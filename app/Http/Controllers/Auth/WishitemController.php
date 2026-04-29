@@ -1350,25 +1350,33 @@ class WishitemController extends Controller
                 'address_1'      => 'nullable|string|max:255',
                 'address_2'      => 'nullable|string|max:255',
                 'city'           => 'nullable|string|max:255',
-                'province_code'  => 'nullable|size:2',
-                'country_code'   => 'nullable|size:2',
+                'province_code'  => 'nullable|string|size:3',
+                'country_code'   => 'nullable|string|size:2',
                 'postal_code'    => 'nullable|digits_between:4,10',
             ]);
 
             $creatorId = Auth::id();
 
+            // Only encrypt non-empty values
+            $encryptIfNotEmpty = function ($value) {
+                if (empty($value)) {
+                    return null;
+                }
+                return $this->safeEncrypt($value);
+            };
+
             CreatorShippingAddress::updateOrCreate(
                 ['creator_id' => $creatorId],
                 [
-                    'first_name'    => $this->safeEncrypt($validatedData['first_name'] ?? null),
-                    'last_name'     => $this->safeEncrypt($validatedData['last_name'] ?? null),
-                    'phone'         => $this->safeEncrypt($validatedData['phone'] ?? null),
-                    'address_1'     => $this->safeEncrypt($validatedData['address_1'] ?? null),
-                    'address_2'     => $this->safeEncrypt($validatedData['address_2'] ?? null),
-                    'city'          => $this->safeEncrypt($validatedData['city'] ?? null),
-                    'province_code' => $this->safeEncrypt($validatedData['province_code'] ?? null),
-                    'country_code'  => $this->safeEncrypt($validatedData['country_code'] ?? null),
-                    'postal_code'   => $this->safeEncrypt($validatedData['postal_code'] ?? null),
+                    'first_name'    => $encryptIfNotEmpty($validatedData['first_name'] ?? null),
+                    'last_name'     => $encryptIfNotEmpty($validatedData['last_name'] ?? null),
+                    'phone'         => $encryptIfNotEmpty($validatedData['phone'] ?? null),
+                    'address_1'     => $encryptIfNotEmpty($validatedData['address_1'] ?? null),
+                    'address_2'     => $encryptIfNotEmpty($validatedData['address_2'] ?? null),
+                    'city'          => $encryptIfNotEmpty($validatedData['city'] ?? null),
+                    'province_code' => $encryptIfNotEmpty($validatedData['province_code'] ?? null),
+                    'country_code'  => $encryptIfNotEmpty($validatedData['country_code'] ?? null),
+                    'postal_code'   => $encryptIfNotEmpty($validatedData['postal_code'] ?? null),
                 ]
             );
 
@@ -1385,8 +1393,7 @@ class WishitemController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Something went wrong',
-                'error'   => $e->getMessage(),
+                'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -1400,26 +1407,57 @@ class WishitemController extends Controller
     {
         $creatorId = Auth::id();
         $creatorAddress = CreatorShippingAddress::where('creator_id', $creatorId)->first();
+
         if (!$creatorAddress) {
             return response()->json([
                 'status' => false,
                 'message' => 'Creator address not found',
             ], 404);
         }
-        $creatorAddress->first_name = Crypt::decryptString($creatorAddress->first_name);
-        $creatorAddress->last_name = Crypt::decryptString($creatorAddress->last_name);
-        $creatorAddress->address_1 = Crypt::decryptString($creatorAddress->address_1);
-        $creatorAddress->address_2 = Crypt::decryptString($creatorAddress->address_2);
-        $creatorAddress->city =      Crypt::decryptString($creatorAddress->city);
-        $creatorAddress->postal_code = Crypt::decryptString($creatorAddress->postal_code);
-        $creatorAddress->country_code = Crypt::decryptString($creatorAddress->country_code);
-        $creatorAddress->province_code = Crypt::decryptString($creatorAddress->province_code);
-        $creatorAddress->phone = Crypt::decryptString($creatorAddress->phone);
+
+        // Helper function to safely decrypt values
+        $safeDecrypt = function ($value) {
+            if (empty($value) || is_null($value)) {
+                return '';
+            }
+
+            try {
+                // Check if the value is already decrypted (not in encrypted format)
+                // Encrypted values typically start with "eyJpdiI6" or similar
+                if (!str_starts_with($value, 'eyJpdiI6')) {
+                    return $value;
+                }
+
+                $decrypted = Crypt::decryptString($value);
+                return $decrypted ?: '';
+            } catch (\Exception $e) {
+                \Log::error('Decryption failed: ' . $e->getMessage());
+                // If decryption fails, it might be a plain text value
+                return $value ?: '';
+            }
+        };
+
+        // Create a new array/object with decrypted values
+        $decryptedData = [
+            'id' => $creatorAddress->id,
+            'creator_id' => $creatorAddress->creator_id,
+            'first_name' => $safeDecrypt($creatorAddress->first_name),
+            'last_name' => $safeDecrypt($creatorAddress->last_name),
+            'phone' => $safeDecrypt($creatorAddress->phone),
+            'address_1' => $safeDecrypt($creatorAddress->address_1),
+            'address_2' => $safeDecrypt($creatorAddress->address_2),
+            'city' => $safeDecrypt($creatorAddress->city),
+            'province_code' => $safeDecrypt($creatorAddress->province_code),
+            'country_code' => $safeDecrypt($creatorAddress->country_code),
+            'postal_code' => $safeDecrypt($creatorAddress->postal_code),
+            'created_at' => $creatorAddress->created_at,
+            'updated_at' => $creatorAddress->updated_at,
+        ];
 
         return response()->json([
             'status' => true,
             'message' => 'Creator address retrieved successfully',
-            'data' => $creatorAddress,
+            'data' => $decryptedData,
         ]);
     }
 
@@ -1621,8 +1659,8 @@ class WishitemController extends Controller
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
-             Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
-             $ryeProductPayment->save();
+            Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
+            $ryeProductPayment->save();
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
