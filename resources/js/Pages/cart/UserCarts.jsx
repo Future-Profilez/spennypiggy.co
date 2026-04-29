@@ -18,6 +18,7 @@ export default function UserCarts(props) {
     const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const datas = props.data;
     const card_capabilities = datas?.card_capabilities;
+    const chargeCurrency = useMemo(() => (datas?.user?.default_currency || currency || "GBP"), [datas?.user?.default_currency, currency]);
     const debugEnabled = useMemo(() => {
         try {
             return window.location.search.includes('debug_cart_checkout=1');
@@ -295,8 +296,8 @@ export default function UserCarts(props) {
 
             const payload = {
                 ...formatCredentialForServer(credential),
-                amount: stepUpContext?.amount || Math.round((fee + subtotal) * (isZeroDecimalCurrency(currency) ? 1 : 100)),
-                currency: stepUpContext?.currency || currency,
+                amount: stepUpContext?.amount || Math.round((fee + subtotal) * (isZeroDecimalCurrency(chargeCurrency) ? 1 : 100)),
+                currency: stepUpContext?.currency || chargeCurrency,
                 creator_id: stepUpContext?.creator_id || datas?.user?.uuid || datas?.user?.id,
                 email: stepUpContext?.email || email || auth?.user?.email,
                 device_id: stepUpContext?.device_id || deviceid,
@@ -332,13 +333,13 @@ export default function UserCarts(props) {
         e.preventDefault();
         setVerifyingOtp(true);
         try {
-            const amountInCents = Math.round((fee + subtotal) * (isZeroDecimalCurrency(currency) ? 1 : 100));
+            const amountInCents = Math.round((fee + subtotal) * (isZeroDecimalCurrency(chargeCurrency) ? 1 : 100));
             const response = await axios.post('/api/risk/step-up/verify', {
                 otp: otpCode,
                 typed_confirmation: typedConfirmation,
                 // We also need to pass the context again so it can create the checkout session
                 amount: amountInCents,
-                currency: currency,
+                currency: chargeCurrency,
                 creator_id: datas?.user?.uuid || datas?.user?.id,
                 email: email || auth?.user?.email,
                 device_id: deviceid,
@@ -390,7 +391,7 @@ export default function UserCarts(props) {
                 }
                 return;
             }
-            const upCurrency = (currency || "GBP").toUpperCase();
+            const upCurrency = (chargeCurrency || "GBP").toUpperCase();
             const rate = rates?.[upCurrency];
             const totalGbp = rate ? ((fee + subtotal) / rate) : (fee + subtotal);
             if (totalGbp > 50) {
@@ -525,7 +526,8 @@ export default function UserCarts(props) {
             items &&
             items.reduce(
                 (total, item) => {
-                    const unitTotal = calculateTotalSupporterPays(item.price, datas?.user && currency, datas?.user?.vat_amount_percentage);
+                    const itemCurrency = item?.currency || datas?.user?.default_currency || chargeCurrency;
+                    const unitTotal = item?.supporter_total ?? calculateTotalSupporterPays(item.price, itemCurrency, datas?.user?.vat_amount_percentage);
                     const unitFee = unitTotal - parseFloat(item.price || 0);
                     return +total + unitFee * (+item.quantity || 1);
                 },
@@ -601,16 +603,18 @@ export default function UserCarts(props) {
                             <div className="CartItemBox">
                                 {items &&
                                     items.map((c, i) => {
+                                        const itemCurrency = c?.currency || datas?.user?.default_currency || chargeCurrency;
+                                        const itemTotalPrice = c?.supporter_total ?? calculateTotalSupporterPays(c.price, itemCurrency, datas?.user?.vat_amount_percentage);
                                         return (
                                             <CartItem
-                                                currency={datas?.user && currency}
+                                                currency={itemCurrency}
                                                 // currency={datas?.user && datas?.user?.default_currency}
                                                 quantityUpdate={quantityUpdate}
                                                 removeCart={removeCart}
                                                 data={c}
                                                 key={i}
                                                 isLoggedIn={!!auth?.user}
-                                                totalPrice={calculateTotalSupporterPays(c.price, datas?.user && currency, datas?.user?.vat_amount_percentage)}
+                                                totalPrice={itemTotalPrice}
                                             />
                                         );
                                     })}
@@ -630,7 +634,7 @@ export default function UserCarts(props) {
                                 <div className="fading cartSubTotal text-right mt-2">
                                     <strong className="!text-black">Total :</strong>
                                     <strong className="!text-right !text-black">
-                                        {formatMultiPrice((fee + subtotal) || "",datas?.user && currency)}
+                                        {formatMultiPrice((fee + subtotal) || "", chargeCurrency)}
                                     </strong>
                                     <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
                                         * Includes all applicable fees

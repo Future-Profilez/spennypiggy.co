@@ -2526,6 +2526,7 @@ class WishitemController extends Controller
                         'uuid' => $value[0]['owner']['uuid'],
                         'default_currency' => $value[0]['owner']['default_currency'],
                         'currency' => $value[0]['currency'],
+                        'vat_amount_percentage' => $value[0]['owner']['vat_amount_percentage'] ?? 0,
                     ],
 
                 ];
@@ -2577,6 +2578,16 @@ class WishitemController extends Controller
                             'quantity' => $v['quantity'],
                             'currency' => $v['currency'],
                         ];
+                    }
+
+                    $vatPercent = (float) ($cart[$key]['user']['vat_amount_percentage'] ?? 0);
+                    $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
+                    if (!empty($v['wish'])) {
+                        $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                        $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
+                    } else {
+                        $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
                     }
                     // if ($v['wish']['subscription'] == 2) {
                     //     $total += $v['amount'];
@@ -2662,6 +2673,7 @@ class WishitemController extends Controller
                         'category' => $v['wish']['category'] ?? null,
                         'url' => $v['url'],
                         'quantity' => $v['quantity'] ?? null,
+                        'currency' => $v['wish']['currency'] ?? ($cart[$key]['user']['default_currency'] ?? null),
                     ];
                 } else {
                     $cart[$key]['items'][$k] = [
@@ -2674,7 +2686,18 @@ class WishitemController extends Controller
                         'url' => $v['url'],
                         'surprise_message' => $v['surprisemessage'] ?? null,
                         'quantity' => $v['quantity'] ?? null,
+                        'currency' => $cart[$key]['user']['default_currency'] ?? null,
                     ];
+                }
+
+                $vatPercent = (float) ($cart[$key]['user']['vat_amount_percentage'] ?? 0);
+                $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
+                if (!empty($v['wish'])) {
+                    $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                    $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
+                } else {
+                    $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
                 }
 
                 $total += !empty($v['priceid']) ? $v['amount'] : ($v['wish']['price'] ?? 0);
@@ -2849,6 +2872,7 @@ class WishitemController extends Controller
                             'category' => $v['wish']['category'],
                             'url' => $v['url'],
                             'quantity' => $v['quantity'],
+                            'currency' => $v['wish']['currency'] ?? ($cart[$key]['user']['default_currency'] ?? null),
                         ];
                     } else {
                         $cart[$key]['items'][$k] = [
@@ -2861,7 +2885,18 @@ class WishitemController extends Controller
                             'url' => $v['url'],
                             'surprise_message' => $v['surprisemessage'],
                             'quantity' => $v['quantity'],
+                            'currency' => $cart[$key]['user']['default_currency'] ?? null,
                         ];
+                    }
+
+                    $vatPercent = (float) ($cart[$key]['user']['vat_amount_percentage'] ?? 0);
+                    $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
+                    if (!empty($v['wish'])) {
+                        $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                        $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
+                    } else {
+                        $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
                     }
                     $total += !empty($v['priceid']) ? $v['amount'] : $v['wish']['price'];
                     $fee += !empty($v['priceid']) ? $v['tax'] * $v['quantity'] : ($v['wish']['tax_amount'] * $v['quantity'] ?? 0);

@@ -179,6 +179,7 @@ class CheckoutController extends Controller
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+            $precision = $multiplier === 1 ? 0 : 2;
 
             // Initialize connectedAccountId outside the loop to avoid undefined variable error
             $connectedAccountId = null;
@@ -201,10 +202,9 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Unable to process payment. Please check your cart and try again.');
             }
 
-            // Check if creator has card_payments capability
-            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+            if (!StripeControl::hasTransfersCapability($connectedAccountId)) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
-            return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+                return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
 
             // Log the connected account ID for debugging
@@ -219,6 +219,7 @@ class CheckoutController extends Controller
             $totalApplicationFee = 0;
             $totalCreatorNet = 0;
             $grandTotalSupporterPays = 0;
+            $grandTotalCreatorTransfer = 0;
 
             foreach ($getdata as $dd) {
                 // Skip cart items without valid wish relationship
@@ -252,6 +253,7 @@ class CheckoutController extends Controller
                 $finalTotalAmount = $breakdown['total_supporter_pays'];
                 $applicationFeeAmount = $breakdown['application_fee'];
                 $creatorNet = $breakdown['net_to_creator'];
+                $creatorTransferAmount = round($itemAmountWithVat, $precision, PHP_ROUND_HALF_UP);
 
                 $productName = $dd->wish->wishname ?? 'Wish Item';
                 $lineItems[] = [
@@ -271,6 +273,7 @@ class CheckoutController extends Controller
                 $totalApplicationFee += $applicationFeeAmount * $dd->quantity;
                 $totalCreatorNet += $creatorNet * $dd->quantity;
                 $grandTotalSupporterPays += $finalTotalAmount * $dd->quantity;
+                $grandTotalCreatorTransfer += $creatorTransferAmount * $dd->quantity;
             }
 
             // Check if we have any valid line items after processing
@@ -305,14 +308,18 @@ class CheckoutController extends Controller
             $paymentIntentData = [
                 'description' => "Spenny Piggy - Content purchase",
                 'metadata' => $this->buildSafeMetadata($owner, $getdata, $totalCreatorNet),
-                'application_fee_amount' => (int) round($totalApplicationFee * $multiplier),
+                'transfer_data' => [
+                    'destination' => $connectedAccountId,
+                    'amount' => (int) round($grandTotalCreatorTransfer * $multiplier),
+                ],
+                'on_behalf_of' => $connectedAccountId,
             ];
 
-            Log::info('Using Direct Charge flow for creator', [
+            Log::info('Using Destination Charge flow for checkout', [
                 'creator_id' => $creator_id,
                 'connected_account_id' => $connectedAccountId,
-                'application_fee_amount' => $paymentIntentData['application_fee_amount'],
-                'total_charge' => $totalCreatorNet
+                'transfer_amount' => $paymentIntentData['transfer_data']['amount'] ?? null,
+                'total_charge' => $grandTotalSupporterPays
             ]);
 
             $payload = [
@@ -337,9 +344,7 @@ class CheckoutController extends Controller
             }
 
             try {
-                // For Direct Charges, we pass the connectedAccountId as the second parameter
-                // This adds the 'stripe_account' => $connectedAccountId header to the request
-                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3ds, $owner->username);
+                $sessionCreate = StripeControl::createCheckoutSession($payload, null, $force3ds, $owner->username);
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 Log::error("Stripe Checkout Error: " . $e->getMessage(), [
                     'error_body' => $e->getJsonBody(),

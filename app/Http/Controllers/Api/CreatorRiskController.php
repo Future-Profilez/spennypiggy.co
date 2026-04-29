@@ -27,7 +27,6 @@ class CreatorRiskController extends Controller
         $creatorRules = \App\Models\RiskSetting::get('creator_rules', []);
         $newCreatorAgeDays = (int) ($creatorRules['new_creator_age_days'] ?? 30);
         $isNewCreator = $user->created_at?->diffInDays(now()) < $newCreatorAgeDays;
-        $hasNoTransactions = ((int) ($metrics->tx_30d ?? 0)) === 0;
         $isStripeConnected = ((int) ($user->stripe_details_submitted ?? 0)) === 1;
         $hasAnyEarnings = Payment::where('creator_id', (string) $user->uuid)
             ->whereIn('status', ['succeeded', 'review_hold', 'disputed', 'refunded'])
@@ -35,17 +34,35 @@ class CreatorRiskController extends Controller
 
         // 1. RESERVE_APPLIED
         if ($metrics->reserve_percent > 0 && $isStripeConnected && $hasAnyEarnings) {
-            $banners[] = [
-                'key' => 'RESERVE_APPLIED',
-                'type' => 'warning',
-                'title' => 'Reserve Applied',
-                'body' => "A temporary reserve of {$metrics->reserve_percent}% has been applied due to increased disputes. This protects payouts long-term.",
-                'action_url' => '/stripe/login',
-                'action_label' => 'View Payouts',
-                'action_method' => 'post',
-                'what_happened' => "To ensure platform stability and protect against potential disputes, a temporary reserve has been placed on your account. This means {$metrics->reserve_percent}% of your earnings is held for a rolling period before being released.",
-                'what_to_do' => "Continue fulfilling orders and maintaining good standing. The reserve is automatically reviewed and may be lowered as your account history improves. You can check your payout schedule in the dashboard.",
-            ];
+            $isHighRisk = ($metrics->risk_level ?? null) === 'high';
+            $isMediumRisk = ($metrics->risk_level ?? null) === 'medium';
+
+            if ($isNewCreator && !$isHighRisk && !$isMediumRisk) {
+                $banners[] = [
+                    'key' => 'RESERVE_APPLIED',
+                    'type' => 'info',
+                    'title' => 'New Creator Reserve',
+                    'body' => "A standard {$metrics->reserve_percent}% rolling reserve is active while your account is new. This is normal and protects payouts long-term.",
+                    'action_url' => '/stripe/login',
+                    'action_label' => 'View Payouts',
+                    'action_method' => 'post',
+                    'what_happened' => "New creators start with a small rolling reserve for the first {$newCreatorAgeDays} days while account history is built. Reserves are released automatically after the rolling period.",
+                    'what_to_do' => "No action needed. Keep fulfilling orders and collecting genuine supporters. Your reserve is reviewed as your account history grows.",
+                ];
+            } else {
+                $reason = $isHighRisk ? 'account risk signals' : ($isMediumRisk ? 'additional safety checks' : 'platform safety');
+                $banners[] = [
+                    'key' => 'RESERVE_APPLIED',
+                    'type' => 'warning',
+                    'title' => 'Reserve Applied',
+                    'body' => "A rolling reserve of {$metrics->reserve_percent}% is active due to {$reason}. This protects payouts long-term.",
+                    'action_url' => '/stripe/login',
+                    'action_label' => 'View Payouts',
+                    'action_method' => 'post',
+                    'what_happened' => "To protect against potential disputes and keep payouts stable, a rolling reserve is held. This means {$metrics->reserve_percent}% of your earnings is held temporarily before being released.",
+                    'what_to_do' => "Continue fulfilling orders and maintaining good standing. The reserve is reviewed automatically and may be lowered as your account history improves.",
+                ];
+            }
         }
 
         // 2. PAYOUT_DELAYED

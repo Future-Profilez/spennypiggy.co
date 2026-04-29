@@ -29,6 +29,7 @@ use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
 use App\Models\Subscription;
 use App\Models\TipGoal;
+use App\Models\FinancialTransaction;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserCart;
@@ -3092,37 +3093,32 @@ class StripeController extends Controller
 
             $this->ensureTurnstileVerified($request);
 
-            $sourceCurrency = strtolower($request->currency ?? $creator->default_currency);
+            $sourceCurrency = strtoupper($request->currency ?? $creator->default_currency ?? 'GBP');
             $amount = (float) $request->amount;
 
-            // If source currency differs from creator currency, convert amount to creator currency
-            if (strtoupper($sourceCurrency) !== strtoupper($creator->default_currency)) {
-                // Example: User entered 100 USD, Creator is GBP.
-                // We need to find how many GBP is 100 USD.
-                // priceFormat(from, amount, to) -> converts FROM currency TO target currency
-                $amount = Helpers::priceFormat(strtoupper($sourceCurrency), $amount, strtoupper($creator->default_currency));
+            $isZeroDecimal = Helpers::isZeroDecimalCurrency($sourceCurrency);
+            $precision = $isZeroDecimal ? 0 : 2;
+
+            $vatPercent = (float) ($creator->vat_amount_percentage ?? 0);
+            $vatAmount = 0.0;
+            if ($vatPercent > 0) {
+                $vatAmount = $amount - ($amount / (1 + ($vatPercent / 100)));
+                $vatAmount = round($vatAmount, $precision, PHP_ROUND_HALF_UP);
             }
 
-            $ConvertedAmount = Helpers::priceFormat($creator->default_currency, $amount, 'gbp');
-            
-            // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
-            $vatPercent = $creator->vat_amount_percentage ?? 0;
-            $vatAmount = $amount * $vatPercent / 100;
-            $amountWithVat = $amount + $vatAmount;
+            $unitAmount = $isZeroDecimal
+                ? (int) round($amount, 0, PHP_ROUND_HALF_UP)
+                : (int) round($amount * 100, 0, PHP_ROUND_HALF_UP);
 
-            // Calculate breakdown in creator's currency to determine what supporter pays
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $creator->default_currency);
-            
-            $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
-            $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
-            $creatorNet = $breakdown['net_to_creator']; // This is in supporter currency
+            $applicationFeeAmount = 0;
+            $creatorNet = round($amount, $precision, PHP_ROUND_HALF_UP);
 
             // Unified Risk Enforcement
             $riskData = $this->enforceRiskChecks(
                 $request,
                 $creator,
-                $breakdown['total_supporter_pays'],
-                $creator->default_currency,
+                $creatorNet,
+                $sourceCurrency,
                 'tip_jar',
                 true // JSON response expected
             );
@@ -3136,7 +3132,7 @@ class StripeController extends Controller
 
             // Values for DB in creator's currency
             $price = $amount;
-            $creatorBreakdown = $breakdown;
+            $creatorBreakdown = null;
             
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
@@ -3144,11 +3140,11 @@ class StripeController extends Controller
                 'creator_id' => $creator->id,
                 'guest_name' => $request->name,
                 'guest_email' => $request->email,
-                'currency' => $creator->default_currency,
+                'currency' => $sourceCurrency,
                 'amount' => $price,
-                'tax' => $creatorBreakdown['application_fee'],
+                'tax' => 0,
                 'vat_amount' => $vatAmount,
-                'total_paid' => $creatorBreakdown['total_supporter_pays'],
+                'total_paid' => $creatorNet,
                 'message' => $request->message ?? null,
                 'anonymous' => $request->anonymous ?? 0,
             ]);
@@ -3162,7 +3158,7 @@ class StripeController extends Controller
                 [
                     'quantity' => 1,
                     'price_data' => [
-                        'currency' => $creator->default_currency,
+                        'currency' => $sourceCurrency,
                         'product_data' => [
                             'name' => "Total value of item including all fees",
                             'description' => "Support payment to {$creator->name} to help them create more content.",
@@ -3173,32 +3169,35 @@ class StripeController extends Controller
             ];
 
             // Check if creator has card_payments capability to determine payment flow
-            $hasCardPayments = StripeControl::hasCardPaymentsCapability($creator->account_id);
+            $hasTransfers = StripeControl::hasTransfersCapability($creator->account_id);
 
-            if (!$hasCardPayments) {
+            if (!$hasTransfers) {
                 return response()->json([
                     'status' => false,
                     'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
                 ]);
             }
 
-            // Direct Charges Implementation
+            // Destination Charges Implementation (platform pays Stripe fee; creator receives full amount)
             $paymentIntentData = [
                 'description' => "Spenny Piggy - Support payment to {$creator->name} (Total value including all fees)",
                 "metadata" => Helpers::buildStripeMetadata('support_payment', $pay, [
                     'item_amount' => (string) $unitAmount,
                     'certificate' => true,
-                    'creator_net_amount' => (string) ($creatorNet * 100),
+                    'creator_net_amount' => (string) $unitAmount,
                     'platform_fee_amount' => (string) $applicationFeeAmount,
                     'total_charge_amount' => (string) $unitAmount,
-                    'payment_type' => 'Support Payment - Direct Charge',
+                    'payment_type' => 'Support Payment - Destination Charge',
                     'anonymous' => (string) ($request->anonymous ? 'yes' : 'no'),
-                    'has_card_payments' => (string) $hasCardPayments,
+                    'has_transfers' => (string) $hasTransfers,
                 ]),
-                'application_fee_amount' => $applicationFeeAmount,
+                'transfer_data' => [
+                    'destination' => $creator->account_id,
+                ],
+                'on_behalf_of' => $creator->account_id,
             ];
 
-            Log::info('Using Direct Charges for support payment', [
+            Log::info('Using Destination Charges for support payment', [
                 'creator_id' => $creator->id,
                 'connected_account_id' => $creator->account_id,
                 'payment_type' => 'support_payment',
@@ -3225,21 +3224,20 @@ class StripeController extends Controller
             }
 
             try {
-                // Create session on CONNECTED account
-                $session = StripeControl::createCheckoutSession($payload, $creator->account_id, false, $creator->username);
+                $session = StripeControl::createCheckoutSession($payload, null, false, $creator->username);
                 $pay->update(['session_id' => $session->id]);
 
                 try {
                     \App\Models\Payment::create([
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $riskData['risk_identity_id'],
-                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
-                        'reserve_amount_minor' => (function () use ($creator, $unitAmount) {
+                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($sourceCurrency)),
+                        'reserve_amount_minor' => (function () use ($creator, $unitAmount, $sourceCurrency) {
                             $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
                             $reservePercent = (int) ($metrics->reserve_percent ?? 0);
                             if ($reservePercent <= 0) return 0;
                             $reserveMinor = (int) round(((int) $unitAmount * $reservePercent) / 100);
-                            return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($creator->default_currency));
+                            return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($sourceCurrency));
                         })(),
                         'currency' => 'gbp',
                         'stripe_session_id' => $session->id,
@@ -3281,8 +3279,7 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Insufficient data!');
         }
         try {
-            // Direct Charges: session is created on connected account
-            $session = StripeControl::getCheckoutSession($tip_pay->session_id, $tip_pay->creator->account_id);
+            $session = StripeControl::getCheckoutSession($tip_pay->session_id, null);
             $tip_pay->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
@@ -3296,13 +3293,7 @@ class StripeController extends Controller
                 // Send notification to creator
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
 
-                // Use consistent fee calculation for creator net amount
-                $vatPercent = $tip_pay->creator->vat_amount_percentage ?? 0;
-                $vatAmount = $tip_pay->amount * $vatPercent / 100;
-                $amountWithVat = $tip_pay->amount + $vatAmount;
-
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $tip_pay->currency);
-                $creatorNet = $breakdown['net_to_creator'];
+                $creatorNet = (float) $tip_pay->amount;
 
                     // Create deliverable record for tracking and certificate generation
                     $deliverable = Deliverable::create([
@@ -3358,8 +3349,43 @@ class StripeController extends Controller
 
                 $tip_pay->save();
 
+                // Immediately sync to FinancialTransaction so earnings dashboard shows up-to-date
+                try {
+                    $gross = $tip_pay->total_paid && $tip_pay->total_paid > 0
+                        ? (float) $tip_pay->total_paid
+                        : (float) $tip_pay->amount;
+                    $platformFee = (float) 0;
+                    $vatAmt = (float) ($tip_pay->vat_amount ?? 0);
+                    $stripeFeeMinor = 0;
+                    if (!empty($session->payment_intent)) {
+                        $stripeFeeMinor = StripeControl::getStripeFeeMinorForPaymentIntent((string) $session->payment_intent, null);
+                    }
+                    $isZeroDecimal = Helpers::isZeroDecimalCurrency((string) strtoupper($tip_pay->currency ?? 'GBP'));
+                    $stripeFee = $isZeroDecimal ? (float) $stripeFeeMinor : ((float) $stripeFeeMinor / 100);
+
+                    FinancialTransaction::updateOrCreate(
+                        ['source_type' => TipGoalsPayment::class, 'source_id' => $tip_pay->id],
+                        [
+                            'user_id'       => $tip_pay->creator_id,
+                            'supporter_id'  => $tip_pay->user_id,
+                            'type'          => 'income',
+                            'gross_amount'  => $gross,
+                            'platform_fee'  => $platformFee,
+                            'stripe_fee'    => $stripeFee,
+                            'vat_amount'    => $vatAmt,
+                            'net_amount'    => (float) $tip_pay->amount,
+                            'currency'      => strtoupper($tip_pay->currency ?? 'GBP'),
+                            'status'        => 'completed',
+                            'description'   => 'Tip / Support',
+                            'transaction_date' => $tip_pay->created_at,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('Failed to sync TipGoalsPayment to FinancialTransaction: ' . $e->getMessage(), ['tip_pay_id' => $tip_pay->id]);
+                }
+
                 // Update GMV for creator
-                Helpers::addGmv($tip_pay->creator_id, (float) $tip_pay->amount, $tip_pay->creator->default_currency);
+                Helpers::addGmv($tip_pay->creator_id, (float) $tip_pay->amount, $tip_pay->currency);
 
 
                 /**************************TIP**JAR**PWA**START****************************************************/
