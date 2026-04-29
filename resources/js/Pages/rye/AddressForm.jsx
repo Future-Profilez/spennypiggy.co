@@ -140,11 +140,21 @@ export default function AddressForm({
 
             if (response?.data?.status) {
                 successAlert(response?.data?.message);
+
                 if (!isEditPopup) {
+                    // For add new address
                     setHasAdded(true);
                 } else {
+                    // For edit/update - close the popup
                     setSassClose(false);
                 }
+
+                // Optional: Add a small delay before closing to show success message
+                // setTimeout(() => {
+                //     if (isEditPopup) {
+                //         setSassClose(false);
+                //     }
+                // }, 1500);
             } else {
                 if (response?.data?.errors) {
                     setFieldErrors(response.data.errors);
