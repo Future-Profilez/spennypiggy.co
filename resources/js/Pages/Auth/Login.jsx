@@ -114,7 +114,9 @@ export default function Login({ status, canResetPassword }) {
             setHasPasskey(userHasPasskey);
         }
 
-        if (isWebAuthnSupported() && userHasPasskey === false) {
+        const platformAuthAvailable = await isPlatformAuthenticatorAvailable();
+
+        if (platformAuthAvailable && userHasPasskey === false) {
             // Abort conditional UI before showing prompt
             if (abortController) {
                 abortController.abort("Showing setup prompt");
@@ -138,6 +140,16 @@ export default function Login({ status, canResetPassword }) {
     // Check if WebAuthn is supported
     const isWebAuthnSupported = () => {
         return typeof window !== 'undefined' && window.PublicKeyCredential !== undefined;
+    };
+
+    // Check if platform authenticator (FaceID/Windows Hello) is available
+    const isPlatformAuthenticatorAvailable = async () => {
+        if (!isWebAuthnSupported()) return false;
+        try {
+            return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        } catch (e) {
+            return false;
+        }
     };
 
     // Check if user has passkey registered
@@ -241,7 +253,7 @@ export default function Login({ status, canResetPassword }) {
         };
     }, []);
 
-    const handlePasskeyLogin = async () => {
+    const handlePasskeyLogin = async (fallbackToPassword = false) => {
         setPasskeyLoading(true);
         try {
             const { data: options } = await axios.post(
@@ -274,17 +286,72 @@ export default function Login({ status, canResetPassword }) {
                     const redirectUrl = response.data.redirect_url || "/";
                     window.location.href = redirectUrl;
                 } else {
-                    errorAlert(response.data.message || "Passkey login failed");
+                    if (!fallbackToPassword) {
+                        errorAlert(response.data.message || "Passkey login failed");
+                    }
+                    if (fallbackToPassword) proceedToStandardLogin();
                 }
+            } else if (fallbackToPassword) {
+                proceedToStandardLogin();
             }
         } catch (error) {
             if (error.name !== "AbortError" && error.name !== "NotAllowedError") {
                 console.error("Passkey login error:", error);
-                errorAlert("Passkey authentication failed");
+                if (!fallbackToPassword) {
+                    errorAlert("Passkey authentication failed");
+                }
+            }
+            if (fallbackToPassword) {
+                proceedToStandardLogin();
             }
         } finally {
             setPasskeyLoading(false);
         }
+    };
+
+    const proceedToStandardLogin = () => {
+        setLoading(true);
+        axios
+            .post("/verify-user", data)
+            .then((resp) => {
+                if (resp.data.status) {
+                    if (resp.data.is_2fa) {
+                        setOpen("open");
+                        setLoading(false);
+                        setTimeout(() => {
+                            setOpen(false);
+                        }, 1000);
+                    } else {
+                        submit();
+                    }
+                } else {
+                    errorAlert(resp.data.msg);
+                    setLoading(false);
+                }
+            })
+            .catch((err) => {
+                console.error("Verify user error:", err);
+                if (
+                    err.response &&
+                    err.response.data &&
+                    err.response.data.message
+                ) {
+                    errorAlert(err.response.data.message);
+                } else if (
+                    err.response &&
+                    err.response.data &&
+                    err.response.data.msg
+                ) {
+                    errorAlert(err.response.data.msg);
+                } else if (err.message) {
+                    errorAlert(err.message);
+                } else {
+                    errorAlert(
+                        "An error occurred during login. Please try again.",
+                    );
+                }
+                setLoading(false);
+            });
     };
 
     const submit = (e) => {
@@ -319,7 +386,9 @@ export default function Login({ status, canResetPassword }) {
                     setHasPasskey(userHasPasskey);
                 }
                 
-                if (isWebAuthnSupported() && userHasPasskey === false) {
+                const platformAuthAvailable = await isPlatformAuthenticatorAvailable();
+                
+                if (platformAuthAvailable && userHasPasskey === false) {
                     // Abort conditional UI before showing prompt
                     if (abortController) {
                         abortController.abort("Showing setup prompt");
@@ -368,52 +437,14 @@ export default function Login({ status, canResetPassword }) {
         // If user has a passkey and is using a supported browser, 
         // try passkey login first for a seamless "system prompt" experience
         if (isWebAuthnSupported() && hasPasskey === true) {
-            handlePasskeyLogin();
-            return;
+            const platformAuthAvailable = await isPlatformAuthenticatorAvailable();
+            if (platformAuthAvailable) {
+                handlePasskeyLogin(true);
+                return;
+            }
         }
 
-        setLoading(true);
-        axios
-            .post("/verify-user", data)
-            .then((resp) => {
-                if (resp.data.status) {
-                    if (resp.data.is_2fa) {
-                        setOpen("open");
-                        setLoading(false);
-                        setTimeout(() => {
-                            setOpen(false);
-                        }, 1000);
-                    } else {
-                        submit();
-                    }
-                } else {
-                    errorAlert(resp.data.msg);
-                    setLoading(false);
-                }
-            })
-            .catch((err) => {
-                console.error("Verify user error:", err);
-                if (
-                    err.response &&
-                    err.response.data &&
-                    err.response.data.message
-                ) {
-                    errorAlert(err.response.data.message);
-                } else if (
-                    err.response &&
-                    err.response.data &&
-                    err.response.data.msg
-                ) {
-                    errorAlert(err.response.data.msg);
-                } else if (err.message) {
-                    errorAlert(err.message);
-                } else {
-                    errorAlert(
-                        "An error occurred during login. Please try again.",
-                    );
-                }
-                setLoading(false);
-            });
+        proceedToStandardLogin();
     };
 
 

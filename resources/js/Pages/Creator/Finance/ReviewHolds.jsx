@@ -1,8 +1,8 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
-import CreatorLayout from '@/Layouts/CreatorLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function ReviewHolds({ holds }) {
+export default function ReviewHolds({ holds, auth }) {
     const formatCurrency = (amount, currency = 'GBP') => {
         return new Intl.NumberFormat('en-GB', {
             style: 'currency',
@@ -11,7 +11,10 @@ export default function ReviewHolds({ holds }) {
     };
 
     return (
-        <CreatorLayout>
+        <AuthenticatedLayout
+            user={auth.user}
+            header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Review Holds</h2>}
+        >
             <Head title="Review Holds" />
 
             <div className="py-8">
@@ -108,6 +111,6 @@ export default function ReviewHolds({ holds }) {
                     </div>
                 </div>
             </div>
-        </CreatorLayout>
+        </AuthenticatedLayout>
     );
 }

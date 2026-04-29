@@ -63,8 +63,10 @@ class PayoutService
 
             $adjustments = Payment::where('creator_id', $creatorId)
                 ->whereIn('status', ['refunded', 'disputed'])
-                ->whereNull('payout_run_id')
-                ->where('created_at', '<=', $cutoff)
+                ->where(function($q) use ($cutoff) {
+                    $q->whereNull('payout_run_id') // New refunds/disputes
+                      ->orWhere('created_at', '<=', $cutoff); // Potential historical ones
+                })
                 ->get();
 
             $reviewHold = Payment::where('creator_id', $creatorId)
@@ -74,7 +76,12 @@ class PayoutService
                 ->get();
 
             $grossAmount = (int) $payments->sum('amount');
-            $refundDisputeAmount = (int) $adjustments->sum('amount');
+
+            // CRITICAL FIX: Only subtract if the payment was actually paid out before (payout_run_id was NOT null)
+            // If it's a NEW dispute/refund that was never paid, we just mark it as "processed" but don't subtract from gross.
+            $refundDisputeAmount = (int) $adjustments->filter(function($p) {
+                return !is_null($p->payout_run_id);
+            })->sum('amount');
             $reviewHoldAmount = (int) $reviewHold->sum('amount');
 
             $eligibleBase = $grossAmount - $refundDisputeAmount;

@@ -90,7 +90,10 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
                     
                     setPublicKeyOptions(options);
                 })
-                .catch(err => console.error("Failed to preload passkey options", err));
+                .catch(err => {
+                    console.error("Failed to preload passkey options", err);
+                    if (silent && onSkip) onSkip();
+                });
         }
     }, [isOpen, email]);
 

@@ -62,7 +62,11 @@ class FinancialService
 
         // Review Holds and Disputed payments
         $reviewHoldsAmount = \App\Models\Payment::where('creator_id', $user->uuid)
-            ->whereIn('status', ['review_hold', 'disputed'])
+            ->where('status', 'review_hold')
+            ->sum('amount');
+            
+        $disputesAmount = \App\Models\Payment::where('creator_id', $user->uuid)
+            ->where('status', 'disputed')
             ->sum('amount');
 
         $grossDisplay = 0;
@@ -151,10 +155,12 @@ class FinancialService
         // Convert reserves and review holds to display currency
         $heldReservesDisplay = $convert('GBP', $heldReservesAmount, $displayCurrency) ?? ($heldReservesAmount);
         $reviewHoldsDisplay = $convert('GBP', $reviewHoldsAmount / 100, $displayCurrency) ?? ($reviewHoldsAmount / 100);
+        $disputesDisplay = $convert('GBP', $disputesAmount / 100, $displayCurrency) ?? ($disputesAmount / 100);
 
         // Calculate Expected Next Payout using PayoutService directly
         $payoutData = $payoutService->calculatePayouts();
-        $netPayoutMinor = $payoutData['payouts'][$user->uuid]['net_payout'] ?? 0;
+        $payoutInfo = $payoutData['payouts'][$user->uuid] ?? null;
+        $netPayoutMinor = $payoutInfo['net_payout'] ?? 0;
         $netPayoutMajor = $netPayoutMinor / 100;
         $payoutableDisplay = $convert('GBP', $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor;
 
@@ -168,7 +174,9 @@ class FinancialService
             'profit' => $netDisplay - $expensesDisplay,
             'held_reserves' => $heldReservesDisplay,
             'review_holds' => $reviewHoldsDisplay,
+            'disputes' => $disputesDisplay,
             'payoutable_balance' => $payoutableDisplay,
+            'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0, // Add this flag
 
             'gross_income_gbp' => $grossGbp,
             'fees_gbp' => $feesGbp,
@@ -178,6 +186,7 @@ class FinancialService
             'profit_gbp' => $netGbp - $expensesGbp,
             'held_reserves_gbp' => $heldReservesAmount,
             'review_holds_gbp' => $reviewHoldsAmount / 100,
+            'disputes_gbp' => $disputesAmount / 100,
         ];
     }
 

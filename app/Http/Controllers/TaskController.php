@@ -105,9 +105,6 @@ class TaskController extends Controller
                         if ($priceGBP < 5) {
                             $fail('Paid Tasks must be at least £5 GBP equivalent.');
                         }
-                        if ($priceGBP > 500) {
-                            $fail('Paid Tasks cannot exceed £500 GBP equivalent.');
-                        }
                     }
                 },
             ],
@@ -191,9 +188,6 @@ class TaskController extends Controller
 
                         if ($priceGBP < 5) {
                             $fail('Paid Tasks must be at least £5 GBP equivalent.');
-                        }
-                        if ($priceGBP > 500) {
-                            $fail('Paid Tasks cannot exceed £500 GBP equivalent.');
                         }
                     }
                 },
@@ -440,14 +434,11 @@ class TaskController extends Controller
 
         $price = $task->price;
 
-        // Enforce Paid Task limits in GBP (min £5, max £500)
+        // Enforce Paid Task limits in GBP (min £5)
         if ($task->type !== 'instant') {
             $priceGBP = Helpers::priceFormat(strtoupper($currency), $price, 'GBP');
             if ($priceGBP < 5) {
                 return back()->with('error', 'Paid Task price must be at least £5.');
-            }
-            if ($priceGBP > 500) {
-                return back()->with('error', 'Paid Task price cannot exceed £500.');
             }
         }
 

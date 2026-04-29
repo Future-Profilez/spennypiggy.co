@@ -1398,7 +1398,7 @@ class StripeController extends Controller
                 $totalCreatorNet += ($creatorNet * $dd->quantity);
             }
 
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripe = StripeControl::getClient();
 
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$owner_id]),
@@ -2571,7 +2571,7 @@ class StripeController extends Controller
 
     public function subscriptionStatus(Request $request)
     {
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = StripeControl::getClient();
 
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
 
@@ -2873,7 +2873,7 @@ class StripeController extends Controller
 
         try {
             // Get the subscription details from Stripe to update period information
-            $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripeClient = StripeControl::getClient();
             $stripeSubscription = $stripeClient->subscriptions->retrieve($subscriptionId);
 
             // Update subscription with new period information

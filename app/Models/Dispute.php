@@ -38,7 +38,7 @@ class Dispute extends Model
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'creator_id', 'id');
+        return $this->belongsTo(User::class, 'creator_id', 'uuid');
     }
 
     public function payment()

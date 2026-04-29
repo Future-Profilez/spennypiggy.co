@@ -96,10 +96,12 @@ export default function DisputesIndex({ auth, disputes }) {
                                     <thead>
                                         <tr className="text-left border-b border-gray-700">
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Supporter</th>
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Reason</th>
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Due By</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-800">
@@ -107,6 +109,25 @@ export default function DisputesIndex({ auth, disputes }) {
                                             <tr key={dispute.id} className="hover:bg-white/5 transition-colors group">
                                                 <td className="px-6 py-5 text-sm text-gray-300">
                                                     {new Date(dispute.created_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-6 py-5 text-sm">
+                                                    {dispute.payment?.supporter ? (
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-700">
+                                                                {dispute.payment.supporter.avatar ? (
+                                                                    <img src={dispute.payment.supporter.avatar} alt="" className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <span className="text-[10px] font-bold text-gray-500">{dispute.payment.supporter.name[0]}</span>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-white font-medium text-xs">{dispute.payment.supporter.name}</div>
+                                                                <div className="text-gray-500 text-[10px]">@{dispute.payment.supporter.username}</div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-500 italic text-xs">Unknown / Guest</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-5 text-sm font-bold text-white">
                                                     {(dispute.amount / 100).toLocaleString('en-GB', { style: 'currency', currency: dispute.currency.toUpperCase() })}
@@ -123,6 +144,14 @@ export default function DisputesIndex({ auth, disputes }) {
                                                             {new Date(dispute.evidence_due_by).toLocaleDateString()}
                                                         </span>
                                                     ) : '-'}
+                                                </td>
+                                                <td className="px-6 py-5 text-right">
+                                                    <Link 
+                                                        href={route('creator.disputes.show', dispute.id)}
+                                                        className="inline-flex items-center gap-1.5 bg-gray-800 hover:bg-[#F94F96] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
+                                                    >
+                                                        Review & Evidence
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))}

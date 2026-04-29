@@ -183,7 +183,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <ShieldCheck size={80} className="text-blue-500" />
                             </div>
-                            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -191,29 +191,20 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                     </div>
                                     <div className="text-2xl md:text-3xl font-bold text-blue-400 mt-2">{formatCurrency(summary.held_reserves, displayCurrency)}</div>
                                     <div className="text-[12px] text-gray-500 mt-2">
-                                        {reserve_reason || 'A small portion of your earnings is temporarily reserved for 30 days to ensure payment security. These funds are automatically released to your available balance.'}
+                                        {reserve_reason || 'Standard rolling reserve for platform safety.'}
                                     </div>
                                     {reserve_breakdown.length > 0 && (
                                         <div className="mt-3 space-y-1">
-                                            {reserve_breakdown.map((r, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-gray-800/60 rounded-lg px-3 py-2 text-[12px]">
+                                            {reserve_breakdown.slice(0, 2).map((r, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-gray-800/60 rounded-lg px-2 py-1.5 text-[10px]">
                                                     <span className="text-gray-400">
-                                                        Held from {r.run_date}
+                                                        {r.release_date}
                                                     </span>
                                                     <span className="text-blue-300 font-bold">
                                                         {formatCurrency(r.amount / 100, displayCurrency)}
                                                     </span>
-                                                    <span className="text-green-400">
-                                                        Releases {r.release_date}
-                                                        {r.days_remaining > 0 && ` (${r.days_remaining}d)`}
-                                                    </span>
                                                 </div>
                                             ))}
-                                        </div>
-                                    )}
-                                    {reserve_breakdown.length === 0 && summary.held_reserves > 0 && (
-                                        <div className="mt-2 text-[11px] text-gray-600 italic">
-                                            Reserves are released automatically after 30 days.
                                         </div>
                                     )}
                                 </div>
@@ -223,14 +214,24 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                         Review Holds
                                     </div>
                                     <div className="text-2xl md:text-3xl font-bold text-purple-400 mt-2 group-hover/holds:text-purple-300 transition-colors">{formatCurrency(summary.review_holds, displayCurrency)}</div>
-                                    <div className="text-[12px] text-gray-500 mt-2 font-bold group-hover/holds:text-gray-400 transition-colors">Payments currently being verified by our team.</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold group-hover/holds:text-gray-400 transition-colors">Verified by our team.</div>
+                                </Link>
+                                <Link href={route('creator.disputes.index')} className="block group/disputes">
+                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2 group-hover/disputes:text-gray-300 transition-colors">
+                                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                                        Disputes
+                                    </div>
+                                    <div className="text-2xl md:text-3xl font-bold text-orange-400 mt-2 group-hover/disputes:text-orange-300 transition-colors">{formatCurrency(summary.disputes, displayCurrency)}</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold group-hover/disputes:text-gray-400 transition-colors">Flagged by banks.</div>
                                 </Link>
                             </div>
                             <div className="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
                                 <div>
                                     <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
                                     <div className="text-xl font-bold text-white">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
-                                    <div className="text-[10px] text-gray-600 mt-1">Paid out every Friday. Excludes reserves &amp; review holds.</div>
+                                    <div className="text-[10px] text-gray-600 mt-1">
+                                        Paid out every Friday. {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, holds & disputes.'}
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Status</div>

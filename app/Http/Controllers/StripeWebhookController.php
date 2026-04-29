@@ -279,7 +279,7 @@ class StripeWebhookController extends Controller
                 break;
             
             case 'review.closed':
-                $this->processMandatorySubscription($event);
+                $this->handleReviewClosed($data);
                 break;
 
             // --- Connect Account / Payout Risk Monitoring ---
@@ -764,7 +764,7 @@ class StripeWebhookController extends Controller
 
             // Request redaction of verification session to avoid storing sensitive images at Stripe
             try {
-                $client = new StripeClient(Stripe::getApiKey());
+                $client = AppStripeControl::getClient();
                 $client->identity->verificationSessions->redact($session->id, []);
             } catch (\Throwable $e) {
                 Log::warning('Stripe Identity redaction failed', [
@@ -1078,7 +1078,7 @@ class StripeWebhookController extends Controller
         $chargeId = null;
         if (!empty($session->payment_intent)) {
             try {
-                $client = new StripeClient(config('services.stripe.secret'));
+                $client = AppStripeControl::getClient();
                 // Check if payment_intent is already an object (expanded) or string
                 $piId = is_string($session->payment_intent) ? $session->payment_intent : $session->payment_intent->id;
                 $pi = $client->paymentIntents->retrieve($piId, ['expand' => ['latest_charge']]);
@@ -1304,7 +1304,7 @@ class StripeWebhookController extends Controller
                 
                 // Update Payment Status
                 if ($payment) {
-                    $payment->update(['status' => 'disputed']);
+                    $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
                 }
 
                 // Recalculate Risk Metrics (Always, if we know the creator)
@@ -1407,6 +1407,13 @@ class StripeWebhookController extends Controller
                     'resolved_at' => now(),
                 ]);
                 Log::info("Risk Engine: Dispute status updated", ['status' => $dispute->status]);
+
+                // Sync Risk Ledger Status
+                if ($dispute->status === 'won') {
+                    $this->syncRiskLedgerStatus($paymentIntentId, 'succeeded');
+                } elseif ($dispute->status === 'lost') {
+                    $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
+                }
 
                 // Notify Creator
                 if ($riskDispute->creator) {
@@ -1735,7 +1742,7 @@ class StripeWebhookController extends Controller
             ]);
 
             // Get the subscription details from Stripe to update period information
-            $stripeClient = new StripeClient(Stripe::getApiKey());
+            $stripeClient = AppStripeControl::getClient();
             $stripeSubscription = $stripeClient->subscriptions->retrieve($wishSubscription->stripe_id);
 
             // Update subscription with new period information
@@ -2284,7 +2291,7 @@ class StripeWebhookController extends Controller
 
     public function CreateProductForCreatorAndGifter()
     {
-        $client = new StripeClient(Stripe::getApiKey());
+        $client = AppStripeControl::getClient();
         try {
             // Step 1: Create the product
             $product = $client->products->create([
@@ -2617,24 +2624,21 @@ class StripeWebhookController extends Controller
     private function handleChargeRefunded($charge)
     {
         $paymentIntentId = $charge->payment_intent ?? null;
+        $chargeId = $charge->id ?? null;
 
         // --- Risk Engine: Handle Refund ---
         try {
             $creatorId = null;
-            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            
+            // Search by PI first, then Charge ID (Stripe sometimes uses one or the other in metadata/logs)
+            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)
+                ->orWhere('stripe_session_id', $charge->payment_intent) // Sometimes the session ID is passed as the identifier
+                ->first();
+
             if ($payment) {
                 $payment->update(['status' => 'refunded']);
                 $creatorId = $payment->creator_id;
                 Log::info("Risk Engine: Payment marked as refunded", ['payment_id' => $payment->id]);
-            } else {
-                // Check legacy tables for creator ID to trigger recalculation
-                $taskPurchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
-                if ($taskPurchase) {
-                    $cUser = \App\Models\User::find($taskPurchase->creator_id);
-                    if ($cUser) {
-                        $creatorId = $cUser->uuid;
-                    }
-                }
             }
             
             if ($creatorId) {
@@ -2650,10 +2654,9 @@ class StripeWebhookController extends Controller
         }
         // ----------------------------------
 
-        if (!$paymentIntentId) {
-            return;
-        }
-
+        // --- Module Sync: Mark internal purchase records as refunded ---
+        
+        // 1. Tasks
         $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
         if ($purchase) {
             $purchase->status = 'refunded';
@@ -2661,7 +2664,6 @@ class StripeWebhookController extends Controller
 
             // Try to get refund ID from charge
             if (isset($charge->refunds->data) && !empty($charge->refunds->data)) {
-                // Assuming the latest refund is the one relevant to this event
                 $latestRefund = $charge->refunds->data[0] ?? null;
                 if ($latestRefund) {
                     $purchase->refund_id = $latestRefund->id;
@@ -2692,13 +2694,12 @@ class StripeWebhookController extends Controller
             } catch (\Exception $e) {
             }
 
-            // Notify Supporter and Creator via email and push
+            // Notify Supporter and Creator
             try {
                 $task = $purchase->task;
                 $supporter = $purchase->supporter;
                 $creator = $purchase->creator;
 
-                // Clear caches
                 if ($creator) {
                     $this->userProfileService->clearUserCaches($creator->username, $creator->id);
                 }
@@ -2707,35 +2708,54 @@ class StripeWebhookController extends Controller
                 }
 
                 if ($supporter) {
-                    Helpers::sendNotification(
-                        "Task Refunded 💸",
-                        "The task '{$task->title}' has been refunded.",
-                        $supporter->email
-                    );
-                    Mail::to($supporter->email)->send(new TaskRefunded([
-                        'title' => $task->title,
-                        'amount' => $purchase->amount,
-                        'currency' => $task->currency,
-                        'message' => "The task was refunded."
-                    ]));
+                    Helpers::sendNotification("Task Refunded 💸", "The task '{$task->title}' has been refunded.", $supporter->email);
+                    Mail::to($supporter->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => "The task was refunded."]));
                 }
 
                 if ($creator) {
-                    Helpers::sendNotification(
-                        "Task Refunded 💸",
-                        "The task '{$task->title}' has been refunded to the supporter.",
-                        $creator->email
-                    );
-                    Mail::to($creator->email)->send(new TaskRefunded([
-                        'title' => $task->title,
-                        'amount' => $purchase->amount,
-                        'currency' => $task->currency,
-                        'message' => "The task was refunded to the supporter."
-                    ]));
+                    Helpers::sendNotification("Task Refunded 💸", "The task '{$task->title}' has been refunded to the supporter.", $creator->email);
+                    Mail::to($creator->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => "The task was refunded to the supporter."]));
                 }
             } catch (\Exception $e) {
                 Log::error("Failed to send refund notifications (webhook): " . $e->getMessage());
             }
+        }
+
+        // 2. Tips / Support
+        $tip = \App\Models\TipGoalsPayment::where('payment_intent_id', $paymentIntentId)
+            ->orWhere('session_id', $paymentIntentId) // Some flows store session ID here
+            ->first();
+        if ($tip) {
+            $tip->update(['status' => 'refunded']);
+        }
+
+        // 3. Shop Purchases
+        $shopPayment = \App\Models\ShopPayment::where('payment_intent_id', $paymentIntentId)
+            ->orWhere('session_id', $paymentIntentId)
+            ->first();
+        if ($shopPayment) {
+            $shopPayment->update(['payment_status' => 'refunded']);
+        }
+
+        // 4. Wishes (StripePaymentDetail)
+        $wishPayment = \App\Models\StripePaymentDetail::where('payment_intent_id', $paymentIntentId)
+            ->orWhere('session_id', $paymentIntentId)
+            ->first();
+        if ($wishPayment) {
+            $wishPayment->update(['payment_status' => 'refunded']);
+        }
+
+        // 5. Memberships
+        $membershipPayment = \App\Models\MembershipPayment::where('payment_intent_id', $paymentIntentId)
+            ->orWhere('session_id', $paymentIntentId)
+            ->first();
+        if ($membershipPayment) {
+            $membershipPayment->update(['payment_status' => 'refunded']);
+        }
+
+        // --- Finalize Sync ---
+        if ($paymentIntentId) {
+            $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
         }
     }
 
@@ -2780,7 +2800,7 @@ class StripeWebhookController extends Controller
             if ($creatorId) {
                 try {
                     $appFee = $paymentIntent->application_fee_amount ?? 0;
-                    $stripeFee = \App\Services\StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $connectedAccountId);
+                    $stripeFee = \App\StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $connectedAccountId);
                     $netMinor = max(0, $paymentIntent->amount - $appFee - $stripeFee);
 
                     $payment = \App\Models\Payment::create([
@@ -2800,14 +2820,21 @@ class StripeWebhookController extends Controller
         
         if ($payment) {
             $newStatus = 'succeeded';
-            // If the payment was already marked as review_hold or has it in reason codes, keep it in review_hold
+            // Only keep in review_hold if it was MANUALLY marked by our risk engine AND not yet released.
+            // If the status is ALREADY succeeded (e.g. admin released it), don't go back to review_hold.
             if ($payment->status === 'review_hold' || (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes))) {
-                $newStatus = 'review_hold';
+                if ($payment->status !== 'succeeded') {
+                    // Check if Stripe explicitly said this PI is under review
+                    // If PI is successful now, Stripe review is done. 
+                    // We only stay in review_hold if our SpennyPiggy risk engine flagged it specifically.
+                    // But usually PI Success means it's safe to release unless Admin specifically wants to hold.
+                    // Let's allow it to become succeeded to sync with Stripe.
+                    $newStatus = 'succeeded';
+                }
             }
             
-            $payment->update(['status' => $newStatus]);
-            Log::info("Risk Ledger: Payment marked as {$newStatus}", ['id' => $payment->id]);
-
+            $this->syncRiskLedgerStatus($paymentIntentId, $newStatus);
+            
             // Also clear discovery cache to update trending/top earners
             app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
 
@@ -3161,6 +3188,55 @@ class StripeWebhookController extends Controller
             }
         } catch (\Exception $e) {
             Log::error("Error handling {$eventType} for risk monitoring: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle review.closed event
+     */
+    private function handleReviewClosed($review)
+    {
+        $paymentIntentId = $review->payment_intent ?? null;
+        if (!$paymentIntentId) return;
+
+        Log::info("Handling review.closed", [
+            'review_id' => $review->id,
+            'pi_id' => $paymentIntentId,
+            'reason' => $review->reason
+        ]);
+
+        if ($review->reason === 'approved') {
+            $this->syncRiskLedgerStatus($paymentIntentId, 'succeeded');
+        } elseif (str_contains($review->reason, 'refunded')) {
+            $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
+        }
+    }
+
+    /**
+     * Sync payment status across Risk Ledger and Financial Transactions
+     */
+    private function syncRiskLedgerStatus($paymentIntentId, $newStatus)
+    {
+        try {
+            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            if ($payment) {
+                $payment->update(['status' => $newStatus]);
+                Log::info("Risk Ledger: Synced payment status to {$newStatus}", ['id' => $payment->id]);
+
+                // Trigger Financial Transaction sync
+                if ($payment->creator_id) {
+                    try {
+                        \Illuminate\Support\Facades\Artisan::queue('finance:sync-transactions', [
+                            '--user_id' => $payment->creator_id,
+                        ]);
+                        Log::info("Financial Sync queued for creator: " . $payment->creator_id);
+                    } catch (\Exception $e) {
+                        Log::error("Failed to queue financial sync: " . $e->getMessage());
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to sync risk ledger status: " . $e->getMessage());
         }
     }
 }
