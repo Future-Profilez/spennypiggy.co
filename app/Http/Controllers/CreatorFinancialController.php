@@ -51,7 +51,7 @@ class CreatorFinancialController extends Controller
 
         $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [now()->subMonths(6), now()])
             ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id']);
 
@@ -104,7 +104,7 @@ class CreatorFinancialController extends Controller
         // Recent Transactions (Income & Expenses)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->with('supporter:id,name,username,email')
             ->latest('transaction_date')
             ->take(10)
@@ -157,7 +157,7 @@ class CreatorFinancialController extends Controller
         // Top Supporters with Category Breakdown
         $supporterTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
             ->with(['supporter:id,name,username,avatar'])
@@ -250,7 +250,7 @@ class CreatorFinancialController extends Controller
         // Income
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->with('supporter:id,name,username,email')
             ->latest('transaction_date')
             ->get()
@@ -332,7 +332,7 @@ class CreatorFinancialController extends Controller
         $joinDate = $user->created_at;
         $incomeAll = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->get(['net_amount', 'currency', 'transaction_date']);
 
         $displayCurrency = strtoupper($user->default_currency ?? 'GBP');

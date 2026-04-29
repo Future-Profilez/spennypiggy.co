@@ -426,6 +426,8 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
 
     // Payout/Reserve Routes
     Route::get('/payouts/reserves', [\App\Http\Controllers\Api\CreatorPayoutController::class, 'getReserves'])->name('payouts.reserves');
+    Route::get('/finance', [\App\Http\Controllers\CreatorFinancialController::class, 'index'])->name('finance.index');
+    Route::get('/finance/review-holds', [\App\Http\Controllers\Creator\ReviewHoldController::class, 'index'])->name('finance.review_holds');
 
     // Security Zone Routes
     Route::prefix('security')->name('security.')->group(function () {

@@ -88,7 +88,7 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerateToken();
             return response()->json([
                 'status' => false,
-                'message' => 'Your account is suspended. Please contact support.'
+                'message' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.'
             ], 403);
         }
         $request->session()->regenerate();

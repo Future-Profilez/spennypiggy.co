@@ -103,16 +103,10 @@ class Kernel extends ConsoleKernel
                  ->monthlyOn(7, '10:00')
                  ->withoutOverlapping(30);
 
-        // Risk Engine: Release Held Reserves (Daily Check)
-        $schedule->call(function () {
-            try {
-                $service = new \App\Services\Risk\PayoutService();
-                $result = $service->releaseReserves();
-                \Illuminate\Support\Facades\Log::info('Reserve Release Job Completed', $result);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Reserve Release Job Failed: ' . $e->getMessage());
-            }
-        })->dailyAt('04:00'); // Run at 4 AM daily when traffic is low
+        // Risk Engine: Enforce Manual Payouts (Every 10 Minutes)
+        $schedule->command('payout:enforce-manual')
+                 ->everyTenMinutes()
+                 ->withoutOverlapping();
 
         // Risk Engine: Monitor Platform State (Every 5 Minutes)
         $schedule->command('risk:monitor-platform')

@@ -44,6 +44,7 @@ class Kernel extends HttpKernel
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             // \App\Http\Middleware\BlockWordsAndEmojis::class,
             \App\Http\Middleware\IpTracker::class,
+            \App\Http\Middleware\CheckSuspendedUser::class,
         ],
 
         'api' => [
@@ -79,6 +80,7 @@ class Kernel extends HttpKernel
         'membership' => \App\Http\Middleware\RequireActiveMembership::class,
         'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
         'check.block' => \App\Http\Middleware\CheckUserBlock::class,
+        'check.suspended' => \App\Http\Middleware\CheckSuspendedUser::class,
     ];
 
     protected $except = [

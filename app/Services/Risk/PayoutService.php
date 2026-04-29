@@ -13,13 +13,16 @@ use Illuminate\Support\Facades\Log;
 
 class PayoutService
 {
+    private const RESERVE_RELEASE_WINDOW_DAYS = 30;
+
     /**
      * Calculate payouts for all eligible creators.
      * Returns a detailed breakdown for preview.
      */
     public function calculatePayouts($runDate = null)
     {
-        $runDate = $runDate ? Carbon::parse($runDate) : Carbon::now();
+        // Use endOfDay() if a date string is passed so we don't accidentally exclude today's payments (00:00:00)
+        $runDate = $runDate ? Carbon::parse($runDate)->endOfDay() : Carbon::now();
         
         $platformState = PlatformRiskState::latest('started_at')->first();
         $state = $platformState ? $platformState->state : 'NORMAL';
@@ -31,6 +34,8 @@ class PayoutService
 
         $payouts = [];
         $platformTotal = 0;
+
+        $dueReleases = $this->getDueReserveReleases($runDate);
 
         foreach ($creators as $creatorId) {
             $creator = User::where('uuid', $creatorId)->first();
@@ -77,7 +82,10 @@ class PayoutService
             $reservePercent = (int) $metrics->reserve_percent;
             $reserveAmount = $eligibleBase > 0 ? (int) floor(($eligibleBase * $reservePercent) / 100) : 0;
 
-            $netBeforeBalance = $eligibleBase - $reserveAmount;
+            $reserveReleaseAmount = (int) ($dueReleases[$creatorId]['amount'] ?? 0);
+            $reserveReleaseSources = $dueReleases[$creatorId]['sources'] ?? [];
+
+            $netBeforeBalance = $eligibleBase - $reserveAmount + $reserveReleaseAmount;
             $negativeBalance = (int) ($metrics->negative_balance_minor ?? 0);
             $negativeBalanceDelta = 0;
 
@@ -96,7 +104,7 @@ class PayoutService
                 $netPayout = $netBeforeBalance;
             }
             
-            if ($payments->isEmpty() && $adjustments->isEmpty() && $reviewHold->isEmpty() && $negativeBalance === 0) {
+            if ($payments->isEmpty() && $adjustments->isEmpty() && $reviewHold->isEmpty() && $negativeBalance === 0 && $reserveReleaseAmount === 0) {
                 continue;
             }
 
@@ -105,13 +113,15 @@ class PayoutService
                 'gross_amount' => $grossAmount,
                 'refund_dispute_amount' => $refundDisputeAmount,
                 'reserve_amount' => $reserveAmount,
+                'reserve_release_amount' => $reserveReleaseAmount,
+                'reserve_release_sources' => $reserveReleaseSources,
                 'review_hold_amount' => $reviewHoldAmount,
                 'net_payout' => $netPayout,
                 'payment_count' => $payments->count(),
                 'payment_ids' => $payments->pluck('id')->toArray(),
                 'adjustment_ids' => $adjustments->pluck('id')->toArray(),
                 'reserve_held' => true, // Flag to track reserve holding
-                'reserve_release_date' => $runDate->copy()->addDays(90)->toDateString(), // Rolling 90 days
+                'reserve_release_date' => $runDate->copy()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString(),
                 'negative_balance_before' => $negativeBalance,
                 'negative_balance_delta' => $negativeBalanceDelta,
                 'negative_balance_after' => max(0, $negativeBalance + $negativeBalanceDelta),
@@ -137,99 +147,22 @@ class PayoutService
     public function releaseReserves($runDate = null)
     {
         $runDate = $runDate ? Carbon::parse($runDate) : Carbon::now();
-        $releaseWindow = 90; // Days to hold reserve
-        
-        // Find old payout runs where reserve was held
-        $cutoffDate = $runDate->copy()->subDays($releaseWindow);
-        
-        $oldRuns = PayoutRun::where('run_date', '<=', $cutoffDate)
-            ->where('status', 'executed')
-            ->get();
-
-        $releasedTotal = 0;
-        $releases = [];
-
-        foreach ($oldRuns as $run) {
-            $data = $run->totals;
-            if (empty($data['payouts'])) continue;
-
-            $runUpdated = false;
-
-            foreach ($data['payouts'] as $creatorId => $payoutData) {
-                // Check if reserve was held and not yet released
-                if (isset($payoutData['reserve_amount']) && $payoutData['reserve_amount'] > 0 
-                    && empty($payoutData['reserve_released'])) {
-                    
-                    $creator = User::where('uuid', $creatorId)->first();
-                    if (!$creator) continue;
-
-                    $amountToRelease = $payoutData['reserve_amount'];
-                    
-                    // Add to release list
-                    $releases[$creatorId] = ($releases[$creatorId] ?? 0) + $amountToRelease;
-                    
-                    // Mark as released in the old run record (Update JSON)
-                    $payoutData['reserve_released'] = true;
-                    $payoutData['released_at'] = $runDate->toDateString();
-                    $data['payouts'][$creatorId] = $payoutData;
-                    $runUpdated = true;
-                }
-            }
-            
-            // Save updated run data to mark reserves as released
-            if ($runUpdated) {
-                $run->totals = $data;
-                $run->save();
-            }
-        }
-
-        // Process Transfers for Released Amounts
-        foreach ($releases as $creatorId => $amount) {
-            if ($amount <= 0) continue;
-            
-            $creator = User::where('uuid', $creatorId)->first();
-            if (!$creator || !$creator->account_id) continue;
-
-            try {
-                $currency = 'gbp';
-                $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
-                $amountMajor = $isZeroDecimal ? (int) $amount : ((float) $amount / 100);
-
-                // Transfer funds from Platform to Creator Connected Account
-                \App\StripeControl::transferToConnectedAccount(
-                    $creator->account_id, 
-                    $amountMajor, 
-                    $currency
-                );
-                
-                $releasedTotal += $amount;
-                
-                // Notify Creator via PWA/Email
-                $currencySymbol = \App\Helpers::getCurrency($currency);
-                $title = "💰 Reserve Released";
-                $content = "Your held reserve of {$currencySymbol}{$amountMajor} has been released to your balance.";
-                
-                // Send PWA Notification
-                \App\Helpers::sendNotification($title, $content, $creator->email);
-                
-                Log::info("Reserve released for creator {$creatorId}: {$amount}");
-                
-            } catch (\Exception $e) {
-                Log::error("Failed to release reserve for {$creatorId}: " . $e->getMessage());
-            }
+        $due = $this->getDueReserveReleases($runDate);
+        $total = 0;
+        foreach ($due as $row) {
+            $total += (int) ($row['amount'] ?? 0);
         }
 
         return [
-            'released_count' => count($releases),
-            'released_total' => $releasedTotal,
-            'details' => $releases
+            'due_creator_count' => count($due),
+            'due_total' => $total,
         ];
     }
 
     /**
-     * Execute Payouts — marks records and triggers Stripe transfers for platform-held funds.
-     * Payments created via the risk engine (platform_holds_funds = true) stay on the platform
-     * account until this method transfers the net amount to each creator's connected account.
+     * Execute Payouts — triggers Stripe payouts to Creator's bank accounts.
+     * All funds go directly to Creator Stripe Accounts (Direct Charges).
+     * Review holds and disputes are simply excluded from the net payout calculation here.
      */
     public function executePayouts($previewData, $runId = null)
     {
@@ -251,73 +184,102 @@ class PayoutService
             }
 
             foreach ($previewData['payouts'] as $creatorId => $data) {
-                Payment::whereIn('id', $data['payment_ids'])
-                    ->update(['payout_run_id' => $run->id]);
-
-                if (!empty($data['adjustment_ids'])) {
-                    Payment::whereIn('id', $data['adjustment_ids'])
-                        ->update(['payout_run_id' => $run->id]);
-                }
-
-                if (isset($data['negative_balance_after'])) {
-                    CreatorMetric::where('creator_id', $creatorId)->update([
-                        'negative_balance_minor' => (int) $data['negative_balance_after'],
-                        'updated_at' => now(),
-                    ]);
-                }
-
+                // Process each creator's payout
                 $netPayout = (int) ($data['net_payout'] ?? 0);
-                if ($netPayout <= 0) {
-                    continue;
-                }
+                $paymentIds = $data['payment_ids'] ?? [];
+                $adjustmentIds = $data['adjustment_ids'] ?? [];
+                $reserveReleaseSources = $data['reserve_release_sources'] ?? [];
 
-                // Only transfer if at least one of the included payments has platform_holds_funds.
-                // Payments using transfer_data already moved money to the creator directly.
-                $needsTransfer = Payment::whereIn('id', $data['payment_ids'])
-                    ->where('platform_holds_funds', true)
-                    ->exists();
+                if ($netPayout > 0) {
+                    $creator = User::where('uuid', $creatorId)->first();
+                    if (!$creator || !$creator->account_id) {
+                        Log::warning("Payout: creator {$creatorId} has no connected account — skipping payout.");
+                        continue;
+                    }
 
-                if (!$needsTransfer) {
-                    continue;
-                }
+                    // For Direct Charges, funds are already in the connected account.
+                    // We only need to trigger a payout from their Stripe balance to their bank account.
 
-                $creator = User::where('uuid', $creatorId)->first();
-                if (!$creator || !$creator->account_id) {
-                    Log::warning("Payout: creator {$creatorId} has no connected account — skipping transfer.");
-                    continue;
-                }
+                    $currency = strtolower((string) ($creator->default_currency ?? 'gbp'));
+                    if (!empty($paymentIds)) {
+                        $paymentCurrency = Payment::whereIn('id', $paymentIds)->orderByDesc('created_at')->value('currency');
+                        if (!empty($paymentCurrency)) {
+                            $currency = strtolower((string) $paymentCurrency);
+                        }
+                    }
 
-                try {
-                    $currency = $creator->default_currency ?? 'gbp';
-                    $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
-                    $amountMajor = $isZeroDecimal ? $netPayout : round($netPayout / 100, 2);
+                    try {
+                        // Always trigger actual bank payout from connected account balance.
+                        \App\StripeControl::ensureManualPayoutSchedule($creator->account_id);
 
-                    $transfer = \App\StripeControl::transferToConnectedAccount(
-                        $creator->account_id,
-                        $amountMajor,
-                        $currency
-                    );
+                        $payout = \App\StripeControl::createPayout([
+                            'amount' => (int) $netPayout,
+                            'currency' => $currency,
+                            'method' => 'standard',
+                            'metadata' => [
+                                'payout_run_id' => (string) $run->id,
+                                'creator_id' => (string) $creatorId,
+                            ],
+                        ], $creator->account_id);
 
-                    // Store transfer ID on the most recent payment in the batch for traceability
-                    Payment::whereIn('id', $data['payment_ids'])
-                        ->where('platform_holds_funds', true)
-                        ->orderByDesc('created_at')
-                        ->limit(1)
-                        ->update(['stripe_transfer_id' => $transfer->id]);
+                        $previewData['payouts'][$creatorId]['stripe_payout_id'] = $payout->id;
+                        Log::info("Payout created for creator {$creatorId}: {$netPayout} {$currency} — payout {$payout->id}");
 
-                    Log::info("Payout transfer executed for creator {$creatorId}: {$netPayout} {$currency} — transfer {$transfer->id}");
+                        if (!empty($paymentIds)) {
+                            Payment::whereIn('id', $paymentIds)
+                                ->update(['payout_run_id' => $run->id]);
+                        }
 
-                    $currencySymbol = \App\Helpers::getCurrency($currency);
-                    \App\Helpers::sendNotification(
-                        '💰 Payout Sent',
-                        "Your payout of {$currencySymbol}{$amountMajor} has been sent to your account.",
-                        $creator->email
-                    );
-                } catch (\Exception $e) {
-                    Log::error("Payout transfer failed for creator {$creatorId}: " . $e->getMessage());
-                    // Continue with remaining creators rather than rolling back everything
+                        if (!empty($adjustmentIds)) {
+                            Payment::whereIn('id', $adjustmentIds)
+                                ->update(['payout_run_id' => $run->id]);
+                        }
+
+                        if (isset($data['negative_balance_after'])) {
+                            CreatorMetric::where('creator_id', $creatorId)->update([
+                                'negative_balance_minor' => (int) $data['negative_balance_after'],
+                                'updated_at' => now(),
+                            ]);
+                        }
+
+                        if (!empty($reserveReleaseSources)) {
+                            $this->markReserveSourcesReleased($creatorId, $reserveReleaseSources);
+                        }
+
+                        $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
+                        $amountMajor = $isZeroDecimal ? (int) $netPayout : round($netPayout / 100, 2);
+                        $currencySymbol = \App\Helpers::getCurrency($currency);
+                        \App\Helpers::sendNotification(
+                            '💰 Payout Sent',
+                            "Your payout of {$currencySymbol}{$amountMajor} has been sent to your account.",
+                            $creator->email
+                        );
+                    } catch (\Exception $e) {
+                        Log::error("Payout execution failed for creator {$creatorId}: " . $e->getMessage());
+                        continue;
+                    }
+                } else {
+                    if (!empty($paymentIds)) {
+                        Payment::whereIn('id', $paymentIds)
+                            ->update(['payout_run_id' => $run->id]);
+                    }
+
+                    if (!empty($adjustmentIds)) {
+                        Payment::whereIn('id', $adjustmentIds)
+                            ->update(['payout_run_id' => $run->id]);
+                    }
+
+                    if (isset($data['negative_balance_after'])) {
+                        CreatorMetric::where('creator_id', $creatorId)->update([
+                            'negative_balance_minor' => (int) $data['negative_balance_after'],
+                            'updated_at' => now(),
+                        ]);
+                    }
                 }
             }
+
+            $run->totals = $previewData;
+            $run->save();
 
             DB::commit();
             return $run;
@@ -448,16 +410,20 @@ class PayoutService
             throw new \Exception("Creator not found or not connected to Stripe.");
         }
 
-        $currency = $creator->default_currency ?? 'gbp';
+        $currency = strtolower((string) ($creator->default_currency ?? 'gbp'));
         $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
         $amountMajor = $isZeroDecimal ? (int) $amount : ((float) $amount / 100);
 
-        // Transfer funds
-        \App\StripeControl::transferToConnectedAccount(
-            $creator->account_id, 
-            $amountMajor, 
-            $currency
-        );
+        \App\StripeControl::ensureManualPayoutSchedule($creator->account_id);
+        \App\StripeControl::createPayout([
+            'amount' => (int) $amount,
+            'currency' => $currency,
+            'method' => 'standard',
+            'metadata' => [
+                'creator_id' => (string) $creatorId,
+                'reason' => 'manual_reserve_release',
+            ],
+        ], $creator->account_id);
         
         // Notify
         $currencySymbol = \App\Helpers::getCurrency($currency);
@@ -467,5 +433,75 @@ class PayoutService
         \App\Helpers::sendNotification($title, $content, $creator->email);
         
         Log::info("Manual reserve release for creator {$creatorId}: {$amount}");
+    }
+
+    private function getDueReserveReleases(Carbon $runDate): array
+    {
+        $cutoffDate = $runDate->copy()->subDays(self::RESERVE_RELEASE_WINDOW_DAYS);
+        $runs = PayoutRun::where('run_date', '<=', $cutoffDate)
+            ->where('status', 'executed')
+            ->get();
+
+        $due = [];
+
+        foreach ($runs as $run) {
+            $payouts = $run->totals['payouts'] ?? [];
+            if (empty($payouts)) {
+                continue;
+            }
+
+            foreach ($payouts as $creatorId => $payoutData) {
+                $reserveAmount = (int) ($payoutData['reserve_amount'] ?? 0);
+                if ($reserveAmount <= 0 || !empty($payoutData['reserve_released'])) {
+                    continue;
+                }
+
+                $releaseDate = $payoutData['reserve_release_date'] ?? Carbon::parse($run->run_date)->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString();
+                if (!Carbon::parse($releaseDate)->lte($runDate)) {
+                    continue;
+                }
+
+                $due[$creatorId]['amount'] = (int) ($due[$creatorId]['amount'] ?? 0) + $reserveAmount;
+                $due[$creatorId]['sources'] = $due[$creatorId]['sources'] ?? [];
+                $due[$creatorId]['sources'][] = [
+                    'payout_run_id' => (int) $run->id,
+                ];
+            }
+        }
+
+        return $due;
+    }
+
+    private function markReserveSourcesReleased(string $creatorId, array $sources): void
+    {
+        foreach ($sources as $source) {
+            $payoutRunId = (int) ($source['payout_run_id'] ?? 0);
+            if ($payoutRunId <= 0) {
+                continue;
+            }
+
+            $run = PayoutRun::find($payoutRunId);
+            if (!$run) {
+                continue;
+            }
+
+            $data = $run->totals;
+            if (empty($data['payouts'][$creatorId])) {
+                continue;
+            }
+
+            $payoutData = $data['payouts'][$creatorId];
+            if (!empty($payoutData['reserve_released'])) {
+                continue;
+            }
+
+            $payoutData['reserve_released'] = true;
+            $payoutData['released_at'] = now()->toDateString();
+            $payoutData['released_via'] = 'payout_run';
+
+            $data['payouts'][$creatorId] = $payoutData;
+            $run->totals = $data;
+            $run->save();
+        }
     }
 }

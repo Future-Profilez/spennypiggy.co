@@ -459,10 +459,10 @@ class TaskController extends Controller
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
-        $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
         $adminFee = $breakdown['admin_fee'] ?? 0;
-        $platformFee = max(0, $applicationFeeAmount - $adminFee);
+        $creatorTransferAmount = round($priceWithVat, $multiplier === 1 ? 0 : 2, PHP_ROUND_HALF_UP);
+        $platformFee = max(0, $finalTotalAmount - $creatorTransferAmount);
 
         // Unified Risk Enforcement
         $riskData = $this->enforceRiskChecks(
@@ -495,16 +495,16 @@ class TaskController extends Controller
 
         // Prepare Transfer Data
         $connectedAccountId = $creator->account_id;
-        $hasCardPayments = StripeControl::hasCardPaymentsCapability($connectedAccountId);
+        $hasTransfers = StripeControl::hasTransfersCapability($connectedAccountId);
 
-        if (!$hasCardPayments) {
+        if (!$hasTransfers) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
             return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
 
         $appUrl = rtrim(config('app.url'), '/');
 
-        $paymentType = $task->type === 'instant' ? 'STANDARD - Direct Charge' : 'PAID_TASK - Direct Charge';
+        $paymentType = $task->type === 'instant' ? 'STANDARD - Destination Charge' : 'PAID_TASK - Destination Charge';
         
         $complianceMetadata = Helpers::buildStripeMetadata('task_purchase', $task, [
             'buyer_id' => $user->id,
@@ -518,27 +518,25 @@ class TaskController extends Controller
             'admin_fee' => (string) round($adminFee * $multiplier),
             'platform_fee' => (string) round($platformFee * $multiplier),
             'creator_net_amount' => (string) round($creatorNet * $multiplier),
-            'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
+            'platform_fee_amount' => (string) round($platformFee * $multiplier),
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
-            'transfer_amount' => (string) round($creatorNet * $multiplier),
-            'has_card_payments' => (string) $hasCardPayments,
+            'transfer_amount' => (string) round($creatorTransferAmount * $multiplier),
+            'has_transfers' => (string) $hasTransfers,
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
         ]);
-
-        $paymentIntentData = [
-            'description' => "Spenny Piggy - Task purchase: " . $task->title . " (Total value including all fees)",
-            'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
-            'metadata' => $complianceMetadata,
-        ];
 
         $payload = [
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
             'mode' => 'payment',
             'payment_intent_data' => [
-                'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                 'receipt_email' => $user->email,
+                'transfer_data' => [
+                    'destination' => $connectedAccountId,
+                    'amount' => (int) round($creatorTransferAmount * $multiplier),
+                ],
+                'on_behalf_of' => $connectedAccountId,
                 'metadata' => $complianceMetadata,
             ],
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
@@ -558,8 +556,7 @@ class TaskController extends Controller
             ];
         }
 
-        // Create session on CONNECTED account
-        $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $creator->username);
+        $session = StripeControl::createCheckoutSession($payload, null, $force3DS, $creator->username);
 
         try {
             $payment = Payment::firstOrCreate(
@@ -599,7 +596,7 @@ class TaskController extends Controller
 
         $session = Session::retrieve(
             $sessionId,
-            ['stripe_account' => $task->creator->account_id]
+            []
         );
 
         $purchase = null;

@@ -447,6 +447,18 @@ class StripeControl
     {
         self::setClient();
         try {
+            // Force manual payout schedule for all created accounts
+            if (!isset($payload['settings'])) {
+                $payload['settings'] = [];
+            }
+            if (!isset($payload['settings']['payouts'])) {
+                $payload['settings']['payouts'] = [];
+            }
+            if (!isset($payload['settings']['payouts']['schedule'])) {
+                $payload['settings']['payouts']['schedule'] = [];
+            }
+            $payload['settings']['payouts']['schedule']['interval'] = 'manual';
+
             return self::$client->accounts->create($payload);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
@@ -915,6 +927,40 @@ class StripeControl
 
         try {
             return self::$client->balance->retrieve([], ['stripe_account' => $connectedAccountId]);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    public static function ensureManualPayoutSchedule(string $connectedAccountId): bool
+    {
+        self::setClient();
+
+        try {
+            $account = self::$client->accounts->retrieve($connectedAccountId, []);
+            $interval = $account->settings->payouts->schedule->interval ?? null;
+
+            if ($interval === 'manual') {
+                return false;
+            }
+
+            self::$client->accounts->update($connectedAccountId, [
+                'settings' => [
+                    'payouts' => [
+                        'schedule' => [
+                            'interval' => 'manual',
+                        ],
+                    ],
+                ],
+            ]);
+
+            return true;
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {

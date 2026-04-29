@@ -191,7 +191,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                     </div>
                                     <div className="text-2xl md:text-3xl font-bold text-blue-400 mt-2">{formatCurrency(summary.held_reserves, displayCurrency)}</div>
                                     <div className="text-[12px] text-gray-500 mt-2">
-                                        {reserve_reason || 'Rolling reserve held for platform safety.'}
+                                        {reserve_reason || 'A small portion of your earnings is temporarily reserved for 30 days to ensure payment security. These funds are automatically released to your available balance.'}
                                     </div>
                                     {reserve_breakdown.length > 0 && (
                                         <div className="mt-3 space-y-1">
@@ -201,7 +201,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                                         Held from {r.run_date}
                                                     </span>
                                                     <span className="text-blue-300 font-bold">
-                                                        {formatCurrency(r.amount, displayCurrency)}
+                                                        {formatCurrency(r.amount / 100, displayCurrency)}
                                                     </span>
                                                     <span className="text-green-400">
                                                         Releases {r.release_date}
@@ -213,18 +213,18 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                     )}
                                     {reserve_breakdown.length === 0 && summary.held_reserves > 0 && (
                                         <div className="mt-2 text-[11px] text-gray-600 italic">
-                                            Reserves are released automatically after 90 days.
+                                            Reserves are released automatically after 30 days.
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                                <Link href={route('creator.finance.review_holds')} className="block group/holds">
+                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2 group-hover/holds:text-gray-300 transition-colors">
                                         <div className="w-2 h-2 rounded-full bg-purple-500"></div>
                                         Review Holds
                                     </div>
-                                    <div className="text-2xl md:text-3xl font-bold text-purple-400 mt-2">{formatCurrency(summary.review_holds, displayCurrency)}</div>
-                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Payments currently being verified by our team.</div>
-                                </div>
+                                    <div className="text-2xl md:text-3xl font-bold text-purple-400 mt-2 group-hover/holds:text-purple-300 transition-colors">{formatCurrency(summary.review_holds, displayCurrency)}</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold group-hover/holds:text-gray-400 transition-colors">Payments currently being verified by our team.</div>
+                                </Link>
                             </div>
                             <div className="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
                                 <div>
@@ -427,8 +427,12 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                                     <td className="px-6 py-4 text-sm text-right">
                                                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                                                             tx.status === 'completed' ? 'bg-green-500/10 text-green-400' : 
-                                                            tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'
-                                                        }`}>{tx.status}
+                                                            tx.status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' : 
+                                                            tx.status === 'disputed' ? 'bg-orange-500/10 text-orange-400' : 
+                                                            tx.status === 'refunded' ? 'bg-red-500/10 text-red-400' : 
+                                                            tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
+                                                            'bg-gray-500/10 text-gray-400'
+                                                        }`}>{tx.status?.replace('_', ' ')}
                                                         </span>
                                                     </td>
                                                 </tr>

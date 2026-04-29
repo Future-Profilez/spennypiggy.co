@@ -42,18 +42,27 @@ class FinancialService
 
         $incomeTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency']);
+            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status']);
 
         // Fetch Reserves and Review Holds from PayoutService
         $payoutService = app(\App\Services\Risk\PayoutService::class);
         $reserves = $payoutService->getHeldReserves($user->uuid);
-        $heldReservesAmount = $reserves['total_held'] ?? 0;
+        
+        // Also check for pending reserves from payments that haven't been in a payout run yet
+        $pendingReservesAmount = \App\Models\Payment::where('creator_id', $user->uuid)
+            ->whereNull('payout_run_id')
+            ->whereIn('status', ['succeeded', 'completed'])
+            ->where('reserve_amount_minor', '>', 0)
+            ->sum('reserve_amount_minor');
+            
+        // Convert all minor units to major units (GBP)
+        $heldReservesAmount = (($reserves['total_held'] ?? 0) / 100) + ($pendingReservesAmount / 100);
 
-        // Review Holds are payments with status 'review_hold'
+        // Review Holds and Disputed payments
         $reviewHoldsAmount = \App\Models\Payment::where('creator_id', $user->uuid)
-            ->where('status', 'review_hold')
+            ->whereIn('status', ['review_hold', 'disputed'])
             ->sum('amount');
 
         $grossDisplay = 0;
@@ -140,8 +149,14 @@ class FinancialService
         }
 
         // Convert reserves and review holds to display currency
-        $heldReservesDisplay = $convert('GBP', $heldReservesAmount / 100, $displayCurrency) ?? ($heldReservesAmount / 100);
+        $heldReservesDisplay = $convert('GBP', $heldReservesAmount, $displayCurrency) ?? ($heldReservesAmount);
         $reviewHoldsDisplay = $convert('GBP', $reviewHoldsAmount / 100, $displayCurrency) ?? ($reviewHoldsAmount / 100);
+
+        // Calculate Expected Next Payout using PayoutService directly
+        $payoutData = $payoutService->calculatePayouts();
+        $netPayoutMinor = $payoutData['payouts'][$user->uuid]['net_payout'] ?? 0;
+        $netPayoutMajor = $netPayoutMinor / 100;
+        $payoutableDisplay = $convert('GBP', $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor;
 
         return [
             'currency' => $displayCurrency,
@@ -153,7 +168,7 @@ class FinancialService
             'profit' => $netDisplay - $expensesDisplay,
             'held_reserves' => $heldReservesDisplay,
             'review_holds' => $reviewHoldsDisplay,
-            'payoutable_balance' => max(0, $netDisplay - $heldReservesDisplay - $reviewHoldsDisplay),
+            'payoutable_balance' => $payoutableDisplay,
 
             'gross_income_gbp' => $grossGbp,
             'fees_gbp' => $feesGbp,
@@ -161,7 +176,7 @@ class FinancialService
             'net_income_gbp' => $netGbp,
             'expenses_gbp' => $expensesGbp,
             'profit_gbp' => $netGbp - $expensesGbp,
-            'held_reserves_gbp' => $heldReservesAmount / 100,
+            'held_reserves_gbp' => $heldReservesAmount,
             'review_holds_gbp' => $reviewHoldsAmount / 100,
         ];
     }
@@ -220,7 +235,7 @@ class FinancialService
 
         $revenueTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->get(['net_amount', 'currency']);
 

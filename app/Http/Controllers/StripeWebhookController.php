@@ -282,6 +282,15 @@ class StripeWebhookController extends Controller
                 $this->processMandatorySubscription($event);
                 break;
 
+            // --- Connect Account / Payout Risk Monitoring ---
+            case 'account.updated':
+                $this->handleAccountUpdated($data);
+                break;
+            case 'payout.created':
+            case 'payout.paid':
+                $this->handlePayoutEvent($data, $type, $event);
+                break;
+
             default:
                 Log::info("Unhandled event type: " . $type);
             }
@@ -2757,7 +2766,7 @@ class StripeWebhookController extends Controller
             if (!$creatorId && $connectedAccountId) {
                 $creator = \App\Models\User::where('account_id', $connectedAccountId)->first();
                 if ($creator) {
-                    $creatorId = $creator->id;
+                    $creatorId = $creator->uuid;
                     Log::info("Risk Ledger: Found creator via Connected Account ID", ['creator_id' => $creatorId, 'account_id' => $connectedAccountId]);
                 }
             }
@@ -2770,17 +2779,14 @@ class StripeWebhookController extends Controller
 
             if ($creatorId) {
                 try {
-                    // Normalize amount (Stripe sends cents, DB likely expects major units)
-                    $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($paymentIntent->currency);
-                    $amount = $paymentIntent->amount;
-                    if (!$isZeroDecimal) {
-                        $amount = $amount / 100;
-                    }
+                    $appFee = $paymentIntent->application_fee_amount ?? 0;
+                    $stripeFee = \App\Services\StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $connectedAccountId);
+                    $netMinor = max(0, $paymentIntent->amount - $appFee - $stripeFee);
 
                     $payment = \App\Models\Payment::create([
                         'stripe_payment_intent_id' => $paymentIntentId,
                         'creator_id' => $creatorId,
-                        'amount' => $amount,
+                        'amount' => $netMinor, // Amount in minor units for Risk Ledger (Net amount)
                         'currency' => strtoupper($paymentIntent->currency),
                         'reserve_amount_minor' => 0,
                         'status' => 'succeeded',
@@ -2806,12 +2812,18 @@ class StripeWebhookController extends Controller
             app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
 
             try {
-                if ((int) ($payment->reserve_amount_minor ?? 0) === 0 && strtoupper((string) ($payment->currency ?? '')) === 'GBP') {
-                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $payment->creator_id]);
+                // If reserve is 0, let's recalculate and see if we should apply one based on current metrics
+                if ((int) ($payment->reserve_amount_minor ?? 0) === 0) {
+                    $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $payment->creator_id);
                     $reservePercent = (int) ($metrics->reserve_percent ?? 0);
                     if ($reservePercent > 0) {
+                        $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($payment->currency ?? 'GBP');
+                        $amountMinor = $isZeroDecimal ? $payment->amount : ($payment->amount * 100);
+                        
+                        $reserveMinor = (int) round(((int) $amountMinor * $reservePercent) / 100);
+                        
                         $payment->update([
-                            'reserve_amount_minor' => (int) round(((int) $payment->amount * $reservePercent) / 100),
+                            'reserve_amount_minor' => $reserveMinor,
                         ]);
                     }
                 }
@@ -3077,5 +3089,78 @@ class StripeWebhookController extends Controller
                 ]);
             }
         });
+    }
+
+    /**
+     * Handle Stripe Connect Account Updates (Risk Monitoring)
+     */
+    private function handleAccountUpdated($account)
+    {
+        try {
+            if (!isset($account->settings->payouts->schedule->interval)) {
+                return;
+            }
+
+            $schedule = $account->settings->payouts->schedule->interval;
+            if ($schedule !== 'manual') {
+                Log::warning("Stripe Risk: Account {$account->id} changed payout schedule to {$schedule}. Reverting and locking.");
+                
+                $creator = \App\Models\User::where('account_id', $account->id)->first();
+                if ($creator) {
+                    // Auto-lock the account
+                    $creator->suspended_account = 1;
+                    $creator->save();
+                    $creator->tokens()->delete();
+
+                    // Mark as HIGH RISK with minimum 20% reserve
+                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+                    $metrics->risk_level = 'high';
+                    $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
+                    $metrics->save();
+
+                    // Revert to manual
+                    \App\StripeControl::ensureManualPayoutSchedule($account->id);
+
+                    Log::warning("Stripe Risk: Account {$account->id} locked and marked HIGH RISK due to payout schedule manipulation.");
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error handling account.updated for risk monitoring: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle Stripe Payout Events (Risk Monitoring)
+     */
+    private function handlePayoutEvent($payout, $eventType, $event)
+    {
+        try {
+            // Check if payout was initiated by our platform (using metadata)
+            $isPlatformPayout = isset($payout->metadata) && (isset($payout->metadata->payout_run_id) || isset($payout->metadata->reason));
+            
+            if (!$isPlatformPayout && $payout->status !== 'canceled' && $payout->status !== 'failed') {
+                $accountId = $event->account ?? null;
+                Log::critical("Stripe Risk: Unexpected payout created {$payout->id} on account {$accountId}.");
+                
+                if ($accountId) {
+                    $creator = \App\Models\User::where('account_id', $accountId)->first();
+                    if ($creator) {
+                        $creator->suspended_account = 1;
+                        $creator->save();
+                        $creator->tokens()->delete();
+
+                        // Mark as HIGH RISK with minimum 20% reserve
+                        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+                        $metrics->risk_level = 'high';
+                        $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
+                        $metrics->save();
+
+                        Log::critical("Stripe Risk: Account {$accountId} locked and marked HIGH RISK due to unexpected manual payout creation.");
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Error handling {$eventType} for risk monitoring: " . $e->getMessage());
+        }
     }
 }

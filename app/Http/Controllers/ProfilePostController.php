@@ -56,7 +56,7 @@ class ProfilePostController extends Controller
         if ($profileUser->suspended_account == 1) {
             return response()->json([
                 'success' => false,
-                'message' => 'User account is suspended'
+                'message' => 'User account is suspended due to a policy violation or payout configuration issue'
             ], 403);
         }
 

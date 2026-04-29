@@ -177,7 +177,7 @@ class TestController extends Controller
 
         $zar_balance = 0;
         foreach ($balance->available as $available) {
-            if ($available->currency == 'zar') {
+            if ($available->currency == 'cad') {
                 $zar_balance = $available->amount;
                 break;
             }

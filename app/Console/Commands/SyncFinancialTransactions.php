@@ -76,6 +76,19 @@ class SyncFinancialTransactions extends Command
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
+                $status = 'completed';
+                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
+                if ($paymentLog) {
+                    $status = match($paymentLog->status) {
+                        'succeeded' => 'completed',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'disputed',
+                        'refunded' => 'refunded',
+                        'failed', 'blocked' => 'failed',
+                        default => 'pending'
+                    };
+                }
+
                 FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => MembershipPayment::class,
@@ -91,7 +104,7 @@ class SyncFinancialTransactions extends Command
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => 'completed',
+                        'status' => $status,
                         'description' => 'Membership Payment',
                         'transaction_date' => $payment->created_at,
                     ]
@@ -144,6 +157,19 @@ class SyncFinancialTransactions extends Command
                     $purchase->save();
                 }
 
+                $status = $purchase->status === 'paid' ? 'completed' : $purchase->status;
+                $paymentLog = \App\Models\Payment::where('stripe_session_id', $purchase->stripe_session_id)->first();
+                if ($paymentLog) {
+                    $status = match($paymentLog->status) {
+                        'succeeded' => 'completed',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'disputed',
+                        'refunded' => 'refunded',
+                        'failed', 'blocked' => 'failed',
+                        default => 'pending'
+                    };
+                }
+
                 FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => TaskPurchase::class,
@@ -159,7 +185,7 @@ class SyncFinancialTransactions extends Command
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
                         'currency' => $currency,
-                        'status' => $purchase->status === 'paid' ? 'completed' : $purchase->status,
+                        'status' => $status,
                         'description' => 'Task Purchase',
                         'transaction_date' => $purchase->created_at,
                     ]
@@ -191,6 +217,19 @@ class SyncFinancialTransactions extends Command
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
+                $status = 'completed';
+                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
+                if ($paymentLog) {
+                    $status = match($paymentLog->status) {
+                        'succeeded' => 'completed',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'disputed',
+                        'refunded' => 'refunded',
+                        'failed', 'blocked' => 'failed',
+                        default => 'pending'
+                    };
+                }
+
                 FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => BillPayment::class,
@@ -206,7 +245,7 @@ class SyncFinancialTransactions extends Command
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => 'completed',
+                        'status' => $status,
                         'description' => 'Bill Payment',
                         'transaction_date' => $payment->created_at,
                     ]
@@ -250,6 +289,19 @@ class SyncFinancialTransactions extends Command
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
+                $status = $item->payment->payment_status === 'paid' ? 'completed' : 'pending';
+                $paymentLog = \App\Models\Payment::where('stripe_session_id', $item->payment->session_id)->first();
+                if ($paymentLog) {
+                    $status = match($paymentLog->status) {
+                        'succeeded' => 'completed',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'disputed',
+                        'refunded' => 'refunded',
+                        'failed', 'blocked' => 'failed',
+                        default => 'pending'
+                    };
+                }
+
                 FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => StripePaymentItems::class,
@@ -265,7 +317,7 @@ class SyncFinancialTransactions extends Command
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
                         'currency' => strtoupper($item->payment->currency ?? 'GBP'),
-                        'status' => $item->payment->payment_status === 'paid' ? 'completed' : 'pending',
+                        'status' => $status,
                         'description' => 'Wish Gift: ' . ($item->wish->name ?? 'Item'),
                         'transaction_date' => $item->created_at,
                     ]
@@ -297,6 +349,19 @@ class SyncFinancialTransactions extends Command
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
+                $status = $payment->payment_status === 'paid' ? 'completed' : 'pending';
+                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
+                if ($paymentLog) {
+                    $status = match($paymentLog->status) {
+                        'succeeded' => 'completed',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'disputed',
+                        'refunded' => 'refunded',
+                        'failed', 'blocked' => 'failed',
+                        default => 'pending'
+                    };
+                }
+
                 FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => ShopPayment::class,
@@ -312,7 +377,7 @@ class SyncFinancialTransactions extends Command
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $payment->payment_status === 'paid' ? 'completed' : 'pending',
+                        'status' => $status,
                         'description' => 'Shop Purchase: ' . ($payment->shop->name ?? 'Item'),
                         'transaction_date' => $payment->created_at,
                     ]
@@ -346,6 +411,18 @@ class SyncFinancialTransactions extends Command
 
                 $status = strtolower((string) ($payment->status ?? ''));
                 $normalizedStatus = in_array($status, ['paid', 'succeeded', 'completed', 'paid_out'], true) ? 'completed' : ($status ?: 'pending');
+
+                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
+                if ($paymentLog) {
+                    $normalizedStatus = match($paymentLog->status) {
+                        'succeeded' => 'completed',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'disputed',
+                        'refunded' => 'refunded',
+                        'failed', 'blocked' => 'failed',
+                        default => 'pending'
+                    };
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [

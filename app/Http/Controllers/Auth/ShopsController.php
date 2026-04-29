@@ -877,9 +877,9 @@ class ShopsController extends Controller
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+        $precision = $multiplier === 1 ? 0 : 2;
 
             $unitAmount = (int) round($breakdown['total_supporter_pays'] * $multiplier);
-            $applicationFeeAmount = (int) round($breakdown['application_fee'] * $multiplier);
             $creatorNet = $breakdown['net_to_creator'];
 
             if (!Auth::check()) {
@@ -915,64 +915,47 @@ class ShopsController extends Controller
             $sessionCreate = null;
             $connectedAccountId = $shop->user->account_id;
 
-            // Step 1: Check if customer already exists in connected account
-            $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
-                ->where('creator_id', $shop->user->id)
-                ->where('connected_account_id', $connectedAccountId)
-                ->where('product_type', 'shop item')
-                ->where('currency', $chargeCurrency)
-                ->first();
+        if (!StripeControl::hasTransfersCapability($connectedAccountId)) {
+            return response()->json([
+                'status' => false,
+                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
+            ]);
+        }
 
-            $customer_id = null;
-            if (!$storeCustomer) {
-                $customer = StripeControl::createCustomer([
-                    'email' => $shopPaymentDetail->email ?? (Auth::user()->email ?? null),
-                    'name' => $shopPaymentDetail->name ?? (Auth::user()->name ?? 'Supporter'),
-                ], $connectedAccountId);
-                $customer_id = $customer->id;
+        $creatorTransferAmountMinor = (int) round(round($listedPriceToGrossUp, $precision, PHP_ROUND_HALF_UP) * $multiplier);
 
-                ConnectedAccountCustomer::create([
-                    'user_id' => Auth::id(),
-                    'creator_id' => $shop->user->id,
-                    'connected_account_id' => $connectedAccountId,
-                    'stripe_customer_id' => $customer_id,
-                    'product_type' => 'shop item',
-                    'currency' => $chargeCurrency,
-                ]);
-            } else {
-                $customer_id = $storeCustomer->stripe_customer_id;
-            }
-
-            // Create a unique price for this specific transaction (to handle variants/taxes correctly)
-            $pricePayload = [
-                'unit_amount' => $unitAmount,
-                'currency' => $chargeCurrency,
-                'product' => $shop->stripe_product_id,
-            ];
-            $price = StripeControl::createPrice($pricePayload, $connectedAccountId);
-            $priceId = $price->id;
-
-            // Step 7: Build session payload
+        // Build session payload (platform checkout + destination transfer)
             $payload = [
                 'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
                 'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-                'line_items' => [[
-                    'price' => $priceId,
-                    'quantity' => 1,
-                ]],
+            'line_items' => [[
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $chargeCurrency,
+                    'product_data' => [
+                        'name' => "Total value of item including all fees",
+                        'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
+                    ],
+                    'unit_amount' => $unitAmount,
+                ],
+            ]],
                 'mode' => 'payment',
                 'payment_method_types' => ['card'],
-                "customer" => $customer_id,
+            'customer_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                 'payment_intent_data' => [
-                    'application_fee_amount' => $applicationFeeAmount,
                     'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                     'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
+                'transfer_data' => [
+                    'destination' => $connectedAccountId,
+                    'amount' => $creatorTransferAmountMinor,
+                ],
+                'on_behalf_of' => $connectedAccountId,
                     'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
                         'shop_item_id' => $shop->id,
                         'quantity' => $shopPaymentDetail->quantity,
                         'anonymous' => $shopPaymentDetail->anonymous,
                         'varient_id' => $shopPaymentDetail->varient_id,
-                        'creator_net_amount' => (string)($creatorNet * $multiplier),
+                    'creator_net_amount' => (string) $creatorTransferAmountMinor,
                         'total_charge_amount' => (string)$unitAmount,
                     ]),
                 ],
@@ -987,7 +970,7 @@ class ShopsController extends Controller
                 ];
             }
 
-            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, false, $shop->user->username);
+            $sessionCreate = StripeControl::createCheckoutSession($payload, null, false, $shop->user->username);
 
             $shopPaymentDetail->session_id =  $sessionCreate->id;
             $shopPaymentDetail->save();
@@ -1076,12 +1059,9 @@ class ShopsController extends Controller
                 // Calculate creator net amount using the SAME logic as buyShopItem
                 $listedPriceToGrossUp = $stripeid->amount + $stripeid->tax_amount + $stripeid->vat_tax_amount + ($stripeid->shipping_amount ?? 0);
 
-                // Fetch creator risk metrics for reserve calculation
-                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $stripeid->shop->user->uuid]);
-                $reserveRate = $metrics->reserve_percent ?? 0;
-
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $stripeid->currency, $reserveRate);
-                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($breakdown['net_to_creator'], 2);
+                $currencyModel = Currency::where('ISO', strtoupper($stripeid->currency))->first();
+                $digits = $currencyModel && $currencyModel->ISOdigits == 0 ? 0 : 2;
+                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($listedPriceToGrossUp, $digits);
 
                 if ($stripeid->anonymous == 0) {
                     ShopBuyed::dispatch($stripeid, false, $creatorNetAmount);

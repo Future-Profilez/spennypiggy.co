@@ -79,8 +79,12 @@ export default function History({ auth, transactions }) {
                                         <td className="px-6 py-5 text-sm text-center">
                                             <span className={`inline-block px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
                                                 tx.status === 'completed' ? 'bg-green-400 text-black' : 
-                                                tx.status === 'pending' ? 'bg-yellow-300 text-black' : 'bg-red-400 text-black'
-                                            }`}>{tx.status}
+                                                tx.status === 'review_hold' ? 'bg-purple-400 text-black' : 
+                                                tx.status === 'disputed' ? 'bg-orange-400 text-black' : 
+                                                tx.status === 'refunded' ? 'bg-red-400 text-black' : 
+                                                tx.status === 'pending' ? 'bg-yellow-300 text-black' : 
+                                                'bg-gray-400 text-black'
+                                            }`}>{tx.status?.replace('_', ' ')}
                                             </span>
                                         </td>
                                     </tr>

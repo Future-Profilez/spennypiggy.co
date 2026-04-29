@@ -2398,6 +2398,90 @@ class StripeController extends Controller
                 $userPayment->status = $session->payment_status;
                 $userPayment->save();
 
+                // -------------------------------------------------------------
+                // NEW: Ensure a `payments` table record exists for Wish Subscriptions
+                // This makes it show up in the Financial Hub and Reserve calculations
+                // -------------------------------------------------------------
+                try {
+                    $paymentIntentId = $session->payment_intent ?? ($stripeSubscription->latest_invoice->payment_intent ?? null);
+                    if ($paymentIntentId) {
+                        $existingPayment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+                        
+                        $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($sub->currency ?? 'GBP');
+                        $multiplier = $isZeroDecimal ? 1 : 100;
+                        
+                        // Use actual creator net from session metadata if available, otherwise calculate
+                        $creatorNetMinor = round($sub->amount * $multiplier); // Default fallback
+                        if ($session && isset($session->metadata->creator_net_amount)) {
+                            $creatorNetMinor = (int) $session->metadata->creator_net_amount;
+                        } else if ($session && isset($session->subscription)) {
+                            // Try to get from subscription metadata
+                            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                            try {
+                                $stripeSub = $stripe->subscriptions->retrieve($session->subscription);
+                                if (isset($stripeSub->metadata->creator_net_amount)) {
+                                    $creatorNetMinor = (int) $stripeSub->metadata->creator_net_amount;
+                                }
+                            } catch (\Exception $e) {
+                                // Ignore
+                            }
+                        }
+
+                        // Calculate initial reserve if needed
+                        $reserveMinor = 0;
+                        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $sub->wish_item->user->uuid]);
+                        $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                        if ($reservePercent > 0) {
+                            $reserveMinor = (int) round(($creatorNetMinor * $reservePercent) / 100);
+                        }
+
+                        if (!$existingPayment) {
+                            \App\Models\Payment::create([
+                                'creator_id' => $sub->wish_item->user->uuid,
+                                'amount' => $creatorNetMinor,
+                                'currency' => strtolower($sub->currency),
+                                'stripe_payment_intent_id' => $paymentIntentId,
+                                'stripe_session_id' => $session->id,
+                                'status' => 'succeeded',
+                                'reserve_amount_minor' => $reserveMinor,
+                            ]);
+                        } else {
+                            if ((int) ($existingPayment->reserve_amount_minor ?? 0) === 0 && $reservePercent > 0) {
+                                $existingPayment->update(['reserve_amount_minor' => $reserveMinor]);
+                            }
+                        }
+                        
+                        // Sync to FinancialTransaction to reflect on dashboard
+                        $stripeFeeMinor = 0;
+                        if (!empty($paymentIntentId)) {
+                            $stripeFeeMinor = StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $sub->wish_item->user->account_id);
+                        }
+                        $stripeFee = $isZeroDecimal ? (float) $stripeFeeMinor : ((float) $stripeFeeMinor / 100);
+                        
+                        $gross = $creatorAmount;
+                        $platformFee = $gross - $stripeFee - (float) $sub->amount - (float) $sub->vat_tax_amount;
+                        if ($platformFee < 0) $platformFee = 0;
+
+                        \App\Models\FinancialTransaction::updateOrCreate(
+                            ['stripe_payment_intent_id' => $paymentIntentId],
+                            [
+                                'user_id' => $sub->wish_item->user->id,
+                                'type' => 'wish_subscription',
+                                'amount' => $sub->amount,
+                                'currency' => strtoupper($sub->currency),
+                                'status' => 'completed',
+                                'stripe_fee' => $stripeFee,
+                                'platform_fee' => $platformFee,
+                                'net_amount' => $sub->amount,
+                                'metadata' => json_encode(['wish_item_id' => $sub->wish_item->id])
+                            ]
+                        );
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to create Payment/FinancialTransaction record for wish subscription: " . $e->getMessage());
+                }
+                // -------------------------------------------------------------
+
                 $message = $username . " just subscribed to your subscription wish " . $sub->wish_item->name;
                 NotificationSave::dispatch($message, $sub->wish_item->user, $sub->user, 'Wish Subscription');
                 $message = null;
@@ -3095,23 +3179,25 @@ class StripeController extends Controller
 
             $sourceCurrency = strtoupper($request->currency ?? $creator->default_currency ?? 'GBP');
             $amount = (float) $request->amount;
+            $sourceCurrency = strtoupper($request->currency ?? $creator->default_currency ?? 'GBP');
+
+            $basePrice = $amount;
+            $vatPercent = (float) ($creator->vat_amount_percentage ?? 0);
+            $vatAmount = $basePrice * $vatPercent / 100;
+            $priceWithVat = $basePrice + $vatAmount;
+
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $sourceCurrency);
+
+            $finalTotalAmount = $breakdown['total_supporter_pays'];
+            $applicationFeeAmount = $breakdown['application_fee'];
+            $creatorNet = $breakdown['net_to_creator'];
 
             $isZeroDecimal = Helpers::isZeroDecimalCurrency($sourceCurrency);
+            $multiplier = $isZeroDecimal ? 1 : 100;
             $precision = $isZeroDecimal ? 0 : 2;
 
-            $vatPercent = (float) ($creator->vat_amount_percentage ?? 0);
-            $vatAmount = 0.0;
-            if ($vatPercent > 0) {
-                $vatAmount = $amount - ($amount / (1 + ($vatPercent / 100)));
-                $vatAmount = round($vatAmount, $precision, PHP_ROUND_HALF_UP);
-            }
-
-            $unitAmount = $isZeroDecimal
-                ? (int) round($amount, 0, PHP_ROUND_HALF_UP)
-                : (int) round($amount * 100, 0, PHP_ROUND_HALF_UP);
-
-            $applicationFeeAmount = 0;
-            $creatorNet = round($amount, $precision, PHP_ROUND_HALF_UP);
+            $unitAmount = round($finalTotalAmount * $multiplier);
+            $creatorNetMinor = round($creatorNet * $multiplier);
 
             // Unified Risk Enforcement
             $riskData = $this->enforceRiskChecks(
@@ -3130,10 +3216,6 @@ class StripeController extends Controller
 
             $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
-            // Values for DB in creator's currency
-            $price = $amount;
-            $creatorBreakdown = null;
-            
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
                 'user_id' => Auth::id() ?? null,
@@ -3141,19 +3223,17 @@ class StripeController extends Controller
                 'guest_name' => $request->name,
                 'guest_email' => $request->email,
                 'currency' => $sourceCurrency,
-                'amount' => $price,
-                'tax' => 0,
-                'vat_amount' => $vatAmount,
-                'total_paid' => $creatorNet,
+                'amount' => $basePrice,
+                'tax' => round($applicationFeeAmount, $precision, PHP_ROUND_HALF_UP),
+                'vat_amount' => round($vatAmount, $precision, PHP_ROUND_HALF_UP),
+                'total_paid' => $finalTotalAmount,
                 'message' => $request->message ?? null,
                 'anonymous' => $request->anonymous ?? 0,
             ]);
 
             Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);
-             $pay->save();
+            $pay->save();
 
-            // Use destination charges pattern like createCheckout - create line items that sum to total charge
-            // Single line item hiding all fees
             $lineItems = [
                 [
                     'quantity' => 1,
@@ -3168,36 +3248,33 @@ class StripeController extends Controller
                 ]
             ];
 
-            // Check if creator has card_payments capability to determine payment flow
-            $hasTransfers = StripeControl::hasTransfersCapability($creator->account_id);
+            // Check if creator has card_payments capability
+            $hasCardPayments = StripeControl::hasCardPaymentsCapability($creator->account_id);
 
-            if (!$hasTransfers) {
+            if (!$hasCardPayments) {
                 return response()->json([
                     'status' => false,
                     'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
                 ]);
             }
 
-            // Destination Charges Implementation (platform pays Stripe fee; creator receives full amount)
+            // Direct Charges Implementation
             $paymentIntentData = [
                 'description' => "Spenny Piggy - Support payment to {$creator->name} (Total value including all fees)",
                 "metadata" => Helpers::buildStripeMetadata('support_payment', $pay, [
                     'item_amount' => (string) $unitAmount,
-                    'certificate' => true,
-                    'creator_net_amount' => (string) $unitAmount,
-                    'platform_fee_amount' => (string) $applicationFeeAmount,
+                    'certificate' => 'true',
+                    'creator_net_amount' => (string) $creatorNet,
+                    'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
                     'total_charge_amount' => (string) $unitAmount,
-                    'payment_type' => 'Support Payment - Destination Charge',
+                    'payment_type' => 'Support Payment - Direct Charge',
                     'anonymous' => (string) ($request->anonymous ? 'yes' : 'no'),
-                    'has_transfers' => (string) $hasTransfers,
+                    'has_card_payments' => (string) $hasCardPayments,
                 ]),
-                'transfer_data' => [
-                    'destination' => $creator->account_id,
-                ],
-                'on_behalf_of' => $creator->account_id,
+                'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
             ];
 
-            Log::info('Using Destination Charges for support payment', [
+            Log::info('Using Direct Charges for support payment', [
                 'creator_id' => $creator->id,
                 'connected_account_id' => $creator->account_id,
                 'payment_type' => 'support_payment',
@@ -3207,7 +3284,7 @@ class StripeController extends Controller
             $payload = [
                 "mode" => 'payment',
                 'payment_method_types' => ['card'],
-                'line_items' => $lineItems, // Total amount determined by line items
+                'line_items' => $lineItems,
                 'payment_intent_data' => $paymentIntentData,
                 'customer_email' => $user->email ?? $request->email,
                 'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
@@ -3215,7 +3292,7 @@ class StripeController extends Controller
             ];
 
             // Check if we need to force 3DS
-            if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
+            if ($force3DS) {
                 $payload['payment_method_options'] = [
                     'card' => [
                         'request_three_d_secure' => 'any',
@@ -3224,19 +3301,20 @@ class StripeController extends Controller
             }
 
             try {
-                $session = StripeControl::createCheckoutSession($payload, null, false, $creator->username);
+                // IMPORTANT: Pass connected account ID for Direct Charge!
+                $session = StripeControl::createCheckoutSession($payload, $creator->account_id, false, $creator->username);
                 $pay->update(['session_id' => $session->id]);
 
                 try {
                     \App\Models\Payment::create([
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $riskData['risk_identity_id'],
-                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($sourceCurrency)),
-                        'reserve_amount_minor' => (function () use ($creator, $unitAmount, $sourceCurrency) {
+                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $creatorNetMinor, (string) strtoupper($sourceCurrency)),
+                        'reserve_amount_minor' => (function () use ($creator, $creatorNetMinor, $sourceCurrency) {
                             $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
                             $reservePercent = (int) ($metrics->reserve_percent ?? 0);
                             if ($reservePercent <= 0) return 0;
-                            $reserveMinor = (int) round(((int) $unitAmount * $reservePercent) / 100);
+                            $reserveMinor = (int) round(((int) $creatorNetMinor * $reservePercent) / 100);
                             return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($sourceCurrency));
                         })(),
                         'currency' => 'gbp',
@@ -3279,7 +3357,8 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Insufficient data!');
         }
         try {
-            $session = StripeControl::getCheckoutSession($tip_pay->session_id, null);
+            // Need to pass the connected account ID because the session was created on the creator's account
+            $session = StripeControl::getCheckoutSession($tip_pay->session_id, $tip_pay->creator->account_id);
             $tip_pay->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
@@ -3354,14 +3433,31 @@ class StripeController extends Controller
                     $gross = $tip_pay->total_paid && $tip_pay->total_paid > 0
                         ? (float) $tip_pay->total_paid
                         : (float) $tip_pay->amount;
-                    $platformFee = (float) 0;
                     $vatAmt = (float) ($tip_pay->vat_amount ?? 0);
                     $stripeFeeMinor = 0;
                     if (!empty($session->payment_intent)) {
-                        $stripeFeeMinor = StripeControl::getStripeFeeMinorForPaymentIntent((string) $session->payment_intent, null);
+                        $stripeFeeMinor = StripeControl::getStripeFeeMinorForPaymentIntent((string) $session->payment_intent, $tip_pay->creator->account_id);
                     }
                     $isZeroDecimal = Helpers::isZeroDecimalCurrency((string) strtoupper($tip_pay->currency ?? 'GBP'));
                     $stripeFee = $isZeroDecimal ? (float) $stripeFeeMinor : ((float) $stripeFeeMinor / 100);
+                    
+                    // Platform fee is what remains after we give the creator their base amount + vat, and stripe takes its fee from the gross.
+                    // Or we can just use the difference.
+                    $platformFee = $gross - $stripeFee - (float) $tip_pay->amount - $vatAmt;
+                    if ($platformFee < 0) $platformFee = 0;
+
+                    // Fetch exact platform fee (application_fee_amount) from Stripe Session/Intent if available
+                    if (!empty($session->payment_intent)) {
+                        try {
+                            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                            $intentObj = \Stripe\PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $tip_pay->creator->account_id]);
+                            if (isset($intentObj->application_fee_amount)) {
+                                $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning("Could not fetch application_fee_amount for tip", ['error' => $e->getMessage()]);
+                        }
+                    }
 
                     FinancialTransaction::updateOrCreate(
                         ['source_type' => TipGoalsPayment::class, 'source_id' => $tip_pay->id],
