@@ -212,7 +212,6 @@ class PostsController extends Controller
 
                     $is_liked = true;
 
-
                     $message = $user->name . " liked your post " . $post->title;
                     NotificationSave::dispatch($message, $post->user, $user, 'Post Like');
 
