@@ -41,23 +41,21 @@ export default function AddShopItem(props) {
                   <Head title={'Add Shop Item'}  />
                   <h2 className='font-GillSans uppercase text-3xl' >Shop</h2>
 
+                  {auth?.user?.user_type === 'creator' && (
                   <div className=" font-medium text-center text-gray-500 border-b border-gray-300 dark:text-gray-400 mt-3 mb-4  md:my-4">
                      <ul className="flex flex-wrap-mb-px ">
-                        {auth?.user?.user_type === 'creator' && (
-                           <li className="me-2">
-                              <button onClick={(e)=>setTab(1)} className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 1 ? 'border-gray-600 text-black' : ""}`}>Products</button>
-                           </li>
-                        )}
-                        {auth?.user?.user_type === 'creator' && (
-                           <li className="me-2">
-                              <button onClick={(e)=>setTab(2)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 2 ? 'border-gray-600 text-black' : ""}`}  >Orders</button>
-                           </li>
-                        )}
+                        <li className="me-2">
+                           <button onClick={(e)=>setTab(1)} className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 1 ? 'border-gray-600 text-black' : ""}`}>Products</button>
+                        </li>
+                        <li className="me-2">
+                           <button onClick={(e)=>setTab(2)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 2 ? 'border-gray-600 text-black' : ""}`}  >Orders</button>
+                        </li>
                         <li className="me-2">
                            <button onClick={(e)=>setTab(3)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 3 ? 'border-gray-600 text-black' : ""}`}  >My Purchases</button>
                         </li>
                      </ul>
                   </div>
+                  )}
 
                   <div className="mb-6"> 
 

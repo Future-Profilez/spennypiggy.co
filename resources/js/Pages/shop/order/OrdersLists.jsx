@@ -74,11 +74,13 @@ export default function OrdersLists({ type = 'sales' }) {
       </div>
       )}
 
-      <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >{type === 'sales' ? 'Recent Claims' : 'My Purchases'}</h2>
-      <div  className="bg-white rounded-[30px]   px-0">
-         <div className="p-3 py-1 relative ">
-            {orders &&  orders.map((item, index) =>
-               <div key={index} className={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>
+      {type === 'sales' ? <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2> : <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >My Purchases</h2>}
+      
+      {orders && orders.length > 0 && (
+         <div  className="bg-white rounded-[30px]   px-0">
+            <div className="p-3 py-1 relative ">
+               {orders.map((item, index) =>
+                  <div key={index} className={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>
                      <Link href={`/${item.username}`} className="flex w-30">
                         <div className="p-relative flex-shrink-0">
                               <img className="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[30px]  object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
@@ -139,6 +141,7 @@ export default function OrdersLists({ type = 'sales' }) {
             )}
          </div>
       </div>
+      )}
       </>
       : ''}
 
