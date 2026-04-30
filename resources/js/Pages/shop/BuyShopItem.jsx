@@ -591,7 +591,7 @@ export default function BuyShopItem({
                                         <strong className="text-black">
                                             {formatMultiPrice(
                                             calculateTotalSupporterPays(
-                                                (parseFloat(fairPrice || s.price) || 0) + (parseFloat(shippingPrice) || 0), 
+                                                ((parseFloat(fairPrice || s.price) || 0) * quantity) + ((parseFloat(shippingPrice) || 0) * quantity), 
                                                 s?.currency || "GBP", 
                                                 s?.user?.vat_amount_percentage || 0
                                             ),
