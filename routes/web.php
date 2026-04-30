@@ -46,14 +46,14 @@ Route::get('/admin/emulate-login/{user}', [EmulationLoginController::class, 'log
 Route::post('/admin/emulate-stop', [EmulationLoginController::class, 'stop'])
     ->name('admin.emulate.stop');
 
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now()->toISOString(),
-        'app' => config('app.name'),
-        'environment' => config('app.env')
-    ], 200);
-})->name('health.check');
+// Route::get('/health', function () {
+//     return response()->json([
+//         'status' => 'ok',
+//         'timestamp' => now()->toISOString(),
+//         'app' => config('app.name'),
+//         'environment' => config('app.env')
+//     ], 200);
+// })->name('health.check');
 
 // Cache Check Route
 Route::get('/debug/cache-check', function () {
@@ -83,6 +83,9 @@ Route::get('/csrf-cookie', function () {
 Route::match(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], '/magicbell/{path?}', MagicBellProxyController::class)
     ->where('path', '.*')
     ->middleware('auth');
+
+Route::get('activity/logs', [\App\Http\Controllers\CreatorActivityController::class, 'logs'])->name('activity.logs')->middleware('auth');
+
 
 
 // Debug route to test subscription status
@@ -400,9 +403,7 @@ if (app()->environment('local')) {
 
     // Debug: Test support image generation end-to-end (Node + PHP fallback)
     Route::get('/debug/test-support-image', [\App\Http\Controllers\Debug\SupportImageTestController::class, 'run'])
-    ->name('debug.test-support-image');
-
-    Route::get('activity/logs', [\App\Http\Controllers\CreatorActivityController::class, 'logs'])->name('activity.logs');
+        ->name('debug.test-support-image');
 }
 
 // Creator Activity Routes
@@ -704,7 +705,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
         return Inertia::render('Admin/FounderBonus/Settings');
     })->name('admin.founder/bonus-settings.page');
     Route::post('/founder/bonuses/trigger-qualification-check', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'triggerQualificationCheck'])->name('admin.founder/bonuses.trigger-qualification');
-    
+
     // Feature Suggestions Admin
     Route::get('/feature-suggestions', function (Illuminate\Http\Request $request) {
         $query = \App\Models\FeatureSuggestion::with('user')->latest();
@@ -717,8 +718,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
             $term = $request->search;
             $query->where(function ($q) use ($term) {
                 $q->where('suggestion', 'like', "%{$term}%")
-                  ->orWhere('name', 'like', "%{$term}%")
-                  ->orWhere('email', 'like', "%{$term}%");
+                    ->orWhere('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%");
             });
         }
 

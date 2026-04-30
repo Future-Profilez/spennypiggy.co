@@ -147,10 +147,10 @@ class PostsController extends Controller
             // Check if this is a support_thanks post with deletion protection
             if ($post->type === 'support_thanks') {
                 // Use can_delete_until if set, otherwise calculate from created_at
-                $canDeleteUntil = $post->can_delete_until ? 
-                    \Carbon\Carbon::parse($post->can_delete_until) : 
+                $canDeleteUntil = $post->can_delete_until ?
+                    \Carbon\Carbon::parse($post->can_delete_until) :
                     $post->created_at->addMonth();
-                
+
                 if (now()->lt($canDeleteUntil)) {
                     $daysLeft = max(1, now()->diffInDays($canDeleteUntil));
                     return response()->json([
@@ -159,7 +159,7 @@ class PostsController extends Controller
                     ]);
                 }
             }
-            
+
             // Verify the user owns this post (security check)
             if ($post->user_id !== Auth::id()) {
                 return response()->json([
@@ -167,7 +167,7 @@ class PostsController extends Controller
                     'msg' => "You don't have permission to delete this post."
                 ]);
             }
-            
+
             $comments = PostComment::where('post_id', $post->id)->get();
             foreach ($comments as $comment) {
                 PostCommentReplies::where('post_comment_id', $comment->id)->delete();
@@ -277,25 +277,37 @@ class PostsController extends Controller
 
         $post = Post::where('uuid', $uuid)->first();
         $user = User::where('id', Auth::id())->first();
+
         if (!empty($post)) {
-            $post->comments()->create([
+            // Check if the comment is by the post owner
+            $isPostOwner = ($post->user_id === $user->id);
+
+            // Auto-approve if post owner is commenting, otherwise set as pending approval
+            $isApproved = $isPostOwner ? 1 : 0;
+
+            $comment = $post->comments()->create([
                 'user_id' => $user->id,
-                'comment' => $request->comment
+                'comment' => $request->comment,
+                'is_approved' => $isApproved
             ]);
 
-            $message = $user->name . " commented on your post " . $post->title;
-            NotificationSave::dispatch($message, $post->user, $user, 'Post Comment');
+            // Only send notification if comment is NOT from the post owner
+            if (!$isPostOwner) {
+                $message = $user->name . " commented on your post " . $post->title;
+                NotificationSave::dispatch($message, $post->user, $user, 'Post Comment');
 
-            $name = ucfirst($user->name);
-            $title = "💬 New Comment Needing Approval!";
-            $content = "$name commented on your post ({$post->title}). Please review and approve it.";
-            $email = $post->user->email;
+                $name = ucfirst($user->name);
+                $title = "💬 New Comment Needing Approval!";
+                $content = "$name commented on your post ({$post->title}). Please review and approve it.";
+                $email = $post->user->email;
 
-            Helpers::sendNotification($title, $content, $email);
+                Helpers::sendNotification($title, $content, $email);
+            }
 
             return response()->json([
                 'status' => true,
-                'msg' => "Comment added successfully."
+                'msg' => $isPostOwner ? "Comment added successfully." : "Comment added and pending approval.",
+                'is_approved' => $isApproved
             ]);
         }
 
@@ -317,36 +329,47 @@ class PostsController extends Controller
 
         $comment = PostComment::where('uuid', $comment_uid)->first();
         $user = User::where('id', Auth::id())->first();
+
         if (!empty($comment)) {
-            $comment->replies()->create([
+            // Check if the reply is by the post owner
+            $isPostOwner = ($comment->post->user_id === $user->id);
+
+            // Auto-approve if post owner is replying, otherwise set as pending approval
+            $isApproved = $isPostOwner ? 1 : 0;
+
+            $reply = $comment->replies()->create([
                 'user_id' => $user->id,
-                'reply' => $request->reply
+                'reply' => $request->reply,
+                'is_approved' => $isApproved
             ]);
 
-            $name = ucfirst($user->name);
-            $title = "💬 New Reply Needing Approval!";
-            $content = "$name replied to a comment on your post ({$comment->post->title}). Please review and approve it.";
-            $email = $comment->post->user->email;
-
-            Helpers::sendNotification($title, $content, $email);
-
-            if ($comment->user_id !== $user->id) {
-                $commenter = $comment->user;
+            // Only send notifications if reply is NOT from the post owner
+            if (!$isPostOwner) {
+                // Notify post owner about the reply
                 $name = ucfirst($user->name);
-                $title = "↩️ Your Comment Got a Reply!";
-                $content = "$name replied to one of your comment on the post ({$comment->post->title}).";
-                $email = $commenter->email;
-
+                $title = "💬 New Reply Needing Approval!";
+                $content = "$name replied to a comment on your post ({$comment->post->title}). Please review and approve it.";
+                $email = $comment->post->user->email;
                 Helpers::sendNotification($title, $content, $email);
+
+                // Notify the commenter (if different from replier)
+                if ($comment->user_id !== $user->id) {
+                    $commenter = $comment->user;
+                    $name = ucfirst($user->name);
+                    $title = "↩️ Your Comment Got a Reply!";
+                    $content = "$name replied to one of your comments on the post ({$comment->post->title}).";
+                    $email = $commenter->email;
+                    Helpers::sendNotification($title, $content, $email);
+                }
+
+                $message = $user->name . " replied to a comment on your post " . $comment->post->title;
+                NotificationSave::dispatch($message, $comment->post->user, $user, 'Post Reply');
             }
-
-
-            $message = $user->name . " commented on your post " . $comment->post->title;
-            NotificationSave::dispatch($message, $comment->post->user, $user, 'Post Comment');
 
             return response()->json([
                 'status' => true,
-                'msg' => "Reply added successfully."
+                'msg' => $isPostOwner ? "Reply added successfully." : "Reply added and pending approval.",
+                'is_approved' => $isApproved
             ]);
         }
 
@@ -376,7 +399,7 @@ class PostsController extends Controller
                 $query->where(function ($q) use ($userId, $isCreator) {
                     $q->where('is_approved', 1)
                         ->orWhere('user_id', $userId);
-                    
+
                     if ($isCreator) {
                         $q->orWhereRaw('1=1'); // Creators see all replies on their post
                     }
@@ -385,7 +408,7 @@ class PostsController extends Controller
             ->where(function ($query) use ($userId, $isCreator) {
                 $query->where('is_approved', 1)
                     ->orWhere('user_id', $userId);
-                
+
                 if ($isCreator) {
                     $query->orWhereRaw('1=1'); // Creators see all comments on their post
                 }
