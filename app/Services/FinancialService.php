@@ -44,7 +44,7 @@ class FinancialService
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed'])
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status']);
+            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status']);
 
         // Fetch Reserves and Review Holds from PayoutService
         $payoutService = app(\App\Services\Risk\PayoutService::class);
@@ -127,17 +127,20 @@ class FinancialService
 
         foreach ($incomeTx as $tx) {
             $from = strtoupper($tx->currency ?? 'GBP');
-            $creatorEarned = (float) ($tx->net_amount ?? 0);
-            $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
+            $net = (float) ($tx->net_amount ?? 0);
             $vat = (float) ($tx->vat_amount ?? 0);
-            $net = $creatorEarned;
+            
+            // Creator's Gross = Price + VAT (No fees included as per user request)
+            $gross = $net + $vat; 
+            
+            $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
 
-            $grossDisplay += $from === $displayCurrency ? $creatorEarned : ($convert($from, $creatorEarned, $displayCurrency) ?? $creatorEarned);
+            $grossDisplay += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
             $feesDisplay += $from === $displayCurrency ? $fees : ($convert($from, $fees, $displayCurrency) ?? $fees);
             $vatDisplay += $from === $displayCurrency ? $vat : ($convert($from, $vat, $displayCurrency) ?? $vat);
             $netDisplay += $from === $displayCurrency ? $net : ($convert($from, $net, $displayCurrency) ?? $net);
 
-            $grossGbp += $from === 'GBP' ? $creatorEarned : ($convert($from, $creatorEarned, 'GBP') ?? $creatorEarned);
+            $grossGbp += $from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross);
             $feesGbp += $from === 'GBP' ? $fees : ($convert($from, $fees, 'GBP') ?? $fees);
             $vatGbp += $from === 'GBP' ? $vat : ($convert($from, $vat, 'GBP') ?? $vat);
             $netGbp += $from === 'GBP' ? $net : ($convert($from, $net, 'GBP') ?? $net);
@@ -164,6 +167,15 @@ class FinancialService
         $netPayoutMajor = $netPayoutMinor / 100;
         $payoutableDisplay = $convert('GBP', $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor;
 
+        // Calculate if there's a difference between current tax year earnings and total payoutable balance
+        $prevYearBalance = max(0, $netPayoutMajor - ($netGbp - ($heldReservesAmount - (($reserves['total_held'] ?? 0) / 100))));
+        // Simplified: The payoutable balance includes EVERYTHING. If it's higher than the current period's net, 
+        // it means there's carry-over from the previous period.
+        $carryOverDisplay = 0;
+        if ($payoutableDisplay > $netDisplay) {
+            $carryOverDisplay = $payoutableDisplay - $netDisplay;
+        }
+
         return [
             'currency' => $displayCurrency,
             'gross_income' => $grossDisplay,
@@ -176,7 +188,8 @@ class FinancialService
             'review_holds' => $reviewHoldsDisplay,
             'disputes' => $disputesDisplay,
             'payoutable_balance' => $payoutableDisplay,
-            'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0, // Add this flag
+            'carry_over_amount' => $carryOverDisplay,
+            'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0,
 
             'gross_income_gbp' => $grossGbp,
             'fees_gbp' => $feesGbp,
@@ -244,7 +257,7 @@ class FinancialService
 
         $revenueTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->get(['net_amount', 'currency']);
 

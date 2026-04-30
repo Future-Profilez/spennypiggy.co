@@ -286,6 +286,11 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
 
+            // Check if creator has card_payments capability
+            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+                return redirect()->back()->with('error', 'This creator cannot receive direct payments at the moment.');
+            }
+
             // Unified Risk Enforcement
             $riskData = $this->enforceRiskChecks(
                 request(),
@@ -304,21 +309,17 @@ class CheckoutController extends Controller
             // Check if we need to force 3DS
             $force3ds = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
-            // Build payment_intent_data based on creator's capabilities
+            // Direct Charges Implementation
             $paymentIntentData = [
-                'description' => "Spenny Piggy - Content purchase",
+                'description' => "Spenny Piggy - Content purchase for {$owner->name} (Total value including all fees)",
                 'metadata' => $this->buildSafeMetadata($owner, $getdata, $totalCreatorNet),
-                'transfer_data' => [
-                    'destination' => $connectedAccountId,
-                    'amount' => (int) round($grandTotalCreatorTransfer * $multiplier),
-                ],
-                'on_behalf_of' => $connectedAccountId,
+                'application_fee_amount' => (int) round($totalApplicationFee * $multiplier),
             ];
 
-            Log::info('Using Destination Charge flow for checkout', [
+            Log::info('Using Direct Charges for cart checkout', [
                 'creator_id' => $creator_id,
                 'connected_account_id' => $connectedAccountId,
-                'transfer_amount' => $paymentIntentData['transfer_data']['amount'] ?? null,
+                'application_fee_amount' => $paymentIntentData['application_fee_amount'],
                 'total_charge' => $grandTotalSupporterPays
             ]);
 
@@ -344,7 +345,8 @@ class CheckoutController extends Controller
             }
 
             try {
-                $sessionCreate = StripeControl::createCheckoutSession($payload, null, $force3ds, $owner->username);
+                // Direct Charge: create session on CONNECTED account
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3ds, $owner->username);
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 Log::error("Stripe Checkout Error: " . $e->getMessage(), [
                     'error_body' => $e->getJsonBody(),
@@ -550,16 +552,18 @@ class CheckoutController extends Controller
     /**
      * Build NEW FLATTENED metadata format for checkout - implements NEW_STRIPE_METADATA_FORMAT.md
      */
-    private function buildSafeMetadata($owner, $getdata, $totalChargeAmount)
+    private function buildSafeMetadata($owner, $getdata, $totalCreatorNet)
     {
         try {
             // Build basic payment info - REQUIRED fields
             $metadata = [
                 'platform' => 'SpennyPiggy',
                 'created_at' => now()->toISOString(),
+                'updated_at' => now()->toISOString(),
                 'creator_id' => (string) $owner->id,
                 'creator_name' => $owner->name ?? 'Unknown Creator',
                 'creator_username' => $owner->username ?? 'unknown',
+                'creator_profile_url' => route('user.show', $owner->username),
             ];
 
             // Add buyer info if available
@@ -572,15 +576,17 @@ class CheckoutController extends Controller
             $metadata['buyer_name'] = $buyerName;
             $metadata['buyer_email'] = $buyerEmail;
             $metadata['buyer_username'] = $buyerUsername;
+            $metadata['gifter_profile_url'] = $buyerId ? route('user.show', $buyerUsername) : 'N/A';
 
             $metadata['digital_waiver_confirmed_at'] = now()->toDateTimeString();
             $metadata['digital_waiver_text'] = Helpers::DIGITAL_WAIVER_TEXT;
 
             // Payment details - REQUIRED fields
-            $metadata['payment_type'] = 'Destination Charges with transfers';
+            $metadata['payment_type'] = 'Support Payment - Direct Charge';
             $metadata['product_type'] = 'wish_one_off';
             $metadata['quantity'] = (string) array_sum(array_column($getdata->toArray(), 'quantity'));
             $metadata['items_count'] = (string) count($getdata);
+            $metadata['creator_net_amount'] = (string) ($totalCreatorNet * 100); // Amount in cents
 
             // Content delivery status - REQUIRED field
             $contentItems = [];
@@ -675,7 +681,7 @@ class CheckoutController extends Controller
             // Build wish items summary (clean JSON format)
             $wishItemsSummary = [
                 'total_items' => count($getdata),
-                'total_amount' => $totalChargeAmount,
+                'total_amount' => $totalCreatorNet,
                 'wish_ids' => [],
                 'wish_names' => []
             ];

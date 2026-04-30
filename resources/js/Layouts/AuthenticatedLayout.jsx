@@ -16,7 +16,7 @@ export default function Authenticated(props){
 
     return <>
         {auth?.is_emulated && (
-            <div className="bg-purple-600 text-white px-4 py-2 flex justify-between items-center sticky top-0 z-[100] shadow-md border-b border-purple-400/30">
+            <div className="bg-purple-600 text-white px-12 py-2 flex justify-between items-center fixed bottom-0 z-[100] shadow-md border-b border-purple-400/30">
                 <div className="flex items-center gap-2">
                     <span className="text-xl">🎭</span>
                     <span className="text-sm font-bold">Emulating: {user?.username || auth.user?.username}</span>

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 class PayoutService
 {
     private const RESERVE_RELEASE_WINDOW_DAYS = 30;
+    private const MINIMUM_PAYOUT_MINOR = 100; // £1.00 / $1.00 minimum threshold
 
     /**
      * Calculate payouts for all eligible creators.
@@ -61,6 +62,67 @@ class PayoutService
                 ->where('created_at', '<=', $cutoff)
                 ->get();
 
+            // Calculate Net Eligible Base
+            $netEarningsMinor = 0;
+            foreach ($payments as $p) {
+                // Find corresponding FinancialTransaction net amount
+                // Since there's no direct link, we check common source models
+                $paymentIntentId = $p->stripe_payment_intent_id;
+                $sessionId = $p->stripe_session_id;
+                
+                $sourceModels = [
+                    \App\Models\TaskPurchase::class         => 'stripe_session_id',
+                    \App\Models\TipGoalsPayment::class      => 'session_id',
+                    \App\Models\ShopPayment::class          => 'session_id',
+                    \App\Models\StripePaymentDetail::class  => 'session_id',
+                    \App\Models\MembershipPayment::class    => 'session_id',
+                    \App\Models\BillPayment::class          => 'session_id',
+                    \App\Models\StripePaymentItems::class   => 'stripe_session_id', // Joined via detail
+                ];
+                
+                $foundTx = false;
+                foreach ($sourceModels as $modelClass => $sessionColumn) {
+                    $record = $modelClass::where(function($q) use ($p, $sessionColumn, $modelClass) {
+                            if ($p->stripe_session_id) {
+                                if ($modelClass === \App\Models\StripePaymentItems::class) {
+                                    // Special handling for cart items
+                                    $detailIds = \App\Models\StripePaymentDetail::where('session_id', $p->stripe_session_id)->pluck('id');
+                                    $q->whereIn('stripe_payment_detail_id', $detailIds);
+                                } else {
+                                    $q->where($sessionColumn, $p->stripe_session_id);
+                                }
+                            }
+                            
+                            // For TaskPurchase which also has payment_intent_id
+                            if ($modelClass === \App\Models\TaskPurchase::class && $p->stripe_payment_intent_id) {
+                                $q->orWhere('payment_intent_id', $p->stripe_payment_intent_id);
+                            }
+                        })->get(); // Get all items (especially for cart)
+                        
+                    if ($record->isNotEmpty()) {
+                        foreach ($record as $item) {
+                            $ft = \App\Models\FinancialTransaction::where('source_type', $modelClass)
+                                ->where('source_id', $item->id)
+                                ->first();
+                            if ($ft) {
+                                $netEarningsMinor += (int) ($ft->net_amount * 100);
+                                $foundTx = true;
+                            }
+                        }
+                        if ($foundTx) break;
+                    }
+                }
+                
+                // Fallback: If no FinancialTransaction found, use Payment amount (Gross)
+                // (This happens for legacy payments or if sync failed)
+                if (!$foundTx) {
+                    $netEarningsMinor += (int) $p->amount;
+                }
+            }
+            
+            $grossAmount = (int) $payments->sum('amount');
+            $totalReservesHeld = (int) $payments->sum('reserve_amount_minor');
+
             $adjustments = Payment::where('creator_id', $creatorId)
                 ->whereIn('status', ['refunded', 'disputed'])
                 ->where(function($q) use ($cutoff) {
@@ -75,24 +137,21 @@ class PayoutService
                 ->where('created_at', '<=', $cutoff)
                 ->get();
 
-            $grossAmount = (int) $payments->sum('amount');
-
             // CRITICAL FIX: Only subtract if the payment was actually paid out before (payout_run_id was NOT null)
-            // If it's a NEW dispute/refund that was never paid, we just mark it as "processed" but don't subtract from gross.
             $refundDisputeAmount = (int) $adjustments->filter(function($p) {
                 return !is_null($p->payout_run_id);
             })->sum('amount');
+            
             $reviewHoldAmount = (int) $reviewHold->sum('amount');
 
-            $eligibleBase = $grossAmount - $refundDisputeAmount;
-
-            $reservePercent = (int) $metrics->reserve_percent;
-            $reserveAmount = $eligibleBase > 0 ? (int) floor(($eligibleBase * $reservePercent) / 100) : 0;
-
+            // The net payout should be the Net Earnings minus any NEW reserves being held,
+            // plus any OLD reserves being released.
+            // Note: net_amount in FinancialTransaction is currently the price before reserve subtraction.
+            
             $reserveReleaseAmount = (int) ($dueReleases[$creatorId]['amount'] ?? 0);
             $reserveReleaseSources = $dueReleases[$creatorId]['sources'] ?? [];
 
-            $netBeforeBalance = $eligibleBase - $reserveAmount + $reserveReleaseAmount;
+            $netBeforeBalance = $netEarningsMinor - $totalReservesHeld + $reserveReleaseAmount - $refundDisputeAmount;
             $negativeBalance = (int) ($metrics->negative_balance_minor ?? 0);
             $negativeBalanceDelta = 0;
 
@@ -111,19 +170,28 @@ class PayoutService
                 $netPayout = $netBeforeBalance;
             }
             
+            // Check for minimum payout threshold
+            $isBelowThreshold = false;
+            if ($netPayout > 0 && $netPayout < self::MINIMUM_PAYOUT_MINOR) {
+                $isBelowThreshold = true;
+                $netPayout = 0;
+            }
+            
             if ($payments->isEmpty() && $adjustments->isEmpty() && $reviewHold->isEmpty() && $negativeBalance === 0 && $reserveReleaseAmount === 0) {
                 continue;
             }
 
             $payouts[$creatorId] = [
-                'creator_name' => $creator->name, // Assuming name exists
+                'creator_name' => $creator->name,
                 'gross_amount' => $grossAmount,
+                'net_earnings' => $netEarningsMinor,
                 'refund_dispute_amount' => $refundDisputeAmount,
-                'reserve_amount' => $reserveAmount,
+                'reserve_amount' => $totalReservesHeld, // This is what was held from the NEW payments
                 'reserve_release_amount' => $reserveReleaseAmount,
                 'reserve_release_sources' => $reserveReleaseSources,
                 'review_hold_amount' => $reviewHoldAmount,
                 'net_payout' => $netPayout,
+                'is_below_threshold' => $isBelowThreshold,
                 'payment_count' => $payments->count(),
                 'payment_ids' => $payments->pluck('id')->toArray(),
                 'adjustment_ids' => $adjustments->pluck('id')->toArray(),
@@ -193,6 +261,7 @@ class PayoutService
             foreach ($previewData['payouts'] as $creatorId => $data) {
                 // Process each creator's payout
                 $netPayout = (int) ($data['net_payout'] ?? 0);
+                $isBelowThreshold = (bool) ($data['is_below_threshold'] ?? false);
                 $paymentIds = $data['payment_ids'] ?? [];
                 $adjustmentIds = $data['adjustment_ids'] ?? [];
                 $reserveReleaseSources = $data['reserve_release_sources'] ?? [];
@@ -217,7 +286,7 @@ class PayoutService
 
                     try {
                         // Always trigger actual bank payout from connected account balance.
-                        \App\StripeControl::ensureManualPayoutSchedule($creator->account_id);
+                        \App\StripeControl::ensureManualPayoutSchedule($creator->account_id, $currency);
 
                         $payout = \App\StripeControl::createPayout([
                             'amount' => (int) $netPayout,
@@ -231,6 +300,20 @@ class PayoutService
 
                         $previewData['payouts'][$creatorId]['stripe_payout_id'] = $payout->id;
                         Log::info("Payout created for creator {$creatorId}: {$netPayout} {$currency} — payout {$payout->id}");
+
+                        // Record individual payout
+                        \App\Models\PayoutRecord::create([
+                            'creator_id' => $creatorId,
+                            'payout_run_id' => $run->id,
+                            'stripe_payout_id' => $payout->id,
+                            'amount_minor' => (int) $netPayout,
+                            'currency' => $currency,
+                            'status' => 'in_transit',
+                            'arrival_date' => \Carbon\Carbon::createFromTimestamp($payout->arrival_date),
+                            'metadata' => [
+                                'stripe_payout' => $payout->toArray()
+                            ]
+                        ]);
 
                         if (!empty($paymentIds)) {
                             Payment::whereIn('id', $paymentIds)
@@ -265,7 +348,13 @@ class PayoutService
                         Log::error("Payout execution failed for creator {$creatorId}: " . $e->getMessage());
                         continue;
                     }
+                } elseif ($isBelowThreshold) {
+                    // Skip marking payments as processed if below threshold
+                    // They will be picked up in the next run
+                    Log::info("Payout skipped for creator {$creatorId}: Amount below threshold — will retry in next run.");
+                    continue;
                 } else {
+                    // Handle zero payout but mark IDs (e.g. only adjustments or holds processed)
                     if (!empty($paymentIds)) {
                         Payment::whereIn('id', $paymentIds)
                             ->update(['payout_run_id' => $run->id]);
@@ -318,7 +407,7 @@ class PayoutService
             if ($data && isset($data['reserve_amount']) && $data['reserve_amount'] > 0 
                 && empty($data['reserve_released'])) {
                 
-                $releaseDate = $data['reserve_release_date'] ?? Carbon::parse($run->run_date)->addDays(90)->toDateString();
+                $releaseDate = $data['reserve_release_date'] ?? Carbon::parse($run->run_date)->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString();
                 
                 $held[] = [
                     'payout_run_id' => $run->id,
@@ -421,7 +510,7 @@ class PayoutService
         $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
         $amountMajor = $isZeroDecimal ? (int) $amount : ((float) $amount / 100);
 
-        \App\StripeControl::ensureManualPayoutSchedule($creator->account_id);
+        \App\StripeControl::ensureManualPayoutSchedule($creator->account_id, $currency);
         \App\StripeControl::createPayout([
             'amount' => (int) $amount,
             'currency' => $currency,

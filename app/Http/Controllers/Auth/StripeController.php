@@ -3575,19 +3575,70 @@ class StripeController extends Controller
      */
     public function payMonthlyCharge(Request $request)
     {
+        $now = now();
         $user = User::where('id', Auth::id())->first();
         if (!$user) {
             return back()->with('error', 'Subscription not allowed for this user.');
         }
 
-        // 🛡️ Prevent duplicate subscriptions: Sync status from Stripe first
+        // Prevent duplicate subscriptions: sync status from Stripe first, then check all cases
         if ($user->stripe_id) {
-            $this->userProfileService->syncUserSubscription($user);
-            
-            // Check if user is already subscribed after sync
-            if ($user->subscription_status >= 1) { // 1 = ACTIVE, 2 = FREE_TRIAL
-                return to_route('user.show', ['username' => $user->username])
-                    ->with('success', 'You already have an active subscription.');
+            $stripeSub = $this->userProfileService->syncUserSubscription($user);
+
+            if ($stripeSub) {
+                // Subscription exists on Stripe
+                if ($stripeSub->cancel_at_period_end) {
+                    // Cancelled but still in paid period — user has access, no need to resubscribe yet
+                    $endDate = \Carbon\Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
+                    return to_route('user.show', ['username' => $user->username])
+                        ->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
+                }
+
+                if ($user->subscription_status >= 1) {
+                    // Fully active subscription — no action needed
+                    return to_route('user.show', ['username' => $user->username])
+                        ->with('success', 'You already have an active subscription.');
+                }
+            } else {
+                // No active subscription on Stripe — check if local record is still in its paid/trial window
+                $canceledButActive = \App\Models\MonthlyCharge::where('user_id', $user->id)
+                    ->where('status', 'canceled')
+                    ->where(function($q) use ($now) {
+                        $q->where(function($q2) use ($now) {
+                            $q2->whereNotNull('current_end_subscription_date')
+                               ->whereDate('current_end_subscription_date', '>=', $now);
+                        })->orWhere(function($q2) use ($now) {
+                            $q2->whereNotNull('current_end_trial_date')
+                               ->whereDate('current_end_trial_date', '>=', $now);
+                        });
+                    })
+                    ->latest()
+                    ->first();
+
+                if ($canceledButActive) {
+                    $date = $canceledButActive->current_end_subscription_date 
+                        ? \Carbon\Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
+                        : \Carbon\Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
+                        
+                    return to_route('user.show', ['username' => $user->username])
+                        ->with('info', "Your subscription is active until {$date}. You can renew after that date.");
+                }
+
+                // Also handle existing paid/active DB record that DB didn't sync (webhook missed)
+                $existingActive = \App\Models\MonthlyCharge::where('user_id', $user->id)
+                    ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+                    ->whereNotNull('current_end_subscription_date')
+                    ->whereDate('current_end_subscription_date', '>=', $now)
+                    ->latest()
+                    ->first();
+
+                if ($existingActive) {
+                    // Stripe says no subscription, but local DB says active — DB is stale, allow re-subscription
+                    $existingActive->status = 'canceled';
+                    $existingActive->cancelled_at = $now;
+                    $existingActive->upcoming_payment = null;
+                    $existingActive->save();
+                }
             }
         }
 

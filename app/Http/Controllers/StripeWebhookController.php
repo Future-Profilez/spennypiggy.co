@@ -288,6 +288,9 @@ class StripeWebhookController extends Controller
                 break;
             case 'payout.created':
             case 'payout.paid':
+            case 'payout.failed':
+            case 'payout.in_transit':
+            case 'payout.canceled':
                 $this->handlePayoutEvent($data, $type, $event);
                 break;
 
@@ -570,34 +573,63 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // SUBSCRIPTION CANCELLED
+        // SUBSCRIPTION CANCELLED (immediately deleted from Stripe)
         if ($eventType === 'customer.subscription.deleted') {
             if ($subs) {
-                $subs->status = 'cancelled';
+                // Use 'canceled' (consistent with Stripe + accessor) so user keeps access until period end
+                $subs->status = 'canceled';
                 $subs->upcoming_payment = null;
+                $subs->cancelled_at = Carbon::now();
                 $subs->save();
 
+                // Only revoke is_subscribed if the billing period has also ended
                 if ($subs->user) {
-                    $subs->user->is_subscribed = 0;
-                    $subs->user->save();
+                    $periodEnded = !$subs->current_end_subscription_date ||
+                        Carbon::now()->greaterThanOrEqualTo(Carbon::parse($subs->current_end_subscription_date));
+
+                    if ($periodEnded) {
+                        $subs->user->is_subscribed = 0;
+                        $subs->user->save();
+                    }
                 }
             }
             Log::info("MonthlyCharge: Subscription Cancelled processed", ['sub_id' => $subscriptionId]);
             return;
         }
 
+        // CANCEL AT PERIOD END scheduled via Stripe dashboard (subscription.updated with cancel_at_period_end=true)
+        if (
+            $eventType === 'customer.subscription.updated' &&
+            $subscription->cancel_at_period_end &&
+            $subs &&
+            in_array($subs->status, ['active', 'paid', 'renew', 'trialing'])
+        ) {
+            $subs->status = 'canceled';
+            $subs->upcoming_payment = null;
+            $subs->cancelled_at = Carbon::now();
+            $subs->save();
+
+            Log::info("MonthlyCharge: Cancel-at-period-end scheduled", ['sub_id' => $subscriptionId, 'ends_at' => $stripeEnd]);
+            // Don't return — fall through to customer detail sync below
+        }
+
         // UPDATE STATUS FOR OTHER EVENTS
         if ($subs && $subs->status !== $subscription->status) {
-            $subs->status = $subscription->status;
+            // Don't overwrite our 'canceled' status back to 'active' when cancel_at_period_end is set
+            $skipUpdate = $subs->status === 'canceled' && $subscription->cancel_at_period_end;
 
-            if (in_array($subscription->status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
-                $subs->upcoming_payment = $stripeEnd;
-            } else {
-                $subs->upcoming_payment = null;
+            if (!$skipUpdate) {
+                $subs->status = $subscription->status;
+
+                if (in_array($subscription->status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
+                    $subs->upcoming_payment = $stripeEnd;
+                } else {
+                    $subs->upcoming_payment = null;
+                }
+
+                $subs->save();
+                Log::info("MonthlyCharge: Status Updated", ['sub_id' => $subscriptionId, 'status' => $subs->status]);
             }
-
-            $subs->save();
-            Log::info("MonthlyCharge: Status Updated", ['sub_id' => $subscriptionId, 'status' => $subs->status]);
         }
 
         // Handle customer details update
@@ -2281,12 +2313,10 @@ class StripeWebhookController extends Controller
 
     public function customerSubscriptionDeleted($data)
     {
+        // Actual cancellation logic is handled in processMandatorySubscription for MonthlyCharge records.
+        // Also handle WishItemSubscription, BillPayment, MembershipPayment if needed here.
         $subscriptionId = $data->id;
-
-        // Delete the subscription from your database
-        // Example: Subscription::where('stripe_id', $subscriptionId)->delete();
-
-        Log::info("Subscription deleted: {$subscriptionId}");
+        Log::info("Subscription deleted webhook received: {$subscriptionId}");
     }
 
     public function CreateProductForCreatorAndGifter()
@@ -2844,8 +2874,7 @@ class StripeWebhookController extends Controller
                     $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $payment->creator_id);
                     $reservePercent = (int) ($metrics->reserve_percent ?? 0);
                     if ($reservePercent > 0) {
-                        $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($payment->currency ?? 'GBP');
-                        $amountMinor = $isZeroDecimal ? $payment->amount : ($payment->amount * 100);
+                        $amountMinor = $payment->amount; // Already in minor units
                         
                         $reserveMinor = (int) round(((int) $amountMinor * $reservePercent) / 100);
                         
@@ -3162,8 +3191,30 @@ class StripeWebhookController extends Controller
     private function handlePayoutEvent($payout, $eventType, $event)
     {
         try {
-            // Check if payout was initiated by our platform (using metadata)
-            $isPlatformPayout = isset($payout->metadata) && (isset($payout->metadata->payout_run_id) || isset($payout->metadata->reason));
+            // Update local PayoutRecord if it exists
+            $record = \App\Models\PayoutRecord::where('stripe_payout_id', $payout->id)->first();
+            if ($record) {
+                $status = match ($payout->status) {
+                    'paid' => 'paid',
+                    'failed' => 'failed',
+                    'canceled' => 'canceled',
+                    'in_transit' => 'in_transit',
+                    default => 'pending'
+                };
+
+                $record->update([
+                    'status' => $status,
+                    'arrival_date' => $payout->arrival_date ? \Carbon\Carbon::createFromTimestamp($payout->arrival_date) : $record->arrival_date,
+                    'failure_code' => $payout->failure_code ?? null,
+                    'failure_message' => $payout->failure_message ?? null,
+                ]);
+
+                Log::info("Payout Record updated via webhook: {$payout->id} status: {$status}");
+            }
+
+            // Check if payout was initiated by our platform (using local records or metadata)
+            $isPlatformPayout = \App\Models\PayoutRecord::where('stripe_payout_id', $payout->id)->exists() || 
+                               (isset($payout->metadata) && (isset($payout->metadata->payout_run_id) || isset($payout->metadata->reason)));
             
             if (!$isPlatformPayout && $payout->status !== 'canceled' && $payout->status !== 'failed') {
                 $accountId = $event->account ?? null;
@@ -3213,6 +3264,40 @@ class StripeWebhookController extends Controller
     }
 
     /**
+     * Handle Dispute Created
+     */
+    private function handleDisputeCreated($dispute)
+    {
+        $paymentIntentId = $dispute->payment_intent ?? null;
+        if ($paymentIntentId) {
+            $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
+        }
+    }
+
+    /**
+     * Handle Dispute Won (Funds Reinstated)
+     */
+    private function handleDisputeWon($dispute)
+    {
+        $paymentIntentId = $dispute->payment_intent ?? null;
+        if ($paymentIntentId) {
+            $this->syncRiskLedgerStatus($paymentIntentId, 'succeeded');
+        }
+    }
+
+    /**
+     * Handle Dispute Lost (Funds Withdrawn)
+     */
+    private function handleDisputeLost($dispute)
+    {
+        $paymentIntentId = $dispute->payment_intent ?? null;
+        if ($paymentIntentId) {
+            // Mark as refunded — funds were withdrawn by Stripe, treated same as refund for payout purposes
+            $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
+        }
+    }
+
+    /**
      * Sync payment status across Risk Ledger and Financial Transactions
      */
     private function syncRiskLedgerStatus($paymentIntentId, $newStatus)
@@ -3223,13 +3308,20 @@ class StripeWebhookController extends Controller
                 $payment->update(['status' => $newStatus]);
                 Log::info("Risk Ledger: Synced payment status to {$newStatus}", ['id' => $payment->id]);
 
-                // Trigger Financial Transaction sync
+                // Direct immediate update on financial_transactions
+                $this->syncFinancialTransactionsByPaymentIntent($paymentIntentId, $newStatus);
+
+                // Also queue full sync as fallback (pass integer user_id, not UUID)
                 if ($payment->creator_id) {
                     try {
-                        \Illuminate\Support\Facades\Artisan::queue('finance:sync-transactions', [
-                            '--user_id' => $payment->creator_id,
-                        ]);
-                        Log::info("Financial Sync queued for creator: " . $payment->creator_id);
+                        $creator = \App\Models\User::where('uuid', $payment->creator_id)->first();
+                        $intUserId = $creator ? $creator->id : null;
+                        if ($intUserId) {
+                            \Illuminate\Support\Facades\Artisan::queue('finance:sync-transactions', [
+                                '--user_id' => $intUserId,
+                            ]);
+                            Log::info("Financial Sync queued for creator user_id: " . $intUserId);
+                        }
                     } catch (\Exception $e) {
                         Log::error("Failed to queue financial sync: " . $e->getMessage());
                     }
@@ -3237,6 +3329,53 @@ class StripeWebhookController extends Controller
             }
         } catch (\Exception $e) {
             Log::error("Failed to sync risk ledger status: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Directly update financial_transactions status for all source records linked to a payment intent.
+     * This provides immediate consistency without waiting for the sync command queue.
+     */
+    private function syncFinancialTransactionsByPaymentIntent(string $paymentIntentId, string $newStatus): void
+    {
+        try {
+            $ftStatus = match($newStatus) {
+                'succeeded' => 'completed',
+                'disputed'  => 'disputed',
+                'refunded'  => 'refunded',
+                'review_hold' => 'review_hold',
+                'failed', 'blocked' => 'failed',
+                default     => $newStatus,
+            };
+
+            $sourceModels = [
+                [\App\Models\TaskPurchase::class,       'payment_intent_id'],
+                [\App\Models\TipGoalsPayment::class,    'payment_intent_id'],
+                [\App\Models\ShopPayment::class,        'payment_intent_id'],
+                [\App\Models\StripePaymentDetail::class,'payment_intent_id'],
+                [\App\Models\MembershipPayment::class,  'payment_intent_id'],
+                [\App\Models\BillPayment::class,        'payment_intent_id'],
+            ];
+
+            foreach ($sourceModels as [$modelClass, $column]) {
+                $record = $modelClass::where($column, $paymentIntentId)
+                    ->orWhere('session_id', $paymentIntentId)
+                    ->first();
+                if ($record) {
+                    $updated = \App\Models\FinancialTransaction::where('source_type', $modelClass)
+                        ->where('source_id', $record->id)
+                        ->update(['status' => $ftStatus]);
+                    if ($updated) {
+                        Log::info("FinancialTransaction updated directly", [
+                            'source_type' => $modelClass,
+                            'source_id'   => $record->id,
+                            'status'      => $ftStatus,
+                        ]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("syncFinancialTransactionsByPaymentIntent failed: " . $e->getMessage());
         }
     }
 }

@@ -150,6 +150,9 @@ export default function ShopDetailItem(props) {
         getIp();
     }, []); // run once on mount — shop.uuid won't change after render
 
+    const baseSpecialPrice = (parseFloat(shop?.special_member_price) || 0) + (parseFloat(shippingPrice) || 0);
+    const baseRegularPrice = (parseFloat(price) || 0) + (parseFloat(shippingPrice) || 0);
+
     return (
         <>
             <Guest auth={auth.user} user={user}>
@@ -436,13 +439,13 @@ export default function ShopDetailItem(props) {
                                                     <>
                                                         {isOwner
                                                             ? formatMultiPrice(
-                                                                  shop.special_member_price,
+                                                                  baseSpecialPrice,
                                                                   shop?.currency ||
                                                                       "GBP",
                                                               )
                                                             : formatMultiPrice(
                                                                   calculateTotalSupporterPays(
-                                                                      shop.special_member_price,
+                                                                      baseSpecialPrice,
                                                                       shop?.currency ||
                                                                           "GBP",
                                                                       vatPercentage,
@@ -454,13 +457,13 @@ export default function ShopDetailItem(props) {
                                                             {price > 0
                                                                 ? isOwner
                                                                     ? formatMultiPrice(
-                                                                          price,
+                                                                          baseRegularPrice,
                                                                           shop?.currency ||
                                                                               "GBP",
                                                                       )
                                                                     : formatMultiPrice(
                                                                           calculateTotalSupporterPays(
-                                                                              price,
+                                                                              baseRegularPrice,
                                                                               shop?.currency ||
                                                                                   "GBP",
                                                                               vatPercentage,
@@ -474,14 +477,14 @@ export default function ShopDetailItem(props) {
                                                 ) : price > 0 ? (
                                                     isOwner ? (
                                                         formatMultiPrice(
-                                                            price,
+                                                            baseRegularPrice,
                                                             shop?.currency ||
                                                                 "GBP",
                                                         )
                                                     ) : (
                                                         formatMultiPrice(
                                                             calculateTotalSupporterPays(
-                                                                price,
+                                                                baseRegularPrice,
                                                                 shop?.currency ||
                                                                     "GBP",
                                                                 vatPercentage,

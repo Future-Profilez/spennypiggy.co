@@ -133,9 +133,9 @@ export default function BuyShopItem({
     const [typedConfirmation, setTypedConfirmation] = useState("");
     const [verifyingOtp, setVerifyingOtp] = useState(false);
 
-    const onVerify = (token) => {
+    const onVerify = React.useCallback((token) => {
         setCaptchaToken(token || "");
-    };
+    }, []);
 
     
     const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -337,6 +337,8 @@ export default function BuyShopItem({
                   currentToken
               )}&digital_waiver=1`
             : "&digital_waiver=1";
+        
+        setChecking(true);
         if (shop.type === "physical") {
             axios
                 .post(
@@ -347,6 +349,7 @@ export default function BuyShopItem({
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        setChecking(false);
                         if (res.data.step_up_required) {
                             setStepUpData({ ui: res.data.ui });
                             setStepUpContext(res.data.step_up_context);
@@ -366,11 +369,13 @@ export default function BuyShopItem({
                         window.location.href = res.data.url;
                     } else {
                         setLoading(false);
+                        setChecking(false);
                         errorAlert(res.data.message || "Something went wrong");
                     }
                 })
                 .catch((err) => {
                     setLoading(false);
+                    setChecking(false);
                     errorsHandling(err);
                 });
         } else {
@@ -381,6 +386,7 @@ export default function BuyShopItem({
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        setChecking(false);
                         if (res.data.step_up_required) {
                             setStepUpData({ ui: res.data.ui });
                             setStepUpContext(res.data.step_up_context);
@@ -400,11 +406,13 @@ export default function BuyShopItem({
                         window.location.href = res.data.url;
                     } else {
                         setLoading(false);
+                        setChecking(false);
                         errorAlert(res.data.message || "Something went wrong");
                     }
                 })
                 .catch((err) => {
                     setLoading(false);
+                    setChecking(false);
                     errorsHandling(err);
                 });
         }
@@ -583,7 +591,7 @@ export default function BuyShopItem({
                                         <strong className="text-black">
                                             {formatMultiPrice(
                                             calculateTotalSupporterPays(
-                                                fairPrice || s.price, 
+                                                (parseFloat(fairPrice || s.price) || 0) + (parseFloat(shippingPrice) || 0), 
                                                 s?.currency || "GBP", 
                                                 s?.user?.vat_amount_percentage || 0
                                             ),
@@ -673,6 +681,29 @@ export default function BuyShopItem({
                                     not be shown to anyone.
                                 </p>
                             </div>
+
+                            {s.quantity_allow == 1 ? (
+                                <div className="form-field mb-3">
+                                    <p className="mb-1">Quantity</p>
+                                    <input
+                                        required
+                                        min="1"
+                                        max={s.slot_limitation !== null ? s.slot_limitation : undefined}
+                                        className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                        value={quantity}
+                                        onChange={(e) => {
+                                            let val = parseInt(e.target.value);
+                                            if (isNaN(val) || val < 1) val = 1;
+                                            if (s.slot_limitation !== null && val > s.slot_limitation) {
+                                                val = s.slot_limitation;
+                                            }
+                                            setQuantity(val);
+                                        }}
+                                        type="number"
+                                        placeholder="1"
+                                    />
+                                </div>
+                            ) : null}
 
                             {shop.type === "physical" ? (
                                 <>

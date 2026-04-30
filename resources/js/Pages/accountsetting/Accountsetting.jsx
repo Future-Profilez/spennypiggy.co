@@ -375,7 +375,7 @@ export default function Accountsetting(props) {
                                 </SiteSubscription>
                             </Popup>
 
-                            {/* {subscription_history &&
+                            {subscription_history &&
                                 subscription_history.length > 0 && (
                                     <Popup
                                         space="4"
@@ -399,7 +399,7 @@ export default function Accountsetting(props) {
                                             }
                                         />
                                     </Popup>
-                                )} */}
+                                )}
 
                             <Popup
                                 action={passClose}

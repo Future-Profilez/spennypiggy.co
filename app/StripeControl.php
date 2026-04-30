@@ -24,10 +24,11 @@ class StripeControl
     ];
 
     /**
-     * Stripe Client
+     * Stripe Clients
      * @var \Stripe\StripeClient
      */
     private static $client;
+    private static $clientUs;
 
     /**
      * Check and set as well as return the client
@@ -37,35 +38,61 @@ class StripeControl
     {
         try {
             if (empty(self::$client)) {
-                $apiKey = env("STRIPE_SECRET_KEY");
+                $apiKey = config('services.stripe.secret') ?? env("STRIPE_SECRET_KEY");
 
-                // If env() returns null, try to get from config
-                if (is_null($apiKey)) {
-                    $apiKey = config('services.stripe.secret', env("STRIPE_SECRET_KEY"));
-                }
-
-                // If still null or not a string, log debug info and throw exception
                 if (empty($apiKey) || !is_string($apiKey)) {
-                    Log::error("Stripe API key configuration issue", [
-                        'env_value' => var_export(env("STRIPE_SECRET_KEY"), true),
-                        'config_value' => var_export(config('services.stripe.secret'), true),
-                        'final_key_type' => gettype($apiKey),
-                        'final_key_empty' => empty($apiKey)
-                    ]);
-                    throw new Exception("Stripe API key is not properly configured. Please check STRIPE_SECRET_KEY environment variable. Debug info logged.");
+                    Log::error("Stripe UK API key configuration issue");
+                    throw new Exception("Stripe UK API key is not properly configured.");
                 }
 
                 self::$client = new StripeClient($apiKey);
             }
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
+
+            if (empty(self::$clientUs)) {
+                $apiKeyUs = env("STRIPE_SECRET_KEY_US") ?? config('services.stripe.secret') ?? env("STRIPE_SECRET_KEY");
+
+                if (empty($apiKeyUs) || !is_string($apiKeyUs)) {
+                    Log::error("Stripe US API key configuration issue");
+                    // Fallback to UK client if US key is missing
+                    self::$clientUs = self::$client;
+                } else {
+                    self::$clientUs = new StripeClient($apiKeyUs);
+                }
+            }
+        } catch (Exception $e) {
+            throw new Exception("Stripe Initialization Error: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Get the appropriate client based on currency
+     */
+    public static function getClientForCurrency(?string $currency = 'GBP'): StripeClient
+    {
+        self::setClient();
+        $currency = strtoupper($currency ?? 'GBP');
+        
+        if ($currency === 'USD') {
+            return self::$clientUs;
+        }
+        
+        return self::$client;
+    }
+
+    /**
+     * Get the appropriate client based on account ID
+     * (Currently defaults to currency-based logic or manual override)
+     */
+    public static function getClientForAccount(?string $accountId = null): StripeClient
+    {
+        self::setClient();
+        return self::$client;
+    }
+
+    public static function getClient()
+    {
+        self::setClient();
+        return self::$client;
     }
 
     /**
@@ -117,12 +144,6 @@ class StripeControl
         } catch (ApiErrorException $e) {
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
-    }
-
-    public static function getClient()
-    {
-        self::setClient();
-        return self::$client;
     }
 
     public static function getStripeFeeMinorForPaymentIntent(string $paymentIntentId, ?string $connectedAccountId = null): int
@@ -688,16 +709,25 @@ class StripeControl
                 $options['stripe_account'] = $connectedAccountId;
             }
 
+            // Fetch all subscriptions for the customer to catch both 'active' and 'trialing'
             $subscriptions = self::$client->subscriptions->all(
                 [
                     'customer' => $customerId,
-                    'status' => 'active',
-                    'limit' => 1,
+                    'limit' => 5, // Get a few to be safe
                 ],
                 $options
             );
 
-            return $subscriptions->data[0] ?? null;
+            // Find the first one that is active, trialing, or past_due
+            foreach ($subscriptions->data as $subscription) {
+                if (in_array($subscription->status, ['active', 'trialing', 'past_due'])) {
+                    // If it's active but set to cancel at period end, we still return it 
+                    // as it technically provides access.
+                    return $subscription;
+                }
+            }
+
+            return null;
         } catch (\Exception $e) {
             Log::error("Stripe fetch subscription error: " . $e->getMessage());
             return null;
@@ -938,19 +968,19 @@ class StripeControl
         }
     }
 
-    public static function ensureManualPayoutSchedule(string $connectedAccountId): bool
+    public static function ensureManualPayoutSchedule(string $connectedAccountId, string $currency = 'GBP'): bool
     {
-        self::setClient();
+        $client = self::getClientForCurrency($currency);
 
         try {
-            $account = self::$client->accounts->retrieve($connectedAccountId, []);
+            $account = $client->accounts->retrieve($connectedAccountId, []);
             $interval = $account->settings->payouts->schedule->interval ?? null;
 
             if ($interval === 'manual') {
                 return false;
             }
 
-            self::$client->accounts->update($connectedAccountId, [
+            $client->accounts->update($connectedAccountId, [
                 'settings' => [
                     'payouts' => [
                         'schedule' => [
@@ -961,14 +991,9 @@ class StripeControl
             ]);
 
             return true;
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error("Failed to ensure manual payout schedule: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -982,21 +1007,17 @@ class StripeControl
      */
     public static function createPayout(array $payload, $connectedAccountId)
     {
-        self::setClient();
+        $currency = $payload['currency'] ?? 'GBP';
+        $client = self::getClientForCurrency($currency);
 
         try {
-            return self::$client->payouts->create(
+            return $client->payouts->create(
                 $payload,
                 ['stripe_account' => $connectedAccountId]
             );
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error("Stripe Payout Error: " . $e->getMessage());
+            throw new Exception("Stripe Payout Error: " . $e->getMessage());
         }
     }
 

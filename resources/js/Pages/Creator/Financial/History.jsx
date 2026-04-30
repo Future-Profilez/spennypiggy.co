@@ -47,6 +47,7 @@ export default function History({ auth, transactions }) {
                                     <th className="px-6 py-5 border-r-[3px] border-black">Date</th>
                                     <th className="px-6 py-5 border-r-[3px] border-black">Supporter</th>
                                     <th className="px-6 py-5 border-r-[3px] border-black">Description</th>
+                                    <th className="px-6 py-5 border-r-[3px] border-black text-center">Reserve</th>
                                     <th className="px-6 py-5 border-r-[3px] border-black text-right">Earned</th>
                                     <th className="px-6 py-5 text-center">Status</th>
                                 </tr>
@@ -72,6 +73,20 @@ export default function History({ auth, transactions }) {
                                             <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest mt-1">
                                                 {tx.label || tx.source_type?.split('\\').pop().replace('Payment', '').replace('Purchase', '') || 'Manual'}
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-5 text-sm border-r-[3px] border-black text-center">
+                                            {tx.reserve_amount > 0 ? (
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                                                        tx.reserve_status === 'released' ? 'bg-green-400' : 'bg-blue-300'
+                                                    }`}>
+                                                        {tx.reserve_status === 'released' ? 'Settled' : 'Held'}
+                                                    </span>
+                                                    <span className="text-[10px] font-black text-gray-700">{tx.reserve_percent}%</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 font-bold">—</span>
+                                            )}
                                         </td>
                                         <td className={`px-6 py-5 text-lg md:text-xl text-right font-black whitespace-nowrap border-r-[3px] border-black ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                                             {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? tx.net_amount : tx.gross_amount, tx.currency)}

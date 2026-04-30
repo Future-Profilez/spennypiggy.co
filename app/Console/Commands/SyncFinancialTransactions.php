@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\FinancialTransaction;
+use App\Models\User;
 use App\Models\MembershipPayment;
 use App\Models\TaskPurchase;
 use App\Models\BillPayment;
@@ -53,11 +54,52 @@ class SyncFinancialTransactions extends Command
         $this->info('Sync completed successfully!');
     }
 
+    private function getPaymentRiskData($sessionId, $defaultStatus = 'completed')
+    {
+        $data = [
+            'status' => $defaultStatus,
+            'reserve_amount' => 0,
+            'reserve_status' => 'none',
+        ];
+
+        if (!$sessionId) return $data;
+
+        $paymentLog = \App\Models\Payment::where('stripe_session_id', $sessionId)
+            ->orWhere('stripe_payment_intent_id', $sessionId)
+            ->first();
+
+        if ($paymentLog) {
+            $data['status'] = match($paymentLog->status) {
+                'succeeded' => 'completed',
+                'review_hold' => 'review_hold',
+                'disputed' => 'disputed',
+                'refunded' => 'refunded',
+                'failed', 'blocked' => 'failed',
+                default => 'pending'
+            };
+            
+            if ($paymentLog->reserve_amount_minor > 0) {
+                $data['reserve_amount'] = $paymentLog->reserve_amount_minor / 100;
+                $data['reserve_status'] = $paymentLog->payout_run_id ? 'released' : 'held';
+            }
+        }
+
+        return $data;
+    }
+
+    private function calculateVatIfMissing($amount, $currentVat, $creator)
+    {
+        if (($currentVat === null || $currentVat <= 0) && $creator && $creator->vat_amount_percentage > 0) {
+            return round(((float) $amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+        }
+        return $currentVat ?? 0;
+    }
+
     private function syncMemberships($userId = null)
     {
         $this->info('Syncing Memberships...');
 
-        $query = MembershipPayment::with('membership');
+        $query = MembershipPayment::with(['membership', 'membership.user']);
         if ($userId) {
             $query->whereHas('membership', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
@@ -68,26 +110,18 @@ class SyncFinancialTransactions extends Command
             foreach ($payments as $payment) {
                 if (!$payment->membership) continue;
                 
-                $creatorId = $payment->membership->user_id;
+                $creator = $payment->membership->user;
+                if (!$creator) continue;
+
+                $creatorId = $creator->id;
                 $amount = $payment->amount;
-                $vat = $payment->vat_tax_amount ?? 0;
+                $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
                 $platformFee = $payment->tax ?? 0;
                 $stripeFee = $payment->stripe_fee_actual ?? 0;
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
-                $status = 'completed';
-                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
-                if ($paymentLog) {
-                    $status = match($paymentLog->status) {
-                        'succeeded' => 'completed',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'disputed',
-                        'refunded' => 'refunded',
-                        'failed', 'blocked' => 'failed',
-                        default => 'pending'
-                    };
-                }
+                $riskData = $this->getPaymentRiskData($payment->session_id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -103,8 +137,10 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
+                        'reserve_amount' => $riskData['reserve_amount'],
+                        'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $status,
+                        'status' => $riskData['status'],
                         'description' => 'Membership Payment',
                         'transaction_date' => $payment->created_at,
                     ]
@@ -117,58 +153,24 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Tasks...');
 
-        $query = TaskPurchase::with(['task:id,currency', 'creator:id,vat_amount_percentage']);
+        $query = TaskPurchase::with(['task:id,currency', 'creator']);
         if ($userId) {
             $query->where('creator_id', $userId);
         }
 
         $query->chunk(100, function ($purchases) {
             foreach ($purchases as $purchase) {
-                // TaskPurchase has creator_id directly
                 $amount = $purchase->amount;
-                $vat = $purchase->vat_amount ?? 0;
-                $vatPercent = (float) ($purchase->creator?->vat_amount_percentage ?? 0);
-                if ((!$vat || $vat <= 0) && $vatPercent > 0) {
-                    $vat = round(((float) $amount * $vatPercent) / 100, 2, PHP_ROUND_HALF_UP);
-                    if ($vat > 0) {
-                        $purchase->vat_amount = $vat;
-                    }
-                }
+                $vat = $this->calculateVatIfMissing($amount, $purchase->vat_amount, $purchase->creator);
+                
                 $currency = strtoupper($purchase->currency ?? ($purchase->task?->currency ?? 'GBP'));
-                if (!$purchase->currency && $currency) {
-                    $purchase->currency = $currency;
-                }
-
-                $expectedAdminFee = (float) \App\Helpers::administrationFeeInCurrency($currency);
-                if (!is_finite($expectedAdminFee) || $expectedAdminFee <= 0) {
-                    $expectedAdminFee = 1;
-                }
-                if (abs(((float) ($purchase->admin_fee ?? 0)) - $expectedAdminFee) > 0.001) {
-                    $purchase->admin_fee = $expectedAdminFee;
-                }
-
-                $adminFee = (float) ($purchase->admin_fee ?? $expectedAdminFee);
-
+                $adminFee = (float) \App\Helpers::administrationFeeInCurrency($currency);
                 $platformFee = (float) ($purchase->platform_fee ?? 0) + $adminFee;
                 $stripeFee = 0;
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
-                if ($purchase->isDirty()) {
-                    $purchase->save();
-                }
 
-                $status = $purchase->status === 'paid' ? 'completed' : $purchase->status;
-                $paymentLog = \App\Models\Payment::where('stripe_session_id', $purchase->stripe_session_id)->first();
-                if ($paymentLog) {
-                    $status = match($paymentLog->status) {
-                        'succeeded' => 'completed',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'disputed',
-                        'refunded' => 'refunded',
-                        'failed', 'blocked' => 'failed',
-                        default => 'pending'
-                    };
-                }
+                $riskData = $this->getPaymentRiskData($purchase->stripe_session_id ?: $purchase->payment_intent_id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -184,8 +186,10 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
+                        'reserve_amount' => $riskData['reserve_amount'],
+                        'reserve_status' => $riskData['reserve_status'],
                         'currency' => $currency,
-                        'status' => $status,
+                        'status' => $riskData['status'],
                         'description' => 'Task Purchase',
                         'transaction_date' => $purchase->created_at,
                     ]
@@ -198,7 +202,7 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Bills...');
 
-        $query = BillPayment::with('bill');
+        $query = BillPayment::with(['bill', 'bill.user']);
         if ($userId) {
             $query->whereHas('bill', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
@@ -209,26 +213,18 @@ class SyncFinancialTransactions extends Command
             foreach ($payments as $payment) {
                 if (!$payment->bill) continue;
 
-                $creatorId = $payment->bill->user_id;
+                $creator = $payment->bill->user;
+                if (!$creator) continue;
+
+                $creatorId = $creator->id;
                 $amount = $payment->amount;
-                $vat = $payment->vat_tax_amount ?? 0;
+                $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
                 $platformFee = $payment->tax ?? 0;
                 $stripeFee = $payment->stripe_fee_actual ?? 0;
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
-                $status = 'completed';
-                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
-                if ($paymentLog) {
-                    $status = match($paymentLog->status) {
-                        'succeeded' => 'completed',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'disputed',
-                        'refunded' => 'refunded',
-                        'failed', 'blocked' => 'failed',
-                        default => 'pending'
-                    };
-                }
+                $riskData = $this->getPaymentRiskData($payment->session_id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -244,8 +240,10 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
+                        'reserve_amount' => $riskData['reserve_amount'],
+                        'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $status,
+                        'status' => $riskData['status'],
                         'description' => 'Bill Payment',
                         'transaction_date' => $payment->created_at,
                     ]
@@ -257,9 +255,8 @@ class SyncFinancialTransactions extends Command
     private function syncWishes($userId = null)
     {
         $this->info('Syncing Wishes...');
-        // StripePaymentItems linked to StripePaymentDetail linked to Owner (Creator)
 
-        $query = StripePaymentItems::with(['payment', 'wish']);
+        $query = StripePaymentItems::with(['payment', 'wish', 'payment.owner']);
         if ($userId) {
             $query->where(function ($q) use ($userId) {
                 $q->whereHas('payment', function ($p) use ($userId) {
@@ -274,33 +271,23 @@ class SyncFinancialTransactions extends Command
             foreach ($items as $item) {
                 if (!$item->payment) continue;
 
-                $creatorId = $item->payment->owner_id;
-                // Fallback to wish item creator if payment owner missing?
+                $creator = $item->payment->owner;
+                $creatorId = $creator?->id;
                 if (!$creatorId && $item->wish) {
                     $creatorId = $item->wish->user_id;
+                    $creator = User::find($creatorId);
                 }
                 
                 if (!$creatorId) continue;
 
                 $amount = $item->amount;
-                $vat = $item->vat_amount ?? ($item->tax ?? 0);
+                $vat = $this->calculateVatIfMissing($amount, $item->vat_amount, $creator);
                 $platformFee = $item->tax ?? 0;
                 $stripeFee = 0;
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
-                $status = $item->payment->payment_status === 'paid' ? 'completed' : 'pending';
-                $paymentLog = \App\Models\Payment::where('stripe_session_id', $item->payment->session_id)->first();
-                if ($paymentLog) {
-                    $status = match($paymentLog->status) {
-                        'succeeded' => 'completed',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'disputed',
-                        'refunded' => 'refunded',
-                        'failed', 'blocked' => 'failed',
-                        default => 'pending'
-                    };
-                }
+                $riskData = $this->getPaymentRiskData($item->payment->session_id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -316,8 +303,10 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
+                        'reserve_amount' => $riskData['reserve_amount'],
+                        'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($item->payment->currency ?? 'GBP'),
-                        'status' => $status,
+                        'status' => $riskData['status'],
                         'description' => 'Wish Gift: ' . ($item->wish->name ?? 'Item'),
                         'transaction_date' => $item->created_at,
                     ]
@@ -330,7 +319,7 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Shops...');
 
-        $query = ShopPayment::with('shop');
+        $query = ShopPayment::with(['shop', 'shop.user']);
         if ($userId) {
             $query->whereHas('shop', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
@@ -341,26 +330,18 @@ class SyncFinancialTransactions extends Command
             foreach ($payments as $payment) {
                 if (!$payment->shop) continue;
 
-                $creatorId = $payment->shop->user_id;
+                $creator = $payment->shop->user;
+                if (!$creator) continue;
+
+                $creatorId = $creator->id;
                 $amount = $payment->amount;
-                $vat = $payment->vat_tax_amount ?? 0;
+                $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
                 $platformFee = $payment->tax_amount ?? 0;
                 $stripeFee = 0;
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
-                $status = $payment->payment_status === 'paid' ? 'completed' : 'pending';
-                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
-                if ($paymentLog) {
-                    $status = match($paymentLog->status) {
-                        'succeeded' => 'completed',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'disputed',
-                        'refunded' => 'refunded',
-                        'failed', 'blocked' => 'failed',
-                        default => 'pending'
-                    };
-                }
+                $riskData = $this->getPaymentRiskData($payment->session_id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -376,8 +357,10 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
+                        'reserve_amount' => $riskData['reserve_amount'],
+                        'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $status,
+                        'status' => $riskData['status'],
                         'description' => 'Shop Purchase: ' . ($payment->shop->name ?? 'Item'),
                         'transaction_date' => $payment->created_at,
                     ]
@@ -390,18 +373,19 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Tips...');
 
-        $query = TipGoalsPayment::query();
+        $query = TipGoalsPayment::with('creator');
         if ($userId) {
             $query->where('creator_id', $userId);
         }
 
         $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
+                $creator = $payment->creator;
                 $creatorId = $payment->creator_id;
                 if (!$creatorId) continue;
 
                 $amount = $payment->amount;
-                $vat = $payment->vat_amount ?? 0;
+                $vat = $this->calculateVatIfMissing($amount, $payment->vat_amount, $creator);
                 $platformFee = $payment->tax ?? 0;
                 $gross = $payment->total_paid && $payment->total_paid > 0
                     ? (float) $payment->total_paid
@@ -409,20 +393,7 @@ class SyncFinancialTransactions extends Command
                 $stripeFee = max(0, $gross - $platformFee - $amount - $vat);
                 $creatorAmount = $amount;
 
-                $status = strtolower((string) ($payment->status ?? ''));
-                $normalizedStatus = in_array($status, ['paid', 'succeeded', 'completed', 'paid_out'], true) ? 'completed' : ($status ?: 'pending');
-
-                $paymentLog = \App\Models\Payment::where('stripe_session_id', $payment->session_id)->first();
-                if ($paymentLog) {
-                    $normalizedStatus = match($paymentLog->status) {
-                        'succeeded' => 'completed',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'disputed',
-                        'refunded' => 'refunded',
-                        'failed', 'blocked' => 'failed',
-                        default => 'pending'
-                    };
-                }
+                $riskData = $this->getPaymentRiskData($payment->session_id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -438,8 +409,10 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
+                        'reserve_amount' => $riskData['reserve_amount'],
+                        'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $normalizedStatus,
+                        'status' => $riskData['status'],
                         'description' => 'Tip / Support',
                         'transaction_date' => $payment->created_at,
                     ]

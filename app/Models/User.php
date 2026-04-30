@@ -201,7 +201,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
             $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
             // Check subscription status from MonthlyCharge table instead of is_subscribed column
-            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active']) && $subEndCarbon && $now->lessThan($subEndCarbon);
+            // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
+            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active', 'canceled']) && $subEndCarbon && $now->lessThan($subEndCarbon);
             $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
 
             // Check for trialing status first, before other conditions

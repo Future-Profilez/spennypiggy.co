@@ -4,18 +4,32 @@ export default function SiteSubscription({ children, auth, subscription_status, 
     const creatorUser = user ?? auth?.user;
 
     const resolvedStatus =
-        site_subscription?.status ??
-        (subscription_status === 1
+        site_subscription?.subscription_status_code === 1
             ? "ACTIVE"
-            : subscription_status === 2
+            : site_subscription?.subscription_status_code === 2
                 ? "FREE_TRIAL"
-                : subscription_status === 3
+                : site_subscription?.subscription_status_code === 3
                     ? "INACTIVE"
-                    : "EXPIRED");
+                    : site_subscription?.subscription_status_code === 0
+                        ? "EXPIRED"
+                        : (site_subscription?.status?.toUpperCase().includes("EXPIRED")
+                            ? "EXPIRED"
+                            : site_subscription?.status?.toUpperCase().includes("ACTIVE")
+                                ? "ACTIVE"
+                                : site_subscription?.status?.toUpperCase().includes("TRIAL")
+                                    ? "FREE_TRIAL"
+                                    : (subscription_status === 1
+                                        ? "ACTIVE"
+                                        : subscription_status === 2
+                                            ? "FREE_TRIAL"
+                                            : subscription_status === 3
+                                                ? "INACTIVE"
+                                                : "EXPIRED"));
 
 
     const isActive = resolvedStatus === "ACTIVE";
     const isTrial = resolvedStatus === "FREE_TRIAL";
+    const isCancelled = site_subscription?.is_cancelled;
     const isExpiredOrInactive = resolvedStatus === "EXPIRED" || resolvedStatus === "INACTIVE";
 
     const hasCapability = card_capabilities !== false;
@@ -26,7 +40,8 @@ export default function SiteSubscription({ children, auth, subscription_status, 
         creatorUser?.bio_approved === 1 &&
         hasCapability;
 
-    const canActivate = isExpiredOrInactive || isEnabled;
+    // Allow activation if expired, inactive, OR if active but cancelled (grace period)
+    const canActivate = isExpiredOrInactive || isEnabled || (isActive && isCancelled);
     
     const SUBSCRIPTIONBOX = () => { 
         return <>
@@ -41,22 +56,18 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                 </p>
 
                 <Link href={"/activate-subscription"}
-                    // onClick={(e) =>  {
-                    //     if(!isEnabled && user?.profile_status_lock == 1 ){
-                    //         toast.error("Please ensure your avatar, bio, and social links are approved before activating your subscription."),
-                    //         e.preventDefault()
-                    //     }
-                    // }}
                     className={`btn-pink !text-sm sm:!text-normal md:!text-[17px] w-full block text-center 
                     bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-3 transition-all duration-200
-                    ${!isActive && canActivate ? "" :
+                    ${canActivate && (!isActive || isCancelled) ? "" :
                     "cursor-not-allowed opacity-50 pointer-events-none"
                     }`} >
-                    {isActive
+                    {isActive && !isCancelled
                         ? "Subscription Active"
-                        : creatorUser?.profile_status_lock == 1
-                            ? "Restart Subscription Again"
-                            : "Start Free Trial"}
+                        : isActive && isCancelled
+                            ? "Renew Subscription"
+                            : creatorUser?.profile_status_lock == 1
+                                ? "Restart Subscription Again"
+                                : "Start Free Trial"}
                 </Link>
         </>
     }
@@ -81,9 +92,16 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                         <SUBSCRIPTIONBOX />
                     </>
                 ) : isActive ? (
-                    <p className="mb-3 text-[17px]  font-poppins text-start text-green-700">
-                        Your subscription is active.
-                    </p>
+                    <>
+                        <p className="mb-3 text-[17px] font-poppins text-start text-green-700">
+                            Your subscription is active.
+                        </p>
+                        {isCancelled && (
+                            <p className="mb-4 text-[15px] font-poppins text-start text-red-600">
+                                Your subscription has been cancelled but you still have access until {site_subscription.subscription_end}. Renew now to avoid losing access to creator tools.
+                            </p>
+                        )}
+                    </>
                 ) : isTrial ? (
                     <p className="mb-3 text-[18px] font-poppins text-start text-green-700">
                         Your free trial is active.

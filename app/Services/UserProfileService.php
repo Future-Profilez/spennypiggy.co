@@ -556,11 +556,12 @@ class UserProfileService
     /**
      * Sync user subscription status from Stripe API
      * This prevents duplicate subscriptions and ensures local records are accurate.
+     * @return \Stripe\Subscription|null
      */
     public function syncUserSubscription(User $user)
     {
         if (!$user->stripe_id) {
-            return;
+            return null;
         }
 
         try {
@@ -572,7 +573,27 @@ class UserProfileService
                     $user->is_subscribed = 0;
                     $user->save();
                 }
-                return;
+
+                // Also update any local MonthlyCharge record that thinks it's active
+                $now = Carbon::now();
+                $activeCharge = MonthlyCharge::where('user_id', $user->id)
+                    ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+                    ->where(function($q) use ($now) {
+                        $q->whereDate('current_end_subscription_date', '>=', $now)
+                          ->orWhereDate('current_end_trial_date', '>=', $now);
+                    })
+                    ->latest()
+                    ->first();
+
+                if ($activeCharge) {
+                    $activeCharge->status = 'canceled';
+                    $activeCharge->cancelled_at = $now;
+                    $activeCharge->save();
+                    
+                    Log::info("Marked local subscription as canceled for user {$user->id} because no active subscription found on Stripe.");
+                }
+
+                return null;
             }
 
             // Extract period dates from Stripe
@@ -623,10 +644,13 @@ class UserProfileService
                 'status' => $status
             ]);
 
+            return $stripeSubscription;
+
         } catch (\Exception $e) {
             Log::error("Failed to sync user subscription: " . $e->getMessage(), [
                 'user_id' => $user->id
             ]);
+            return null;
         }
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
+use App\Models\FinancialTransaction;
 use App\Models\ReferralCode;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -259,6 +260,29 @@ class ReferAndEarnController extends Controller
                 ->update([
                     'status' => 'PAYOUT_REQUESTED',
                 ]);
+
+            // 6️⃣ Create FinancialTransaction record for audit trail
+            FinancialTransaction::updateOrCreate(
+                [
+                    'source_type' => CreatorReferralPayout::class,
+                    'source_id'   => $payout->id,
+                ],
+                [
+                    'user_id'          => $creator->id,
+                    'type'             => 'referral_payout',
+                    'gross_amount'     => $amount,
+                    'platform_fee'     => 0,
+                    'stripe_fee'       => 0,
+                    'vat_amount'       => 0,
+                    'net_amount'       => $amount,
+                    'reserve_amount'   => 0,
+                    'reserve_status'   => 'none',
+                    'currency'         => 'gbp',
+                    'status'           => 'pending',
+                    'description'      => "Referral payout request for {$qualifiedReferrals->count()} referral(s)",
+                    'transaction_date' => now(),
+                ]
+            );
 
             DB::commit();
 

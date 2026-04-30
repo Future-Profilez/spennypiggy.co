@@ -440,19 +440,19 @@ Route::middleware('auth')->group(function () {
                             });
                         })
                         // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
-                        ->orderByDesc('current_start_subscription_date')
+                        ->latest()
                         ->first();
 
                     // If no active period found, get the most recent one
                     if (!$subscription) {
                         $subscription = MonthlyCharge::where('user_id', $user->id)
-                            ->orderByDesc('current_start_subscription_date')
+                            ->latest()
                             ->first();
                     }
 
                     // Get complete subscription history for the user
                     $historyCollection = MonthlyCharge::where('user_id', $user->id)
-                        ->orderByDesc('current_start_subscription_date')
+                        ->latest()
                         ->get();
                     $subscription_history = $historyCollection->map(function ($charge) {
                         $fmt = function ($date) {
@@ -521,6 +521,7 @@ Route::middleware('auth')->group(function () {
                         $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
                         $site_subscription['subscription_status_code'] = $user->subscription_status;
                         $site_subscription['status'] = $user->display_subscription_status;
+                        $site_subscription['is_cancelled'] = $subscription->status === 'canceled' || !empty($subscription->cancelled_at);
                     } else {
                         $site_subscription['status'] = 'Not Subscribed';
                         $site_subscription['subscription_status_code'] = 3;

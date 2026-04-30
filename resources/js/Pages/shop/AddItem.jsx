@@ -117,10 +117,31 @@ export default function AddItem(props) {
             price: pre_price || "",
         });
 
-        const [wwsShipping, setwwsShipping] = useState([]);
-        const [shipping, setShipping] = useState([]);
-        const [variants, setVariants] = useState([{ name: "", value: "" }]);
-        const [shipping_info, setShipping_info] = useState("");
+        const [wwsShipping, setwwsShipping] = useState(() => {
+            if (item && item.shop_shipping_info) {
+                const wws = item.shop_shipping_info.find(s => s.country === 'all');
+                return wws ? wws.shipping_price : "";
+            }
+            return "";
+        });
+        const [shipping, setShipping] = useState(() => {
+            if (item && item.shop_shipping_info) {
+                return item.shop_shipping_info.filter(s => s.country !== 'all').map(s => ({
+                    country: s.country,
+                    price: s.shipping_price
+                }));
+            }
+            return [];
+        });
+        const [variants, setVariants] = useState(() => {
+            if (item && item.shop_varients && item.shop_varients.length > 0) {
+                return item.shop_varients.map(v => ({ name: v.name, value: v.price }));
+            }
+            return [{ name: "", value: "" }];
+        });
+        const [shipping_info, setShipping_info] = useState(
+            (item && item.shipping_information) || "",
+        );
         const [shippingProfiles, setShippingProfiles] = useState([]);
         const [selectedProfile, setSelectedProfile] = useState(
             (item && item.shipping_profile_id) || null,
@@ -671,6 +692,7 @@ export default function AddItem(props) {
                                                     type="text"
                                                     className="shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[12px] px-[20px] mr-2"
                                                     name={`variantName${index}`}
+                                                    value={variant.name}
                                                     placeholder="Variant Name"
                                                     onChange={(e) =>
                                                         handleVariantChange(
@@ -689,6 +711,7 @@ export default function AddItem(props) {
                                                         type="text"
                                                         className="shop-forms-input pl-[50px] bg-gray-200 w-full  border-0 rounded-[30px]  p-[12px] px-[20px] "
                                                         name={`variantValue${index}`}
+                                                        value={variant.value}
                                                         placeholder="Variant Price"
                                                         onChange={(e) =>
                                                             handleVariantChange(

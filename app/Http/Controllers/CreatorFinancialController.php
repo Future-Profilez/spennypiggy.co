@@ -46,13 +46,13 @@ class CreatorFinancialController extends Controller
             ?: UkTaxSetting::orderByDesc('tax_year_start')->first();
         $taxBandLabel = $taxSettings?->tax_year_label;
 
-        // Analytics Data
+        // Analytics Data (Consistent with Tax Year)
         $displayCurrency = $summary['currency'] ?? $displayCurrency ?? 'GBP';
 
         $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
-            ->whereBetween('transaction_date', [now()->subMonths(6), now()])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id']);
 
         $monthlyStats = $incomeForAnalytics
@@ -101,16 +101,18 @@ class CreatorFinancialController extends Controller
             ->sortByDesc('total')
             ->values();
 
-        // Recent Transactions (Income & Expenses)
+        // Recent Transactions (Filtered by Tax Year)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('supporter:id,name,username,email')
             ->latest('transaction_date')
-            ->take(10)
+            ->take(20)
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
+                $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
                 
                 $base = class_basename($tx->source_type);
                 $tx->label = match($base) {
@@ -127,8 +129,9 @@ class CreatorFinancialController extends Controller
             });
 
         $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
+            ->whereBetween('expense_date', [$dates['start'], $dates['end']])
             ->latest('expense_date')
-            ->take(10)
+            ->take(20)
             ->get()
             ->map(function ($exp) {
                 // Mock FinancialTransaction structure for frontend compatibility
@@ -151,13 +154,13 @@ class CreatorFinancialController extends Controller
 
         $recentTransactions = $income->concat($expenses)
             ->sortByDesc('display_date')
-            ->take(10)
+            ->take(20)
             ->values();
 
         // Top Supporters with Category Breakdown
         $supporterTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
             ->with(['supporter:id,name,username,avatar'])
@@ -210,6 +213,21 @@ class CreatorFinancialController extends Controller
         // Reserve breakdown with release dates
         $reserveBreakdown = $this->payoutService->getHeldReserves($user->uuid);
 
+        // Payout History
+        $payoutHistory = \App\Models\PayoutRecord::where('creator_id', $user->uuid)
+            ->latest()
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'uuid' => $p->uuid,
+                    'date' => $p->created_at->format('d M Y'),
+                    'amount' => $p->amount_minor / 100,
+                    'currency' => $p->currency,
+                    'status' => $p->status,
+                    'arrival_date' => $p->arrival_date ? $p->arrival_date->format('d M Y') : null,
+                ];
+            });
+
         // Creator risk level for reserve messaging
         $creatorMetric = CreatorMetric::where('creator_id', $user->uuid)->first();
         $reserveReason = null;
@@ -229,6 +247,10 @@ class CreatorFinancialController extends Controller
             'summary' => $summary,
             'tax_estimate' => $estimatedTax,
             'tax_year' => $dates['label'],
+            'date_range' => [
+                'start' => $dates['start']->format('d M Y'),
+                'end' => $dates['end']->format('d M Y'),
+            ],
             'tax_band_label' => $taxBandLabel,
             'display_currency' => $displayCurrency,
             'profile' => $profile,
@@ -240,23 +262,28 @@ class CreatorFinancialController extends Controller
             ],
             'reserve_breakdown' => $reserveBreakdown['breakdown'] ?? [],
             'reserve_reason' => $reserveReason,
+            'payout_history' => $payoutHistory,
         ]);
     }
 
     public function history(Request $request)
     {
         $user = Auth::user();
+        $year = $request->input('year', $this->financialService->getCurrentTaxYear());
+        $dates = $this->financialService->getTaxYearDates($year);
         
-        // Income
+        // Income (Filtered by Tax Year)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('supporter:id,name,username,email')
             ->latest('transaction_date')
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
                 $tx->uuid = $tx->uuid ?? $tx->id;
+                $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
                 
                 $base = class_basename($tx->source_type);
                 $tx->label = match($base) {
@@ -271,8 +298,9 @@ class CreatorFinancialController extends Controller
                 return $tx;
             });
 
-        // Expenses
+        // Expenses (Filtered by Tax Year)
         $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
+            ->whereBetween('expense_date', [$dates['start'], $dates['end']])
             ->latest('expense_date')
             ->get()
             ->map(function ($exp) {
@@ -332,7 +360,7 @@ class CreatorFinancialController extends Controller
         $joinDate = $user->created_at;
         $incomeAll = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
             ->get(['net_amount', 'currency', 'transaction_date']);
 
         $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
@@ -424,6 +452,7 @@ class CreatorFinancialController extends Controller
 
         $transactions = FinancialTransaction::where('user_id', $user->id)
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed']) // Match dashboard logic
             ->get()
             ->map(function ($transaction) {
                 return [
@@ -496,7 +525,10 @@ class CreatorFinancialController extends Controller
         $user = Auth::user();
         $year = $request->input('year', $this->financialService->getCurrentTaxYear());
         $dates = $this->financialService->getTaxYearDates($year);
-        $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end']);
+        
+        // Use the SAME summary logic as dashboard to ensure consistency
+        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+        $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end'], $displayCurrency);
         $profile = CreatorFinancialProfile::firstOrCreate(['user_id' => $user->id]);
 
         return Inertia::render('Creator/Financial/Statement', [

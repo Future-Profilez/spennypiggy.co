@@ -109,6 +109,46 @@ export default function MyShopProducts({lists, loading, update}) {
                                           </div>
                                        )}
                                     </Menu.Item>
+                                    <Menu.Item>
+                                       {({ active }) => (
+                                          <button
+                                             className={`${
+                                                active ? 'bg-gray-100' : ''
+                                             } group flex w-full items-center rounded-[30px]  px-2 py-2 text-sm text-gray-900`}
+                                             onClick={() => {
+                                                 if (window.confirm('Are you sure you want to delete this item?')) {
+                                                     axios.get(`/shop/delete/${s.uuid}`).then(res => {
+                                                         if(res.data.status) {
+                                                             toast.success(res.data.msg);
+                                                             update && update();
+                                                         } else {
+                                                             toast.error(res.data.msg);
+                                                         }
+                                                     });
+                                                 }
+                                             }}
+                                          >
+                                             Delete
+                                          </button>
+                                       )}
+                                    </Menu.Item>
+                                    <Menu.Item>
+                                       {({ active }) => (
+                                          <button
+                                             className={`${
+                                                active ? 'bg-gray-100' : ''
+                                             } group flex w-full items-center rounded-[30px]  px-2 py-2 text-sm text-gray-900`}
+                                             onClick={() => {
+                                                 axios.get(`/shop/deactivate/${s.uuid}`).then(res => {
+                                                     toast.success(s.status == 1 ? 'Deactivated' : 'Activated');
+                                                     update && update();
+                                                 });
+                                             }}
+                                          >
+                                             {s.status == 1 ? 'Deactivate' : 'Activate'}
+                                          </button>
+                                       )}
+                                    </Menu.Item>
                                  </div>
                               </Menu.Items>
                            </Transition>
@@ -116,6 +156,7 @@ export default function MyShopProducts({lists, loading, update}) {
                      </div>
                   </div>
                   {s.approved == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-yellow-50 text-yellow-800' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
+                  {s.status == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-red-50 text-red-800' >This item is deactivated.</div> : ''}
                </div>
             }) : <Nocontent/>
              }

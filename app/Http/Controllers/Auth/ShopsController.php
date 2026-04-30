@@ -56,11 +56,14 @@ class ShopsController extends Controller
             ]);
         }
 
-        $shops = Shop::where('user_id', $user->id)
-            ->where('approved', 1)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->get();
+        $query = Shop::where('user_id', $user->id);
+
+        // If not the owner, only show approved and active items
+        if (!Auth::check() || Auth::id() !== $user->id) {
+            $query->where('approved', 1)->where('status', 1);
+        }
+
+        $shops = $query->orderBy('id', 'desc')->with(['shop_varients', 'shop_shipping_info'])->get();
 
         return response()->json([
             'status' => true,
@@ -299,7 +302,14 @@ class ShopsController extends Controller
     {
         $user = User::find(Auth::id());
 
-        $shop = Shop::where('uuid', $uuid)->first();
+        $shop = Shop::where('uuid', $uuid)->where('user_id', $user->id)->first();
+
+        if (!$shop) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Shop item not found or you don't have permission."
+            ]);
+        }
 
         $old_price = $shop->price;
 
@@ -500,12 +510,12 @@ class ShopsController extends Controller
 
     public function deleteShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->first();
+        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
 
         if (!$shop) {
             return response()->json([
                 'status' => false,
-                'msg' => "Shop item not found."
+                'msg' => "Shop item not found or you don't have permission."
             ]);
         }
 
@@ -703,11 +713,20 @@ class ShopsController extends Controller
             }
 
             // Check stock if slot_limitation is set
-            if ($shop->slot_limitation !== null && $shop->slot_limitation <= 0) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'This item is currently sold out.'
-                ]);
+            $requestedQuantity = (int) request()->query('quantity', 1);
+            if ($shop->slot_limitation !== null) {
+                if ($shop->slot_limitation <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This item is currently sold out.'
+                    ]);
+                }
+                if ($shop->slot_limitation < $requestedQuantity) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Not enough stock available. Only ' . $shop->slot_limitation . ' left.'
+                    ]);
+                }
             }
 
             if (!$shop->user) {
@@ -796,6 +815,8 @@ class ShopsController extends Controller
                 }
                 $amount = round($var->price, 2, PHP_ROUND_HALF_UP);
             }
+            
+            $amount = $amount * $requestedQuantity;
 
             // Add Shipping Price if physical item
             $shipping_price = 0;
@@ -823,6 +844,7 @@ class ShopsController extends Controller
                         }
                         $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
                     }
+                    $shipping_price = $shipping_price * $requestedQuantity;
                 }
             }
 
@@ -1021,14 +1043,19 @@ class ShopsController extends Controller
 
                 // If already paid, just redirect
                 if ($stripeid->payment_status === 'paid') {
-                    return to_route('thank-you', ['username' => $stripeid->shop->user->username])->with('success', 'Payment Successful.');
+                    return redirect()->route('single-shop-list', [
+                        'slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
+                        'uuid' => $stripeid->shop->uuid,
+                        'session_id' => $stripeid->session_id
+                    ])->with('success', 'Payment Successful.');
                 }
 
                 // 1. Decrement stock if applicable
                 $shop = $stripeid->shop;
                 if ($shop->slot_limitation !== null) {
+                    $purchasedQuantity = $stripeid->quantity > 0 ? $stripeid->quantity : 1;
                     if ($shop->slot_limitation > 0) {
-                        $shop->decrement('slot_limitation');
+                        $shop->decrement('slot_limitation', $purchasedQuantity);
                     } else {
                         Log::warning('Shop item sold out during payment success', ['shop_id' => $shop->id]);
                         // We still allow the payment to succeed as money is already taken
@@ -1149,7 +1176,11 @@ class ShopsController extends Controller
                 // Clear user caches
                 app(UserProfileService::class)->clearUserCaches($stripeid->shop->user->username, $stripeid->shop->user->id);
 
-                return to_route('thank-you', ['username' => $stripeid->shop->user->username])->with('success', 'Payment Successful.');
+                return redirect()->route('single-shop-list', [
+                    'slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
+                    'uuid' => $stripeid->shop->uuid,
+                    'session_id' => $stripeid->session_id
+                ])->with('success', 'Payment Successful.');
             } catch (\Exception $e) {
                 Log::error("Error in successPayment: " . $e->getMessage());
                 return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', 'Something went wrong during payment processing.');
@@ -1169,7 +1200,7 @@ class ShopsController extends Controller
 
     public function deactivateShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->first();
+        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
         if (!empty($shop)) {
             if ($shop->status == 1) {
                 $shop->status = 0;
@@ -1193,7 +1224,9 @@ class ShopsController extends Controller
             'courier_name' => 'nullable|string',
         ]);
 
-        $deliverable = Deliverable::where('uuid', $uuid)
+        $shopPayment = ShopPayment::where('uuid', $uuid)->firstOrFail();
+
+        $deliverable = Deliverable::where('session_id', $shopPayment->session_id)
             ->where('creator_id', Auth::id())
             ->firstOrFail();
 
@@ -1300,6 +1333,99 @@ class ShopsController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Shipping profile deleted successfully.'
+        ]);
+    }
+
+    public function ordersList(Request $request)
+    {
+        $user = Auth::user();
+        $type = $request->query('type', 'sales');
+
+        if ($type === 'purchases') {
+            $orders = ShopPayment::with('shop.user')
+                ->where('user_id', $user->id)
+                ->where('payment_status', 'paid')
+                ->orderBy('id', 'desc')
+                ->get();
+            
+             // Map orders to format expected by frontend
+            $formattedOrders = $orders->map(function ($order) {
+                $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)->first();
+                return [
+                    'id' => $order->id,
+                    'uuid' => $order->uuid,
+                    'amount' => $order->amount,
+                    'currency' => $order->currency,
+                    'created_at' => $order->created_at,
+                    'name' => $order->shop->user->name ?? 'Unknown',
+                    'username' => $order->shop->user->username ?? '',
+                    'email' => $order->shop->user->email ?? '',
+                    'avatar_url' => $order->shop->user->avatar_url ?? null,
+                    'shop' => $order->shop,
+                    'quantity' => $order->quantity,
+                    'shipping_info' => $order->shipping_info,
+                    'status' => $deliverable->status ?? 'pending',
+                    'tracking_id' => $deliverable->tracking_id ?? null,
+                    'courier_name' => $deliverable->courier_name ?? null,
+                    'ask_question' => $order->ask_question,
+                    'answer' => $order->answer,
+                    'message' => $order->message,
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'orders' => $formattedOrders,
+                'all_time' => 0,
+                'thirtydays' => 0,
+                'total_claims' => $formattedOrders->count()
+            ]);
+        }
+
+        // Default to sales
+        $orders = ShopPayment::with('shop')
+            ->whereHas('shop', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->where('payment_status', 'paid')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $allTime = $orders->sum('amount');
+        $thirtyDays = $orders->where('created_at', '>=', Carbon::now()->subDays(30))->sum('amount');
+
+        // Map orders to format expected by frontend
+        $formattedOrders = $orders->map(function ($order) {
+            $buyer = User::find($order->user_id);
+            $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)->first();
+            return [
+                'id' => $order->id,
+                'uuid' => $order->uuid,
+                'amount' => $order->amount,
+                'currency' => $order->currency,
+                'created_at' => $order->created_at,
+                'name' => $order->name ?? ($buyer->name ?? 'Anonymous'),
+                'username' => $buyer->username ?? '',
+                'email' => $order->email ?? ($buyer->email ?? ''),
+                'avatar_url' => $buyer->avatar_url ?? null,
+                'shop' => $order->shop,
+                'quantity' => $order->quantity,
+                'shipping_info' => $order->shipping_info,
+                'status' => $deliverable->status ?? 'pending',
+                'tracking_id' => $deliverable->tracking_id ?? null,
+                'courier_name' => $deliverable->courier_name ?? null,
+                'ask_question' => $order->ask_question,
+                'answer' => $order->answer,
+                'message' => $order->message,
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'orders' => $formattedOrders,
+            'all_time' => $allTime,
+            'thirtydays' => $thirtyDays,
+            'total_claims' => $formattedOrders->count()
         ]);
     }
 }

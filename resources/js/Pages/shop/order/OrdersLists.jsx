@@ -12,7 +12,7 @@ import { HiDotsVertical } from "react-icons/hi";
 import OrderDetail from './OrderDetail';
 
 
-export default function OrdersLists() {
+export default function OrdersLists({ type = 'sales' }) {
    const slug = (inputString) => {
       return inputString
       .toLowerCase()
@@ -31,7 +31,7 @@ export default function OrdersLists() {
 
    const fetchorders = () =>{
       setOrderLoading(true);
-        axios.get(`/shop/orders-list`)
+        axios.get(`/shop/orders-list?type=${type}`)
        .then(res =>{
          setOrders(res.data.orders);
          setAllEarning(res.data.all_time);
@@ -47,7 +47,7 @@ export default function OrdersLists() {
 
    useEffect(()=>{
       fetchorders();
-   }, []);
+   }, [type]);
 
    const { formatMultiPrice} = PriceFormat();
 
@@ -57,6 +57,7 @@ export default function OrdersLists() {
       {!orderloading ?
       <>
 
+      {type === 'sales' && (
       <div className='grid md:grid-cols-3 gap-4 mb-6 ' >
          <div className='bg-white p-4 text-black rounded-[30px] ' >
             <h2 className='font-bold text-2xl' >{claims}</h2>
@@ -71,8 +72,9 @@ export default function OrdersLists() {
             <p className='text-gray-500'>All Time</p>
          </div>
       </div>
+      )}
 
-      <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2>
+      <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >{type === 'sales' ? 'Recent Claims' : 'My Purchases'}</h2>
       <div  className="bg-white rounded-[30px]   px-0">
          <div className="p-3 py-1 relative ">
             {orders &&  orders.map((item, index) =>

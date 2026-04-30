@@ -9,7 +9,7 @@ import OrdersLists from './order/OrdersLists';
 export default function AddShopItem(props) {
 
    const { auth, user } = props;
-   const [tab, setTab] = useState(1);
+   const [tab, setTab] = useState(auth?.user?.user_type === 'creator' ? 1 : 3);
 
    const [loading, setLoading] = useState(false);
    const [lists, setLists] = useState([]);
@@ -43,11 +43,18 @@ export default function AddShopItem(props) {
 
                   <div className=" font-medium text-center text-gray-500 border-b border-gray-300 dark:text-gray-400 mt-3 mb-4  md:my-4">
                      <ul className="flex flex-wrap-mb-px ">
+                        {auth?.user?.user_type === 'creator' && (
+                           <li className="me-2">
+                              <button onClick={(e)=>setTab(1)} className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 1 ? 'border-gray-600 text-black' : ""}`}>Products</button>
+                           </li>
+                        )}
+                        {auth?.user?.user_type === 'creator' && (
+                           <li className="me-2">
+                              <button onClick={(e)=>setTab(2)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 2 ? 'border-gray-600 text-black' : ""}`}  >Orders</button>
+                           </li>
+                        )}
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(1)} className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 1 ? 'border-gray-600 text-black' : ""}`}>Products</button>
-                        </li>
-                        <li className="me-2">
-                           <button onClick={(e)=>setTab(2)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 2 ? 'border-gray-600 text-black' : ""}`}  >Orders</button>
+                           <button onClick={(e)=>setTab(3)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 3 ? 'border-gray-600 text-black' : ""}`}  >My Purchases</button>
                         </li>
                      </ul>
                   </div>
@@ -68,7 +75,15 @@ export default function AddShopItem(props) {
                         role="tabpanel"
                         aria-labelledby="tabs-home-tab"
                         data-twe-tab-active>
-                           <OrdersLists />
+                           <OrdersLists type="sales" />
+                     </div> : ''}
+
+                     {tab == 3 ? <div className=" transition-opacity duration-150 ease-linear"
+                        id="tabs-home"
+                        role="tabpanel"
+                        aria-labelledby="tabs-home-tab"
+                        data-twe-tab-active>
+                           <OrdersLists type="purchases" />
                      </div> : ''}
                      
                   </div>

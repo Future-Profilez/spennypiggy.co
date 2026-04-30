@@ -78,7 +78,7 @@ class EmulationLoginController extends Controller
         $request->session()->regenerateToken();
 
         // Redirect back to admin dashboard — flash messages can't cross domains
-        $adminDashboardUrl = env('ADMIN_SITE_URL', 'https://admin.spennypiggy.co');
-        return redirect($adminDashboardUrl . '/admin/users');
+        $adminDashboardUrl = env('ADMIN_SITE_URL', 'http://localhost:8001');
+        return redirect($adminDashboardUrl . '/admin/users/list');
     }
 }
