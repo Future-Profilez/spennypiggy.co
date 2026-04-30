@@ -14,7 +14,7 @@ export default function OrderDetail({classes, text, item, date}) {
    const [loading, setLoading] = useState(false);
    const { auth } = usePage().props;
 
-   const isCreator = auth?.user?.user_type === 'creator';
+   const isCreator = auth?.user?.role == 1;
    const isPhysical = item?.shop?.type === 'physical';
 
    const updateFulfillment = async () => {

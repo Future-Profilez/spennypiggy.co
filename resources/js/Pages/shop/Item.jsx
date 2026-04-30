@@ -230,6 +230,12 @@ export default function ShopDetailItem(props) {
                                     </ol>
                                 </nav>
 
+                                {isOwner && shop.edited_status == 0 && (
+                                    <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-[20px] font-medium text-sm">
+                                        <strong>Admin requested changes:</strong> {shop.edited_reason}
+                                    </div>
+                                )}
+
                                 <div className="w-full relative">
                                     <img
                                         className="w-full max-h-[400px] object-cover rounded-[30px] "

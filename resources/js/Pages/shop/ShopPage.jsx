@@ -9,7 +9,8 @@ import OrdersLists from './order/OrdersLists';
 export default function AddShopItem(props) {
 
    const { auth, user } = props;
-   const [tab, setTab] = useState(auth?.user?.user_type === 'creator' ? 1 : 3);
+   const isCreator = auth?.user?.role == 1;
+   const [tab, setTab] = useState(isCreator ? 1 : 3);
 
    const [loading, setLoading] = useState(false);
    const [lists, setLists] = useState([]);
@@ -41,7 +42,7 @@ export default function AddShopItem(props) {
                   <Head title={'Add Shop Item'}  />
                   <h2 className='font-GillSans uppercase text-3xl' >Shop</h2>
 
-                  {auth?.user?.user_type === 'creator' && (
+                  {isCreator && (
                   <div className=" font-medium text-center text-gray-500 border-b border-gray-300 dark:text-gray-400 mt-3 mb-4  md:my-4">
                      <ul className="flex flex-wrap-mb-px ">
                         <li className="me-2">

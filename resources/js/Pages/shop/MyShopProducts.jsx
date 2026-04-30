@@ -63,7 +63,12 @@ export default function MyShopProducts({lists, loading, update}) {
                            <p className='text-gray-500 text-sm line-clamp-1 '>{s.description}</p>
                         </Link>
                      </div>
-                     <p>{s.total_sold} Sold</p>
+                     <p>
+                        {s.slot_limitation !== null && s.slot_limitation > 0 
+                           ? `${s.total_sold}/${s.total_sold + s.slot_limitation} Sold` 
+                           : `${s.total_sold} Sold`
+                        }
+                     </p>
                      <div className='relative'>
                         <Menu as="div" className="relative inline-block text-left">
                            <div>
@@ -157,6 +162,7 @@ export default function MyShopProducts({lists, loading, update}) {
                   </div>
                   {s.approved == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-yellow-50 text-yellow-800' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
                   {s.status == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-red-50 text-red-800' >This item is deactivated.</div> : ''}
+                  {s.edited_status == 0 ? <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-red-50 text-red-800' >Admin requested changes: {s.edited_reason}</div> : ''}
                </div>
             }) : <Nocontent/>
              }

@@ -63,6 +63,11 @@ export default function ProfileProduct({item}) {
             </Link>
          </div>
          <Link href={url}  className="flex flex-col gap-1 mt-2 sm:mt-4 px-3 sm:px-4">
+            {isCreator && item.edited_status == 0 && (
+               <div className='text-xs bg-red-50 text-red-800 p-2 rounded-lg mb-1 font-medium'>
+                  Admin requested changes: {item.edited_reason}
+               </div>
+            )}
             <h2 className="text-sm line-clamp-1 sm:text-lg font-semibold text-black ">{item.name}</h2>
             <span className="text-[13px] sm:text-normal font-normal text-gray-600 line-clamp-2">{item.description}</span>
          </Link>
