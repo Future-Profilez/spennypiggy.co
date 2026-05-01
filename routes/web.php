@@ -708,6 +708,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     })->name('admin.founder/bonus-settings.page');
     Route::post('/founder/bonuses/trigger-qualification-check', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'triggerQualificationCheck'])->name('admin.founder/bonuses.trigger-qualification');
 
+    // Task Purchases Admin
+    Route::get('/tasks', [\App\Http\Controllers\Admin\TaskPurchaseController::class, 'index'])->name('admin.tasks.index');
+    Route::post('/tasks/{uuid}/resolve', [\App\Http\Controllers\Admin\TaskPurchaseController::class, 'resolve'])->name('admin.tasks.resolve');
+
     // System Diagnostics Admin
     Route::get('/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
     Route::post('/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');

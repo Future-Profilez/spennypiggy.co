@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
+use App\Models\Deliverable;
 
 class ShopPayment extends Model
 {
@@ -73,5 +74,10 @@ class ShopPayment extends Model
     public function shop()
     {
         return $this->belongsTo(Shop::class, 'shop_id');
+    }
+
+    public function deliverable()
+    {
+        return $this->hasOne(Deliverable::class, 'session_id', 'session_id');
     }
 }

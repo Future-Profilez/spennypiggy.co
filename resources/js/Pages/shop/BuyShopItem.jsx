@@ -77,9 +77,6 @@ export default function BuyShopItem({
     const actualPrice = () => {
         if (s && s.is_member == 1 && s.special_member_price) {
             return s.special_member_price;
-        } else if (selectedVarient && selectedVarient !== "no_varient") {
-            const variant = s.shop_varients?.find(v => v.id == selectedVarient);
-            return variant?.price !== null && variant?.price !== undefined ? variant.price : s.price;
         } else {
             return s.price;
         }
@@ -103,7 +100,7 @@ export default function BuyShopItem({
 
     useEffect(() => {
         setfaiPrice(actualPrice());
-    }, [selectedVarient, s]);
+    }, [s]);
 
     const slug = (inputString) => {
         return inputString
@@ -351,7 +348,7 @@ export default function BuyShopItem({
         if (shop.type === "physical") {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
+                    `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
                     {
                         shipping_info: JSON.stringify(shipping_info),
                     }
@@ -390,7 +387,7 @@ export default function BuyShopItem({
                 });
         } else {
             axios
-                .get(
+                .post(
                     `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
                 )
                 .then((res) => {
@@ -703,12 +700,21 @@ export default function BuyShopItem({
                                         className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                                         value={quantity}
                                         onChange={(e) => {
+                                            if (e.target.value === '') {
+                                                setQuantity('');
+                                                return;
+                                            }
                                             let val = parseInt(e.target.value);
                                             if (isNaN(val) || val < 1) val = 1;
                                             if (s.slot_limitation !== null && val > s.slot_limitation) {
                                                 val = s.slot_limitation;
                                             }
                                             setQuantity(val);
+                                        }}
+                                        onBlur={(e) => {
+                                            if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                                                setQuantity(1);
+                                            }
                                         }}
                                         type="number"
                                         placeholder="1"

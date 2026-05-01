@@ -25,9 +25,9 @@ export default function BottomNavigation({ activeTab = 'home' }) {
             activeIcon: HiHome,
         },
         {
-            key: 'purchases',
-            label: 'Purchases',
-            href: '/purchases',
+            key: 'shop',
+            label: 'Shop',
+            href: '/shop',
             icon: HiOutlineShoppingBag,
             activeIcon: HiShoppingBag,
         },

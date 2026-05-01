@@ -34,7 +34,7 @@ import {
     Area
 } from 'recharts';
 
-export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, reserve_breakdown = [], reserve_reason, payout_history = [] }) {
+export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, payout_history = [] }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
     const { post: refreshPost, processing: refreshProcessing } = useForm({});
@@ -186,11 +186,46 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             </div>
                         </div>
 
-                        {/* Reserves & Payout Status */}
-                        
-                        
-
                     </div>
+
+                    {/* Payment Status Breakdown */}
+                    {(() => {
+                        const STATUS_CONFIG = [
+                            { key: 'completed', label: 'Paid',        color: '#22c55e', bg: 'bg-green-500/10',  border: 'border-green-500/20',  text: 'text-green-400',  inPayout: true,  note: 'Included in payout' },
+                            { key: 'pending',   label: 'Pending',     color: '#facc15', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', inPayout: false, note: 'Awaiting confirmation' },
+                            { key: 'review_hold', label: 'Review Hold', color: '#a78bfa', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', inPayout: false, note: 'Not in payout or reserve' },
+                            { key: 'disputed',  label: 'Disputed',    color: '#f97316', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-400', inPayout: false, note: 'Not in payout or reserve' },
+                            { key: 'refunded',  label: 'Refunded',    color: '#ef4444', bg: 'bg-red-500/10',    border: 'border-red-500/20',    text: 'text-red-400',    inPayout: false, note: 'Deducted from future payout' },
+                        ];
+
+                        const statusMap = {};
+                        status_breakdown.forEach(s => { statusMap[s.status] = s; });
+
+                        return (
+                            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-[25px] md:rounded-[30px] border border-gray-700/50 p-5 md:p-6 shadow-xl">
+                                <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                                    <span className="text-lg">📊</span> Payment Status Overview
+                                    <span className="ml-auto text-[10px] text-gray-500 font-bold uppercase tracking-widest">{tax_year}</span>
+                                </h2>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    {STATUS_CONFIG.map(({ key, label, bg, border, text, inPayout, note }) => {
+                                        const s = statusMap[key];
+                                        return (
+                                            <div key={key} className={`rounded-xl p-3 border ${bg} ${border} flex flex-col gap-1`}>
+                                                <div className={`text-[10px] font-bold uppercase tracking-widest ${text}`}>{label}</div>
+                                                <div className="text-lg font-bold text-white">{formatCurrency(s?.total ?? 0, displayCurrency)}</div>
+                                                <div className="text-[11px] text-gray-500">{s?.count ?? 0} payment{(s?.count ?? 0) !== 1 ? 's' : ''}</div>
+                                                <div className={`text-[10px] font-semibold mt-1 ${inPayout ? 'text-green-500' : 'text-gray-500'}`}>
+                                                    {inPayout ? '✓ In payout' : `✗ ${note}`}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })()}
+
                     <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                             <ShieldCheck size={80} className="text-blue-500" />
@@ -498,12 +533,17 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                                 {tx.label || tx.source_type?.split('\\').pop().replace('Payment', '').replace('Purchase', '') || 'Manual'}
                                                             </div>
                                                             {tx.reserve_amount > 0 && (
-                                                                <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                                                                    tx.reserve_status === 'released' 
-                                                                        ? 'bg-green-500/5 border-green-500/20 text-green-500' 
+                                                                <div className={`flex flex-col gap-0.5 px-1.5 py-1 rounded border ${
+                                                                    tx.reserve_status === 'released'
+                                                                        ? 'bg-green-500/5 border-green-500/20 text-green-500'
                                                                         : 'bg-blue-500/5 border-blue-500/20 text-blue-400'
                                                                 }`}>
-                                                                    {tx.reserve_status === 'released' ? 'Reserve Settled' : `${tx.reserve_percent}% Reserved`}
+                                                                    <span className="text-[10px] font-bold uppercase">
+                                                                        {tx.reserve_status === 'released' ? '✓ Reserve Settled' : `🔒 ${tx.reserve_percent}% Reserved`}
+                                                                    </span>
+                                                                    <span className="text-[10px] font-semibold">
+                                                                        {formatCurrency(tx.reserve_amount, tx.currency)} of your earnings
+                                                                    </span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -605,32 +645,58 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 p-6 shadow-xl">
                                 <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                     <PieChart className="text-[#F94F96]" size={20} />
-                                    Income Sources
+                                    Income by Type
                                 </h2>
-                                <div className="space-y-4">
-                                    {analytics?.tribute_types?.map((type, index) => {
-                                        const percentage = summary.gross_income > 0 ? (type.total / summary.gross_income) * 100 : 0;
-                                        const label = type.label || type.source_type?.split('\\').pop().replace('Payment', '').replace('Purchase', '') || 'Other';
-                                        
-                                        return (
-                                            <div key={index} className="space-y-1">
-                                                <div className="flex justify-between text-normal font-medium text-gray-300">
-                                                    <span>{label}</span>
-                                                    <span>{formatCurrency(type.total)}</span>
-                                                </div>
-                                                <div className="w-full bg-gray-800 rounded-full h-1.5">
-                                                    <div 
-                                                        className="bg-[#F94F96] h-1.5 rounded-full" 
-                                                        style={{ width: `${Math.min(percentage, 100)}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                    {(!analytics?.tribute_types || analytics.tribute_types.length === 0) && (
-                                        <p className="text-gray-500 text-sm text-center py-4">No income recorded yet.</p>
-                                    )}
-                                </div>
+
+                                {/* All 6 tracked types — zero if no data yet */}
+                                {(() => {
+                                    const ALL_TYPES = [
+                                        { key: 'Support/Tip',    emoji: '💝', color: '#F94F96' },
+                                        { key: 'Wish Gift',      emoji: '🛒', color: '#05EFB8' },
+                                        { key: 'Bill',           emoji: '📄', color: '#60a5fa' },
+                                        { key: 'Membership',     emoji: '⭐', color: '#a78bfa' },
+                                        { key: 'Task',           emoji: '✅', color: '#fbbf24' },
+                                        { key: 'Shop Purchase',  emoji: '🛍️', color: '#fb923c' },
+                                    ];
+
+                                    const typeMap = {};
+                                    analytics?.tribute_types?.forEach(t => {
+                                        typeMap[t.label] = t;
+                                    });
+
+                                    return (
+                                        <div className="space-y-3">
+                                            {ALL_TYPES.map(({ key, emoji, color }) => {
+                                                const t = typeMap[key];
+                                                const total = t?.total ?? 0;
+                                                const count = t?.count ?? 0;
+                                                const percentage = summary.gross_income > 0 ? (total / summary.gross_income) * 100 : 0;
+
+                                                return (
+                                                    <div key={key} className="bg-gray-800/40 rounded-xl p-3 border border-gray-700/50">
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-base leading-none">{emoji}</span>
+                                                                <span className="text-sm font-semibold text-gray-200">{key}</span>
+                                                            </div>
+                                                            <span className="text-sm font-bold text-white">{formatCurrency(total, displayCurrency)}</span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-700 rounded-full h-1 mb-1.5">
+                                                            <div
+                                                                className="h-1 rounded-full transition-all duration-700"
+                                                                style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: color }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[11px] text-gray-500">{count} payment{count !== 1 ? 's' : ''}</span>
+                                                            <span className="text-[11px] font-bold" style={{ color }}>{percentage.toFixed(1)}%</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                             
                             {/* Tax & Financial Records */}

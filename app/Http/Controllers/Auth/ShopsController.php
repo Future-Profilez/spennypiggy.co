@@ -124,11 +124,11 @@ class ShopsController extends Controller
                 [
                     "shipping" => [
                         "required",
+                        "json",
                     ],
                     'shipping_info' => [
-                        'sometimes',
-                        'nullable',
-                        'string'
+                        'required',
+                        'string',
                     ],
                     "varients" => [
                         'sometimes',
@@ -136,6 +136,17 @@ class ShopsController extends Controller
                     ]
                 ]
             );
+        }
+
+        $shippingDecoded = null;
+        if ($request->type == "physical" && empty($request->shipping_profile_id)) {
+            $shippingDecoded = json_decode($request->shipping);
+            if (!is_array($shippingDecoded) || count($shippingDecoded) < 1) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'Please add at least one shipping method'
+                ]);
+            }
         }
 
         $user = User::find(Auth::id());
@@ -181,10 +192,10 @@ class ShopsController extends Controller
                 'price' => $request->price,
                 'currency' => $user->default_currency,
                 'image' => $request->image ?? null,
-                'success_page_type' => !empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
-                'success_page_value' => !empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
-                'reward_file_type' => !empty($file['contentInfo']['mime']['type']) ? $file['contentInfo']['mime']['type'] : (!empty($request->reward_file) ? "image" : null),
-                'reward_file' => !empty($file['uuid']) ? $file['uuid'] : (!empty($request->reward_file) ? $request->reward_file : null),
+                'success_page_type' => null,
+                'success_page_value' => null,
+                'reward_file_type' => null,
+                'reward_file' => null,
                 'ask_question' => $request->ask_question ?? null,
                 'slot_limitation' => $request->slot_limitation ?? null,
                 'special_member_price' => $request->special_member_price ?? null,
@@ -194,7 +205,7 @@ class ShopsController extends Controller
             ]);
 
             if (empty($request->shipping_profile_id)) {
-                $shipping = json_decode($request->shipping);
+                $shipping = $shippingDecoded ?? [];
 
                 foreach ($shipping as $value) {
                     $ship = new ShopShippingInfo();
@@ -217,6 +228,10 @@ class ShopsController extends Controller
                     $var->save();
                 }
             }
+        }
+
+        if ($request->has('shipping_info')) {
+            $shop->shipping_information = $request->shipping_info;
         }
 
         $shop->refresh();
@@ -312,6 +327,32 @@ class ShopsController extends Controller
 
         $old_price = $shop->price;
 
+        if ($request->type == "physical") {
+            $request->validate(
+                [
+                    "shipping" => [
+                        "required",
+                        "json",
+                    ],
+                    'shipping_info' => [
+                        'required',
+                        'string',
+                    ],
+                ]
+            );
+        }
+
+        $shippingDecoded = null;
+        if ($request->type == "physical" && empty($request->shipping_profile_id)) {
+            $shippingDecoded = json_decode($request->shipping);
+            if (!is_array($shippingDecoded) || count($shippingDecoded) < 1) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'Please add at least one shipping method'
+                ]);
+            }
+        }
+
         if (Helpers::checkBlockData($request) == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
@@ -352,10 +393,10 @@ class ShopsController extends Controller
                     'price' => $request->price,
                     'currency' => $user->default_currency,
                     'image' => !empty($request->image) ? $request->image : $shop->image,
-                    'success_page_type' => !empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
-                    'success_page_value' => !empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
-                    'reward_file_type' => !empty($file['contentInfo']['mime']['type']) ? $file['contentInfo']['mime']['type'] : (!empty($request->reward_file) ? "image" : $shop->reward_file_type),
-                    'reward_file' => !empty($file['uuid']) ? $file['uuid'] : (!empty($request->reward_file) ? $request->reward_file : $shop->reward_file),
+                    'success_page_type' => null,
+                    'success_page_value' => null,
+                    'reward_file_type' => null,
+                    'reward_file' => null,
                     "ai_generated" => $request->ai_generated ?? $shop->ai_generated,
                     'ask_question' => $request->ask_question ?? null,
                     'slot_limitation' => $request->slot_limitation ?? null,
@@ -368,7 +409,7 @@ class ShopsController extends Controller
                 if (!empty($request->shipping_profile_id)) {
                     ShopShippingInfo::where('shop_id', $shop->id)->delete();
                 } else {
-                    $shipping = json_decode($request->shipping);
+                    $shipping = $shippingDecoded ?? [];
                     ShopShippingInfo::where('shop_id', $shop->id)->delete();
                     foreach ($shipping as $value) {
                         $ship = new ShopShippingInfo();
@@ -377,19 +418,6 @@ class ShopsController extends Controller
                         $ship->country = $value->country;
                         $ship->shipping_price = $value->price;
                         $ship->save();
-                    }
-                }
-
-                if (!empty($request->varients)) {
-                    $varients = json_decode($request->varients);
-                    ShopVarients::where('shop_id', $shop->id)->delete();
-                    foreach ($varients as $value) {
-                        $var = new ShopVarients();
-                        $var->uuid = Uuid::uuid4();
-                        $var->shop_id = $shop->id;
-                        $var->name = $value->name;
-                        $var->price = (!empty($value->value) && $value->value !== "") ? $value->value : null;
-                        $var->save();
                     }
                 }
             }
@@ -497,12 +525,11 @@ class ShopsController extends Controller
                 // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
 
             } catch (Exception $e) {
-                $shop->delete();
+                // $shop->delete(); // Do not delete on update failure
                 return response()->json([
                     'status' => false,
                     'msg' => "Stripe Error: " . $e->getMessage()
                 ]);
-                // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
             }
         }
     }
@@ -591,9 +618,14 @@ class ShopsController extends Controller
         if (Auth::check()) {
             $my_purchases = ShopPayment::where('shop_id', $shop->id)
                 ->where('user_id', Auth::id())
-                ->whereIn('status', ['paid', 'succeeded', 'processing', 'shipped', 'delivered'])
+                ->where('payment_status', 'paid')
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->get()
+                ->map(function ($order) {
+                    $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)->first();
+                    $order->status = $deliverable->status ?? 'pending';
+                    return $order;
+                });
         }
 
         return Inertia::render('shop/Item', [
@@ -1097,6 +1129,44 @@ class ShopsController extends Controller
                     'updated_at' => Carbon::now(),
                 ]);
 
+                // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+                try {
+                    $creator = $stripeid->shop->user;
+                    $amount = (float) $stripeid->amount;
+                    $shippingAmount = (float) ($stripeid->shipping_amount ?? 0);
+                    $vat = (float) ($stripeid->vat_tax_amount ?? 0);
+                    if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
+                        $vat = round((($amount + $shippingAmount) * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+                    }
+                    $platformFee = (float) ($stripeid->tax_amount ?? 0);
+                    $stripeFee = 0;
+                    $gross = $amount + $shippingAmount + $vat + $platformFee + $stripeFee;
+                    $creatorAmount = $amount + $shippingAmount;
+
+                    \App\Models\FinancialTransaction::updateOrCreate(
+                        [
+                            'source_type' => \App\Models\ShopPayment::class,
+                            'source_id' => $stripeid->id,
+                        ],
+                        [
+                            'user_id' => $creator->id,
+                            'supporter_id' => $stripeid->user_id,
+                            'type' => 'income',
+                            'gross_amount' => $gross,
+                            'platform_fee' => $platformFee,
+                            'stripe_fee' => $stripeFee,
+                            'vat_amount' => $vat,
+                            'net_amount' => $creatorAmount,
+                            'currency' => strtoupper($stripeid->currency ?? 'GBP'),
+                            'status' => 'completed',
+                            'description' => 'Shop Purchase: ' . ($stripeid->shop->name ?? 'Item'),
+                            'transaction_date' => $stripeid->created_at,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('Failed to sync ShopPayment to FinancialTransaction in successPayment: ' . $e->getMessage(), ['shop_payment_id' => $stripeid->id]);
+                }
+
                 $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
 
                 $message = $stripeid->message;
@@ -1264,9 +1334,6 @@ class ShopsController extends Controller
         }
 
         $deliverable->update($updateData);
-        $shopPayment->status = $request->status;
-        $shopPayment->tracking_id = $request->tracking_id;
-        $shopPayment->courier_name = $request->courier_name;
         $shopPayment->expected_delivery_date = $request->expected_delivery_date;
         $shopPayment->save();
 
@@ -1419,6 +1486,8 @@ class ShopsController extends Controller
                     'is_delayed' => $isDelayed,
                     'tracking_id' => $deliverable->tracking_id ?? null,
                     'courier_name' => $deliverable->courier_name ?? null,
+                    'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
+                    'shipped_at' => $deliverable->shipped_at ?? null,
                     'ask_question' => $order->ask_question,
                     'answer' => $order->answer,
                     'message' => $order->message,
@@ -1479,6 +1548,8 @@ class ShopsController extends Controller
                 'is_delayed' => $isDelayed,
                 'tracking_id' => $deliverable->tracking_id ?? null,
                 'courier_name' => $deliverable->courier_name ?? null,
+                'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
+                'shipped_at' => $deliverable->shipped_at ?? null,
                 'ask_question' => $order->ask_question,
                 'answer' => $order->answer,
                 'message' => $order->message,
@@ -1496,13 +1567,28 @@ class ShopsController extends Controller
 
     public function answerPayment(Request $request, $payment_id)
     {
-        $user = User::find(Auth::id());
-        $payment = ShopPayment::where('id', $payment_id)->where('user_id', $user->id)->first();
+        // Try finding by session_id first (passed from frontend BuyShopItem)
+        $payment = ShopPayment::where('session_id', $payment_id)->first();
+
+        // Fallback to id or uuid if not found by session_id
+        if (!$payment) {
+            $payment = ShopPayment::where('id', $payment_id)
+                ->orWhere('uuid', $payment_id)
+                ->first();
+        }
 
         if (!$payment) {
             return response()->json([
                 'status' => false,
-                'message' => 'Payment not found or unauthorized.'
+                'message' => 'Payment not found.'
+            ]);
+        }
+
+        // If the payment has a user_id, ensure it matches the current user
+        if ($payment->user_id && (!Auth::check() || Auth::id() !== $payment->user_id)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access to this payment.'
             ]);
         }
 

@@ -1,10 +1,10 @@
 import Popup from '@/Components/Popup'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAlerts } from "@/Components/Alerts";
 import { usePage } from '@inertiajs/react';
 
-export default function OrderDetail({classes, text, item, date}) {
+export default function OrderDetail({classes, text, item, date, onSuccess}) {
 
    const [close, setClose] = useState(false);
    const [status, setStatus] = useState(item.status || 'pending');
@@ -17,6 +17,14 @@ export default function OrderDetail({classes, text, item, date}) {
    const [loading, setLoading] = useState(false);
    const [answerLoading, setAnswerLoading] = useState(false);
    const { auth } = usePage().props;
+
+   useEffect(() => {
+       setStatus(item.status || 'pending');
+       setTracking(item.tracking_id || '');
+       setCourier(item.courier_name || '');
+       setExpectedDelivery(item.expected_delivery_date ? item.expected_delivery_date.split('T')[0] : '');
+       setSubmittedAnswer(item.answer || '');
+   }, [item]);
 
    const isCreator = auth?.user?.role == 1;
    const isPhysical = item?.shop?.type === 'physical';
@@ -32,6 +40,11 @@ export default function OrderDetail({classes, text, item, date}) {
            });
            if (res.data.status) {
                successAlert(res.data.message);
+               setClose(true);
+               setTimeout(() => {
+                   setClose(false);
+                   if (onSuccess) onSuccess();
+               }, 100);
            }
        } catch (err) {
            errorAlert(err?.response?.data?.message || 'Failed to update');
@@ -97,7 +110,7 @@ export default function OrderDetail({classes, text, item, date}) {
                {isPhysical && item.expected_delivery_date && (
                   <div className=' border-t pt-2 mt-3'>
                      <strong>Expected Delivery Date</strong>
-                     <p className='whitespace-pre-wrap'>{item.expected_delivery_date}</p>
+                     <p className='whitespace-pre-wrap'>{item.expected_delivery_date.split('T')[0]}</p>
                   </div>
                )}
                <div className=' border-t pt-2 mt-3'>

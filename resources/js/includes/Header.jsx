@@ -404,7 +404,7 @@ export default function Header({ classMagicword }) {
                                                         />
                                                     </span>
                                                     <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        {auth.user.role == 1 ? 'Shop' : 'My Purchases'}
+                                                        Shop
                                                     </span>
                                                 </Link>
                                             </li>

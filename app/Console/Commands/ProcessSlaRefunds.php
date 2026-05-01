@@ -41,14 +41,12 @@ class ProcessSlaRefunds extends Command
     public function handle()
     {
         $this->info('Starting SLA check...');
-        // Log::info('Starting SLA check...');
 
         $this->processGracePeriodEntry();
         $this->processGracePeriodReminders();
-        $this->processGracePeriodExpirations();
+        // Auto-refund disabled — admin manually refunds escalated tasks via admin panel
 
         $this->info('SLA check completed.');
-        // Log::info('SLA check completed.');
     }
 
     private function processGracePeriodEntry()

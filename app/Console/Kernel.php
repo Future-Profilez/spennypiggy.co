@@ -114,7 +114,8 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping();
 
         $schedule->command('app:send-shop-order-reminder-email')
-                 ->daily()
+                //  ->daily()
+                ->everyFiveMinutes()
                  ->withoutOverlapping(10);
 
         // Risk Engine: Weekly Payout Run (Fridays at 10 AM)

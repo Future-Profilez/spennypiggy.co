@@ -108,6 +108,9 @@
     // Build a normalized summary entries array from either $pendingSummary (notifications)
     // or directly from $pendingItems (service mailable fallback)
     $entries = [];
+    $adminUrl = app()->environment('local')
+        ? 'http://localhost:8001'
+        : 'https://admin.spennypiggy.co';
 
     if (isset($pendingSummary) && is_array($pendingSummary)) {
         $entries = $pendingSummary;
@@ -121,6 +124,7 @@
             ['label' => 'Memberships', 'count' => isset($items['memberships']) ? count($items['memberships']) : 0, 'icon' => $icons['Memberships'] ?? '👥'],
             ['label' => 'Bills', 'count' => isset($items['bills']) ? count($items['bills']) : 0, 'icon' => $icons['Bills'] ?? '🧾'],
             ['label' => 'Shops', 'count' => isset($items['shops']) ? count($items['shops']) : 0, 'icon' => $icons['Shops'] ?? '🏪'],
+            ['label' => 'Shop Orders (Action Needed)', 'count' => isset($items['shop_orders_action_needed']) ? count($items['shop_orders_action_needed']) : 0, 'icon' => $icons['Shop Orders (Action Needed)'] ?? '📦'],
             ['label' => 'User Intros', 'count' => isset($items['user_intros']) ? count($items['user_intros']) : 0, 'icon' => $icons['User Intros'] ?? '👋'],
             ['label' => 'User Avatars', 'count' => isset($items['user_avatars']) ? count($items['user_avatars']) : 0, 'icon' => $icons['User Avatars'] ?? '🖼️'],
             ['label' => 'User Profiles', 'count' => isset($items['user_profiles']) ? count($items['user_profiles']) : 0, 'icon' => $icons['User Profiles'] ?? '👤'],
@@ -155,7 +159,7 @@
             <tr>
                 <td style="font-size: 16px; color: #64748b; padding: 0 0 32px 0; line-height: 24px;">
                     Hello Admin! 👋<br>
-                    Here's your latest summary of items awaiting approval:
+                    Here's your latest summary of items awaiting approval and shop orders needing action:
                 </td>
             </tr>
 
@@ -170,7 +174,11 @@
                         </thead>
                         <tbody>
                             @foreach ($entries as $entry)
-                            <tr style="{{ $loop->even ? 'background-color: #f8f9ff;' : 'background-color: #ffffff;' }}">
+                            @if ($loop->even)
+                            <tr style="background-color: #f8f9ff;">
+                            @else
+                            <tr style="background-color: #ffffff;">
+                            @endif
                                 <td style="padding: 16px 20px; border: 1px solid #e2e8f0; font-size: 16px; font-weight: 600; color: #1e293b;">
                                     <span style="font-size: 20px; margin-right: 10px;">{{ $entry['icon'] ?? '📋' }}</span>
                                     {{ $entry['label'] }}
@@ -187,7 +195,7 @@
 
             <tr>
                 <td style="padding: 0 0 32px 0; text-align: center;">
-                    <a href="{{ env('APP_URL') . '/login' }}" class="cta-button">
+                    <a href="{{ $adminUrl }}" class="cta-button">
                         🔍 Review All Items
                     </a>
                 </td>

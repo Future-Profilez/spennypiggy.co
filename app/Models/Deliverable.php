@@ -46,6 +46,10 @@ class Deliverable extends Model
         'message',
         'digital_waiver_confirmed_at',
         'digital_waiver_text',
+        'tracking_id',
+        'courier_name',
+        'expected_delivery_date',
+        'shipped_at',
     ];
 
     protected $casts = [
@@ -168,12 +172,17 @@ class Deliverable extends Model
         'access',
         'post',
         'media_bundle',
+        'email',
+        'shipping',
+        'platform_access',
         'content_file'
     ];
 
     // Status enum
     const STATUSES = [
         'pending',
+        'processing',
+        'shipped',
         'delivered',
         'failed',
         'refunded'

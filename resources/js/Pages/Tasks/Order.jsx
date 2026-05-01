@@ -51,9 +51,7 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
     return (
         <span className="text-pink-600">
             {timeLeft.days > 0 && `${timeLeft.days}d `}
-            {(timeLeft.days > 0 || timeLeft.hours > 0) &&
-                `${timeLeft.hours}h `}
-            {timeLeft.minutes}m {timeLeft.seconds}s
+            {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
         </span>
     );
 };
@@ -67,7 +65,59 @@ export default function Order({
     currencySymbol,
     gracePeriodHours = 1,
 }) {
-    const { formatMultiPrice } = PriceFormat();
+    const { platform_fee_percentage, transaction_fee_percentage } =
+        usePage().props;
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            "BIF",
+            "CLP",
+            "DJF",
+            "GNF",
+            "JPY",
+            "KMF",
+            "KRW",
+            "MGA",
+            "PYG",
+            "RWF",
+            "UGX",
+            "VND",
+            "VUV",
+            "XAF",
+            "XOF",
+            "XPF",
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+
+        const priceWithVat = listedPrice + vat;
+
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
+        const platformFeeRate = (platform_fee_percentage || 20) / 100;
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+        const adminFee = adminFeeInCurrency(curr);
+        const totalDeductionRate =
+            stripeFeeRate + platformFeeRate + complianceFeeRate;
+
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays =
+            (priceWithVat + stripeFixedFee + adminFee) /
+            (1 - totalDeductionRate);
+
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
+    };
 
     // Grace Period Logic
     const GRACE_PERIOD_HOURS = gracePeriodHours;
@@ -81,23 +131,6 @@ export default function Order({
           : null;
 
     const [isGraceActive, setIsGraceActive] = useState(false);
-
-    const getFinalPrice = (purchase, auth) => {
-        console.log(auth);
-        const amount = Number(purchase?.amount) || 0;
-        const platformFee = Number(purchase?.platform_fee) || 0;
-        const adminFee = Number(purchase?.admin_fee) || 0;
-
-        if (auth?.role === 1) {
-            return amount;
-        }
-
-        if (auth?.role === 0) {
-            return amount + platformFee + adminFee;
-        }
-
-        return amount; // fallback safety
-    };
 
     useEffect(() => {
         if (slaDeadline) {
@@ -216,13 +249,22 @@ export default function Order({
                                 {task.type}
                             </span>
                         </span>
-                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             PRICE:{" "}
                             <span className="text-green-600">
-                                {formatMultiPrice(
-                                    getFinalPrice(purchase, auth),
-                                    task.currency || "USD",
-                                )}
+                                {isCreator
+                                    ? formatMultiPrice(
+                                          purchase.amount,
+                                          task.currency || "USD",
+                                      )
+                                    : formatMultiPrice(
+                                          calculateTotalSupporterPays(
+                                              purchase.amount,
+                                              task.currency || "USD",
+                                              purchase.vat_amount || 0,
+                                          ),
+                                          task.currency || "USD",
+                                      )}
                             </span>
                         </span>
                         <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">

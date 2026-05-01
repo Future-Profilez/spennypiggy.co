@@ -157,6 +157,7 @@ class PayoutService
                         })->get(); // Get all items (especially for cart)
                         
                     if ($record->isNotEmpty()) {
+                        $sourceFound = true;
                         foreach ($record as $item) {
                             $ft = \App\Models\FinancialTransaction::where('source_type', $modelClass)
                                 ->where('source_id', $item->id)
@@ -167,18 +168,31 @@ class PayoutService
                             }
                         }
                         if ($foundTx) break;
+                        // Source record exists but no FinancialTransaction — skip and log
+                        \Illuminate\Support\Facades\Log::warning("PayoutService: Source record found for payment {$p->stripe_session_id} but no FinancialTransaction exists. Run sync-financial-transactions.");
+                        break;
                     }
                 }
-                
-                // Fallback: If no FinancialTransaction found, use Payment amount (Gross)
-                // (This happens for legacy payments or if sync failed)
-                if (!$foundTx) {
-                    $netEarningsMinor += (int) $p->amount;
+
+                // Fallback: only if NO source record found at all
+                if (!$foundTx && !isset($sourceFound)) {
+                    \Illuminate\Support\Facades\Log::warning("PayoutService: No source record found for payment {$p->stripe_session_id} — skipping from net earnings.");
                 }
+                unset($sourceFound);
             }
             
             $grossAmount = (int) $payments->sum('amount');
-            $totalReservesHeld = (int) $payments->sum('reserve_amount_minor');
+
+            // Use FinancialTransaction.reserve_amount (net-based) instead of Payment.reserve_amount_minor (may be gross-based)
+            $totalReservesHeld = 0;
+            foreach ($payments as $p) {
+                $ft = $this->findFinancialTransactionForPayment($p);
+                if ($ft && $ft->reserve_amount > 0) {
+                    $totalReservesHeld += (int) round($ft->reserve_amount * 100);
+                } else {
+                    $totalReservesHeld += (int) ($p->reserve_amount_minor ?? 0);
+                }
+            }
 
             $adjustments = Payment::where('creator_id', $creatorId)
                 ->whereIn('status', ['refunded', 'disputed'])
@@ -488,15 +502,15 @@ class PayoutService
         }
 
         // Add pending reserves from recent payments (Excluding Holds/Disputes)
+        // Fetch ALL unpaid succeeded payments — filter by FT reserve, not Payment.reserve_amount_minor
         $pendingPayments = \App\Models\Payment::where('creator_id', $creatorId)
             ->whereNull('payout_run_id')
             ->where('status', 'succeeded')
-            ->where('reserve_amount_minor', '>', 0)
             ->orderByDesc('created_at')
             ->get(['amount', 'reserve_amount_minor', 'status', 'created_at', 'stripe_session_id', 'stripe_payment_intent_id', 'creator_id', 'currency'])
             ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
             ->values();
-        
+
         $holdIntentIds = \App\Models\Payment::where('creator_id', $creatorId)
             ->whereNull('payout_run_id')
             ->whereIn('status', ['review_hold', 'disputed'])
@@ -510,22 +524,21 @@ class PayoutService
         }
 
         foreach ($pendingPayments as $p) {
-            $reserveMinor = $p->reserve_amount_minor;
-            $amountGbp = $convert($reserveMinor, $p->currency, 'GBP');
+            // Always use FinancialTransaction.reserve_amount (net-based) as the canonical reserve
+            $ft = $this->findFinancialTransactionForPayment($p);
 
-            // Try to find the description from FinancialTransaction
-            $description = \App\Models\FinancialTransaction::where('user_id', function($q) use ($p) {
-                    $q->select('id')->from('users')->where('uuid', $p->creator_id);
-                })
-                ->where(function($q) use ($p) {
-                    $q->where('description', 'LIKE', '%' . $p->stripe_session_id . '%')
-                      ->orWhere('description', 'LIKE', '%' . $p->stripe_payment_intent_id . '%');
-                })
-                ->value('description');
-
-            if (!$description) {
+            if ($ft && $ft->reserve_amount > 0) {
+                $reserveMinor = (int) round($ft->reserve_amount * 100);
+                $description = $ft->description ?: 'Pending Payment';
+            } elseif ((int) ($p->reserve_amount_minor ?? 0) > 0) {
+                // Legacy fallback: Payment.reserve_amount_minor
+                $reserveMinor = (int) $p->reserve_amount_minor;
                 $description = 'Pending Payment';
+            } else {
+                continue; // No reserve on this payment
             }
+
+            $amountGbp = $convert($reserveMinor, $p->currency, 'GBP');
 
             $held[] = [
                 'payout_run_id' => 'Pending',
@@ -719,5 +732,51 @@ class PayoutService
             $run->totals = $data;
             $run->save();
         }
+    }
+
+    /**
+     * Find the FinancialTransaction for a Payment record by looking up source models.
+     * Returns the FT or null if not found.
+     */
+    private function findFinancialTransactionForPayment(\App\Models\Payment $payment): ?\App\Models\FinancialTransaction
+    {
+        $sourceModels = [
+            \App\Models\TaskPurchase::class         => 'stripe_session_id',
+            \App\Models\TipGoalsPayment::class      => 'session_id',
+            \App\Models\ShopPayment::class          => 'session_id',
+            \App\Models\StripePaymentDetail::class  => 'session_id',
+            \App\Models\MembershipPayment::class    => 'session_id',
+            \App\Models\BillPayment::class          => 'session_id',
+            \App\Models\StripePaymentItems::class   => 'stripe_session_id',
+        ];
+
+        foreach ($sourceModels as $modelClass => $sessionColumn) {
+            $query = $modelClass::query();
+
+            if ($modelClass === \App\Models\StripePaymentItems::class) {
+                if (!$payment->stripe_session_id) continue;
+                $detailIds = \App\Models\StripePaymentDetail::where('session_id', $payment->stripe_session_id)->pluck('id');
+                $query->whereIn('stripe_payment_detail_id', $detailIds);
+            } else {
+                $query->where(function ($q) use ($payment, $sessionColumn, $modelClass) {
+                    if ($payment->stripe_session_id) {
+                        $q->orWhere($sessionColumn, $payment->stripe_session_id);
+                    }
+                    if ($modelClass === \App\Models\TaskPurchase::class && $payment->stripe_payment_intent_id) {
+                        $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
+                    }
+                });
+            }
+
+            $items = $query->get(['id']);
+            foreach ($items as $item) {
+                $ft = \App\Models\FinancialTransaction::where('source_type', $modelClass)
+                    ->where('source_id', $item->id)
+                    ->first();
+                if ($ft) return $ft;
+            }
+        }
+
+        return null;
     }
 }

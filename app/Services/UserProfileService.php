@@ -159,14 +159,17 @@ class UserProfileService
      */
     private function getOptimizedShopItems(int $userId, bool $isOwner): array
     {
-        $query = Shop::select([
-            'id', 'user_id', 'uuid', 'name', 'price', 'currency',
-            'image', 'approved', 'created_at'
-        ])->where('user_id', $userId)
-        ->with(['shop_varients:id,shop_id,name,price', 'user:id,name,username,suspended_account,vat_amount_percentage']);
+        $query = Shop::where('user_id', $userId);
         
-        if (!$isOwner) {
-            $query->where('approved', 1);
+        if ($isOwner) {
+            $query->with(['shop_varients', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
+        } else {
+            $query->select([
+                'id', 'user_id', 'uuid', 'name', 'price', 'currency',
+                'image', 'approved', 'created_at', 'type', 'description', 'ai_generated'
+            ])
+            ->with(['shop_varients:id,shop_id,name,price', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+            ->where('approved', 1);
         }
         
         return $query->latest()->get()->toArray();
@@ -391,12 +394,15 @@ class UserProfileService
         $callback = function () use ($userId) {
             $isOwner = Auth::check() && Auth::id() === $userId;
             
-            $query = Shop::where('user_id', $userId)
-            ->with(['shop_varients:id,shop_id,name,price']);
+            $query = Shop::where('user_id', $userId);
 
-            if (!$isOwner) {
-                $query->where('approved', 1);
+            if ($isOwner) {
+                $query->with(['shop_varients', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
+            } else {
+                $query->with(['shop_varients:id,shop_id,name,price', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+                      ->where('approved', 1);
             }
+
             return $query->latest()->get()->toArray();
         };
 
