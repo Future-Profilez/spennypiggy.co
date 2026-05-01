@@ -410,9 +410,7 @@ export default function Header({ classMagicword }) {
                                             </li>
                                     )}
 
-                                    {auth &&
-                                    auth.user &&
-                                    auth.user.role ==1 ? (
+                                    {auth && auth.user ? (
                                         <>
                                          <li>
                                                 <Link
