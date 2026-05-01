@@ -21,13 +21,45 @@ export default function OrdersLists({ type = 'sales' }) {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
    }
-   const { global_currency, auth, user } = usePage().props;
+   const { global_currency, auth, user, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
    const [orderloading, setOrderLoading] = useState(false);
    const [orders, setOrders] = useState([]);
 
    const [allEarning, setAllEarning] = useState(0);
    const [monthEarning, setmonthEarning] = useState(0);
    const [claims, setclaims] = useState(0);
+
+   const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+
+   const isZeroDecimalCurrency = (curr) => {
+       const zeroDecimalCurrencies = [
+           'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+           'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+       ];
+       return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+   };
+
+   const calculateTotalSupporterPays = (price, curr) => {
+       const listedPrice = parseFloat(price || 0);
+       const isZeroDecimal = isZeroDecimalCurrency(curr);
+       
+       const stripeFeeRate = 0.029;
+       const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+       const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+       const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
+       const adminFee = adminFeeInCurrency(curr); 
+       const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+       
+       if (totalDeductionRate >= 1) return listedPrice;
+
+       const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+       
+       if (!isZeroDecimal) {
+           return Math.ceil(totalSupporterPays * 100) / 100;
+       } else {
+           return Math.ceil(totalSupporterPays);
+       }
+   };
 
    const fetchorders = () =>{
       setOrderLoading(true);
@@ -48,9 +80,6 @@ export default function OrdersLists({ type = 'sales' }) {
    useEffect(()=>{
       fetchorders();
    }, [type]);
-
-   const { formatMultiPrice} = PriceFormat();
-
 
   return <>
 
@@ -116,7 +145,7 @@ export default function OrdersLists({ type = 'sales' }) {
                               type === 'sales' ? (
                                  <> {formatMultiPrice((item.amount), item?.currency || 'GBP') }</>
                               ) : (
-                                 <> {formatMultiPrice(parseFloat(item.amount) + parseFloat(item.shipping_amount || 0) + parseFloat(item.tax_amount || 0) + parseFloat(item.vat_tax_amount || 0), item?.currency || 'GBP') }</>
+                                 <> {formatMultiPrice(calculateTotalSupporterPays(parseFloat(item.amount) + parseFloat(item.shipping_amount || 0) + parseFloat(item.tax_amount || 0) + parseFloat(item.vat_tax_amount || 0), item?.currency || 'GBP'), item?.currency || 'GBP') }</>
                               )
                            ) : "FREE"}
                         </div>
@@ -134,10 +163,14 @@ export default function OrdersLists({ type = 'sales' }) {
                            <div className="mt-1">
                               {item.status === 'delivered' ? (
                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Completed</span>
+                              ) : item.status === 'shipped' ? (
+                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Shipped</span>
+                              ) : item.status === 'processing' ? (
+                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Processing</span>
                               ) : item.is_delayed ? (
                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Delayed</span>
                               ) : (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Funds Reserved</span>
+                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Pending</span>
                               )}
                            </div>
                         )}
@@ -146,7 +179,7 @@ export default function OrdersLists({ type = 'sales' }) {
                         <div className=" text-[#4d4d4d] text-sm hidden lg:block pb-2 me-2">
                             <TimeFormat dateString={item.created_at} />
                         </div>
-                        <OrderDetail date={<TimeFormat dateString={item.created_at} />} item={item} text={'View Info'} classes="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-[20px] text-sm font-medium" />
+                        <OrderDetail date={<TimeFormat dateString={item.created_at} />} item={item} text={'View Info'} classes="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-[20px] text-sm font-medium" onSuccess={fetchorders} />
                      </div>
                </div>
             )}

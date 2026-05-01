@@ -99,6 +99,42 @@ class SyncFinancialTransactions extends Command
         return $data;
     }
 
+    /**
+     * Determine the reserve amount from creator's net amount.
+     * Rule:
+     *   1. If risk engine has set reserve_percent on CreatorMetric → apply that % to netAmount.
+     *   2. Else if payment was within creator's first 30 days → apply 10% to netAmount.
+     *   3. Otherwise → no reserve.
+     * Reserve is always calculated from creator net amount, never from gross/total.
+     */
+    private function determineReserve(float $netAmount, array $riskData, $creator, \Carbon\Carbon $paymentDate): array
+    {
+        if ($netAmount <= 0) {
+            return ['amount' => 0, 'status' => 'none'];
+        }
+
+        $metric = $creator ? \App\Models\CreatorMetric::where('creator_id', $creator->uuid)->first() : null;
+        $riskReservePercent = (float) ($metric?->reserve_percent ?? 0);
+
+        if ($riskReservePercent > 0) {
+            $reserveStatus = $riskData['reserve_status'] !== 'none' ? $riskData['reserve_status'] : 'held';
+            return [
+                'amount' => round($netAmount * $riskReservePercent / 100, 2),
+                'status' => $reserveStatus,
+            ];
+        }
+
+        // New creator: first 30 days → 10% reserve
+        if ($creator && $creator->created_at) {
+            $daysSinceJoined = (int) $creator->created_at->diffInDays($paymentDate);
+            if ($daysSinceJoined <= 30) {
+                return ['amount' => round($netAmount * 0.10, 2), 'status' => 'held'];
+            }
+        }
+
+        return ['amount' => 0, 'status' => 'none'];
+    }
+
     private function calculateVatIfMissing($amount, $currentVat, $creator)
     {
         if (($currentVat === null || $currentVat <= 0) && $creator && $creator->vat_amount_percentage > 0) {
@@ -138,6 +174,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->status === 'paid') {
                     $status = 'completed';
                 }
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -153,8 +190,8 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
-                        'reserve_amount' => $riskData['reserve_amount'],
-                        'reserve_status' => $riskData['reserve_status'],
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $status,
                         'description' => 'Membership Payment',
@@ -191,6 +228,8 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && in_array($purchase->status, ['paid', 'completed'])) {
                     $status = 'completed';
                 }
+                $taskCreator = $purchase->creator;
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $taskCreator, $purchase->created_at);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -206,8 +245,8 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
-                        'reserve_amount' => $riskData['reserve_amount'],
-                        'reserve_status' => $riskData['reserve_status'],
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
                         'currency' => $currency,
                         'status' => $status,
                         'description' => 'Task Purchase',
@@ -249,6 +288,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->status === 'paid') {
                     $status = 'completed';
                 }
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -264,8 +304,8 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
-                        'reserve_amount' => $riskData['reserve_amount'],
-                        'reserve_status' => $riskData['reserve_status'],
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $status,
                         'description' => 'Bill Payment',
@@ -316,6 +356,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $item->payment->payment_status === 'paid') {
                     $status = 'completed';
                 }
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $item->created_at);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -331,8 +372,8 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
-                        'reserve_amount' => $riskData['reserve_amount'],
-                        'reserve_status' => $riskData['reserve_status'],
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($item->payment->currency ?? 'GBP'),
                         'status' => $status,
                         'description' => 'Wish Gift: ' . ($item->wish->name ?? 'Item'),
@@ -375,6 +416,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->payment_status === 'paid') {
                     $status = 'completed';
                 }
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -390,8 +432,8 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
-                        'reserve_amount' => $riskData['reserve_amount'],
-                        'reserve_status' => $riskData['reserve_status'],
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $status,
                         'description' => 'Shop Purchase: ' . ($payment->shop->name ?? 'Item'),
@@ -431,6 +473,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->status === 'paid') {
                     $status = 'completed';
                 }
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -446,8 +489,8 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
-                        'reserve_amount' => $riskData['reserve_amount'],
-                        'reserve_status' => $riskData['reserve_status'],
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $status,
                         'description' => 'Tip / Support',

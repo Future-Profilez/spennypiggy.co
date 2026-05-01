@@ -95,7 +95,11 @@ export default function History({ auth, transactions }) {
                                                         }`}>
                                                             {tx.reserve_status === 'released' ? 'Settled' : 'Held'}
                                                         </span>
-                                                        <span className="text-[9px] font-black text-gray-500 mt-0.5">{tx.reserve_percent}%</span>
+                                                        <span className="text-[10px] font-black text-gray-800">{tx.reserve_percent}%</span>
+                                                        <span className="text-[9px] font-bold text-gray-500">
+                                                            {new Intl.NumberFormat('en-GB', { style: 'currency', currency: tx.currency || 'GBP' }).format(tx.reserve_amount)}
+                                                        </span>
+                                                        <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wide">of your amount</span>
                                                     </div>
                                                 ) : (
                                                     <span className="text-gray-300 font-black">—</span>

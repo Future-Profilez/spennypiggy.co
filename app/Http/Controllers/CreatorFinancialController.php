@@ -101,10 +101,28 @@ class CreatorFinancialController extends Controller
             ->sortByDesc('total')
             ->values();
 
-        // Recent Transactions (Filtered by Tax Year)
+        // Status breakdown — counts and totals per status for the tax year
+        $allStatusTx = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
+            ->get(['status', 'net_amount', 'currency']);
+
+        $statusBreakdown = $allStatusTx
+            ->groupBy('status')
+            ->map(function ($items, $status) use ($displayCurrency) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
+                    $from = strtoupper($tx->currency ?? 'GBP');
+                    $amount = (float) ($tx->net_amount ?? 0);
+                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                });
+                return ['status' => $status, 'count' => $items->count(), 'total' => $total];
+            })
+            ->values();
+
+        // Recent Transactions (Filtered by Tax Year) — all statuses
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'pending', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('supporter:id,name,username,email')
             ->latest('transaction_date')
@@ -112,10 +130,8 @@ class CreatorFinancialController extends Controller
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
-                // Calculate reserve percentage based on net_amount (creator share)
-                // so it matches the expected reserve rate (e.g. 10%).
                 $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
-                
+
                 $base = class_basename($tx->source_type);
                 $tx->label = match($base) {
                     'StripePaymentItems' => 'Wish Gift',
@@ -126,7 +142,7 @@ class CreatorFinancialController extends Controller
                     'BillPayment' => 'Bill',
                     default => str_replace(['Payment', 'Purchase'], '', $base)
                 };
-                
+
                 return $tx;
             });
 
@@ -265,6 +281,7 @@ class CreatorFinancialController extends Controller
                 'monthly' => $monthlyStats,
                 'tribute_types' => $tributeTypes
             ],
+            'status_breakdown' => $statusBreakdown,
             'reserve_breakdown' => $reserveBreakdown['breakdown'] ?? [],
             'reserve_reason' => $reserveReason,
             'payout_history' => $payoutHistory,
@@ -287,7 +304,7 @@ class CreatorFinancialController extends Controller
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
-                $tx->reserve_percent = $tx->gross_amount > 0 ? round(($tx->reserve_amount / $tx->gross_amount) * 100, 1) : 0;
+                $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
                 
                 $base = class_basename($tx->source_type);
                 $tx->label = match($base) {

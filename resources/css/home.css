@@ -174,7 +174,7 @@ button.editProfile{border-radius:10px;border:1px solid var(--voilet);background:
 .addsocial ul li a,.addsocial ul li button{display:inline-flex;}
 .addsocial ul li a svg,.addsocial ul li button svg{display:inline-block;margin:0 5px 0 0;}
 .addsocial ul li{width:50%;position:relative;}
-.addsocial ul li:last-child{text-align:right;border-left:1px solid var(--voilet);}
+.addsocial ul li:last-child{text-align:right;}
 .wishlistModal h2{color:var(--black);font-size:24px;text-transform:uppercase;text-align:center;margin:0 0 20px;}
 .wishlistModal .nav.nav-tabs{display:flex;align-items:center;align-content:center;justify-content:center;border-bottom-color:var(--pink);}
 .wishlistModal .nav.nav-tabs .nav-link.active{border:0;position:relative;color:var(--pink);}

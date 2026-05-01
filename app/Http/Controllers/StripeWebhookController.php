@@ -2777,9 +2777,17 @@ class StripeWebhookController extends Controller
         }
 
         // 3. Shop Purchases
-        $shopPayment = \App\Models\ShopPayment::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId)
+        $shopDeliverable = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)
+            ->where('product_type', 'shop_item')
             ->first();
+        $shopPayment = null;
+        if ($shopDeliverable) {
+            $shopPayment = \App\Models\ShopPayment::where('session_id', $shopDeliverable->session_id)->first();
+        } else {
+            // Fallback for session ID lookup
+            $shopPayment = \App\Models\ShopPayment::where('session_id', $paymentIntentId)->first();
+        }
+        
         if ($shopPayment) {
             $shopPayment->update(['payment_status' => 'refunded']);
         }
@@ -3088,6 +3096,44 @@ class StripeWebhookController extends Controller
                     'updated_at' => Carbon::now(),
                 ]);
 
+                // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+                try {
+                    $creator = $shopPayment->shop->user;
+                    $amount = (float) $shopPayment->amount;
+                    $shippingAmount = (float) ($shopPayment->shipping_amount ?? 0);
+                    $vat = (float) ($shopPayment->vat_tax_amount ?? 0);
+                    if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
+                        $vat = round((($amount + $shippingAmount) * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+                    }
+                    $platformFee = (float) ($shopPayment->tax_amount ?? 0);
+                    $stripeFee = 0;
+                    $gross = $amount + $shippingAmount + $vat + $platformFee + $stripeFee;
+                    $creatorAmount = $amount + $shippingAmount;
+
+                    \App\Models\FinancialTransaction::updateOrCreate(
+                        [
+                            'source_type' => \App\Models\ShopPayment::class,
+                            'source_id' => $shopPayment->id,
+                        ],
+                        [
+                            'user_id' => $creator->id,
+                            'supporter_id' => $shopPayment->user_id,
+                            'type' => 'income',
+                            'gross_amount' => $gross,
+                            'platform_fee' => $platformFee,
+                            'stripe_fee' => $stripeFee,
+                            'vat_amount' => $vat,
+                            'net_amount' => $creatorAmount,
+                            'currency' => strtoupper($shopPayment->currency ?? 'GBP'),
+                            'status' => 'completed',
+                            'description' => 'Shop Purchase: ' . ($shopPayment->shop->name ?? 'Item'),
+                            'transaction_date' => $shopPayment->created_at,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('Failed to sync ShopPayment to FinancialTransaction in processShopItemPayment: ' . $e->getMessage(), ['shop_payment_id' => $shopPayment->id]);
+                }
+
                 // 6. Get currency symbol and calculate net
                 $currency = \App\Models\Currency::where('iso', strtoupper($shopPayment->currency))->first();
                 $symbol = $currency->symbol ?? '£';
@@ -3115,6 +3161,7 @@ class StripeWebhookController extends Controller
                             'item_id' => $shopPayment->shop->id,
                             'creator_id' => $shopPayment->shop->user_id,
                             'gifter_id' => $shopPayment->user_id,
+                            'payment_intent_id' => $session->payment_intent ?? null,
                             'session_id' => $session->id,
                             'deliverable_type' => $shopPayment->shop->type == 'physical' ? 'shipping' : 'digital_file',
                             'product_type' => 'shop_item',

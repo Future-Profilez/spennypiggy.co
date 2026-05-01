@@ -1,5 +1,8 @@
 @extends('email.default-2')
 @section('content')
+@php
+    $shopItemName = $deliverable?->metadata['shop_item_name'] ?? $payment->shop?->name ?? 'Shop Item';
+@endphp
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
         <a href="{{ env('APP_URL') . '/' }}">
@@ -38,7 +41,7 @@
                             <td style="font-family: Arial; font-size: 12px; color: #888888; text-transform: uppercase; padding-bottom: 5px;">Item Name</td>
                         </tr>
                         <tr>
-                            <td style="font-family: Arial; font-size: 15px; font-weight: bold; color: #333333; padding-bottom: 10px;">{{ $deliverable->metadata['shop_item_name'] ?? 'Shop Item' }}</td>
+                            <td style="font-family: Arial; font-size: 15px; font-weight: bold; color: #333333; padding-bottom: 10px;">{{ $shopItemName }}</td>
                         </tr>
                         <tr>
                             <td style="font-family: Arial; font-size: 12px; color: #888888; text-transform: uppercase; padding-bottom: 5px;">Order Date</td>

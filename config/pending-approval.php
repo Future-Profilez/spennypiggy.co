@@ -21,6 +21,7 @@ return [
         'Memberships' => '🧑‍🤝‍🧑',
         'Bills' => '🧾',
         'Shops' => '🛍️',
+        'Shop Orders (Action Needed)' => '📦',
         'User Intros' => '👋',
         'User Avatars' => '🧑‍🎨',
         'User Profiles' => '👤',

@@ -10,6 +10,7 @@ use App\Models\UserIntro;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\SocialLinks;
+use App\Models\ShopPayment;
 use Exception;
 use App\Mail\PendingApprovalSummary;
 use Illuminate\Support\Facades\Log;
@@ -55,6 +56,7 @@ class PendingApprovalService
             'memberships' => $this->getPendingMemberships(),
             'bills' => $this->getPendingBills(),
             'shops' => $this->getPendingShops(),
+            'shop_orders_action_needed' => $this->getShopOrdersActionNeeded(),
             'user_intros' => $this->getPendingUserIntros(),
             'posts' => $this->getPendingPosts(),
             'user_profiles' => $this->getPendingUserProfiles(),
@@ -130,6 +132,36 @@ class PendingApprovalService
             ->with('user:id,name,username,email')
             ->orderBy('created_at', 'desc')
             ->get(['id', 'uuid', 'user_id', 'name', 'price', 'currency', 'created_at']);
+    }
+
+    private function getShopOrdersActionNeeded()
+    {
+        return ShopPayment::query()
+            ->where('payment_status', 'paid')
+            ->where('created_at', '<', now()->subDays(10))
+            ->whereHas('shop', function ($q) {
+                $q->where('type', 'physical');
+            })
+            ->where(function ($q) {
+                $q->whereDoesntHave('deliverable')
+                    ->orWhereHas('deliverable', function ($dq) {
+                        $dq->whereNotIn('status', ['delivered', 'refunded'])
+                            ->where(function ($qq) {
+                                $qq->whereNull('shipped_at')
+                                    ->orWhereNull('tracking_id')
+                                    ->orWhere('tracking_id', '')
+                                    ->orWhereNull('courier_name')
+                                    ->orWhere('courier_name', '');
+                            });
+                    });
+            })
+            ->with([
+                'shop.user:id,name,username,email',
+                'deliverable:id,session_id,status,tracking_id,courier_name,shipped_at,created_at'
+            ])
+            ->latest()
+            ->limit(50)
+            ->get(['id', 'uuid', 'session_id', 'shop_id', 'payment_status', 'created_at']);
     }
 
     /**

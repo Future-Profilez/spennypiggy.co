@@ -23,7 +23,7 @@ class ShopOrderReminderMail extends Mailable implements ShouldQueue
     /**
      * Create a new message instance.
      */
-    public function __construct(User $creator, ShopPayment $payment, Deliverable $deliverable)
+    public function __construct(User $creator, ShopPayment $payment, ?Deliverable $deliverable)
     {
         $this->creator = $creator;
         $this->payment = $payment;

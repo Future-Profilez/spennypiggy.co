@@ -55,7 +55,41 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
 };
 
 export default function Order({ auth, purchase, task, isCreator, isSupporter, currencySymbol, gracePeriodHours = 1 }) {
-    const { formatMultiPrice } = PriceFormat();
+    const { platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        const priceWithVat = listedPrice + vat;
+
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
+        const adminFee = adminFeeInCurrency(curr); 
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
+    };
     
     // Grace Period Logic
     const GRACE_PERIOD_HOURS = gracePeriodHours;
@@ -150,7 +184,13 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             TYPE: <span className="uppercase text-pink-600">{task.type}</span>
                         </span>
                         <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            PRICE: <span className="text-green-600">{formatMultiPrice(purchase.amount, task.currency || 'USD')}</span>
+                            PRICE: <span className="text-green-600">
+                                {isCreator ? (
+                                    formatMultiPrice(purchase.amount, task.currency || 'USD')
+                                ) : (
+                                    formatMultiPrice(calculateTotalSupporterPays(purchase.amount, task.currency || 'USD', purchase.vat_amount || 0), task.currency || 'USD')
+                                )}
+                            </span>
                         </span>
                         <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             ASSIGNED: <span className="text-blue-600">{new Date(purchase.created_at).toLocaleDateString()}</span>

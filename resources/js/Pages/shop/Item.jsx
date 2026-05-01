@@ -103,20 +103,11 @@ export default function ShopDetailItem(props) {
     const isOwner = auth?.user?.id === shop?.user_id;
     const vatPercentage = shop?.user?.vat_amount_percentage || 0;
 
-    const hasVariants =
-        shop?.type === "physical" &&
-        shop?.shop_varients &&
-        shop.shop_varients.length > 0;
-    const [price, setPrice] = useState(
-        hasVariants ? (shop.shop_varients[0].price !== null ? shop.shop_varients[0].price : shop.price) : shop.price,
-    );
-    const [selectedVarient, setSelectedVarient] = useState(
-        hasVariants ? shop.shop_varients[0].id : "no_varient",
-    );
+    const hasVariants = false;
+    const [price, setPrice] = useState(shop.price);
+    const [selectedVarient, setSelectedVarient] = useState("no_varient");
     const handleVarient = (e) => {
-        const varient = shop.shop_varients.find((v) => v.id == e.target.value);
-        setPrice(varient.price !== null ? varient.price : shop.price);
-        setSelectedVarient(varient.id);
+        // no op
     };
 
     const [currentCountry, setCurrentCountry] = useState();
@@ -410,31 +401,7 @@ export default function ShopDetailItem(props) {
                                     </ul>
                                 </div>
 
-                                {shop.type === "physical" && hasVariants ? (
-                                    <>
-                                        <h2 className="text-lg mb-2">
-                                            Select Varient
-                                        </h2>
-                                        <select
-                                            onChange={handleVarient}
-                                            className="bg-white rounded-[30px]  text-lg capitalize px-4 py-2.5 mb-3 w-full border-0"
-                                        >
-                                            {shop.shop_varients &&
-                                                shop.shop_varients.map(
-                                                    (varient) => (
-                                                        <option
-                                                            key={varient.id}
-                                                            value={varient.id}
-                                                        >
-                                                            {varient.name}
-                                                        </option>
-                                                    ),
-                                                )}
-                                        </select>
-                                    </>
-                                ) : (
-                                    ""
-                                )}
+
 
                                 <div className="sm:flex items-center justify-between">
                                     <div className=" mb-3">

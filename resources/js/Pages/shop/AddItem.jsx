@@ -131,12 +131,7 @@ export default function AddItem(props) {
             }
             return "";
         });
-        const [variants, setVariants] = useState(() => {
-            if (item && item.shop_varients && item.shop_varients.length > 0) {
-                return item.shop_varients.map(v => ({ name: v.name, value: v.price || "" }));
-            }
-            return [{ name: "", value: "" }];
-        });
+        const [variants, setVariants] = useState([]);
         const [shipping_info, setShipping_info] = useState(
             (item && item.shipping_information) || "",
         );
@@ -311,14 +306,13 @@ export default function AddItem(props) {
                     return false;
                 }
             }
+            if (physical && !String(shipping_info || "").trim()) {
+                errorAlert("Shipping information can not be empty");
+                return false;
+            }
 
             if (!isChecked) {
                 return false;
-            }
-            setLoading(true);
-            const vars = updatedVarients(variants);
-            if (vars.length > 0) {
-                setShopItem({ ...shopItem, price: vars[0].value });
             }
 
             const updatedShipping = () => {
@@ -337,12 +331,13 @@ export default function AddItem(props) {
                 errorAlert("Please add at least one shipping method");
                 return false;
             }
+            setLoading(true);
 
             const data = {
                 ...shopItem,
                 success_page_value:
-                    pagetype === "url" ? pageUrl : parsedContent,
-                reward_file: rewardfile,
+                    physical ? null : (pagetype === "url" ? pageUrl : parsedContent),
+                reward_file: physical ? null : rewardfile,
                 category:
                     checkboxes && checkboxes.length
                         ? JSON.stringify(checkboxes)
@@ -354,11 +349,11 @@ export default function AddItem(props) {
                 shipping: JSON.stringify(ships),
                 shipping_profile_id: null,
                 shipping_info: shipping_info,
-                varients: vars && vars.length ? JSON.stringify(vars) : "",
+                varients: "",
                 image: thumb,
                 ai_generated: IsAiImage ? 1 : 0,
-                price: vars.length > 0 ? vars[0].value : shopItem.price,
-                success_page_type: (item && item.success_page_type) || pagetype,
+                price: shopItem.price,
+                success_page_type: physical ? null : ((item && item.success_page_type) || pagetype),
             };
             axios
                 .post(`/shop/add`, data)
@@ -405,12 +400,14 @@ export default function AddItem(props) {
                     return false;
                 }
             }
+            if (physical && !String(shipping_info || "").trim()) {
+                errorAlert("Shipping information can not be empty");
+                return false;
+            }
 
             if (!isChecked) {
                 return false;
             }
-            setLoading(true);
-            const vars = updatedVarients(variants);
             const updatedShipping = () => {
                 const arr = [];
                 if (domesticShipping !== "" && Number(domesticShipping) >= 0) {
@@ -426,15 +423,15 @@ export default function AddItem(props) {
 
             if (physical && ships.length < 1) {
                 errorAlert("Please add at least one shipping method");
-                setLoading(false);
                 return false;
             }
+            setLoading(true);
 
             const data = {
                 ...shopItem,
                 success_page_value:
-                    pagetype === "url" ? pageUrl : parsedContent,
-                reward_file: rewardfile,
+                    physical ? null : (pagetype === "url" ? pageUrl : parsedContent),
+                reward_file: physical ? null : rewardfile,
                 category:
                     checkboxes && checkboxes.length
                         ? JSON.stringify(checkboxes)
@@ -446,10 +443,11 @@ export default function AddItem(props) {
                 shipping: JSON.stringify(ships),
                 shipping_profile_id: null,
                 shipping_info: shipping_info,
-                varients: vars && vars.length ? JSON.stringify(vars) : "",
+                varients: "",
                 image: thumb,
-                success_page_type: pagetype,
+                success_page_type: physical ? null : pagetype,
                 ai_generated: IsAiImage ? 1 : 0,
+                price: shopItem.price,
             };
             axios
                 .post(`/shop/update/${item.uuid}`, data)
@@ -557,7 +555,7 @@ export default function AddItem(props) {
                                 <label className="w-full mb-2">Name*</label>
                                 <input
                                     name="name"
-                                    defaultValue={pre_title}
+                                    value={shopItem.name}
                                     onChange={handelInputs}
                                     className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-3 px-3.5"
                                     type="text"
@@ -571,7 +569,7 @@ export default function AddItem(props) {
                                 </label>
                                 <input
                                     name="description"
-                                    defaultValue={pre_description}
+                                    value={shopItem.description}
                                     onChange={handelInputs}
                                     className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-3 px-3.5"
                                     type="text"
@@ -589,7 +587,7 @@ export default function AddItem(props) {
                                     </span>
                                     <input
                                         name="price"
-                                        defaultValue={pre_price}
+                                        value={shopItem.price}
                                         onChange={handelInputs}
                                         className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-[12px] px-[20px] !ps-[55px]  "
                                         type="number"
@@ -667,79 +665,6 @@ export default function AddItem(props) {
 
                             {physical ? (
                                 <>
-                                    <h2 className="font-bold mb-1 pt-4 border-t border-gray-200">
-                                        Options and Variants
-                                    </h2>
-                                    <p className="text-gray-500 max-w-[600px] pb-2">
-                                        Offer variations of your products with
-                                        different options for size, color etc.
-                                        The first option will be selected by
-                                        default.
-                                    </p>
-                                    <div className="add-form">
-                                        {variants.map((variant, index) => (
-                                            <div className="flex items-center justify-between my-2">
-                                                <input
-                                                    type="text"
-                                                    className="shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[12px] px-[20px] mr-2"
-                                                    name={`variantName${index}`}
-                                                    value={variant.name}
-                                                    placeholder="Variant Name"
-                                                    onChange={(e) =>
-                                                        handleVariantChange(
-                                                            index,
-                                                            "name",
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                />
-                                                <div className="relative mr-2">
-                                                    <span className="currency-tag">
-                                                        {defaultCurrency ||
-                                                            "GBP"}
-                                                    </span>
-                                                    <input
-                                                        type="text"
-                                                        className="shop-forms-input pl-[50px] bg-gray-200 w-full  border-0 rounded-[30px]  p-[12px] px-[20px] "
-                                                        name={`variantValue${index}`}
-                                                        value={variant.value}
-                                                        placeholder="Variant Price"
-                                                        onChange={(e) =>
-                                                            handleVariantChange(
-                                                                index,
-                                                                "value",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                    {variant.value > 0 && (
-                                                        <div className="mt-1 px-2 text-[10px] font-bold text-gray-600 flex justify-between gap-2">
-                                                            <span>Fans pay: {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(variant.value, defaultCurrency).total_supporter_pays)}</span>
-                                                        </div>
-                                                    )}
-                                                    <p className="mt-1 px-2 text-[10px] text-gray-500">Leave empty to use base price</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    className="text-black shop-forms-input bg-gray-200 w-full  text-[20px] border-0 rounded-[30px]  p-[8px] px-[20px] max-w-[50px]"
-                                                    onClick={() =>
-                                                        handleRemoveVariant(
-                                                            index,
-                                                        )
-                                                    }
-                                                >
-                                                    {" "}
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={addVariant}
-                                            className="button sm pinkbg px-3 py-2 mt-2 mb-3"
-                                        >
-                                            Add Variant
-                                        </button>
-                                    </div>
                                     <div className="shipping-setup-options border-t border-gray-100 pt-4 mt-4">
                                         <div className="flex items-center justify-between mb-4">
                                             <h2 className="text-md font-bold">Shipping Setup</h2>
@@ -783,6 +708,7 @@ export default function AddItem(props) {
                                         className="shop-forms-input bg-gray-200 w-full border-0
                             mb-6 rounded-[30px]  p-[12px] px-[20px]"
                                         name={`shipping-information`}
+                                        value={shipping_info}
                                         placeholder="Shipping information.."
                                         onChange={(e) =>
                                             setShipping_info(e.target.value)
@@ -846,7 +772,7 @@ export default function AddItem(props) {
                                     {pagetype == "text" ? (
                                         <div className="">
                                             <textarea
-                                                defaultValue={parsedContent}
+                                                value={parsedContent}
                                                 onChange={(e) =>
                                                     setParsedContent(
                                                         e.target.value,
@@ -960,7 +886,7 @@ export default function AddItem(props) {
                                     )}
                                     {pagetype == "url" ? (
                                         <input
-                                            defaultValue={pageUrl}
+                                            value={pageUrl}
                                             onChange={(e) =>
                                                 setpageUrl(e.target.value)
                                             }
@@ -1056,7 +982,7 @@ export default function AddItem(props) {
                                     </div>
                                     {haveQuestion ? (
                                         <input
-                                            defaultValue={item && item.ask_question}
+                                            value={question}
                                             onChange={(e) =>
                                                 setQuestion(e.target.value)
                                             }
@@ -1097,7 +1023,7 @@ export default function AddItem(props) {
                                             onChange={(e) =>
                                                 setSlots(e.target.value)
                                             }
-                                            defaultValue={slots || ""}
+                                            value={slots}
                                             className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
                                             type="text"
                                         />
@@ -1153,7 +1079,7 @@ export default function AddItem(props) {
                                                         }
                                                         className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-[13px] px-4"
                                                         type="text"
-                                                        defaultValue={spPrice || ""}
+                                                        value={spPrice}
                                                     />
                                                     {defaultCurrency !==
                                                         global_currency &&
