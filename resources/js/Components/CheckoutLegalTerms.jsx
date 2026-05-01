@@ -9,7 +9,7 @@ export default function CheckoutLegalTerms({ onAgreeChange }) {
     };
 
     return (
-        <div className="checkout-legal-terms text-left w-full mt-4">
+        <div className="checkout-legal-terms text-left w-full mt-4 mb-5">
             <label className="flex items-start cursor-pointer mb-3">
                 <input
                     type="checkbox"

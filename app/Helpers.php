@@ -163,7 +163,6 @@ class Helpers
 
 
 
-
     /**
      * Calculate total price for Stripe Direct Charges Flow
      * 
@@ -178,7 +177,22 @@ class Helpers
     public static function isZeroDecimalCurrency($currency): bool
     {
         $zeroDecimalCurrencies = [
-            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+            'BIF',
+            'CLP',
+            'DJF',
+            'GNF',
+            'JPY',
+            'KMF',
+            'KRW',
+            'MGA',
+            'PYG',
+            'RWF',
+            'UGX',
+            'VND',
+            'VUV',
+            'XAF',
+            'XOF',
+            'XPF'
         ];
         return in_array(strtoupper($currency), $zeroDecimalCurrencies);
     }
@@ -205,13 +219,13 @@ class Helpers
     {
         $listedPrice = (float) $listedPrice;
         $isZeroDecimal = self::isZeroDecimalCurrency($currency);
-        
+
         // Stripe fees (Variable based on card/country, used here for estimation to cover costs)
         // Note: The actual fee is deducted by Stripe at transaction time.
         // We use a standard rate (e.g. 2.9% + 30c) to ensure the gross-up covers most scenarios.
         $stripeFeeRate = 0.029;
         $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
-        
+
         // Platform fees
         $platformFeeRate = config('app.platform_fee_percentage', 15) / 100;
         $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
@@ -220,7 +234,7 @@ class Helpers
         // Correct gross-up formula to ensure creator receives exactly listedPrice:
         // TotalAmount = (ListedPrice + StripeFixedFee + AdminFee) / (1 - StripeFeeRate - PlatformFeeRate - ComplianceFeeRate)
         $totalDeductionRate = $stripeFeeRate + $platformFeeRate + $complianceFeeRate;
-        
+
         if ($totalDeductionRate >= 1) {
             Log::error('Total deduction rate exceeds 100% in calculateStripeDirectChargeFlow');
             return [
@@ -231,7 +245,7 @@ class Helpers
         }
 
         $totalSupporterPays = ($listedPrice + $stripeFixedFee + $adminFee) / (1 - $totalDeductionRate);
-        
+
         // Use CEIL as per client requirement to avoid underpayment (round UP)
         $precision = $isZeroDecimal ? 0 : 2;
         // For standard currencies, multiply by 100, ceil, then divide by 100
@@ -240,10 +254,10 @@ class Helpers
         } else {
             $totalSupporterPays = ceil($totalSupporterPays);
         }
-        
+
         // Calculate the actual Stripe fee based on the total charged
         $actualStripeFee = round(($totalSupporterPays * $stripeFeeRate) + $stripeFixedFee, $precision, PHP_ROUND_HALF_UP);
-        
+
         // Application Fee is what we take (Platform + Compliance + Admin)
         $platformFee = round($totalSupporterPays * $platformFeeRate, $precision, PHP_ROUND_HALF_UP);
         $complianceFee = round($totalSupporterPays * $complianceFeeRate, $precision, PHP_ROUND_HALF_UP);
