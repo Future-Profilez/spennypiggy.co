@@ -51,7 +51,9 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
     return (
         <span className="text-pink-600">
             {timeLeft.days > 0 && `${timeLeft.days}d `}
-            {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
+            {(timeLeft.days > 0 || timeLeft.hours > 0) &&
+                `${timeLeft.hours}h `}
+            {timeLeft.minutes}m {timeLeft.seconds}s
         </span>
     );
 };
