@@ -124,50 +124,6 @@ class Helpers
             
             $referral->lifetime_gmv = $totalGmvGbp;
 
-<<<<<<< HEAD
-            // 👉 STEP 1: Get creator
-            $creator = $referral->referred ?? null;
-
-            // 👉 STEP 2: Calculate VAT
-            $vatAmount = 0;
-            if ($creator && $creator->vat_amount_percentage > 0) {
-                $vatAmount = round(($amountGbp * $creator->vat_amount_percentage) / 100, 2);
-            }
-
-            // 👉 STEP 3: Add VAT to amount
-            $finalAmount = $amountGbp + $vatAmount;
-
-            if ($finalAmount <= 0) {
-                return;
-            }
-
-            // Remaining amount to reach 1000
-            $remaining = 1000 - $referral->lifetime_gmv;
-
-            if ($remaining <= 0) {
-                return;
-            }
-
-            // 👉 USE FINAL AMOUNT (WITH VAT)
-            $increment = min($finalAmount, $remaining);
-
-            // Add GMV
-            $referral->increment('lifetime_gmv', $increment);
-
-            // Final qualification check
-            if ($referral->lifetime_gmv >= 1000) {
-                $referral->update([
-                    'status'       => 'QUALIFIED',
-                    'qualified_at' => now(),
-                ]);
-
-                SendReferralQualifiedEmailJob::dispatch($referral);
-
-                $referredCreatorName = $referral->referred->name;
-
-                $title = '🎉 Referral Goal Achieved!';
-                $content = "Your referred creator ($referredCreatorName) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
-=======
             if ($referral->status === 'IN_PROGRESS' && $referral->lifetime_gmv >= 1000) {
                 $referral->status = 'QUALIFIED';
                 $referral->qualified_at = now();
@@ -180,7 +136,6 @@ class Helpers
                 // 🔔 PWA Notification
                 $title = '🎉 Referral Goal Achieved!';
                 $content = "Your referred creator ({$referredCreatorName}) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
->>>>>>> 3b08c3ec58b584c49c6bf48de28456df7799d9e7
                 $email = $referral->referrer->email;
 
                 self::sendNotification($title, $content, $email);
@@ -190,13 +145,6 @@ class Helpers
                 $referral->qualified_at = null;
             }
 
-<<<<<<< HEAD
-            Log::info('Creator referral GMV updated (with VAT)', [
-                'base_amount'   => $amountGbp,
-                'vat_amount'    => $vatAmount,
-                'final_amount'  => $finalAmount,
-                'added_gmv_gbp' => $increment,
-=======
             $referral->save();
 
             Log::info('Creator referral GMV recalculated', [
@@ -204,7 +152,6 @@ class Helpers
                 'referred_creator_id' => $user->id,
                 'total_gmv_gbp'       => $referral->lifetime_gmv,
                 'status'              => $referral->status,
->>>>>>> 3b08c3ec58b584c49c6bf48de28456df7799d9e7
             ]);
         } catch (\Throwable $e) {
             Log::error('CreatorReferralHelper::recalculateGmv failed', [
@@ -321,21 +268,12 @@ class Helpers
         // the percentage matches what the creator expects to see from their earnings.
         $reserveAmount = 0;
         if ($reserveRate > 0) {
-<<<<<<< HEAD
-            // Reserve logic: Deduct from Creator's Net, Add to Application Fee (Held by Platform)
-            // Calculation Base: Percentage of the *Gross Amount* (Total Supporter Pays) is standard for risk.
-            $reserveAmount = round(($totalSupporterPays * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
-
-            // Add to Application Fee (So Stripe sends it to Platform Account instead of Creator)
-            $applicationFee += $reserveAmount;
-=======
              // Reserve logic: Deduct from Creator's Net, Add to Application Fee (Held by Platform)
              // Calculation Base: Percentage of the *Listed Price* (Creator's Share)
              $reserveAmount = round(($listedPrice * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
              
              // Add to Application Fee (So Stripe sends it to Platform Account instead of Creator)
              $applicationFee += $reserveAmount;
->>>>>>> 3b08c3ec58b584c49c6bf48de28456df7799d9e7
         }
 
         return [
