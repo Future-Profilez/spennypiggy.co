@@ -33,7 +33,7 @@ export default function OrdersLists({ type = 'sales' }) {
 
    const isZeroDecimalCurrency = (curr) => {
        const zeroDecimalCurrencies = [
-           'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+           'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
        ];
        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
@@ -42,18 +42,18 @@ export default function OrdersLists({ type = 'sales' }) {
    const calculateTotalSupporterPays = (price, curr) => {
        const listedPrice = parseFloat(price || 0);
        const isZeroDecimal = isZeroDecimalCurrency(curr);
-       
+
        const stripeFeeRate = 0.029;
        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-       const platformFeeRate = (platform_fee_percentage || 20) / 100; 
-       const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
-       const adminFee = adminFeeInCurrency(curr); 
+       const platformFeeRate = (platform_fee_percentage || 20) / 100;
+       const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+       const adminFee = adminFeeInCurrency(curr);
        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-       
+
        if (totalDeductionRate >= 1) return listedPrice;
 
        const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-       
+
        if (!isZeroDecimal) {
            return Math.ceil(totalSupporterPays * 100) / 100;
        } else {
@@ -104,7 +104,7 @@ export default function OrdersLists({ type = 'sales' }) {
       )}
 
       {type === 'sales' ? <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2> : <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >My Purchases</h2>}
-      
+
       {orders && orders.length > 0 && (
          <div  className="bg-white rounded-[30px]   px-0">
             <div className="p-3 py-1 relative ">

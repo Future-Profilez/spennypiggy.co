@@ -26,11 +26,11 @@ export default function AddShopItem(props) {
             setLoading(false);
         });
    }
- 
+
    useEffect(()=>{
       fetchItems();
    }, []);
-   
+
 
 
   return (
@@ -58,7 +58,7 @@ export default function AddShopItem(props) {
                   </div>
                   )}
 
-                  <div className="mb-6"> 
+                  <div className="mb-6">
 
                      {tab == 1 ? <div className=" transition-opacity duration-150 ease-linear"
                         id="tabs-home"
@@ -84,7 +84,7 @@ export default function AddShopItem(props) {
                         data-twe-tab-active>
                            <OrdersLists type="purchases" />
                      </div> : ''}
-                     
+
                   </div>
                </div>
             </div>
