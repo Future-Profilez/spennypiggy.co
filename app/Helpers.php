@@ -74,8 +74,7 @@ class Helpers
                 return;
             }
 
-            // Always fetch referral
-            /** @var CreatorReferral|null $referral */
+            // Fetch referral
             $referral = CreatorReferral::with('referrer', 'referred')
                 ->where('referred_creator_id', $referredCreatorId)
                 ->whereIn('status', ['IN_PROGRESS', 'QUALIFIED'])
@@ -90,6 +89,22 @@ class Helpers
                 return;
             }
 
+            // 👉 STEP 1: Get creator
+            $creator = $referral->referred ?? null;
+
+            // 👉 STEP 2: Calculate VAT
+            $vatAmount = 0;
+            if ($creator && $creator->vat_amount_percentage > 0) {
+                $vatAmount = round(($amountGbp * $creator->vat_amount_percentage) / 100, 2);
+            }
+
+            // 👉 STEP 3: Add VAT to amount
+            $finalAmount = $amountGbp + $vatAmount;
+
+            if ($finalAmount <= 0) {
+                return;
+            }
+
             // Remaining amount to reach 1000
             $remaining = 1000 - $referral->lifetime_gmv;
 
@@ -97,10 +112,10 @@ class Helpers
                 return;
             }
 
-            // Cap the increment
-            $increment = min($amountGbp, $remaining);
+            // 👉 USE FINAL AMOUNT (WITH VAT)
+            $increment = min($finalAmount, $remaining);
 
-            // Add only allowed amount
+            // Add GMV
             $referral->increment('lifetime_gmv', $increment);
 
             // Final qualification check
@@ -110,25 +125,22 @@ class Helpers
                     'qualified_at' => now(),
                 ]);
 
-                // 📧 Existing email job
                 SendReferralQualifiedEmailJob::dispatch($referral);
 
                 $referredCreatorName = $referral->referred->name;
 
-                // 🔔 PWA Notification (NEW)
                 $title = '🎉 Referral Goal Achieved!';
-                $content = "Your referred creator($referredCreatorName) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
+                $content = "Your referred creator ($referredCreatorName) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
                 $email = $referral->referrer->email;
 
                 Helpers::sendNotification($title, $content, $email);
             }
 
-            Log::info('Creator referral GMV updated (capped)', [
-                'referrer_creator_id' => $referral->referrer_creator_id,
-                'referred_creator_id' => $referredCreatorId,
-                'added_gmv_gbp'       => $increment,
-                'total_gmv_gbp'       => $referral->lifetime_gmv,
-                'status'              => $referral->status,
+            Log::info('Creator referral GMV updated (with VAT)', [
+                'base_amount'   => $amountGbp,
+                'vat_amount'    => $vatAmount,
+                'final_amount'  => $finalAmount,
+                'added_gmv_gbp' => $increment,
             ]);
         } catch (\Throwable $e) {
             Log::error('CreatorReferralHelper::addGmv failed', [
@@ -139,7 +151,6 @@ class Helpers
             ]);
         }
     }
-
 
 
 
@@ -157,7 +168,22 @@ class Helpers
     public static function isZeroDecimalCurrency($currency): bool
     {
         $zeroDecimalCurrencies = [
-            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+            'BIF',
+            'CLP',
+            'DJF',
+            'GNF',
+            'JPY',
+            'KMF',
+            'KRW',
+            'MGA',
+            'PYG',
+            'RWF',
+            'UGX',
+            'VND',
+            'VUV',
+            'XAF',
+            'XOF',
+            'XPF'
         ];
         return in_array(strtoupper($currency), $zeroDecimalCurrencies);
     }
@@ -184,13 +210,13 @@ class Helpers
     {
         $listedPrice = (float) $listedPrice;
         $isZeroDecimal = self::isZeroDecimalCurrency($currency);
-        
+
         // Stripe fees (Variable based on card/country, used here for estimation to cover costs)
         // Note: The actual fee is deducted by Stripe at transaction time.
         // We use a standard rate (e.g. 2.9% + 30c) to ensure the gross-up covers most scenarios.
         $stripeFeeRate = 0.029;
         $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
-        
+
         // Platform fees
         $platformFeeRate = config('app.platform_fee_percentage', 15) / 100;
         $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
@@ -199,7 +225,7 @@ class Helpers
         // Correct gross-up formula to ensure creator receives exactly listedPrice:
         // TotalAmount = (ListedPrice + StripeFixedFee + AdminFee) / (1 - StripeFeeRate - PlatformFeeRate - ComplianceFeeRate)
         $totalDeductionRate = $stripeFeeRate + $platformFeeRate + $complianceFeeRate;
-        
+
         if ($totalDeductionRate >= 1) {
             Log::error('Total deduction rate exceeds 100% in calculateStripeDirectChargeFlow');
             return [
@@ -210,7 +236,7 @@ class Helpers
         }
 
         $totalSupporterPays = ($listedPrice + $stripeFixedFee + $adminFee) / (1 - $totalDeductionRate);
-        
+
         // Use CEIL as per client requirement to avoid underpayment (round UP)
         $precision = $isZeroDecimal ? 0 : 2;
         // For standard currencies, multiply by 100, ceil, then divide by 100
@@ -219,10 +245,10 @@ class Helpers
         } else {
             $totalSupporterPays = ceil($totalSupporterPays);
         }
-        
+
         // Calculate the actual Stripe fee based on the total charged
         $actualStripeFee = round(($totalSupporterPays * $stripeFeeRate) + $stripeFixedFee, $precision, PHP_ROUND_HALF_UP);
-        
+
         // Application Fee is what we take (Platform + Compliance + Admin)
         $platformFee = round($totalSupporterPays * $platformFeeRate, $precision, PHP_ROUND_HALF_UP);
         $complianceFee = round($totalSupporterPays * $complianceFeeRate, $precision, PHP_ROUND_HALF_UP);
@@ -235,12 +261,12 @@ class Helpers
         // If we deduct from Creator Share:
         $reserveAmount = 0;
         if ($reserveRate > 0) {
-             // Reserve logic: Deduct from Creator's Net, Add to Application Fee (Held by Platform)
-             // Calculation Base: Percentage of the *Gross Amount* (Total Supporter Pays) is standard for risk.
-             $reserveAmount = round(($totalSupporterPays * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
-             
-             // Add to Application Fee (So Stripe sends it to Platform Account instead of Creator)
-             $applicationFee += $reserveAmount;
+            // Reserve logic: Deduct from Creator's Net, Add to Application Fee (Held by Platform)
+            // Calculation Base: Percentage of the *Gross Amount* (Total Supporter Pays) is standard for risk.
+            $reserveAmount = round(($totalSupporterPays * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
+
+            // Add to Application Fee (So Stripe sends it to Platform Account instead of Creator)
+            $applicationFee += $reserveAmount;
         }
 
         return [
