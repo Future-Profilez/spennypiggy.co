@@ -251,7 +251,7 @@ class FinancialService
 
         $revenueTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->get(['net_amount', 'currency']);
 

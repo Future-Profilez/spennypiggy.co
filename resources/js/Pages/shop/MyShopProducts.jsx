@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {Fragment, useState, useEffect, useRef} from "react";
 import axios from 'axios';
 import { Menu, Transition } from '@headlessui/react'
@@ -8,9 +8,24 @@ import AddItem from './AddItem';
 import LoadingScreen from '@/includes/LoadingScreen';
 import { Suspense } from 'react';
 import Nocontent from '@/includes/Nocontent';
+import PriceFormat from '@/includes/PriceFormat';
 
 export default function MyShopProducts({lists, loading, update}) {
+   const { auth } = usePage().props;
+   const { formatMultiPrice } = PriceFormat();
    const editButtonRefs = useRef({});
+
+   const getShippingDetails = (shop) => {
+      if (shop.type !== 'physical' || !shop.shop_shipping_info) return null;
+      
+      const domestic = shop.shop_shipping_info.find(i => i.country !== 'all');
+      const worldwide = shop.shop_shipping_info.find(i => i.country === 'all');
+
+      return {
+         domestic: domestic ? formatMultiPrice(domestic.shipping_price, shop.currency) : null,
+         worldwide: worldwide ? formatMultiPrice(worldwide.shipping_price, shop.currency) : null
+      };
+   };
 
    const slug = (inputString) => { 
       return inputString
@@ -42,12 +57,12 @@ export default function MyShopProducts({lists, loading, update}) {
          {loading ? <LoadingScreen /> : 
             <>
             {lists && lists.length ? lists.map((s, i)=>{
-               return <div className='mt-2 bg-white p-3 rounded-[30px] ' > 
+               return <div className='mt-2 bg-white p-4 rounded-[30px] ' > 
                   <div className='shop-item flex justify-between w-full items-center ' >
                      <div className='shop-item-user flex  items-center max-w-[40%] min-w-[40%] ' >
-                        <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-img w-12 h-12 min-w-12' >
+                        <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-img w-16 h-16  min-w-16' >
                            <img 
-                             className='w-full h-full object-cover rounded-[30px]  ' 
+                             className='w-full h-full object-cover rounded-[10px]  ' 
                              src={s.perma_link} 
                              alt={s.name || 'Shop item'}
                              onError={(e) => {
@@ -60,13 +75,33 @@ export default function MyShopProducts({lists, loading, update}) {
                              }}
                            />
                         </Link>
-                        <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-text pl-3 ' >
-                           <h2 className='text-md font-bold line-clamp-2'>{s.name}</h2>
+                        <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-text pl-3 flex flex-col' >
+                           <div className='flex items-center gap-2'>
+                              <h2 className='text-md font-bold line-clamp-2'>{s.name}</h2>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${s.type === 'physical' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                 {s.type === 'physical' ? 'Physical' : 'Digital'}
+                              </span>
+                           </div>
                            <p className='text-gray-500 text-sm line-clamp-1 '>{s.description}</p>
+                           <div className='flex items-center gap-4 mt-1'>
+                              <div className='text-sm font-semibold'>
+                                 {formatMultiPrice(s.price, s.currency)}
+                              </div>
+                              {s.type === 'physical' && (
+                                 <div className='flex gap-2 text-[11px] text-gray-500 font-medium'>
+                                    {getShippingDetails(s)?.domestic && (
+                                       <span>Domestic: {getShippingDetails(s).domestic}</span>
+                                    )}
+                                    {getShippingDetails(s)?.worldwide && (
+                                       <span>Worldwide: {getShippingDetails(s).worldwide}</span>
+                                    )}
+                                 </div>
+                              )}
+                           </div>
                         </Link>
                      </div>
                      <p>
-                        {s.slot_limitation !== null 
+                        {s.slot_limitation !== null && s.type === 'physical'
                            ? `${s.total_sold}/${s.total_sold + s.slot_limitation} Sold` 
                            : `${s.total_sold} Sold`
                         }
@@ -164,7 +199,7 @@ export default function MyShopProducts({lists, loading, update}) {
                         </Menu>
                      </div>
                   </div>
-                  {s.approved == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-yellow-50 text-yellow-800' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
+                  {s.approved == 0 ?  <div className='approvalmessage static rounded-[30px]  p-4 py-2 mt-3 bg-yellow-50 text-yellow-800' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
                   {s.status == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-red-50 text-red-800' >This item is deactivated.</div> : ''}
                   {s.edited_status == 0 ? <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-red-50 text-red-800' >Admin requested changes: {s.edited_reason}</div> : ''}
                   {/* Hidden AddItem component to manage the modal outside the Menu context */}

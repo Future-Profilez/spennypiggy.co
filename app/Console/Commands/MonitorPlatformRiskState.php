@@ -60,7 +60,7 @@ class MonitorPlatformRiskState extends Command
             SELECT 
                 tx.total_tx, 
                 dp.total_disputes,
-                (dp.total_disputes::decimal / NULLIF(tx.total_tx, 0)) * 100 AS dispute_rate_pct
+                (CAST(dp.total_disputes AS DECIMAL(10,4)) / NULLIF(tx.total_tx, 0)) * 100 AS dispute_rate_pct
             FROM tx, dp
         ");
 
@@ -95,7 +95,7 @@ class MonitorPlatformRiskState extends Command
                 last_24h.gmv_24h, 
                 avg_7d.avg_daily_7d,
                 CASE WHEN avg_7d.avg_daily_7d = 0 THEN 0 
-                ELSE last_24h.gmv_24h::decimal / avg_7d.avg_daily_7d END AS ratio
+                ELSE CAST(last_24h.gmv_24h AS DECIMAL(10,4)) / avg_7d.avg_daily_7d END AS ratio
             FROM last_24h, avg_7d
         ");
 
@@ -140,7 +140,7 @@ class MonitorPlatformRiskState extends Command
                 this_week.gmv AS gmv_this_week, 
                 prev_week.gmv AS gmv_prev_week,
                 CASE WHEN prev_week.gmv = 0 THEN 0 
-                ELSE this_week.gmv::decimal / prev_week.gmv END AS ratio
+                ELSE CAST(this_week.gmv AS DECIMAL(10,4)) / prev_week.gmv END AS ratio
             FROM this_week, prev_week
         ");
 
@@ -175,7 +175,7 @@ class MonitorPlatformRiskState extends Command
             rates AS (
                 SELECT 
                     t.creator_id,
-                    (COALESCE(d.disputes,0)::decimal / NULLIF(t.tx,0)) * 100 AS dispute_rate_pct
+                    (CAST(COALESCE(d.disputes,0) AS DECIMAL(10,4)) / NULLIF(t.tx,0)) * 100 AS dispute_rate_pct
                 FROM creator_tx t
                 LEFT JOIN creator_dp d ON d.creator_id = t.creator_id
             )

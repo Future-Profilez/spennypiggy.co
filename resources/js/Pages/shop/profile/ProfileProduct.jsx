@@ -71,9 +71,14 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                 <div
                     className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3 flex-grow"
                 >
-                    <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
-                        {item.name}
-                    </h2>
+                    <div className='flex items-center gap-2'>
+                        <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
+                            {item.name}
+                        </h2>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-lg border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${item.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                            {item.type === 'physical' ? 'Physical' : 'Digital'}
+                        </span>
+                    </div>
                     <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-2">
                         {item.description}
                     </span>

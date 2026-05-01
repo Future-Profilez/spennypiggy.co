@@ -9,7 +9,7 @@ export default function CheckoutLegalTerms({ onAgreeChange }) {
     };
 
     return (
-        <div className="checkout-legal-terms text-left w-full mt-4 mb-5">
+        <div className="checkout-legal-terms text-left w-full mt-4 mb-5 !pb-4 ">
             <label className="flex items-start cursor-pointer mb-3">
                 <input
                     type="checkbox"
@@ -21,7 +21,7 @@ export default function CheckoutLegalTerms({ onAgreeChange }) {
                 </span>
             </label>
 
-            <div className="pl-9 pr-2">
+            <div className="pl-9 pr-2 ">
                 <p className="text-sm text-gray-700 font-semibold mb-2">By continuing, I confirm that:</p>
                 <ul className="list-disc pl-4 text-sm text-gray-600 space-y-1.5 mb-3">
                     <li>I am purchasing from the creator, not Spenny Piggy</li>
@@ -33,14 +33,13 @@ export default function CheckoutLegalTerms({ onAgreeChange }) {
                 <button 
                     type="button" 
                     onClick={() => setExpanded(!expanded)}
-                    className="text-violet-600 text-sm font-semibold flex items-center hover:underline focus:outline-none"
-                >
+                    className="text-violet-600 text-sm font-semibold flex items-center hover:underline focus:outline-none mb-4">
                     View full purchase terms
                     <svg className={`ml-1 w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
 
                 {expanded && (
-                    <div className="mt-3 p-4 bg-gray-50 rounded-[15px] border border-gray-200">
+                    <div className="mt-3 mb-4 p-4 bg-gray-50 rounded-[15px] border border-gray-200">
                         <p className="text-sm text-gray-700 font-semibold mb-2">By completing this purchase, I acknowledge and agree that:</p>
                         <ul className="list-disc pl-4 text-sm text-gray-600 space-y-1.5">
                             <li>Payments are made directly to the creator, who is the merchant of record and solely responsible for the content, products, and fulfilment</li>

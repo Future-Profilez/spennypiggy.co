@@ -97,6 +97,25 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                   <strong>Shop Item</strong>
                   <p>{item.shop.name}</p>
                </div>
+               {item.shop.success_page_value && (
+                  <div className=' border-t pt-2 mt-3'>
+                     <strong>Confirmation Message</strong>
+                     {item.shop.success_page_type === 'url' ? (
+                        <p>
+                           <a 
+                              href={item.shop.success_page_value} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-pink-600 hover:underline break-all"
+                           >
+                              {item.shop.success_page_value}
+                           </a>
+                        </p>
+                     ) : (
+                        <p className='whitespace-pre-wrap'>{item.shop.success_page_value}</p>
+                     )}
+                  </div>
+               )}
                <div className=' border-t pt-2 mt-3'>
                   <strong>Email</strong>
                   <p>{item.email}</p>

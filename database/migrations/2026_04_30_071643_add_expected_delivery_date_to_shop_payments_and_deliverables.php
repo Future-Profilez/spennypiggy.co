@@ -11,13 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('shop_payments', function (Blueprint $table) {
-            $table->date('expected_delivery_date')->nullable();
-        });
+        if (Schema::hasTable('shop_payments') && !Schema::hasColumn('shop_payments', 'expected_delivery_date')) {
+            Schema::table('shop_payments', function (Blueprint $table) {
+                $table->date('expected_delivery_date')->nullable();
+            });
+        }
 
-        Schema::table('deliverables', function (Blueprint $table) {
-            $table->date('expected_delivery_date')->nullable();
-        });
+        if (Schema::hasTable('deliverables') && !Schema::hasColumn('deliverables', 'expected_delivery_date')) {
+            Schema::table('deliverables', function (Blueprint $table) {
+                $table->date('expected_delivery_date')->nullable();
+            });
+        }
     }
 
     /**

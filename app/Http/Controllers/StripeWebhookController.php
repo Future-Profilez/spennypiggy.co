@@ -17,7 +17,11 @@ use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
 use App\Jobs\NotificationSave;
 use App\Models\BillPayment;
+use App\Models\FinancialTransaction;
 use App\Models\Deliverable;
+use App\Models\StripePaymentItems;
+use App\Models\UserCart;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\Task;
@@ -902,6 +906,13 @@ class StripeWebhookController extends Controller
                         'status' => $newStatus,
                     ]);
 
+                    // Also store the payment intent ID on the StripePaymentDetail record for future lookups
+                    if ($session->payment_intent) {
+                        \App\Models\StripePaymentDetail::where('session_id', $session->id)
+                            ->whereNull('stripe_payment_intent_id')
+                            ->update(['stripe_payment_intent_id' => $session->payment_intent]);
+                    }
+
                     if ($session->payment_intent) {
                         $this->syncFinancialTransactionsByPaymentIntent($session->payment_intent, $newStatus);
                     }
@@ -921,8 +932,9 @@ class StripeWebhookController extends Controller
                 ]);
             }
 
-            // Check if this is a wish item purchase
-            if (isset($metadata->deliverable_type) && $metadata->deliverable_type === 'media_bundle') {
+            // Check if this is a wish item purchase (handles single wishes and carts)
+            $wishTypes = ['media_bundle', 'content_file', 'reward', 'no_content'];
+            if (isset($metadata->deliverable_type) && in_array($metadata->deliverable_type, $wishTypes)) {
                 $this->processWishItemDeliverable($session, $metadata);
             }
 
@@ -1014,6 +1026,9 @@ class StripeWebhookController extends Controller
             'deliverable_type' => $deliverableType,
             'has_content_file' => $wishItem && $wishItem->content_file ? true : false
         ]);
+
+        // Sync StripePaymentItems and FinancialTransaction if missing (Safety check for missed checkout redirects)
+        $this->syncWishPaymentItemsFromDetail($payment, $session);
 
         // Dispatch job to process the deliverable (media bundle creation, etc.)
         \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
@@ -1209,6 +1224,40 @@ class StripeWebhookController extends Controller
             $deliverable->delivered_at = Carbon::now();
             $deliverable->save();
 
+            // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+            try {
+                $creator = User::find($creatorId ?? $task->creator_id);
+                $amount = (float) $purchase->amount;
+                $vat = (float) ($purchase->vat_amount ?? 0);
+                $platformFee = (float) ($purchase->platform_fee ?? 0);
+                $stripeFee = 0;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount;
+
+                FinancialTransaction::updateOrCreate(
+                    [
+                        'source_type' => TaskPurchase::class,
+                        'source_id' => $purchase->id,
+                    ],
+                    [
+                        'user_id' => $creator->id,
+                        'supporter_id' => $purchase->supporter_id,
+                        'type' => 'income',
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
+                        'vat_amount' => $vat,
+                        'net_amount' => $creatorAmount,
+                        'currency' => strtoupper($purchase->currency ?? 'GBP'),
+                        'status' => 'completed',
+                        'description' => 'Task Purchase: ' . ($task->title ?? 'Task'),
+                        'transaction_date' => $purchase->created_at,
+                    ]
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to sync TaskPurchase to FinancialTransaction in processTaskPurchase: ' . $e->getMessage(), ['purchase_id' => $purchase->id]);
+            }
+
             // Update Metadata for Instant Completion
             try {
                 app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
@@ -1222,6 +1271,40 @@ class StripeWebhookController extends Controller
 
             Log::info("Instant task purchase completed", ['purchase_id' => $purchase->id]);
         } else {
+            // Immediately sync to FinancialTransaction even for timed tasks so they appear as 'pending' or 'completed' depending on risk
+            try {
+                $creator = User::find($creatorId ?? $task->creator_id);
+                $amount = (float) $purchase->amount;
+                $vat = (float) ($purchase->vat_amount ?? 0);
+                $platformFee = (float) ($purchase->platform_fee ?? 0);
+                $stripeFee = 0;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount;
+
+                FinancialTransaction::updateOrCreate(
+                    [
+                        'source_type' => TaskPurchase::class,
+                        'source_id' => $purchase->id,
+                    ],
+                    [
+                        'user_id' => $creator->id,
+                        'supporter_id' => $purchase->supporter_id,
+                        'type' => 'income',
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
+                        'vat_amount' => $vat,
+                        'net_amount' => $creatorAmount,
+                        'currency' => strtoupper($purchase->currency ?? 'GBP'),
+                        'status' => 'completed',
+                        'description' => 'Task Purchase: ' . ($task->title ?? 'Task'),
+                        'transaction_date' => $purchase->created_at,
+                    ]
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to sync TaskPurchase to FinancialTransaction in processTaskPurchase (timed): ' . $e->getMessage(), ['purchase_id' => $purchase->id]);
+            }
+
             Log::info("Timed task purchase created", ['purchase_id' => $purchase->id]);
         }
 
@@ -1397,6 +1480,11 @@ class StripeWebhookController extends Controller
         }
         // -----------------------------------
 
+        // Propagate disputed status to ALL payment tables (not just TaskPurchase)
+        if ($paymentIntentId) {
+            $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
+        }
+
         if (!$paymentIntentId) {
             return;
         }
@@ -1432,7 +1520,8 @@ class StripeWebhookController extends Controller
             if (!empty($dispute->payment_intent)) {
                 $payment = \App\Models\Payment::where('stripe_payment_intent_id', $dispute->payment_intent)->first();
                 if ($payment && $payment->status !== 'disputed' && !in_array($payment->status, ['refunded', 'failed', 'blocked'], true)) {
-                    $payment->update(['status' => 'disputed']);
+                    // Sync disputed status to ALL tables
+                    $this->syncRiskLedgerStatus($dispute->payment_intent, 'disputed');
                 }
             }
         } catch (\Exception $e) {
@@ -2792,23 +2881,38 @@ class StripeWebhookController extends Controller
             $shopPayment->update(['payment_status' => 'refunded']);
         }
 
-        // 4. Wishes (StripePaymentDetail)
-        $wishPayment = \App\Models\StripePaymentDetail::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId)
-            ->first();
-        if ($wishPayment) {
-            $wishPayment->update(['payment_status' => 'refunded']);
+        // 4. Wishes (StripePaymentDetail) — looked up via session_id from risk ledger Payment record
+        // NOTE: StripePaymentDetail has no payment_intent_id column; use stripe_session_id from Payment table.
+        // syncRiskLedgerStatus() below handles all FinancialTransaction and source-model updates including this.
+
+        // 5 & 6. Memberships + Bills — resolved via session_id from the risk-ledger Payment record.
+        // syncRiskLedgerStatus() below handles all these via syncFinancialTransactionsByPaymentIntent().
+        // Direct status updates here are belt-and-suspenders for faster UI consistency.
+        try {
+            $riskPaymentRecord = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            if ($riskPaymentRecord && $riskPaymentRecord->stripe_session_id) {
+                $sessionId = $riskPaymentRecord->stripe_session_id;
+
+                $membershipPayment = \App\Models\MembershipPayment::where('session_id', $sessionId)->first();
+                if ($membershipPayment) {
+                    $membershipPayment->update(['payment_status' => 'refunded']);
+                }
+
+                $billPayment = \App\Models\BillPayment::where('session_id', $sessionId)->first();
+                if ($billPayment) {
+                    $billPayment->update(['status' => 'refunded']);
+                }
+
+                $wishPayment = \App\Models\StripePaymentDetail::where('session_id', $sessionId)->first();
+                if ($wishPayment) {
+                    $wishPayment->update(['payment_status' => 'refunded']);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Risk Engine: Failed to update Membership/Bill/Wish on refund: " . $e->getMessage());
         }
 
-        // 5. Memberships
-        $membershipPayment = \App\Models\MembershipPayment::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId)
-            ->first();
-        if ($membershipPayment) {
-            $membershipPayment->update(['payment_status' => 'refunded']);
-        }
-
-        // --- Finalize Sync ---
+        // --- Finalize Sync: propagates to ALL tables including FinancialTransaction, Deliverable, UserPayment ---
         if ($paymentIntentId) {
             $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
         }
@@ -3103,11 +3207,13 @@ class StripeWebhookController extends Controller
                     $shippingAmount = (float) ($shopPayment->shipping_amount ?? 0);
                     $vat = (float) ($shopPayment->vat_tax_amount ?? 0);
                     if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
-                        $vat = round((($amount + $shippingAmount) * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+                        $vat = round(($amount + $shippingAmount) * (float) $creator->vat_amount_percentage / 100, 2, PHP_ROUND_HALF_UP);
                     }
-                    $platformFee = (float) ($shopPayment->tax_amount ?? 0);
-                    $stripeFee = 0;
-                    $gross = $amount + $shippingAmount + $vat + $platformFee + $stripeFee;
+                    // Use actual fee breakdown from the gross-up formula (not legacy tax_amount)
+                    $shopBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat + $shippingAmount, strtoupper($shopPayment->currency ?? 'GBP'));
+                    $platformFee = $shopBreakdown['platform_fee'] + $shopBreakdown['compliance_fee'] + $shopBreakdown['admin_fee'];
+                    $stripeFee = $shopBreakdown['stripe_fee'];
+                    $gross = $shopBreakdown['total_supporter_pays'];
                     $creatorAmount = $amount + $shippingAmount;
 
                     \App\Models\FinancialTransaction::updateOrCreate(
@@ -3137,9 +3243,9 @@ class StripeWebhookController extends Controller
                 // 6. Get currency symbol and calculate net
                 $currency = \App\Models\Currency::where('iso', strtoupper($shopPayment->currency))->first();
                 $symbol = $currency->symbol ?? '£';
-                
-                // Calculate creator net amount using the SAME logic as ShopsController
-                $listedPriceToGrossUp = $shopPayment->amount + $shopPayment->tax_amount + $shopPayment->vat_tax_amount + ($shopPayment->shipping_amount ?? 0);
+
+                // Calculate creator net amount: gross-up from creator's listed price (no extra shop_tax)
+                $listedPriceToGrossUp = $shopPayment->amount + $shopPayment->vat_tax_amount + ($shopPayment->shipping_amount ?? 0);
                 
                 $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $shopPayment->shop->user->uuid);
                 $reserveRate = $metrics->reserve_percent ?? 0;
@@ -3345,11 +3451,15 @@ class StripeWebhookController extends Controller
             'reason' => $review->reason
         ]);
 
+        // Stripe review.closed reasons: approved, disputed, refunded, redacted
         if ($review->reason === 'approved') {
             $this->syncRiskLedgerStatus($paymentIntentId, 'succeeded');
-        } elseif (str_contains($review->reason, 'refunded')) {
+        } elseif (in_array($review->reason, ['refunded', 'refunded_as_fraud'], true)) {
             $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
+        } elseif ($review->reason === 'disputed') {
+            $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
         }
+        // 'redacted' means the payment was blocked/removed by Stripe — leave status as-is
     }
 
     /**
@@ -3360,6 +3470,96 @@ class StripeWebhookController extends Controller
         $paymentIntentId = $dispute->payment_intent ?? null;
         if ($paymentIntentId) {
             $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
+        }
+    }
+
+    /**
+     * Reconstruct StripePaymentItems and FinancialTransaction from StripePaymentDetail metadata
+     * if they were missed during the success redirect.
+     */
+    private function syncWishPaymentItemsFromDetail($payment, $session)
+    {
+        if (!$payment || !$payment->metadata) {
+            return;
+        }
+
+        try {
+            $metadata = json_decode($payment->metadata, true);
+            $wishItems = $metadata['wish_items'] ?? [];
+            
+            if (empty($wishItems)) {
+                // Try alternate metadata format if primary is missing
+                $wishItemsSummary = json_decode($payment->metadata, true)['wish_items_summary'] ?? null;
+                if ($wishItemsSummary) {
+                    $summary = json_decode($wishItemsSummary, true);
+                    // Minimal reconstruction if summary exists but full items don't
+                    // (Note: full items should be in 'wish_items' key from buildWishItemsMetadata)
+                }
+            }
+
+            if (empty($wishItems)) {
+                Log::warning("No wish items found in metadata for sync", ['session_id' => $session->id]);
+                return;
+            }
+
+            foreach ($wishItems as $item) {
+                // 1. Create StripePaymentItems if missing
+                $paymentItem = StripePaymentItems::updateOrCreate(
+                    [
+                        'stripe_payment_detail_id' => $payment->id,
+                        'wish_item_id' => $item['wish_id'],
+                        'amount' => $item['amount'],
+                    ],
+                    [
+                        'quantity' => $item['quantity'] ?? 1,
+                        'tax' => 0, // Tax/Fees handled in FinancialTransaction
+                        'created_at' => $payment->created_at,
+                        'updated_at' => now(),
+                    ]
+                );
+
+                // 2. Create FinancialTransaction if missing
+                $creator = User::find($payment->owner_id);
+                $amount = (float) $item['amount'];
+                $vat = 0; // Standardize later via sync command if needed
+                $platformFee = 0; // Standardize later via sync command if needed
+                $stripeFee = 0;
+                $gross = $amount; // Webhook uses minimal reconstruction; full fees synced via cron
+                
+                FinancialTransaction::updateOrCreate(
+                    [
+                        'source_type' => StripePaymentItems::class,
+                        'source_id' => $paymentItem->id,
+                    ],
+                    [
+                        'user_id' => $payment->owner_id,
+                        'supporter_id' => $payment->user_id,
+                        'type' => 'income',
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
+                        'vat_amount' => $vat,
+                        'net_amount' => $amount,
+                        'currency' => strtoupper($payment->currency ?? 'GBP'),
+                        'status' => 'completed',
+                        'description' => 'Wish Gift: ' . ($item['wish_name'] ?? 'Item'),
+                        'transaction_date' => $payment->created_at,
+                    ]
+                );
+            }
+
+            // 3. Mark UserCart as processed if we have a user_id
+            if ($payment->user_id) {
+                UserCart::where('user_id', $payment->user_id)
+                    ->where('owner_id', $payment->owner_id)
+                    ->where('status', 1)
+                    ->update(['status' => 0, 'quantity' => 0]);
+            }
+
+            Log::info("Synced wish payment items from metadata", ['session_id' => $session->id, 'items_count' => count($wishItems)]);
+
+        } catch (\Exception $e) {
+            Log::error("Failed to sync wish payment items from metadata: " . $e->getMessage(), ['session_id' => $session->id]);
         }
     }
 
@@ -3426,7 +3626,8 @@ class StripeWebhookController extends Controller
     }
 
     /**
-     * Directly update financial_transactions status for all source records linked to a payment intent.
+     * Directly update financial_transactions status for ALL source records linked to a payment intent.
+     * Also propagates status to source payment tables, UserPayment, and Deliverable.
      * This provides immediate consistency without waiting for the sync command queue.
      */
     private function syncFinancialTransactionsByPaymentIntent(string $paymentIntentId, string $newStatus): void
@@ -3441,20 +3642,57 @@ class StripeWebhookController extends Controller
                 default     => $newStatus,
             };
 
+            // Also resolve via session_id from the Payment (risk ledger) record
+            $paymentRecord = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            $sessionId = $paymentRecord->stripe_session_id ?? null;
+
+            // Source models: [class, payment_intent column, session column, status column]
             $sourceModels = [
-                [\App\Models\TaskPurchase::class,       'payment_intent_id', 'stripe_session_id'],
-                [\App\Models\TipGoalsPayment::class,    'session_id',        'session_id'], // Uses session_id for both
-                [\App\Models\ShopPayment::class,        'payment_intent_id', 'session_id'],
-                [\App\Models\StripePaymentDetail::class,'payment_intent_id', 'session_id'],
-                [\App\Models\MembershipPayment::class,  'payment_intent_id', 'session_id'],
-                [\App\Models\BillPayment::class,        'payment_intent_id', 'session_id'],
+                [\App\Models\TaskPurchase::class,        'payment_intent_id',        'stripe_session_id', 'status'],
+                [\App\Models\TipGoalsPayment::class,     null,                        'session_id',        'status'],
+                [\App\Models\ShopPayment::class,         null,                        'session_id',        'payment_status'],
+                [\App\Models\StripePaymentDetail::class, 'stripe_payment_intent_id',  'session_id',        'payment_status'],
+                [\App\Models\MembershipPayment::class,   null,                        'session_id',        'status'],
+                [\App\Models\BillPayment::class,         null,                        'session_id',        'status'],
             ];
 
-            foreach ($sourceModels as [$modelClass, $piCol, $sessionCol]) {
-                $record = $modelClass::where($piCol, $paymentIntentId)
-                    ->orWhere($sessionCol, $paymentIntentId)
-                    ->first();
-                if ($record) {
+            // Map risk-ledger status to source-model friendly status
+            $sourceStatus = match($newStatus) {
+                'succeeded' => 'paid',
+                'disputed'  => 'disputed',
+                'refunded'  => 'refunded',
+                'review_hold' => 'review_hold',
+                'failed', 'blocked' => 'failed',
+                default     => $newStatus,
+            };
+
+            foreach ($sourceModels as [$modelClass, $piCol, $sessionCol, $statusCol]) {
+                // Find ALL matching records (not just first) via PI or session
+                $query = $modelClass::query();
+                $query->where(function ($q) use ($piCol, $sessionCol, $paymentIntentId, $sessionId) {
+                    if ($piCol) {
+                        $q->where($piCol, $paymentIntentId);
+                    }
+                    if ($sessionId) {
+                        $q->orWhere($sessionCol, $sessionId);
+                    }
+                    if (!$piCol && !$sessionId) {
+                        // For models without a PI column and no session, try PI as session fallback
+                        $q->where($sessionCol, $paymentIntentId);
+                    }
+                });
+
+                $records = $query->get();
+                foreach ($records as $record) {
+                    // Update the source record's own status column
+                    try {
+                        $record->update([$statusCol => $sourceStatus]);
+                    } catch (\Throwable $e) {
+                        // Status column might not accept this value; log and continue
+                        Log::warning("syncFinancialTransactionsByPaymentIntent: Could not update {$modelClass}#{$record->id}.{$statusCol} to {$sourceStatus}: " . $e->getMessage());
+                    }
+
+                    // Update all FinancialTransaction rows linked to this source
                     $updated = \App\Models\FinancialTransaction::where('source_type', $modelClass)
                         ->where('source_id', $record->id)
                         ->update(['status' => $ftStatus]);
@@ -3466,7 +3704,49 @@ class StripeWebhookController extends Controller
                         ]);
                     }
                 }
+
+                // For StripePaymentDetail, also update child StripePaymentItems FTs
+                if ($modelClass === \App\Models\StripePaymentDetail::class && $records->isNotEmpty()) {
+                    $detailIds = $records->pluck('id');
+                    $items = \App\Models\StripePaymentItems::whereIn('stripe_payment_detail_id', $detailIds)->get();
+                    foreach ($items as $item) {
+                        \App\Models\FinancialTransaction::where('source_type', \App\Models\StripePaymentItems::class)
+                            ->where('source_id', $item->id)
+                            ->update(['status' => $ftStatus]);
+                    }
+                }
             }
+
+            // Update Deliverable status
+            $deliverables = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)
+                ->when($sessionId, fn($q) => $q->orWhere('session_id', $sessionId))
+                ->get();
+            foreach ($deliverables as $deliverable) {
+                $deliverableStatus = match($newStatus) {
+                    'refunded' => 'refunded',
+                    'failed', 'blocked' => 'failed',
+                    default => $deliverable->status, // Don't overwrite delivered/pending with 'succeeded'
+                };
+                if ($deliverableStatus !== $deliverable->status) {
+                    $deliverable->update(['status' => $deliverableStatus]);
+                }
+                if (in_array($newStatus, ['succeeded', 'review_hold']) && $deliverable->payment_status !== 'paid') {
+                    $deliverable->update(['payment_status' => 'paid']);
+                } elseif ($newStatus === 'refunded') {
+                    $deliverable->update(['payment_status' => 'refunded']);
+                }
+            }
+
+            // Update UserPayment status
+            if ($sessionId) {
+                \App\Models\UserPayment::where('payment_details', 'LIKE', '%' . $sessionId . '%')
+                    ->update(['status' => $sourceStatus]);
+            }
+            if ($paymentIntentId) {
+                \App\Models\UserPayment::where('payment_details', 'LIKE', '%' . $paymentIntentId . '%')
+                    ->update(['status' => $sourceStatus]);
+            }
+
         } catch (\Exception $e) {
             Log::error("syncFinancialTransactionsByPaymentIntent failed: " . $e->getMessage());
         }

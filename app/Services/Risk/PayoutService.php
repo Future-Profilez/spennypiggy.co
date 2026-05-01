@@ -17,6 +17,55 @@ class PayoutService
     private const MINIMUM_PAYOUT_MINOR = 100; // £1.00 / $1.00 minimum threshold
 
     /**
+     * Get all FinancialTransaction records for a Payment record by looking up source models.
+     * Returns a collection of FTs.
+     */
+    public function getAllFinancialTransactionsForPayment(\App\Models\Payment $payment): \Illuminate\Support\Collection
+    {
+        $sourceModels = [
+            \App\Models\TaskPurchase::class         => 'stripe_session_id',
+            \App\Models\TipGoalsPayment::class      => 'session_id',
+            \App\Models\ShopPayment::class          => 'session_id',
+            \App\Models\MembershipPayment::class    => 'session_id',
+            \App\Models\BillPayment::class          => 'session_id',
+            \App\Models\StripePaymentItems::class   => 'stripe_session_id',
+        ];
+
+        foreach ($sourceModels as $modelClass => $sessionColumn) {
+            $query = $modelClass::query();
+
+            if ($modelClass === \App\Models\StripePaymentItems::class) {
+                if (!$payment->stripe_session_id) continue;
+                $detailIds = \App\Models\StripePaymentDetail::where('session_id', $payment->stripe_session_id)->pluck('id');
+                if ($detailIds->isEmpty()) continue;
+                $query->whereIn('stripe_payment_detail_id', $detailIds);
+            } else {
+                $query->where(function ($q) use ($payment, $sessionColumn, $modelClass) {
+                    if ($payment->stripe_session_id) {
+                        $q->orWhere($sessionColumn, $payment->stripe_session_id);
+                    }
+                    if ($modelClass === \App\Models\TaskPurchase::class && $payment->stripe_payment_intent_id) {
+                        $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
+                    }
+                });
+            }
+
+            $items = $query->get(['id']);
+            if ($items->isEmpty()) continue;
+
+            $fts = \App\Models\FinancialTransaction::where('source_type', $modelClass)
+                ->whereIn('source_id', $items->pluck('id'))
+                ->get();
+            
+            if ($fts->isNotEmpty()) {
+                return $fts;
+            }
+        }
+
+        return collect();
+    }
+
+    /**
      * Calculate payouts for all eligible creators.
      * Returns a detailed breakdown for preview.
      */
@@ -122,63 +171,12 @@ class PayoutService
             // Calculate Net Eligible Base
             $netEarningsMinor = 0;
             foreach ($payments as $p) {
-                // Find corresponding FinancialTransaction net amount
-                // Since there's no direct link, we check common source models
-                $paymentIntentId = $p->stripe_payment_intent_id;
-                $sessionId = $p->stripe_session_id;
-                
-                $sourceModels = [
-                    \App\Models\TaskPurchase::class         => 'stripe_session_id',
-                    \App\Models\TipGoalsPayment::class      => 'session_id',
-                    \App\Models\ShopPayment::class          => 'session_id',
-                    \App\Models\StripePaymentDetail::class  => 'session_id',
-                    \App\Models\MembershipPayment::class    => 'session_id',
-                    \App\Models\BillPayment::class          => 'session_id',
-                    \App\Models\StripePaymentItems::class   => 'stripe_session_id', // Joined via detail
-                ];
-                
-                $foundTx = false;
-                foreach ($sourceModels as $modelClass => $sessionColumn) {
-                    $record = $modelClass::where(function($q) use ($p, $sessionColumn, $modelClass) {
-                            if ($p->stripe_session_id) {
-                                if ($modelClass === \App\Models\StripePaymentItems::class) {
-                                    // Special handling for cart items
-                                    $detailIds = \App\Models\StripePaymentDetail::where('session_id', $p->stripe_session_id)->pluck('id');
-                                    $q->whereIn('stripe_payment_detail_id', $detailIds);
-                                } else {
-                                    $q->where($sessionColumn, $p->stripe_session_id);
-                                }
-                            }
-                            
-                            // For TaskPurchase which also has payment_intent_id
-                            if ($modelClass === \App\Models\TaskPurchase::class && $p->stripe_payment_intent_id) {
-                                $q->orWhere('payment_intent_id', $p->stripe_payment_intent_id);
-                            }
-                        })->get(); // Get all items (especially for cart)
-                        
-                    if ($record->isNotEmpty()) {
-                        $sourceFound = true;
-                        foreach ($record as $item) {
-                            $ft = \App\Models\FinancialTransaction::where('source_type', $modelClass)
-                                ->where('source_id', $item->id)
-                                ->first();
-                            if ($ft) {
-                                $netEarningsMinor += (int) ($ft->net_amount * 100);
-                                $foundTx = true;
-                            }
-                        }
-                        if ($foundTx) break;
-                        // Source record exists but no FinancialTransaction — skip and log
-                        \Illuminate\Support\Facades\Log::warning("PayoutService: Source record found for payment {$p->stripe_session_id} but no FinancialTransaction exists. Run sync-financial-transactions.");
-                        break;
-                    }
+                $fts = $this->getAllFinancialTransactionsForPayment($p);
+                if ($fts->isNotEmpty()) {
+                    $netEarningsMinor += (int) round($fts->sum('net_amount') * 100);
+                } else {
+                    \Illuminate\Support\Facades\Log::warning("PayoutService: No FinancialTransactions found for payment {$p->stripe_session_id} — skipping from net earnings.");
                 }
-
-                // Fallback: only if NO source record found at all
-                if (!$foundTx && !isset($sourceFound)) {
-                    \Illuminate\Support\Facades\Log::warning("PayoutService: No source record found for payment {$p->stripe_session_id} — skipping from net earnings.");
-                }
-                unset($sourceFound);
             }
             
             $grossAmount = (int) $payments->sum('amount');
@@ -186,9 +184,9 @@ class PayoutService
             // Use FinancialTransaction.reserve_amount (net-based) instead of Payment.reserve_amount_minor (may be gross-based)
             $totalReservesHeld = 0;
             foreach ($payments as $p) {
-                $ft = $this->findFinancialTransactionForPayment($p);
-                if ($ft && $ft->reserve_amount > 0) {
-                    $totalReservesHeld += (int) round($ft->reserve_amount * 100);
+                $fts = $this->getAllFinancialTransactionsForPayment($p);
+                if ($fts->isNotEmpty() && $fts->sum('reserve_amount') > 0) {
+                    $totalReservesHeld += (int) round($fts->sum('reserve_amount') * 100);
                 } else {
                     $totalReservesHeld += (int) ($p->reserve_amount_minor ?? 0);
                 }
@@ -209,7 +207,18 @@ class PayoutService
                 ->where('created_at', '<=', $cutoff)
                 ->get();
 
-            $refundDisputeAmount = (int) $adjustments->sum('amount');
+            // Use FinancialTransaction net_amount (creator's actual earnings) for adjustments,
+            // not Payment.amount which may be the gifter total or GBP-normalized risk amount.
+            $refundDisputeAmount = 0;
+            foreach ($adjustments as $adj) {
+                $fts = $this->getAllFinancialTransactionsForPayment($adj);
+                if ($fts->isNotEmpty()) {
+                    $refundDisputeAmount += (int) round($fts->sum('net_amount') * 100);
+                } else {
+                    // Fallback to Payment amount if no FT exists
+                    $refundDisputeAmount += (int) $adj->amount;
+                }
+            }
             
             $reviewHoldAmount = (int) $reviewHold->sum('amount');
 
@@ -525,11 +534,11 @@ class PayoutService
 
         foreach ($pendingPayments as $p) {
             // Always use FinancialTransaction.reserve_amount (net-based) as the canonical reserve
-            $ft = $this->findFinancialTransactionForPayment($p);
+            $fts = $this->getAllFinancialTransactionsForPayment($p);
 
-            if ($ft && $ft->reserve_amount > 0) {
-                $reserveMinor = (int) round($ft->reserve_amount * 100);
-                $description = $ft->description ?: 'Pending Payment';
+            if ($fts->isNotEmpty() && $fts->sum('reserve_amount') > 0) {
+                $reserveMinor = (int) round($fts->sum('reserve_amount') * 100);
+                $description = $fts->first()->description ?: 'Pending Payment';
             } elseif ((int) ($p->reserve_amount_minor ?? 0) > 0) {
                 // Legacy fallback: Payment.reserve_amount_minor
                 $reserveMinor = (int) $p->reserve_amount_minor;
@@ -693,7 +702,7 @@ class PayoutService
                 $due[$creatorId]['amount'] = (int) ($due[$creatorId]['amount'] ?? 0) + $reserveAmount;
                 $due[$creatorId]['sources'] = $due[$creatorId]['sources'] ?? [];
                 $due[$creatorId]['sources'][] = [
-                    'payout_run_id' => (int) $run->id,
+                    'payout_run_id' => $run->id, // UUID — do not cast to int
                 ];
             }
         }
@@ -704,8 +713,8 @@ class PayoutService
     private function markReserveSourcesReleased(string $creatorId, array $sources): void
     {
         foreach ($sources as $source) {
-            $payoutRunId = (int) ($source['payout_run_id'] ?? 0);
-            if ($payoutRunId <= 0) {
+            $payoutRunId = $source['payout_run_id'] ?? null; // UUID — do not cast to int
+            if (empty($payoutRunId)) {
                 continue;
             }
 
@@ -734,49 +743,13 @@ class PayoutService
         }
     }
 
-    /**
-     * Find the FinancialTransaction for a Payment record by looking up source models.
-     * Returns the FT or null if not found.
-     */
-    private function findFinancialTransactionForPayment(\App\Models\Payment $payment): ?\App\Models\FinancialTransaction
-    {
-        $sourceModels = [
-            \App\Models\TaskPurchase::class         => 'stripe_session_id',
-            \App\Models\TipGoalsPayment::class      => 'session_id',
-            \App\Models\ShopPayment::class          => 'session_id',
-            \App\Models\StripePaymentDetail::class  => 'session_id',
-            \App\Models\MembershipPayment::class    => 'session_id',
-            \App\Models\BillPayment::class          => 'session_id',
-            \App\Models\StripePaymentItems::class   => 'stripe_session_id',
-        ];
-
-        foreach ($sourceModels as $modelClass => $sessionColumn) {
-            $query = $modelClass::query();
-
-            if ($modelClass === \App\Models\StripePaymentItems::class) {
-                if (!$payment->stripe_session_id) continue;
-                $detailIds = \App\Models\StripePaymentDetail::where('session_id', $payment->stripe_session_id)->pluck('id');
-                $query->whereIn('stripe_payment_detail_id', $detailIds);
-            } else {
-                $query->where(function ($q) use ($payment, $sessionColumn, $modelClass) {
-                    if ($payment->stripe_session_id) {
-                        $q->orWhere($sessionColumn, $payment->stripe_session_id);
-                    }
-                    if ($modelClass === \App\Models\TaskPurchase::class && $payment->stripe_payment_intent_id) {
-                        $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
-                    }
-                });
-            }
-
-            $items = $query->get(['id']);
-            foreach ($items as $item) {
-                $ft = \App\Models\FinancialTransaction::where('source_type', $modelClass)
-                    ->where('source_id', $item->id)
-                    ->first();
-                if ($ft) return $ft;
-            }
-        }
-
-        return null;
-    }
+     /**
+      * Find the FinancialTransaction for a Payment record by looking up source models.
+      * Returns the first FT found or null if not found.
+      * @deprecated Use getAllFinancialTransactionsForPayment instead
+      */
+     private function findFinancialTransactionForPayment(\App\Models\Payment $payment): ?\App\Models\FinancialTransaction
+     {
+         return $this->getAllFinancialTransactionsForPayment($payment)->first();
+     }
 }

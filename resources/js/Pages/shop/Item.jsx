@@ -80,7 +80,7 @@ export default function ShopDetailItem(props) {
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
-        const platformFeeRate = (platform_fee_percentage || 20) / 100;
+        const platformFeeRate = (platform_fee_percentage || 17) / 100;
         const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
         const adminFee = adminFeeInCurrency(curr);
         const totalDeductionRate =
@@ -263,7 +263,7 @@ export default function ShopDetailItem(props) {
                                 {shop &&
                                 shop.is_member == 0 &&
                                 shop.special_member_price ? (
-                                    <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[30px]  px-1 py-2 ">
+                                    <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[30px]  p-3 ">
                                         <div className="discount-tag w-[50px] h-[50px] mr-2">
                                             <RiDiscountPercentFill />
                                         </div>
@@ -403,11 +403,25 @@ export default function ShopDetailItem(props) {
 
 
 
+                                {shop.slot_limitation && (shop.slot_limitation - shop.total_sold) > 0 ? (
+                                    <div className="my-2">
+                                        <span className=" text-pink text-lg font-light ">
+                                            Only {" "}
+                                            {shop.slot_limitation -
+                                                shop.total_sold}{" "}
+                                            Left
+                                        </span>
+                                    </div>
+                                        
+                                ) : (
+                                    ""
+                                )}
+                                
                                 <div className="sm:flex items-center justify-between">
                                     <div className=" mb-3">
                                         <h3 className="text-3xl font-bold flex flex-col">
-                                            <div className="flex flex-col items-start">
-                                                <div className="flex items-baseline">
+                                            <div className="flex">
+                                                <div className="flex">
                                                     {shop &&
                                                     shop.is_member == 1 &&
                                                     shop.special_member_price ? (
@@ -432,7 +446,7 @@ export default function ShopDetailItem(props) {
                                                                             {formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}
                                                                         </span>
                                                                     </div>
-                                                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                                                    <span className="!text-[14px] text-gray-500 font-normal mt-1 leading-tight">
                                                                         *Includes platform and payment processing fees and shipping. You will be charged in {shop?.currency || "GBP"}.
                                                                     </span>
                                                                 </div>
@@ -449,7 +463,7 @@ export default function ShopDetailItem(props) {
                                                         ) : (
                                                             <div className="flex flex-col">
                                                                 <span>{formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
-                                                                <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                                                <span className="text-[14px] text-gray-500 font-normal mt-1 leading-tight">
                                                                     *Includes platform and payment processing fees and shipping. You will be charged in {shop?.currency || "GBP"}.
                                                                 </span>
                                                             </div>
@@ -457,21 +471,17 @@ export default function ShopDetailItem(props) {
                                                     ) : (
                                                         "Free"
                                                     )}
-                                                    {shop.slot_limitation && (shop.slot_limitation - shop.total_sold) > 0 ? (
-                                                        <span className="ml-3 text-pink text-lg font-light ">
-                                                            Only {" "}
-                                                            {shop.slot_limitation -
-                                                                shop.total_sold}{" "}
-                                                            Left
-                                                        </span>
-                                                    ) : (
-                                                        ""
-                                                    )}
+                                                    
                                                 </div>
                                             </div>
                                         </h3>
                                     </div>
 
+
+
+                                    
+                                </div>
+                                <div>
                                     {IsloggedIn ? (
                                         ""
                                     ) : (
@@ -505,33 +515,32 @@ export default function ShopDetailItem(props) {
                                                         }
                                                         open={open}
                                                         s={shop}
-                                                        text={"Get This"}
-                                                        classes="w-full sm:w-auto btn-pink font-light md  mb-3"
+                                                        text={"Buy This Item"}
+                                                        classes="w-full sm:w-auto btn-pink !text-[16px] md !px-6 py-3 mb-3"
                                                     />
                                                 </>
                                             )}
                                         </>
                                     )}
-
-                                    {props.my_purchases && props.my_purchases.length > 0 && (
-                                        <div className="mt-6 border-t border-gray-200 pt-4">
-                                            <h3 className="text-md font-semibold text-gray-800 mb-3">Your Purchases</h3>
-                                            <div className="space-y-3">
-                                                {props.my_purchases.map(purchase => (
-                                                    <div key={purchase.id} className="bg-gray-50 rounded-2xl p-3 flex justify-between items-center text-sm">
-                                                        <div>
-                                                            <p className="font-medium text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
-                                                            <p className="text-xs text-gray-500 capitalize">Status: {purchase.status}</p>
-                                                        </div>
-                                                        <a href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-xs">
-                                                            View Details
-                                                        </a>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
+                                {props.my_purchases && props.my_purchases.length > 0 && (
+                                    <div className="mt-6 border-t border-gray-200 pt-4">
+                                        <h3 className="text-md font-semibold text-gray-800 mb-3">Your Purchases</h3>
+                                        <div className="space-y-3">
+                                            {props.my_purchases.map(purchase => (
+                                                <div key={purchase.id} className="bg-gray-50 !rounded-[20px] p-4 flex justify-between items-center text-sm">
+                                                    <div>
+                                                        <p className="font-medium text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
+                                                        <p className="text-xs text-gray-500 capitalize">Status: {purchase.status}</p>
+                                                    </div>
+                                                    <a href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-xs">
+                                                        View Details
+                                                    </a>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -51,7 +51,7 @@ class CreatorFinancialController extends Controller
 
         $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id']);
 
@@ -125,11 +125,13 @@ class CreatorFinancialController extends Controller
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'pending', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('supporter:id,name,username,email')
-            ->latest('transaction_date')
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('id', 'desc')
             ->take(20)
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
+                $tx->id = $tx->id; // Ensure ID is available for stable sorting
                 $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
 
                 $base = class_basename($tx->source_type);
@@ -148,12 +150,14 @@ class CreatorFinancialController extends Controller
 
         $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$dates['start'], $dates['end']])
-            ->latest('expense_date')
+            ->orderBy('expense_date', 'desc')
+            ->orderBy('id', 'desc')
             ->take(20)
             ->get()
             ->map(function ($exp) {
                 // Mock FinancialTransaction structure for frontend compatibility
                 $tx = new \stdClass();
+                $tx->id = $exp->id;
                 $tx->uuid = 'exp-' . $exp->id;
                 $tx->transaction_date = $exp->expense_date;
                 $tx->description = $exp->description;
@@ -171,14 +175,17 @@ class CreatorFinancialController extends Controller
             });
 
         $recentTransactions = $income->concat($expenses)
-            ->sortByDesc('display_date')
+            ->sortBy([
+                ['display_date', 'desc'],
+                ['id', 'desc'],
+            ])
             ->take(20)
             ->values();
 
         // Top Supporters with Category Breakdown
         $supporterTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
             ->with(['supporter:id,name,username,avatar'])
@@ -297,13 +304,15 @@ class CreatorFinancialController extends Controller
         // Income (Filtered by Tax Year)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'pending', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('supporter:id,name,username,email')
-            ->latest('transaction_date')
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('id', 'desc')
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
+                $tx->id = $tx->id;
                 $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
                 
                 $base = class_basename($tx->source_type);
@@ -322,10 +331,12 @@ class CreatorFinancialController extends Controller
         // Expenses (Filtered by Tax Year)
         $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$dates['start'], $dates['end']])
-            ->latest('expense_date')
+            ->orderBy('expense_date', 'desc')
+            ->orderBy('id', 'desc')
             ->get()
             ->map(function ($exp) {
                 $tx = new \stdClass();
+                $tx->id = $exp->id;
                 $tx->uuid = 'exp-' . $exp->id;
                 $tx->transaction_date = $exp->expense_date;
                 $tx->description = $exp->description;
@@ -341,7 +352,12 @@ class CreatorFinancialController extends Controller
                 return $tx;
             });
 
-        $allTransactions = $income->concat($expenses)->sortByDesc('display_date')->values();
+        $allTransactions = $income->concat($expenses)
+            ->sortBy([
+                ['display_date', 'desc'],
+                ['id', 'desc'],
+            ])
+            ->values();
         
         // Pagination
         $perPage = 20;
@@ -364,12 +380,19 @@ class CreatorFinancialController extends Controller
     public function refresh(Request $request)
     {
         $user = Auth::user();
+        \Illuminate\Support\Facades\Log::info("CreatorFinancialController: Refreshing records for user {$user->id}");
 
-        Artisan::call('finance:sync-transactions', [
-            '--user_id' => $user->id,
-        ]);
-
-        return back()->with('success', 'Financial records refreshed.');
+        try {
+            Artisan::call('finance:sync-transactions', [
+                '--user_id' => $user->id,
+            ]);
+            
+            \Illuminate\Support\Facades\Log::info("CreatorFinancialController: Sync completed for user {$user->id}");
+            return redirect()->route('financial.dashboard')->with('success', 'Financial records refreshed.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("CreatorFinancialController: Sync failed for user {$user->id}: " . $e->getMessage());
+            return redirect()->route('financial.dashboard')->with('error', 'Failed to refresh records: ' . $e->getMessage());
+        }
     }
 
     public function certificate(Request $request)
@@ -381,7 +404,7 @@ class CreatorFinancialController extends Controller
         $joinDate = $user->created_at;
         $incomeAll = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->where('status', 'completed')
             ->get(['net_amount', 'currency', 'transaction_date']);
 
         $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
@@ -473,7 +496,7 @@ class CreatorFinancialController extends Controller
 
         $transactions = FinancialTransaction::where('user_id', $user->id)
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->whereIn('status', ['completed', 'review_hold', 'disputed']) // Match dashboard logic
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'pending', 'refunded'])
             ->get()
             ->map(function ($transaction) {
                 return [

@@ -995,42 +995,44 @@ export default function AddItem(props) {
                                     )}
                                 </div>
 
-                                <div className="ad-setting my-2">
-                                    <div className="inline-flex items-centercursor-pointer">
-                                        <div
-                                            onClick={handleHaveSlots}
-                                            className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${
-                                                haveSlots
-                                                    ? "after:transition-all after:translate-x-full  bg-blue-600"
-                                                    : "bg-gray-200"
-                                            }`}
-                                        ></div>
-                                        <span className="ml-3 text-md font-medium text-gray-900">
-                                            Limit slots (optional)
-                                            <button className="tooltipbtn">
-                                                {" "}
-                                                ?
-                                                <p>
-                                                    A limited number of slots
-                                                    creates a sense of urgency and
-                                                    also saves you from burn-out.
-                                                </p>
-                                            </button>
-                                        </span>
+                                {physical && (
+                                    <div className="ad-setting my-2">
+                                        <div className="inline-flex items-center cursor-pointer">
+                                            <div
+                                                onClick={handleHaveSlots}
+                                                className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${
+                                                    haveSlots
+                                                        ? "after:transition-all after:translate-x-full  bg-blue-600"
+                                                        : "bg-gray-200"
+                                                }`}
+                                            ></div>
+                                            <span className="ml-3 text-md font-medium text-gray-900">
+                                                Limit slots (optional)
+                                                <button className="tooltipbtn">
+                                                    {" "}
+                                                    ?
+                                                    <p>
+                                                        A limited number of slots
+                                                        creates a sense of urgency and
+                                                        also saves you from burn-out.
+                                                    </p>
+                                                </button>
+                                            </span>
+                                        </div>
+                                        {haveSlots ? (
+                                            <input
+                                                onChange={(e) =>
+                                                    setSlots(e.target.value)
+                                                }
+                                                value={slots}
+                                                className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
+                                                type="number"
+                                            />
+                                        ) : (
+                                            ""
+                                        )}
                                     </div>
-                                    {haveSlots ? (
-                                        <input
-                                            onChange={(e) =>
-                                                setSlots(e.target.value)
-                                            }
-                                            value={slots}
-                                            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
-                                            type="text"
-                                        />
-                                    ) : (
-                                        ""
-                                    )}
-                                </div>
+                                )}
 
                                 {shopItem && shopItem.type !== "physical" ? (
                                     <>

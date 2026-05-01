@@ -16,6 +16,7 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
+use App\Models\FinancialTransaction;
 use App\Models\Deliverable;
 use App\Models\Logs;
 use App\Models\Membership;
@@ -910,6 +911,46 @@ class MembershipController extends Controller
                 $userPayment->paid_at = Carbon::now();
                 $userPayment->status = $session->payment_status;
                 $userPayment->save();
+
+                // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+                try {
+                    $creator = $mem->membership->user;
+                    $amount = (float) $mem->amount;
+                    $vat = (float) ($mem->vat_tax_amount ?? 0);
+                    if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
+                        $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+                    }
+                    // Use actual fee breakdown from the gross-up formula
+                    $memBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'));
+                    $platformFee = $memBreakdown['platform_fee'] + $memBreakdown['compliance_fee'] + $memBreakdown['admin_fee'];
+                    $stripeFee = $memBreakdown['stripe_fee'];
+                    $gross = $memBreakdown['total_supporter_pays'];
+                    $creatorAmount = $amount;
+
+                    FinancialTransaction::updateOrCreate(
+                        [
+                            'source_type' => \App\Models\MembershipPayment::class,
+                            'source_id' => $mem->id,
+                        ],
+                        [
+                            'user_id' => $creator->id,
+                            'supporter_id' => $mem->user_id,
+                            'type' => 'income',
+                            'gross_amount' => $gross,
+                            'platform_fee' => $platformFee,
+                            'stripe_fee' => $stripeFee,
+                            'vat_amount' => $vat,
+                            'net_amount' => $creatorAmount,
+                            'currency' => strtoupper($mem->currency ?? 'GBP'),
+                            'status' => 'completed',
+                            'description' => 'Membership: ' . ($mem->membership->level ?? 'Subscription'),
+                            'transaction_date' => $mem->created_at,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('Failed to sync MembershipPayment to FinancialTransaction in handlePayment: ' . $e->getMessage(), ['membership_payment_id' => $mem->id]);
+                }
+
                 // if ($mem->wish_item->user->auto_tweet == 1) {
                 //     // MakeAutoTweets::dispatch($user);
                 //     SubscribeAutoTweet::dispatch($mem);

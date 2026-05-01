@@ -45,7 +45,7 @@ export default function OrdersLists({ type = 'sales' }) {
        
        const stripeFeeRate = 0.029;
        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-       const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+       const platformFeeRate = (platform_fee_percentage || 17) / 100; 
        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
        const adminFee = adminFeeInCurrency(curr); 
        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;

@@ -105,7 +105,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
     // 2. Define fee rates (Constants must match backend configuration in Helpers.php)
     const stripeFeeRate = 0.029;
     const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-    const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+    const platformFeeRate = (platform_fee_percentage || 17) / 100; 
     const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
     const adminFee = adminFeeInCurrency(curr);
 
