@@ -216,7 +216,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                           </div>
                           {!isCreator && (
                             <div className="text-[10px] text-black font-bold mt-1 leading-tight text-center">
-                              * Includes all fees
+                              *Includes platform and payment processing fees
                             </div>
                           )}
                         </div>

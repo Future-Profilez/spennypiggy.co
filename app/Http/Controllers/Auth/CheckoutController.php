@@ -202,7 +202,7 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Unable to process payment. Please check your cart and try again.');
             }
 
-            if (!StripeControl::hasTransfersCapability($connectedAccountId)) {
+            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
                 return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
@@ -377,10 +377,15 @@ class CheckoutController extends Controller
             session(['session_id' => $sessionCreate->id]);
 
             try {
-                $rawAmountMinor = (int) ($sessionCreate->amount_total ?? (int) round($totalCreatorNet * $multiplier));
+                $rawAmountMinor = (int) ($sessionCreate->amount_total ?? (int) round($grandTotalSupporterPays * $multiplier));
+                $creatorNetMinor = (int) round($totalCreatorNet * $multiplier);
+                
                 $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner->uuid);
                 $reserveRate = (int) ($metrics->reserve_percent ?? 0);
-                $reserveMinor = $reserveRate > 0 ? (int) round(($rawAmountMinor * $reserveRate) / 100) : 0;
+                
+                // Calculate reserve based on the creator's share (Net Amount)
+                $reserveMinor = $reserveRate > 0 ? (int) round(($creatorNetMinor * $reserveRate) / 100) : 0;
+                
                 \App\Models\Payment::create([
                     'creator_id' => $owner->uuid,
                     'risk_identity_id' => $riskData['risk_identity_id'],

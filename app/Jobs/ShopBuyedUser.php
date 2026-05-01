@@ -39,8 +39,6 @@ class ShopBuyedUser implements ShouldQueue
      */
     public function handle()
     {
-        if ((isset($this->payment->user) && $this->payment->user->notification_send == 1) || (empty($this->payment->user))) {
-            EmailService::shopBuyedUser($this->payment, $this->url, $this->curr);
-        }
+        EmailService::shopBuyedUser($this->payment, $this->url, $this->curr);
     }
 }

@@ -5,6 +5,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import toast from "react-hot-toast";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 
@@ -402,7 +403,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                 task.currency || 'USD'
                                             )}
                                             <span className="block text-xs text-gray-500 font-normal mt-1 leading-tight">
-                                                * Includes all fees. You will be charged in {task.currency || 'USD'}.
+                                                *Includes platform and payment processing fees. You will be charged in {task.currency || 'USD'}.
                                             </span>
                                         </>
                                     )}
@@ -417,7 +418,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                     {task.type} Delivery
                                 </span>
                                 {task?.sla_hours ? <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
-                                    {task.sla_hours} Hours
+                                    {task.sla_hours === 168 ? '7d' : `${task.sla_hours}h`}
                                 </span>: ''}
                                 <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
                                     {task.category || 'Paid Task'}
@@ -547,57 +548,10 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                          />
                                                      </div>
                                                  ) : null}
-                                                 <div className="mb-4">
-                                                     <label htmlFor="task-terms" className="flex items-start gap-2 text-normal text-gray-700">
-                                                         <input
-                                                             id="task-terms"
-                                                             type="checkbox"
-                                                             className="mt-1"
-                                                             checked={!!data.agree}
-                                                             onChange={(e) => setData("agree", e.target.checked)}
-                                                         />
-                                                         <span>
-                                                             I agree to the{" "}
-                                                             <Link
-                                                                 href={route("paid-tasks-terms")}
-                                                                 target="_blank"
-                                                                 className="text-pink-600 underline font-bold">
-                                                                 Paid Tasks Terms
-                                                             </Link>
-                                                         </span>
-                                                     </label>
-                                                     <div className="mt-2 text-sm text-gray-600">
-                                                         <ul className="list-disc pl-5 space-y-1">
-                                                             <li>Payments are processed securely via Stripe.</li>
-                                                             <li>Refunds are eligibility-based (e.g., non-delivery), not satisfaction-based.</li>
-                                                             <li>Creators may accept or decline requests at their discretion.</li>
-                                                             <li>Delivered work is treated as completed under the agreed format.</li>
-                                                             <li>Spenny Piggy facilitates payments and workflow, not the task itself.</li>
-                                                         </ul>
-                                                     </div>
-                                                 </div>
-
-                                                 <div className="mt-6 mb-6 p-4 bg-gray-50 border border-gray-200 rounded-[20px]">
-                                                     <label
-                                                         htmlFor="digital_waiver"
-                                                         className="text-left flex items-start cursor-pointer group"
-                                                     >
-                                                         <div className="flex items-center h-5 mt-1">
-                                                             <input
-                                                                 onChange={(e) => setData('digital_waiver', e.target.checked)}
-                                                                 type="checkbox"
-                                                                 id="digital_waiver"
-                                                                 name="digital_waiver"
-                                                                 className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-                                                                 checked={data.digital_waiver}
-                                                                 required
-                                                             />
-                                                         </div>
-                                                         <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
-                                                             I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
-                                                         </span>
-                                                     </label>
-                                                 </div>
+                                                 <CheckoutLegalTerms onAgreeChange={(checked) => {
+                                                     setData('agree', checked);
+                                                     setData('digital_waiver', checked);
+                                                 }} />
 
                                                  <button
                                                      type="button"

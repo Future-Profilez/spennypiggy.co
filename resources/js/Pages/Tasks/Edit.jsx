@@ -1,44 +1,62 @@
-import { useForm, Head, Link, router } from "@inertiajs/react";
+import { useForm, Head, Link, router, usePage } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
 import GlobalUploader from "@/uploadcare/Uploader";
 import InputError from "@/Components/InputError";
-import { usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
+import { useState } from "react";
+import { Info, CheckCircle2, Clock, Zap, FileUp, ArrowLeft, AlertTriangle } from "lucide-react";
 
 export default function Edit({ auth, currencySymbol, task }) {
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const { global_currency } = usePage().props;
     const defaultCurrency = auth.user.default_currency || 'GBP';
+    const [showSummary, setShowSummary] = useState(false);
+
+    const categories = [
+        "Shoutout / Name Feature",
+        "Custom Message (Text / Audio)",
+        "Custom Image (PG-13)",
+        "Custom Video (PG-13)",
+        "Task / Instruction (Non-sexual)",
+        "Priority Access / Fast Response",
+        "Leaderboard / Public Recognition",
+        "Profile Feature / Pin",
+        "Countdown / Deadline Task",
+        "Challenge / Dare (PG-13)",
+        "Decision Control (PG-13 framing)",
+        "Reward / Unlockable",
+        "Writing / Text Feature",
+        "Digital File / Deliverable",
+        "Other (Describe Clearly)"
+    ];
+
+    const timeframes = [
+        { label: "1h", value: 1 },
+        { label: "24h", value: 24 },
+        { label: "48h", value: 48 },
+        { label: "72h", value: 72 },
+        { label: "7d", value: 168 }
+    ];
+
     const { data, setData, post, processing, errors } = useForm({
         title: task.title || "",
         description: task.description || "",
         price: task.price || "",
-        category: task.category || "",
-        type: task.type || "instant",
+        category: task.category || "Shoutout / Name Feature",
+        type: task.type || "timed",
         sla_hours: task.sla_hours || 48,
         deliverable_file: null,
         deliverable_note: task.deliverable_note || "",
         media_file: null,
     });
 
-    const { url } = usePage();
-
-    // Check if task is rejected (is_approved === 2)
     const isRejected = task.is_approved === 2;
     const submitText = isRejected ? "Resubmit Task" : "Update Task";
     const titleText = isRejected ? "Resubmit Task" : "Edit Task";
-    const descriptionText = isRejected
-        ? "Make changes based on feedback and resubmit for admin review"
-        : "Update your task details";
 
-    // Handle back button click
     const handleBack = (e) => {
         e.preventDefault();
-        // Go back in history or redirect to dashboard
-        if (
-            document.referrer &&
-            document.referrer.includes(window.location.origin)
-        ) {
+        if (document.referrer && document.referrer.includes(window.location.origin)) {
             window.history.back();
         } else {
             router.visit(route("task.dashboard"));
@@ -47,6 +65,11 @@ export default function Edit({ auth, currencySymbol, task }) {
 
     const submit = (e) => {
         e.preventDefault();
+        if (!showSummary) {
+            setShowSummary(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
         post(route("task.update", task.uuid));
     };
 
@@ -61,77 +84,46 @@ export default function Edit({ auth, currencySymbol, task }) {
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title={titleText} />
-            <div className="loginPage bg-white px-3 py-5 min-h-screen font-public-sans">
+            <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-screen font-public-sans">
                 <div className="container">
                     <div className="mx-auto max-w-[900px]">
-                        {/* Back Button - Top Left */}
+                        {/* Back Button */}
                         <div className="mb-6">
                             <button
                                 onClick={handleBack}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
                             >
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                                    />
-                                </svg>
+                                <ArrowLeft size={16} />
                                 Back to Task Lists
                             </button>
                         </div>
 
+                        <div className="text-center mb-8">
+                            <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider">
+                                {titleText}
+                            </h2>
+                            <div className="mt-4 p-4 bg-yellow-50 border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-left">
+                                <p className="text-black font-bold text-lg tracking-wide">
+                                    Paid Tasks are for things you’re happy to do. You define the task, price, and delivery. No custom requests outside your description. PG-13 only.
+                                </p>
+                            </div>
+                        </div>
+
                         {/* Rejection Notice Banner */}
                         {isRejected && (
-                            <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
-                                <div className="flex items-start gap-3">
-                                    {/* <div className="p-2 bg-red-100 rounded-full flex-shrink-0">
-                                        <svg
-                                            className="w-6 h-6 text-red-600"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.342 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                            />
-                                        </svg>
-                                    </div> */}
+                            <div className="mb-8 p-6 bg-red-50 border-2 border-red-500 rounded-[30px] shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
+                                <div className="flex items-start gap-4">
                                     <div className="flex-1">
-                                        <h3 className="text-lg font-black text-red-800 mb-1">
-                                            ⚠️ Task Rejected - Action Required
+                                        <h3 className="text-lg font-black text-red-800 mb-1 flex items-center gap-2">
+                                            <AlertTriangle className="text-red-600" /> Task Rejected - Action Required
                                         </h3>
-                                        <p className="text-red-700 font-medium mb-2">
-                                            Your task was rejected by the admin.
-                                            Please review the feedback below,
-                                            make necessary changes, and resubmit
-                                            for review.
+                                        <p className="text-red-700 font-medium mb-4">
+                                            Your task was rejected by the admin. Please review the feedback, make necessary changes, and resubmit for review.
                                         </p>
                                         {task.reason && (
-                                            <div className="mt-3 p-3 bg-red-100 border border-red-300 rounded-[30px]  ">
-                                                <p className="text-red-800 font-bold text-sm mb-1">
-                                                    Rejection Feedback:
-                                                </p>
-                                                <p className="text-red-700 text-sm whitespace-pre-wrap">
-                                                    {task.reason}
-                                                </p>
-                                                {task.rejected_at && (
-                                                    <p className="text-red-600 text-xs mt-2">
-                                                        Rejected on:{" "}
-                                                        {new Date(
-                                                            task.rejected_at,
-                                                        ).toLocaleDateString()}
-                                                    </p>
-                                                )}
+                                            <div className="p-4 bg-red-100 border-2 border-red-200 rounded-[20px]">
+                                                <p className="text-red-800 font-bold text-sm mb-1 uppercase tracking-wider">Feedback:</p>
+                                                <p className="text-red-700 font-medium whitespace-pre-wrap">{task.reason}</p>
                                             </div>
                                         )}
                                     </div>
@@ -139,386 +131,265 @@ export default function Edit({ auth, currencySymbol, task }) {
                             </div>
                         )}
 
-                        <div className="text-center">
-                            <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider">
-                                {titleText}
-                            </h2>
-                            <p className="text-black mt-1 font-bold text-lg tracking-wide capitalize">
-                                {descriptionText}
-                            </p>
-                        </div>
-
-                        <div className="">
-                            <form
-                                onSubmit={submit}
-                                className="mt-4  space-y-6 bg-white"
-                            >
-                                {/* Title */}
-                                <div className="mb-0">
-                                    <input
-                                        type="text"
-                                        className="w-full border-2 border-black rounded-[30px]  p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400"
-                                        value={data.title}
-                                        onChange={(e) =>
-                                            setData("title", e.target.value)
-                                        }
-                                        placeholder="Task Title e.g. Custom Video Greeting"
-                                    />
-                                    <InputError
-                                        message={errors.title}
-                                        className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
-                                    />
-                                </div>
-
-                                {/* Description */}
-                                <div className="mb-0">
-                                    <textarea
-                                        className="w-full border-2 border-black rounded-[30px]  p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
-                                        rows="4"
-                                        value={data.description}
-                                        onChange={(e) =>
-                                            setData(
-                                                "description",
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="Describe exactly what you will provide..."
-                                    ></textarea>
-                                    <InputError
-                                        message={errors.description}
-                                        className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Price */}
-                                    <div className="mb-0">
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-green-700 z-10 pointer-events-none">
-                                                {currencySymbol}
-                                            </span>
-                                            <input
-                                                type="number"
-                                                placeholder={`Price (${currencySymbol})`}
-                                                step="0.01"
-                                                className="w-full border-2 border-black rounded-[30px]  p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
-                                                value={data.price}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "price",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        {data.price > 0 && (
-                                            <div className="mt-4 p-4 bg-gray-50 rounded-[30px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
-                                                    <span className="font-black text-xl text-black">
-                                                        {new Intl.NumberFormat('en-GB', { 
-                                                            style: 'currency', 
-                                                            currency: defaultCurrency 
-                                                        }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm font-bold text-gray-700 uppercase">You receive:</span>
-                                                    <span className="font-black text-xl text-green-600">
-                                                        {new Intl.NumberFormat('en-GB', { 
-                                                            style: 'currency', 
-                                                            currency: defaultCurrency 
-                                                        }).format(data.price)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {defaultCurrency !== global_currency && data.price > 0 && (
-                                            <p className="mt-2 text-sm text-gray-500 font-bold">
-                                                ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
-                                            </p>
-                                        )}
-                                        <InputError
-                                            message={errors.price}
-                                            className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
-                                        />
+                        {showSummary ? (
+                            <div className="bg-white border-2 border-black rounded-[30px] p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h3 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
+                                    <CheckCircle2 className="text-green-600" /> Confirm Task Changes
+                                </h3>
+                                
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex justify-between border-b-2 border-gray-100 pb-3">
+                                        <span className="font-bold text-gray-500 uppercase text-sm">Title</span>
+                                        <span className="font-black text-right max-w-[60%]">{data.title}</span>
                                     </div>
+                                    <div className="flex justify-between border-b-2 border-gray-100 pb-3">
+                                        <span className="font-bold text-gray-500 uppercase text-sm">Category</span>
+                                        <span className="font-black">{data.category}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b-2 border-gray-100 pb-3">
+                                        <span className="font-bold text-gray-500 uppercase text-sm">Price</span>
+                                        <span className="font-black text-green-600">{currencySymbol}{data.price}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b-2 border-gray-100 pb-3">
+                                        <span className="font-bold text-gray-500 uppercase text-sm">Delivery</span>
+                                        <span className="font-black uppercase">{data.type === 'instant' ? '⚡ Instant' : '⏳ Manual'}</span>
+                                    </div>
+                                    {data.type === 'timed' && (
+                                        <div className="flex justify-between border-b-2 border-gray-100 pb-3">
+                                            <span className="font-bold text-gray-500 uppercase text-sm">Timeframe</span>
+                                            <span className="font-black">{timeframes.find(tf => tf.value === data.sla_hours)?.label || `${data.sla_hours}h`}</span>
+                                        </div>
+                                    )}
+                                </div>
 
-                                    {/* Category */}
-                                    <div className="mb-0">
+                                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-[20px] mb-8">
+                                    <div className="flex gap-3">
+                                        <Info className="text-blue-600 shrink-0" />
+                                        <p className="text-sm font-bold text-blue-900">
+                                            {data.type === 'timed' 
+                                                ? "Funds for manual tasks are held until you upload delivery proof. High-value tasks may experience additional verification delays."
+                                                : "Instant tasks are delivered immediately and are non-refundable once purchased."}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <button 
+                                        onClick={() => setShowSummary(false)}
+                                        className="flex-1 px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase hover:bg-gray-50 transition-all"
+                                    >
+                                        Back to Edit
+                                    </button>
+                                    <button 
+                                        onClick={submit}
+                                        disabled={processing}
+                                        className="flex-[2] bg-pink-500 text-white px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
+                                    >
+                                        {processing ? "Updating..." : "Save Changes & Resubmit"}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <form onSubmit={submit} className="space-y-8">
+                                    {/* Title */}
+                                    <div>
+                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Title</label>
                                         <input
                                             type="text"
-                                            className="w-full border-2 border-black rounded-[30px]  p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 placeholder-gray-400"
-                                            value={data.category}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "category",
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Category (e.g. Shoutout, Art)"
+                                            maxLength={100}
+                                            className="w-full border-2 border-black rounded-[20px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400 font-bold"
+                                            value={data.title}
+                                            onChange={(e) => setData("title", e.target.value)}
+                                            placeholder="Keep the title clear and specific."
                                         />
-                                        <InputError
-                                            message={errors.category}
-                                            className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Type Selection */}
-                                <div className="">
-                                    <label className="block font-black text-normal mb-2 mt-8 capitalize tracking-wide text-start">
-                                        Delivery Method
-                                    </label>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setData("type", "instant")
-                                            }
-                                            className={`p-4 rounded-[30px]  border-2 border-black text-left transition-all ${
-                                                data.type === "instant"
-                                                    ? "bg-pink-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
-                                                    : "bg-white hover:bg-gray-50"
-                                            }`}
-                                        >
-                                            <div className="font-black text-lg uppercase mb-1">
-                                                ⚡ Instant Delivery
-                                            </div>
-                                            <div
-                                                className={`text-sm font-medium ${
-                                                    data.type === "instant"
-                                                        ? "text-pink-100"
-                                                        : "text-gray-600"
-                                                }`}
-                                            >
-                                                Content is delivered
-                                                automatically immediately after
-                                                payment.
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setData("type", "timed")
-                                            }
-                                            className={`p-4 rounded-[30px]  border-2 border-black text-left transition-all ${
-                                                data.type === "timed"
-                                                    ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
-                                                    : "bg-white hover:bg-gray-50"
-                                            }`}
-                                        >
-                                            <div className="font-black text-lg uppercase mb-1">
-                                                ⏳ Timed / Manual
-                                            </div>
-                                            <div
-                                                className={`text-sm font-medium ${
-                                                    data.type === "timed"
-                                                        ? "text-blue-100"
-                                                        : "text-gray-600"
-                                                }`}
-                                            >
-                                                You upload proof of completion
-                                                within a set timeframe.
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* SLA (Only for Timed) */}
-                                {data.type === "timed" && (
-                                    <div className="">
-                                        <label className="block font-black text-lg mb-2 text-blue-900 uppercase">
-                                            SLA (Hours to complete)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            className="w-full border-2 bg-blue-100 border-black rounded-[30px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-bold text-xl"
-                                            value={data.sla_hours}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "sla_hours",
-                                                    e.target.value,
-                                                )
-                                            }
-                                            min="1"
-                                            max="168"
-                                        />
-                                        <p className="text-sm text-blue-800 mt-3 font-bold">
-                                            You have {data.sla_hours} hours to
-                                            complete the task after purchase.
-                                            After {data.sla_hours} hours, the
-                                            task will be marked as expired.
-                                        </p>
-                                        <InputError
-                                            message={errors.sla_hours}
-                                            className="mt-2"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Deliverable File (Only for Instant) */}
-                                {data.type === "instant" && (
-                                    <div className="">
-                                        <div className="border-2 border-black rounded-[30px]  p-4 bg-pink-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                            <label className="block font-black text-lg mb-3 text-pink-900 uppercase flex items-center gap-2">
-                                                <span className="bg-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm border-2 border-black">
-                                                    1
-                                                </span>
-                                                Update Deliverable Content
-                                            </label>
-                                            <textarea
-                                                className="bg-white w-full border-2 border-black rounded-[30px]  p-3 mb-4 font-medium focus:!shadow-none"
-                                                rows="2"
-                                                placeholder="Add a note or external link (optional if file provided)..."
-                                                value={data.deliverable_note}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "deliverable_note",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            ></textarea>
-                                            <p className="text-sm font-black text-gray-900 mb-2 uppercase">
-                                                OR Upload File
+                                        <div className="flex justify-between mt-2">
+                                            <p className="text-xs font-bold text-gray-500">This is what supporters will see before purchasing.</p>
+                                            <p className={`text-xs font-bold ${data.title.length >= 100 ? 'text-red-500' : 'text-gray-400'}`}>
+                                                {data.title.length}/100
                                             </p>
+                                        </div>
+                                        <InputError message={errors.title} className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block" />
+                                    </div>
 
-                                            {task.deliverable_content &&
-                                                !data.deliverable_file && (
-                                                    <div className="mb-4 text-sm text-blue-800 font-bold bg-blue-100 p-3 rounded-[30px]   border-2 border-black flex flex-col gap-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <span>📁</span>
-                                                            <span>
-                                                                Current File:{" "}
-                                                                <strong>
-                                                                    {task.deliverable_content
-                                                                        .split(
-                                                                            "/",
-                                                                        )
-                                                                        .pop()}
-                                                                </strong>
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-3 ml-6">
-                                                            <a
-                                                                href={route(
-                                                                    "task.download",
-                                                                    task.uuid,
-                                                                )}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-[30px]  text-xs font-bold uppercase transition-colors"
-                                                            >
-                                                                Download / View
-                                                            </a>
-                                                            <span className="text-xs text-blue-700 font-medium">
-                                                                (Uploading a new
-                                                                file will
-                                                                replace this)
-                                                            </span>
+                                    {/* Description */}
+                                    <div>
+                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Description</label>
+                                        <textarea
+                                            className="w-full border-2 border-black rounded-[20px] p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
+                                            rows="4"
+                                            value={data.description}
+                                            onChange={(e) => setData("description", e.target.value)}
+                                            placeholder="Describe exactly what you will deliver."
+                                        ></textarea>
+                                        <InputError message={errors.description} className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block" />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Price */}
+                                        <div>
+                                            <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500 flex items-center gap-2">
+                                                Price ({currencySymbol})
+                                                {data.type === 'timed' && (
+                                                    <div className="group relative">
+                                                        <Info size={14} className="text-blue-500 cursor-help" />
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                            High-value tasks may delay payout until delivery is confirmed.
                                                         </div>
                                                     </div>
                                                 )}
-
-                                            <GlobalUploader
-                                                ctxName="task-deliverable"
-                                                type="minimal"
-                                                sendFile={
-                                                    handleDeliverableUpload
-                                                }
-                                                accept="image/*,video/*,audio/*,application/pdf,text/plain,application/zip,application/x-zip-compressed,application/x-rar-compressed"
-                                                imgonly={false}
-                                            />
-                                            {data.deliverable_file && (
-                                                <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-[30px]   border-2 border-black flex items-center gap-2">
-                                                    <span>✅</span> New File
-                                                    selected:{" "}
-                                                    {data.deliverable_file.name}
+                                            </label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-green-700 z-10 pointer-events-none">{currencySymbol}</span>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    className="w-full border-2 border-black rounded-[20px] p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
+                                                    value={data.price}
+                                                    onChange={(e) => setData("price", e.target.value)}
+                                                />
+                                            </div>
+                                            {data.price > 0 && (
+                                                <div className="mt-4 p-4 bg-gray-50 rounded-[20px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
+                                                        <span className="font-black text-xl text-black">
+                                                            {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-bold text-gray-700 uppercase">You receive:</span>
+                                                        <span className="font-black text-xl text-green-600">
+                                                            {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(data.price)}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             )}
+                                            <InputError message={errors.price} className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block" />
                                         </div>
-                                        <InputError
-                                            message={errors.deliverable_file}
-                                            className="mt-2 font-bold text-red-600"
-                                        />
+
+                                        {/* Category */}
+                                        <div>
+                                            <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Category</label>
+                                            <select
+                                                className="w-full border-2 border-black rounded-[20px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 font-bold appearance-none cursor-pointer"
+                                                value={data.category}
+                                                onChange={(e) => setData("category", e.target.value)}
+                                            >
+                                                {categories.map((cat) => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                            <InputError message={errors.category} className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block" />
+                                        </div>
                                     </div>
-                                )}
 
-                                <div className="flex items-center !mt-12">
-                                    <input
-                                        id="terms-checkbox"
-                                        type="checkbox"
-                                        required
-                                        className="mt-1 mr-3 h-6 w-6 text-pink-600 border-2 border-black rounded focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                                    />
-                                    <label
-                                        htmlFor="terms-checkbox"
-                                        className="cursor-pointer text-normal text-black font-bold leading-relaxed"
-                                    >
-                                        I accept the terms: PG-13 only, No
-                                        sexual content, No custom requests
-                                        outside of these parameters.
-                                    </label>
-                                </div>
+                                    {/* Type Selection */}
+                                    <div>
+                                        <label className="block font-black text-sm mb-4 uppercase tracking-wide text-gray-500">Delivery Method</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setData("type", "timed")}
+                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${data.type === "timed" ? "bg-blue-500 text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
+                                            >
+                                                <div className="font-black text-xl uppercase mb-2 flex items-center gap-2"><Clock size={20} /> Timed / Manual</div>
+                                                <div className={`text-sm font-bold ${data.type === "timed" ? "text-blue-100" : "text-gray-500"}`}>Best for custom shoutouts. Funds are held until delivery.</div>
+                                            </button>
 
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    {/* Cancel Button - Bottom */}
-                                    <button
-                                        type="button"
-                                        onClick={handleBack}
-                                        className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-center flex items-center justify-center gap-2"
-                                    >
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                                            />
-                                        </svg>
-                                        Cancel
-                                    </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setData("type", "instant")}
+                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${data.type === "instant" ? "bg-pink-500 text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
+                                            >
+                                                <div className="font-black text-xl uppercase mb-2 flex items-center gap-2"><Zap size={20} /> Instant Delivery</div>
+                                                <div className={`text-sm font-bold ${data.type === "instant" ? "text-pink-100" : "text-gray-500"}`}>Content is delivered immediately. Best for files or links.</div>
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                    {/* Submit Button */}
+                                    {/* SLA */}
+                                    {data.type === "timed" && (
+                                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <label className="block font-black text-sm mb-4 uppercase tracking-wide text-gray-500">Delivery Timeframe</label>
+                                            <div className="flex flex-wrap gap-3">
+                                                {timeframes.map((tf) => (
+                                                    <button
+                                                        key={tf.value}
+                                                        type="button"
+                                                        onClick={() => setData("sla_hours", tf.value)}
+                                                        className={`px-6 py-3 rounded-full border-2 border-black font-black transition-all ${data.sla_hours == tf.value ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1" : "bg-white hover:bg-blue-50"}`}
+                                                    >
+                                                        {tf.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-sm text-blue-800 mt-4 font-bold flex items-center gap-2"><Clock size={16} /> You will have {timeframes.find(tf => tf.value === data.sla_hours)?.label || `${data.sla_hours}h`} to complete the task.</p>
+                                        </div>
+                                    )}
+
+                                    {/* Instant Deliverable */}
+                                    {data.type === "instant" && (
+                                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="border-2 border-black rounded-[30px] p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                                <label className="block font-black text-lg mb-4 text-pink-900 uppercase flex items-center gap-2"><FileUp className="text-pink-500" /> Deliverable Content</label>
+                                                
+                                                {task.deliverable_content && !data.deliverable_file && (
+                                                    <div className="mb-4 text-sm text-blue-800 font-bold bg-blue-100 p-4 rounded-[20px] border-2 border-blue-500 flex flex-col gap-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <CheckCircle2 size={18} /> Current File: {task.deliverable_content.split("/").pop()}
+                                                        </div>
+                                                        <a href={route("task.download", task.uuid)} target="_blank" className="bg-blue-600 text-white px-4 py-2 rounded-full text-xs uppercase w-fit">View Current Content</a>
+                                                    </div>
+                                                )}
+
+                                                <textarea
+                                                    className="bg-white w-full border-2 border-black rounded-[20px] p-4 mb-4 font-medium shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                    rows="2"
+                                                    placeholder="Add a private link or note..."
+                                                    value={data.deliverable_note}
+                                                    onChange={(e) => setData("deliverable_note", e.target.value)}
+                                                ></textarea>
+                                                
+                                                <div className="relative mb-4">
+                                                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-pink-200"></div></div>
+                                                    <div className="relative flex justify-center text-xs uppercase font-black"><span className="bg-pink-50 px-2 text-pink-400">OR REPLACE FILE</span></div>
+                                                </div>
+
+                                                <GlobalUploader ctxName="task-deliverable" type="minimal" sendFile={handleDeliverableUpload} accept="image/*,video/*,audio/*,application/pdf,text/plain,application/zip" imgonly={false} />
+                                                
+                                                {data.deliverable_file && (
+                                                    <div className="mt-4 text-sm text-green-800 font-bold bg-green-100 p-4 rounded-[20px] border-2 border-green-500 flex items-center gap-2">
+                                                        <CheckCircle2 size={18} /> New File: {data.deliverable_file.name}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Terms */}
+                                    <div className="p-6 bg-red-50 border-2 border-black rounded-[25px] !mt-12 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="flex items-start">
+                                            <input id="terms-checkbox" type="checkbox" required className="h-6 w-6 text-pink-600 border-2 border-black rounded focus:ring-0 cursor-pointer" />
+                                            <div className="ml-4">
+                                                <label htmlFor="terms-checkbox" className="cursor-pointer text-sm text-black font-black leading-tight flex flex-col gap-1">
+                                                    <span>PG-13 only. No sexual content. No custom requests outside these parameters.</span>
+                                                    <span className="text-red-600 text-xs">Failure to deliver may result in refunds or account action.</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className={`flex-1 px-6 py-3 ${
-                                            isRejected
-                                                ? "bg-red-600 hover:bg-red-700"
-                                                : "bg-black hover:bg-gray-800"
-                                        } text-white font-bold rounded-[30px]  border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all`}
+                                        className="w-full bg-black text-white px-8 py-5 rounded-[25px] font-black text-xl uppercase shadow-[8px_8px_0px_0px_rgba(236,72,153,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:opacity-50"
                                     >
-                                        {processing
-                                            ? isRejected
-                                                ? "Resubmitting..."
-                                                : "Updating..."
-                                            : submitText}
+                                        {processing ? "Updating..." : "Continue to Summary"}
                                     </button>
-                                </div>
-
-                                {/* Additional info for rejected tasks */}
-                                {isRejected && (
-                                    <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded-[30px]   text-center">
-                                        <p className="text-gray-700 text-sm font-medium">
-                                            <span className="font-bold">
-                                                Note:
-                                            </span>{" "}
-                                            After resubmitting, your task will
-                                            be sent back to admin for review.
-                                            You'll be notified once a decision
-                                            is made.
-                                        </p>
-                                    </div>
-                                )}
-                            </form>
-                        </div>
+                                </form>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

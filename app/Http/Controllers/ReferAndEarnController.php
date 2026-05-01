@@ -126,6 +126,11 @@ class ReferAndEarnController extends Controller
 
         $availableForPayout = $availableForPayouts ? $totalEarn : 0;
 
+        /* =====================================================| Paid Out Amount===================================================== */
+        $paidOutAmount = CreatorReferralPayout::where('creator_id', $user->id)
+            ->where('status', 'PAID')
+            ->sum('amount');
+
         $canRedeem = $availableForPayout >= 50 && !$hasActivePayout;
 
         /* =====================================================| Response===================================================== */
@@ -145,6 +150,7 @@ class ReferAndEarnController extends Controller
                 'qualified_referrals'  => $qualifiedCount,
                 'total_earned'         => $totalEarned,
                 'available_for_payout' => $availableForPayout,
+                'paid_out_amount'      => (float) $paidOutAmount,
             ],
 
             'referrals' => $referrals,
@@ -197,6 +203,16 @@ class ReferAndEarnController extends Controller
     public function requestRedeem()
     {
         $creator = auth()->user();
+
+        // 0️⃣ Check Stripe connection
+        if (empty($creator->account_id)) {
+            return back()->with('error', 'Please connect your Stripe account before requesting a payout.');
+        }
+
+        // 0️⃣ Check if payouts are blocked by admin (suspended account)
+        if ($creator->suspended_account) {
+            return back()->with('error', 'Your payouts are currently disabled. Please contact support.');
+        }
 
         try {
             DB::beginTransaction();

@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
-import {Fragment, useState} from "react";
+import {Fragment, useState, useEffect, useRef} from "react";
+import axios from 'axios';
 import { Menu, Transition } from '@headlessui/react'
 import { HiDotsVertical } from "react-icons/hi";
 import toast from 'react-hot-toast';
@@ -9,6 +10,7 @@ import { Suspense } from 'react';
 import Nocontent from '@/includes/Nocontent';
 
 export default function MyShopProducts({lists, loading, update}) {
+   const editButtonRefs = useRef({});
 
    const slug = (inputString) => { 
       return inputString
@@ -64,7 +66,7 @@ export default function MyShopProducts({lists, loading, update}) {
                         </Link>
                      </div>
                      <p>
-                        {s.slot_limitation !== null && s.slot_limitation > 0 
+                        {s.slot_limitation !== null 
                            ? `${s.total_sold}/${s.total_sold + s.slot_limitation} Sold` 
                            : `${s.total_sold} Sold`
                         }
@@ -101,17 +103,19 @@ export default function MyShopProducts({lists, loading, update}) {
                                     </Menu.Item>
                                     <Menu.Item>
                                        {({ active }) => (
-                                          <div className={`${
-                                             active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center rounded-[30px]  text-sm text-gray-900`}>
-                                             <AddItem update={update}
-                                                classes={"px-2 py-2 w-full text-left bg-transparent border-0 hover:bg-transparent"}
-                                                pre_title={s.name} title="Edit"
-                                                pre_description={s.description} 
-                                                pre_price={s.price} 
-                                                product_type={s.type}
-                                                item={s} isEdit={true} />
-                                          </div>
+                                          <button
+                                             className={`${
+                                                active ? 'bg-gray-100' : ''
+                                             } group flex w-full items-center rounded-[30px]  px-2 py-2 text-sm text-gray-900`}
+                                             onClick={() => {
+                                                if (editButtonRefs.current[s.uuid]) {
+                                                   const btn = editButtonRefs.current[s.uuid].querySelector('button');
+                                                   if (btn) btn.click();
+                                                }
+                                             }}
+                                          >
+                                             Edit
+                                          </button>
                                        )}
                                     </Menu.Item>
                                     <Menu.Item>
@@ -163,6 +167,16 @@ export default function MyShopProducts({lists, loading, update}) {
                   {s.approved == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-yellow-50 text-yellow-800' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
                   {s.status == 0 ?  <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-red-50 text-red-800' >This item is deactivated.</div> : ''}
                   {s.edited_status == 0 ? <div className='approvalmessage static rounded-[30px]  p-3 py-2 mt-3 bg-red-50 text-red-800' >Admin requested changes: {s.edited_reason}</div> : ''}
+                  {/* Hidden AddItem component to manage the modal outside the Menu context */}
+                  <div className="hidden" ref={(el) => editButtonRefs.current[s.uuid] = el}>
+                     <AddItem update={update}
+                        classes={"hidden"}
+                        pre_title={s.name} title="Edit"
+                        pre_description={s.description} 
+                        pre_price={s.price} 
+                        product_type={s.type}
+                        item={s} isEdit={true} />
+                  </div>
                </div>
             }) : <Nocontent/>
              }

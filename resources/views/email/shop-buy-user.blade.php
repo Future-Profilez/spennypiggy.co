@@ -11,10 +11,23 @@
                      <td
                          style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 16px; line-height: 23px;  color: 141414; text-align: left; text-align: center;">
                          <span style="color:#F94F97 ">
-                         Thank you for purchasing {{ $data->user->name }} Shop Item ({{ $data->shop->name }}) for {{ $curr.$data->amount }} on Spenny Piggy 🐷🎁!
+                         Thank you for purchasing {{ $data->shop->user->name }}'s Shop Item ({{ $data->shop->name }}) for {{ $curr.$data->amount }} on Spenny Piggy 🐷🎁!
                          </span>
                      </td>
                  </tr>
+
+                 @if($data->shop->type === 'physical')
+                 <tr>
+                     <td style="padding: 15px 0;">
+                         <div style="padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: center;">
+                             <p style="font-family: Arial; font-size: 14px; color: #666; margin: 0; line-height: 1.4;">
+                                 📦 <strong>Your order has been placed!</strong><br><br>
+                                 The creator will process and ship your order soon. You'll receive an email with tracking details once it's dispatched.
+                             </p>
+                         </div>
+                     </td>
+                 </tr>
+                 @endif
 
                  @if(!empty($url))
                      <tr>
@@ -33,11 +46,11 @@
                                          </td>
                                          <td style="float:right;padding-top: 8px;">
                                              @php
-                                                 $accessUrl = isset($deliverable->uuid) 
+                                                 $accessUrl = isset($deliverable) && isset($deliverable->uuid) 
                                                     ? route('deliverable.access', $deliverable->uuid) 
                                                     : $url;
                                              @endphp
-                                             <a href="{{ $accessUrl }}" style="background:#ffffff;border:1px solid #dddddd;border-radius:4px;font-size: 12px;font-family:Helvetica Neue Roman,Arial,sans-serif,'Open Sans';font-weight: 500;padding: 8px 16px;display:inline-block;text-decoration:none;color:#000000!important;margin-top: 3;" target="_blank">Download</a>
+                                             <a href="{{ $accessUrl }}" style="background:#8C52FF;border:1px solid #dddddd;border-radius:25px;font-size: 14px;font-family:Helvetica Neue Roman,Arial,sans-serif,'Open Sans';font-weight: bold;padding: 10px 20px;display:inline-block;text-decoration:none;color:#ffffff!important;margin-top: 3;" target="_blank">📥 Download Content</a>
                                          </td>
                                      </tr>
                                  </tbody>
@@ -61,12 +74,12 @@
                  <tr>
                      <td
                          style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                         Go to <a href="{{ env('APP_URL') . '/history' }}">Spenny Piggy</a>  and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more!
+                         Go to <a href="{{ env('APP_URL') }}">Spenny Piggy</a> and discover more creators' wishes to fulfil! Check out their profile Intros, memberships and more!
                      </td>
                  </tr>
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href={{ env('APP_URL') . '/' . $data->user->username }}
+                        <a href={{ env('APP_URL') . '/' . $data->shop->user->username }}
                             style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
                      </td>
                  </tr>

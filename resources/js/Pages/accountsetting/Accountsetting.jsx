@@ -594,6 +594,13 @@ export default function Accountsetting(props) {
                             subtitle="View your audit trail and filter activity entries"
                             onClick={() => router.get(route("activity.logs"))}
                         />
+
+                        <SettingItem
+                            icon={Gift}
+                            title="Support History"
+                            subtitle="View your complete support history"
+                            onClick={() => router.get(route("support.history.page"))}
+                        />
                     </div>
 
                     {/* SECURITY SECTION */}

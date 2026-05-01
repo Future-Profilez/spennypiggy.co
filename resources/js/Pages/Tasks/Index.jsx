@@ -290,12 +290,7 @@ export default function Index({
                                                                             SLA Deadline :
                                                                         </span>
                                                                         <span className="text-gray-500">
-                                                                            {
-                                                                                order
-                                                                                    ?.task
-                                                                                    ?.sla_hours
-                                                                            }{" "}
-                                                                            Hours
+                                                                            {order?.task?.sla_hours === 168 ? '7d' : `${order?.task?.sla_hours}h`}
                                                                         </span>
                                                                     </>
                                                                 )}
@@ -527,10 +522,7 @@ export default function Index({
                                                                             </span>
                                                                             {task?.sla_hours && (
                                                                                 <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
-                                                                                    {
-                                                                                        task.sla_hours
-                                                                                    }{" "}
-                                                                                    Hours
+                                                                                    {task.sla_hours === 168 ? '7d' : `${task.sla_hours}h`}
                                                                                 </span>
                                                                             )}
                                                                             <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">

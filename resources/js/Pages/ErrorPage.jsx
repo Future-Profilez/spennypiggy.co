@@ -65,10 +65,10 @@ export default function ErrorPage(props) {
                             </div>
                         </div>
                         <div className="md:flex justify-center pt-6 text-white">
-                            <p className="text-black text-center"><p className="w-full md:w-auto ">If your problem persists, please</p>
+                            <div className="text-black text-center"><span className="w-full md:w-auto ">If your problem persists, please</span>
                                 <a 
                                 className="cursor-pointer ms-2 text-pink livechat intercom-dud02y e11rlguj1">Report a Bug</a>
-                                </p>
+                                </div>
                         </div>
                     </div>
                 </div>

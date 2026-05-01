@@ -9,6 +9,7 @@ import st from "../../../css/uploader.module.css";
 import axios from "axios";
 import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
+import PriceFormat from "@/includes/PriceFormat";
 const memberships = [
     {
         title: "Bronze Level",
@@ -76,6 +77,7 @@ const membershipBenifits = [
 ];
 export default function EditMembership({ item }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const { auth } = usePage().props;
     const uploaderRef = useRef();
     const resetUploader = () => {
@@ -286,6 +288,29 @@ export default function EditMembership({ item }) {
                                 }
                             />
                         </div>
+                        {data.month_price > 0 && (
+                            <div className="mt-3 p-3 bg-gray-50 rounded-[20px] border border-gray-100">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-gray-600">Fans pay:</span>
+                                    <span className="font-bold text-gray-900">
+                                        {new Intl.NumberFormat('en-GB', { 
+                                            style: 'currency', 
+                                            currency: 'GBP' 
+                                        }).format(calculateTotalSupporterPays(data.month_price, 'GBP').total_supporter_pays)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600">You receive:</span>
+                                    <span className="font-bold text-green-600">
+                                        {new Intl.NumberFormat('en-GB', { 
+                                            style: 'currency', 
+                                            currency: 'GBP' 
+                                        }).format(data.month_price)}
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="w-full mb-4">

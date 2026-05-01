@@ -505,6 +505,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                     }).format(data.price)}
                                                 </span>
                                             </div>
+                                            <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
                                         </div>
                                     )}
                                     {defaultCurrency !== global_currency &&

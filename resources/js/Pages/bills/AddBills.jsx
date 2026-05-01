@@ -214,6 +214,7 @@ export default function AddBills(props) {
                                                     }).format(data.price)}
                                                 </span>
                                             </div>
+                                            <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
                                         </div>
                                     )}
                                     {defaultCurrency !== global_currency && data.price > 0 && (

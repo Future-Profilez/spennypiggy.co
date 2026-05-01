@@ -52,6 +52,7 @@ import InstantTabSystem from "@/Components/InstantTabSystem";
 import OfferAnnouncement from "@/Components/OfferAnnouncement";
 import FounderBadge from "@/Components/FounderBadge";
 import CreatorRiskBanner from "@/Components/Risk/CreatorRiskBanner";
+import ReferralBanner from "@/Components/ReferralBanner";
 
 const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
 
@@ -539,6 +540,9 @@ export default function Dashboard(props) {
                                         </Suspense>
                                     )} */}
 
+                                {IsloggedIn && <ReferralBanner />}
+                                {IsloggedIn && <CreatorRiskBanner />}
+
                                 <div className="userManageRt mt-4 mb-10">
                                     <div
                                         className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
@@ -567,7 +571,6 @@ export default function Dashboard(props) {
                                             <div className="tabs-containers min-height">
                                                 {page === "about" || page === false ? (
                                                     <Suspense fallback={ <LoadingScreen /> } >
-                                                        {IsloggedIn && <CreatorRiskBanner />}
                                                         <div className="flex flex-wrap about-sec self-start ">
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[100px]">

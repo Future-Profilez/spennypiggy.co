@@ -28,6 +28,7 @@ import PaidTasksAnnouncement from "./home/PaidTasksAnnouncement";
 import TrendingCreators from './home/TrendingCreators';
 import NewVerified from './home/NewVerified';
 import TopEarners from './home/TopEarners';
+import ReferEarnAnnouncement from './home/ReferEarnAnnouncement';
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
 
     useEffect(()=>{},[]);
@@ -66,6 +67,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
         <Hero auth={auth} />
         <PaidTasksAnnouncement />
+        <ReferEarnAnnouncement />
         <FounderProgramAnnouncement founderBonus={founderBonus} />
         <LiveBarSection />
 

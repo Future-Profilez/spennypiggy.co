@@ -34,8 +34,8 @@ const lists = [
 const updatedVarients = (data) => {
     const arr = [];
     data.forEach((v, i) => {
-        if (v.name !== "" && v.value !== "") {
-            arr.push(v);
+        if (v.name !== "") {
+            arr.push({ name: v.name, value: v.value || null });
         }
     });
     return arr;
@@ -124,51 +124,22 @@ export default function AddItem(props) {
             }
             return "";
         });
-        const [shipping, setShipping] = useState(() => {
+        const [domesticShipping, setDomesticShipping] = useState(() => {
             if (item && item.shop_shipping_info) {
-                return item.shop_shipping_info.filter(s => s.country !== 'all').map(s => ({
-                    country: s.country,
-                    price: s.shipping_price
-                }));
+                const domestic = item.shop_shipping_info.find(s => s.country !== 'all');
+                return domestic ? domestic.shipping_price : "";
             }
-            return [];
+            return "";
         });
         const [variants, setVariants] = useState(() => {
             if (item && item.shop_varients && item.shop_varients.length > 0) {
-                return item.shop_varients.map(v => ({ name: v.name, value: v.price }));
+                return item.shop_varients.map(v => ({ name: v.name, value: v.price || "" }));
             }
             return [{ name: "", value: "" }];
         });
         const [shipping_info, setShipping_info] = useState(
             (item && item.shipping_information) || "",
         );
-        const [shippingProfiles, setShippingProfiles] = useState([]);
-        const [selectedProfile, setSelectedProfile] = useState(
-            (item && item.shipping_profile_id) || null,
-        );
-        const [useSimpleShipping, setUseSimpleShipping] = useState(true);
-
-        const handleShipping = (e) => {
-            setShipping(e);
-        };
-        const handlewws = (e) => {
-            setwwsShipping(e);
-        };
-
-        const fetchShippingProfiles = async () => {
-            try {
-                const res = await axios.get("/shop/shipping-profiles");
-                if (res.data.status) {
-                    setShippingProfiles(res.data.profiles);
-                }
-            } catch (err) {
-                console.error("Failed to fetch shipping profiles", err);
-            }
-        };
-
-        useEffect(() => {
-            fetchShippingProfiles();
-        }, []);
 
         const [physical, setPhysical] = useState(
             shopItem && shopItem.type === "physical" ? true : false,
@@ -323,8 +294,12 @@ export default function AddItem(props) {
 
         const addShopItem = () => {
             if (!physical) {
-                if (!rewardfile && !pagetype) {
-                    errorAlert("Please fill the required fields");
+                if (!pagetype) {
+                    errorAlert("Please select a success page type");
+                    return false;
+                }
+                if (!rewardfile && pagetype === "text") {
+                    errorAlert("Please add the item for sale (file)");
                     return false;
                 }
                 if (pagetype === "url" && !pageUrl) {
@@ -348,20 +323,18 @@ export default function AddItem(props) {
 
             const updatedShipping = () => {
                 const arr = [];
-                shipping.forEach((v, i) => {
-                    if (v.country !== "" && v.price !== "") {
-                        arr.push(v);
-                    }
-                });
-                if (wwsShipping > 0) {
+                if (domesticShipping !== "" && Number(domesticShipping) >= 0) {
+                    arr.push({ country: auth?.user?.country_code || 'GB', price: domesticShipping });
+                }
+                if (wwsShipping !== "" && Number(wwsShipping) >= 0) {
                     arr.push({ country: "all", price: wwsShipping });
                 }
                 return arr;
             };
 
             const ships = updatedShipping();
-            if (physical && !selectedProfile && ships.length < 1) {
-                errorAlert("Please add at least one shipping method or select a profile");
+            if (physical && ships.length < 1) {
+                errorAlert("Please add at least one shipping method");
                 return false;
             }
 
@@ -379,7 +352,7 @@ export default function AddItem(props) {
                 special_member_price: spPrice || "",
                 quantity_allow: haveQty ? 1 : 0,
                 shipping: JSON.stringify(ships),
-                shipping_profile_id: selectedProfile,
+                shipping_profile_id: null,
                 shipping_info: shipping_info,
                 varients: vars && vars.length ? JSON.stringify(vars) : "",
                 image: thumb,
@@ -414,6 +387,25 @@ export default function AddItem(props) {
         };
 
         const updateItem = () => {
+            if (!physical) {
+                if (!pagetype) {
+                    errorAlert("Please select a success page type");
+                    return false;
+                }
+                if (!rewardfile && pagetype === "text" && (!item || !item.reward_file_url)) {
+                    errorAlert("Please add the item for sale (file)");
+                    return false;
+                }
+                if (pagetype === "url" && !pageUrl) {
+                    errorAlert("Success page url can not be empty");
+                    return false;
+                }
+                if (pagetype === "text" && !parsedContent) {
+                    errorAlert("Success page content can not be empty");
+                    return false;
+                }
+            }
+
             if (!isChecked) {
                 return false;
             }
@@ -421,12 +413,10 @@ export default function AddItem(props) {
             const vars = updatedVarients(variants);
             const updatedShipping = () => {
                 const arr = [];
-                shipping.forEach((v, i) => {
-                    if (v.country !== "" && v.price !== "") {
-                        arr.push(v);
-                    }
-                });
-                if (wwsShipping > 0) {
+                if (domesticShipping !== "" && Number(domesticShipping) >= 0) {
+                    arr.push({ country: auth?.user?.country_code || 'GB', price: domesticShipping });
+                }
+                if (wwsShipping !== "" && Number(wwsShipping) >= 0) {
                     arr.push({ country: "all", price: wwsShipping });
                 }
                 return arr;
@@ -434,8 +424,8 @@ export default function AddItem(props) {
 
             const ships = updatedShipping();
 
-            if (physical && !selectedProfile && ships.length < 1) {
-                errorAlert("Please add at least one shipping method or select a profile");
+            if (physical && ships.length < 1) {
+                errorAlert("Please add at least one shipping method");
                 setLoading(false);
                 return false;
             }
@@ -454,7 +444,7 @@ export default function AddItem(props) {
                 special_member_price: spPrice || "",
                 quantity_allow: haveQty ? 1 : 0,
                 shipping: JSON.stringify(ships),
-                shipping_profile_id: selectedProfile,
+                shipping_profile_id: null,
                 shipping_info: shipping_info,
                 varients: vars && vars.length ? JSON.stringify(vars) : "",
                 image: thumb,
@@ -526,7 +516,7 @@ export default function AddItem(props) {
                 classes={`${classes ? classes : "px-3 py-2"}`}
             >
                 <div className=" overflow-auto bg-white md:bg-gray-200 h-full">
-                    <div className="flex items-center justify-center py-3 bg-white sticky -top-4 w-full">
+                    <div className="flex items-center justify-center py-3 bg-white sticky -top-4 z-10 w-full">
                         <h2 className="text-[22px]">What are you offering?</h2>
                     </div>
                     <div className="shop-forms-field m-auto rounded-[30px] ">
@@ -626,6 +616,7 @@ export default function AddItem(props) {
                                                 }).format(shopItem.price)}
                                             </span>
                                         </div>
+                                        <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
                                     </div>
                                 )}
                                 {defaultCurrency !== global_currency &&
@@ -726,6 +717,7 @@ export default function AddItem(props) {
                                                             <span>Fans pay: {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(variant.value, defaultCurrency).total_supporter_pays)}</span>
                                                         </div>
                                                     )}
+                                                    <p className="mt-1 px-2 text-[10px] text-gray-500">Leave empty to use base price</p>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -751,80 +743,36 @@ export default function AddItem(props) {
                                     <div className="shipping-setup-options border-t border-gray-100 pt-4 mt-4">
                                         <div className="flex items-center justify-between mb-4">
                                             <h2 className="text-md font-bold">Shipping Setup</h2>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs text-gray-500">Simple</span>
-                                                <div 
-                                                    onClick={() => setUseSimpleShipping(!useSimpleShipping)}
-                                                    className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-colors ${useSimpleShipping ? 'bg-pink-500' : 'bg-gray-300'}`}
-                                                >
-                                                    <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${useSimpleShipping ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                                                </div>
-                                                <span className="text-xs text-gray-500">Advanced</span>
-                                            </div>
                                         </div>
 
-                                        {shippingProfiles.length > 0 && (
-                                            <div className="mb-6">
-                                                <label className="text-sm font-medium mb-2 block">Select Shipping Profile (Recommended)</label>
-                                                <Select
-                                                    options={[
-                                                        { value: null, label: "None (Use manual pricing below)" },
-                                                        ...shippingProfiles.map(p => ({ value: p.id, label: p.name }))
-                                                    ]}
-                                                    value={selectedProfile ? { value: selectedProfile, label: shippingProfiles.find(p => p.id === selectedProfile)?.name } : { value: null, label: "None (Use manual pricing below)" }}
-                                                    onChange={(e) => setSelectedProfile(e.value)}
-                                                    classNamePrefix="react-select"
-                                                />
-                                                <p className="text-[11px] text-gray-500 mt-1">Using a profile makes it easy to manage shipping across all your items.</p>
-                                            </div>
-                                        )}
-
-                                        {!selectedProfile && (
-                                            <>
-                                                {useSimpleShipping ? (
-                                                    <div className="simple-shipping-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                                        <div className="field">
-                                                            <label className="text-sm block mb-1">Domestic (My Country)</label>
-                                                            <div className="relative">
-                                                                <span className="absolute left-3 top-3 text-gray-500 text-sm">{global_currency === 'GBP' ? '£' : '$'}</span>
-                                                                <input 
-                                                                    type="number"
-                                                                    placeholder="0.00"
-                                                                    className="shop-forms-input pl-8 bg-gray-200 w-full border-0 rounded-[30px] p-[12px] px-[20px]"
-                                                                    value={shipping.find(s => s.country === (auth?.user?.country_code || 'GB'))?.price || ''}
-                                                                    onChange={(e) => {
-                                                                        const country = auth?.user?.country_code || 'GB';
-                                                                        const newShipping = [...shipping.filter(s => s.country !== country)];
-                                                                        if (e.target.value !== "") {
-                                                                            newShipping.push({ country, price: e.target.value });
-                                                                        }
-                                                                        setShipping(newShipping);
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="field">
-                                                            <label className="text-sm block mb-1">Worldwide (Everywhere else)</label>
-                                                            <div className="relative">
-                                                                <span className="absolute left-3 top-3 text-gray-500 text-sm">{global_currency === 'GBP' ? '£' : '$'}</span>
-                                                                <input 
-                                                                    type="number"
-                                                                    placeholder="0.00"
-                                                                    className="shop-forms-input pl-8 bg-gray-200 w-full border-0 rounded-[30px] p-[12px] px-[20px]"
-                                                                    value={wwsShipping || ''}
-                                                                    onChange={(e) => setwwsShipping(e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <CountriesShipping
-                                                        handleShipping={handleShipping}
-                                                        handlewws={handlewws}
+                                        <div className="simple-shipping-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                            <div className="field">
+                                                <label className="text-sm block mb-1">Domestic (My Country)</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-3 text-gray-500 text-sm">{new Intl.NumberFormat('en', { style: 'currency', currency: defaultCurrency }).formatToParts(0).find(p => p.type === 'currency')?.value}</span>
+                                                    <input 
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        className="shop-forms-input pl-8 bg-gray-200 w-full border-0 rounded-[30px] p-[12px] px-[20px]"
+                                                        value={domesticShipping}
+                                                        onChange={(e) => setDomesticShipping(e.target.value)}
                                                     />
-                                                )}
-                                            </>
-                                        )}
+                                                </div>
+                                            </div>
+                                            <div className="field">
+                                                <label className="text-sm block mb-1">Worldwide (Everywhere else)</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-3 text-gray-500 text-sm">{new Intl.NumberFormat('en', { style: 'currency', currency: defaultCurrency }).formatToParts(0).find(p => p.type === 'currency')?.value}</span>
+                                                    <input 
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        className="shop-forms-input pl-8 bg-gray-200 w-full border-0 rounded-[30px] p-[12px] px-[20px]"
+                                                        value={wwsShipping || ''}
+                                                        onChange={(e) => setwwsShipping(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <h2 className="font-bold pt-4 border-t border-gray-200 mb-2">
@@ -1318,12 +1266,7 @@ export default function AddItem(props) {
 
     return (
         <>
-            {/*
-        <button onClick={(e)=>setOpen(true)} className={classes ? classes : 'w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[30px] '} >
-            <h2 className='md:text-[19px]' >{title}</h2>
-        </button>
-        */}
-            <AddForm classes="w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[30px] " />
+            <AddForm />
         </>
     );
 }

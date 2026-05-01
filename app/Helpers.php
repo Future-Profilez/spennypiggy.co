@@ -27,7 +27,16 @@ class Helpers
 
     public static function checkBlockData($request)
     {
-        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
+        $blockedWords = [
+            'sex', 'sexual', 'fuck', 'fucking', 'blowjob', 'handjob', 'anal', 'cum', 'orgasm', 'masturbation', 
+            'nude', 'nudity', 'porn', 'fetish', 'dick', 'cock', 'pussy', 'cunt', 'tits', 'boobs', 'nipples', 
+            'asshole', 'must pay', 'forced', 'you owe', 'debt', 'punishment', 'humiliate', 'degrade', 
+            'control you', 'own you', 'submit', 'meet me', 'address', 'phone number', 'bank details', 
+            'doxx', 'threaten', 'escort', 'prostitution', 'sexual service', 'private session', 
+            'paypal me', 'cashapp', 'venmo', 'crypto only', 'off platform', 'drugs', 'cocaine', 
+            'heroin', 'meth', 'weapons', 'fraud', 'scam', 'fake id',
+            'paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'goddess', 'master', 'mistress'
+        ];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
 
         // Filter out non-stringable values (like arrays or objects)
@@ -37,9 +46,19 @@ class Helpers
 
         // Combine all the valid inputs into one string
         $inputText = implode(' ', $stringValues);
+        
+        // Obfuscation check: normalize text (lowercase, remove spaces and special chars for a secondary check)
+        $normalizedText = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $inputText));
 
         foreach ($blockedWords as $word) {
+            // 1. Direct match with word boundaries
             if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
+                return true;
+            }
+            
+            // 2. Obfuscation match (e.g. "s e x" or "s.e.x" becomes "sex")
+            $normalizedWord = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $word));
+            if (strlen($normalizedWord) > 2 && str_contains($normalizedText, $normalizedWord)) {
                 return true;
             }
         }
@@ -55,40 +74,57 @@ class Helpers
 
     /**
      * Add GMV to an existing creator referral
+     * (Deprecated: kept for backward compatibility, now just triggers recalculateGmv)
      *
      * @param int   $referredCreatorId  Creator who received payment
-     * @param float $amountGbp          GMV amount in GBP
+     * @param float $amount             GMV amount (ignored now)
      */
-    public static function addGmv(int $referredCreatorId, float $amount, string $fromCurrency = 'gbp'): void
+    public static function addGmv(int $referredCreatorId, float $amount = 0, string $fromCurrency = 'gbp'): void
+    {
+        self::recalculateGmv($referredCreatorId);
+    }
+
+    /**
+     * Recalculate GMV for an existing creator referral based on successful payments.
+     *
+     * @param int|string $referredCreatorId  Creator who received payment (id or uuid)
+     */
+    public static function recalculateGmv($referredCreatorId): void
     {
         try {
-            if ($amount <= 0) {
+            $user = \App\Models\User::where('id', $referredCreatorId)->orWhere('uuid', $referredCreatorId)->first();
+            if (!$user) {
                 return;
             }
 
-            // Convert to GBP
-            $amountGbp = Helpers::priceFormat($fromCurrency, $amount, 'gbp');
-            $amountGbp = (float) round($amountGbp, 2);
-
-            if ($amountGbp <= 0) {
-                return;
-            }
-
-            // Fetch referral
-            $referral = CreatorReferral::with('referrer', 'referred')
-                ->where('referred_creator_id', $referredCreatorId)
-                ->whereIn('status', ['IN_PROGRESS', 'QUALIFIED'])
+            // Always fetch referral
+            /** @var \App\Models\CreatorReferral|null $referral */
+            $referral = \App\Models\CreatorReferral::with('referrer', 'referred')
+                ->where('referred_creator_id', $user->id)
                 ->first();
 
             if (!$referral) {
                 return;
             }
 
-            // Already qualified → do nothing
-            if ($referral->status === 'QUALIFIED') {
-                return;
+            // Calculate total GMV from payments table
+            $payments = \App\Models\Payment::where('creator_id', $user->uuid)
+                ->whereIn('status', ['succeeded', 'completed'])
+                ->get();
+            
+            $totalGmvGbp = 0.0;
+            foreach ($payments as $payment) {
+                $amountMajor = $payment->amount / 100;
+                if (strtolower($payment->currency) === 'gbp') {
+                    $totalGmvGbp += $amountMajor;
+                } else {
+                    $totalGmvGbp += self::priceFormat($payment->currency, $amountMajor, 'gbp');
+                }
             }
+            
+            $referral->lifetime_gmv = $totalGmvGbp;
 
+<<<<<<< HEAD
             // 👉 STEP 1: Get creator
             $creator = $referral->referred ?? null;
 
@@ -131,22 +167,48 @@ class Helpers
 
                 $title = '🎉 Referral Goal Achieved!';
                 $content = "Your referred creator ($referredCreatorName) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
+=======
+            if ($referral->status === 'IN_PROGRESS' && $referral->lifetime_gmv >= 1000) {
+                $referral->status = 'QUALIFIED';
+                $referral->qualified_at = now();
+
+                // 📧 Existing email job
+                \App\Jobs\SendReferralQualifiedEmailJob::dispatch($referral);
+
+                $referredCreatorName = $referral->referred->name;
+
+                // 🔔 PWA Notification
+                $title = '🎉 Referral Goal Achieved!';
+                $content = "Your referred creator ({$referredCreatorName}) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
+>>>>>>> 3b08c3ec58b584c49c6bf48de28456df7799d9e7
                 $email = $referral->referrer->email;
 
-                Helpers::sendNotification($title, $content, $email);
+                self::sendNotification($title, $content, $email);
+            } elseif ($referral->status === 'QUALIFIED' && $referral->lifetime_gmv < 1000) {
+                // Revoke qualification if GMV drops below 1000 (e.g. due to refund/dispute)
+                $referral->status = 'IN_PROGRESS';
+                $referral->qualified_at = null;
             }
 
+<<<<<<< HEAD
             Log::info('Creator referral GMV updated (with VAT)', [
                 'base_amount'   => $amountGbp,
                 'vat_amount'    => $vatAmount,
                 'final_amount'  => $finalAmount,
                 'added_gmv_gbp' => $increment,
+=======
+            $referral->save();
+
+            Log::info('Creator referral GMV recalculated', [
+                'referrer_creator_id' => $referral->referrer_creator_id,
+                'referred_creator_id' => $user->id,
+                'total_gmv_gbp'       => $referral->lifetime_gmv,
+                'status'              => $referral->status,
+>>>>>>> 3b08c3ec58b584c49c6bf48de28456df7799d9e7
             ]);
         } catch (\Throwable $e) {
-            Log::error('CreatorReferralHelper::addGmv failed', [
+            Log::error('CreatorReferralHelper::recalculateGmv failed', [
                 'referred_creator_id' => $referredCreatorId,
-                'amount'              => $amount,
-                'currency'            => $fromCurrency,
                 'error'               => $e->getMessage(),
             ]);
         }
@@ -255,18 +317,25 @@ class Helpers
         $applicationFee = $platformFee + $complianceFee + $adminFee;
 
         // Calculate Reserve (if applicable)
-        // Reserve is calculated on the Net to Creator (Listed Price) or Total Supporter Pays?
-        // Usually reserves are held from the *processed volume*.
-        // Let's assume 10% of the *Total Supporter Pays* to be safe, OR 10% of the *Creator's Share*.
-        // If we deduct from Creator Share:
+        // Reserve is calculated on the Net to Creator (Listed Price) to ensure 
+        // the percentage matches what the creator expects to see from their earnings.
         $reserveAmount = 0;
         if ($reserveRate > 0) {
+<<<<<<< HEAD
             // Reserve logic: Deduct from Creator's Net, Add to Application Fee (Held by Platform)
             // Calculation Base: Percentage of the *Gross Amount* (Total Supporter Pays) is standard for risk.
             $reserveAmount = round(($totalSupporterPays * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
 
             // Add to Application Fee (So Stripe sends it to Platform Account instead of Creator)
             $applicationFee += $reserveAmount;
+=======
+             // Reserve logic: Deduct from Creator's Net, Add to Application Fee (Held by Platform)
+             // Calculation Base: Percentage of the *Listed Price* (Creator's Share)
+             $reserveAmount = round(($listedPrice * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
+             
+             // Add to Application Fee (So Stripe sends it to Platform Account instead of Creator)
+             $applicationFee += $reserveAmount;
+>>>>>>> 3b08c3ec58b584c49c6bf48de28456df7799d9e7
         }
 
         return [

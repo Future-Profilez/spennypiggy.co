@@ -66,7 +66,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
                                 {formatMultiPrice(totalPrice || ((data.price || 0) + (data.tax || 0)), currency)}
                             </span>
                             <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                                * Includes all applicable fees
+                                *Includes platform and payment processing fees
                             </span>
                         </div>
                     </div>

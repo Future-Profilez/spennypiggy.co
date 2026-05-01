@@ -14,6 +14,7 @@ import DeviceID from "@/includes/DeviceID";
 
 import { CiSquareCheck } from "react-icons/ci";
 import toast from "react-hot-toast";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 
 export default function GlobalCheckout({
     action,
@@ -483,27 +484,7 @@ export default function GlobalCheckout({
                         )}
                         {selectedCurrency ? (
                             <>
-                                <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
-                                    <label
-                                        htmlFor="digital_waiver"
-                                        className="text-left flex items-start cursor-pointer group"
-                                    >
-                                        <div className="flex items-center h-5 mt-1">
-                                            <input
-                                                onChange={(e) => setDigitalWaiver(e.target.checked)}
-                                                type="checkbox"
-                                                id="digital_waiver"
-                                                name="digital_waiver"
-                                                className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-                                                checked={digitalWaiver}
-                                                required
-                                            />
-                                        </div>
-                                        <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
-                                            I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
-                                        </span>
-                                    </label>
-                                </div>
+                                <CheckoutLegalTerms onAgreeChange={(checked) => setDigitalWaiver(checked)} />
                                 <button
                                     onClick={handleSubmit}
                                     disabled={!digitalWaiver || loading}

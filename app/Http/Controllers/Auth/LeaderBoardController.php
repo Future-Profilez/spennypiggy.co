@@ -1450,11 +1450,23 @@ class LeaderBoardController extends Controller
         $resp = [];
 
         foreach ($pay as $p) {
+            $itemIds = StripePaymentItems::where('wish_item_id', $p->wish_item_id)
+                ->whereBetween('created_at', [$start, $end])
+                ->whereHas('payment', function ($q) use ($user) {
+                    $q->where('owner_id', $user->id)->where('payment_status', 'paid');
+                })->pluck('id')->toArray();
+
+            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', StripePaymentItems::class)
+                ->whereIn('source_id', $itemIds)
+                ->pluck('status')->toArray();
+
             $resp[] = [
                 'uuid' => $p->wish->uuid,
                 'title' => $p->wish->wishname,
                 'amount' => $p->total_amount,
-                'media' => $p->wish->perma_link
+                'media' => $p->wish->perma_link,
+                'has_hold' => in_array('review_hold', $ftStatuses),
+                'has_dispute' => in_array('disputed', $ftStatuses),
             ];
         }
 
@@ -1481,11 +1493,22 @@ class LeaderBoardController extends Controller
         $resp = [];
 
         foreach ($pay as $p) {
+            $itemIds = WishItemSubscription::where('wish_item_id', $p->wish_item_id)
+                ->whereBetween('created_at', [$start, $end])
+                ->where('status', 'paid')
+                ->pluck('id')->toArray();
+
+            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', WishItemSubscription::class)
+                ->whereIn('source_id', $itemIds)
+                ->pluck('status')->toArray();
+
             $resp[] = [
                 'uuid' => $p->wish_item->uuid,
                 'title' => $p->wish_item->wishname,
                 'amount' => $p->total_amount,
-                'media' => $p->wish_item->perma_link
+                'media' => $p->wish_item->perma_link,
+                'has_hold' => in_array('review_hold', $ftStatuses),
+                'has_dispute' => in_array('disputed', $ftStatuses),
             ];
         }
 
@@ -1511,11 +1534,22 @@ class LeaderBoardController extends Controller
         $resp = [];
 
         foreach ($taskPurchase as $p) {
+            $itemIds = TaskPurchase::where('task_id', $p->task_id)
+                ->whereBetween('created_at', [$start, $end])
+                ->where('status', 'completed')
+                ->pluck('id')->toArray();
+
+            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', TaskPurchase::class)
+                ->whereIn('source_id', $itemIds)
+                ->pluck('status')->toArray();
+
             $resp[] = [
                 'uuid' => $p->task->uuid,
                 'title' => $p->task->title,
                 'amount' => $p->total_amount,
-                'media' => $p->task->media_url
+                'media' => $p->task->media_url,
+                'has_hold' => in_array('review_hold', $ftStatuses),
+                'has_dispute' => in_array('disputed', $ftStatuses),
             ];
         }
 
@@ -1541,11 +1575,22 @@ class LeaderBoardController extends Controller
         $resp = [];
 
         foreach ($pay as $p) {
+            $itemIds = BillPayment::where('bills_id', $p->bills_id)
+                ->whereBetween('created_at', [$start, $end])
+                ->where('status', 'paid')
+                ->pluck('id')->toArray();
+
+            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', BillPayment::class)
+                ->whereIn('source_id', $itemIds)
+                ->pluck('status')->toArray();
+
             $resp[] = [
                 'uuid' => $p->bill->uuid,
                 'title' => $p->bill->name,
                 'amount' => $p->total_amount,
-                'media' => $p->bill->perma_link
+                'media' => $p->bill->perma_link,
+                'has_hold' => in_array('review_hold', $ftStatuses),
+                'has_dispute' => in_array('disputed', $ftStatuses),
             ];
         }
 
@@ -1571,11 +1616,22 @@ class LeaderBoardController extends Controller
         $resp = [];
 
         foreach ($pay as $p) {
+            $itemIds = ShopPayment::where('shop_id', $p->shop_id)
+                ->whereBetween('created_at', [$start, $end])
+                ->where('payment_status', 'paid')
+                ->pluck('id')->toArray();
+
+            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', ShopPayment::class)
+                ->whereIn('source_id', $itemIds)
+                ->pluck('status')->toArray();
+
             $resp[] = [
                 'uuid' => $p->shop->uuid,
                 'title' => $p->shop->name,
                 'amount' => $p->total_amount,
-                'media' => $p->shop->perma_link
+                'media' => $p->shop->perma_link,
+                'has_hold' => in_array('review_hold', $ftStatuses),
+                'has_dispute' => in_array('disputed', $ftStatuses),
             ];
         }
 
@@ -1600,12 +1656,24 @@ class LeaderBoardController extends Controller
         $resp = [];
 
         foreach ($pay as $p) {
+            $itemIds = TipGoalsPayment::where('user_id', $p->user_id)
+                ->whereBetween('created_at', [$start, $end])
+                ->where('creator_id', $user->id)
+                ->where('status', 'paid')
+                ->pluck('id')->toArray();
+
+            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', TipGoalsPayment::class)
+                ->whereIn('source_id', $itemIds)
+                ->pluck('status')->toArray();
+
             $resp[] = [
                 'uuid' => $p->user->uuid,
                 'name' => $p->user->name,
                 'username' => $p->user->username,
                 'amount' => $p->total_amount,
-                'media' => $p->user->avatar_url
+                'media' => $p->user->avatar_url,
+                'has_hold' => in_array('review_hold', $ftStatuses),
+                'has_dispute' => in_array('disputed', $ftStatuses),
             ];
         }
 

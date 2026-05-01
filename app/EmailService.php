@@ -109,21 +109,19 @@ class EmailService
     public static function shopBuyedUser($data, $url, $curr)
     {
         try {
-            $emailData = [
-                'to' => $data->user->email,
-                'name' => $data->user->name,
-                'username' => $data->user->username,
-                'phone' => $data->user->phone,
-                'email' => $data->user->email,
-                'uuid' => $data->user->uuid,
-            ];
+            $toEmail = $data->user->email ?? $data->email; // Fallback to guest email from payment
+            
+            if (!$toEmail) {
+                // If it's a shop buy, no email, just return
+                return;
+            }
 
             // Fetch deliverable for tracking link
             $deliverable = \App\Models\Deliverable::where('session_id', $data->session_id)
                 ->where('product_type', 'shop_item')
                 ->first();
 
-            Mail::to($emailData['to'])
+            Mail::to($toEmail)
                 ->send(new ShopBuyedMailUser($data, $url, $curr, $deliverable));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());

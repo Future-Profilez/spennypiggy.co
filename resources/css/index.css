@@ -13,6 +13,10 @@
 div{animation:load 0.4s linear;} */
 
 @layer components{
+  input[type="checkbox"] {
+    @apply rounded-[4px] border-gray-300 text-pink-600 focus:ring-pink-500 cursor-pointer w-5 h-5 transition-all;
+  }
+  
   .text-gradient-wishlist{
     display: inline-block;
     background-image: linear-gradient(to right, rgb(253 224 71), rgb(236 72 153), rgb(168 85 247));

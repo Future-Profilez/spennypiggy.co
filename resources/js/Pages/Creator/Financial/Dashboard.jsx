@@ -187,103 +187,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                         </div>
 
                         {/* Reserves & Payout Status */}
-                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <ShieldCheck size={80} className="text-blue-500" />
-                            </div>
-                            <div className="relative ">
-                                <div>
-                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                        Held Reserves
-                                    </div>
-                                    <div className="text-2xl md:text-3xl font-bold text-blue-400 mt-2">{formatCurrency(summary.held_reserves, displayCurrency)}</div>
-                                    <div className="text-[12px] text-gray-500 mt-2">
-                                        {reserve_reason || 'Standard rolling reserve for platform safety.'}
-                                    </div>
-                                    {reserve_breakdown.length > 0 && (
-                                        <div className="mt-3 space-y-1">
-                                            {reserve_breakdown.slice(0, 2).map((r, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-gray-800/60 rounded-lg px-2 py-1.5 text-[10px]">
-                                                    <span className="text-gray-400">
-                                                        {r.release_date}
-                                                    </span>
-                                                    <span className="text-blue-300 font-bold">
-                                                        {formatCurrency(r.amount / 100, displayCurrency)}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <ShieldCheck size={80} className="text-blue-500" />
-                            </div>
-                            <div className="relative  ">
-                                <div>
-                                    {reserve_breakdown.length > 0 && (
-                                        <div className="mt-3 space-y-1">
-                                            {reserve_breakdown.slice(0, 2).map((r, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-gray-800/60 rounded-lg px-2 py-1.5 text-[10px]">
-                                                    <span className="text-gray-400">
-                                                        {r.release_date}
-                                                    </span>
-                                                    <span className="text-blue-300 font-bold">
-                                                        {formatCurrency(r.amount / 100, displayCurrency)}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <Link href={route('creator.finance.review_holds')} className="block group/holds">
-                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2 group-hover/holds:text-gray-300 transition-colors">
-                                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                                        Review Holds
-                                    </div>
-                                    <div className="text-2xl md:text-3xl font-bold text-purple-400 mt-2 group-hover/holds:text-purple-300 transition-colors">{formatCurrency(summary.review_holds, displayCurrency)}</div>
-                                    <div className="text-[12px] text-gray-500 mt-2 font-bold group-hover/holds:text-gray-400 transition-colors">Verified by our team.</div>
-                                </Link>
-                            </div>
-                        </div>
-                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <ShieldCheck size={80} className="text-blue-500" />
-                            </div>
-                            <div className="relative ">
-                                <Link href={route('creator.disputes.index')} className="block group/disputes">
-                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2 group-hover/disputes:text-gray-300 transition-colors">
-                                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                                        Disputes
-                                    </div>
-                                    <div className="text-2xl md:text-3xl font-bold text-orange-400 mt-2 group-hover/disputes:text-orange-300 transition-colors">{formatCurrency(summary.disputes, displayCurrency)}</div>
-                                    <div className="text-[12px] text-gray-500 mt-2 font-bold group-hover/disputes:text-gray-400 transition-colors">Flagged by banks.</div>
-                                </Link>
-                            </div>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <ShieldCheck size={80} className="text-blue-500" />
-                            </div>
-                           
-                            <div className=" ">
-                                <div>
-                                    <div className="text-md uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
-                                    <div className="text-xl font-bold text-white">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
-                                    <div className="text-[10px] text-gray-600 mt-1">
-                                        Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, holds & disputes.'}
-                                    </div>
-                                </div>
-                                <div className="text-right flex items-center gap-2 mt-2">
-                                    <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Status</div>
-                                    <div className="bg-green-500/10 text-green-400 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Healthy</div>
-                                </div>
-                            </div>
-                        </div>
+                        
+                        
 
                     </div>
                     <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
@@ -302,14 +207,19 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 </div>
                                 {reserve_breakdown.length > 0 && (
                                     <div className="mt-3 space-y-1">
-                                        {reserve_breakdown.slice(0, 2).map((r, i) => (
-                                            <div key={i} className="flex justify-between items-center bg-gray-800/60 rounded-lg px-2 py-1.5 text-[10px]">
-                                                <span className="text-gray-400">
-                                                    {r.release_date}
-                                                </span>
-                                                <span className="text-blue-300 font-bold">
-                                                    {formatCurrency(r.amount / 100, displayCurrency)}
-                                                </span>
+                                        {reserve_breakdown.slice(0, 3).map((r, i) => (
+                                            <div key={i} className="bg-gray-800/60 rounded-lg px-2 py-1.5 text-[10px]">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-300 font-bold truncate max-w-[120px]" title={r.source_name}>
+                                                        {r.source_name}
+                                                    </span>
+                                                    <span className="text-blue-300 font-bold ml-2 whitespace-nowrap">
+                                                        {formatCurrency(r.amount / 100, displayCurrency)}
+                                                    </span>
+                                                </div>
+                                                <div className="text-gray-500 mt-0.5">
+                                                    Releases: {r.release_date}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -462,7 +372,12 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <div className="text-gray-200 font-medium">{supporter.supporter.name}</div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className="text-gray-200 font-medium">{supporter.supporter.name}</div>
+                                                                {supporter.has_hold && (
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse shrink-0" title="Contains held/disputed funds"></div>
+                                                                )}
+                                                            </div>
                                                             <div className="text-[14px] text-gray-500">@{supporter.supporter.username}</div>
                                                         </div>
                                                     </td>
@@ -597,15 +512,28 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                     {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? tx.net_amount : tx.gross_amount, tx.currency)}
                                                 </td>
                                                     <td className="px-6 py-4 text-sm text-right">
-                                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                                            tx.status === 'completed' ? 'bg-green-500/10 text-green-400' : 
-                                                            tx.status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' : 
-                                                            tx.status === 'disputed' ? 'bg-orange-500/10 text-orange-400' : 
-                                                            tx.status === 'refunded' ? 'bg-red-500/10 text-red-400' : 
-                                                            tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
-                                                            'bg-gray-500/10 text-gray-400'
-                                                        }`}>{tx.status?.replace('_', ' ')}
-                                                        </span>
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                                                tx.status === 'completed' ? 'bg-green-500/10 text-green-400' : 
+                                                                tx.status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' : 
+                                                                tx.status === 'disputed' ? 'bg-orange-500/10 text-orange-400' : 
+                                                                tx.status === 'refunded' ? 'bg-red-500/10 text-red-400' : 
+                                                                tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
+                                                                'bg-gray-500/10 text-gray-400'
+                                                            }`}>{tx.status?.replace('_', ' ')}
+                                                            </span>
+                                                            {tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (
+                                                                <a 
+                                                                    href={route('financial.evidence-pack', { uuid: tx.uuid })} 
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-[10px] font-bold uppercase tracking-widest text-[#F94F96] hover:text-[#d83a7c] flex items-center gap-1 mt-1"
+                                                                >
+                                                                    <FileText size={10} />
+                                                                    Evidence Pack
+                                                                </a>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}

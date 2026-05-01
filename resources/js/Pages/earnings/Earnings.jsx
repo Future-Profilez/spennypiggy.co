@@ -117,6 +117,15 @@ export default function Earnings(props) {
                         <p className='text-gray-400 text-sm md:text-base' >
                             Track your revenue and celebrate your success across all channels.
                         </p>
+                        <div className="mt-4">
+                            <a href="/financial/dashboard" className="inline-flex items-center gap-2 text-brandYellow hover:text-white transition-colors text-sm font-semibold uppercase tracking-wider">
+                                View Financial Dashboard 
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M5 12h14"></path>
+                                    <path d="M12 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        </div>
                     </div>
 
                     <div className="w-full md:w-auto">
@@ -209,14 +218,15 @@ export default function Earnings(props) {
                     </div> 
                   })}
                 </div>
+                 <div className='pb-12' >
+                        <ReserveWidget />
+                    </div>
 
                 <div className='space-y-10' >
                       <div className={`transition-opacity duration-300 ${isChanging ? 'opacity-50 blur-sm' : 'opacity-100'}`}>
                           <MonthlyRevenue /> 
                       </div>
-                    <div className='lg:col-span-1' >
-                        <ReserveWidget />
-                    </div>
+                   
 
                   <div className="relative">
                     <div className="flex items-center gap-4 mb-10">

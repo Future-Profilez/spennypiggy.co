@@ -54,7 +54,7 @@ class SyncFinancialTransactions extends Command
         $this->info('Sync completed successfully!');
     }
 
-    private function getPaymentRiskData($sessionId, $defaultStatus = 'completed')
+    private function getPaymentRiskData($sessionId, $defaultStatus = 'completed', $paymentIntentId = null)
     {
         $data = [
             'status' => $defaultStatus,
@@ -62,11 +62,22 @@ class SyncFinancialTransactions extends Command
             'reserve_status' => 'none',
         ];
 
-        if (!$sessionId) return $data;
+        if (!$sessionId && !$paymentIntentId) return $data;
 
-        $paymentLog = \App\Models\Payment::where('stripe_session_id', $sessionId)
-            ->orWhere('stripe_payment_intent_id', $sessionId)
-            ->first();
+        // Search by both session ID and payment intent ID
+        $query = \App\Models\Payment::query();
+        if ($sessionId && $paymentIntentId) {
+            $query->where(function($q) use ($sessionId, $paymentIntentId) {
+                $q->where('stripe_session_id', $sessionId)
+                  ->orWhere('stripe_payment_intent_id', $paymentIntentId);
+            });
+        } elseif ($sessionId) {
+            $query->where('stripe_session_id', $sessionId);
+        } else {
+            $query->where('stripe_payment_intent_id', $paymentIntentId);
+        }
+
+        $paymentLog = $query->first();
 
         if ($paymentLog) {
             $data['status'] = match($paymentLog->status) {
@@ -75,6 +86,7 @@ class SyncFinancialTransactions extends Command
                 'disputed' => 'disputed',
                 'refunded' => 'refunded',
                 'failed', 'blocked' => 'failed',
+                'initiated' => 'pending',
                 default => 'pending'
             };
             
@@ -122,6 +134,10 @@ class SyncFinancialTransactions extends Command
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);
+                $status = $riskData['status'];
+                if ($status === 'pending' && $payment->status === 'paid') {
+                    $status = 'completed';
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -140,7 +156,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_amount' => $riskData['reserve_amount'],
                         'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $riskData['status'],
+                        'status' => $status,
                         'description' => 'Membership Payment',
                         'transaction_date' => $payment->created_at,
                     ]
@@ -170,7 +186,11 @@ class SyncFinancialTransactions extends Command
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
 
-                $riskData = $this->getPaymentRiskData($purchase->stripe_session_id ?: $purchase->payment_intent_id);
+                $riskData = $this->getPaymentRiskData($purchase->stripe_session_id, 'completed', $purchase->payment_intent_id);
+                $status = $riskData['status'];
+                if ($status === 'pending' && in_array($purchase->status, ['paid', 'completed'])) {
+                    $status = 'completed';
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -189,7 +209,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_amount' => $riskData['reserve_amount'],
                         'reserve_status' => $riskData['reserve_status'],
                         'currency' => $currency,
-                        'status' => $riskData['status'],
+                        'status' => $status,
                         'description' => 'Task Purchase',
                         'transaction_date' => $purchase->created_at,
                     ]
@@ -225,6 +245,10 @@ class SyncFinancialTransactions extends Command
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);
+                $status = $riskData['status'];
+                if ($status === 'pending' && $payment->status === 'paid') {
+                    $status = 'completed';
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -243,7 +267,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_amount' => $riskData['reserve_amount'],
                         'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $riskData['status'],
+                        'status' => $status,
                         'description' => 'Bill Payment',
                         'transaction_date' => $payment->created_at,
                     ]
@@ -288,6 +312,10 @@ class SyncFinancialTransactions extends Command
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($item->payment->session_id);
+                $status = $riskData['status'];
+                if ($status === 'pending' && $item->payment->payment_status === 'paid') {
+                    $status = 'completed';
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -306,7 +334,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_amount' => $riskData['reserve_amount'],
                         'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($item->payment->currency ?? 'GBP'),
-                        'status' => $riskData['status'],
+                        'status' => $status,
                         'description' => 'Wish Gift: ' . ($item->wish->name ?? 'Item'),
                         'transaction_date' => $item->created_at,
                     ]
@@ -335,13 +363,18 @@ class SyncFinancialTransactions extends Command
 
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
-                $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
+                $shippingAmount = $payment->shipping_amount ?? 0;
+                $vat = $this->calculateVatIfMissing($amount + $shippingAmount, $payment->vat_tax_amount, $creator);
                 $platformFee = $payment->tax_amount ?? 0;
                 $stripeFee = 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
-                $creatorAmount = $amount;
+                $gross = $amount + $shippingAmount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount + $shippingAmount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);
+                $status = $riskData['status'];
+                if ($status === 'pending' && $payment->payment_status === 'paid') {
+                    $status = 'completed';
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -360,7 +393,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_amount' => $riskData['reserve_amount'],
                         'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $riskData['status'],
+                        'status' => $status,
                         'description' => 'Shop Purchase: ' . ($payment->shop->name ?? 'Item'),
                         'transaction_date' => $payment->created_at,
                     ]
@@ -394,6 +427,10 @@ class SyncFinancialTransactions extends Command
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);
+                $status = $riskData['status'];
+                if ($status === 'pending' && $payment->status === 'paid') {
+                    $status = 'completed';
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -412,7 +449,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_amount' => $riskData['reserve_amount'],
                         'reserve_status' => $riskData['reserve_status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $riskData['status'],
+                        'status' => $status,
                         'description' => 'Tip / Support',
                         'transaction_date' => $payment->created_at,
                     ]

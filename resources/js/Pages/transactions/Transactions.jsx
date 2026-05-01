@@ -8,6 +8,7 @@ import ReactionsAndReply from '@/Components/ReactionsAndReply';
 import { FaTwitter } from 'react-icons/fa';
 import Modal from '@/Components/Modal';
 import { router } from '@inertiajs/react';
+import { ChevronLeft, Calendar, FileText, ExternalLink, Filter } from 'lucide-react';
 
 export default function Transactions(props) {
   const { auth, initial, display_currency, spend_summary } = props || {};
@@ -501,26 +502,7 @@ export default function Transactions(props) {
                       </div>
 
                       <div className="flex items-center md:justify-end gap-4   ">
-                        <div className="flex items-center gap-3">
-                          {auth?.user?.role === 1 && (
-                            <button
-                              onClick={() => handleTwitterClick(e)}
-                              className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
-                              title="Share on X" >
-                              <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
-                            </button>
-                          )}
-                          {e.open_link ? (
-                            e.open_link.startsWith('http') ? (
-                              <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</a>
-                            ) : (
-                              <Link href={e.open_link} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</Link>
-                            )
-                          ) : null}
-                          {storyUrlFor(e) ? (
-                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
-                          ) : null}
-                        </div>
+                      
                         <div className="text-right">
                           <div className={`${e?.status === 'completed' ? 'text-green-600' : 'text-gray-500'} font-black text-xl md:text-2xl`}>
                             {amountFor(e)}
@@ -539,8 +521,45 @@ export default function Transactions(props) {
                       </div>
                     </div>
                     <div className="pt-0">
-                      <ReactionsAndReply ev={e} viewer={auth?.user} />
+                      <ReactionsAndReply 
+                        ev={e} 
+                        viewer={auth?.user} 
+                        creator={e.category === 'sent' ? e.creator?.username : auth?.user?.username}
+                        gifter={e.category === 'received' ? e.gifter?.username : auth?.user?.username}
+                        canAct={!!(auth?.user && (e.category === 'sent' ? e.creator?.username : e.gifter?.username))}
+                      />
                     </div>
+                      <div className="pt-4 flex items-center gap-3">
+                          {auth?.user?.role === 1 && (
+                            <button
+                              onClick={() => handleTwitterClick(e)}
+                              className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                              title="Share on X" >
+                              <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
+                            </button>
+                          )}
+                          {e.category === 'received' && e.uuid && !String(e.uuid).startsWith('exp-') && (
+                            <a 
+                                href={route('financial.evidence-pack', { uuid: e.uuid })} 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-pink-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1"
+                            >
+                                <FileText size={12} />
+                                Evidence Pack
+                            </a>
+                          )}
+                          {e.open_link ? (
+                            e.open_link.startsWith('http') ? (
+                              <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</a>
+                            ) : (
+                              <Link href={e.open_link} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</Link>
+                            )
+                          ) : null}
+                          {storyUrlFor(e) ? (
+                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
+                          ) : null}
+                        </div>
                   </div>
                 </FadeIn>
               );
@@ -550,6 +569,8 @@ export default function Transactions(props) {
                 <button onClick={() => fetchFeed(data?.next_before || null, true)} className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">Load More</button>
               </div>
             ) : null}
+
+
           </div>
         ) : (
           <Nocontent text="No transactions found" />

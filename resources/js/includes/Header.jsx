@@ -390,6 +390,25 @@ export default function Header({ classMagicword }) {
                                         </>
                                     ) :""}
                                     
+                                    {auth?.user?.username && (
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/shop`}
+                                                    className={`${getNavLinkClass('/shop')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-2">
+                                                        <FaBasketShopping
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
+                                                        {auth.user.role == 1 ? 'Shop' : 'My Purchases'}
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                    )}
 
                                     {auth &&
                                     auth.user &&
@@ -412,40 +431,6 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/shop`}
-                                                    className={`${getNavLinkClass('/shop')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <FaBasketShopping
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Shop
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            {/* <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={"giftstore"}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-white/90 hover:text-white border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <FiGift
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                                Gift Store
-                                                            </span>
-                                                        </Link>
-                                                    </li> */}
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
@@ -528,6 +513,23 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                     <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Feature Suggestions
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/admin/system-diagnostics`}
+                                                    className={`${getNavLinkClass('/admin/system-diagnostics')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-indigo-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-2">
+                                                        <TbSettingsCog
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
+                                                        System Diagnostics
                                                     </span>
                                                 </Link>
                                             </li>

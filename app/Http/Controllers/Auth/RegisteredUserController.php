@@ -190,20 +190,10 @@ class RegisteredUserController extends Controller
                 ->where('is_active', 1)
                 ->first();
 
-            if (!$referralCode) {
-                throw ValidationException::withMessages([
-                    'promo' => 'Invalid referral code.',
-                ]);
-            }
-
-            $referrer = User::where('id', $referralCode->creator_id)
-                ->where('role', 1)
-                ->first();
-
-            if (!$referrer) {
-                throw ValidationException::withMessages([
-                    'promo' => 'Invalid referral code.',
-                ]);
+            if ($referralCode) {
+                $referrer = User::where('id', $referralCode->creator_id)
+                    ->where('role', 1)
+                    ->first();
             }
         }
 
@@ -259,7 +249,7 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================✅ CREATOR REFERRAL LOGIC========================== */
-        if ($referralCode && $referrer && $request->role == 1) {
+        if ($referralCode && $referrer && $request->role == 1 && $referrer->id !== $user->id) {
             // ❌ Prevent duplicate referral entry
             $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)
                 ->exists();

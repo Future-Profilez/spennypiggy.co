@@ -23,6 +23,8 @@ class Payment extends Model
         'status',
         'confirmation_log_id',
         'reason_codes',
+        'payout_run_id',
+        'adjustment_payout_run_id',
     ];
 
     protected $casts = [
@@ -30,6 +32,8 @@ class Payment extends Model
         'amount' => 'integer',
         'reserve_amount_minor' => 'integer',
         'platform_holds_funds' => 'boolean',
+        'payout_run_id' => 'string',
+        'adjustment_payout_run_id' => 'string',
     ];
 
     public function riskIdentity()

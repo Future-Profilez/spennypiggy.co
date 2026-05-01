@@ -121,6 +121,14 @@ class Deliverable extends Model
     }
 
     /**
+     * Get the shop item this deliverable is for
+     */
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'item_id');
+    }
+
+    /**
      * Get the purchase/order this deliverable is for
      */
     public function purchase(): BelongsTo
