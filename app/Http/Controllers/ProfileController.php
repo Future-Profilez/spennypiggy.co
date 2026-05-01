@@ -1944,6 +1944,7 @@ class ProfileController extends Controller
             $sourceId = $source === 'financial_transactions' ? $tx->id : $tx->source_id;
 
             $event = [
+                'uuid' => $tx->uuid,
                 'type' => $type,
                 'source' => $source,
                 'source_id' => $sourceId,

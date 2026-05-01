@@ -876,6 +876,15 @@ class StripeWebhookController extends Controller
                     $payment = \App\Models\Payment::where('stripe_session_id', $session->id)->first();
                 }
 
+                if (!$payment && $session->payment_intent) {
+                    $payment = \App\Models\Payment::where('stripe_payment_intent_id', $session->payment_intent)->first();
+                    if ($payment) {
+                        $payment->update([
+                            'stripe_session_id' => $session->id,
+                        ]);
+                    }
+                }
+
                 if ($payment) {
                     $newStatus = 'succeeded';
                     // Check if it was marked for review hold
@@ -892,6 +901,10 @@ class StripeWebhookController extends Controller
                         'stripe_payment_intent_id' => $session->payment_intent ?? $payment->stripe_payment_intent_id,
                         'status' => $newStatus,
                     ]);
+
+                    if ($session->payment_intent) {
+                        $this->syncFinancialTransactionsByPaymentIntent($session->payment_intent, $newStatus);
+                    }
 
                     Log::info("Risk Ledger: Checkout session mapped to payment", [
                         'session_id' => $session->id,
@@ -1226,6 +1239,10 @@ class StripeWebhookController extends Controller
                     $creator->email
                 );
                 Log::info("Task purchase email sent", ['creator_email' => $creator->email]);
+            }
+
+            if ($supporter) {
+                Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
             }
         } catch (\Exception $e) {
             Log::error("Failed to send task purchase email/notification", ['error' => $e->getMessage()]);
@@ -2833,6 +2850,20 @@ class StripeWebhookController extends Controller
                     $stripeFee = \App\StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $connectedAccountId);
                     $netMinor = max(0, $paymentIntent->amount - $appFee - $stripeFee);
 
+                    $existing = \App\Models\Payment::whereNull('stripe_payment_intent_id')
+                        ->where('creator_id', $creatorId)
+                        ->where('currency', strtoupper((string) $paymentIntent->currency))
+                        ->where('amount', $netMinor)
+                        ->where('created_at', '>=', now()->subMinutes(10))
+                        ->orderByDesc('created_at')
+                        ->first();
+                    if ($existing) {
+                        $existing->update([
+                            'stripe_payment_intent_id' => $paymentIntentId,
+                        ]);
+                        $payment = $existing;
+                    } else {
+
                     $payment = \App\Models\Payment::create([
                         'stripe_payment_intent_id' => $paymentIntentId,
                         'creator_id' => $creatorId,
@@ -2841,6 +2872,7 @@ class StripeWebhookController extends Controller
                         'reserve_amount_minor' => 0,
                         'status' => 'succeeded',
                     ]);
+                    }
                     Log::info("Risk Ledger: Auto-created missing Payment record", ['id' => $payment->id, 'creator_id' => $creatorId]);
                 } catch (\Exception $e) {
                     Log::error("Risk Ledger: Failed to auto-create payment: " . $e->getMessage());
@@ -2850,17 +2882,10 @@ class StripeWebhookController extends Controller
         
         if ($payment) {
             $newStatus = 'succeeded';
-            // Only keep in review_hold if it was MANUALLY marked by our risk engine AND not yet released.
-            // If the status is ALREADY succeeded (e.g. admin released it), don't go back to review_hold.
-            if ($payment->status === 'review_hold' || (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes))) {
-                if ($payment->status !== 'succeeded') {
-                    // Check if Stripe explicitly said this PI is under review
-                    // If PI is successful now, Stripe review is done. 
-                    // We only stay in review_hold if our SpennyPiggy risk engine flagged it specifically.
-                    // But usually PI Success means it's safe to release unless Admin specifically wants to hold.
-                    // Let's allow it to become succeeded to sync with Stripe.
-                    $newStatus = 'succeeded';
-                }
+            // If the payment is already in a specialized state (hold, dispute, refund), 
+            // we should PRESERVE that state unless it's just 'initiated' or 'pending'.
+            if (in_array($payment->status, ['review_hold', 'disputed', 'refunded'])) {
+                $newStatus = $payment->status;
             }
             
             $this->syncRiskLedgerStatus($paymentIntentId, $newStatus);
@@ -2869,14 +2894,28 @@ class StripeWebhookController extends Controller
             app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
 
             try {
-                // If reserve is 0, let's recalculate and see if we should apply one based on current metrics
-                if ((int) ($payment->reserve_amount_minor ?? 0) === 0) {
+                // Calculate reserve based on the creator's share (Net Amount)
+                // This ensures the reserve percentage matches what the creator expects to see.
+                if ((int) ($payment->reserve_amount_minor ?? 0) === 0 || true) { // Force recalculation to ensure net-based
                     $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $payment->creator_id);
                     $reservePercent = (int) ($metrics->reserve_percent ?? 0);
                     if ($reservePercent > 0) {
-                        $amountMinor = $payment->amount; // Already in minor units
+                        // Calculate Net Amount
+                        $netMinor = null;
                         
-                        $reserveMinor = (int) round(((int) $amountMinor * $reservePercent) / 100);
+                        // First try to get it from metadata (set by our controllers)
+                        if (isset($paymentIntent->metadata->creator_net_amount)) {
+                            $netMinor = (int) $paymentIntent->metadata->creator_net_amount;
+                        } 
+                        
+                        if ($netMinor === null) {
+                            // Fallback: Gross - App Fee - Stripe Fee
+                            $appFee = $paymentIntent->application_fee_amount ?? 0;
+                            $stripeFee = \App\StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $connectedAccountId);
+                            $netMinor = max(0, $paymentIntent->amount - $appFee - $stripeFee);
+                        }
+                        
+                        $reserveMinor = (int) round(((int) $netMinor * $reservePercent) / 100);
                         
                         $payment->update([
                             'reserve_amount_minor' => $reserveMinor,
@@ -3064,12 +3103,12 @@ class StripeWebhookController extends Controller
 
                 // 7. Dispatch jobs
                 ShopBuyed::dispatch($shopPayment, $shopPayment->anonymous == 1, $creatorNetAmount);
-                ShopBuyedUser::dispatch($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
-
+                
                 // 8. Create deliverable record
+                $deliverable = null;
                 try {
                     if (!\App\Models\Deliverable::where('session_id', $session->id)->exists()) {
-                        \App\Models\Deliverable::create([
+                        $deliverable = \App\Models\Deliverable::create([
                             'uuid' => (string) \Illuminate\Support\Str::uuid(),
                             'product_id' => $shopPayment->shop->stripe_product_id ?? 'shop_' . $shopPayment->shop->id,
                             'price_id' => $shopPayment->shop->price_id,
@@ -3099,10 +3138,13 @@ class StripeWebhookController extends Controller
                                 'via_webhook' => true
                             ])
                         ]);
+                        Log::info('StripeWebhookController: Deliverable record created for shop item', ['shop_id' => $shopPayment->shop->id]);
                     }
                 } catch (\Exception $e) {
                     Log::error('StripeWebhookController: Failed to create deliverable record for shop', ['error' => $e->getMessage()]);
                 }
+
+                ShopBuyedUser::dispatch($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
 
                 // 9. Send PWA notifications
                 try {
@@ -3320,6 +3362,10 @@ class StripeWebhookController extends Controller
                             \Illuminate\Support\Facades\Artisan::queue('finance:sync-transactions', [
                                 '--user_id' => $intUserId,
                             ]);
+                            
+                            // Re-evaluate Refer & Earn GMV on any payment status change
+                            \App\Helpers::recalculateGmv($intUserId);
+
                             Log::info("Financial Sync queued for creator user_id: " . $intUserId);
                         }
                     } catch (\Exception $e) {
@@ -3349,17 +3395,17 @@ class StripeWebhookController extends Controller
             };
 
             $sourceModels = [
-                [\App\Models\TaskPurchase::class,       'payment_intent_id'],
-                [\App\Models\TipGoalsPayment::class,    'payment_intent_id'],
-                [\App\Models\ShopPayment::class,        'payment_intent_id'],
-                [\App\Models\StripePaymentDetail::class,'payment_intent_id'],
-                [\App\Models\MembershipPayment::class,  'payment_intent_id'],
-                [\App\Models\BillPayment::class,        'payment_intent_id'],
+                [\App\Models\TaskPurchase::class,       'payment_intent_id', 'stripe_session_id'],
+                [\App\Models\TipGoalsPayment::class,    'session_id',        'session_id'], // Uses session_id for both
+                [\App\Models\ShopPayment::class,        'payment_intent_id', 'session_id'],
+                [\App\Models\StripePaymentDetail::class,'payment_intent_id', 'session_id'],
+                [\App\Models\MembershipPayment::class,  'payment_intent_id', 'session_id'],
+                [\App\Models\BillPayment::class,        'payment_intent_id', 'session_id'],
             ];
 
-            foreach ($sourceModels as [$modelClass, $column]) {
-                $record = $modelClass::where($column, $paymentIntentId)
-                    ->orWhere('session_id', $paymentIntentId)
+            foreach ($sourceModels as [$modelClass, $piCol, $sessionCol]) {
+                $record = $modelClass::where($piCol, $paymentIntentId)
+                    ->orWhere($sessionCol, $paymentIntentId)
                     ->first();
                 if ($record) {
                     $updated = \App\Models\FinancialTransaction::where('source_type', $modelClass)

@@ -8,6 +8,7 @@ import axios from "axios";
 import { add_to_cart } from "@/Pages/redux/UserSlice";
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
@@ -637,7 +638,7 @@ export default function UserCarts(props) {
                                         {formatMultiPrice((fee + subtotal) || "", chargeCurrency)}
                                     </strong>
                                     <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
-                                        * Includes all applicable fees
+                                        *Includes platform and payment processing fees
                                     </div>
                                 </div>
                             </div>
@@ -645,29 +646,7 @@ export default function UserCarts(props) {
                             <div className="addMessage">
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <ul className="flex flex-wrap">
-                                        <li className="fading w-full">
-                                            <div className="mt-4 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[20px] text-left">
-                                                <label
-                                                    htmlFor={`digital_waiver_${datas?.user?.id}`}
-                                                    className="text-left flex items-start cursor-pointer group"
-                                                >
-                                                    <div className="flex items-center h-5 mt-1">
-                                                        <input
-                                                            onChange={(e) => setDigitalWaiver(e.target.checked)}
-                                                            type="checkbox"
-                                                            id={`digital_waiver_${datas?.user?.id}`}
-                                                            name="digital_waiver"
-                                                            className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-                                                            checked={digitalWaiver}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
-                                                        I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
-                                                    </span>
-                                                </label>
-                                            </div>
-                                        </li>
+
                                         <li className="fading w-full">
                                             <label>Add Message </label>
                                             <textarea rows={2}
@@ -735,101 +714,10 @@ export default function UserCarts(props) {
                                                 private.
                                             </p>
 
-                                            <label
-                                                htmlFor="agreeterm"
-                                                className="text-left fading"
-                                            >
-                                                <input
-                                                    onChange={(e) =>
-                                                        setIsChecked(e.target.checked)
-                                                    }
-                                                    type="checkbox"
-                                                    id="agreeterm"
-                                                    name="agreeterm"
-                                                    className="mr-2"
-                                                    value="agreeterm"
-                                                ></input>
-                                                I understand I am paying the creator
-                                                directly and I agree to the{" "}
-                                                <Link
-                                                    target="_blank"
-                                                    className="text-violet-600"
-                                                    href={route("terms-and-conditions")}
-                                                >
-                                                    Terms of Service
-                                                </Link>{" "}
-                                                and{" "}
-                                                <Link
-                                                    className="text-violet-600"
-                                                    target="_blank"
-                                                    href={route("terms-and-conditions")}
-                                                >
-                                                    {" "}
-                                                    Privacy Policy{" "}
-                                                </Link>{" "}
-                                                and the following statements:
-                                            </label>
-                                            <div className="tearmlist pl-3">
-                                                <ul className="pl-0  ">
-                                                    <li> 
-                                                        For Memberships and
-                                                        subscriptions, I understand I am
-                                                        making a non-refundable purchase
-                                                        that provides access to
-                                                        exclusive posts. This payment
-                                                        will be automatically taken on a
-                                                        daily, weekly, monthly or yearly
-                                                        basis depending on the
-                                                        subscription type. Can be
-                                                        cancelled anytime.
-                                                    </li>
-                                                    <li>
-                                                        {" "}
-                                                        I understand that for wishes or
-                                                        support payments I am making a
-                                                        non-refundable gift of support
-                                                        and understand in exchange i
-                                                        will recieve a supporter
-                                                        membership or exclusive content
-                                                        reward.{" "}
-                                                    </li>
-                                                    <li>
-                                                        I understand that all Profile
-                                                        shop purchases are non
-                                                        refundable and I have taken all
-                                                        necessary steps to understand
-                                                        what I am purchasing
-                                                    </li>
-                                                    <li>
-                                                        I have taken the necessary steps
-                                                        to confirm the account owner is
-                                                        authentic and I understand that
-                                                        Spenny Piggy will not be held
-                                                        responsible for any issues
-                                                        arising from a catfishing
-                                                        situation.
-                                                    </li>
-                                                    <li>
-                                                        I understand that by violating
-                                                        these terms I may be subject to
-                                                        legal action or can fall a
-                                                        victim of scams.
-                                                    </li>
-                                                    <li>
-                                                        I understand that by checking
-                                                        the box above and then clicking
-                                                        "CHECKOUT", I will have created
-                                                        a legally binding e-signature to
-                                                        this agreement.
-                                                    </li>
-                                                    <li>
-                                                        By providing an e-mail, you
-                                                        confirm that you are happy to
-                                                        receive marketing updates. You
-                                                        can opt out at anytime.
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                            <CheckoutLegalTerms onAgreeChange={(checked) => {
+                                                setIsChecked(checked);
+                                                setDigitalWaiver(checked);
+                                            }} />
                                         </li>
                                     </ul>
                                     {turnstileSiteKey ? (

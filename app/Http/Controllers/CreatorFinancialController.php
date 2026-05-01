@@ -112,6 +112,8 @@ class CreatorFinancialController extends Controller
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
+                // Calculate reserve percentage based on net_amount (creator share)
+                // so it matches the expected reserve rate (e.g. 10%).
                 $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
                 
                 $base = class_basename($tx->source_type);
@@ -198,12 +200,15 @@ class CreatorFinancialController extends Controller
                         return [$label => $amount];
                     });
 
+                $hasHold = $items->contains(fn($tx) => in_array($tx->status, ['review_hold', 'disputed']));
+
                 $first = $items->first();
                 return (object) [
                     'supporter_id' => $first->supporter_id,
                     'total_spent' => $total,
                     'supporter' => $first->supporter,
                     'breakdown' => $breakdown,
+                    'has_hold' => $hasHold,
                 ];
             })
             ->sortByDesc('total_spent')
@@ -282,8 +287,7 @@ class CreatorFinancialController extends Controller
             ->get()
             ->map(function ($tx) {
                 $tx->display_date = $tx->transaction_date;
-                $tx->uuid = $tx->uuid ?? $tx->id;
-                $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
+                $tx->reserve_percent = $tx->gross_amount > 0 ? round(($tx->reserve_amount / $tx->gross_amount) * 100, 1) : 0;
                 
                 $base = class_basename($tx->source_type);
                 $tx->label = match($base) {

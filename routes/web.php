@@ -708,6 +708,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     })->name('admin.founder/bonus-settings.page');
     Route::post('/founder/bonuses/trigger-qualification-check', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'triggerQualificationCheck'])->name('admin.founder/bonuses.trigger-qualification');
 
+    // System Diagnostics Admin
+    Route::get('/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
+    Route::post('/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
+
     // Feature Suggestions Admin
     Route::get('/feature-suggestions', function (Illuminate\Http\Request $request) {
         $query = \App\Models\FeatureSuggestion::with('user')->latest();

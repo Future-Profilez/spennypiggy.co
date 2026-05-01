@@ -109,7 +109,7 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
                                 </p> 
                                 {!isCreator && (
                                     <span className="block text-xs text-gray-500 font-bold mt-0 leading-tight text-right">
-                                        * Includes all fees
+                                        *Includes platform and payment processing fees
                                     </span>
                                 )}
                             </div>

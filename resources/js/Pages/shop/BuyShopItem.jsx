@@ -1,4 +1,5 @@
 import React from 'react';
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import Popup from "@/Components/Popup";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
@@ -13,7 +14,6 @@ import AllContries from "../../includes/AllCountries";
 import Turnstile from "@/Components/Turnstile";
 
 export default function BuyShopItem({
-    vat_percent,
     opened,
     classes,
     text,
@@ -26,7 +26,7 @@ export default function BuyShopItem({
     card_capabilities,
 }) {
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
-    const { global_currency, auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const { auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const turnstileRef = useRef(null);
     const [close, setClose] = useState();
 
@@ -72,12 +72,14 @@ export default function BuyShopItem({
         }
     }, [open]);
 
-    const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
-    const [isfairPrice, setIsfaiPrice] = useState(false);
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const actualPrice = () => {
         if (s && s.is_member == 1 && s.special_member_price) {
             return s.special_member_price;
+        } else if (selectedVarient && selectedVarient !== "no_varient") {
+            const variant = s.shop_varients?.find(v => v.id == selectedVarient);
+            return variant?.price !== null && variant?.price !== undefined ? variant.price : s.price;
         } else {
             return s.price;
         }
@@ -99,14 +101,10 @@ export default function BuyShopItem({
 
     const [fairPrice, setfaiPrice] = useState(actualPrice());
 
-    const enterFairPrice = (e) => {
-        if (e.target.value) {
-            setIsfaiPrice(true);
-        } else {
-            setIsfaiPrice(false);
-        }
-        setfaiPrice(e.target.value);
-    };
+    useEffect(() => {
+        setfaiPrice(actualPrice());
+    }, [selectedVarient, s]);
+
     const slug = (inputString) => {
         return inputString
             .toLowerCase()
@@ -199,7 +197,7 @@ export default function BuyShopItem({
     
     React.useEffect(() => {
         const checkPasskey = async () => {
-            const userEmail = (typeof email !== 'undefined' ? email : null) || (typeof data !== 'undefined' && data?.email ? data.email : null) || auth?.user?.email;
+            const userEmail = email || auth?.user?.email;
             if (userEmail && isWebAuthnSupported()) {
                 try {
                     const res = await axios.post('/webauthn/check', { email: userEmail });
@@ -209,15 +207,15 @@ export default function BuyShopItem({
                 }
             }
         };
-        if (typeof showStepUp !== 'undefined' && showStepUp) {
+        if (showStepUp) {
             checkPasskey();
         }
-    }, [typeof showStepUp !== 'undefined' ? showStepUp : false]);
+    }, [showStepUp]);
 
     const handlePasskeyStepUp = async () => {
         try {
             setPasskeyLoading(true);
-            const userEmail = (typeof email !== 'undefined' ? email : null) || (typeof data !== 'undefined' && data?.email ? data.email : null) || auth?.user?.email;
+            const userEmail = email || auth?.user?.email;
 
             if (!userEmail) {
                 toast.error("Email required for passkey verification.");
@@ -264,7 +262,6 @@ export default function BuyShopItem({
             if (response.data.success) {
                 toast.success("Identity verified! Proceeding to checkout...");
                 setShowStepUp(false);
-                if (typeof setSkipCaptcha !== 'undefined') setSkipCaptcha(true);
                 buyItem("verified");
             } else {
                 toast.error("Passkey verification failed.");
@@ -328,7 +325,18 @@ export default function BuyShopItem({
             errorAlert("Please enter your name and email");
             return false;
         }
-        
+
+        if (shop.type === "physical") {
+            if (!shipping_info.country) {
+                errorAlert("Please select a shipping country");
+                return false;
+            }
+            if (!shipping_info.street_address || !shipping_info.city || !shipping_info.state || !shipping_info.postal_code) {
+                errorAlert("Please fill in all shipping address fields");
+                return false;
+            }
+        }
+
         // If token is passed directly (e.g. from verify), use it, otherwise use state
         const currentToken = typeof token === "string" ? token : captchaToken;
 
@@ -338,6 +346,7 @@ export default function BuyShopItem({
               )}&digital_waiver=1`
             : "&digital_waiver=1";
         
+        setLoading(true);
         setChecking(true);
         if (shop.type === "physical") {
             axios
@@ -349,6 +358,7 @@ export default function BuyShopItem({
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        setLoading(false);
                         setChecking(false);
                         if (res.data.step_up_required) {
                             setStepUpData({ ui: res.data.ui });
@@ -379,13 +389,13 @@ export default function BuyShopItem({
                     errorsHandling(err);
                 });
         } else {
-            setLoading(true);
             axios
                 .get(
                     `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        setLoading(false);
                         setChecking(false);
                         if (res.data.step_up_required) {
                             setStepUpData({ ui: res.data.ui });
@@ -446,15 +456,11 @@ export default function BuyShopItem({
             });
     };
 
-    const [copied, setCopied] = useState(false);
     const handleCopy = () => {
-        const text = window.location.href;
         navigator.clipboard
-            .writeText(text)
+            .writeText(window.location.href)
             .then(() => {
-                setCopied(true);
                 toast.success("Copied to clipboard");
-                setTimeout(() => setCopied(false), 2000);
             })
             .catch((err) => {
                 console.error("Failed to copy: ", err);
@@ -524,7 +530,12 @@ export default function BuyShopItem({
                                     </div>
                                 </div>
 
-                                {s && s.success_page_type == "text" ? (
+                                {shop.type === "physical" ? (
+                                    <div className="text-center py-2">
+                                        <p className="text-gray-700 font-medium">📦 Your order has been placed!</p>
+                                        <p className="text-sm text-gray-500 mt-1">The creator will process and ship your order soon. You&apos;ll receive an email with tracking details once it&apos;s dispatched.</p>
+                                    </div>
+                                ) : s && s.success_page_type == "text" ? (
                                     <p>{s && s.success_page_value}</p>
                                 ) : (
                                     <a
@@ -599,7 +610,7 @@ export default function BuyShopItem({
                                         )}
                                         </strong>
                                         <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                            * Includes all fees. You will be charged in {s?.currency || "GBP"}.
+                                            *Includes platform and payment processing fees and shipping. You will be charged in {s?.currency || "GBP"}.
                                         </span>
                                         <button className="tooltipbtn flex justify-center items-center !font-normal">
                                             ?
@@ -767,7 +778,7 @@ export default function BuyShopItem({
                                                 className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                                 onChange={handleShipInput}
                                                 name="postal_code"
-                                                type="email"
+                                                type="text"
                                                 placeholder="Postal Code"
                                             />
                                         </div>
@@ -793,27 +804,7 @@ export default function BuyShopItem({
                                 </div>
                             )}
 
-                            <div className="mt-2 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-left">
-                                <label
-                                    htmlFor="digital_waiver"
-                                    className="text-left flex items-start cursor-pointer group"
-                                >
-                                    <div className="flex items-center h-5 mt-1">
-                                        <input
-                                            onChange={(e) => setDigitalWaiver(e.target.checked)}
-                                            type="checkbox"
-                                            id="digital_waiver"
-                                            name="digital_waiver"
-                                            className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-                                            checked={digitalWaiver}
-                                            required
-                                        />
-                                    </div>
-                                    <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
-                                        I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
-                                    </span>
-                                </label>
-                            </div>
+                            <CheckoutLegalTerms onAgreeChange={(checked) => setDigitalWaiver(checked)} />
 
                             <button
                                 disabled={checking || !card_capabilities || !digitalWaiver}
@@ -891,7 +882,7 @@ export default function BuyShopItem({
                             <button
                                 type="button"
                                 onClick={handlePasskeyStepUp}
-                                disabled={passkeyLoading || (typeof verifyingOtp !== 'undefined' ? verifyingOtp : false)}
+                                disabled={passkeyLoading || verifyingOtp}
                                 className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (

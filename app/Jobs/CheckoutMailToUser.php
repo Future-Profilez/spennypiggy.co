@@ -39,15 +39,7 @@ class CheckoutMailToUser implements ShouldQueue
      */
     private function createEmailDeliverable()
     {
-        // Only create email deliverable for authenticated users (due to gifter_id constraint)
-        if (!$this->payment->user_id) {
-            Log::info('CheckoutMailToUser: Skipping email deliverable for guest checkout', [
-                'payment_id' => $this->payment->id,
-                'guest_email' => $this->payment->guest_email ?? 'null'
-            ]);
-            return;
-        }
-        
+        // Create email deliverable for both authenticated users and guests
         try {
             $deliverable = \App\Models\Deliverable::create([
                 'uuid' => Str::uuid(),
@@ -540,14 +532,6 @@ class CheckoutMailToUser implements ShouldQueue
                 // Create basic deliverable even without content for tracking
                 $status = 'delivered';
                 $deliveredAt = now();
-            }
-            
-            // Only create for authenticated users due to gifter_id constraint
-            if (!$this->payment->user_id) {
-                Log::info('CheckoutMailToUser: Skipping deliverable for guest', [
-                    'wish_id' => $wish->id
-                ]);
-                return null;
             }
             
             // Determine customer email and name

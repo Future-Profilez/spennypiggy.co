@@ -28,8 +28,17 @@ class PayoutService
         $platformState = PlatformRiskState::latest('started_at')->first();
         $state = $platformState ? $platformState->state : 'NORMAL';
 
-        $creators = Payment::whereNull('payout_run_id')
-            ->whereIn('status', ['succeeded', 'refunded', 'disputed', 'review_hold'])
+        $creators = Payment::query()
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereNull('payout_run_id')
+                        ->whereIn('status', ['succeeded', 'review_hold']);
+                })->orWhere(function ($q2) {
+                    $q2->whereNotNull('payout_run_id')
+                        ->whereIn('status', ['refunded', 'disputed'])
+                        ->whereNull('adjustment_payout_run_id');
+                });
+            })
             ->distinct()
             ->pluck('creator_id');
 
@@ -60,7 +69,55 @@ class PayoutService
                 ->where('status', 'succeeded')
                 ->whereNull('payout_run_id')
                 ->where('created_at', '<=', $cutoff)
+                ->orderByDesc('created_at')
                 ->get();
+            
+            $holdIntentIds = Payment::where('creator_id', $creatorId)
+                ->whereNull('payout_run_id')
+                ->whereIn('status', ['review_hold', 'disputed'])
+                ->whereNotNull('stripe_payment_intent_id')
+                ->pluck('stripe_payment_intent_id')
+                ->toArray();
+            if (!empty($holdIntentIds)) {
+                $payments = $payments
+                    ->reject(fn ($p) => $p->stripe_payment_intent_id && in_array($p->stripe_payment_intent_id, $holdIntentIds, true))
+                    ->values();
+            }
+
+            $payments = $payments
+                ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
+                ->values();
+
+            // Filter out physical shop payments and manual tasks that are NOT yet completed
+            $payments = $payments->filter(function ($p) {
+                if ($p->stripe_session_id) {
+                    // 1. Shop Payments (Physical)
+                    $shopPayment = \App\Models\ShopPayment::with(['shop', 'deliverable'])
+                        ->where('session_id', $p->stripe_session_id)
+                        ->first();
+                        
+                    if ($shopPayment && $shopPayment->shop && $shopPayment->shop->type === 'physical') {
+                        // If it's a physical shop item, it must be marked as 'delivered' to be paid out
+                        if (!$shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
+                            return false; // Exclude from this payout run (funds reserved)
+                        }
+                    }
+
+                    // 2. Paid Tasks (Manual/Timed)
+                    $taskPurchase = \App\Models\TaskPurchase::where('stripe_session_id', $p->stripe_session_id)
+                        ->orWhere('payment_intent_id', $p->stripe_payment_intent_id)
+                        ->first();
+
+                    if ($taskPurchase) {
+                        // Only include completed tasks (Instant or accepted Timed tasks)
+                        // Statuses: 'completed' (Instant), 'completed_accepted' (Timed/Manual)
+                        if (!in_array($taskPurchase->status, ['completed', 'completed_accepted'])) {
+                            return false; // Exclude from this payout run (funds reserved)
+                        }
+                    }
+                }
+                return true;
+            });
 
             // Calculate Net Eligible Base
             $netEarningsMinor = 0;
@@ -125,11 +182,12 @@ class PayoutService
 
             $adjustments = Payment::where('creator_id', $creatorId)
                 ->whereIn('status', ['refunded', 'disputed'])
-                ->where(function($q) use ($cutoff) {
-                    $q->whereNull('payout_run_id') // New refunds/disputes
-                      ->orWhere('created_at', '<=', $cutoff); // Potential historical ones
-                })
-                ->get();
+                ->whereNotNull('payout_run_id')
+                ->whereNull('adjustment_payout_run_id')
+                ->orderByDesc('created_at')
+                ->get()
+                ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
+                ->values();
 
             $reviewHold = Payment::where('creator_id', $creatorId)
                 ->where('status', 'review_hold')
@@ -137,10 +195,7 @@ class PayoutService
                 ->where('created_at', '<=', $cutoff)
                 ->get();
 
-            // CRITICAL FIX: Only subtract if the payment was actually paid out before (payout_run_id was NOT null)
-            $refundDisputeAmount = (int) $adjustments->filter(function($p) {
-                return !is_null($p->payout_run_id);
-            })->sum('amount');
+            $refundDisputeAmount = (int) $adjustments->sum('amount');
             
             $reviewHoldAmount = (int) $reviewHold->sum('amount');
 
@@ -322,7 +377,7 @@ class PayoutService
 
                         if (!empty($adjustmentIds)) {
                             Payment::whereIn('id', $adjustmentIds)
-                                ->update(['payout_run_id' => $run->id]);
+                                ->update(['adjustment_payout_run_id' => $run->id]);
                         }
 
                         if (isset($data['negative_balance_after'])) {
@@ -362,7 +417,7 @@ class PayoutService
 
                     if (!empty($adjustmentIds)) {
                         Payment::whereIn('id', $adjustmentIds)
-                            ->update(['payout_run_id' => $run->id]);
+                            ->update(['adjustment_payout_run_id' => $run->id]);
                     }
 
                     if (isset($data['negative_balance_after'])) {
@@ -391,16 +446,23 @@ class PayoutService
      */
     public function getHeldReserves($creatorId)
     {
+        $rates = \App\Models\Currency::rates();
+        $convert = function ($amount, $from, $to = 'GBP') use ($rates) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) return $amount;
+            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            $gbpAmount = $amount / $rates[$from];
+            return $gbpAmount * $rates[$to];
+        };
+
         // Find executed runs with unreleased reserves for this creator
-        // Note: whereJsonContains might be slow on large datasets, consider indexing or separate table for reserves if scaling
-        $runs = PayoutRun::where('status', 'executed')
-            ->get();
+        $runs = PayoutRun::where('status', 'executed')->get();
 
         $held = [];
-        $totalHeld = 0;
+        $totalHeldGbp = 0;
 
         foreach ($runs as $run) {
-            // Check if this run has data for the creator
             $payouts = $run->totals['payouts'] ?? [];
             $data = $payouts[$creatorId] ?? null;
 
@@ -408,16 +470,74 @@ class PayoutService
                 && empty($data['reserve_released'])) {
                 
                 $releaseDate = $data['reserve_release_date'] ?? Carbon::parse($run->run_date)->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString();
-                
+                $currency = $data['currency'] ?? 'GBP';
+                $amountGbp = $convert($data['reserve_amount'], $currency, 'GBP');
+
                 $held[] = [
                     'payout_run_id' => $run->id,
                     'amount' => $data['reserve_amount'],
+                    'currency' => $currency,
+                    'amount_gbp' => $amountGbp,
                     'run_date' => $run->run_date,
                     'release_date' => $releaseDate,
-                    'days_remaining' => max(0, Carbon::now()->diffInDays(Carbon::parse($releaseDate), false))
+                    'days_remaining' => max(0, Carbon::now()->diffInDays(Carbon::parse($releaseDate), false)),
+                    'source_name' => 'Payout Run Reserve',
                 ];
-                $totalHeld += $data['reserve_amount'];
+                $totalHeldGbp += $amountGbp;
             }
+        }
+
+        // Add pending reserves from recent payments (Excluding Holds/Disputes)
+        $pendingPayments = \App\Models\Payment::where('creator_id', $creatorId)
+            ->whereNull('payout_run_id')
+            ->where('status', 'succeeded')
+            ->where('reserve_amount_minor', '>', 0)
+            ->orderByDesc('created_at')
+            ->get(['amount', 'reserve_amount_minor', 'status', 'created_at', 'stripe_session_id', 'stripe_payment_intent_id', 'creator_id', 'currency'])
+            ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
+            ->values();
+        
+        $holdIntentIds = \App\Models\Payment::where('creator_id', $creatorId)
+            ->whereNull('payout_run_id')
+            ->whereIn('status', ['review_hold', 'disputed'])
+            ->whereNotNull('stripe_payment_intent_id')
+            ->pluck('stripe_payment_intent_id')
+            ->toArray();
+        if (!empty($holdIntentIds)) {
+            $pendingPayments = $pendingPayments
+                ->reject(fn ($p) => $p->stripe_payment_intent_id && in_array($p->stripe_payment_intent_id, $holdIntentIds, true))
+                ->values();
+        }
+
+        foreach ($pendingPayments as $p) {
+            $reserveMinor = $p->reserve_amount_minor;
+            $amountGbp = $convert($reserveMinor, $p->currency, 'GBP');
+
+            // Try to find the description from FinancialTransaction
+            $description = \App\Models\FinancialTransaction::where('user_id', function($q) use ($p) {
+                    $q->select('id')->from('users')->where('uuid', $p->creator_id);
+                })
+                ->where(function($q) use ($p) {
+                    $q->where('description', 'LIKE', '%' . $p->stripe_session_id . '%')
+                      ->orWhere('description', 'LIKE', '%' . $p->stripe_payment_intent_id . '%');
+                })
+                ->value('description');
+
+            if (!$description) {
+                $description = 'Pending Payment';
+            }
+
+            $held[] = [
+                'payout_run_id' => 'Pending',
+                'amount' => $reserveMinor,
+                'currency' => $p->currency,
+                'amount_gbp' => $amountGbp,
+                'run_date' => 'Pending',
+                'release_date' => $p->created_at ? $p->created_at->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString() : Carbon::now()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString(),
+                'days_remaining' => max(0, Carbon::now()->diffInDays($p->created_at ? $p->created_at->addDays(self::RESERVE_RELEASE_WINDOW_DAYS) : Carbon::now()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS), false)),
+                'source_name' => $description,
+            ];
+            $totalHeldGbp += $amountGbp;
         }
 
         // Sort by release date (soonest first)
@@ -426,7 +546,7 @@ class PayoutService
         });
 
         return [
-            'total_held' => $totalHeld,
+            'total_held' => $totalHeldGbp,
             'breakdown' => $held
         ];
     }

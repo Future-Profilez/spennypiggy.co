@@ -24,6 +24,7 @@
                 </div>
                 
                 <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: center;">
+                    <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px;">You can now see subscription-only posts of {{ $bill_pay->bill->user->name }}.</p>
                     @php
                         $accessUrl = isset($deliverable->uuid) 
                            ? route('deliverable.access', $deliverable->uuid) 

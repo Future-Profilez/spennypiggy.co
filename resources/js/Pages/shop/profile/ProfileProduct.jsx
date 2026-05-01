@@ -1,5 +1,7 @@
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
+import AddItem from "../AddItem";
+
 export default function ProfileProduct({ item, IsloggedIn }) {
     const { auth, user } = usePage().props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
@@ -25,7 +27,10 @@ export default function ProfileProduct({ item, IsloggedIn }) {
     const listedPriceToGrossUp = basePrice + taxAmount + vatAmount;
     const supporterPays = calculateTotalSupporterPays(listedPriceToGrossUp, item?.currency || "GBP")?.total_supporter_pays ?? listedPriceToGrossUp;
     return (
-        <article className="max-w-sm w-full bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between">
+        <article 
+            onClick={() => router.visit(url)}
+            className="cursor-pointer max-w-sm w-full bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
+        >
             <div className="p-3 md:p-4">
                 <div className="relative ">
                     {IsloggedIn && item?.approved === 0 && (
@@ -33,8 +38,13 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                             Waiting for approval
                         </div>
                     )}
+                    {isOwner && item?.edited_status == 0 && item?.edited_reason && (
+                        <div className="absolute top-12 left-5 right-5 bg-red-100 border-2 border-red-500 z-10 text-red-700 text-xs font-black p-2 rounded-lg text-center shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]">
+                            Admin requested changes: {item.edited_reason}
+                        </div>
+                    )}
                     <div className="">
-                        <Link href={url} className="block border border-black rounded-[20px] overflow-hidden">
+                        <div className="block border border-black rounded-[20px] overflow-hidden relative">
                             <img
                                 className="object-cover h-[130px] sm:h-[200px] w-full"
                                 src={item.perma_link}
@@ -54,12 +64,11 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                                     MADE WITH AI
                                 </div>
                             )}
-                        </Link>
+                        </div>
                     </div>
                 </div>
 
-                <Link
-                    href={url}
+                <div
                     className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3 flex-grow"
                 >
                     <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
@@ -68,7 +77,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                     <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-2">
                         {item.description}
                     </span>
-                </Link>
+                </div>
 
                 <div className="flex items-center justify-between">
                     <div className="flex flex-col">
@@ -83,21 +92,33 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                         )}
                     </div>
 
-                    {auth?.user ? (
-                        <Link
-                            href={url}
+                    {isOwner ? (
+                        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                            <AddItem 
+                                classes="font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 text-black text-sm sm:text-base uppercase"
+                                pre_title={item.name} title="Edit Item"
+                                pre_description={item.description} 
+                                pre_price={item.price} 
+                                product_type={item.type}
+                                item={item} isEdit={true}
+                                IsloggedIn={IsloggedIn}
+                            />
+                        </div>
+                    ) : auth?.user ? (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.visit(url);
+                            }}
                             className="font-black cursor-pointer bg-yellow-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 text-black text-sm sm:text-base uppercase"
                         >
                             Buy Now
-                        </Link>
+                        </button>
                     ) : (
                         <button
-                            onClick={() => {
-                                // if (itemPriceGbp > 50) {
-                                //     gotologin();
-                                // } else {
+                            onClick={(e) => {
+                                e.stopPropagation();
                                 router.visit(url);
-                                // }
                             }}
                             className="font-black cursor-pointer bg-yellow-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 text-black text-sm sm:text-base uppercase"
                         >

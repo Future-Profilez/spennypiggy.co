@@ -56,7 +56,7 @@ export default function ReferAndEarn({
 
                 {/* Percentage text */}
                 <div className="text-[11px] text-gray-500 mt-1 text-center">
-                    {Math.floor(percent)}% completed
+                    £{formatMoney(value || 0)} / £1,000
                 </div>
 
                 {/* Qualified label (only when 100%) */}
@@ -227,7 +227,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= STATS ================= */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                         <Stat
                             label="Total Referrals"
                             value={stats.total_referrals || 0}
@@ -240,6 +240,10 @@ export default function ReferAndEarn({
                         <Stat
                             label="Available (£)"
                             value={stats.available_for_payout}
+                        />
+                        <Stat
+                            label="Paid Out (£)"
+                            value={stats.paid_out_amount}
                         />
                     </div>
 
@@ -328,10 +332,16 @@ export default function ReferAndEarn({
                                                 Joined
                                             </th>
                                             <th className="text-center">
+                                                Lifetime GMV
+                                            </th>
+                                            <th className="text-center">
                                                 Status
                                             </th>
                                             <th className="text-center">
                                                 Progress
+                                            </th>
+                                            <th className="text-center">
+                                                Reward
                                             </th>
                                         </tr>
                                     </thead>
@@ -347,6 +357,10 @@ export default function ReferAndEarn({
 
                                                 <td className="text-center">
                                                     {r.joined_at}
+                                                </td>
+
+                                                <td className="text-center">
+                                                    £{formatMoney(r.lifetime_gmv)}
                                                 </td>
 
                                                 <td className="text-center">
@@ -376,6 +390,10 @@ export default function ReferAndEarn({
                                                             </div>
                                                         )
                                                     )}
+                                                </td>
+
+                                                <td className="text-center font-semibold">
+                                                    £50
                                                 </td>
                                             </tr>
                                         ))}

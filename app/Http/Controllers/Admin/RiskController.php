@@ -166,15 +166,10 @@ class RiskController extends Controller
         $user = is_numeric($id) ? User::find($id) : User::where('uuid', $id)->first();
         if (!$user) return response()->json(['data' => []]);
 
-        $reserves = Payment::where(function($q) use ($user) {
-                $q->where('creator_id', (string)$user->id)
-                  ->orWhere('creator_id', $user->uuid);
-            })
-            ->whereIn('status', ['review_hold', 'disputed'])
-            ->latest()
-            ->get();
+        $payoutService = new \App\Services\Risk\PayoutService();
+        $data = $payoutService->getHeldReserves($user->uuid);
             
-        return response()->json(['data' => $reserves]);
+        return response()->json(['data' => $data['breakdown'] ?? []]);
     }
 
     /**

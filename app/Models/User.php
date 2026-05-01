@@ -174,14 +174,14 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                             ->whereDate('current_end_trial_date', '>=', $now);
                     });
                 })
-                // Order by start date DESC to get the newest period first (handles overlaps)
-                ->latest()
+                // Order by id DESC to get the newest period first (handles overlaps and exact timestamps)
+                ->latest('id')
                 ->first();
 
             // If no active period found, get the most recent one
             if (!$subscription) {
                 $subscription = MonthlyCharge::where('user_id', $this->id)
-                    ->latest()
+                    ->latest('id')
                     ->first();
             }
 

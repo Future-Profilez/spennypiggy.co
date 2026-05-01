@@ -30,6 +30,15 @@
                     Please review the submitted work and either accept it to complete the order or reject it if revisions are needed.
                 </td>
             </tr>
+            @if(isset($proofUrl) && $proofUrl)
+            <tr>
+                <td style="padding: 0 0 20px 0; text-align: center;">
+                    <a href="{{ $proofUrl }}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold;">
+                        📥 Download Proof / Content
+                    </a>
+                </td>
+            </tr>
+            @endif
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">

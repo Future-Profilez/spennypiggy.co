@@ -42,7 +42,7 @@ class FinancialService
 
         $incomeTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status']);
 
@@ -50,15 +50,9 @@ class FinancialService
         $payoutService = app(\App\Services\Risk\PayoutService::class);
         $reserves = $payoutService->getHeldReserves($user->uuid);
         
-        // Also check for pending reserves from payments that haven't been in a payout run yet
-        $pendingReservesAmount = \App\Models\Payment::where('creator_id', $user->uuid)
-            ->whereNull('payout_run_id')
-            ->whereIn('status', ['succeeded', 'completed'])
-            ->where('reserve_amount_minor', '>', 0)
-            ->sum('reserve_amount_minor');
-            
         // Convert all minor units to major units (GBP)
-        $heldReservesAmount = (($reserves['total_held'] ?? 0) / 100) + ($pendingReservesAmount / 100);
+        // Note: getHeldReserves now includes both executed run reserves and pending payment reserves.
+        $heldReservesAmount = ($reserves['total_held'] ?? 0) / 100;
 
         // Review Holds and Disputed payments
         $reviewHoldsAmount = \App\Models\Payment::where('creator_id', $user->uuid)

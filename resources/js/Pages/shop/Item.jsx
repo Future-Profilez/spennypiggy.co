@@ -108,14 +108,14 @@ export default function ShopDetailItem(props) {
         shop?.shop_varients &&
         shop.shop_varients.length > 0;
     const [price, setPrice] = useState(
-        hasVariants ? shop.shop_varients[0].price : shop.price,
+        hasVariants ? (shop.shop_varients[0].price !== null ? shop.shop_varients[0].price : shop.price) : shop.price,
     );
     const [selectedVarient, setSelectedVarient] = useState(
         hasVariants ? shop.shop_varients[0].id : "no_varient",
     );
     const handleVarient = (e) => {
         const varient = shop.shop_varients.find((v) => v.id == e.target.value);
-        setPrice(varient.price);
+        setPrice(varient.price !== null ? varient.price : shop.price);
         setSelectedVarient(varient.id);
     };
 
@@ -423,6 +423,7 @@ export default function ShopDetailItem(props) {
                                                 shop.shop_varients.map(
                                                     (varient) => (
                                                         <option
+                                                            key={varient.id}
                                                             value={varient.id}
                                                         >
                                                             {varient.name}
@@ -438,99 +439,70 @@ export default function ShopDetailItem(props) {
                                 <div className="sm:flex items-center justify-between">
                                     <div className=" mb-3">
                                         <h3 className="text-3xl font-bold flex flex-col">
-                                            <div className="flex items-baseline">
-                                                {shop &&
-                                                shop.is_member == 1 &&
-                                                shop.special_member_price ? (
-                                                    <>
-                                                        {isOwner
-                                                            ? formatMultiPrice(
-                                                                  baseSpecialPrice,
-                                                                  shop?.currency ||
-                                                                      "GBP",
-                                                              )
-                                                            : formatMultiPrice(
-                                                                  calculateTotalSupporterPays(
-                                                                      baseSpecialPrice,
-                                                                      shop?.currency ||
-                                                                          "GBP",
-                                                                      vatPercentage,
-                                                                  ),
-                                                                  shop?.currency ||
-                                                                      "GBP",
-                                                              )}{" "}
-                                                        <span className="line-through text-gray-400 text-xl ml-2">
-                                                            {price > 0
-                                                                ? isOwner
-                                                                    ? formatMultiPrice(
-                                                                          baseRegularPrice,
-                                                                          shop?.currency ||
-                                                                              "GBP",
-                                                                      )
-                                                                    : formatMultiPrice(
-                                                                          calculateTotalSupporterPays(
-                                                                              baseRegularPrice,
-                                                                              shop?.currency ||
-                                                                                  "GBP",
-                                                                              vatPercentage,
-                                                                          ),
-                                                                          shop?.currency ||
-                                                                              "GBP",
-                                                                      )
-                                                                : "FREE"}
-                                                        </span>
-                                                    </>
-                                                ) : price > 0 ? (
-                                                    isOwner ? (
-                                                        formatMultiPrice(
-                                                            baseRegularPrice,
-                                                            shop?.currency ||
-                                                                "GBP",
+                                            <div className="flex flex-col items-start">
+                                                <div className="flex items-baseline">
+                                                    {shop &&
+                                                    shop.is_member == 1 &&
+                                                    shop.special_member_price ? (
+                                                        <>
+                                                            {isOwner ? (
+                                                                <div className="flex flex-col">
+                                                                    <div className="flex items-baseline">
+                                                                        <span>{formatMultiPrice(shop?.special_member_price, shop?.currency || "GBP")}</span>
+                                                                        <span className="line-through text-gray-400 text-xl ml-2">
+                                                                            {formatMultiPrice(price, shop?.currency || "GBP")}
+                                                                        </span>
+                                                                    </div>
+                                                                    {parseFloat(shippingPrice) > 0 && (
+                                                                        <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, shop?.currency || "GBP")} shipping</span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col">
+                                                                    <div className="flex items-baseline">
+                                                                        <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
+                                                                        <span className="line-through text-gray-400 text-xl ml-2">
+                                                                            {formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                                                        *Includes platform and payment processing fees and shipping. You will be charged in {shop?.currency || "GBP"}.
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : price > 0 ? (
+                                                        isOwner ? (
+                                                            <div className="flex flex-col">
+                                                                <span>{formatMultiPrice(price, shop?.currency || "GBP")}</span>
+                                                                {parseFloat(shippingPrice) > 0 && (
+                                                                    <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, shop?.currency || "GBP")} shipping</span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col">
+                                                                <span>{formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
+                                                                <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                                                    *Includes platform and payment processing fees and shipping. You will be charged in {shop?.currency || "GBP"}.
+                                                                </span>
+                                                            </div>
                                                         )
                                                     ) : (
-                                                        formatMultiPrice(
-                                                            calculateTotalSupporterPays(
-                                                                baseRegularPrice,
-                                                                shop?.currency ||
-                                                                    "GBP",
-                                                                vatPercentage,
-                                                            ),
-                                                            shop?.currency ||
-                                                                "GBP",
-                                                        )
-                                                    )
-                                                ) : (
-                                                    "Free"
-                                                )}
-                                                {shop.slot_limitation ? (
-                                                    <span className="ml-3 text-pink text-lg font-light ">
-                                                        Only{" "}
-                                                        {shop.slot_limitation -
-                                                            shop.total_sold}{" "}
-                                                        Left
-                                                    </span>
-                                                ) : (
-                                                    ""
-                                                )}
+                                                        "Free"
+                                                    )}
+                                                    {shop.slot_limitation && (shop.slot_limitation - shop.total_sold) > 0 ? (
+                                                        <span className="ml-3 text-pink text-lg font-light ">
+                                                            Only {" "}
+                                                            {shop.slot_limitation -
+                                                                shop.total_sold}{" "}
+                                                            Left
+                                                        </span>
+                                                    ) : (
+                                                        ""
+                                                    )}
+                                                </div>
                                             </div>
-                                            {!isOwner && price > 0 && (
-                                                <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                                                    * Includes all applicable
-                                                    fees
-                                                </span>
-                                            )}
                                         </h3>
-                                        {shop.type === "physical" ? (
-                                            <h2 className="mt-1">
-                                                Shipping Price :{" "}
-                                                {formatMultiPrice(
-                                                    shippingPrice,
-                                                    shop?.currency || "GBP",
-                                                )}
-                                            </h2>
-                                        ) : (
-                                            ""
-                                        )}
                                     </div>
 
                                     {IsloggedIn ? (
@@ -572,6 +544,25 @@ export default function ShopDetailItem(props) {
                                                 </>
                                             )}
                                         </>
+                                    )}
+
+                                    {props.my_purchases && props.my_purchases.length > 0 && (
+                                        <div className="mt-6 border-t border-gray-200 pt-4">
+                                            <h3 className="text-md font-semibold text-gray-800 mb-3">Your Purchases</h3>
+                                            <div className="space-y-3">
+                                                {props.my_purchases.map(purchase => (
+                                                    <div key={purchase.id} className="bg-gray-50 rounded-2xl p-3 flex justify-between items-center text-sm">
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
+                                                            <p className="text-xs text-gray-500 capitalize">Status: {purchase.status}</p>
+                                                        </div>
+                                                        <a href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-xs">
+                                                            View Details
+                                                        </a>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>

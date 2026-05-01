@@ -8,6 +8,7 @@ import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import axios from "axios";
 
 export default function BillCheckout(props) {
@@ -413,7 +414,7 @@ export default function BillCheckout(props) {
                                             )} */}
 
                                             <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                                * Includes all fees. You will be charged in {bill?.currency}.
+                                                *Includes platform and payment processing fees. You will be charged in {bill?.currency}.
                                             </span>
                                         </div>
                                     </li>
@@ -520,155 +521,13 @@ export default function BillCheckout(props) {
                                                 Your personal email and name
                                                 will be private.
                                             </p>
-                                            <label
-                                                htmlFor="agreeterm"
-                                                className="text-left"
-                                            >
-                                                <input
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "agree",
-                                                            e.target.checked
-                                                        )
-                                                    }
-                                                    type="checkbox"
-                                                    id="agreeterm"
-                                                    name="agreeterm"
-                                                    className="mr-2"
-                                                    value="agreeterm"
-                                                ></input>
-                                                I understand I am paying the
-                                                creator directly and I agree to
-                                                the{" "}
-                                                <Link
-                                                    target="_blank"
-                                                    className="text-violet-600"
-                                                    href={route(
-                                                        "terms-and-conditions"
-                                                    )}
-                                                >
-                                                    Terms of Service
-                                                </Link>{" "}
-                                                and{" "}
-                                                <Link
-                                                    className="text-violet-600"
-                                                    target="_blank"
-                                                    href={route(
-                                                        "terms-and-conditions"
-                                                    )}
-                                                >
-                                                    {" "}
-                                                    Privacy Policy{" "}
-                                                </Link>{" "}
-                                                and the following statements:
-                                            </label>
-                                            <div className="tearmlist pl-3">
-                                                <ul className="pl-0">
-                                                    <li>
-                                                        {" "}
-                                                        This payment will be
-                                                        automatically taken on a
-                                                        daily,weekly,monthly or
-                                                        yearly basis depending
-                                                        on your choice and can be
-                                                        cancelled anytime.{" "}
-                                                    </li>
-
-                                                    <li>
-                                                        {" "}
-                                                        For Memberships and
-                                                        subscriptions, I
-                                                        understand I am making a
-                                                        non-refundable purchase
-                                                        that provides access to
-                                                        exclusive posts.{" "}
-                                                    </li>
-                                                    <li>
-                                                        {" "}
-                                                        I understand that for
-                                                        wishes or support
-                                                        payments I am making a
-                                                        non-refundable donation
-                                                        of support and
-                                                        understand I will
-                                                        recieve a thank you
-                                                        message as a reward.{" "}
-                                                    </li>
-                                                    <li>
-                                                        {" "}
-                                                        This payment of purchase
-                                                        or donation is intended
-                                                        soley for the wish
-                                                        recipient{" "}
-                                                    </li>
-                                                    <li>
-                                                        {" "}
-                                                        I have taken the
-                                                        necessary steps to
-                                                        confirm the account
-                                                        owner is authentic and I
-                                                        understand that Spenny
-                                                        Piggy will not be held
-                                                        responsible for any
-                                                        issues arising from a
-                                                        catfishing situation.{" "}
-                                                    </li>
-                                                    <li>
-                                                        {" "}
-                                                        I understand that by
-                                                        violating these terms I
-                                                        may be subject to legal
-                                                        action or can fall a
-                                                        victim of scams.{" "}
-                                                    </li>
-                                                    <li>
-                                                        {" "}
-                                                        I understand that by
-                                                        checking the box above
-                                                        and then clicking
-                                                        "CHECKOUT",I will have
-                                                        created a legally
-                                                        binding e-signature to
-                                                        this agreement.{" "}
-                                                    </li>
-                                                    <li>
-                                                        {" "}
-                                                        By providing an
-                                                        e-mail,you confirm that
-                                                        you are happy to receive
-                                                        marketing updates. You
-                                                        can opt out at anytime.{" "}
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                            <CheckoutLegalTerms onAgreeChange={(checked) => {
+                                                setData("agree", checked);
+                                                setData("digital_waiver", checked);
+                                            }} />
                                         </li>
                                     </ul>
-                                    <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
-                                        <label
-                                            htmlFor="digital_waiver"
-                                            className="text-left flex items-start cursor-pointer group"
-                                        >
-                                            <div className="flex items-center h-5 mt-1">
-                                                <input
-                                                    onChange={(e) => setData('digital_waiver', e.target.checked)}
-                                                    type="checkbox"
-                                                    id="digital_waiver"
-                                                    name="digital_waiver"
-                                                    className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-                                                    checked={data.digital_waiver}
-                                                    required
-                                                />
-                                            </div>
-                                            <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
-                                                I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
-                                            </span>
-                                        </label>
-                                        {errors.digital_waiver && (
-                                            <p className="mt-2 text-xs text-red-600 font-bold uppercase tracking-tight">
-                                                {errors.digital_waiver}
-                                            </p>
-                                        )}
-                                    </div>
+
                                     {!card_capabilities && (
                                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
                                             <strong className="font-bold">Payment Unavailable: </strong>

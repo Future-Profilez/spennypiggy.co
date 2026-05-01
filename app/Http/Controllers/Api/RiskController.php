@@ -166,10 +166,16 @@ class RiskController extends Controller
 
         // Create Payment Record (for Payment Intent flow)
         $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
+        
+        // Estimate Net Amount (approx 85% of gross to avoid over-calculating reserve before webhook sync)
+        // Webhook will backfill the exact net-based reserve once Stripe fees are known.
+        $estimatedNetGbp = (int) round($amountGbp * 0.85);
+
         $riskService = app(\App\Services\Risk\RiskService::class);
         $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
         $reservePercent = (int) ($metrics->reserve_percent ?? 0);
-        $reserveGbp = $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
+        $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
+        
         $payment = \App\Models\Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
@@ -338,10 +344,15 @@ class RiskController extends Controller
         $identity = $identityService->resolveIdentity($context);
 
         $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
+        
+        // Estimate Net Amount (approx 85% of gross to avoid over-calculating reserve before webhook sync)
+        // Webhook will backfill the exact net-based reserve once Stripe fees are known.
+        $estimatedNetGbp = (int) round($amountGbp * 0.85);
+
         $riskService = app(\App\Services\Risk\RiskService::class);
         $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
         $reservePercent = (int) ($metrics->reserve_percent ?? 0);
-        $reserveGbp = $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
+        $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
         
         $payment = Payment::create([
             'creator_id' => $request->creator_id,

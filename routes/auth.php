@@ -750,6 +750,9 @@ Route::middleware('auth')->group(function () {
 
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
 
+        Route::prefix('financial')->name('financial.')->group(function () {
+            Route::get('/evidence-pack/{uuid}', [\App\Http\Controllers\EvidencePackController::class, 'generate'])->name('evidence-pack');
+        });
 
         // rye product routes start
         Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');

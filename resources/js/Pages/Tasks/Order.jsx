@@ -175,7 +175,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             </span>
                         )}
                        {task?.sla_hours ? <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            SLA Deadline : <span className="text-green-600">{task?.sla_hours} hours</span>
+                            SLA Deadline : <span className="text-green-600">{task?.sla_hours === 168 ? '7d' : `${task?.sla_hours}h`}</span>
                         </span> : ''}
                     </div>
                         
@@ -249,7 +249,8 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
 
                                             <form onSubmit={handleUpload} className="space-y-6">
                                                 <div>
-                                                    <label className="block text-sm font-bold uppercase text-gray-900 mb-2">Proof File (Image, PDF, etc.)</label>
+                                                    <label className="block text-sm font-bold uppercase text-gray-900 mb-1">Proof File (Image, PDF, etc.)</label>
+                                                    <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Upload the final content or a private link visible only to the buyer.</p>
                                                     <div className="bg-white border-2 border-black rounded-[30px]  p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
                                                         <GlobalUploader
                                                             ctxName="task-proof"

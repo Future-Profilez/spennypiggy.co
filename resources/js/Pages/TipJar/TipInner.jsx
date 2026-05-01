@@ -11,6 +11,7 @@ import { useAlerts } from '@/Components/Alerts';
 import toast from 'react-hot-toast';
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
@@ -31,6 +32,7 @@ export default function TipInner({classes, idd}) {
     anonymous: 0,
     amount: amount,
     digital_waiver: false,
+    agree: false,
     currency: user?.default_currency || 'GBP', // Default to creator currency
     cf_turnstile_response: "",
     device_id: deviceid,
@@ -118,7 +120,7 @@ export default function TipInner({classes, idd}) {
         return false;
     }
    
-    if (!checkRef.current?.checked) {
+    if (!data.agree) {
         errorAlert("Please accept the terms to continue.");
         return false;
     }
@@ -392,7 +394,7 @@ export default function TipInner({classes, idd}) {
               </div>
 
               <p className="!my-4 text-[14px]  text-gray-500 font-normal mt-1 leading-tight">
-                * Includes all fees. <br /> You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
+                *Includes platform and payment processing fees. <br /> You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
               </p>
 
 
@@ -435,25 +437,6 @@ export default function TipInner({classes, idd}) {
 
               {amount > 0 ? <>
               <div className='termselect mt-3 mb-3'>
-                  <label htmlFor={`termaccept${idd || 1}`}>
-                    <p className='text-[15px] text-gray-900 font-normal' >
-                      <input 
-                      type="checkbox" ref={checkRef}
-                      id={`termaccept${idd || 1}`}  name="termaccept"
-                      value="termaccept" required
-                              className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-
-                      onChange={(e) => setData("termaccept", e.target.value)}></input>
-
-
-                     
-
-                        By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
-                    </p>
-                  </label>
-              </div>
-
-              <div className='termselect mt-3 mb-3'>
                   <label htmlFor="keepanonymous">
                     <p className='text-[15px] text-gray-900 font-normal'>
                       <input className='w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer' type="checkbox"
@@ -466,27 +449,10 @@ export default function TipInner({classes, idd}) {
                   <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
               </div>
 
-              <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
-                  <label
-                      htmlFor="digital_waiver"
-                      className="text-left flex items-start cursor-pointer group"
-                  >
-                      <div className="flex items-center h-5 mt-1">
-                          <input
-                              onChange={(e) => setData('digital_waiver', e.target.checked)}
-                              type="checkbox"
-                              id="digital_waiver"
-                              name="digital_waiver"
-                              className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-                              checked={data.digital_waiver}
-                              required
-                            />
-                      </div>
-                      <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
-                          I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
-                      </span>
-                  </label>
-              </div>
+              <CheckoutLegalTerms onAgreeChange={(checked) => {
+                  setData('agree', checked);
+                  setData('digital_waiver', checked);
+              }} />
               </> : ''}
 
 
@@ -511,7 +477,7 @@ export default function TipInner({classes, idd}) {
               <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={send} className={`items-center px-4  shadow-black
                 rounded-[30px]  btn-pink md justify-center btn-shadow !font-normal
                 ease-in-out duration-150 flex button text-center w-full
-                  mx-auto  ${(amount > 0 && checkRef.current && checkRef.current.checked && data.digital_waiver && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
+                  mx-auto  ${(amount > 0 && data.agree && data.digital_waiver && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
                 > {loading ? "Processing..." : 'Support Me'} </button>
 
               <div className='securestripe text-center mt-3' >

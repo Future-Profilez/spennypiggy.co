@@ -40,8 +40,15 @@ export default function TopEarnWishes({currency, earnType}) {
               className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:shadow transition-shadow" 
             />
           </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold text-gray-900 truncate">{item.title}</h3>
+          <div className="min-w-0 flex flex-col">
+            <h3 className="text-sm font-bold text-gray-900 truncate flex items-center gap-2">
+              {item.title}
+              {item.has_dispute ? (
+                <span className="text-[9px] font-black uppercase tracking-wider bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md">Disputed</span>
+              ) : item.has_hold ? (
+                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md">Hold</span>
+              ) : null}
+            </h3>
           </div>
         </div>
         <div className="shrink-0 text-sm font-black text-gray-900 bg-gray-100 px-3 py-1.5 rounded-xl">

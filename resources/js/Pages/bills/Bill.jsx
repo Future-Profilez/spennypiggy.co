@@ -223,7 +223,7 @@ function Bill(props) {
                                             itm?.currency || "GBP"
                                         )}
                                         <div className="text-[10px] text-gray-600 font-bold mt-1 leading-tight text-center">
-                                            * Includes all fees
+                                            *Includes platform and payment processing fees
                                         </div>
                                     </div>
                                 )}

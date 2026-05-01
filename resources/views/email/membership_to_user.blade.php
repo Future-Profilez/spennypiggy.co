@@ -32,7 +32,8 @@
                          
                          <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: left;">
                              <p style="font-family: Arial; font-size: 16px; font-weight: bold; color: #333; margin: 0 0 5px 0;">Membership Benefits</p>
-                             <ul style="font-family: Arial; font-size: 14px; color: #666; margin: 0 0 15px 0; padding-left: 20px;">
+                            <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px;">You can now access members-only posts of {{ $mem->membership->user->name }}.</p>
+                            <ul style="font-family: Arial; font-size: 14px; color: #666; margin: 0 0 15px 0; padding-left: 20px;">
                                  <li>Exclusive Member-Only Posts</li>
                                  <li>Special Intro Videos</li>
                                  <li>Direct Support to {{ $mem->membership->user->name }}</li>
