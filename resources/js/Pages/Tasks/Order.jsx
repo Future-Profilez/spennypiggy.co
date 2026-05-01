@@ -80,6 +80,23 @@ export default function Order({
 
     const [isGraceActive, setIsGraceActive] = useState(false);
 
+    const getFinalPrice = (purchase, auth) => {
+        console.log(auth);
+        const amount = Number(purchase?.amount) || 0;
+        const platformFee = Number(purchase?.platform_fee) || 0;
+        const adminFee = Number(purchase?.admin_fee) || 0;
+
+        if (auth?.role === 1) {
+            return amount;
+        }
+
+        if (auth?.role === 0) {
+            return amount + platformFee + adminFee;
+        }
+
+        return amount; // fallback safety
+    };
+
     useEffect(() => {
         if (slaDeadline) {
             const checkGrace = () => {
@@ -201,9 +218,7 @@ export default function Order({
                             PRICE:{" "}
                             <span className="text-green-600">
                                 {formatMultiPrice(
-                                    (Number(purchase.amount) || 0) +
-                                        (Number(purchase.platform_fee) || 0) +
-                                        (Number(purchase.admin_fee) || 0),
+                                    getFinalPrice(purchase, auth),
                                     task.currency || "USD",
                                 )}
                             </span>

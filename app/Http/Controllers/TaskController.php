@@ -512,7 +512,7 @@ class TaskController extends Controller
         $appUrl = rtrim(config('app.url'), '/');
 
         $paymentType = $task->type === 'instant' ? 'STANDARD - Destination Charge' : 'PAID_TASK - Destination Charge';
-        
+
         $complianceMetadata = Helpers::buildStripeMetadata('task_purchase', $task, [
             'buyer_id' => $user->id,
             'task_type' => $task->type,
@@ -948,7 +948,7 @@ class TaskController extends Controller
                     $deliverable->delivered_at = now();
                     // If task has content URL, ensure it's set in deliverable_url?
                     // Usually deliverable_url for tasks might be the proof file or task content.
-                    // If task type is instant, it's already set. 
+                    // If task type is instant, it's already set.
                     // For timed task, maybe we set it to proof file URL?
                     if (isset($purchase->proof_content['file'])) {
                         $deliverable->deliverable_url = $purchase->proof_content['file'];
@@ -1094,6 +1094,7 @@ class TaskController extends Controller
         $currencySymbol = \App\Models\Currency::where('ISO', $purchase->task->currency)->value('symbol') ?? '$';
 
         return Inertia::render('Tasks/Order', [
+            'auth' => Auth::user(),
             'purchase' => $purchase,
             'task' => $purchase->task,
             'isCreator' => Auth::id() === $purchase->creator_id,
