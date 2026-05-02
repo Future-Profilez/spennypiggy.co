@@ -712,9 +712,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     Route::get('/tasks', [\App\Http\Controllers\Admin\TaskPurchaseController::class, 'index'])->name('admin.tasks.index');
     Route::post('/tasks/{uuid}/resolve', [\App\Http\Controllers\Admin\TaskPurchaseController::class, 'resolve'])->name('admin.tasks.resolve');
 
-    // System Diagnostics Admin
 
-    Route::post('/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
 
     // Feature Suggestions Admin
     Route::get('/feature-suggestions', function (Illuminate\Http\Request $request) {
@@ -742,7 +740,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     Route::patch('/feature-suggestions/{suggestion}/status', [FeatureSuggestionController::class, 'updateStatus'])->name('admin.feature-suggestions.update-status');
 });
 
+// System Diagnostics Admin
 Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
+Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
 require __DIR__ . '/auth.php';
