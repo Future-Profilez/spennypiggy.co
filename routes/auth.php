@@ -183,7 +183,7 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
 
 // Discover route
 Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
-    $getData = function() use ($request, $discoveryService, $type, $category) {
+    $getData = function () use ($request, $discoveryService, $type, $category) {
         $filters = $request->only(['search', 'contentType']);
         // Normalize type and apply shortcut filters
         if ($type) {
@@ -254,21 +254,21 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             // Section data (top 10) - ONLY fetch when not searching to save resources
             $limit = 10;
             $sortBy = $filters['sortBy'] ?? null;
-            
+
             // Creators
             $featuredCreators = $sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit);
-            
+
             $newVerifiedCreators = $discoveryService->getNewVerifiedCreators($limit);
-            
+
             // Wishes
             $featuredWishes = $sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit);
-            
+
             // Top earners this week
             $topEarnersData = $discoveryService->getTopEarners('weekly', $limit)['data'];
-            
+
             // Bills & Memberships
             $featuredBills = $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
-            
+
             $featuredMemberships = $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
         }
 
@@ -289,7 +289,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     // that depends on the request parameters.
     $cacheKey = 'discover_v2_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
     $ttl = Auth::check() ? 300 : 1200; // 5 mins for auth, 20 mins for guests
-    
+
     $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $getData);
 
     return Inertia::render('discover/Discover', [
@@ -451,7 +451,7 @@ Route::middleware('auth')->group(function () {
                     }
 
                     // Get complete subscription history for the user
-                    $historyCollection = MonthlyCharge::where('user_id', $user->id)
+                    $historyCollection = MonthlyCharge::where('user_id', $user->id)->where('status', '!=', 'unpaid')
                         ->latest()
                         ->get();
                     $subscription_history = $historyCollection->map(function ($charge) {
@@ -790,7 +790,7 @@ Route::prefix('shop')->group(function () {
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
     Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
-    
+
     // Shipping Profiles (Authenticated)
     Route::middleware('auth')->group(function () {
         Route::get('/shipping-profiles', [ShopsController::class, 'getShippingProfiles'])->name('shop.shipping-profiles');
