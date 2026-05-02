@@ -35,14 +35,14 @@ class Kernel extends ConsoleKernel
             }
         })->everyMinute();
 
-        // Sync subscription status from Stripe every hour
+        // Sync subscription status from Stripe every 15 minutes
         $schedule->command('subscription:sync')
-                 ->hourly()
+                 ->everyFifteenMinutes()
                  ->withoutOverlapping();
 
-        // Sync all subscriptions status from Stripe every 12 minutes
+        // Sync all subscriptions status from Stripe every 15 minutes
         $schedule->command('subscription:sync --all')
-                 ->cron('*/12 * * * *')
+                 ->everyFifteenMinutes()
                  ->withoutOverlapping();
 
         $schedule->command('finance:sync-transactions')
@@ -114,9 +114,8 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping();
 
         $schedule->command('app:send-shop-order-reminder-email')
-                //  ->daily()
-                ->everyFiveMinutes()
-                 ->withoutOverlapping(10);
+                ->everyThreeHours()
+                ->withoutOverlapping(10);
 
         // Risk Engine: Weekly Payout Run (Fridays at 10 AM)
         $schedule->command('payout:run-weekly')

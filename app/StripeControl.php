@@ -440,6 +440,45 @@ class StripeControl
      * @param string $query Query like name, email
      * @return \Stripe\SearchResult
      */
+    /**
+     * Search Customer across both UK and US accounts
+     *
+     * @param string $query Query like name, email
+     * @return array Array of customers from both accounts
+     */
+    public static function searchCustomerAcrossAccounts($email)
+    {
+        self::setClient();
+        $results = [];
+        $query = "email:'" . $email . "'";
+
+        try {
+            // 1. Search UK
+            $searchUk = self::$client->customers->search(['query' => $query]);
+            foreach ($searchUk->data as $customer) {
+                $customer->account_region = 'UK';
+                $results[] = $customer;
+            }
+        } catch (\Exception $e) {
+            Log::warning("Stripe UK search failed: " . $e->getMessage());
+        }
+
+        try {
+            // 2. Search US
+            if (self::$clientUs !== self::$client) {
+                $searchUs = self::$clientUs->customers->search(['query' => $query]);
+                foreach ($searchUs->data as $customer) {
+                    $customer->account_region = 'US';
+                    $results[] = $customer;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("Stripe US search failed: " . $e->getMessage());
+        }
+
+        return $results;
+    }
+
     public static function searchCustomer($query)
     {
         self::setClient();
@@ -709,21 +748,31 @@ class StripeControl
                 $options['stripe_account'] = $connectedAccountId;
             }
 
-            // Fetch all subscriptions for the customer to catch both 'active' and 'trialing'
+            // 1. Check UK Account (Default)
             $subscriptions = self::$client->subscriptions->all(
                 [
                     'customer' => $customerId,
-                    'limit' => 5, // Get a few to be safe
+                    'limit' => 1,
                 ],
                 $options
             );
 
-            // Find the first one that is active, trialing, or past_due
-            foreach ($subscriptions->data as $subscription) {
-                if (in_array($subscription->status, ['active', 'trialing', 'past_due'])) {
-                    // If it's active but set to cancel at period end, we still return it 
-                    // as it technically provides access.
-                    return $subscription;
+            if ($subscriptions->data && count($subscriptions->data) > 0) {
+                return $subscriptions->data[0];
+            }
+
+            // 2. Check US Account if no connected account is specified (Platform Sub)
+            if (!$connectedAccountId && self::$clientUs !== self::$client) {
+                $subscriptionsUs = self::$clientUs->subscriptions->all(
+                    [
+                        'customer' => $customerId,
+                        'limit' => 1,
+                    ],
+                    $options
+                );
+
+                if ($subscriptionsUs->data && count($subscriptionsUs->data) > 0) {
+                    return $subscriptionsUs->data[0];
                 }
             }
 
@@ -902,13 +951,27 @@ class StripeControl
      * @param array $payload Update Payload
      * @return Throwable|\Stripe\Subscription
      */
-    public static function cancelSubscription($sub_id, $connectedAccountId = null)
+    /**
+     * Cancel a subscription at the end of the period (disable auto-renewal)
+     *
+     * @param string $sub_id Subscription Id
+     * @param bool $atPeriodEnd Whether to cancel at the end of the current period
+     * @param string|null $connectedAccountId
+     * @return \Stripe\Subscription
+     */
+    public static function cancelSubscription($sub_id, $atPeriodEnd = false, $connectedAccountId = null)
     {
         self::setClient();
         try {
             $options = [];
             if ($connectedAccountId) {
                 $options['stripe_account'] = $connectedAccountId;
+            }
+
+            if ($atPeriodEnd) {
+                return self::$client->subscriptions->update($sub_id, [
+                    'cancel_at_period_end' => true,
+                ], $options);
             }
 
             return self::$client->subscriptions->cancel($sub_id, [], $options);

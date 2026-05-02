@@ -17,111 +17,109 @@ class SendShopOrderReminderEmail extends Command
      *
      * @var string
      */
-    protected $signature = 'app:send-shop-order-reminder-email {--mode=daily : daily or overdue} {--dry-run : show matches without sending}';
+    protected $signature = 'app:send-shop-order-reminder-email {--dry-run : show matches without sending}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Send reminder emails to creators for physical shop orders pending more than 2 days';
+    protected $description = 'Handle shop order reminders (2 days, 7 days) and overdue marking (10 days)';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $mode = $this->option('mode') ?: 'daily';
         $dryRun = (bool) $this->option('dry-run');
 
-        $twoDaysAgo = Carbon::now()->subDays(2);
-        $threeDaysAgo = Carbon::now()->subDays(3);
-        $sevenDaysAgo = Carbon::now()->subDays(7);
-        $eightDaysAgo = Carbon::now()->subDays(8);
+        $now = Carbon::now();
+        $twoDaysAgo = $now->copy()->subDays(2);
+        $sevenDaysAgo = $now->copy()->subDays(7);
+        $tenDaysAgo = $now->copy()->subDays(10);
 
-        $query = ShopPayment::query()
+        // Find pending physical shop orders
+        $query = Deliverable::query()
+            ->where('product_type', 'shop_item')
             ->where('payment_status', 'paid')
-            ->whereHas('shop', function ($q) {
-                $q->where('type', 'physical');
-            })
-            ->with([
-                'shop.user',
-                'deliverable.creator',
-                'deliverable',
-            ]);
+            ->where('status', 'pending')
+            ->with(['creator', 'shop', 'purchase']);
 
-        if ($mode === 'overdue') {
-            $query->where(function ($q) use ($twoDaysAgo, $sevenDaysAgo) {
-                $q->where(function ($subq) use ($twoDaysAgo) {
-                    $subq->where('created_at', '<=', $twoDaysAgo)
-                        ->where(function ($qq) {
-                            $qq->whereDoesntHave('deliverable')
-                                ->orWhereHas('deliverable', function ($dq) {
-                                    $dq->where('status', 'pending');
-                                });
-                        });
-                })->orWhere(function ($subq) use ($sevenDaysAgo) {
-                    $subq->where('created_at', '<=', $sevenDaysAgo)
-                        ->where(function ($qq) {
-                            $qq->whereDoesntHave('deliverable')
-                                ->orWhereHas('deliverable', function ($dq) {
-                                    $dq->whereNotIn('status', ['delivered', 'refunded']);
-                                });
-                        });
-                });
-            });
-        } else {
-            $query->where(function ($q) use ($twoDaysAgo, $threeDaysAgo, $sevenDaysAgo, $eightDaysAgo) {
-                $q->where(function ($subq) use ($twoDaysAgo, $threeDaysAgo) {
-                    $subq->where('created_at', '<=', $twoDaysAgo)
-                        ->where('created_at', '>=', $threeDaysAgo)
-                        ->where(function ($qq) {
-                            $qq->whereDoesntHave('deliverable')
-                                ->orWhereHas('deliverable', function ($dq) {
-                                    $dq->where('status', 'pending');
-                                });
-                        });
-                })->orWhere(function ($subq) use ($sevenDaysAgo, $eightDaysAgo) {
-                    $subq->where('created_at', '<=', $sevenDaysAgo)
-                        ->where('created_at', '>=', $eightDaysAgo)
-                        ->where(function ($qq) {
-                            $qq->whereDoesntHave('deliverable')
-                                ->orWhereHas('deliverable', function ($dq) {
-                                    $dq->whereNotIn('status', ['delivered', 'refunded']);
-                                });
-                        });
-                });
-            });
-        }
-
-        $payments = $query->get();
+        $deliverables = $query->get();
 
         if ($dryRun) {
-            $this->info("Matched {$payments->count()} physical shop orders (mode={$mode}).");
+            $this->info("Matched {$deliverables->count()} pending physical shop orders.");
             return 0;
         }
 
-        $count = 0;
-        foreach ($payments as $payment) {
-            $deliverable = $payment->deliverable;
-            $creator = $deliverable?->creator ?: $payment->shop?->user;
+        $reminderCount = 0;
+        $overdueCount = 0;
+        $adminReviewCount = 0;
 
-            if (!$creator || !$creator->email) {
+        foreach ($deliverables as $deliverable) {
+            $createdAt = $deliverable->created_at;
+
+            // 1. Check for 10-day overdue marking
+            if ($createdAt->lte($tenDaysAgo) && !$deliverable->is_overdue) {
+                $deliverable->update([
+                    'is_overdue' => true,
+                    'needs_admin_review' => true
+                ]);
+                $overdueCount++;
+                continue; // Once it's overdue, system reminders stop
+            }
+
+            // 2. Check for 7-day second reminder
+            if ($createdAt->lte($sevenDaysAgo) && $deliverable->system_reminder_count < 2) {
+                $this->sendReminder($deliverable);
+                $reminderCount++;
                 continue;
             }
 
-            try {
-                Mail::to($creator->email)->send(new ShopOrderReminderMail(
-                    $creator,
-                    $payment,
-                    $deliverable
-                ));
-                $count++;
-            } catch (\Exception $e) {
-                Log::error('Failed to send shop order reminder email: ' . $e->getMessage());
+            // 3. Check for 2-day first reminder
+            if ($createdAt->lte($twoDaysAgo) && $deliverable->system_reminder_count < 1) {
+                $this->sendReminder($deliverable);
+                $reminderCount++;
+                continue;
+            }
+
+            // 4. Handle Admin Re-Review logic (2 days after manual admin reminder)
+            if ($deliverable->is_overdue && !$deliverable->needs_admin_review && $deliverable->admin_reminder_sent_at) {
+                $twoDaysAfterAdmin = Carbon::parse($deliverable->admin_reminder_sent_at)->addDays(2);
+                if ($now->gte($twoDaysAfterAdmin)) {
+                    $deliverable->update(['needs_admin_review' => true]);
+                    $adminReviewCount++;
+                }
             }
         }
 
-        $this->info("Sent {$count} reminder emails for pending physical shop orders (mode={$mode}).");
+        $this->info("Reminders sent: {$reminderCount}");
+        $this->info("Marked overdue: {$overdueCount}");
+        $this->info("Sent back to admin review: {$adminReviewCount}");
+    }
+
+    private function sendReminder(Deliverable $deliverable)
+    {
+        $creator = $deliverable->creator;
+        if (!$creator || !$creator->email) {
+            return;
+        }
+
+        try {
+            // Find the associated shop payment for the email content
+            $payment = ShopPayment::where('session_id', $deliverable->session_id)->first();
+
+            Mail::to($creator->email)->send(new ShopOrderReminderMail(
+                $creator,
+                $payment,
+                $deliverable
+            ));
+
+            $deliverable->increment('system_reminder_count');
+            $deliverable->update(['last_system_reminder_at' => Carbon::now()]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send shop order reminder email: ' . $e->getMessage());
+        }
     }
 }

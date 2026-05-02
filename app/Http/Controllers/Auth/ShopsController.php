@@ -641,23 +641,35 @@ class ShopsController extends Controller
                         ->first();
                     if (empty($shipping)) {
                         $shipping = ShippingProfileZone::where('shipping_profile_id', $shop->shipping_profile_id)
-                            ->where('country', 'all')
+                            ->where(function($q) {
+                                $q->where('country', 'all')->orWhere('country', 'worldwide');
+                            })
                             ->first();
                     }
                 } else {
                     $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', $country)->first();
                     if (empty($shipping)) {
-                        $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
+                        $shipping = ShopShippingInfo::where('shop_id', $shop->id)
+                            ->where(function($q) {
+                                $q->where('country', 'all')->orWhere('country', 'worldwide');
+                            })
+                            ->first();
                     }
                 }
             }
             if (empty($shipping) || empty($country)) {
                 if (!empty($shop->shipping_profile_id)) {
                     $shipping = ShippingProfileZone::where('shipping_profile_id', $shop->shipping_profile_id)
-                        ->where('country', 'all')
+                        ->where(function($q) {
+                            $q->where('country', 'all')->orWhere('country', 'worldwide');
+                        })
                         ->first();
                 } else {
-                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
+                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)
+                        ->where(function($q) {
+                            $q->where('country', 'all')->orWhere('country', 'worldwide');
+                        })
+                        ->first();
                 }
             }
             $shipping_price = !empty($shipping) ? (float) $shipping->shipping_price : 0;
@@ -1321,6 +1333,12 @@ class ShopsController extends Controller
 
         if ($request->status === 'delivered') {
             $updateData['delivered_at'] = now();
+        }
+
+        // Clear overdue flags when action is taken (shipped or delivered)
+        if (in_array($request->status, ['shipped', 'delivered'])) {
+            $updateData['is_overdue'] = false;
+            $updateData['needs_admin_review'] = false;
         }
 
         $deliverable->update($updateData);

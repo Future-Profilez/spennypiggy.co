@@ -125,7 +125,17 @@ export default function ShopDetailItem(props) {
         }
     };
 
-    const [shippingPrice, setShippingPrice] = useState(0);
+    const [shippingPrice, setShippingPrice] = useState(() => {
+        if (shop?.type === 'physical') {
+            const shippingRates = shop.shop_shipping_info || [];
+            const baselineRate = shippingRates.find(s => 
+                s.country?.toLowerCase() === 'all' || 
+                s.country?.toLowerCase() === 'worldwide'
+            ) || shippingRates[0];
+            return parseFloat(baselineRate?.shipping_price || 0);
+        }
+        return 0;
+    });
     const getShippingPrice = (c) => {
         axios
             .get(`/shop/shipping-price/${shop.uuid}?country=${c}`)
@@ -272,7 +282,11 @@ export default function ShopDetailItem(props) {
                                                 <h2 className="font-bold text-base">
                                                     Only{" "}
                                                     {formatMultiPrice(
-                                                        shop.special_member_price,
+                                                        calculateTotalSupporterPays(
+                                                            (parseFloat(shop.special_member_price) || 0) + (parseFloat(shippingPrice) || 0),
+                                                            shop?.currency || "GBP",
+                                                            vatPercentage
+                                                        ),
                                                         shop?.currency || "GBP",
                                                     )}{" "}
                                                     for members
@@ -285,7 +299,7 @@ export default function ShopDetailItem(props) {
                                             </div>
                                             <div className="py-2 ">
                                                 <Link
-                                                    href={`/${shop.user && shop.user.username}`}
+                                                    href={`/${shop.user && shop.user.username}/memberships`}
                                                     className="button sm Join whitespace-nowrap"
                                                 >
                                                     Join Membership
@@ -440,16 +454,19 @@ export default function ShopDetailItem(props) {
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex flex-col">
-                                                                    <div className="flex items-baseline">
-                                                                        <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
-                                                                        <span className="line-through text-gray-400 text-xl ml-2">
-                                                                            {formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}
+                                                                        <div className="flex items-baseline">
+                                                                            <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
+                                                                            <span className="line-through text-gray-400 text-xl ml-2">
+                                                                                {formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}
+                                                                            </span>
+                                                                        </div>
+                                                                        <span className="text-sm font-bold text-green-600 mt-1 uppercase tracking-wide flex items-center gap-1">
+                                                                            <RiDiscountPercentFill className="text-lg" /> Member Discount Applied
+                                                                        </span>
+                                                                        <span className="!text-[14px] text-gray-500 font-normal mt-1 leading-tight">
+                                                                            *Includes platform and payment processing fees{parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping"}. You will be charged in {shop?.currency || "GBP"}.
                                                                         </span>
                                                                     </div>
-                                                                    <span className="!text-[14px] text-gray-500 font-normal mt-1 leading-tight">
-                                                                        *Includes platform and payment processing fees and shipping. You will be charged in {shop?.currency || "GBP"}.
-                                                                    </span>
-                                                                </div>
                                                             )}
                                                         </>
                                                     ) : price > 0 ? (
@@ -464,7 +481,7 @@ export default function ShopDetailItem(props) {
                                                             <div className="flex flex-col">
                                                                 <span>{formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
                                                                 <span className="text-[14px] text-gray-500 font-normal mt-1 leading-tight">
-                                                                    *Includes platform and payment processing fees and shipping. You will be charged in {shop?.currency || "GBP"}.
+                                                                    *Includes platform and payment processing fees{parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping"}. You will be charged in {shop?.currency || "GBP"}.
                                                                 </span>
                                                             </div>
                                                         )

@@ -1083,6 +1083,20 @@ export default function AddItem(props) {
                                                         type="text"
                                                         value={spPrice}
                                                     />
+                                                    {spPrice > 0 && (
+                                                        <div className="mb-3 p-3 bg-blue-50 rounded-[20px] border border-blue-100">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <span className="text-sm text-blue-700">Members pay:</span>
+                                                                <span className="font-bold text-blue-900">
+                                                                    {new Intl.NumberFormat('en-GB', { 
+                                                                        style: 'currency', 
+                                                                        currency: defaultCurrency 
+                                                                    }).format(calculateTotalSupporterPays(spPrice, defaultCurrency).total_supporter_pays)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-blue-600 font-medium italic">Grossed up from your base price of {formatMultiPrice(spPrice, defaultCurrency)}</p>
+                                                        </div>
+                                                    )}
                                                     {defaultCurrency !==
                                                         global_currency &&
                                                         spPrice > 0 && (

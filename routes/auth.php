@@ -633,6 +633,7 @@ Route::middleware('auth')->group(function () {
             Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('wish.subscribe.checkout');
 
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
+            Route::post('mandatory-cancel/', [StripeController::class, 'cancelMandatorySubscription'])->name("mandatory.cancel");
 
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
 

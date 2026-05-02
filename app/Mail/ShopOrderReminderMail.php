@@ -19,15 +19,17 @@ class ShopOrderReminderMail extends Mailable implements ShouldQueue
     public $creator;
     public $payment;
     public $deliverable;
+    public $isManual;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(User $creator, ShopPayment $payment, ?Deliverable $deliverable)
+    public function __construct(User $creator, ShopPayment $payment, ?Deliverable $deliverable, bool $isManual = false)
     {
         $this->creator = $creator;
         $this->payment = $payment;
         $this->deliverable = $deliverable;
+        $this->isManual = $isManual;
     }
 
     /**
@@ -35,8 +37,12 @@ class ShopOrderReminderMail extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
+        $subject = $this->isManual 
+            ? 'FINAL REMINDER: Action Required for Shop Order' 
+            : 'Reminder: Pending Physical Shop Order Fulfillment';
+
         return new Envelope(
-            subject: 'Reminder: Pending Physical Shop Order Fulfillment',
+            subject: $subject,
         );
     }
 

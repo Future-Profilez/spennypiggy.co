@@ -50,6 +50,12 @@ class Deliverable extends Model
         'courier_name',
         'expected_delivery_date',
         'shipped_at',
+        'is_overdue',
+        'system_reminder_count',
+        'last_system_reminder_at',
+        'needs_admin_review',
+        'admin_reminder_sent_at',
+        'admin_reminder_count'
     ];
 
     protected $casts = [

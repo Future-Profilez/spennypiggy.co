@@ -159,129 +159,54 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function getSubscriptionStatusAttribute()
     {
-        if ($this->role == 1) {
-            // Find the currently active subscription period (same logic as account route)
-            $now = Carbon::now();
-            $subscription = MonthlyCharge::where('user_id', $this->id)
-                ->where(function ($query) use ($now) {
-                    $query->where(function ($q) use ($now) {
-                        // Active subscription period
-                        $q->whereDate('current_start_subscription_date', '<=', $now)
-                            ->whereDate('current_end_subscription_date', '>=', $now);
-                    })->orWhere(function ($q) use ($now) {
-                        // Active trial period
-                        $q->whereDate('current_start_trial_date', '<=', $now)
-                            ->whereDate('current_end_trial_date', '>=', $now);
-                    });
-                })
-                // Order by id DESC to get the newest period first (handles overlaps and exact timestamps)
-                ->latest('id')
-                ->first();
-
-            // If no active period found, get the most recent one
-            if (!$subscription) {
-                $subscription = MonthlyCharge::where('user_id', $this->id)
-                    ->latest('id')
-                    ->first();
-            }
-
-            if (!$subscription) {
-                return 3; // INACTIVE / NEVER SUBSCRIBED
-            }
-
-            // Use the same logic as account settings route
-            $trial_start = $subscription->current_start_trial_date;
-            $trial_end = $subscription->current_end_trial_date;
-            $subscription_start = $subscription->current_start_subscription_date;
-            $subscription_end = $subscription->current_end_subscription_date;
-
-            $now = Carbon::now();
-            $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
-            $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
-
-            $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
-            // Check subscription status from MonthlyCharge table instead of is_subscribed column
-            // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
-            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active', 'canceled']) && $subEndCarbon && $now->lessThan($subEndCarbon);
-            $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
-
-            // Check for trialing status first, before other conditions
-            if ($subscription->status === 'trialing') {
-                return 2; // FREE_TRIAL
-            }
-
-            // Return status based on subscription table status
-            if ($isSubscriptionActive) {
-                return 1; // ACTIVE
-            } elseif ($isTrialOngoing) {
-                return 2; // FREE_TRIAL
-            } elseif ($isExpired || !in_array($subscription->status, ['paid', 'renew', 'active', 'trialing'])) {
-                return 0; // EXPIRED
-            }
-
-            // Fallback to original Stripe API logic for edge cases
-            if ($subscription->status === 'trial_ending') {
-                return 2;
-            }
-            if ($subscription->status === 'paid' || $subscription->status === 'renew' || $subscription->status === 'trialing') {
-                if (!isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
-                    if ($subscription->status === 'trialing') {
-                        return 2;
-                    }
-                    return 1;
-                }
-
-                // PERFORMANCE OPTIMIZATION: Rely on local database state only.
-                // Do NOT call Stripe API during model serialization as it causes timeouts and page load failures.
-                // Webhooks should handle status updates.
-
-                if ($subscription->status === 'trialing') {
-                    // Check trial dates
-                    if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
-                        $now = \Carbon\Carbon::now();
-                        $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
-                        if ($now->lessThan($trialEnd)) {
-                            return 2; // Still in trial
-                        }
-                    }
-                    return 0; // Trial expired
-                }
-
-                // Default to active if status is paid/renew/active
-                return 1;
-
-                /* 
-                // REMOVED STRIPE API CALL TO PREVENT TIMEOUTS
-                try {
-                    // Skip Stripe API call in background jobs to prevent token errors
-                    if (app()->runningInConsole() || app()->runningUnitTests()) {
-                        // In background jobs, just use the local subscription status
-                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
-                    }
-
-                    $stripeKey = env('STRIPE_SECRET_KEY');
-                    if (empty($stripeKey)) {
-                        Log::warning('Stripe API key not configured, falling back to local subscription status', [
-                            'user_id' => $this->id,
-                            'subscription_status' => $subscription->status
-                        ]);
-                        // Return based on local status instead of throwing exception
-                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
-                    }
-                    
-                    // ... (Rest of Stripe API logic removed)
-                } catch (\Exception $e) {
-                   // ...
-                }
-                */
-            }
-            return 0;
+        $now = Carbon::now();
+        
+        // 1. Check for active subscription period in MonthlyCharge table
+        // We check for statuses that indicate a paid or active subscription
+        $activeSub = $this->allMonthlyCharges()
+            ->whereIn('status', ['paid', 'active', 'renew'])
+            ->where(function($q) use ($now) {
+                $q->where('current_start_subscription_date', '<=', $now)
+                  ->where('current_end_subscription_date', '>=', $now);
+            })
+            ->exists();
+            
+        if ($activeSub) {
+            return 1; // ACTIVE
         }
 
-        if ($this->role == 0) { // Gifter
-            return $this->gifterCardVerification ? 1 : 0;
+        // 2. Check for active trial period in MonthlyCharge table
+        $activeTrial = $this->allMonthlyCharges()
+            ->where('status', 'trialing')
+            ->where(function($q) use ($now) {
+                $q->where('current_start_trial_date', '<=', $now)
+                  ->where('current_end_trial_date', '>=', $now);
+            })
+            ->exists();
+            
+        if ($activeTrial) {
+            return 2; // FREE_TRIAL
         }
-        return 'Unknown';
+
+        // 3. Fallback: If is_subscribed is 1, but no date-matched record exists, 
+        // check if there's any 'active' or 'paid' record at all (legacy or edge case)
+        if ($this->is_subscribed) {
+            $anyActive = $this->allMonthlyCharges()
+                ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+                ->exists();
+            if ($anyActive) {
+                // If we have a record but dates don't match today, it might be a sync delay
+                // We'll return the status of the latest record
+                $latest = $this->allMonthlyCharges()->first();
+                if ($latest) {
+                    if ($latest->status === 'trialing') return 2;
+                    if (in_array($latest->status, ['paid', 'active', 'renew'])) return 1;
+                }
+                return 1; 
+            }
+        }
+
+        return 3; // INACTIVE
     }
 
     /**
@@ -299,19 +224,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function getDisplaySubscriptionStatusAttribute()
     {
         $status = $this->subscription_status;
-
-        $displayMap = [
-            1 => 'Active Subscription',
-            2 => 'Free Trial',
-            0 => 'Subscription Expired',
-            3 => 'Not Subscribed',
-        ];
-
-        if ($this->role == 0) {
-            return $status == 1 ? 'Card Verified' : 'Not Verified';
-        }
-
-        return $displayMap[$status] ?? 'Unknown Status';
+        
+        if ($status === 1) return 'Active';
+        if ($status === 2) return 'Free Trial';
+        
+        return 'Inactive';
     }
 
     // ───────────────────────

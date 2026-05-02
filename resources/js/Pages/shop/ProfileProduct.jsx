@@ -42,8 +42,26 @@ export default function ProfileProduct({item}) {
        }
    };
 
+   // Get baseline shipping price for physical items
+   let shippingPrice = 0;
+   if (item.type === 'physical') {
+       const shippingRates = item.shop_shipping_info || [];
+       // Priority: "all" or "worldwide" (any case), otherwise first available
+       const baselineRate = shippingRates.find(s => 
+           s.country?.toLowerCase() === 'all' || 
+           s.country?.toLowerCase() === 'worldwide'
+       ) || shippingRates[0];
+       
+       shippingPrice = parseFloat(baselineRate?.shipping_price || 0);
+   }
+
    const isCreator = auth?.user?.id === item?.user_id;
+   const isMember = item?.is_member === 1;
    const vatPercentage = item?.user?.vat_amount_percentage || 0;
+
+   // Choose base price: use special_member_price if user is a member
+   const priceToUse = (isMember && item?.special_member_price) ? parseFloat(item.special_member_price) : parseFloat(item.price || 0);
+   const basePriceWithShipping = priceToUse + shippingPrice;
 
    const slug = (inputString) => {
       return inputString
@@ -80,11 +98,23 @@ export default function ProfileProduct({item}) {
             <div className="flex justify-between items-center">
                <h2 className='font-bold text-sm sm:text-xl' >
                   {isCreator ? (
-                     formatMultiPrice(item.price, item?.currency || 'GBP')
+                     formatMultiPrice(priceToUse, item?.currency || 'GBP')
                   ) : (
-                     formatMultiPrice(
-                        calculateTotalSupporterPays(item.price, item?.currency || 'GBP', vatPercentage),
-                        item?.currency || 'GBP'
+                     isMember && item?.special_member_price ? (
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                                <span>{formatMultiPrice(calculateTotalSupporterPays(basePriceWithShipping, item?.currency || 'GBP', vatPercentage), item?.currency || 'GBP')}</span>
+                                <span className="line-through text-gray-400 text-sm">
+                                    {formatMultiPrice(calculateTotalSupporterPays(parseFloat(item.price || 0) + shippingPrice, item?.currency || 'GBP', vatPercentage), item?.currency || 'GBP')}
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-green-600 uppercase">Member Discount Applied</span>
+                        </div>
+                     ) : (
+                        formatMultiPrice(
+                           calculateTotalSupporterPays(basePriceWithShipping, item?.currency || 'GBP', vatPercentage),
+                           item?.currency || 'GBP'
+                        )
                      )
                   ) || "FREE"}
                </h2>
@@ -94,7 +124,9 @@ export default function ProfileProduct({item}) {
             </div>
             {!isCreator && item.price > 0 && (
                <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                  *Includes platform and payment processing fees
+                  {item.type === 'physical' 
+                    ? (shippingPrice > 0 ? "*Includes platform and payment processing fees and shipping" : "*Includes platform and payment processing fees. Free shipping.")
+                    : "*Includes platform and payment processing fees"}
                </span>
             )}
          </div>

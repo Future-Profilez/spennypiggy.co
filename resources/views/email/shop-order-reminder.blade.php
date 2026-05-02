@@ -55,7 +55,11 @@
 
             <tr>
                 <td style="padding: 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    It has been more than 2 days since this order was placed. Please update the shipping status for your gifter to keep them informed!
+                    @if($isManual)
+                        <strong style="color: #F94F97;">FINAL NOTICE:</strong> Our admin team has reviewed this order and noted it is significantly delayed. Please fulfill this order immediately or it may be subject to a manual refund by our support team.
+                    @else
+                        It has been some time since this order was placed. Please update the shipping status for your gifter to keep them informed!
+                    @endif
                 </td>
             </tr>
             

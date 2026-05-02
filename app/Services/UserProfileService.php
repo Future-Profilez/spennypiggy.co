@@ -168,7 +168,7 @@ class UserProfileService
                 'id', 'user_id', 'uuid', 'name', 'price', 'currency',
                 'image', 'approved', 'created_at', 'type', 'description', 'ai_generated'
             ])
-            ->with(['shop_varients:id,shop_id,name,price', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+            ->with(['shop_varients:id,shop_id,name,price', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
             ->where('approved', 1);
         }
         
@@ -399,7 +399,7 @@ class UserProfileService
             if ($isOwner) {
                 $query->with(['shop_varients', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
             } else {
-                $query->with(['shop_varients:id,shop_id,name,price', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+                $query->with(['shop_varients:id,shop_id,name,price', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
                       ->where('approved', 1);
             }
 
@@ -564,99 +564,349 @@ class UserProfileService
      * This prevents duplicate subscriptions and ensures local records are accurate.
      * @return \Stripe\Subscription|null
      */
-    public function syncUserSubscription(User $user)
+    /**
+     * Unified sync for mandatory platform subscriptions (MonthlyCharge)
+     * Used by both StripeWebhookController and StripeController for consistency.
+     */
+    public function syncMandatorySubscriptionStatus(\Stripe\Subscription $subscription, string $eventType, ?\Stripe\Invoice $invoice = null, ?User $user = null)
     {
-        if (!$user->stripe_id) {
-            return null;
+        $subscriptionId = $subscription->id;
+        $stripeStart = Carbon::createFromTimestamp($subscription->current_period_start);
+        $stripeEnd   = Carbon::createFromTimestamp($subscription->current_period_end);
+
+        // If this is an invoice sync, use the period dates from the invoice line item if available
+        if ($invoice && isset($invoice->lines->data[0]->period)) {
+            $stripeStart = Carbon::createFromTimestamp($invoice->lines->data[0]->period->start);
+            $stripeEnd   = Carbon::createFromTimestamp($invoice->lines->data[0]->period->end);
+        }
+        
+        // Fetch customer if not already expanded
+        $customer = $subscription->customer;
+        if (is_string($customer)) {
+            $customer = StripeControl::getClient()->customers->retrieve($customer);
         }
 
-        try {
-            $stripeSubscription = StripeControl::getActiveSubscriptionByCustomer($user->stripe_id);
-            
-            if (!$stripeSubscription) {
-                // If no active sub in Stripe, but local says subscribed, fix it
-                if ($user->is_subscribed) {
-                    $user->is_subscribed = 0;
-                    $user->save();
-                }
+        // Latest DB row for this subscription
+        $stripeId = $invoice ? $invoice->id : $subscription->id;
+        $subs = MonthlyCharge::where('stripe_id', $stripeId)
+            ->latest()
+            ->first();
 
-                // Also update any local MonthlyCharge record that thinks it's active
-                $now = Carbon::now();
-                $activeCharge = MonthlyCharge::where('user_id', $user->id)
-                    ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
-                    ->where(function($q) use ($now) {
-                        $q->whereDate('current_end_subscription_date', '>=', $now)
-                          ->orWhereDate('current_end_trial_date', '>=', $now);
-                    })
-                    ->latest()
-                    ->first();
+        // Resolve User if not provided
+        if (!$user) {
+            $userId = $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null;
+            if ($userId) {
+                $user = User::find($userId);
+            }
+        }
 
-                if ($activeCharge) {
-                    $activeCharge->status = 'canceled';
-                    $activeCharge->cancelled_at = $now;
-                    $activeCharge->save();
-                    
-                    Log::info("Marked local subscription as canceled for user {$user->id} because no active subscription found on Stripe.");
-                }
+        /* ================= Handle different event types ================= */
 
-                return null;
+        // TRIAL STARTED / WILL END
+        if (
+            $eventType === 'customer.subscription.trial_will_end' ||
+            ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')
+        ) {
+            if ($subs && $subs->status === 'trialing') {
+                return $subs;
             }
 
-            // Extract period dates from Stripe
-            $currentPeriodStart = Carbon::createFromTimestamp($stripeSubscription->current_period_start);
-            $currentPeriodEnd = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
-            $trialStart = $stripeSubscription->trial_start ? Carbon::createFromTimestamp($stripeSubscription->trial_start) : null;
-            $trialEnd = $stripeSubscription->trial_end ? Carbon::createFromTimestamp($stripeSubscription->trial_end) : null;
-            $status = $stripeSubscription->status;
-
-            // Find if we already have a record for this period
-            $charge = MonthlyCharge::where('user_id', $user->id)
-                ->where('stripe_id', $stripeSubscription->id)
-                ->where(function($q) use ($currentPeriodStart) {
-                    $q->whereDate('current_start_subscription_date', $currentPeriodStart)
-                      ->orWhereDate('current_start_trial_date', $currentPeriodStart);
-                })
-                ->first();
-
-            if (!$charge) {
-                // Create a new record for history if not found
-                $charge = new MonthlyCharge();
-                $charge->user_id = $user->id;
-                $charge->stripe_id = $stripeSubscription->id;
-                $charge->email = $user->email;
-                $charge->name = $user->name;
-                $charge->currency = strtoupper($stripeSubscription->currency);
-                $charge->amount = $stripeSubscription->plan->amount / 100;
-                $charge->tax = 0; // Default or calculate if needed
-            }
-
-            // Update record with latest data from Stripe
-            $charge->status = $status === 'active' ? 'paid' : $status;
-            $charge->current_start_trial_date = $trialStart;
-            $charge->current_end_trial_date = $trialEnd;
-            $charge->current_start_subscription_date = $currentPeriodStart;
-            $charge->current_end_subscription_date = $currentPeriodEnd;
-            $charge->upcoming_payment = $currentPeriodEnd;
-            $charge->save();
-
-            // Update user status
-            if (in_array($status, ['active', 'trialing'])) {
-                $user->is_subscribed = 1;
-                $user->save();
-            }
-
-            Log::info("Synced subscription for user {$user->id} from Stripe API.", [
-                'subscription_id' => $stripeSubscription->id,
-                'status' => $status
+            $newSub = MonthlyCharge::create([
+                'user_id' => $user->id ?? $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                'name' => $customer->name ?? 'Creator',
+                'email' => $customer->email,
+                'stripe_id' => $subscriptionId,
+                'current_start_trial_date' => $stripeStart,
+                'current_end_trial_date' => $stripeEnd,
+                'status' => 'trialing',
+                'upcoming_payment' => $stripeEnd,
             ]);
 
-            return $stripeSubscription;
+            if ($newSub->user) {
+                $newSub->user->update(['is_subscribed' => 1]);
+            }
+
+            Log::info("MonthlyCharge Sync: Trial processed", ['sub_id' => $subscriptionId]);
+            return $newSub;
+        }
+
+        // PAYMENT SUCCEEDED (First Payment or Renewal)
+        if ($eventType === 'invoice.payment_succeeded' && $subscription->status === 'active') {
+            $amount = $invoice ? ($invoice->amount_paid / 100) : ($subscription->plan->amount / 100);
+            $currency = strtoupper($invoice ? $invoice->currency : $subscription->currency);
+            $tax = 0;
+            if ($invoice && !empty($invoice->total_tax_amounts)) {
+                foreach ($invoice->total_tax_amounts as $t) {
+                    $tax += ($t->amount ?? 0) / 100;
+                }
+            }
+
+            $isFirstPayment = false;
+            if ($subs) {
+                $isFirstPayment = !empty($subs->current_start_trial_date) && empty($subs->current_start_subscription_date);
+            } else {
+                $isFirstPayment = true;
+            }
+
+            if ($isFirstPayment) {
+                if ($subs) {
+                    $subs->update([
+                        'current_start_subscription_date' => $stripeStart,
+                        'current_end_subscription_date' => $stripeEnd,
+                        'amount' => $amount,
+                        'currency' => $currency,
+                        'tax' => $tax,
+                        'status' => 'active',
+                        'upcoming_payment' => $stripeEnd,
+                    ]);
+                } else {
+                    $subs = MonthlyCharge::create([
+                        'user_id' => $user->id ?? $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                        'name' => $customer->name ?? 'Creator',
+                        'email' => $customer->email,
+                        'stripe_id' => $subscriptionId,
+                        'current_start_subscription_date' => $stripeStart,
+                        'current_end_subscription_date' => $stripeEnd,
+                        'amount' => $amount,
+                        'currency' => $currency,
+                        'tax' => $tax,
+                        'status' => 'active',
+                        'upcoming_payment' => $stripeEnd,
+                    ]);
+                }
+                
+                if ($subs->user) {
+                    $subs->user->update(['is_subscribed' => 1]);
+                }
+                
+                Log::info("MonthlyCharge Sync: First Payment processed", ['sub_id' => $subscriptionId]);
+                return $subs;
+            } else {
+                // Renewal check
+                $exists = MonthlyCharge::where('stripe_id', $subscriptionId)
+                    ->where('current_start_subscription_date', $stripeStart->toDateString())
+                    ->where('current_end_subscription_date', $stripeEnd->toDateString())
+                    ->exists();
+
+                if (!$exists) {
+                    if ($subs) {
+                        $subs->update(['status' => 'ended']);
+                    }
+
+                    $newSub = MonthlyCharge::create([
+                        'user_id' => $user->id ?? $subs->user_id ?? ($subscription->metadata->user_id ?? $customer->metadata->user_id ?? null),
+                        'name' => $subs->name ?? $customer->name ?? 'Creator',
+                        'email' => $subs->email ?? $customer->email,
+                        'stripe_id' => $subscriptionId,
+                        'current_start_subscription_date' => $stripeStart,
+                        'current_end_subscription_date' => $stripeEnd,
+                        'amount' => $amount,
+                        'currency' => $currency,
+                        'tax' => $tax,
+                        'status' => 'active',
+                        'upcoming_payment' => $stripeEnd,
+                    ]);
+
+                    if ($newSub->user) {
+                        $newSub->user->update(['is_subscribed' => 1]);
+                    }
+
+                    Log::info("MonthlyCharge Sync: Renewal processed", ['sub_id' => $subscriptionId]);
+                    return $newSub;
+                }
+            }
+        }
+
+        // PAYMENT FAILED
+        if ($eventType === 'invoice.payment_failed') {
+            if ($subs) {
+                $subs->update(['status' => 'failed', 'upcoming_payment' => null]);
+                if ($subs->user) {
+                    $subs->user->update(['is_subscribed' => 0]);
+                }
+            }
+            Log::info("MonthlyCharge Sync: Payment Failed processed", ['sub_id' => $subscriptionId]);
+            return $subs;
+        }
+
+        // DELETED
+        if ($eventType === 'customer.subscription.deleted') {
+            if ($subs) {
+                $subs->update(['status' => 'canceled', 'upcoming_payment' => null, 'cancelled_at' => now()]);
+                $periodEnded = !$subs->current_end_subscription_date || now()->greaterThanOrEqualTo(Carbon::parse($subs->current_end_subscription_date));
+                if ($periodEnded && $subs->user) {
+                    $subs->user->update(['is_subscribed' => 0]);
+                }
+            }
+            Log::info("MonthlyCharge Sync: Subscription Deleted processed", ['sub_id' => $subscriptionId]);
+            return $subs;
+        }
+
+        // UPDATED (Generic) or missing local record sync
+        if ($eventType === 'customer.subscription.updated' || $eventType === 'manual_sync') {
+            if ($subs) {
+                $newStatus = $subscription->status === 'active' ? 'paid' : $subscription->status;
+                $updateData = [
+                    'status' => $newStatus,
+                    'current_end_subscription_date' => $stripeEnd,
+                    'upcoming_payment' => ($subscription->cancel_at_period_end || in_array($subscription->status, ['canceled', 'unpaid'])) ? null : $stripeEnd,
+                    'cancelled_at' => ($subscription->cancel_at_period_end || $subscription->status === 'canceled') ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : now()) : $subs->cancelled_at,
+                ];
+                
+                // If it's a manual sync (not a specific invoice update), ensure start date is correct
+                if (!$invoice) {
+                    $updateData['current_start_subscription_date'] = $stripeStart;
+                }
+                
+                $subs->update($updateData);
+
+                if (in_array($subscription->status, ['active', 'trialing'])) {
+                    if ($subs->user) $subs->user->update(['is_subscribed' => 1]);
+                } else {
+                    if ($subs->user) $subs->user->update(['is_subscribed' => 0]);
+                }
+            } else {
+                // MISSING LOCAL RECORD: Create it now regardless of status
+                $amount = $invoice ? ($invoice->amount_paid / 100) : ($subscription->plan->amount / 100);
+                $currency = strtoupper($invoice ? $invoice->currency : $subscription->currency);
+                
+                $createData = [
+                    'user_id' => $user->id ?? $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                    'name' => $customer->name ?? 'Creator',
+                    'email' => $customer->email,
+                    'stripe_id' => $stripeId,
+                    'status' => $subscription->status === 'active' ? 'paid' : $subscription->status,
+                    'currency' => $currency,
+                    'amount' => $amount,
+                    'upcoming_payment' => ($subscription->cancel_at_period_end || in_array($subscription->status, ['canceled', 'unpaid'])) ? null : $stripeEnd,
+                    'cancelled_at' => ($subscription->cancel_at_period_end || $subscription->status === 'canceled') ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : now()) : null,
+                    'current_start_subscription_date' => $stripeStart,
+                    'current_end_subscription_date' => $stripeEnd,
+                ];
+
+                if ($subscription->status === 'trialing' && !$invoice) {
+                    $createData['current_start_trial_date'] = $stripeStart;
+                    $createData['current_end_trial_date'] = $stripeEnd;
+                    // For trials, the subscription dates are often the same, but we set them for history
+                }
+
+                $subs = MonthlyCharge::create($createData);
+
+                if ($subs->user) {
+                    $subs->user->update(['is_subscribed' => in_array($subscription->status, ['active', 'trialing']) ? 1 : 0]);
+                }
+
+                Log::info("MonthlyCharge Sync: Created missing local record for sub", ['sub_id' => $subscriptionId, 'status' => $subscription->status]);
+            }
+            
+            Log::info("MonthlyCharge Sync: Manual/Update processed", ['sub_id' => $subscriptionId, 'status' => $subscription->status]);
+            return $subs;
+        }
+
+        return $subs;
+    }
+
+    /**
+     * Legacy wrapper for syncMandatorySubscriptionStatus.
+     * Fetches current subscription from Stripe and performs a manual sync.
+     *
+     * @param User $user
+     * @return \Stripe\Subscription|null
+     */
+    /**
+     * Deep sync for all subscription records (history) from Stripe invoices
+     */
+    public function syncSubscriptionHistory(\Stripe\Subscription $subscription, User $user)
+    {
+        try {
+            $stripe = StripeControl::getClient();
+            
+            // 1. Fetch all paid invoices for this subscription
+            $invoices = $stripe->invoices->all([
+                'subscription' => $subscription->id,
+                'status' => 'paid',
+                'limit' => 50
+            ]);
+
+            Log::info("UserProfileService: Syncing history for sub {$subscription->id} (Found " . count($invoices->data) . " invoices)");
+
+            foreach ($invoices->data as $invoice) {
+                // Sync each paid invoice as a separate MonthlyCharge record
+                $this->syncMandatorySubscriptionStatus($subscription, 'invoice.payment_succeeded', $invoice, $user);
+            }
+
+            // 2. Final sync for the current subscription state (handles trial, cancellations, etc.)
+            $this->syncMandatorySubscriptionStatus($subscription, 'manual_sync', null, $user);
 
         } catch (\Exception $e) {
-            Log::error("Failed to sync user subscription: " . $e->getMessage(), [
-                'user_id' => $user->id
-            ]);
-            return null;
+            Log::error("UserProfileService: History sync failed: " . $e->getMessage());
         }
+    }
+
+    public function syncUserSubscription(User $user)
+    {
+        // 1. If we have a stripe_id, try to fetch it directly
+        if ($user->stripe_id) {
+            try {
+                // We check both UK and US via getActiveSubscriptionByCustomer
+                $stripeSubscription = StripeControl::getActiveSubscriptionByCustomer($user->stripe_id);
+                if ($stripeSubscription) {
+                    $this->syncSubscriptionHistory($stripeSubscription, $user);
+                    return $stripeSubscription;
+                }
+            } catch (\Exception $e) {
+                Log::warning("UserProfileService: Direct ID sync failed for user {$user->id}: " . $e->getMessage());
+            }
+        }
+
+        // 2. If direct ID didn't yield a subscription, search by email across ALL accounts
+        Log::info("UserProfileService: Searching for subscriptions by email for user {$user->id} ({$user->email})");
+        $stripeCustomers = StripeControl::searchCustomerAcrossAccounts($user->email);
+
+        foreach ($stripeCustomers as $customer) {
+            try {
+                $stripeSubscription = StripeControl::getActiveSubscriptionByCustomer($customer->id);
+                if ($stripeSubscription) {
+                    // Found an active subscription! Link this customer ID and sync.
+                    if ($user->stripe_id !== $customer->id) {
+                        $user->stripe_id = $customer->id;
+                        $user->save();
+                        Log::info("UserProfileService: Re-linked user {$user->id} to Stripe customer {$customer->id} ({$customer->account_region})");
+                    }
+                    
+                    $this->syncSubscriptionHistory($stripeSubscription, $user);
+                    return $stripeSubscription;
+                }
+            } catch (\Exception $e) {
+                Log::warning("UserProfileService: Error syncing customer {$customer->id}: " . $e->getMessage());
+            }
+        }
+
+        // 3. If we still have nothing, handle the un-subscribed state
+        if ($user->is_subscribed) {
+            $user->is_subscribed = 0;
+            $user->save();
+        }
+
+        // Also update any local MonthlyCharge record that thinks it's active
+        $now = Carbon::now();
+        $activeCharge = MonthlyCharge::where('user_id', $user->id)
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+            ->where(function($q) use ($now) {
+                $q->whereDate('current_end_subscription_date', '>=', $now)
+                  ->orWhereDate('current_end_trial_date', '>=', $now);
+            })
+            ->latest()
+            ->first();
+
+        if ($activeCharge) {
+            $activeCharge->update([
+                'status' => 'canceled',
+                'cancelled_at' => $now
+            ]);
+            Log::info("UserProfileService: No active subscription found on Stripe for user {$user->id} after deep search. Marked local as canceled.");
+        }
+
+        return null;
     }
 }

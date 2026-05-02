@@ -19,12 +19,33 @@ export default function ProfileProduct({ item, IsloggedIn }) {
 
     const isOwner = auth?.user?.id === item?.user_id;
     const variants = item?.shop_varients || [];
-    const basePrice = variants.length ? Math.min(...variants.map(v => parseFloat(v.price || 0))) : parseFloat(item?.price || 0);
-    const shopTaxRate = 20;
+    const isMember = item?.is_member === 1;
+    
+    // Choose base price: use special_member_price if user is a member
+    let priceToUse = variants.length ? Math.min(...variants.map(v => parseFloat(v.price || 0))) : parseFloat(item?.price || 0);
+    if (isMember && item?.special_member_price) {
+        priceToUse = parseFloat(item.special_member_price);
+    }
+    const basePrice = priceToUse;
+    
+    // Get baseline shipping price for physical items
+    let shippingPrice = 0;
+    if (item.type === 'physical') {
+        const shippingRates = item.shop_shipping_info || [];
+        // Priority: "all" or "worldwide" (any case), otherwise first available
+        const baselineRate = shippingRates.find(s => 
+            s.country?.toLowerCase() === 'all' || 
+            s.country?.toLowerCase() === 'worldwide'
+        ) || shippingRates[0];
+        
+        shippingPrice = parseFloat(baselineRate?.shipping_price || 0);
+    }
+
+    const shopTaxRate = 0;
     const taxAmount = basePrice * (shopTaxRate / 100);
     const vatPercent = item?.user?.vat_amount_percentage ?? user?.vat_amount_percentage ?? 0;
     const vatAmount = (basePrice + taxAmount) * (parseFloat(vatPercent || 0) / 100);
-    const listedPriceToGrossUp = basePrice + taxAmount + vatAmount;
+    const listedPriceToGrossUp = basePrice + taxAmount + vatAmount + shippingPrice;
     const supporterPays = calculateTotalSupporterPays(listedPriceToGrossUp, item?.currency || "GBP")?.total_supporter_pays ?? listedPriceToGrossUp;
     return (
         <article 
@@ -79,7 +100,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                             {item.type === 'physical' ? 'Physical' : 'Digital'}
                         </span>
                     </div>
-                    <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-2">
+                    <span className="text-[13px]  sm:text-normal font-bold text-gray-700 line-clamp-1">
                         {item.description}
                     </span>
                 </div>
@@ -88,11 +109,30 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                     <div className="flex flex-col">
                         <h2 className="font-black text-lg sm:text-2xl text-black">
                             {variants.length && !isOwner ? 'From ' : ''}
-                            {formatMultiPrice(isOwner ? basePrice : supporterPays, item?.currency || "GBP") || "FREE"}
+                            {isMember && item?.special_member_price && !isOwner ? (
+                                <div className="flex flex-col">
+                                    <div className="flex items-baseline gap-2">
+                                        <span>{formatMultiPrice(supporterPays, item?.currency || "GBP")}</span>
+                                        <span className="line-through text-gray-400 text-sm">
+                                            {formatMultiPrice(calculateTotalSupporterPays(parseFloat(item?.price || 0) + shippingPrice, item?.currency || "GBP")?.total_supporter_pays, item?.currency || "GBP")}
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-green-600 uppercase tracking-tight">Member Discount Applied</span>
+                                </div>
+                            ) : (
+                                formatMultiPrice(isOwner ? basePrice : supporterPays, item?.currency || "GBP") || "FREE"
+                            )}
                         </h2>
                         {item?.type === 'physical' && !isOwner && (
                             <span className="text-[10px] text-gray-500 font-normal leading-tight">
-                                + shipping at checkout
+                                {shippingPrice > 0 
+                                    ? "*Includes platform and payment processing fees and shipping."
+                                    : "*Includes platform and payment processing fees. Free shipping."}
+                            </span>
+                        )}
+                        {item?.type !== 'physical' && !isOwner && (
+                            <span className="text-[10px] text-gray-500 font-normal leading-tight">
+                                *Includes platform and payment processing fees
                             </span>
                         )}
                     </div>
