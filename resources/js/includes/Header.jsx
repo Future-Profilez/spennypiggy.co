@@ -516,7 +516,7 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                            <li>
+                                            {/* <li>
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/admin/system-diagnostics`}
@@ -532,7 +532,7 @@ export default function Header({ classMagicword }) {
                                                         System Diagnostics
                                                     </span>
                                                 </Link>
-                                            </li>
+                                            </li> */}
                                         </>
                                     ) : (
                                         ""
