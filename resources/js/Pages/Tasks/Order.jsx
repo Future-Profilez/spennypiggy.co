@@ -56,37 +56,14 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
     );
 };
 
-export default function Order({
-    auth,
-    purchase,
-    task,
-    isCreator,
-    isSupporter,
-    currencySymbol,
-    gracePeriodHours = 1,
-}) {
-    const { platform_fee_percentage, transaction_fee_percentage } =
-        usePage().props;
+export default function Order({ auth, purchase, task, isCreator, isSupporter, currencySymbol, gracePeriodHours = 1 }) {
+    const { platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
 
     const isZeroDecimalCurrency = (curr) => {
         const zeroDecimalCurrencies = [
-            "BIF",
-            "CLP",
-            "DJF",
-            "GNF",
-            "JPY",
-            "KMF",
-            "KRW",
-            "MGA",
-            "PYG",
-            "RWF",
-            "UGX",
-            "VND",
-            "VUV",
-            "XAF",
-            "XOF",
-            "XPF",
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
         ];
         return zeroDecimalCurrencies.includes(curr?.toUpperCase());
     };
@@ -99,18 +76,15 @@ export default function Order({
         const priceWithVat = listedPrice + vat;
 
         const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
-        const platformFeeRate = (platform_fee_percentage || 20) / 100;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = (platform_fee_percentage || 17) / 100;
         const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
         const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate =
-            stripeFeeRate + platformFeeRate + complianceFeeRate;
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
 
         if (totalDeductionRate >= 1) return priceWithVat;
 
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
 
         if (!isZeroDecimal) {
             return Math.ceil(totalSupporterPays * 100) / 100;
@@ -249,22 +223,15 @@ export default function Order({
                                 {task.type}
                             </span>
                         </span>
-                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             PRICE:{" "}
                             <span className="text-green-600">
-                                {isCreator
-                                    ? formatMultiPrice(
-                                          purchase.amount,
-                                          task.currency || "USD",
-                                      )
-                                    : formatMultiPrice(
-                                          calculateTotalSupporterPays(
-                                              purchase.amount,
-                                              task.currency || "USD",
-                                              purchase.vat_amount || 0,
-                                          ),
-                                          task.currency || "USD",
-                                      )}
+                                {formatMultiPrice(
+                                    (Number(purchase.amount) || 0) +
+                                        (Number(purchase.platform_fee) || 0) +
+                                        (Number(purchase.admin_fee) || 0),
+                                    task.currency || "USD",
+                                )}
                             </span>
                         </span>
                         <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">

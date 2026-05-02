@@ -11,6 +11,7 @@ use App\Models\BillPayment;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
+use App\Models\UserCart;
 
 class SyncFinancialTransactions extends Command
 {
@@ -19,6 +20,7 @@ class SyncFinancialTransactions extends Command
 
     public function handle()
     {
+        ini_set('memory_limit', '512M');
         $this->info('Starting financial transaction sync...');
 
         $userId = $this->option('user_id');
@@ -51,7 +53,122 @@ class SyncFinancialTransactions extends Command
         // 6. Sync Tips
         $this->syncTips($userId);
 
+        // 7. Sync Orphan Checkouts (Records in StripePaymentDetail that never created items)
+        $this->syncOrphanCheckouts($userId);
+
         $this->info('Sync completed successfully!');
+    }
+
+    private function syncOrphanCheckouts($userId)
+    {
+        $this->info('Syncing orphan checkouts...');
+
+        $query = \App\Models\StripePaymentDetail::where('payment_status', 'paid')
+            ->whereDoesntHave('items'); 
+
+        if ($userId) {
+            $query->where('owner_id', $userId);
+        }
+
+        $orphans = $query->get();
+        $count = 0;
+
+        foreach ($orphans as $payment) {
+            if (!$payment->metadata) continue;
+
+            $metadata = json_decode($payment->metadata, true);
+            $wishItems = [];
+
+            // Try to find items in flattened metadata (item_1_wish_id, item_2_wish_id, etc.)
+            for ($i = 1; $i <= 10; $i++) { // Check up to 10 items
+                $prefix = "item_{$i}_";
+                if (isset($metadata[$prefix . 'wish_id'])) {
+                    $wishItems[] = [
+                        'wish_id' => $metadata[$prefix . 'wish_id'],
+                        'wish_name' => $metadata[$prefix . 'wish_name'] ?? 'Item',
+                        'amount' => (float) ($metadata[$prefix . 'amount'] ?? 0),
+                        'quantity' => (int) ($metadata[$prefix . 'quantity'] ?? 1),
+                        'tax' => (float) ($metadata[$prefix . 'tax'] ?? 0),
+                        'vat_amount' => (float) ($metadata[$prefix . 'vat_amount'] ?? 0),
+                    ];
+                } else {
+                    break; // No more items
+                }
+            }
+
+            // Fallback to wish_items JSON if flattened items not found
+            if (empty($wishItems) && isset($metadata['wish_items'])) {
+                $wishItems = json_decode($metadata['wish_items'], true) ?: [];
+            }
+
+            if (empty($wishItems)) {
+                // Last fallback: if we have amount_total, create one generic item
+                if ($payment->amount_total > 0) {
+                    $wishItems[] = [
+                        'wish_id' => 0,
+                        'wish_name' => 'Legacy Checkout Item',
+                        'amount' => $payment->amount_total / 100,
+                        'quantity' => 1,
+                    ];
+                }
+            }
+
+            foreach ($wishItems as $item) {
+                // Create StripePaymentItems
+                $paymentItem = StripePaymentItems::updateOrCreate(
+                    [
+                        'stripe_payment_detail_id' => $payment->id,
+                        'wish_item_id' => $item['wish_id'] > 0 ? $item['wish_id'] : null,
+                        'amount' => $item['amount'],
+                    ],
+                    [
+                        'quantity' => $item['quantity'] ?? 1,
+                        'tax' => $item['tax'] ?? 0,
+                        'vat_amount' => $item['vat_amount'] ?? 0,
+                        'created_at' => $payment->created_at,
+                        'updated_at' => now(),
+                    ]
+                );
+
+                // Create FinancialTransaction
+                $riskData = $this->getPaymentRiskData($payment->session_id, 'completed', $payment->stripe_payment_intent_id);
+                $creator = User::find($payment->owner_id);
+                
+                $amount = (float) $item['amount'];
+                $vat = (float) ($item['vat_amount'] ?? 0);
+                $platformFee = (float) ($item['tax'] ?? 0);
+                $stripeFee = 0;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+
+                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at);
+
+                FinancialTransaction::updateOrCreate(
+                    [
+                        'source_type' => StripePaymentItems::class,
+                        'source_id' => $paymentItem->id,
+                    ],
+                    [
+                        'user_id' => $payment->owner_id,
+                        'supporter_id' => $payment->user_id,
+                        'type' => 'income',
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
+                        'vat_amount' => $vat,
+                        'net_amount' => $amount,
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
+                        'currency' => strtoupper($payment->currency ?? 'GBP'),
+                        'status' => $riskData['status'],
+                        'description' => 'Wish Gift: ' . ($item['wish_name'] ?? 'Item'),
+                        'transaction_date' => $payment->created_at,
+                    ]
+                );
+                $count++;
+            }
+        }
+
+        $this->info("Synced {$count} orphan wish items.");
     }
 
     private function getPaymentRiskData($sessionId, $defaultStatus = 'completed', $paymentIntentId = null)
@@ -113,6 +230,16 @@ class SyncFinancialTransactions extends Command
             return ['amount' => 0, 'status' => 'none'];
         }
 
+        // 1. If we already have a recorded reserve from the payment log, use it!
+        // This ensures historical transactions don't change when creator's global % changes.
+        if (isset($riskData['reserve_amount']) && $riskData['reserve_amount'] > 0) {
+            return [
+                'amount' => (float) $riskData['reserve_amount'],
+                'status' => $riskData['reserve_status'] !== 'none' ? $riskData['reserve_status'] : 'held',
+            ];
+        }
+
+        // 2. Otherwise fallback to current metric %
         $metric = $creator ? \App\Models\CreatorMetric::where('creator_id', $creator->uuid)->first() : null;
         $riskReservePercent = (float) ($metric?->reserve_percent ?? 0);
 
@@ -124,7 +251,7 @@ class SyncFinancialTransactions extends Command
             ];
         }
 
-        // New creator: first 30 days → 10% reserve
+        // 3. New creator fallback: first 30 days → 10% reserve
         if ($creator && $creator->created_at) {
             $daysSinceJoined = (int) $creator->created_at->diffInDays($paymentDate);
             if ($daysSinceJoined <= 30) {
@@ -406,7 +533,13 @@ class SyncFinancialTransactions extends Command
                 $amount = $payment->amount;
                 $shippingAmount = $payment->shipping_amount ?? 0;
                 $vat = $this->calculateVatIfMissing($amount + $shippingAmount, $payment->vat_tax_amount, $creator);
+                
+                // Ensure platform fee is correctly identified from the shop payment record
                 $platformFee = $payment->tax_amount ?? 0;
+                if ($platformFee <= 0 && $payment->tax && $payment->tax > 0) {
+                    $platformFee = $payment->tax;
+                }
+                
                 $stripeFee = 0;
                 $gross = $amount + $shippingAmount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount + $shippingAmount;

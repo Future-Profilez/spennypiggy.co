@@ -25,7 +25,7 @@ export default function ProfileProduct({item}) {
        // Constants must match backend configuration (Helpers.php)
        const stripeFeeRate = 0.029;
        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-       const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+       const platformFeeRate = (platform_fee_percentage || 17) / 100; 
        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
        const adminFee = adminFeeInCurrency(curr); 
        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
@@ -68,7 +68,12 @@ export default function ProfileProduct({item}) {
                   Admin requested changes: {item.edited_reason}
                </div>
             )}
-            <h2 className="text-sm line-clamp-1 sm:text-lg font-semibold text-black ">{item.name}</h2>
+            <div className='flex items-center gap-2'>
+               <h2 className="text-sm line-clamp-1 sm:text-lg font-semibold text-black ">{item.name}</h2>
+               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${item.type === 'physical' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                  {item.type === 'physical' ? 'Physical' : 'Digital'}
+               </span>
+            </div>
             <span className="text-[13px] sm:text-normal font-normal text-gray-600 line-clamp-2">{item.description}</span>
          </Link>
          <div className="mt-2 sm:mt-4 p-3 sm:p-4 border-t flex flex-col border-gray-200">

@@ -1827,7 +1827,14 @@ class ProfileController extends Controller
         $sent = $this->buildFinancialTransactionsFeed($user, 'sent', 20, null, $displayCurrency);
 
         $allEvents = array_merge($received['events'] ?? [], $sent['events'] ?? []);
-        usort($allEvents, fn ($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
+        usort($allEvents, function ($a, $b) {
+            $dateA = strtotime($a['created_at']);
+            $dateB = strtotime($b['created_at']);
+            if ($dateA !== $dateB) {
+                return $dateB <=> $dateA;
+            }
+            return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+        });
 
         $hasMore = ($received['has_more'] ?? false) || ($sent['has_more'] ?? false);
         $nextBefore = $received['next_before'] ?? $sent['next_before'] ?? null;
@@ -1872,6 +1879,7 @@ class ProfileController extends Controller
                 'supporter:id,name,username,avatar',
             ])
             ->orderByDesc('transaction_date')
+            ->orderByDesc('id')
             ->limit($limit + 1)
             ->get();
 
@@ -1958,6 +1966,7 @@ class ProfileController extends Controller
                 'created_at' => optional($tx->transaction_date)->format('Y-m-d H:i:s') ?? $tx->created_at->format('Y-m-d H:i:s'),
                 'creator_id' => $tx->user_id,
                 'gifter_id' => $tx->supporter_id,
+                'id' => $tx->id,
                 'description' => $tx->description,
                 'gifter' => $tx->supporter ? [
                     'name' => $tx->supporter->name,

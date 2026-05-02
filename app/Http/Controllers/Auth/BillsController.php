@@ -14,6 +14,7 @@ use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
+use App\Models\FinancialTransaction;
 use App\Models\Deliverable;
 use App\Models\Logs;
 use App\Models\Payment;
@@ -805,6 +806,45 @@ class BillsController extends Controller
                 $userPayment->paid_at = Carbon::now();
                 $userPayment->status = $session->payment_status;
                 $userPayment->save();
+
+                // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+                try {
+                    $creator = $bill_pay->bill->user;
+                    $amount = (float) $bill_pay->amount;
+                    $vat = (float) ($bill_pay->vat_tax_amount ?? 0);
+                    if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
+                        $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+                    }
+                    // Use actual fee breakdown from the gross-up formula
+                    $billBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'));
+                    $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
+                    $stripeFee = $billBreakdown['stripe_fee'];
+                    $gross = $billBreakdown['total_supporter_pays'];
+                    $creatorAmount = $amount;
+
+                    FinancialTransaction::updateOrCreate(
+                        [
+                            'source_type' => \App\Models\BillPayment::class,
+                            'source_id' => $bill_pay->id,
+                        ],
+                        [
+                            'user_id' => $creator->id,
+                            'supporter_id' => $bill_pay->user_id,
+                            'type' => 'income',
+                            'gross_amount' => $gross,
+                            'platform_fee' => $platformFee,
+                            'stripe_fee' => $stripeFee,
+                            'vat_amount' => $vat,
+                            'net_amount' => $creatorAmount,
+                            'currency' => strtoupper($bill_pay->currency ?? 'GBP'),
+                            'status' => 'completed',
+                            'description' => 'Bill Payment: ' . ($bill_pay->bill->name ?? 'Bill'),
+                            'transaction_date' => $bill_pay->created_at,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('Failed to sync BillPayment to FinancialTransaction in handlePayment: ' . $e->getMessage(), ['bill_payment_id' => $bill_pay->id]);
+                }
 
 
                 return to_route('thank-you', ['username' => $bill_pay->bill->user->username])->with('success', "Payment for subscription of bill is successful.");

@@ -48,7 +48,12 @@ export default function Transactions(props) {
     Promise.all([fetch(`/history-feed?${p1.toString()}`), fetch(`/history-feed?${p2.toString()}`)])
       .then(async ([r1, r2]) => {
         const a = await r1.json(); const b = await r2.json();
-        const all = [...(a.events || []), ...(b.events || [])].sort((x, y) => new Date(y.created_at) - new Date(x.created_at));
+        const all = [...(a.events || []), ...(b.events || [])].sort((x, y) => {
+          const dateX = new Date(x.created_at);
+          const dateY = new Date(y.created_at);
+          if (dateY - dateX !== 0) return dateY - dateX;
+          return (y.id || 0) - (x.id || 0);
+        });
         const mergedResp = { events: all, has_more: (a.has_more || b.has_more), next_before: a.next_before || b.next_before };
         setData(prev => {
           const stats = prev?.stats || initial?.stats || { received: {}, sent: {} };

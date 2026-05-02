@@ -96,7 +96,14 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             <div className="md:flex w-full  justify-end gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => refreshPost(route('financial.refresh'), { preserveScroll: true })}
+                                    onClick={() => {
+                                        console.log('Refreshing records...');
+                                        refreshPost(route('financial.refresh'), { 
+                                            preserveScroll: true,
+                                            onSuccess: () => console.log('Refresh successful'),
+                                            onError: (err) => console.error('Refresh failed', err)
+                                        });
+                                    }}
                                     disabled={refreshProcessing}
                                     className="mb-3 w-full md:w-fit flex-1 md:flex-none flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl md:rounded-[30px] font-medium transition-all border border-gray-700 !text-[14px]  " >
                                     <RefreshCw size={18} className={refreshProcessing ? 'animate-spin' : ''} />
@@ -202,36 +209,32 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                         status_breakdown.forEach(s => { statusMap[s.status] = s; });
 
                         return (
-                            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-[25px] md:rounded-[30px] border border-gray-700/50 p-5 md:p-6 shadow-xl">
-                                <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                                    <span className="text-lg">📊</span> Payment Status Overview
-                                    <span className="ml-auto text-[10px] text-gray-500 font-bold uppercase tracking-widest">{tax_year}</span>
-                                </h2>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {STATUS_CONFIG.map(({ key, label, bg, border, text, inPayout, note }) => {
                                         const s = statusMap[key];
                                         return (
-                                            <div key={key} className={`rounded-xl p-3 border ${bg} ${border} flex flex-col gap-1`}>
-                                                <div className={`text-[10px] font-bold uppercase tracking-widest ${text}`}>{label}</div>
-                                                <div className="text-lg font-bold text-white">{formatCurrency(s?.total ?? 0, displayCurrency)}</div>
-                                                <div className="text-[11px] text-gray-500">{s?.count ?? 0} payment{(s?.count ?? 0) !== 1 ? 's' : ''}</div>
+                                            <div className={`bg-gray-900/40  border-2 ${border} !rounded-[25px]  overflow-hidden  `}>
+                                            <div key={key} className={`p-4 ${bg}  flex flex-col gap-1`}>
+                                                <div className={`text-[16px] font-bold uppercase tracking-widest ${text}`}>{label}</div>
+                                                <div className="text-2xl font-bold text-white">{formatCurrency(s?.total ?? 0, displayCurrency)}</div>
+                                                <div className="text-[15px] text-gray-500">{s?.count ?? 0} payment{(s?.count ?? 0) !== 1 ? 's' : ''}</div>
                                                 <div className={`text-[10px] font-semibold mt-1 ${inPayout ? 'text-green-500' : 'text-gray-500'}`}>
                                                     {inPayout ? '✓ In payout' : `✗ ${note}`}
                                                 </div>
                                             </div>
+                                            </div>
                                         );
                                     })}
                                 </div>
-                            </div>
                         );
                     })()}
 
-                    <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
+                    <div className="bg-gradient-to-br flex gap-6 from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                             <ShieldCheck size={80} className="text-blue-500" />
                         </div>
-                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
+                        <div className="relative z-10 gap-6">
+                            <div className='pb-6'>
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                                     Held Reserves
@@ -260,7 +263,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     </div>
                                 )}
                             </div>
-                            <Link href={route('creator.finance.review_holds')} className="block group/holds">
+                            {/* <Link href={route('creator.finance.review_holds')} className="block group/holds">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2 group-hover/holds:text-gray-300 transition-colors">
                                     <div className="w-2 h-2 rounded-full bg-purple-500"></div>
                                     Review Holds
@@ -275,9 +278,9 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 </div>
                                 <div className="text-2xl md:text-3xl font-bold text-orange-400 mt-2 group-hover/disputes:text-orange-300 transition-colors">{formatCurrency(summary.disputes, displayCurrency)}</div>
                                 <div className="text-[12px] text-gray-500 mt-2 font-bold group-hover/disputes:text-gray-400 transition-colors">Flagged by banks.</div>
-                            </Link>
+                            </Link> */}
                         </div>
-                        <div className="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <div className=" flex justify-between  ">
                             <div>
                                 <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
                                 <div className="text-xl font-bold text-white">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
@@ -673,9 +676,9 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 const percentage = summary.gross_income > 0 ? (total / summary.gross_income) * 100 : 0;
 
                                                 return (
-                                                    <div key={key} className="bg-gray-800/40 rounded-xl p-3 border border-gray-700/50">
+                                                    <div key={key} className="bg-gray-800/40 rounded-[20px] p-3 border border-gray-700/50">
                                                         <div className="flex items-center justify-between mb-1.5">
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex items-center gap-2"> 
                                                                 <span className="text-base leading-none">{emoji}</span>
                                                                 <span className="text-sm font-semibold text-gray-200">{key}</span>
                                                             </div>

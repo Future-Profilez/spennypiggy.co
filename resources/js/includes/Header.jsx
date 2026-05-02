@@ -410,7 +410,9 @@ export default function Header({ classMagicword }) {
                                             </li>
                                     )}
 
-                                    {auth && auth.user ? (
+                                    {auth &&
+                                    auth.user &&
+                                    auth.user.role ==1 ? (
                                         <>
                                          <li>
                                                 <Link
@@ -463,7 +465,7 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                            <li>
+                                            {auth?.user?.role == 1 && <li>
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={route('financial.dashboard')}
@@ -479,7 +481,7 @@ export default function Header({ classMagicword }) {
                                                         Finance & Tax
                                                     </span>
                                                 </Link>
-                                            </li>
+                                            </li>}
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}

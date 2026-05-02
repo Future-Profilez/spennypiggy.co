@@ -250,16 +250,13 @@ class ShopsController extends Controller
 
         $currency = $user->default_currency ?? 'gbp';
 
-        // Use new gross-up flow for consistent fee calculation
-        // Calculate the base amount the creator should receive (Price + Tax + VAT)
+        // Gross-up so gifter pays the total and creator receives exactly their listed price.
+        // Platform fee (17%), compliance fee (2%), and £1 admin fee are already accounted for
+        // inside calculateStripeDirectChargeFlow — do NOT add an extra shop_tax here.
         $vatPercent = $user->vat_amount_percentage ?? 0;
         $vatAmount = $request->price * $vatPercent / 100;
 
-        // Add Shop Tax (Standard 20% if not overridden)
-        $taxRate = config('app.shop_tax', 20) / 100;
-        $taxAmount = $request->price * $taxRate;
-
-        $listedPriceToGrossUp = $request->price + $taxAmount + $vatAmount;
+        $listedPriceToGrossUp = $request->price + $vatAmount;
 
         $metrics = app(RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
@@ -440,16 +437,11 @@ class ShopsController extends Controller
 
             $currency = $user->default_currency ?? 'gbp';
 
-            // Use new gross-up flow for consistent fee calculation
-            // Calculate the base amount the creator should receive (Price + Tax + VAT)
+            // Gross-up so gifter pays the total and creator receives exactly their listed price.
             $vatPercent = $user->vat_amount_percentage ?? 0;
             $vatAmount = $request->price * $vatPercent / 100;
 
-            // Add Shop Tax (Standard 20% if not overridden)
-            $taxRate = config('app.shop_tax', 20) / 100;
-            $taxAmount = $request->price * $taxRate;
-
-            $listedPriceToGrossUp = $request->price + $taxAmount + $vatAmount;
+            $listedPriceToGrossUp = $request->price + $vatAmount;
 
             // Fetch creator risk metrics for reserve calculation
             $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
@@ -605,11 +597,9 @@ class ShopsController extends Controller
             $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
         }
 
-        $tax = round(($amount * config('app.shop_tax', 20) / 100), 2, PHP_ROUND_HALF_UP);
-
         $vat_percentage_amount = 0;
         if (!empty($shop->user->vat_amount_percentage)) {
-            $vat_percentage_amount = ($amount + $tax) * $shop->user->vat_amount_percentage / 100;
+            $vat_percentage_amount = $amount * $shop->user->vat_amount_percentage / 100;
         }
 
         $card_capabilities = StripeControl::hasCardPaymentsCapability($shop->user->account_id);
@@ -752,9 +742,9 @@ class ShopsController extends Controller
                 ]);
             }
 
-            // Check stock if slot_limitation is set
+            // Check stock if slot_limitation is set (only for physical products)
             $requestedQuantity = (int) request()->query('quantity', 1);
-            if ($shop->slot_limitation !== null) {
+            if ($shop->type === 'physical' && $shop->slot_limitation !== null) {
                 if ($shop->slot_limitation <= 0) {
                     return response()->json([
                         'status' => false,
@@ -903,17 +893,17 @@ class ShopsController extends Controller
                 }
             }
 
-            // Add Shop Tax (Standard 20% if not overridden)
-            $taxRate = config('app.shop_tax', 20) / 100;
-            $taxAmount = $amount * $taxRate;
+            // Platform fee (17%), compliance (2%), and £1 admin fee are all accounted for
+            // inside calculateStripeDirectChargeFlow — do NOT add an extra shop_tax here.
+            $taxAmount = 0; // No additional shop tax; kept as variable for ShopPayment record compatibility
 
             // Add VAT if applicable
             $vatAmount = 0;
             if (!empty($shop->user->vat_amount_percentage)) {
-                $vatAmount = ($amount + $taxAmount) * $shop->user->vat_amount_percentage / 100;
+                $vatAmount = $amount * $shop->user->vat_amount_percentage / 100;
             }
 
-            $listedPriceToGrossUp = $amount + $taxAmount + $vatAmount + $shipping_price;
+            $listedPriceToGrossUp = $amount + $vatAmount + $shipping_price;
 
             // Unified Risk Enforcement
             $riskData = $this->enforceRiskChecks(
@@ -1101,9 +1091,9 @@ class ShopsController extends Controller
                     ])->with('success', 'Payment Successful.');
                 }
 
-                // 1. Decrement stock if applicable
+                // 1. Decrement stock if applicable (only for physical products)
                 $shop = $stripeid->shop;
-                if ($shop->slot_limitation !== null) {
+                if ($shop->type === 'physical' && $shop->slot_limitation !== null) {
                     $purchasedQuantity = $stripeid->quantity > 0 ? $stripeid->quantity : 1;
                     if ($shop->slot_limitation > 0) {
                         $shop->decrement('slot_limitation', $purchasedQuantity);

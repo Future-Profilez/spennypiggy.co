@@ -22,9 +22,9 @@ export default function PriceFormat() {
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         
-        // Platform fees
-        const platformFeeRate = (platform_fee_percentage || 20) / 100;
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+        // Platform fees — confirmed rates
+        const platformFeeRate = 0.17;  // 17%
+        const complianceFeeRate = 0.02; // 2%
         
         // Admin fee in target currency
         const conversion_rate = rates?.[upCurrency] || 1;
@@ -58,11 +58,11 @@ export default function PriceFormat() {
         const complianceFee = Number((totalSupporterPays * complianceFeeRate).toFixed(precision));
         let applicationFee = platformFee + complianceFee + adminFee;
 
-        // Reserve
+        // Reserve — metadata only, NOT added to applicationFee
+        // Reserve stays in creator's connected account, withheld at payout time
         let reserveAmount = 0;
         if (reserveRate > 0) {
-            reserveAmount = Number(((totalSupporterPays * reserveRate) / 100).toFixed(precision));
-            applicationFee += reserveAmount;
+            reserveAmount = Number(((listedPrice * reserveRate) / 100).toFixed(precision));
         }
 
         return {

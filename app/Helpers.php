@@ -226,10 +226,10 @@ class Helpers
         $stripeFeeRate = 0.029;
         $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
 
-        // Platform fees
-        $platformFeeRate = config('app.platform_fee_percentage', 15) / 100;
+        // Platform fees — confirmed rates
+        $platformFeeRate = config('app.platform_fee_percentage', 17) / 100;
         $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
-        $adminFee = self::administrationFeeInCurrency($currency);
+        $adminFee = self::administrationFeeInCurrency($currency); // £1 converted
 
         // Correct gross-up formula to ensure creator receives exactly listedPrice:
         // TotalAmount = (ListedPrice + StripeFixedFee + AdminFee) / (1 - StripeFeeRate - PlatformFeeRate - ComplianceFeeRate)
@@ -241,6 +241,8 @@ class Helpers
                 'listed_price' => $listedPrice,
                 'total_supporter_pays' => $listedPrice,
                 'application_fee' => 0,
+                'reserve_amount' => 0,
+                'net_to_creator' => $listedPrice,
             ];
         }
 
@@ -248,7 +250,6 @@ class Helpers
 
         // Use CEIL as per client requirement to avoid underpayment (round UP)
         $precision = $isZeroDecimal ? 0 : 2;
-        // For standard currencies, multiply by 100, ceil, then divide by 100
         if (!$isZeroDecimal) {
             $totalSupporterPays = ceil($totalSupporterPays * 100) / 100;
         } else {
@@ -258,35 +259,34 @@ class Helpers
         // Calculate the actual Stripe fee based on the total charged
         $actualStripeFee = round(($totalSupporterPays * $stripeFeeRate) + $stripeFixedFee, $precision, PHP_ROUND_HALF_UP);
 
-        // Application Fee is what we take (Platform + Compliance + Admin)
+        // Application Fee is what platform takes (Platform + Compliance + Admin)
+        // IMPORTANT: Reserve is NOT included in application_fee.
+        // Reserve stays in the creator's connected-account balance and is withheld at payout time.
         $platformFee = round($totalSupporterPays * $platformFeeRate, $precision, PHP_ROUND_HALF_UP);
         $complianceFee = round($totalSupporterPays * $complianceFeeRate, $precision, PHP_ROUND_HALF_UP);
         $applicationFee = $platformFee + $complianceFee + $adminFee;
 
-        // Calculate Reserve (if applicable)
-        // Reserve is calculated on the Net to Creator (Listed Price) to ensure 
-        // the percentage matches what the creator expects to see from their earnings.
+        // Calculate Reserve for ledger/metadata (NOT added to application_fee)
+        // Reserve is calculated on the Listed Price (Creator's Net Share)
         $reserveAmount = 0;
         if ($reserveRate > 0) {
-             // Reserve logic: Deduct from Creator's Net, Add to Application Fee (Held by Platform)
-             // Calculation Base: Percentage of the *Listed Price* (Creator's Share)
              $reserveAmount = round(($listedPrice * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
-             
-             // Add to Application Fee (So Stripe sends it to Platform Account instead of Creator)
-             $applicationFee += $reserveAmount;
         }
+
+        // Net to creator = what lands in their connected account after Stripe + platform fees
+        // Reserve is NOT deducted here — it stays in connected account, withheld at payout time
+        $netToCreator = round($totalSupporterPays - $actualStripeFee - $applicationFee, $precision);
 
         return [
             'listed_price' => round($listedPrice, $precision),
             'platform_fee' => $platformFee,
             'compliance_fee' => $complianceFee,
             'admin_fee' => round($adminFee, $precision),
-            'reserve_amount' => $reserveAmount, // Return for logging/metadata
+            'reserve_amount' => $reserveAmount,
             'application_fee' => round($applicationFee, $precision),
             'stripe_fee' => $actualStripeFee,
             'total_supporter_pays' => $totalSupporterPays,
-            // Net to creator is reduced by Reserve
-            'net_to_creator' => round($totalSupporterPays - $actualStripeFee - $applicationFee, $precision),
+            'net_to_creator' => $netToCreator,
         ];
     }
 
