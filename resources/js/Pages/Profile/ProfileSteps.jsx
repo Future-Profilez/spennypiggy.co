@@ -136,7 +136,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                             <div>
                                 <EditProfile updateProfileSteps={updateProfileSteps}
                                     user={user}
-                                    classes="updatebtn"
+                                    classes="updatebtn "
                                     global_currency={global_currency}
                                 />
                             </div>

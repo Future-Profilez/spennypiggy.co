@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
@@ -30,7 +31,7 @@ import Guest from "@/Layouts/GuestLayout";
 import useWidthCount from "@/Components/useWidthCount";
 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy,} from "@dnd-kit/sortable";
-import { closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { closestCenter, closestCorners, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects, MeasuringStrategy, defaultDropAnimation } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
 const ProfileProductLists = lazy(() => import("./shop/profile/ProfileProductLists"),);
@@ -81,6 +82,11 @@ export default function Dashboard(props) {
 
     const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
+    const [activeId, setActiveId] = useState(null);
+
+    const activeItem = useMemo(() => 
+        activeId ? wishitems.find(item => (item.id || item.uuid) === activeId) : null
+    , [activeId, wishitems]);
 
     useEffect(() => {
         if (items && Array.isArray(items)) {
@@ -185,31 +191,38 @@ export default function Dashboard(props) {
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, {
-            activationConstraint: { delay: 50, tolerance: 10 },
+            activationConstraint: { delay: 250, tolerance: 5 },
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         }),
     );
 
+    const handleDragStart = (event) => {
+        if (!IsloggedIn) return;
+        setActiveId(event.active.id);
+    };
+
     const handleDragEnd = (event) => {
-        if (!IsloggedIn) {
-            return false;
-        }
         const { active, over } = event;
-        const activeIndex = wishitems.findIndex(
-            (item) => item.id === active.id,
-        );
-        const newOverIndex = over
-            ? wishitems.findIndex((item) => item.id === over.id)
-            : null;
-        if (activeIndex !== newOverIndex) {
-            const updated = arrayMove(wishitems, activeIndex, newOverIndex, {
-                key: "id",
-            });
+        
+        if (over && active.id !== over.id) {
+            const activeIndex = wishitems.findIndex(
+                (item) => (item.id || item.uuid) === active.id,
+            );
+            const newOverIndex = wishitems.findIndex(
+                (item) => (item.id || item.uuid) === over.id,
+            );
+            
+            const updated = arrayMove(wishitems, activeIndex, newOverIndex);
             setWishitems(updated);
             updateMovement(updated);
         }
+        setActiveId(null);
+    };
+
+    const handleDragCancel = () => {
+        setActiveId(null);
     };
 
     const [showAlert, setShowAlert] = useState(true);
@@ -967,17 +980,17 @@ export default function Dashboard(props) {
                                                                             <LoadingScreen />
                                                                         ) : wishitems && wishitems.length > 0 ? (
                                                                             <>
-                                                                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
-                                                                                    <DndContext
-                                                                                        sensors={sensors}
-                                                                                        collisionDetection={closestCenter}
-                                                                                        onDragEnd={
-                                                                                            handleDragEnd
-                                                                                        }
-                                                                                    >
+                                                                                <DndContext
+                                                                                     sensors={sensors}
+                                                                                     collisionDetection={closestCorners}
+                                                                                     onDragStart={handleDragStart}
+                                                                                     onDragEnd={handleDragEnd}
+                                                                                     onDragCancel={handleDragCancel}
+                                                                                 >
+                                                                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                         <SortableContext
                                                                                             strategy={rectSortingStrategy}
-                                                                                            items={wishitems}
+                                                                                            items={wishitems.map(item => item.id || item.uuid)}
                                                                                         >
                                                                                             {wishitems.map(
                                                                                                 (
@@ -1018,8 +1031,40 @@ export default function Dashboard(props) {
                                                                                                 },
                                                                                             )}
                                                                                         </SortableContext>
-                                                                                    </DndContext>
-                                                                                </div>
+                                                                                    </div>
+                                                                                     {createPortal(
+                                                                                        <DragOverlay 
+                                                                                            dropAnimation={{
+                                                                                                duration: 250,
+                                                                                                easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+                                                                                                sideEffects: defaultDropAnimationSideEffects({
+                                                                                                    styles: {
+                                                                                                        active: {
+                                                                                                            opacity: '0.3',
+                                                                                                        },
+                                                                                                    },
+                                                                                                }),
+                                                                                            }}
+                                                                                            zIndex={999999}
+                                                                                        >
+                                                                                            {activeItem ? (
+                                                                                                <div style={{ width: '320px', maxWidth: '90vw' }}>
+                                                                                                    <Wishlistbox
+                                                                                                        itm={activeItem}
+                                                                                                        currency={global_currency}
+                                                                                                        IsloggedIn={IsloggedIn}
+                                                                                                        auth={auth.user}
+                                                                                                        itemid={itemid}
+                                                                                                        setuped={AuthUserStripeConnected == 1}
+                                                                                                        classes=" "
+                                                                                                        isOverlay
+                                                                                                    />
+                                                                                                </div>
+                                                                                            ) : null}
+                                                                                        </DragOverlay>,
+                                                                                        document.body
+                                                                                     )}
+                                                                                </DndContext>
                                                                             </>
                                                                         ) : (
                                                                             <div className="w-full">

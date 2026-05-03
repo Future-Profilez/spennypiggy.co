@@ -67,21 +67,23 @@ export default function Post({item}) {
     <>
       <div className=" post-wrap bg-[#fdfbf7] rounded-[30px] md:rounded-[35px] p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
         <div className='flex items-center justify-between mb-3' >
-            {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
-                <img alt='spenny piggy' className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" src={item?.user?.avatar_url || userphoto} />
+            <div>
+              {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
+                  <img alt='spenny piggy' className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" src={item?.user?.avatar_url || userphoto} />
+                  <div>
+                    <p className="authors text-black font-black !capitalize tracking-wider"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
+                    <p className="authors text-gray-700 font-bold text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
+                  </div>
+              </Link>
+              :
+              <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
+                  <img alt='spenny piggy' className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" src={user && user.avatar_url || userphoto} />
                 <div>
-                  <p className="authors text-black font-black !capitalize tracking-wider"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
-                  <p className="authors text-gray-700 font-bold text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
+                  <p className="fading authors text-black font-black !capitalize tracking-wider"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
+                  <p className="fading authors text-gray-700 font-bold text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
                 </div>
-            </Link>
-            :
-            <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
-                <img alt='spenny piggy' className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" src={user && user.avatar_url || userphoto} />
-              <div>
-                <p className="fading authors text-black font-black !capitalize tracking-wider"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
-                <p className="fading authors text-gray-700 font-bold text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
-              </div>
-            </Link> }
+              </Link> }
+            </div>
 
 
             {IsloggedIn ? (

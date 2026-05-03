@@ -1,5 +1,8 @@
 import Guest from "@/Layouts/GuestLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
+import { useState, useEffect } from "react";
+import PriceFormat from "../../includes/PriceFormat";
+import BuyShopItem from "./BuyShopItem";
 import { 
     ChevronLeftIcon, 
     PercentIcon, 

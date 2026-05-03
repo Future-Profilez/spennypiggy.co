@@ -335,11 +335,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
         }
     }
 
-    const formatMultiPrice = (price, currency) => {
-        // Simple formatter placeholder if not available in context
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(price);
-    }
-
+   
     const renderTabs = () => (
         <div className="flex ps-2 py-3 gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
             <button

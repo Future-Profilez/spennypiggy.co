@@ -32,6 +32,7 @@ export default function Wishlistbox(props) {
         classes,
         showall,
         trackClick,
+        isOverlay,
     } = props;
 
     // Helper to identify zero decimal currencies
@@ -73,6 +74,8 @@ export default function Wishlistbox(props) {
     const effectiveAuth = auth || globalAuth;
     const isCreator = effectiveAuth?.user?.id === itm?.user_id;
 
+    const sortableId = itm?.id || itm?.uuid;
+
     const {
         attributes,
         listeners,
@@ -82,10 +85,21 @@ export default function Wishlistbox(props) {
         setNodeRef,
         transform,
         transition,
-    } = useSortable({ id: itm && itm.id });
+    } = useSortable({ id: sortableId });
 
     const style = {
-        transform: CSS.Translate.toString(transform),
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.3 : 1,
+        zIndex: isDragging ? 0 : 1,
+        animation: isDragging ? "none" : undefined,
+    };
+
+    const overlayStyle = {
+        cursor: "grabbing",
+        animation: "none",
+        width: "100%",
+        display: "block",
     };
 
     const stylenone = {
@@ -114,10 +128,10 @@ export default function Wishlistbox(props) {
 
     return (
         <div
-            style={IsloggedIn ? style : stylenone}
+            style={isOverlay ? overlayStyle : (IsloggedIn ? style : stylenone)}
             className={`wish-item-box !p-0 ${classes} ${
-                isDragging ? "dragging" : ""
-            } cursor-pointer hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all`}
+                isDragging ? "dragging opacity-30" : ""
+            } ${isOverlay ? "is-overlay" : ""} cursor-pointer ${!isDragging && !isOverlay ? "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all" : ""}`}
         >
             <div className="bg-[#fdfbf7] rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative border-[3px] border-black w-full min-h-[300px] flex flex-col justify-between ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
@@ -137,7 +151,7 @@ export default function Wishlistbox(props) {
                 {IsloggedIn ? (
                     <>
                         <div
-                            className="movesvg absolute !top-6 !left-6"
+                            className={`movesvg absolute !top-6 !left-6 ${isOverlay ? "cursor-grabbing" : "cursor-grab"}`}
                             ref={setNodeRef}
                             {...listeners}
                             {...attributes} >

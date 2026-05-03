@@ -174,13 +174,13 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
 // Filter tabs component
 function PostFilterTabs({ filters, activeFilter, onFilterChange, disabled = false }) {
   return (
-    <div className="flex gap-3 mb-6 overflow-auto hideScroll pb-2 pt-1 px-1">
+    <div className="flex gap-3 mb-3 overflow-auto hideScroll pb-2   px-1">
       {filters.map(({ key, label }) => (
         <button 
           key={key}
           onClick={() => onFilterChange(key)}
           disabled={disabled}
-          className={`px-5 py-2 text-sm md:text-base font-black uppercase tracking-widest border-2 border-black rounded-full transition-all duration-200 whitespace-nowrap ${
+          className={`px-5 py-2 text-sm font-black uppercase tracking-widest border-2 border-black rounded-full transition-all duration-200 whitespace-nowrap ${
             activeFilter === key
               ? 'bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               : 'bg-white text-black hover:bg-yellow-100 shadow-none hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
