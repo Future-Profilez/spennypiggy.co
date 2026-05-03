@@ -33,6 +33,7 @@ class StripePaymentItems extends Model
         'wish_item_id',
         'user_cart_id',
         'amount',
+        'total_paid',
         'message_media',
         'media_type',
         'thank_you_approved',

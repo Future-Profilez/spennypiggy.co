@@ -7,8 +7,6 @@ import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
 import userdefaultphoto from '../../../../assets/siteicon.png';
 import { TimeFormat } from '@/includes/TimeFormat';
-import { Menu, Transition } from '@headlessui/react'
-import { HiDotsVertical } from "react-icons/hi";
 import OrderDetail from './OrderDetail';
 
 
@@ -21,7 +19,7 @@ export default function OrdersLists({ type = 'sales' }) {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
    }
-   const { global_currency, auth, user, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+   const { global_currency, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
    const [orderloading, setOrderLoading] = useState(false);
    const [orders, setOrders] = useState([]);
 
@@ -136,7 +134,7 @@ export default function OrdersLists({ type = 'sales' }) {
                      </Link>
                      <div className="hidden md:block w-40 flex pd-l-16 flex-vert-center">
                         <Link href={`/shop/item/${slug(item.shop.name)}/${item.shop.uuid}`} className=" text-dark  text-sm  font-cr-regular  flex">
-                           <span className="limit-text-line-1 leading-4  max-w-60  mr-3">{item.shop.name || ""}</span>
+                           <span className="line-clamp-2 max-w-60  mr-3">{item.shop.name || ""}</span>
                         </Link>
                      </div>
                      <div className=" flex flex-vert-center flex-col items-end">
@@ -159,9 +157,13 @@ export default function OrdersLists({ type = 'sales' }) {
                               Includes fees & shipping
                            </div>
                         )}
-                        {item.shop?.type === 'physical' && (
+                        {(item.payment_status === 'refunded' || item.is_deactivated || item.shop?.type === 'physical') && (
                            <div className="mt-1">
-                              {item.status === 'delivered' ? (
+                              {item.payment_status === 'refunded' ? (
+                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Refunded</span>
+                              ) : item.is_deactivated ? (
+                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Deactivated</span>
+                              ) : item.status === 'delivered' ? (
                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Completed</span>
                               ) : item.status === 'shipped' ? (
                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Shipped</span>

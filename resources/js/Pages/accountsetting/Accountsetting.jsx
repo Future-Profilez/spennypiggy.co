@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { lazy } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
@@ -22,31 +22,37 @@ import ManagePasskey from '@/Components/ManagePasskey';
 import SecurityZone from '@/Components/SecurityZone';
 import { Switch } from "@headlessui/react";
 import {
-    User,
-    CreditCard,
-    Bell,
-    Shield,
-    LogOut,
-    ExternalLink,
-    ChevronRight,
-    Settings,
-    DollarSign,
-    Heart,
-    Gift,
-    LayoutDashboard,
-    History,
-    MapPin,
-    Percent,
-    Twitter,
-    PiggyBank,
-    Users,
-    Trash2,
-    Mail,
-    Lock,
-    HelpCircle,
-    FileText,
-    Globe,
-    Fingerprint,
+    UserIcon,
+    CreditCardIcon,
+    BellIcon,
+    LogoutIcon,
+    ExternalLinkIcon,
+    ChevronRightIcon,
+    SettingsIcon,
+    DollarSignIcon,
+    HeartIcon,
+    DashboardIcon,
+    ActivityIcon,
+    MapPinIcon,
+    TwitterIcon,
+    UsersIcon,
+    Trash2Icon,
+    MailIcon,
+    LockIcon,
+    GlobeIcon,
+    ShieldCheckIcon,
+} from "@animateicons/react/lucide";
+import { 
+    Shield, 
+    LogOut, 
+    Gift, 
+    LayoutDashboard, 
+    History, 
+    Percent, 
+    PiggyBank, 
+    HelpCircle, 
+    FileText, 
+    Fingerprint 
 } from "lucide-react";
 
 export default function Accountsetting(props) {
@@ -113,9 +119,7 @@ export default function Accountsetting(props) {
             });
     };
 
-    const [vatpercent, setvatpercent] = useState(
-        (auth && auth?.user?.vat_amount_percentage) || "",
-    );
+    const [vatpercent, setvatpercent] = useState((auth && auth?.user?.vat_amount_percentage) || "",);
 
     const closeEmailPopup = () => {
         setEmailPopupAction(false);
@@ -241,50 +245,56 @@ export default function Accountsetting(props) {
         value,
         className,
         bordercolor,
-    }) => (
-        <div
-            onClick={onClick}
-            className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-pink-500"}  !rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
-        >
-            <div className="flex !items-center gap-4 text-left">
-                <div
-                    className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
-                    ${isDestructive ? "bg-red-200 text-red-600" : "bg-pink-200 text-pink-600"}`}
-                >
-                    <Icon size={28} strokeWidth={2} />
-                </div>
-                <div>
-                    <h3
-                        className={`font-bold text-base ${isDestructive ? "text-red-600" : "text-gray-800"}`}
+    }) => {
+        const iconRef = useRef(null);
+        
+        return (
+            <div
+                onClick={onClick}
+                onMouseEnter={() => iconRef.current?.startAnimation?.()}
+                onMouseLeave={() => iconRef.current?.stopAnimation?.()}
+                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-pink-500"}  !rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
+            >
+                <div className="flex !items-center gap-4 text-left">
+                    <div
+                        className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
+                        ${isDestructive ? "bg-red-200 text-red-600" : "bg-pink-200 text-pink-600"}`}
                     >
-                        {title}
-                    </h3>
-                    {subtitle && (
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">
-                            {subtitle}
-                        </p>
+                        <Icon ref={iconRef} size={28} strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h3
+                            className={`font-bold text-base ${isDestructive ? "text-red-600" : "text-gray-800"}`}
+                        >
+                            {title}
+                        </h3>
+                        {subtitle && (
+                            <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                {subtitle}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    {value && (
+                        <span className=" mt-4 md:mt-0 text-sm font-semibold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg border border-pink-500">
+                            {value}
+                        </span>
+                    )}
+                    {action ? (
+                        action
+                    ) : (
+                        <ChevronRightIcon
+                            size={18}
+                            className="
+                     text-gray-300 group-hover:text-pink-400 absolute md:static !text-xl
+                     top-[30px] right-4 "
+                        />
                     )}
                 </div>
             </div>
-            <div className="flex items-center gap-3">
-                {value && (
-                    <span className=" mt-4 md:mt-0 text-sm font-semibold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg border border-pink-500">
-                        {value}
-                    </span>
-                )}
-                {action ? (
-                    action
-                ) : (
-                    <ChevronRight
-                        size={18}
-                        className="
-                 text-gray-300 group-hover:text-pink-400 absolute md:static !text-xl
-                 top-[30px] right-4 "
-                    />
-                )}
-            </div>
-        </div>
-    );
+        );
+    };
 
     const SectionTitle = ({ title }) => (
         <h2 className="text-normal text-gray-600 mb-4 px-2 uppercase tracking-widest font-gulfs">
@@ -320,7 +330,7 @@ export default function Accountsetting(props) {
                                 user={auth?.user}
                                 text={
                                     <SettingItem
-                                        icon={Users}
+                                        icon={UsersIcon}
                                         title="My Profile"
                                         subtitle="Manage your earnings and payouts"
                                         value={auth?.user?.name}
@@ -350,7 +360,7 @@ export default function Accountsetting(props) {
                                 classes="w-full" 
                                 text={
                                     <SettingItem
-                                        icon={Gift}
+                                        icon={GiftIcon}
                                         title="Platform Subscription"
                                         subtitle={
                                             site_subscription?.subscription_status_code === 1 || site_subscription?.subscription_status_code === 2
@@ -408,7 +418,7 @@ export default function Accountsetting(props) {
                                 modalclass="pinkmodal"
                                 text={
                                     <SettingItem
-                                        icon={Twitter}
+                                        icon={TwitterIcon}
                                         title="Auto Tweet"
                                         subtitle={
                                             auth.user.twitter_username
@@ -438,7 +448,7 @@ export default function Accountsetting(props) {
                             <FollowersBulkNotification
                                 trigger={
                                     <SettingItem
-                                        icon={Users}
+                                        icon={UsersIcon}
                                         title="Follower Notifications"
                                         subtitle="Send push notifications to followers"
                                     />
@@ -465,7 +475,7 @@ export default function Accountsetting(props) {
                             text={
                                 <SettingItem
                                     iconcolor={`text-voilet`}
-                                    icon={DollarSign}
+                                    icon={DollarSignIcon}
                                     title="Display Currency"
                                     subtitle="Choose your preferred currency"
                                     value={global_currency}
@@ -486,7 +496,7 @@ export default function Accountsetting(props) {
                                     text={
                                         <SettingItem
                                             iconcolor={`text-voilet`}
-                                            icon={MapPin}
+                                            icon={MapPinIcon}
                                             title="Address"
                                             subtitle="Manage your physical address"
                                         />
@@ -563,7 +573,7 @@ export default function Accountsetting(props) {
                                 <div
                                             className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-pink-600`}
                                         >
-                                            <Bell
+                                            <BellIcon
                                                 size={20}
                                                 strokeWidth={2.5}
                                             />
@@ -638,7 +648,7 @@ export default function Accountsetting(props) {
                             modalclass="pinkmodal"
                             text={
                                 <SettingItem
-                                    icon={Mail}
+                                    icon={MailIcon}
                                     title="Email Address"
                                     subtitle="Update your email address"
                                     value={auth?.user?.email}
@@ -657,7 +667,7 @@ export default function Accountsetting(props) {
                             modalclass="pinkmodal"
                             text={
                                 <SettingItem
-                                    icon={Lock}
+                                    icon={LockIcon}
                                     title="Password"
                                     subtitle="Change your password"
                                     value="••••••••"
@@ -699,7 +709,7 @@ export default function Accountsetting(props) {
                             className="block w-full"
                         >
                             <SettingItem
-                                icon={Users}
+                                icon={UsersIcon}
                                 title="Refer & Earn"
                                 subtitle="Invite creators and earn rewards"
                             />
@@ -709,11 +719,11 @@ export default function Accountsetting(props) {
                             href={route("how-it-works")}
                             className="block w-full"
                         >
-                            <SettingItem
-                                icon={HelpCircle}
-                                title="How it Works"
-                                subtitle="Learn about Spenny Piggy"
-                            />
+                        <SettingItem
+                             icon={HelpCircle}
+                             title="How it Works"
+                             subtitle="Learn about Spenny Piggy"
+                         />
                         </Link>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -733,7 +743,7 @@ export default function Accountsetting(props) {
                                 className="block w-full"
                             >
                                 <SettingItem
-                                    icon={Globe}
+                                    icon={GlobeIcon}
                                     title="Privacy Policy"
                                     subtitle="Read our privacy policy"
                                     className="!mb-0"
@@ -755,7 +765,7 @@ export default function Accountsetting(props) {
                             text={
                                 <SettingItem
                                     bordercolor="border-red-600"
-                                    icon={Trash2}
+                                    icon={Trash2Icon}
                                     title="Delete Account"
                                     subtitle="Permanently remove your account and data"
                                     isDestructive

@@ -44,6 +44,26 @@ class FinancialService
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->where(function ($q) {
+                // For TaskPurchases, only include if they are completed/accepted
+                $q->where(function ($sq) {
+                    $sq->where('source_type', '!=', \App\Models\TaskPurchase::class)
+                       ->where('source_type', '!=', \App\Models\ShopPayment::class);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('task_purchases')
+                        ->whereColumn('task_purchases.id', 'financial_transactions.source_id')
+                        ->whereIn('task_purchases.status', ['completed', 'completed_accepted']);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('shop_payments')
+                        ->join('deliverables', 'deliverables.session_id', '=', 'shop_payments.session_id')
+                        ->whereColumn('shop_payments.id', 'financial_transactions.source_id')
+                        ->where('deliverables.status', 'delivered');
+                });
+            })
             ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status']);
 
         // Fetch Reserves and Review Holds from PayoutService

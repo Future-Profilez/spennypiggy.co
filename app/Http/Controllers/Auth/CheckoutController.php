@@ -1099,16 +1099,24 @@ class CheckoutController extends Controller
             foreach ($getdata as $dd) {
                 $vatPercent = $dd->owner->vat_amount_percentage ?? 0;
                 $vatAmount = ((float) ($dd->amount ?? 0) * (float) $vatPercent) / 100;
+                
+                // Recalculate fees to ensure exact tax and total_paid are recorded
+                $currency = strtoupper($stripeid->currency ?? 'GBP');
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($dd->amount + $vatAmount, $currency);
+                $tax = $breakdown['total_fees'];
+                $totalPaid = $breakdown['total_supporter_pays'];
+
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
                     'stripe_payment_detail_id' => $stripeid->id,
                     'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
+                    'total_paid' => $totalPaid,
                     'message_media' => $dd->wish ? ($dd->wish->reward ?? null) : null,
                     'media_type' => ($dd->wish && !empty($dd->wish->reward)) ? 'image' : null,
                     'thank_you_approved' => ($dd->wish && !empty($dd->wish->reward)) ? 1 : 0,
-                    'tax' => $dd->tax,
+                    'tax' => $tax,
                     'vat_amount' => $vatAmount,
                     'quantity' => $dd->quantity,
                     'anonymous' => $dd->anonymous ?? false,
@@ -1225,6 +1233,7 @@ class CheckoutController extends Controller
                     $userPayment->to_user_id = $dd->owner_id;
                     $userPayment->product_type = 'wish item';
                     $userPayment->amount = $total_amount;
+                    $userPayment->total_paid = $total_amount + ($dd->tax * $dd->quantity) + ($vatAmount * $dd->quantity);
                     $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
                     $userPayment->creator_currency = $creatorCurrency;
                     $userPayment->charge_currency = $chargeCurrency;
@@ -1236,12 +1245,6 @@ class CheckoutController extends Controller
                     $userPayment->save();
                     Log::info("UserPayment record created successfully");
                 }
-
-                Log::info("About to update cart item status");
-                $dd->status = 0;
-                $dd->quantity = 0;
-                $dd->save();
-                Log::info("Cart item status updated successfully");
 
                 // NEW: Synchronous Deliverable creation for paid wish items
                 // This ensures content is tracked even if CheckoutMailToUser job fails
@@ -1260,6 +1263,7 @@ class CheckoutController extends Controller
                         'customer_email' => $stripeid->guest_email ?? ($dd->user->email ?? null),
                         'customer_name' => $stripeid->name ?? ($dd->user->name ?? 'A Fan'),
                         'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
+                        'status' => 'delivered', // Mark as delivered since payment is successful
                         'metadata' => json_encode([
                             'wish_item_id' => $dd->wish_item_id,
                             'quantity' => $dd->quantity,
@@ -1277,13 +1281,19 @@ class CheckoutController extends Controller
                                 'wish_processed_at' => now()->toISOString(),
                                 'sync_processed' => 'true'
                             ]);
-                        } catch (\Exception $e) {
+                        } catch (\Throwable $e) {
                             Log::error("Failed to update Stripe metadata in successCheckout", ['error' => $e->getMessage()]);
                         }
                     }
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     Log::error("Failed to create Deliverable in successCheckout", ['error' => $e->getMessage()]);
                 }
+
+                Log::info("About to update cart item status");
+                $dd->status = 0;
+                $dd->quantity = 0;
+                $dd->save();
+                Log::info("Cart item status updated successfully");
 
                 // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
                 try {
@@ -1291,9 +1301,15 @@ class CheckoutController extends Controller
                     $vatPercent = (float) ($creator->vat_amount_percentage ?? 0);
                     $amount = (float) $dd->amount;
                     $vat = round(($amount * $vatPercent) / 100, 2);
-                    $platformFee = (float) $dd->tax;
-                    $stripeFee = 0;
-                    $gross = $amount + $vat + $platformFee + $stripeFee;
+                    
+                    $currency = strtoupper($stripeid->currency ?? 'GBP');
+                    $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                    $platformFee = $breakdown['application_fee'];
+                    $stripeFee = $breakdown['stripe_fee'];
+
+                    $gross = $payment_data->total_paid && $payment_data->total_paid > 0 
+                        ? (float) $payment_data->total_paid 
+                        : $breakdown['total_supporter_pays'];
                     $creatorAmount = $amount;
 
                     FinancialTransaction::updateOrCreate(

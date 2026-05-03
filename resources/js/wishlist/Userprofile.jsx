@@ -1,14 +1,17 @@
-import { lazy, useState } from "react";
+import { lazy, useState, useRef } from "react";
 import userphoto from "../../assets/siteicon.png";
 import { usePage } from "@inertiajs/react";
 const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 const ShareProfile = lazy(() => import("./ShareProfile"));
 const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));
-import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FollowButton from "@/Pages/Profile/FollowButton";
-import { MdOutlineContentCopy } from "react-icons/md";
 import FounderBadge from "@/Components/FounderBadge";
-import { UserX, ShieldAlert, Ban, Info } from "lucide-react";
+import { 
+    UserXIcon, 
+    InfoIcon,
+    CopyIcon
+} from "@animateicons/react/lucide";
+import { ShieldAlert, Ban, BadgeCheck, BadgeCheckIcon } from "lucide-react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import Popup from "@/Components/Popup";
@@ -16,6 +19,10 @@ import FeatureSuggestionBanner from "@/Components/FeatureSuggestionBanner";
 import FeatureSuggestionModal from "@/Components/FeatureSuggestionModal";
 
 export default function Userprofile({ IsloggedIn }) {
+    const copyIconRef = useRef(null);
+    const unblockIconRef = useRef(null);
+    const blockIconRef = useRef(null);
+
     const {
         auth,
         user,
@@ -131,7 +138,7 @@ export default function Userprofile({ IsloggedIn }) {
                                                     icon={true}
                                                 />
                                         ) : (
-                                            <RiVerifiedBadgeFill
+                                            <BadgeCheckIcon
                                                 className=" min-w-8 min-h-8 w-8 h-8 text-[#1d3ef8]"
                                             />
                                         )}
@@ -143,10 +150,12 @@ export default function Userprofile({ IsloggedIn }) {
                         <div className="userId mt- flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
                             <ShareProfile
                                 username={user?.name}
-                                classes="flex text-gray-800 font-black text-normal transition-all mr-4 items-center"
+                                classes="flex text-gray-800 font-black text-normal transition-all mr-4 items-center group"
+                                onMouseEnter={() => copyIconRef.current?.startAnimation?.()}
+                                onMouseLeave={() => copyIconRef.current?.stopAnimation?.()}
                                 custom={`${window.location.origin}/${user?.username}`} >
                                 @{user?.username}
-                                <MdOutlineContentCopy className="ml-2 font-black text-black" />
+                                <CopyIcon ref={copyIconRef} size={16} className="ml-2 font-black text-black" />
                             </ShareProfile>
                         </div>
                     </div>
@@ -195,18 +204,22 @@ export default function Userprofile({ IsloggedIn }) {
                                                 isBlocked ? (
                                                     <button 
                                                         onClick={unblockUser}
-                                                        className="bg-green-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white"
+                                                        onMouseEnter={() => unblockIconRef.current?.startAnimation?.()}
+                                                        onMouseLeave={() => unblockIconRef.current?.stopAnimation?.()}
+                                                        className="bg-green-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white group"
                                                         title="Unblock User"
                                                     >
-                                                        <UserX size={20} strokeWidth={2.5} className="rotate-180" />
+                                                        <UserXIcon ref={unblockIconRef} size={20} strokeWidth={2.5} className="rotate-180" />
                                                     </button>
                                                 ) : (
                                                     <Popup 
                                                         modalclass="pinkmodal"
                                                         size="md"
                                                         space="6"
-                                                        classes="bg-red-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white"
-                                                        text={<UserX size={20} strokeWidth={2.5} />}
+                                                        onMouseEnter={() => blockIconRef.current?.startAnimation?.()}
+                                                        onMouseLeave={() => blockIconRef.current?.stopAnimation?.()}
+                                                        classes="bg-red-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white group"
+                                                        text={<UserXIcon ref={blockIconRef} size={20} strokeWidth={2.5} />}
                                                         action={showBlockConfirm}
                                                         onHide={() => setShowBlockConfirm(false)}
                                                     >
@@ -225,7 +238,7 @@ export default function Userprofile({ IsloggedIn }) {
                                                                     <p className="text-sm font-bold">They will be blocked from sending you any gifts, tips, or messages.</p>
                                                                 </div>
                                                                 <div className="flex gap-3">
-                                                                    <Info size={20} className="text-blue-600 shrink-0" />
+                                                                    <InfoIcon size={20} className="text-blue-600 shrink-0" />
                                                                     <p className="text-sm font-bold text-gray-500">They won't be notified that you blocked them.</p>
                                                                 </div>
                                                             </div>

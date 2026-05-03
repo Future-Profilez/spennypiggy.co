@@ -50,6 +50,11 @@ class Deliverable extends Model
         'courier_name',
         'expected_delivery_date',
         'shipped_at',
+        'is_deactivated',
+        'hidden_from_gifter',
+        'deactivated_at',
+        'deactivated_by',
+        'deactivated_reason',
         'is_overdue',
         'system_reminder_count',
         'last_system_reminder_at',
@@ -63,7 +68,10 @@ class Deliverable extends Model
         'accessed_at' => 'datetime',
         'metadata' => 'array',
         'transaction_amount' => 'decimal:2',
-        'access_count' => 'integer'
+        'access_count' => 'integer',
+        'is_deactivated' => 'boolean',
+        'hidden_from_gifter' => 'boolean',
+        'deactivated_at' => 'datetime',
     ];
 
     protected $dates = [
@@ -181,7 +189,8 @@ class Deliverable extends Model
         'email',
         'shipping',
         'platform_access',
-        'content_file'
+        'content_file',
+        'digital_task'
     ];
 
     // Status enum
@@ -190,8 +199,7 @@ class Deliverable extends Model
         'processing',
         'shipped',
         'delivered',
-        'failed',
-        'refunded'
+        'failed'
     ];
 
     /**

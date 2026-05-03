@@ -1,7 +1,12 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { FileText, Download, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+    DownloadIcon, 
+    ChevronLeftIcon, 
+    ChevronRightIcon 
+} from "@animateicons/react/lucide";
+import { ArrowLeft, FileText } from "lucide-react";
 
 export default function History({ auth, transactions }) {
     const formatCurrency = (amount, currency = 'GBP') => {
@@ -43,7 +48,7 @@ export default function History({ auth, transactions }) {
                             target="_blank"
                             className="flex items-center gap-2 bg-[#FF90E8] hover:bg-[#ff7ae4] text-black px-6 py-3 rounded-xl border-[3px] border-black font-black uppercase tracking-widest text-xs transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                         >
-                            <Download size={16} className="stroke-[3px]" />
+                            <DownloadIcon size={16} className="stroke-[3px]" />
                             <span>Export CSV</span>
                         </a>
                     </div>
@@ -63,10 +68,15 @@ export default function History({ auth, transactions }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y-[2px] divide-black">
-                                    {transactions.data.map((tx) => (
-                                        <tr key={tx.uuid} className="hover:bg-yellow-50/50 transition-colors group">
+                                    {transactions.data.map((tx) => {
+                                        const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending'));
+                                        return (
+                                        <tr key={tx.uuid} className={`hover:bg-yellow-50/50 transition-colors group ${isPending ? 'opacity-30 grayscale-[0.4]' : ''}`}>
                                             <td className="px-6 py-4 text-xs font-bold text-gray-800 whitespace-nowrap border-r-[2px] border-black group-hover:text-black">
-                                                {new Date(tx.display_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                <div className="flex flex-col">
+                                                    <span>{new Date(tx.display_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                    <span className="text-[10px] text-gray-500 font-black">{new Date(tx.display_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-xs border-r-[2px] border-black">
                                                 {tx.supporter ? (
@@ -110,6 +120,15 @@ export default function History({ auth, transactions }) {
                                             </td>
                                             <td className="px-6 py-4 text-xs text-center">
                                                 <div className="flex flex-col items-center gap-2">
+                                                    {tx.item_status && (
+                                                        <span className={`inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border-[1.5px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                                                            tx.item_status.endsWith('completed') || tx.item_status.endsWith('delivered') || tx.item_status.endsWith('accepted') ? 'bg-[#90FFB1] text-black' : 
+                                                            tx.item_status.startsWith('task') ? 'bg-[#90E0FF] text-black' : 
+                                                            tx.item_status.startsWith('order') ? 'bg-[#FFB190] text-black' :
+                                                            'bg-gray-300 text-black'
+                                                        }`}>{tx.item_status.replace('_', ' ')}
+                                                        </span>
+                                                    )}
                                                     <span className={`inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border-[1.5px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
                                                         tx.status === 'completed' ? 'bg-[#90FFB1] text-black' : 
                                                         tx.status === 'review_hold' ? 'bg-[#C590FF] text-black' : 
@@ -133,7 +152,8 @@ export default function History({ auth, transactions }) {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                     {transactions.data.length === 0 && (
                                         <tr>
                                             <td colSpan="6" className="px-6 py-16 text-center">

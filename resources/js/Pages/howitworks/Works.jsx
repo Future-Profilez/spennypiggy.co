@@ -7,11 +7,18 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { 
-    FaSearch, FaHeart, FaUserPlus, 
-    FaMagic, FaShieldAlt, FaShareAlt,
-    FaRocket, FaBolt, FaCrown
-} from 'react-icons/fa';
-
+    SearchIcon, 
+    HeartIcon, 
+    UserPlusIcon, 
+    ShieldCheckIcon, 
+    ShareIcon,
+    RocketIcon, 
+    BoltIcon, 
+} from "@animateicons/react/lucide";
+import { 
+    Wand2, 
+    Crown 
+} from "lucide-react";
 import vishitimg from "../../../assets/img/vishitimg01.png";
 import giftbasketimg from "../../../assets/img/giftbasketimg01.png";
 import fundbasketimg from "../../../assets/img/fundbasketimg01.png";
@@ -72,7 +79,7 @@ export default function Works(props) {
             title: "Seek & Search",
             description: "Find your favorite creators. Browse their profile, shop items, and check out their latest wishes.",
             img: vishitimg,
-            icon: FaSearch,
+            icon: SearchIcon,
             color: "pink-500",
             shadowColor: "#EC4899"
         },
@@ -81,7 +88,7 @@ export default function Works(props) {
             title: "Support Them",
             description: "Join a membership, purchase a wish, or simply send some love to fill their Piggy Bank.",
             img: giftbasketimg,
-            icon: FaHeart,
+            icon: HeartIcon,
             color: "yellow-400",
             shadowColor: "#FACC15"
         },
@@ -90,7 +97,7 @@ export default function Works(props) {
             title: "Create Account",
             description: "Sign up to track your exclusive content and custom orders. Quick and easy checkout!",
             img: fundbasketimg,
-            icon: FaUserPlus,
+            icon: UserPlusIcon,
             color: "purple-500",
             shadowColor: "#A855F7"
         }
@@ -102,7 +109,7 @@ export default function Works(props) {
             title: "Set Up Page",
             description: "Craft your unique space. Publish a reward-based Wishlist or offer tailored memberships.",
             img: yourwishlist,
-            icon: FaMagic,
+            icon: Wand2,
             color: "pink-500",
             shadowColor: "#EC4899"
         },
@@ -111,7 +118,7 @@ export default function Works(props) {
             title: "Secure Payouts",
             description: "Connect our secure third-party payment processor and start funding your fabulous lifestyle!",
             img: setuppaymentimg,
-            icon: FaShieldAlt,
+            icon: ShieldCheckIcon,
             color: "yellow-400",
             shadowColor: "#FACC15"
         },
@@ -120,7 +127,7 @@ export default function Works(props) {
             title: "Share & Grow",
             description: "Update your fans, share on socials, and watch the support roll in with auto-tweets.",
             img: sharlinkimg,
-            icon: FaShareAlt,
+            icon: ShareIcon,
             color: "purple-500",
             shadowColor: "#A855F7"
         }

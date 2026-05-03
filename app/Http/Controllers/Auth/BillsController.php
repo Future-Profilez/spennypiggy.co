@@ -85,7 +85,7 @@ class BillsController extends Controller
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
 
         $createPriceId = $breakdown['total_supporter_pays'];
-        $taxAmount = $breakdown['application_fee'];
+        $taxAmount = $breakdown['total_fees'];
 
         $bill = new Bills();
         $bill->user_id = Auth::id();
@@ -221,12 +221,51 @@ class BillsController extends Controller
             Log::info("old_period: $old_periods");
             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-            if ($old_price != $price || $old_periods != $request->period) {
-                Log::info("request->period: $request->period");
+            // Check if product exists in Stripe
+            $stripeProduct = null;
+            try {
+                $stripeProduct = $stripe->products->retrieve($bill->product_id, [], ['stripe_account' => $user->account_id]);
+            } catch (Exception $e) {
+                Log::warning("Stripe Product not found for bill {$bill->uuid}, will attempt to recreate. Error: " . $e->getMessage());
+            }
 
-                // Get currency metadata to handle zero-decimal currencies properly
-                $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
-                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+            // Get currency metadata to handle zero-decimal currencies properly
+            $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+            $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
+            if (!$stripeProduct) {
+                // Recreate the product if it's missing from Stripe
+                $productPayload = [
+                    "name"  => "Bill: {$bill->name} (Total value including all fees)",
+                    "images" => [$bill->perma_link],
+                    "default_price_data"    => [
+                        "currency"  => $currency,
+                        "unit_amount_decimal"   => round($totalAmount * $multiplier, 2, PHP_ROUND_HALF_UP),
+                        'recurring' => [
+                            'interval'  =>  StripeControl::$periods[$request->period],
+                            'interval_count'    =>  1
+                        ]
+                    ],
+                    "url"   =>  env('APP_URL') . '/' . $user->username,
+                    'metadata' => [
+                        'bill_name' => $bill->name,
+                        'creator_id' => $user->id,
+                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                        'total_charge_amount' => (string)($totalAmount * 100),
+                    ]
+                ];
+
+                $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
+                
+                $bill->update([
+                    'product_id' => $stripeProduct->id,
+                    'price_id' => $stripeProduct->default_price,
+                    'approved' => 0,
+                ]);
+
+                Log::info("Recreated Stripe Product for bill {$bill->uuid}: " . $stripeProduct->id);
+            } else if ($old_price != $price || $old_periods != $request->period) {
+                Log::info("request->period: $request->period");
 
                 $newPrice = $stripe->prices->create([
                     'unit_amount_decimal' => (string) round($totalAmount * $multiplier),
@@ -266,6 +305,20 @@ class BillsController extends Controller
                     'price_id' => $newPrice->id,
                     'product_id' => $product->id,
                     'approved' => 0,
+                ]);
+            } else {
+                // Only name or metadata might have changed
+                $stripe->products->update($bill->product_id, [
+                    'name' => "Bill: {$bill->name} (Total value including all fees)",
+                    'images' => [$bill->perma_link],
+                    'metadata' => [
+                        'bill_name' => $bill->name,
+                        'creator_id' => $user->id,
+                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                        'total_charge_amount' => (string)($totalAmount * 100),
+                    ]
+                ], [
+                    'stripe_account' => $user->account_id
                 ]);
             }
 
@@ -479,8 +532,9 @@ class BillsController extends Controller
                 'guest_email'    => $request->email,
                 'currency'       => $chargeCurrency, // Force Creator's Currency
                 'amount'         => $bill->price,
-                'tax'            => $totalTax,
-                'vat_tax_amount' => $feesAsVat,
+                'total_paid'     => $finalTotalAmount,
+                'tax'            => $breakdown['total_fees'],
+                'vat_tax_amount' => $bill->price * $vatPercent / 100, // Store actual VAT
                 'recurring_for'  => $reccure ?? null,
                 'recurring_type' => $bill->period,
                 'message'        => $request->message ?? null,
@@ -800,6 +854,15 @@ class BillsController extends Controller
                 $userPayment->to_user_id = $bill_pay->bill->user_id;
                 $userPayment->product_type = 'bill';
                 $userPayment->amount = $bill_pay->amount;
+
+                // Ensure total_paid is updated in BillPayment if missing
+                if (!$bill_pay->total_paid || $bill_pay->total_paid <= 0) {
+                    $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+                    $bill_pay->total_paid = (float) ($session->amount_total / $multiplier);
+                    $bill_pay->save();
+                }
+
+                $userPayment->total_paid = $bill_pay->total_paid;
                 $userPayment->currency = $bill_pay->currency;
                 $userPayment->payment_method = 'stripe';
                 $userPayment->payment_details = json_encode($session, true);
@@ -819,7 +882,9 @@ class BillsController extends Controller
                     $billBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'));
                     $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
                     $stripeFee = $billBreakdown['stripe_fee'];
-                    $gross = $billBreakdown['total_supporter_pays'];
+                    $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0 
+                        ? (float) $bill_pay->total_paid 
+                        : $billBreakdown['total_supporter_pays'];
                     $creatorAmount = $amount;
 
                     FinancialTransaction::updateOrCreate(

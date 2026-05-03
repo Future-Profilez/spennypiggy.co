@@ -211,6 +211,150 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                                     </div>
                                 </li>
 
+                                {/* Wish Items */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.wish_items.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Wish Items (Add/Edit/Delete)</p>
+                                                <p className="text-sm text-gray-500">{results.wish_items.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.wish_items.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.wish_items.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Bills */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.bills.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Bills (Add/Edit/Delete)</p>
+                                                <p className="text-sm text-gray-500">{results.bills.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.bills.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.bills.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Memberships */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.memberships.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Memberships (Add/Edit/Delete)</p>
+                                                <p className="text-sm text-gray-500">{results.memberships.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.memberships.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.memberships.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Shop Items */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.shop_items.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Shop Items (Add/Edit/Delete)</p>
+                                                <p className="text-sm text-gray-500">{results.shop_items.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.shop_items.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.shop_items.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Tasks */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.tasks.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Tasks (Add/Edit/Delete)</p>
+                                                <p className="text-sm text-gray-500">{results.tasks.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.tasks.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.tasks.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Cart Flow */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.cart_flow.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Add to Cart Flow</p>
+                                                <p className="text-sm text-gray-500">{results.cart_flow.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.cart_flow.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.cart_flow.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Social Flow */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.social_flow.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Social Flow (Follow/Unfollow)</p>
+                                                <p className="text-sm text-gray-500">{results.social_flow.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.social_flow.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.social_flow.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Profile Update */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.profile_update.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Profile Management (Update Bio/Name/Media)</p>
+                                                <p className="text-sm text-gray-500">{results.profile_update.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.profile_update.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.profile_update.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
+                                {/* Search Engine */}
+                                <li className="px-6 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            {getStatusIcon(results.search_engine.status)}
+                                            <div className="ml-3">
+                                                <p className="text-sm font-medium text-gray-900">Platform Search Engine</p>
+                                                <p className="text-sm text-gray-500">{results.search_engine.message}</p>
+                                            </div>
+                                        </div>
+                                        {results.search_engine.time_ms && (
+                                            <div className="text-sm text-gray-500">{results.search_engine.time_ms}ms</div>
+                                        )}
+                                    </div>
+                                </li>
+
                                 {/* Stripe ID Flow */}
                                 <li className="px-6 py-4">
                                     <div className="flex items-center justify-between">

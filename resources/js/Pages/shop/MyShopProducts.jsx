@@ -2,7 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {Fragment, useState, useEffect, useRef} from "react";
 import axios from 'axios';
 import { Menu, Transition } from '@headlessui/react'
-import { HiDotsVertical } from "react-icons/hi";
+import { EllipsisVerticalIcon } from "@animateicons/react/lucide";
 import toast from 'react-hot-toast';
 import AddItem from './AddItem';
 import LoadingScreen from '@/includes/LoadingScreen';
@@ -57,7 +57,13 @@ export default function MyShopProducts({lists, loading, update}) {
          {loading ? <LoadingScreen /> : 
             <>
             {lists && lists.length ? lists.map((s, i)=>{
-               return <div className='mt-2 bg-white p-4 rounded-[30px] ' > 
+               const isDeactivated = Number(s?.status) === 0;
+               return <div className={`mt-2 bg-white p-4 rounded-[30px] relative ${isDeactivated ? 'opacity-60 grayscale' : ''}`} > 
+                  {isDeactivated && (
+                     <div className="absolute top-2 right-2 bg-gray-800/80 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
+                        Deactivated
+                     </div>
+                  )}
                   <div className='shop-item flex justify-between w-full items-center ' >
                      <div className='shop-item-user flex  items-center max-w-[40%] min-w-[40%] ' >
                         <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-img w-16 h-16  min-w-16' >
@@ -77,7 +83,7 @@ export default function MyShopProducts({lists, loading, update}) {
                         </Link>
                         <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-text pl-3 flex flex-col' >
                            <div className='flex items-center gap-2'>
-                              <h2 className='text-md font-bold line-clamp-2'>{s.name}</h2>
+                              <h2 className='text-md font-bold line-clamp-1'>{s.name}</h2>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${s.type === 'physical' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                                  {s.type === 'physical' ? 'Physical' : 'Digital'}
                               </span>
@@ -110,7 +116,7 @@ export default function MyShopProducts({lists, loading, update}) {
                         <Menu as="div" className="relative inline-block text-left">
                            <div>
                               <Menu.Button className="inline-flex w-full justify-center rounded-[30px]  px-3 py-2 text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
-                                 <HiDotsVertical size='1.5rem' color="#000" />
+                                 <EllipsisVerticalIcon size={24} color="#000" />
                               </Menu.Button>
                            </div>
                            <Transition

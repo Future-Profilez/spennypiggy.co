@@ -31,6 +31,7 @@ class IntercomService
         }
 
         $secret = config('services.intercom.identity_secret');
+        
         $userId = (string) $user->id;
         $userHash = $secret ? hash_hmac('sha256', $userId, $secret) : null;
 

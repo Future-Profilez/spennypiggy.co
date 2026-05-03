@@ -476,7 +476,26 @@ class ShopsController extends Controller
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                if ($shop->type != 'physical') {
+                // Check if product exists in Stripe
+                $stripeProduct = null;
+                try {
+                    $stripeProduct = $stripe->products->retrieve($shop->stripe_product_id, [], ['stripe_account' => $user->account_id]);
+                } catch (Exception $e) {
+                    Log::warning("Stripe Product not found for shop item {$shop->uuid}, will attempt to recreate. Error: " . $e->getMessage());
+                }
+
+                if (!$stripeProduct) {
+                    // Recreate the product if it's missing from Stripe
+                    $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
+                    
+                    $shop->update([
+                        'stripe_product_id' => $stripeProduct->id,
+                        'price_id' => $stripeProduct->default_price,
+                        'approved' => 0,
+                    ]);
+
+                    Log::info("Recreated Stripe Product for shop item {$shop->uuid}: " . $stripeProduct->id);
+                } else if ($shop->type != 'physical') {
                     if ($old_price == $shop->price) {
                         $stripe_client = $stripe->products->update($shop->stripe_product_id, [
                             'name' => "Total value of item including all fees",
@@ -559,10 +578,19 @@ class ShopsController extends Controller
 
     public function singleShopList($_slug, $uuid, $session_id = null)
     {
-        $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_varients', 'shop_shipping_info'])->first();
+        $shopQuery = Shop::where('uuid', $uuid)->with(['user', 'shop_varients', 'shop_shipping_info']);
+        
+        $shop = $shopQuery->first();
 
         if (!$shop) {
             abort(404);
+        }
+        
+        // Hide from public if not approved or deactivated, unless owner is viewing
+        if (!Auth::check() || Auth::id() !== $shop->user_id) {
+            if ($shop->approved != 1 || $shop->status != 1) {
+                abort(404);
+            }
         }
 
         $opened = null;
@@ -906,8 +934,9 @@ class ShopsController extends Controller
             }
 
             // Platform fee (17%), compliance (2%), and £1 admin fee are all accounted for
-            // inside calculateStripeDirectChargeFlow — do NOT add an extra shop_tax here.
-            $taxAmount = 0; // No additional shop tax; kept as variable for ShopPayment record compatibility
+            // inside calculateStripeDirectChargeFlow.
+            // We'll store the total fees (Platform + Stripe) in tax_amount for the record.
+            $taxAmount = $breakdown['total_fees'] ?? 0;
 
             // Add VAT if applicable
             $vatAmount = 0;
@@ -941,6 +970,7 @@ class ShopsController extends Controller
             // Use new gross-up flow with the full price the creator expects to receive
             $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $chargeCurrency, $reserveRate);
             $applicationFeeAmount = $breakdown['application_fee'] ?? 0;
+            $taxAmount = $breakdown['total_fees'] ?? 0; // Update with accurate breakdown fees
 
             $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
             if ($guestRestriction) {
@@ -970,6 +1000,7 @@ class ShopsController extends Controller
 
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
+                'total_paid' => $breakdown['total_supporter_pays'] ?? 0,
                 'tax_amount' => $taxAmount,
                 'vat_tax_amount' => $vatAmount,
                 'shipping_amount' => $shipping_price,
@@ -1137,12 +1168,16 @@ class ShopsController extends Controller
                     $amount = (float) $stripeid->amount;
                     $shippingAmount = (float) ($stripeid->shipping_amount ?? 0);
                     $vat = (float) ($stripeid->vat_tax_amount ?? 0);
-                    if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
-                        $vat = round((($amount + $shippingAmount) * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
-                    }
-                    $platformFee = (float) ($stripeid->tax_amount ?? 0);
-                    $stripeFee = 0;
-                    $gross = $amount + $shippingAmount + $vat + $platformFee + $stripeFee;
+                    
+                    // Recalculate breakdown to get accurate split for FinancialTransaction
+                    $priceToGrossUp = $amount + $shippingAmount + $vat;
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($priceToGrossUp, $stripeid->currency);
+                    
+                    $platformFee = $breakdown['application_fee'];
+                    $stripeFee = $breakdown['stripe_fee'];
+                    $gross = $stripeid->total_paid && $stripeid->total_paid > 0 
+                        ? (float) $stripeid->total_paid 
+                        : $breakdown['total_supporter_pays'];
                     $creatorAmount = $amount + $shippingAmount;
 
                     \App\Models\FinancialTransaction::updateOrCreate(
@@ -1172,12 +1207,12 @@ class ShopsController extends Controller
                 $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
 
                 $message = $stripeid->message;
-                // Calculate creator net amount using the SAME logic as buyShopItem
-                $listedPriceToGrossUp = $stripeid->amount + $stripeid->tax_amount + $stripeid->vat_tax_amount + ($stripeid->shipping_amount ?? 0);
+                // Calculate creator net amount (what they receive)
+                $creatorNetAmountVal = $stripeid->amount + ($stripeid->shipping_amount ?? 0);
 
                 $currencyModel = Currency::where('ISO', strtoupper($stripeid->currency))->first();
                 $digits = $currencyModel && $currencyModel->ISOdigits == 0 ? 0 : 2;
-                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($listedPriceToGrossUp, $digits);
+                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($creatorNetAmountVal, $digits);
 
                 if ($stripeid->anonymous == 0) {
                     ShopBuyed::dispatch($stripeid, false, $creatorNetAmount);
@@ -1185,42 +1220,43 @@ class ShopsController extends Controller
                     ShopBuyed::dispatch($stripeid, true, $creatorNetAmount);
                 }
 
-                // Create deliverable record for shop item
+                // Create/ensure deliverable record for shop item
                 try {
-                    if (!\App\Models\Deliverable::where('session_id', $stripeid->session_id)->exists()) {
-                        \App\Models\Deliverable::create([
-                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
-                            'product_id' => $stripeid->shop->stripe_product_id ?? 'shop_' . $stripeid->shop->id,
-                            'price_id' => $stripeid->shop->price_id,
+                    \App\Models\Deliverable::updateOrCreate(
+                        [
+                            'session_id' => $stripeid->session_id,
+                            'product_type' => 'shop_item',
                             'item_id' => $stripeid->shop->id,
                             'creator_id' => $stripeid->shop->user_id,
+                        ],
+                        [
+                            'product_id' => $stripeid->shop->stripe_product_id ?? 'shop_' . $stripeid->shop->id,
+                            'price_id' => $stripeid->shop->price_id,
                             'gifter_id' => $stripeid->user_id,
-                            'session_id' => $stripeid->session_id,
                             'deliverable_type' => $stripeid->shop->type == 'physical' ? 'shipping' : 'digital_file',
-                            'product_type' => 'shop_item',
                             'transaction_amount' => $stripeid->amount,
                             'deliverable_url' => $stripeid->shop->reward_file_url,
-                            'customer_email' => $stripeid->email ?? ($stripeid->user->email ?? null),
-                            'customer_name' => $stripeid->name ?? ($stripeid->user->name ?? null),
+                            'customer_email' => $stripeid->email ?? ($stripeid->user?->email),
+                            'customer_name' => $stripeid->name ?? ($stripeid->user?->name),
                             'payment_status' => 'paid',
                             'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
                             'anonymous' => $stripeid->anonymous ?? false,
                             'message' => $stripeid->message,
                             'status' => $stripeid->shop->type == 'physical' ? 'pending' : 'delivered',
                             'delivered_at' => $stripeid->shop->type == 'physical' ? null : now(),
-                            'metadata' => json_encode([
+                            'metadata' => [
                                 'shop_item_id' => $stripeid->shop->id,
                                 'shop_item_name' => $stripeid->shop->name,
                                 'type' => $stripeid->shop->type,
                                 'amount' => $stripeid->amount,
                                 'currency' => $stripeid->currency,
                                 'creator_net_amount' => $creatorNetAmount
-                            ])
-                        ]);
-                        Log::info('ShopsController: Deliverable record created for shop item', ['shop_id' => $stripeid->shop->id]);
-                    }
+                            ],
+                        ]
+                    );
+                    Log::info('ShopsController: Deliverable record ensured for shop item', ['shop_id' => $stripeid->shop->id]);
                 } catch (\Exception $e) {
-                    Log::error('ShopsController: Failed to create deliverable record', ['error' => $e->getMessage()]);
+                    Log::error('ShopsController: Failed to ensure deliverable record', ['error' => $e->getMessage(), 'shop_id' => $stripeid->shop->id ?? null, 'session_id' => $stripeid->session_id ?? null]);
                 }
 
                 ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
@@ -1254,6 +1290,15 @@ class ShopsController extends Controller
                     $userPayment->to_user_id = $stripeid->shop->user_id;
                     $userPayment->product_type = 'shop';
                     $userPayment->amount = $stripeid->amount;
+
+                    // Ensure total_paid is updated in ShopPayment if missing
+                    if (!$stripeid->total_paid || $stripeid->total_paid <= 0) {
+                        $multiplier = Helpers::isZeroDecimalCurrency($stripeid->currency) ? 1 : 100;
+                        $stripeid->total_paid = (float) ($stripeid->amount_total); // amount_total in StripePaymentDetail is already divided by multiplier
+                        $stripeid->save();
+                    }
+
+                    $userPayment->total_paid = $stripeid->total_paid;
                     $userPayment->currency = $stripeid->currency;
                     $userPayment->payment_method = 'stripe';
                     $userPayment->payment_details = json_encode($stripeid->session_id, true);
@@ -1314,11 +1359,58 @@ class ShopsController extends Controller
             'expected_delivery_date' => 'nullable|date',
         ]);
 
-        $shopPayment = ShopPayment::where('uuid', $uuid)->firstOrFail();
+        $shopPayment = ShopPayment::where('uuid', $uuid)->with('shop')->firstOrFail();
+
+        if (!$shopPayment->shop || (int) $shopPayment->shop->user_id !== (int) Auth::id()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized.'
+            ], 403);
+        }
 
         $deliverable = Deliverable::where('session_id', $shopPayment->session_id)
+            ->where('product_type', 'shop_item')
+            ->where('item_id', $shopPayment->shop_id)
             ->where('creator_id', Auth::id())
-            ->firstOrFail();
+            ->first();
+
+        if (!$deliverable) {
+            try {
+                $deliverable = Deliverable::create([
+                    'product_id' => $shopPayment->shop->stripe_product_id ?? 'shop_' . $shopPayment->shop_id,
+                    'price_id' => $shopPayment->shop->price_id,
+                    'item_id' => $shopPayment->shop_id,
+                    'creator_id' => $shopPayment->shop->user_id,
+                    'gifter_id' => $shopPayment->user_id,
+                    'session_id' => $shopPayment->session_id,
+                    'deliverable_type' => $shopPayment->shop->type == 'physical' ? 'shipping' : 'digital_file',
+                    'product_type' => 'shop_item',
+                    'transaction_amount' => $shopPayment->amount,
+                    'deliverable_url' => $shopPayment->shop->reward_file_url,
+                    'customer_email' => $shopPayment->email ?? ($shopPayment->user?->email),
+                    'customer_name' => $shopPayment->name ?? ($shopPayment->user?->name),
+                    'payment_status' => $shopPayment->payment_status ?? 'paid',
+                    'payment_currency' => strtoupper($shopPayment->currency ?? 'GBP'),
+                    'anonymous' => $shopPayment->anonymous ?? false,
+                    'message' => $shopPayment->message,
+                    'status' => $shopPayment->shop->type == 'physical' ? 'pending' : 'delivered',
+                    'delivered_at' => $shopPayment->shop->type == 'physical' ? null : now(),
+                    'metadata' => [
+                        'shop_item_id' => $shopPayment->shop_id,
+                        'shop_item_name' => $shopPayment->shop->name ?? null,
+                        'type' => $shopPayment->shop->type ?? null,
+                        'amount' => $shopPayment->amount,
+                        'currency' => $shopPayment->currency,
+                    ],
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Fulfillment: Failed to create missing deliverable', ['error' => $e->getMessage(), 'shop_payment_uuid' => $uuid, 'session_id' => $shopPayment->session_id]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unable to update fulfillment because deliverable record is missing.'
+                ], 422);
+            }
+        }
 
         $updateData = [
             'status' => $request->status,
@@ -1381,6 +1473,79 @@ class ShopsController extends Controller
             'status' => true,
             'message' => 'Fulfillment status updated successfully.',
             'deliverable' => $deliverable
+        ]);
+    }
+
+    public function deactivateOrder(Request $request, $uuid)
+    {
+        $request->validate([
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $shopPayment = ShopPayment::where('uuid', $uuid)->with(['shop', 'user'])->firstOrFail();
+
+        if (!$shopPayment->shop || (int) $shopPayment->shop->user_id !== (int) Auth::id()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized.'
+            ], 403);
+        }
+
+        $deliverable = Deliverable::where('session_id', $shopPayment->session_id)
+            ->where('product_type', 'shop_item')
+            ->where('item_id', $shopPayment->shop_id)
+            ->where('creator_id', Auth::id())
+            ->first();
+
+        if (!$deliverable) {
+            try {
+                $deliverable = Deliverable::create([
+                    'product_id' => $shopPayment->shop->stripe_product_id ?? 'shop_' . $shopPayment->shop_id,
+                    'price_id' => $shopPayment->shop->price_id,
+                    'item_id' => $shopPayment->shop_id,
+                    'creator_id' => $shopPayment->shop->user_id,
+                    'gifter_id' => $shopPayment->user_id,
+                    'session_id' => $shopPayment->session_id,
+                    'deliverable_type' => $shopPayment->shop->type == 'physical' ? 'shipping' : 'digital_file',
+                    'product_type' => 'shop_item',
+                    'transaction_amount' => $shopPayment->amount,
+                    'deliverable_url' => $shopPayment->shop->reward_file_url,
+                    'customer_email' => $shopPayment->email ?? ($shopPayment->user?->email),
+                    'customer_name' => $shopPayment->name ?? ($shopPayment->user?->name),
+                    'payment_status' => $shopPayment->payment_status ?? 'paid',
+                    'payment_currency' => strtoupper($shopPayment->currency ?? 'GBP'),
+                    'anonymous' => $shopPayment->anonymous ?? false,
+                    'message' => $shopPayment->message,
+                    'status' => $shopPayment->shop->type == 'physical' ? 'pending' : 'delivered',
+                    'delivered_at' => $shopPayment->shop->type == 'physical' ? null : now(),
+                    'metadata' => [
+                        'shop_item_id' => $shopPayment->shop_id,
+                        'shop_item_name' => $shopPayment->shop->name ?? null,
+                        'type' => $shopPayment->shop->type ?? null,
+                        'amount' => $shopPayment->amount,
+                        'currency' => $shopPayment->currency,
+                    ],
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Shop order deactivation: failed to create missing deliverable', ['error' => $e->getMessage(), 'shop_payment_uuid' => $uuid, 'session_id' => $shopPayment->session_id]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unable to deactivate order.'
+                ], 422);
+            }
+        }
+
+        $deliverable->is_deactivated = true;
+        $deliverable->hidden_from_gifter = true;
+        $deliverable->deactivated_at = now();
+        $deliverable->deactivated_by = 'creator';
+        $deliverable->deactivated_reason = $request->reason;
+        $deliverable->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Order deactivated successfully.',
+            'deliverable' => $deliverable,
         ]);
     }
 
@@ -1459,16 +1624,23 @@ class ShopsController extends Controller
         if ($type === 'purchases') {
             $orders = ShopPayment::with('shop.user')
                 ->where('user_id', $user->id)
-                ->where('payment_status', 'paid')
+                ->whereIn('payment_status', ['paid', 'refunded'])
                 ->orderBy('id', 'desc')
                 ->get();
             
              // Map orders to format expected by frontend
             $formattedOrders = $orders->map(function ($order) {
-                $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)->first();
+                $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)
+                    ->where('product_type', 'shop_item')
+                    ->where('item_id', $order->shop_id)
+                    ->first();
+
+                if (($deliverable->hidden_from_gifter ?? false) === true) {
+                    return null;
+                }
                 // Determine delay status
                 $isDelayed = false;
-                if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered') {
+                if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
                     if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
                         $isDelayed = true;
                     }
@@ -1491,6 +1663,8 @@ class ShopsController extends Controller
                     'quantity' => $order->quantity,
                     'shipping_info' => $order->shipping_info,
                     'status' => $deliverable->status ?? 'pending',
+                    'payment_status' => $order->payment_status,
+                    'is_deactivated' => $deliverable->is_deactivated ?? false,
                     'is_delayed' => $isDelayed,
                     'tracking_id' => $deliverable->tracking_id ?? null,
                     'courier_name' => $deliverable->courier_name ?? null,
@@ -1501,6 +1675,8 @@ class ShopsController extends Controller
                     'message' => $order->message,
                 ];
             });
+
+            $formattedOrders = $formattedOrders->filter();
 
             return response()->json([
                 'status' => true,
@@ -1516,7 +1692,7 @@ class ShopsController extends Controller
             ->whereHas('shop', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
-            ->where('payment_status', 'paid')
+            ->whereIn('payment_status', ['paid', 'refunded'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -1526,11 +1702,14 @@ class ShopsController extends Controller
         // Map orders to format expected by frontend
         $formattedOrders = $orders->map(function ($order) {
             $buyer = User::find($order->user_id);
-            $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)->first();
+            $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)
+                ->where('product_type', 'shop_item')
+                ->where('item_id', $order->shop_id)
+                ->first();
             
             // Determine delay status
             $isDelayed = false;
-            if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered') {
+            if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
                 if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
                     $isDelayed = true;
                 }
@@ -1553,6 +1732,8 @@ class ShopsController extends Controller
                 'quantity' => $order->quantity,
                 'shipping_info' => $order->shipping_info,
                 'status' => $deliverable->status ?? 'pending',
+                'payment_status' => $order->payment_status,
+                'is_deactivated' => $deliverable->is_deactivated ?? false,
                 'is_delayed' => $isDelayed,
                 'tracking_id' => $deliverable->tracking_id ?? null,
                 'courier_name' => $deliverable->courier_name ?? null,

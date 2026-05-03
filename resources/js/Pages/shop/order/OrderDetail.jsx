@@ -29,6 +29,25 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
    const isCreator = auth?.user?.role == 1;
    const isPhysical = item?.shop?.type === 'physical';
 
+   const deactivateOrder = async () => {
+       if (!confirm('Deactivate this order? It will remain visible to you and admin, but it will be hidden from the buyer.')) return;
+       setLoading(true);
+       try {
+           const res = await axios.post(`/shop/order/${item.uuid}/deactivate`, {});
+           if (res.data.status) {
+               successAlert(res.data.message);
+               setClose(true);
+               setTimeout(() => {
+                   setClose(false);
+                   if (onSuccess) onSuccess();
+               }, 100);
+           }
+       } catch (err) {
+           errorAlert(err?.response?.data?.message || 'Failed to deactivate');
+       }
+       setLoading(false);
+   };
+
    const updateFulfillment = async () => {
        setLoading(true);
        try {
@@ -78,9 +97,13 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
             <div className='p-0' >
                <div className='flex justify-between items-start mb-4'>
                    <h2 className='mb-2 pe-5 font-bold text-xl'>{item.name} claimed {item.shop.name}.</h2>
-                   {isPhysical && (
+                   {(item.payment_status === 'refunded' || item.is_deactivated || isPhysical) && (
                        <div className="text-right">
-                           {item.status === 'delivered' ? (
+                           {item.payment_status === 'refunded' ? (
+                               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-gray-200 text-gray-700">Refunded</span>
+                           ) : item.is_deactivated ? (
+                               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-gray-200 text-gray-700">Deactivated</span>
+                           ) : item.status === 'delivered' ? (
                                <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">Completed</span>
                            ) : item.is_delayed ? (
                                <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-700">Delayed</span>
@@ -185,7 +208,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                   {item.message ? <p className='text-sm mt-2'>Message : {item.message || ""}</p> : ''}
                </div> : ''}
 
-               {isPhysical && isCreator && (
+               {isPhysical && isCreator && !item.is_deactivated && item.payment_status !== 'refunded' && (
                    <div className='border-t pt-4 mt-4'>
                        <h3 className='font-bold mb-3'>Fulfillment</h3>
                        <div className='grid gap-3'>
@@ -239,6 +262,18 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                                {loading ? 'Saving...' : 'Update Fulfillment'}
                            </button>
                        </div>
+                   </div>
+               )}
+
+               {isCreator && (
+                   <div className='border-t pt-4 mt-4'>
+                       <button
+                           onClick={deactivateOrder}
+                           disabled={loading || item.is_deactivated}
+                           className='w-full bg-gray-900 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-black disabled:opacity-50'
+                       >
+                           {item.is_deactivated ? 'Order Deactivated' : 'Deactivate Order'}
+                       </button>
                    </div>
                )}
 

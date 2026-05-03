@@ -25,7 +25,7 @@ export default function ProfileProduct({item}) {
        // Constants must match backend configuration (Helpers.php)
        const stripeFeeRate = 0.029;
        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-       const platformFeeRate = (platform_fee_percentage || 17) / 100; 
+       const platformFeeRate = (platform_fee_percentage || 20) / 100; 
        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
        const adminFee = adminFeeInCurrency(curr); 
        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
@@ -42,26 +42,21 @@ export default function ProfileProduct({item}) {
        }
    };
 
+   const isCreator = auth?.user?.id === item?.user_id;
+   const vatPercentage = item?.user?.vat_amount_percentage || 0;
+   const isDeactivated = Number(item?.status) === 0;
+
    // Get baseline shipping price for physical items
-   let shippingPrice = 0;
-   if (item.type === 'physical') {
-       const shippingRates = item.shop_shipping_info || [];
-       // Priority: "all" or "worldwide" (any case), otherwise first available
+   const shippingPrice = item?.type === 'physical' ? (() => {
+       const shippingRates = item?.shop_shipping_info || [];
        const baselineRate = shippingRates.find(s => 
            s.country?.toLowerCase() === 'all' || 
            s.country?.toLowerCase() === 'worldwide'
        ) || shippingRates[0];
-       
-       shippingPrice = parseFloat(baselineRate?.shipping_price || 0);
-   }
+       return parseFloat(baselineRate?.shipping_price || 0);
+   })() : 0;
 
-   const isCreator = auth?.user?.id === item?.user_id;
-   const isMember = item?.is_member === 1;
-   const vatPercentage = item?.user?.vat_amount_percentage || 0;
-
-   // Choose base price: use special_member_price if user is a member
-   const priceToUse = (isMember && item?.special_member_price) ? parseFloat(item.special_member_price) : parseFloat(item.price || 0);
-   const basePriceWithShipping = priceToUse + shippingPrice;
+   const basePriceWithShipping = parseFloat(item.price || 0) + shippingPrice;
 
    const slug = (inputString) => {
       return inputString
@@ -74,7 +69,12 @@ export default function ProfileProduct({item}) {
    const url = `/shop/item/${slug(item.name)}/${item.uuid}`;
 
   return (
-      <article className="max-w-sm w-full bg-white rounded-[30px]  overflow-hidden ">
+      <article className={`max-w-sm w-full bg-white rounded-[30px] overflow-hidden relative ${isDeactivated ? 'opacity-60 grayscale' : ''}`}>
+         {isDeactivated && isCreator && (
+            <div className="absolute top-2 right-2 bg-gray-800/80 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
+               Deactivated
+            </div>
+         )}
          <div>
             <Link href={url} >
                <img className="object-cover h-[130px] sm:h-[200px] w-full" src={item.perma_link} alt="Converse sneakers" />
@@ -98,23 +98,11 @@ export default function ProfileProduct({item}) {
             <div className="flex justify-between items-center">
                <h2 className='font-bold text-sm sm:text-xl' >
                   {isCreator ? (
-                     formatMultiPrice(priceToUse, item?.currency || 'GBP')
+                     formatMultiPrice(item.price, item?.currency || 'GBP')
                   ) : (
-                     isMember && item?.special_member_price ? (
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span>{formatMultiPrice(calculateTotalSupporterPays(basePriceWithShipping, item?.currency || 'GBP', vatPercentage), item?.currency || 'GBP')}</span>
-                                <span className="line-through text-gray-400 text-sm">
-                                    {formatMultiPrice(calculateTotalSupporterPays(parseFloat(item.price || 0) + shippingPrice, item?.currency || 'GBP', vatPercentage), item?.currency || 'GBP')}
-                                </span>
-                            </div>
-                            <span className="text-[10px] font-bold text-green-600 uppercase">Member Discount Applied</span>
-                        </div>
-                     ) : (
-                        formatMultiPrice(
-                           calculateTotalSupporterPays(basePriceWithShipping, item?.currency || 'GBP', vatPercentage),
-                           item?.currency || 'GBP'
-                        )
+                     formatMultiPrice(
+                        calculateTotalSupporterPays(basePriceWithShipping, item?.currency || 'GBP', vatPercentage),
+                        item?.currency || 'GBP'
                      )
                   ) || "FREE"}
                </h2>
@@ -124,9 +112,7 @@ export default function ProfileProduct({item}) {
             </div>
             {!isCreator && item.price > 0 && (
                <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                  {item.type === 'physical' 
-                    ? (shippingPrice > 0 ? "*Includes platform and payment processing fees and shipping" : "*Includes platform and payment processing fees. Free shipping.")
-                    : "*Includes platform and payment processing fees"}
+                  *Includes platform and payment processing fees{item?.type === 'physical' ? (shippingPrice > 0 ? " and shipping" : ". Free shipping") : ""}
                </span>
             )}
          </div>

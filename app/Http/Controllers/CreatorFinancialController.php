@@ -9,6 +9,7 @@ use App\Models\UkTaxSetting;
 use App\Services\FinancialService;
 use App\Services\Risk\PayoutService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Artisan;
@@ -53,6 +54,25 @@ class CreatorFinancialController extends Controller
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
+            ->where(function ($q) {
+                $q->where(function ($sq) {
+                    $sq->where('source_type', '!=', \App\Models\TaskPurchase::class)
+                       ->where('source_type', '!=', \App\Models\ShopPayment::class);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('task_purchases')
+                        ->whereColumn('task_purchases.id', 'financial_transactions.source_id')
+                        ->whereIn('task_purchases.status', ['completed', 'completed_accepted']);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('shop_payments')
+                        ->join('deliverables', 'deliverables.session_id', '=', 'shop_payments.session_id')
+                        ->whereColumn('shop_payments.id', 'financial_transactions.source_id')
+                        ->where('deliverables.status', 'delivered');
+                });
+            })
             ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id']);
 
         $monthlyStats = $incomeForAnalytics
@@ -105,6 +125,25 @@ class CreatorFinancialController extends Controller
         $allStatusTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
+            ->where(function ($q) {
+                $q->where(function ($sq) {
+                    $sq->where('source_type', '!=', \App\Models\TaskPurchase::class)
+                       ->where('source_type', '!=', \App\Models\ShopPayment::class);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('task_purchases')
+                        ->whereColumn('task_purchases.id', 'financial_transactions.source_id')
+                        ->whereIn('task_purchases.status', ['completed', 'completed_accepted']);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('shop_payments')
+                        ->join('deliverables', 'deliverables.session_id', '=', 'shop_payments.session_id')
+                        ->whereColumn('shop_payments.id', 'financial_transactions.source_id')
+                        ->where('deliverables.status', 'delivered');
+                });
+            })
             ->get(['status', 'net_amount', 'currency']);
 
         $statusBreakdown = $allStatusTx
@@ -119,10 +158,10 @@ class CreatorFinancialController extends Controller
             })
             ->values();
 
-        // Recent Transactions (Filtered by Tax Year) — all statuses
+        // Recent Transactions (Filtered by Tax Year) — only finalized statuses
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'pending', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('supporter:id,name,username,email')
             ->orderBy('transaction_date', 'desc')
@@ -144,6 +183,22 @@ class CreatorFinancialController extends Controller
                     'BillPayment' => 'Bill',
                     default => str_replace(['Payment', 'Purchase'], '', $base)
                 };
+
+                // Special handling for Task status display in ledger
+                if ($base === 'TaskPurchase') {
+                    $task = \App\Models\TaskPurchase::find($tx->source_id);
+                    if ($task) {
+                        $tx->item_status = 'task_' . ($task->status === 'paid' ? 'pending' : $task->status);
+                    }
+                }
+
+                // Special handling for Shop status display in ledger
+                if ($base === 'ShopPayment') {
+                    $shop = \App\Models\ShopPayment::with('deliverable')->find($tx->source_id);
+                    if ($shop) {
+                        $tx->item_status = 'order_' . ($shop->deliverable->status ?? 'pending');
+                    }
+                }
 
                 return $tx;
             });
@@ -188,6 +243,25 @@ class CreatorFinancialController extends Controller
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
+            ->where(function ($q) {
+                $q->where(function ($sq) {
+                    $sq->where('source_type', '!=', \App\Models\TaskPurchase::class)
+                       ->where('source_type', '!=', \App\Models\ShopPayment::class);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('task_purchases')
+                        ->whereColumn('task_purchases.id', 'financial_transactions.source_id')
+                        ->whereIn('task_purchases.status', ['completed', 'completed_accepted']);
+                })
+                ->orWhereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('shop_payments')
+                        ->join('deliverables', 'deliverables.session_id', '=', 'shop_payments.session_id')
+                        ->whereColumn('shop_payments.id', 'financial_transactions.source_id')
+                        ->where('deliverables.status', 'delivered');
+                });
+            })
             ->with(['supporter:id,name,username,avatar'])
             ->get(['supporter_id', 'net_amount', 'currency', 'source_type', 'transaction_date']);
 
@@ -253,6 +327,7 @@ class CreatorFinancialController extends Controller
                     'currency' => $p->currency,
                     'status' => $p->status,
                     'arrival_date' => $p->arrival_date ? $p->arrival_date->format('d M Y') : null,
+                    'failure_reason' => $p->status === 'failed' ? ($p->failure_message ?: ($p->metadata['error'] ?? 'Declined by Stripe')) : null,
                 ];
             });
 
@@ -301,10 +376,10 @@ class CreatorFinancialController extends Controller
         $year = $request->input('year', $this->financialService->getCurrentTaxYear());
         $dates = $this->financialService->getTaxYearDates($year);
         
-        // Income (Filtered by Tax Year)
+        // Income (Filtered by Tax Year) — only finalized statuses
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'pending', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('supporter:id,name,username,email')
             ->orderBy('transaction_date', 'desc')
@@ -325,6 +400,23 @@ class CreatorFinancialController extends Controller
                     'BillPayment' => 'Bill',
                     default => str_replace(['Payment', 'Purchase'], '', $base)
                 };
+
+                // Special handling for Task status display in ledger
+                if ($base === 'TaskPurchase') {
+                    $task = \App\Models\TaskPurchase::find($tx->source_id);
+                    if ($task) {
+                        $tx->item_status = 'task_' . ($task->status === 'paid' ? 'pending' : $task->status);
+                    }
+                }
+
+                // Special handling for Shop status display in ledger
+                if ($base === 'ShopPayment') {
+                    $shop = \App\Models\ShopPayment::with('deliverable')->find($tx->source_id);
+                    if ($shop) {
+                        $tx->item_status = 'order_' . ($shop->deliverable->status ?? 'pending');
+                    }
+                }
+
                 return $tx;
             });
 
@@ -496,7 +588,7 @@ class CreatorFinancialController extends Controller
 
         $transactions = FinancialTransaction::where('user_id', $user->id)
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'pending', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->get()
             ->map(function ($transaction) {
                 return [

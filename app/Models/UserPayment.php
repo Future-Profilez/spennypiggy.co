@@ -14,6 +14,7 @@ class UserPayment extends Model
         'to_user_id',
         'product_type',
         'amount',
+        'total_paid',
         'currency',
         'payment_method',
         'payment_details',
@@ -31,7 +32,8 @@ class UserPayment extends Model
     protected $casts = [
         'from_user_id' => 'integer',
         'to_user_id' => 'integer',
-        'amount' => 'integer',
+        'amount' => 'float',
+        'total_paid' => 'float',
         'paid_at' => 'datetime',
     ];
     protected $table = 'user_payments';

@@ -1,28 +1,32 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { 
-    Wallet, 
-    TrendingUp, 
-    TrendingDown, 
+    WalletIcon, 
+    TrendingUpIcon, 
+    TrendingDownIcon, 
+    DownloadIcon, 
+    PlusIcon, 
+    TriangleAlertIcon, 
+    CircleCheckIcon,
+    ChartBarIcon,
+    UsersIcon,
+    ChevronRightIcon,
+    ChartPieIcon,
+    ShieldCheckIcon,
+} from "@animateicons/react/lucide";
+import { 
     Calculator, 
     FileText, 
-    Download, 
-    Plus, 
-    AlertTriangle, 
-    CheckCircle,
-    Building2,
-    Pencil,
-    
-    BarChart3,
-    Users,
-    ChevronRight,
-    PieChart,
-    ShieldCheck,
-    ScrollText,
+    Building2, 
+    ScrollText, 
     HelpCircle,
-    RefreshCw
-} from 'lucide-react';
+    Pencil,
+    RefreshCw,
+    ScrollText as ScrollTextIcon,
+    Calculator as CalculatorIcon,
+    FileText as FileTextIcon
+} from "lucide-react";
 import { 
     
     XAxis, 
@@ -36,6 +40,8 @@ import {
 
 export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, payout_history = [] }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const logExpenseIconRef = useRef(null);
+    const exportCsvIconRef = useRef(null);
 
     const { post: refreshPost, processing: refreshProcessing } = useForm({});
 
@@ -111,17 +117,21 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 </button>
                                 <Link 
                                     href={route('financial.expenses.index')} 
+                                    onMouseEnter={() => logExpenseIconRef.current?.startAnimation?.()}
+                                    onMouseLeave={() => logExpenseIconRef.current?.stopAnimation?.()}
                                     className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#F94F96] hover:bg-[#d83a7c] text-white px-4 py-2.5 rounded-xl md:rounded-[30px] font-medium transition-all shadow-lg shadow-pink-500/20 !text-[14px]  "
                                 >
-                                    <Plus size={18} />
+                                    <PlusIcon ref={logExpenseIconRef} size={18} />
                                     <span>Log Expense</span>
                                 </Link>
                                 <a 
                                     href={route('financial.export.csv')} 
                                     target="_blank"
+                                    onMouseEnter={() => exportCsvIconRef.current?.startAnimation?.()}
+                                    onMouseLeave={() => exportCsvIconRef.current?.stopAnimation?.()}
                                     className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl md:rounded-[30px] font-medium transition-all border border-gray-700 !text-[14px]  "
                                 >
-                                    <Download size={18} />
+                                    <DownloadIcon ref={exportCsvIconRef} size={18} />
                                     <span>Export CSV</span>
                                 </a>
                             </div>
@@ -132,11 +142,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-gray-600 transition-colors shadow-xl">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Wallet size={80} />
+                                <WalletIcon size={80} />
                             </div>
                             <div className="relative z-10">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                                    <TrendingUp size={14} className="text-green-400" />
+                                    <TrendingUpIcon size={14} className="text-green-400" />
                                     Gross Earnings ({tax_year})
                                 </div>
                                 <div className="text-2xl md:text-3xl font-bold text-white mt-2">{formatCurrency(summary.gross_income, displayCurrency)}</div>
@@ -146,7 +156,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
 
                         <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-[#05EFB8]/30 transition-colors shadow-xl">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <CheckCircle size={80} className="text-[#05EFB8]" />
+                                <CircleCheckIcon size={80} className="text-[#05EFB8]" />
                             </div>
                             <div className="relative z-10">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
@@ -160,7 +170,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
 
                         <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-red-500/30 transition-colors shadow-xl">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <TrendingDown size={80} className="text-red-500" />
+                                <TrendingDownIcon size={80} className="text-red-500" />
                             </div>
                             <div className="relative z-10">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
@@ -231,8 +241,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
 
                     <div className="bg-gradient-to-br flex gap-6 from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl">
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <ShieldCheck size={80} className="text-blue-500" />
-                        </div>
+                                <ShieldCheckIcon size={80} className="text-blue-500" />
+                            </div>
                         <div className="relative z-10 gap-6">
                             <div className='pb-6'>
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
@@ -299,7 +309,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-[#1e1e1e] p-6 rounded-[20px] md:rounded-[30px] border border-gray-800 shadow-xl">
                             <h3 className="text-white font-bold text-normal mb-4 flex items-center gap-2">
-                                <TrendingUp size={16} className="text-[#F94F96]" />
+                                <TrendingUpIcon size={16} className="text-[#F94F96]" />
                                 Tax Year Progress ({tax_year})
                             </h3>
                             <div className="space-y-2">
@@ -327,12 +337,12 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
 
                         <div className="bg-[#1e1e1e] p-6 rounded-[20px] md:rounded-[30px] border border-gray-800 shadow-xl">
                             <h3 className="text-white font-bold text-normal mb-4 flex items-center gap-2">
-                                <AlertTriangle size={16} className="text-yellow-500" />
+                                <TriangleAlertIcon size={16} className="text-yellow-500" />
                                 Financial Health Tip
                             </h3>
                             <div className="flex items-start gap-4">
                                 <div className="bg-yellow-500/10 p-3 rounded-2xl">
-                                    <Calculator size={24} className="text-yellow-500" />
+                                    <CalculatorIcon size={24} className="text-yellow-500" />
                                 </div>
                                 <div>
                                     <p className="text-gray-300 text-normal leading-relaxed">
@@ -354,7 +364,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 p-6 shadow-xl">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                        <BarChart3 className="text-[#F94F96]" size={20} />
+                                        <ChartBarIcon className="text-[#F94F96]" size={20} />
                                         Earnings Trend
                                     </h2>
                                     <span className="text-xs text-gray-500 font-medium bg-gray-800 px-3 py-1 rounded-full">{tax_year}</span>
@@ -386,7 +396,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800  shadow-xl">
                                 <div className="flex justify-between p-6 items-center ">
                                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                        <Users className="text-[#05EFB8]" size={20} />
+                                        <UsersIcon className="text-[#05EFB8]" size={20} />
                                         Top Supporters
                                     </h2>
                                 </div>
@@ -440,7 +450,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 overflow-hidden shadow-xl mb-8">
                                 <div className="p-6 border-b border-gray-800 flex justify-between items-center">
                                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                        <Wallet className="text-green-400" size={20} />
+                                        <WalletIcon className="text-green-400" size={20} />
                                         Payout History
                                     </h2>
                                 </div>
@@ -465,7 +475,15 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                             {formatCurrency(p.amount, p.currency)}
                                                         </td>
                                                         <td className="px-6 py-4 text-[14px] text-gray-400">
-                                                            {p.arrival_date || 'Processing…'}
+                                                            {p.status === 'failed' ? (
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-red-500 font-bold text-[11px] italic">
+                                                                        {p.failure_reason || 'Declined by Stripe'}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                p.arrival_date || 'Processing…'
+                                                            )}
                                                         </td>
                                                         <td className="px-6 py-4 text-sm text-right">
                                                             <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
@@ -495,11 +513,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 overflow-hidden shadow-xl">
                                 <div className="p-6 border-b border-gray-800 flex justify-between items-center">
                                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                        <FileText className="text-gray-400" size={20} />
+                                        <FileTextIcon className="text-gray-400" size={20} />
                                         Ledger History ({tax_year})
                                     </h2>
                                     <Link href={route('financial.history', { year: tax_year?.split('-')[0] })} className="text-xs text-[#F94F96] hover:text-[#d83a7c] font-bold uppercase tracking-wider flex items-center gap-1 group">
-                                        Full History <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        Full History <ChevronRightIcon size={14} className="group-hover:translate-x-1 transition-transform" />
                                     </Link>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -514,10 +532,15 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-800">
-                                            {recent_transactions.map((tx) => (
-                                                <tr key={tx.uuid} className="hover:bg-white/5 transition-colors">
+                                            {recent_transactions.map((tx) => {
+                                                const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending'));
+                                                return (
+                                                <tr key={tx.uuid} className={`hover:bg-white/5 transition-colors ${isPending ? 'opacity-40 grayscale-[0.4]' : ''}`}>
                                                     <td className="px-6 py-4 text-[14px] text-gray-400 whitespace-nowrap">
-                                                        {new Date(tx.transaction_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                                        <div className="flex flex-col">
+                                                            <span>{new Date(tx.transaction_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                                                            <span className="text-[11px] text-gray-500 font-medium">{new Date(tx.transaction_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-sm">
                                                         {tx.supporter ? (
@@ -530,38 +553,52 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 text-sm">
-                                                        <div className="font-medium text-gray-200">{tx.description}</div>
+                                                        <div className="font-medium text-gray-200 line-clamp-2">{tx.description}</div>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <div className="text-[14px] text-gray-500 font-bold uppercase">
+                                                            <div className="text-[14px] text-gray-500 font-bold uppercase line-clamp-1">
                                                                 {tx.label || tx.source_type?.split('\\').pop().replace('Payment', '').replace('Purchase', '') || 'Manual'}
                                                             </div>
-                                                            {tx.reserve_amount > 0 && (
-                                                                <div className={`flex flex-col gap-0.5 px-1.5 py-1 rounded border ${
-                                                                    tx.reserve_status === 'released'
-                                                                        ? 'bg-green-500/5 border-green-500/20 text-green-500'
-                                                                        : 'bg-blue-500/5 border-blue-500/20 text-blue-400'
-                                                                }`}>
-                                                                    <span className="text-[10px] font-bold uppercase">
-                                                                        {tx.reserve_status === 'released' ? '✓ Reserve Settled' : `🔒 ${tx.reserve_percent}% Reserved`}
-                                                                    </span>
-                                                                    <span className="text-[10px] font-semibold">
-                                                                        {formatCurrency(tx.reserve_amount, tx.currency)} of your earnings
-                                                                    </span>
-                                                                </div>
-                                                            )}
+                                                            
                                                         </div>
+                                                            
                                                     </td>
                                                 <td className={`px-4 md:px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
                                                     {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? tx.net_amount : tx.gross_amount, tx.currency)}
+                                                        
+                                                        <p>{tx.reserve_amount > 0 && ['completed', 'review_hold'].includes(tx.status) && (
+                                                            <div className={`flex text-center mt-1 flex-col gap-0.5 px-1.5 py-1 rounded-xl border ${
+                                                                tx.reserve_status === 'released'
+                                                                    ? 'bg-green-500/5 border-green-500/20 text-green-500'
+                                                                    : 'bg-blue-500/5 border-blue-500/20 text-blue-400'
+                                                            }`}>
+                                                                <span className="text-[10px] font-bold uppercase">
+                                                                    {tx.reserve_status === 'released' ? '✓ Reserve Settled' : `🔒 ${tx.reserve_percent}% Reserved`}
+                                                                </span>
+                                                                <span className="text-[10px] font-semibold">
+                                                                    {formatCurrency(tx.reserve_amount, tx.currency)} of your earnings
+                                                                </span>
+                                                            </div>
+                                                        )}</p>
                                                 </td>
                                                     <td className="px-6 py-4 text-sm text-right">
                                                         <div className="flex flex-col items-end gap-1">
-                                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                                            {tx.item_status && (
+                                                                <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                                                    tx.item_status.endsWith('completed') || tx.item_status.endsWith('delivered') || tx.item_status.endsWith('accepted') ? 'bg-green-500/10 text-green-400' : 
+                                                                    tx.item_status.startsWith('task') ? 'bg-blue-500/10 text-blue-400' : 
+                                                                    tx.item_status.startsWith('order') ? 'bg-orange-500/10 text-orange-400' :
+                                                                    'bg-gray-500/10 text-gray-400'
+                                                                }`}>{tx.item_status.replace('_', ' ')}
+                                                                </span>
+                                                            )}
+                                                            <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
                                                                 tx.status === 'completed' ? 'bg-green-500/10 text-green-400' : 
                                                                 tx.status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' : 
                                                                 tx.status === 'disputed' ? 'bg-orange-500/10 text-orange-400' : 
                                                                 tx.status === 'refunded' ? 'bg-red-500/10 text-red-400' : 
                                                                 tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
+                                                                tx.status === 'task_pending' ? 'bg-blue-500/10 text-blue-400' : 
+                                                                tx.status === 'order_pending' ? 'bg-orange-500/10 text-orange-400' :
                                                                 'bg-gray-500/10 text-gray-400'
                                                             }`}>{tx.status?.replace('_', ' ')}
                                                             </span>
@@ -570,16 +607,16 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                                     href={route('financial.evidence-pack', { uuid: tx.uuid })} 
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="text-[10px] font-bold uppercase tracking-widest text-[#F94F96] hover:text-[#d83a7c] flex items-center gap-1 mt-1"
+                                                                    className="text-[10px] block flex whitespace-nowrap font-bold uppercase tracking-wider text-[#F94F96] hover:text-[#d83a7c] flex items-center   mt-1"
                                                                 >
-                                                                    <FileText size={10} />
                                                                     Evidence Pack
                                                                 </a>
                                                             )}
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            );
+                                        })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -647,7 +684,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             {/* Income Sources */}
                             <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 p-6 shadow-xl">
                                 <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                    <PieChart className="text-[#F94F96]" size={20} />
+                                    <ChartPieIcon className="text-[#F94F96]" size={20} />
                                     Income by Type
                                 </h2>
 
@@ -705,11 +742,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             {/* Tax & Financial Records */}
                             <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 p-6 shadow-xl relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                                    <ScrollText size={100} className="text-[#F94F96]" />
+                                    <ScrollTextIcon size={100} className="text-[#F94F96]" />
                                 </div>
                                 
                                 <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2 relative z-10">
-                                    <ShieldCheck className="text-[#05EFB8]" size={20} />
+                                    <ShieldCheckIcon className="text-[#05EFB8]" size={20} />
                                     Tax & Financial Records
                                 </h2>
                                 
@@ -743,7 +780,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             href={route('financial.statement')} 
                                             className="flex items-center justify-center gap-2 w-full bg-gray-700 hover:bg-[#F94F96] text-white py-2 rounded-lg text-xs font-bold transition-all"
                                         >
-                                            <Download size={14} /> Download Statement
+                                            <DownloadIcon size={14} /> Download Statement
                                         </Link>
                                     </div>
 
@@ -752,7 +789,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
                                                 <div className="flex items-center gap-1.5 mb-1">
-                                                    <CheckCircle size={12} className="text-[#05EFB8]" />
+                                                    <CircleCheckIcon size={12} className="text-[#05EFB8]" />
                                                     <span className="text-[14px] text-gray-500 uppercase font-bold tracking-wider">Proof of Income</span>
                                                 </div>
                                                 <h4 className="text-normal font-bold text-white group-hover:text-[#05EFB8] transition-colors">Verified Certificate</h4>
@@ -765,7 +802,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             href={route('financial.certificate')} 
                                             className="flex items-center justify-center gap-2 w-full bg-gray-700 hover:bg-[#05EFB8] text-white py-2 rounded-lg text-xs font-bold transition-all"
                                         >
-                                            <Download size={14} /> Download Certificate
+                                            <DownloadIcon size={14} /> Download Certificate
                                         </Link>
                                     </div>
 
@@ -774,7 +811,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
                                                 <div className="flex items-center gap-1.5 mb-1">
-                                                    <TrendingUp size={12} className="text-yellow-500" />
+                                                    <TrendingUpIcon size={12} className="text-yellow-500" />
                                                     <span className="text-[14px] text-gray-500 uppercase font-bold tracking-wider">Payout Status</span>
                                                 </div>
                                                 <h4 className="text-normal font-bold text-white group-hover:text-yellow-400 transition-colors">Transaction History</h4>
@@ -787,7 +824,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             href={route('financial.history')} 
                                             className="flex items-center justify-center gap-2 w-full bg-gray-700 hover:bg-yellow-500 text-white py-2 rounded-lg text-xs font-bold transition-all"
                                         >
-                                            <ChevronRight size={14} /> View Full History
+                                            <ChevronRightIcon size={14} /> View Full History
                                         </Link>
                                     </div>
                                 </div>

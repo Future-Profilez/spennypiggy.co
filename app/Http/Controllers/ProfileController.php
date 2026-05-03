@@ -76,8 +76,8 @@ class ProfileController extends Controller
 
     public function __construct(Google2FA $google2FA, UserProfileService $userProfileService)
     {
-        $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
-        $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
+        $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(config('services.uploadcare.secret'), 300));
+        $config = Configuration::create(config('services.uploadcare.public'), config('services.uploadcare.secret'))->setAuthUrlConfig($authUrlConfig);
         $this->uploadcareApi = new Api($config);
         $this->google2FA = $google2FA;
         $this->userProfileService = $userProfileService;
@@ -534,7 +534,7 @@ class ProfileController extends Controller
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
         ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
             'target' => $uuid,
         ]);
@@ -542,7 +542,7 @@ class ProfileController extends Controller
 
         $response = Http::withHeaders([
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
         ])->get("https://api.uploadcare.com/files/" . $uuid . "/?include=appdata");
 
         $data = $response->json();
@@ -1557,6 +1557,43 @@ class ProfileController extends Controller
                 return strtotime($e['created_at']) < strtotime($before);
             }));
         }
+        $isViewerGifter = Auth::id() === $gifter->id;
+        $events = array_map(function ($ev) use ($isViewerGifter) {
+            $modelClass = match ($ev['source'] ?? null) {
+                'stripe_payment_items' => \App\Models\StripePaymentItems::class,
+                'membership_payments' => \App\Models\MembershipPayment::class,
+                'bill_payments' => \App\Models\BillPayment::class,
+                'tip_goals_payments' => \App\Models\TipGoalsPayment::class,
+                'shop_payments' => \App\Models\ShopPayment::class,
+                'task_purchases' => \App\Models\TaskPurchase::class,
+                default => null,
+            };
+
+            if ($modelClass && isset($ev['source_id'])) {
+                $ft = \App\Models\FinancialTransaction::where('source_type', $modelClass)
+                    ->where('source_id', $ev['source_id'])
+                    ->first();
+
+                if ($ft) {
+                    $ev['amount'] = $isViewerGifter ? (float) $ft->gross_amount : (float) $ft->net_amount;
+                    $ev['creator_amount'] = (float) $ft->net_amount;
+                    
+                    $status = $ft->status;
+                    if ($isViewerGifter) {
+                        // Gifter only sees 'completed' or 'refunded'
+                        if ($status === 'refunded') {
+                            $ev['status'] = 'refunded';
+                        } elseif (in_array($status, ['completed', 'review_hold', 'disputed', 'pending'])) {
+                            $ev['status'] = 'completed';
+                        }
+                    } else {
+                        $ev['status'] = $status;
+                    }
+                }
+            }
+            return $ev;
+        }, $events);
+
         $sliced = array_slice($events, 0, $limit);
         $hasMore = count($events) > $limit;
         $nextBefore = $hasMore && !empty($sliced) ? end($sliced)['created_at'] : null;
@@ -1861,7 +1898,8 @@ class ProfileController extends Controller
         $before = $before ?: null;
 
         $query = \App\Models\FinancialTransaction::query()
-            ->where('type', 'income');
+            ->where('type', 'income')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded']);
 
         if ($tab === 'sent') {
             $query->where('supporter_id', $user->id);
@@ -1951,6 +1989,21 @@ class ProfileController extends Controller
 
             $sourceId = $source === 'financial_transactions' ? $tx->id : $tx->source_id;
 
+            $status = $tx->status;
+            $reserveAmount = (float) ($tx->reserve_amount ?? 0);
+
+            // Gifter view normalization
+            if ($tab === 'sent') {
+                $reserveAmount = 0; // Hide reserves from gifter
+                
+                // Gifter only sees 'completed' or 'refunded'
+                if ($status === 'refunded') {
+                    $status = 'refunded';
+                } elseif (in_array($status, ['completed', 'review_hold', 'disputed', 'pending'])) {
+                    $status = 'completed';
+                }
+            }
+
             $event = [
                 'uuid' => $tx->uuid,
                 'type' => $type,
@@ -1961,8 +2014,10 @@ class ProfileController extends Controller
                 'display_amount' => $displayAmount,
                 'currency' => strtolower($from),
                 'display_currency' => strtolower($displayCurrency),
-                'status' => $tx->status,
-                'is_success' => $tx->status === 'completed',
+                'status' => $status,
+                'reserve_status' => $tab === 'sent' ? 'none' : $tx->reserve_status,
+                'reserve_amount' => $reserveAmount,
+                'is_success' => $status === 'completed',
                 'created_at' => optional($tx->transaction_date)->format('Y-m-d H:i:s') ?? $tx->created_at->format('Y-m-d H:i:s'),
                 'creator_id' => $tx->user_id,
                 'gifter_id' => $tx->supporter_id,

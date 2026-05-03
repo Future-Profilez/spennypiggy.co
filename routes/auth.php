@@ -451,8 +451,10 @@ Route::middleware('auth')->group(function () {
                     }
 
                     // Get complete subscription history for the user
-                    $historyCollection = MonthlyCharge::where('user_id', $user->id)->where('status', '!=', 'unpaid')
-                        ->latest()
+                    // Sort by the effective start date DESC to show most recent at the top and trial at the bottom
+                    $historyCollection = MonthlyCharge::where('user_id', $user->id)
+                        ->where('status', '!=', 'unpaid')
+                        ->orderByRaw('COALESCE(current_start_subscription_date, current_start_trial_date) DESC')
                         ->get();
                     $subscription_history = $historyCollection->map(function ($charge) {
                         $fmt = function ($date) {
@@ -634,6 +636,7 @@ Route::middleware('auth')->group(function () {
 
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
             Route::post('mandatory-cancel/', [StripeController::class, 'cancelMandatorySubscription'])->name("mandatory.cancel");
+    Route::post('mandatory-resume/', [StripeController::class, 'resumeMandatorySubscription'])->name("mandatory.resume");
 
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
 
@@ -798,6 +801,7 @@ Route::prefix('shop')->group(function () {
         Route::post('/shipping-profile/save', [ShopsController::class, 'saveShippingProfile'])->name('shop.shipping-profile.save');
         Route::delete('/shipping-profile/{id}', [ShopsController::class, 'deleteShippingProfile'])->name('shop.shipping-profile.delete');
         Route::post('/fulfillment/{uuid}', [ShopsController::class, 'updateFulfillment'])->name('shop.fulfillment.update');
+        Route::post('/order/{uuid}/deactivate', [ShopsController::class, 'deactivateOrder'])->name('shop.order.deactivate');
     });
 });
 

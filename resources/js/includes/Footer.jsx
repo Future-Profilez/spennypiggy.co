@@ -2,7 +2,9 @@ import { Head, Link } from "@inertiajs/react";
 import { route } from 'ziggy-js';
 import { useEffect, useState } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
-import { FaTwitter, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa";
+import { TwitterIcon, InstagramIcon } from "@animateicons/react/lucide";
+import { Youtube } from "lucide-react";
+import { FaTiktok } from "react-icons/fa";
 import spennypiggy from "../../assets/img/logo.png";
 import risk from "../../assets/risk_intolerant_vanguard_sharing_mint.png";
 import FeatureSuggestionModal from "../Components/FeatureSuggestionModal";
@@ -10,49 +12,6 @@ import FeatureSuggestionModal from "../Components/FeatureSuggestionModal";
 export default function Footer(props) {
     const { auth } = props;
     const [showSuggestionModal, setShowSuggestionModal] = useState(false);
-
-    async function configIntercom() {
-      window.intercomSettings = {
-         api_base: "https://api-iam.intercom.io",
-         app_id: "xomg14o9",
-         custom_launcher_selector: ".livechat",
-      };
-      (function () {
-         var w = window;
-         var ic = w.Intercom;
-         if (typeof ic === "function") {
-            ic("reattach_activator");
-            ic("update", w.intercomSettings);
-         } else {
-            var d = document;
-            var i = function () {
-                  i.c(arguments);
-            };
-            i.q = [];
-            i.c = function (args) {
-                  i.q.push(args);
-            };
-            w.Intercom = i;
-            var l = function () {
-                  var s = d.createElement("script");
-                  s.type = "text/javascript";
-                  s.async = true;
-                  s.src =
-                     "https://widget.intercom.io/widget/xomg14o9";
-                  var x = d.getElementsByTagName("script")[0];
-                  x.parentNode.insertBefore(s, x);
-            };
-            if (document.readyState === "complete") {
-                  l();
-            } else if (w.attachEvent) {
-                  w.attachEvent("onload", l);
-            } else {
-                  w.addEventListener("load", l, false);
-            }
-         }
-      })();
-    }
-
 
     async function confgureGtag() {
         window.dataLayer = window.dataLayer || [];
@@ -64,10 +23,6 @@ export default function Footer(props) {
     }
 
 
-    useEffect(() => {
-        configIntercom();
-    }, [auth && auth?.name]);
-    
     useEffect(() => {
         confgureGtag();
     }, []);
@@ -112,10 +67,10 @@ export default function Footer(props) {
                             
                             <div className="flex flex-wrap gap-4 pt-4">
                                 {[
-                                    { icon: FaTwitter, href: "https://x.com/spennypiggy", color: "hover:bg-[#1DA1F2]" },
-                                    { icon: FaInstagram, href: "https://www.instagram.com/spennypiggy", color: "hover:bg-[#E4405F]" },
+                                    { icon: TwitterIcon, href: "https://x.com/spennypiggy", color: "hover:bg-[#1DA1F2]" },
+                                    { icon: InstagramIcon, href: "https://www.instagram.com/spennypiggy", color: "hover:bg-[#E4405F]" },
                                     { icon: FaTiktok, href: "https://www.tiktok.com/@spennypiggy", color: "hover:bg-[#000000] hover:border-white/20" },
-                                    { icon: FaYoutube, href: "https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ", color: "hover:bg-[#FF0000]" }
+                                    { icon: Youtube, href: "https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ", color: "hover:bg-[#FF0000]" }
                                 ].map((social, index) => (
                                     <a
                                         key={index}

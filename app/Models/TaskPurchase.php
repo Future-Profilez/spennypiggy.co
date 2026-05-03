@@ -39,6 +39,7 @@ class TaskPurchase extends Model
         'transfer_id',
         'refund_id',
         'amount',
+        'total_paid',
         'currency',
         'status',
         'payment_type',

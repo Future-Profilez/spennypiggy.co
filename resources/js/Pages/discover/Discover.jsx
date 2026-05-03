@@ -5,7 +5,12 @@ import TopBar from './components/TopBar';
 import FeaturedCarousel from './components/FeaturedCarousel';
 import ResultsGrid from './components/ResultsGrid';
 import debounce from 'lodash/debounce';
-import { RiFireLine, RiCheckboxCircleLine, RiGiftLine, RiMoneyPoundCircleLine } from 'react-icons/ri';
+import { 
+    FlameIcon, 
+    CircleCheckIcon, 
+    PoundSterlingIcon 
+} from "@animateicons/react/lucide";
+import { Gift } from "lucide-react";
 import IntroVideos from './IntrosVideos';
 import TopSupporters from '../leaderboard/TopSupporters';
 
@@ -242,7 +247,7 @@ export default function Discover(props) {
                                             title="Wishes Trending Now 🎁" 
                                             items={featuredWishes} 
                                             type="wish"
-                                            icon={<RiGiftLine />}
+                                            icon={<Gift />}
                                         />
                                         <div className="mb-8">
                                             <TopSupporters grid={true} />
@@ -259,20 +264,20 @@ export default function Discover(props) {
                                             title="Trending Creators 🔥" 
                                             items={featuredCreators} 
                                             type="creator"
-                                            icon={<RiFireLine />}
+                                            icon={<FlameIcon />}
                                         />
                                         <FeaturedCarousel 
                                             title="New & Verified 🆕" 
                                             items={newVerifiedCreators} 
                                             type="creator"
-                                            icon={<RiCheckboxCircleLine />}
+                                            icon={<CircleCheckIcon />}
                                         />
                                         
                                         <FeaturedCarousel 
                                             title="Top Earners This Week 💰" 
                                             items={topEarners} 
                                             type="creator"
-                                            icon={<RiMoneyPoundCircleLine />}
+                                            icon={<PoundSterlingIcon />}
                                         />
                                     </div>
                                 )}
@@ -282,7 +287,7 @@ export default function Discover(props) {
                                         title="Wishes Trending Now 🎁" 
                                         items={featuredWishes} 
                                         type="wish"
-                                        icon={<RiGiftLine />}
+                                        icon={<Gift />}
                                     />
                                 )}
 
@@ -291,7 +296,7 @@ export default function Discover(props) {
                                         title="Featured Bills" 
                                         items={featuredBills} 
                                         type="bill"
-                                        icon={<RiGiftLine />}
+                                        icon={<Gift />}
                                     />
                                 )}
 
@@ -300,7 +305,7 @@ export default function Discover(props) {
                                         title="Featured Memberships" 
                                         items={featuredMemberships} 
                                         type="membership"
-                                        icon={<RiGiftLine />}
+                                        icon={<Gift />}
                                     />
                                 )}
                             </>

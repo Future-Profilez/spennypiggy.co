@@ -70,6 +70,64 @@ class StripeController extends Controller
         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
     }
 
+    public function cancelMandatorySubscription(Request $request)
+    {
+        $user = Auth::user();
+        
+        // Find the latest active subscription for this user
+        $charge = MonthlyCharge::where('user_id', $user->id)
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+            ->latest()
+            ->first();
+
+        if (!$charge || !$charge->stripe_id) {
+            return back()->with('error', 'No active subscription found to cancel.');
+        }
+
+        try {
+            // Cancel at period end via Stripe
+            $subscription = StripeControl::cancelSubscription($charge->stripe_id, true);
+            
+            // Sync the change locally
+            app(\App\Services\UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
+
+            return back()->with('success', 'Auto-renewal has been cancelled. You will have access until ' . Carbon::createFromTimestamp($subscription->current_period_end)->format('d M Y'));
+        } catch (\Exception $e) {
+            Log::error("StripeController: Manual cancellation failed: " . $e->getMessage());
+            return back()->with('error', 'Failed to cancel subscription: ' . $e->getMessage());
+        }
+    }
+
+    public function resumeMandatorySubscription(Request $request)
+    {
+        $user = Auth::user();
+        
+        // Find the latest cancelled but active subscription for this user
+        $charge = MonthlyCharge::where('user_id', $user->id)
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
+            ->latest()
+            ->first();
+
+        if (!$charge || !$charge->stripe_id) {
+            return back()->with('error', 'No subscription found to resume.');
+        }
+
+        try {
+            $stripe = StripeControl::getClient();
+            $subscription = $stripe->subscriptions->update($charge->stripe_id, [
+                'cancel_at_period_end' => false,
+            ]);
+            
+            // Sync the change locally
+            app(\App\Services\UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
+
+            return back()->with('success', 'Auto-renewal has been re-enabled successfully!');
+        } catch (\Exception $e) {
+            Log::error("StripeController: Manual resume failed: " . $e->getMessage());
+            return back()->with('error', 'Failed to resume subscription: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Determine the appropriate service agreement type based on country
      * to handle cross-border payment restrictions
@@ -1373,10 +1431,13 @@ class StripeController extends Controller
                 $reserveRate = $metrics->reserve_percent ?? 0;
                 
                 foreach ($getdata as $dd) {
-                    $listedPrice = $dd->priceid != Null ? $dd->priceid : $dd->wish->amount;
+                    $basePrice = (float) $dd->amount;
+                    $vatPercent = (float) ($dd->owner->vat_amount_percentage ?? 0);
+                    $vatAmount = ($basePrice * $vatPercent) / 100;
+                    $listedPriceWithVat = $basePrice + $vatAmount;
                     
                     // Use new gross-up flow
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $dd->wish->currency ?? 'USD', $reserveRate);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $dd->wish->currency ?? 'USD', $reserveRate);
                     
                     $totalPrice = $breakdown['total_supporter_pays'];
                 $applicationFee = $breakdown['application_fee'];
@@ -1389,7 +1450,7 @@ class StripeController extends Controller
                             'name' => "Total value of item including all fees",
                             'description' => "Support payment for " . ($dd->wish->title ?? 'Wish Item'),
                         ],
-                        'unit_amount' => (int)($totalPrice * 100),
+                        'unit_amount' => (int)round($totalPrice * 100),
                     ],
                     'quantity' => $dd->quantity,
                 ];
@@ -1512,6 +1573,7 @@ class StripeController extends Controller
                     'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
+                    'total_paid' => (float)$dd->amount + (float)($dd->tax ?? 0),
                     'tax' => $dd->tax,
                     'anonymous' => $dd->anonymous ?? false,
                     'message' => $dd->message ?? null,
@@ -1618,10 +1680,13 @@ class StripeController extends Controller
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
                 foreach ($cart as $value) {
-                    $listedPrice = $value->amount; // This is the price from the cart
+                    $basePrice = (float) $value->amount;
+                    $vatPercent = (float) ($value->owner->vat_amount_percentage ?? 0);
+                    $vatAmount = ($basePrice * $vatPercent) / 100;
+                    $listedPriceWithVat = $basePrice + $vatAmount;
                     
                     // Use new gross-up flow
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $currency, $reserveRate);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $currency, $reserveRate);
                     
                     $totalPrice = $breakdown['total_supporter_pays'];
                     $applicationFee = $breakdown['application_fee'];
@@ -1634,7 +1699,7 @@ class StripeController extends Controller
                                 'name' => "Total value of item including all fees",
                                 'description' => "Support payment for " . ($value->wish->title ?? 'Wish Item'),
                             ],
-                            'unit_amount' => (int)($totalPrice * 100),
+                            'unit_amount' => (int)round($totalPrice * 100),
                         ],
                         'quantity' => $value->quantity,
                     ];
@@ -1737,6 +1802,7 @@ class StripeController extends Controller
                     'stripe_payment_detail_id' => $stripeid->id,
                     'wish_item_id' => $value->wish_item_id ?? null,
                     'amount' => $amount,
+                    'total_paid' => (float)$amount + (float)($tax ?? 0),
                     'tax' => $tax,
                     'anonymous' => $value->anonymous ?? false,
                     'message' => $value->message ?? null,
@@ -1927,6 +1993,12 @@ class StripeController extends Controller
                 }
             }
 
+            $vatPercent = $wish->user->vat_amount_percentage ?? 0;
+            $vatAmountCalculated = $price * $vatPercent / 100;
+            $priceWithVat = $price + $vatAmountCalculated;
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
+            $finalTotalAmount = $breakdown['total_supporter_pays'];
+
             $sub = WishItemSubscription::create([
                 'wish_item_id'   => $wish->id,
                 'user_id'        => Auth::id(),
@@ -1934,6 +2006,7 @@ class StripeController extends Controller
                 'guest_email'    => $request->email,
                 'currency'       => $wish->currency,
                 'amount'         => $wish->price,
+                'total_paid'     => $finalTotalAmount,
                 'tax'            => $totalTax,
                 'vat_tax_amount' => ceil($vat_percentage_amount),
                 'recurring_for'  => $reccure,
@@ -1965,13 +2038,6 @@ class StripeController extends Controller
 
             $basePrice = $price;
         
-            $vatPercent = $wish->user->vat_amount_percentage ?? 0;
-            $vatAmount = $basePrice * $vatPercent / 100;
-            $priceWithVat = $basePrice + $vatAmount;
-
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
-        
-            $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
             $creatorNet = $breakdown['net_to_creator'];
             $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
@@ -2391,6 +2457,15 @@ class StripeController extends Controller
                 $userPayment->to_user_id = $sub->wish_item->user_id;
                 $userPayment->product_type = 'wish item subscription';
                 $userPayment->amount = $sub->wish_item->price; // Use wish item price directly (no fees)
+
+                // Ensure total_paid is updated in WishItemSubscription if missing
+                if (!$sub->total_paid || $sub->total_paid <= 0) {
+                    $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+                    $sub->total_paid = (float) ($session->amount_total / $multiplier);
+                    $sub->save();
+                }
+
+                $userPayment->total_paid = $sub->total_paid;
                 $userPayment->currency = $sub->currency;
                 $userPayment->payment_method = 'stripe';
                 $userPayment->payment_details = json_encode($session, true);
@@ -2458,7 +2533,7 @@ class StripeController extends Controller
                         }
                         $stripeFee = $isZeroDecimal ? (float) $stripeFeeMinor : ((float) $stripeFeeMinor / 100);
                         
-                        $gross = $creatorAmount;
+                        $gross = $sub->total_paid && $sub->total_paid > 0 ? (float) $sub->total_paid : $creatorAmount;
                         $platformFee = $gross - $stripeFee - (float) $sub->amount - (float) $sub->vat_tax_amount;
                         if ($platformFee < 0) $platformFee = 0;
 
@@ -2515,7 +2590,9 @@ class StripeController extends Controller
     {
         try {
             // Create a proper StripePaymentDetail record that works with CheckoutMailToUser system
-            // Use wish item price only (no fees) to match what user expects to pay for the content
+            $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+            $totalPaid = (float) ($session->amount_total / $multiplier);
+
             $stripePayment = StripePaymentDetail::create([
                 'uuid' => Str::uuid(),
                 'session_id' => $subscription->session_id,
@@ -2523,7 +2600,7 @@ class StripeController extends Controller
                 'owner_id' => $subscription->wish_item->user_id,
                 'stripe_payment_intent_id' => $session->payment_intent ?? null,
                 'amount_subtotal' => $subscription->wish_item->price, // Use wish item price directly
-                'amount_total' => $subscription->wish_item->price, // Use wish item price directly (no fees)
+                'amount_total' => $totalPaid,
                 'currency' => $subscription->currency,
                 'payment_status' => $session->payment_status,
                 'guest_email' => $subscription->guest_email,
@@ -2546,6 +2623,7 @@ class StripeController extends Controller
                 'stripe_payment_detail_id' => $stripePayment->id,
                 'wish_item_id' => $subscription->wish_item->id,
                 'amount' => $subscription->wish_item->price, // Use wish item price directly
+                'total_paid' => $totalPaid,
                 'quantity' => 1,
                 'message' => $subscription->surprise_message,
                 'anonymous' => $subscription->anonymous ?? false
@@ -3024,34 +3102,6 @@ class StripeController extends Controller
         }
     }
 
-    public function cancelMandatorySubscription(Request $request)
-    {
-        $user = Auth::user();
-        
-        // Find the active subscription
-        $subscription = MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
-            ->latest()
-            ->first();
-
-        if (!$subscription || !$subscription->stripe_id) {
-            return back()->with('error', 'No active subscription found to cancel.');
-        }
-
-        try {
-            // Cancel at period end (disable auto-renewal)
-            StripeControl::cancelSubscription($subscription->stripe_id, true);
-            
-            // Sync the updated state immediately
-            $this->userProfileService->syncUserSubscription($user);
-            
-            return back()->with('success', 'Auto-renewal has been disabled. Your subscription will remain active until the end of the current period.');
-        } catch (\Exception $e) {
-            Log::error('Mandatory subscription cancellation failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
-            return back()->with('error', 'Failed to cancel auto-renewal. Please try again or contact support.');
-        }
-    }
-
     public function cancelSubs($uuid)
     {
         $subs = WishItemSubscription::where('uuid', $uuid)->first();
@@ -3252,7 +3302,7 @@ class StripeController extends Controller
                 'guest_email' => $request->email,
                 'currency' => $sourceCurrency,
                 'amount' => $basePrice,
-                'tax' => round($applicationFeeAmount, $precision, PHP_ROUND_HALF_UP),
+                'tax' => $breakdown['total_fees'],
                 'vat_amount' => round($vatAmount, $precision, PHP_ROUND_HALF_UP),
                 'total_paid' => $finalTotalAmount,
                 'message' => $request->message ?? null,
@@ -3550,6 +3600,7 @@ class StripeController extends Controller
                 $userPayment->to_user_id = $tip_pay->creator_id ?? null;
                 $userPayment->product_type = 'support payment';
                 $userPayment->amount = $tip_pay->amount;
+                $userPayment->total_paid = $tip_pay->total_paid;
                 $userPayment->currency = $tip_pay->currency;
                 $userPayment->payment_method = 'stripe';
                 $userPayment->payment_details = json_encode($session, true);
@@ -3667,10 +3718,24 @@ class StripeController extends Controller
                 }
 
                 if ($stripeSub->cancel_at_period_end) {
-                    // Cancelled but still in paid period — user has access, no need to resubscribe yet
-                    $endDate = \Carbon\Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
-                    return to_route('user.show', ['username' => $user->username])
-                        ->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
+                    // Cancelled but still in paid period — offer to resume
+                    try {
+                        $stripe = StripeControl::getClient();
+                        $resumedSub = $stripe->subscriptions->update($stripeSub->id, [
+                            'cancel_at_period_end' => false,
+                        ]);
+                        
+                        // Sync the change locally
+                        $this->userProfileService->syncMandatorySubscriptionStatus($resumedSub, 'manual_sync', $invoice, $user);
+
+                        return to_route('user.show', ['username' => $user->username])
+                            ->with('success', 'Your auto-renewal has been re-enabled successfully!');
+                    } catch (\Exception $e) {
+                        Log::warning("StripeController: Auto-resume failed in checkout flow: " . $e->getMessage());
+                        $endDate = \Carbon\Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
+                        return to_route('user.show', ['username' => $user->username])
+                            ->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
+                    }
                 }
 
                 if ($user->subscription_status >= 1) {

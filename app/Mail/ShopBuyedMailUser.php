@@ -39,12 +39,12 @@ class ShopBuyedMailUser extends Mailable
      */
     public function build()
     {
-        try {
-            $subject = "Thank You For Claiming Shop Item  " . $this->data->shop->name;
-            return $this->view('email.shop-buy-user')
-                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
-                ->subject($subject);
-        } catch (\Exception $e) {
-        }
+        $creatorName = $this->data->shop?->user?->name ?? 'a creator';
+        $itemName = $this->data->shop?->name ?? 'Shop Item';
+        $subject = "Purchase confirmed: {$creatorName}'s {$itemName}";
+
+        return $this->view('email.shop-buy-user')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject($subject);
     }
 }

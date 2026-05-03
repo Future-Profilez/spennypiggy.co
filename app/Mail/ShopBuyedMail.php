@@ -36,13 +36,12 @@ class ShopBuyedMail extends Mailable
      */
     public function build()
     {
-        try {
-            $name = $this->anon ? 'Anonymous user' : $this->data->name;
-            $subject = "$name just claimed shop item " . $this->data->shop->name;
-            return $this->view('email.shopbuy')
-                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
-                ->subject($subject);
-        } catch (\Exception $e) {
-        }
+        $name = $this->anon ? 'Anonymous user' : ($this->data->name ?? 'A customer');
+        $itemName = $this->data->shop?->name ?? 'Shop Item';
+        $subject = "{$name} purchased {$itemName}";
+
+        return $this->view('email.shopbuy')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject($subject);
     }
 }

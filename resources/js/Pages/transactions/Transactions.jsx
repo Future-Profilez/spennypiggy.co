@@ -5,10 +5,12 @@ import Nocontent from '@/includes/Nocontent';
 import axios from 'axios';
 import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
-import { FaTwitter } from 'react-icons/fa';
-import Modal from '@/Components/Modal';
-import { router } from '@inertiajs/react';
-import { ChevronLeft, Calendar, FileText, ExternalLink, Filter } from 'lucide-react';
+import { 
+  ChevronLeftIcon, 
+  ExternalLinkIcon, 
+  TwitterIcon
+} from "@animateicons/react/lucide";
+import { FileText, Filter, CalendarIcon } from "lucide-react";
 
 export default function Transactions(props) {
   const { auth, initial, display_currency, spend_summary } = props || {};
@@ -304,7 +306,7 @@ export default function Transactions(props) {
             {auth?.user?.role === 1 && (
               <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px] bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
-                  <FaTwitter size={20} className="text-black" />
+                  <TwitterIcon size={20} className="text-black" />
                   <span className="font-black text-black text-sm uppercase tracking-widest">Creator Feature: Announce on X</span>
                 </div>
                 <p className="text-gray-800 font-bold text-sm leading-relaxed">
@@ -420,7 +422,17 @@ export default function Transactions(props) {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-pink-400 text-black' : 'bg-white text-black'}`}>
-                              {e.category === 'sent' ? 'Support Payment' : 'Support Received'}
+                              {e.category === 'sent' 
+                                ? (e.type === 'gift_wish' ? 'Wish Gift' : 
+                                   e.type === 'gift_membership' ? 'Membership' : 
+                                   e.type === 'gift_bill' ? 'Bill' : 
+                                   e.type === 'gift_shop' ? 'Shop Order' : 
+                                   e.type === 'gift_task' ? 'Task' : 'Support Payment')
+                                : (e.type === 'gift_wish' ? 'Wish Received' : 
+                                   e.type === 'gift_membership' ? 'Membership Received' : 
+                                   e.type === 'gift_bill' ? 'Bill Received' : 
+                                   e.type === 'gift_shop' ? 'Shop Order' : 
+                                   e.type === 'gift_task' ? 'Task Received' : 'Support Received')}
                             </span>
                             <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-gray-200 text-black">
                                 {e.category === 'sent' ? 'SENT' : 'RECEIVED'}
@@ -431,11 +443,18 @@ export default function Transactions(props) {
                                   ? 'bg-green-300 text-black'
                                   : (e.status === 'initiated' || e.status === 'pending')
                                     ? 'bg-yellow-300 text-black'
-                                    : 'bg-red-300 text-black'
+                                    : (e.status === 'disputed' || e.status === 'refunded')
+                                      ? 'bg-red-500 text-white'
+                                      : 'bg-red-300 text-black'
                               }`}>
                                 {String(e.status).replaceAll('_', ' ')}
                               </span>
                             ) : null}
+                            {e?.category === 'received' && e?.reserve_status === 'held' && e?.status === 'completed' && Number(e?.reserve_amount || 0) > 0 && (
+                               <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-blue-400 text-white">
+                                 Reserved
+                               </span>
+                             )}
                             {isNew(e.created_at) ? (
                               <span className="px-2 py-0.5 rounded-md bg-yellow-300 border-2 border-black text-[9px] font-black text-black uppercase tracking-widest animate-pulse shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">New</span>
                             ) : null}
@@ -540,7 +559,7 @@ export default function Transactions(props) {
                               onClick={() => handleTwitterClick(e)}
                               className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
                               title="Share on X" >
-                              <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
+                              <TwitterIcon size={16} className="group-hover:scale-110 transition-transform" />
                             </button>
                           )}
                           {e.category === 'received' && e.uuid && !String(e.uuid).startsWith('exp-') && (

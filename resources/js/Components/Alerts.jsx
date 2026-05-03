@@ -1,4 +1,9 @@
 import { toast } from "react-hot-toast";
+import { 
+    CircleCheckIcon, 
+    TriangleAlertIcon, 
+    InfoIcon 
+} from "@animateicons/react/lucide";
 
 export const useAlerts = () => {
     const clearToasts = () => {
@@ -10,6 +15,7 @@ export const useAlerts = () => {
         toast.success(message, {
             duration,
             position,
+            icon: <CircleCheckIcon size={24} color="#22c55e" />,
         });
     };
 
@@ -18,6 +24,7 @@ export const useAlerts = () => {
         toast.error(message, {
             duration,
             position,
+            icon: <TriangleAlertIcon size={24} color="#ef4444" />,
         });
     };
 
@@ -27,6 +34,7 @@ export const useAlerts = () => {
             duration,
             position,
             className: "bg-yellow-800 text-white",
+            icon: <TriangleAlertIcon size={24} color="#facc15" />,
         });
     };
 
@@ -35,6 +43,7 @@ export const useAlerts = () => {
         toast(message, {
             duration,
             position,
+            icon: <InfoIcon size={24} color="#3b82f6" />,
         });
     };
 

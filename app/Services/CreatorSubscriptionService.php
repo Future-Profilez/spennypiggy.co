@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\Subscription;
@@ -37,6 +38,40 @@ class CreatorSubscriptionService
 
             // Status 0 = Expired, Status 3 = Inactive/Never Subscribed
             if ($subscriptionStatus === 0 || $subscriptionStatus === 3) {
+                // Attempt a throttled on-demand re-sync from Stripe.
+                // This prevents blocking supporter payments when local records are stale/missed webhooks.
+                try {
+                    $shouldAttemptSync = ($creator->stripe_id || $creator->email) &&
+                        Cache::add("creator_subscription_sync_attempt:{$creator->id}", true, now()->addMinutes(5));
+
+                    if ($shouldAttemptSync) {
+                        app(UserProfileService::class)->syncUserSubscription($creator);
+                        $creator->refresh();
+
+                        $subscriptionStatus = $creator->subscription_status;
+                        if ($subscriptionStatus === 1) {
+                            return [
+                                'eligible' => true,
+                                'status' => 'active_subscription',
+                                'message' => '✅ Subscription active',
+                                'subscription_status' => $subscriptionStatus
+                            ];
+                        }
+                        if ($subscriptionStatus === 2) {
+                            return [
+                                'eligible' => true,
+                                'status' => 'trial_active',
+                                'message' => '🌟 Trial period active',
+                                'subscription_status' => $subscriptionStatus
+                            ];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('CreatorSubscriptionService on-demand sync failed: ' . $e->getMessage(), [
+                        'creator_id' => $creator->id,
+                    ]);
+                }
+
                 return [
                     'eligible' => false,
                     'status' => $subscriptionStatus === 0 ? 'subscription_expired' : 'no_subscription',

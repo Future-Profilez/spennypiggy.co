@@ -38,6 +38,7 @@ use Stripe\Webhook;
 use App\Mail\TaskPurchasedMail;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TaskRefunded;
+use App\Mail\PaymentRefunded;
 use App\Services\UserProfileService;
 use App\Services\StripeMetadataService;
 use App\Services\Risk\RiskService;
@@ -860,6 +861,7 @@ class StripeWebhookController extends Controller
             'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
             'charge_id' => $chargeId,
             'amount' => $amount,
+            'total_paid' => (float) ($session->amount_total ?? 0) / $multiplier,
             'currency' => $currency,
             'status' => $initialStatus,
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
@@ -876,6 +878,27 @@ class StripeWebhookController extends Controller
         if ($slaHours > 0) {
             $purchase->sla_deadline = Carbon::now()->addHours($slaHours);
             $purchase->save();
+        }
+
+        // Record UserPayment
+        try {
+            $existingUserPayment = UserPayment::where('payment_details', json_encode($session->id, true))->exists();
+            if (!$existingUserPayment) {
+                UserPayment::create([
+                    'from_user_id' => $buyerId,
+                    'to_user_id' => $creatorId ?? $task->creator_id,
+                    'product_type' => 'task',
+                    'amount' => $amount,
+                    'total_paid' => $purchase->total_paid,
+                    'currency' => $currency,
+                    'payment_method' => 'stripe',
+                    'payment_details' => json_encode($session->id, true),
+                    'paid_at' => Carbon::now(),
+                    'status' => 'paid',
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('StripeWebhookController: Failed to record UserPayment for task', ['error' => $e->getMessage()]);
         }
 
         // Create Deliverable
@@ -928,9 +951,15 @@ class StripeWebhookController extends Controller
                 $creator = User::find($creatorId ?? $task->creator_id);
                 $amount = (float) $purchase->amount;
                 $vat = (float) ($purchase->vat_amount ?? 0);
-                $platformFee = (float) ($purchase->platform_fee ?? 0);
-                $stripeFee = 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
+                
+                $currency = strtoupper($purchase->currency ?? 'GBP');
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+                
+                $gross = $purchase->total_paid && $purchase->total_paid > 0 
+                    ? (float) $purchase->total_paid 
+                    : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
                 FinancialTransaction::updateOrCreate(
@@ -975,9 +1004,15 @@ class StripeWebhookController extends Controller
                 $creator = User::find($creatorId ?? $task->creator_id);
                 $amount = (float) $purchase->amount;
                 $vat = (float) ($purchase->vat_amount ?? 0);
-                $platformFee = (float) ($purchase->platform_fee ?? 0);
-                $stripeFee = 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
+                
+                $currency = strtoupper($purchase->currency ?? 'GBP');
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+                
+                $gross = $purchase->total_paid && $purchase->total_paid > 0 
+                    ? (float) $purchase->total_paid 
+                    : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
                 FinancialTransaction::updateOrCreate(
@@ -1075,6 +1110,52 @@ class StripeWebhookController extends Controller
                     }
                 }
 
+                // Check MembershipPayment
+                if (!$creatorId) {
+                    $membershipPayment = \App\Models\MembershipPayment::where('stripe_id', $paymentIntentId)
+                        ->orWhere('session_id', $paymentIntentId)
+                        ->with('membership')
+                        ->first();
+                    if ($membershipPayment && $membershipPayment->membership) {
+                        $creatorId = $membershipPayment->membership->user_id;
+                        $amount = (int)($membershipPayment->amount * 100);
+                    }
+                }
+
+                // Check BillPayment
+                if (!$creatorId) {
+                    $billPayment = \App\Models\BillPayment::where('stripe_id', $paymentIntentId)
+                        ->orWhere('session_id', $paymentIntentId)
+                        ->with('bill')
+                        ->first();
+                    if ($billPayment && $billPayment->bill) {
+                        $creatorId = $billPayment->bill->user_id;
+                        $amount = (int)($billPayment->amount * 100);
+                    }
+                }
+
+                // Check ShopPayment
+                if (!$creatorId) {
+                    $shopPayment = \App\Models\ShopPayment::where('session_id', $paymentIntentId)
+                        ->with('shop')
+                        ->first();
+                    if ($shopPayment && $shopPayment->shop) {
+                        $creatorId = $shopPayment->shop->user_id;
+                        $amount = (int)($shopPayment->amount * 100);
+                    }
+                }
+
+                // Check StripePaymentDetail (Fallback)
+                if (!$creatorId) {
+                    $paymentDetail = \App\Models\StripePaymentDetail::where('stripe_payment_intent_id', $paymentIntentId)
+                        ->orWhere('session_id', $paymentIntentId)
+                        ->first();
+                    if ($paymentDetail) {
+                        $creatorId = $paymentDetail->owner_id;
+                        $amount = (int)($paymentDetail->amount_total * 100);
+                    }
+                }
+
                 // Resolve UUID if we got an integer ID
                 if ($creatorId && is_numeric($creatorId)) {
                     $cUser = \App\Models\User::find($creatorId);
@@ -1159,15 +1240,25 @@ class StripeWebhookController extends Controller
                     if ($creator) {
                         $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
                         $formattedAmount = number_format($dispute->amount / 100, 2);
-                        
+
                         $title = "⚠️ Dispute Opened: We Are Handling It";
                         $content = "A dispute for {$currencySymbol}{$formattedAmount} has been opened by a supporter. No action is required from you—Spenny Piggy is automatically submitting evidence on your behalf. The amount is temporarily reserved.";
-                        
+
                         try {
                             \App\Helpers::sendNotification($title, $content, $creator->email);
                             Log::info("Dispute notification sent to creator: " . $creator->email);
                         } catch (\Exception $e) {
                             Log::error("Failed to send dispute notification: " . $e->getMessage());
+                        }
+
+                        // Send email to creator about dispute opened
+                        try {
+                            $disputeTaskPurchase = \App\Models\TaskPurchase::where('payment_intent_id', $paymentIntentId ?? ($dispute->payment_intent ?? null))->first();
+                            if ($disputeTaskPurchase && $disputeTaskPurchase->task) {
+                                Mail::to($creator->email)->send(new \App\Mail\TaskDisputeEscalatedMail($disputeTaskPurchase, $disputeTaskPurchase->task, $creator, 'creator'));
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Failed to send dispute email to creator: " . $e->getMessage());
                         }
                     }
                 }
@@ -1271,6 +1362,32 @@ class StripeWebhookController extends Controller
                         } catch (\Exception $e) {
                             Log::error("Failed to send dispute closed notification: " . $e->getMessage());
                         }
+
+                        // Send email to creator about dispute resolution
+                        try {
+                            $closedPurchase = \App\Models\TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+                            if ($closedPurchase && $closedPurchase->task) {
+                                $resolution = $dispute->status === 'won' ? 'creator_won' : 'supporter_won';
+                                Mail::to($riskDispute->creator->email)->send(new \App\Mail\TaskDisputeResolvedMail(
+                                    $closedPurchase, $closedPurchase->task, $riskDispute->creator, 'creator', $resolution
+                                ));
+
+                                // Notify supporter about dispute resolution
+                                $closedSupporter = $closedPurchase->supporter;
+                                if ($closedSupporter) {
+                                    $supporterTitle = $dispute->status === 'won' ? "❌ Dispute Lost" : "✅ Dispute Resolved";
+                                    $supporterContent = $dispute->status === 'won'
+                                        ? "The dispute for '{$closedPurchase->task->title}' was decided in favor of the creator. No refund will be issued."
+                                        : "The dispute for '{$closedPurchase->task->title}' has been resolved. A refund has been issued.";
+                                    \App\Helpers::sendNotification($supporterTitle, $supporterContent, $closedSupporter->email);
+                                    Mail::to($closedSupporter->email)->send(new \App\Mail\TaskDisputeResolvedMail(
+                                        $closedPurchase, $closedPurchase->task, $closedSupporter, 'supporter', $resolution
+                                    ));
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Failed to send dispute resolved emails: " . $e->getMessage());
+                        }
                     }
                 }
             }
@@ -1326,6 +1443,21 @@ class StripeWebhookController extends Controller
                             "The dispute for '{$purchase->task->title}' was decided in favor of the customer. Funds have been returned.",
                             $creator->email
                         );
+                        Mail::to($creator->email)->send(new \App\Mail\TaskDisputeResolvedMail(
+                            $purchase, $purchase->task, $creator, 'creator', 'supporter_won'
+                        ));
+                    }
+                    // Also notify supporter
+                    $lostSupporter = $purchase->supporter;
+                    if ($lostSupporter) {
+                        Helpers::sendNotification(
+                            "Dispute Resolved ✅",
+                            "The dispute for '{$purchase->task->title}' has been resolved. A refund has been issued to you.",
+                            $lostSupporter->email
+                        );
+                        Mail::to($lostSupporter->email)->send(new \App\Mail\TaskDisputeResolvedMail(
+                            $purchase, $purchase->task, $lostSupporter, 'supporter', 'supporter_won'
+                        ));
                     }
                 } catch (\Exception $e) {
                 }
@@ -2122,6 +2254,26 @@ class StripeWebhookController extends Controller
         // Also handle WishItemSubscription, BillPayment, MembershipPayment if needed here.
         $subscriptionId = $data->id;
         Log::info("Subscription deleted webhook received: {$subscriptionId}");
+
+        // Handle MembershipPayment cancellation
+        $membershipPayment = \App\Models\MembershipPayment::where('stripe_id', $subscriptionId)->latest()->first();
+        if ($membershipPayment) {
+            $membershipPayment->update([
+                'status' => 'cancelled',
+                'end' => now()
+            ]);
+            Log::info("MembershipPayment marked as cancelled via webhook", ['id' => $membershipPayment->id]);
+        }
+
+        // Handle BillPayment cancellation
+        $billPayment = \App\Models\BillPayment::where('stripe_id', $subscriptionId)->latest()->first();
+        if ($billPayment) {
+            $billPayment->update([
+                'status' => 'cancelled',
+                'end' => now()
+            ]);
+            Log::info("BillPayment marked as cancelled via webhook", ['id' => $billPayment->id]);
+        }
     }
 
     public function CreateProductForCreatorAndGifter()
@@ -2557,11 +2709,44 @@ class StripeWebhookController extends Controller
         }
 
         // 2. Tips / Support
-        $tip = \App\Models\TipGoalsPayment::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId) // Some flows store session ID here
-            ->first();
+        $tip = \App\Models\TipGoalsPayment::where('session_id', $paymentIntentId)->first();
+        if (!$tip) {
+            // Resolve session ID from risk engine if not found directly
+            $riskPayment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            if ($riskPayment && $riskPayment->stripe_session_id) {
+                $tip = \App\Models\TipGoalsPayment::where('session_id', $riskPayment->stripe_session_id)->first();
+            }
+        }
         if ($tip) {
             $tip->update(['status' => 'refunded']);
+
+            try {
+                $tipCreator = $tip->creator;
+                $tipSupporter = $tip->user;
+                $tipTitle = $tip->tipGoal->title ?? 'Support Payment';
+                $tipAmount = $tip->amount ?? 0;
+                $tipCurrency = $tip->currency ?? 'GBP';
+                $refundData = [
+                    'payment_type' => 'support',
+                    'title' => $tipTitle,
+                    'amount' => $tipAmount,
+                    'currency' => $tipCurrency,
+                    'link' => env('APP_URL') . '/dashboard',
+                ];
+
+                if ($tipSupporter) {
+                    $refundData['message'] = "Your support payment has been refunded.";
+                    Helpers::sendNotification("Refund Issued 💸", "Your support payment '{$tipTitle}' has been refunded.", $tipSupporter->email);
+                    Mail::to($tipSupporter->email)->send(new PaymentRefunded($refundData));
+                }
+                if ($tipCreator) {
+                    $refundData['message'] = "A support payment you received has been refunded to the supporter.";
+                    Helpers::sendNotification("Refund Issued 💸", "A support payment '{$tipTitle}' has been refunded to the supporter.", $tipCreator->email);
+                    Mail::to($tipCreator->email)->send(new PaymentRefunded($refundData));
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to send tip refund notifications: " . $e->getMessage());
+            }
         }
 
         // 3. Shop Purchases
@@ -2575,9 +2760,37 @@ class StripeWebhookController extends Controller
             // Fallback for session ID lookup
             $shopPayment = \App\Models\ShopPayment::where('session_id', $paymentIntentId)->first();
         }
-        
+
         if ($shopPayment) {
             $shopPayment->update(['payment_status' => 'refunded']);
+
+            try {
+                $shopBuyer = $shopPayment->user;
+                $shopCreator = $shopPayment->shop ? $shopPayment->shop->user : null;
+                $shopTitle = $shopPayment->shop->name ?? 'Shop Item';
+                $shopAmount = $shopPayment->amount ?? 0;
+                $shopCurrency = $shopPayment->currency ?? 'GBP';
+                $shopRefundData = [
+                    'payment_type' => 'shop',
+                    'title' => $shopTitle,
+                    'amount' => $shopAmount,
+                    'currency' => $shopCurrency,
+                    'link' => env('APP_URL') . '/dashboard',
+                ];
+
+                if ($shopBuyer) {
+                    $shopRefundData['message'] = "Your shop purchase has been refunded.";
+                    Helpers::sendNotification("Refund Issued 💸", "Your purchase from '{$shopTitle}' has been refunded.", $shopBuyer->email);
+                    Mail::to($shopBuyer->email)->send(new PaymentRefunded($shopRefundData));
+                }
+                if ($shopCreator) {
+                    $shopRefundData['message'] = "A shop purchase has been refunded to the buyer.";
+                    Helpers::sendNotification("Refund Issued 💸", "A purchase from your shop '{$shopTitle}' has been refunded.", $shopCreator->email);
+                    Mail::to($shopCreator->email)->send(new PaymentRefunded($shopRefundData));
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to send shop refund notifications: " . $e->getMessage());
+            }
         }
 
         // 4. Wishes (StripePaymentDetail) — looked up via session_id from risk ledger Payment record
@@ -2594,17 +2807,109 @@ class StripeWebhookController extends Controller
 
                 $membershipPayment = \App\Models\MembershipPayment::where('session_id', $sessionId)->first();
                 if ($membershipPayment) {
-                    $membershipPayment->update(['payment_status' => 'refunded']);
+                    $membershipPayment->update([
+                        'status' => 'refunded',
+                        'end' => now()
+                    ]);
+
+                    try {
+                        $memPayer = $membershipPayment->user;
+                        $memCreator = $membershipPayment->membership ? $membershipPayment->membership->user : null;
+                        $memTitle = $membershipPayment->membership->name ?? 'Membership';
+                        $memAmount = $membershipPayment->amount ?? 0;
+                        $memCurrency = $membershipPayment->currency ?? 'GBP';
+                        $memRefundData = [
+                            'payment_type' => 'membership',
+                            'title' => $memTitle,
+                            'amount' => $memAmount,
+                            'currency' => $memCurrency,
+                            'link' => env('APP_URL') . '/dashboard',
+                        ];
+
+                        if ($memPayer) {
+                            $memRefundData['message'] = "Your membership payment has been refunded.";
+                            Helpers::sendNotification("Refund Issued 💸", "Your membership '{$memTitle}' payment has been refunded.", $memPayer->email);
+                            Mail::to($memPayer->email)->send(new PaymentRefunded($memRefundData));
+                        }
+                        if ($memCreator) {
+                            $memRefundData['message'] = "A membership payment you received has been refunded.";
+                            Helpers::sendNotification("Refund Issued 💸", "A membership '{$memTitle}' payment has been refunded to the supporter.", $memCreator->email);
+                            Mail::to($memCreator->email)->send(new PaymentRefunded($memRefundData));
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Failed to send membership refund notifications: " . $e->getMessage());
+                    }
                 }
 
                 $billPayment = \App\Models\BillPayment::where('session_id', $sessionId)->first();
                 if ($billPayment) {
-                    $billPayment->update(['status' => 'refunded']);
+                    $billPayment->update([
+                        'status' => 'refunded',
+                        'end' => now()
+                    ]);
+
+                    try {
+                        $billPayer = $billPayment->user;
+                        $billCreator = $billPayment->bill ? $billPayment->bill->user : null;
+                        $billTitle = $billPayment->bill->name ?? 'Bill';
+                        $billAmount = $billPayment->amount ?? 0;
+                        $billCurrency = $billPayment->currency ?? 'GBP';
+                        $billRefundData = [
+                            'payment_type' => 'bill',
+                            'title' => $billTitle,
+                            'amount' => $billAmount,
+                            'currency' => $billCurrency,
+                            'link' => env('APP_URL') . '/dashboard',
+                        ];
+
+                        if ($billPayer) {
+                            $billRefundData['message'] = "Your bill payment has been refunded.";
+                            Helpers::sendNotification("Refund Issued 💸", "Your bill payment '{$billTitle}' has been refunded.", $billPayer->email);
+                            Mail::to($billPayer->email)->send(new PaymentRefunded($billRefundData));
+                        }
+                        if ($billCreator) {
+                            $billRefundData['message'] = "A bill payment you received has been refunded.";
+                            Helpers::sendNotification("Refund Issued 💸", "A bill payment '{$billTitle}' has been refunded to the supporter.", $billCreator->email);
+                            Mail::to($billCreator->email)->send(new PaymentRefunded($billRefundData));
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Failed to send bill refund notifications: " . $e->getMessage());
+                    }
                 }
 
                 $wishPayment = \App\Models\StripePaymentDetail::where('session_id', $sessionId)->first();
                 if ($wishPayment) {
                     $wishPayment->update(['payment_status' => 'refunded']);
+
+                    try {
+                        $wishGifter = $wishPayment->user;
+                        $wishCreator = $wishPayment->owner;
+                        $wishAmount = $wishPayment->amount_subtotal ?? 0;
+                        $wishCurrency = $wishPayment->currency ?? 'GBP';
+                        $wishRefundData = [
+                            'payment_type' => 'wish',
+                            'title' => 'Wish Gift',
+                            'amount' => $wishAmount,
+                            'currency' => $wishCurrency,
+                            'link' => env('APP_URL') . '/dashboard',
+                        ];
+
+                        if ($wishGifter) {
+                            $wishRefundData['message'] = "Your wish payment has been refunded.";
+                            Helpers::sendNotification("Refund Issued 💸", "Your wish payment has been refunded.", $wishGifter->email);
+                            Mail::to($wishGifter->email)->send(new PaymentRefunded($wishRefundData));
+                        } elseif ($wishPayment->guest_email) {
+                            $wishRefundData['message'] = "Your wish payment has been refunded.";
+                            Mail::to($wishPayment->guest_email)->send(new PaymentRefunded($wishRefundData));
+                        }
+                        if ($wishCreator) {
+                            $wishRefundData['message'] = "A wish payment you received has been refunded.";
+                            Helpers::sendNotification("Refund Issued 💸", "A wish payment has been refunded to the supporter.", $wishCreator->email);
+                            Mail::to($wishCreator->email)->send(new PaymentRefunded($wishRefundData));
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Failed to send wish refund notifications: " . $e->getMessage());
+                    }
                 }
             }
         } catch (\Exception $e) {
@@ -2893,11 +3198,14 @@ class StripeWebhookController extends Controller
                 NotificationSave::dispatch($message, $shopPayment->shop->user, $shopPayment->user, 'Shop');
 
                 // 5. Update status
+                $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                 $shopPayment->update([
                     'payment_status' => 'paid',
                     'session_id' => $session->id,
+                    'total_paid' => (float) ($session->amount_total / $multiplier),
                     'updated_at' => Carbon::now(),
                 ]);
+                $shopPayment->refresh();
 
                 // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
                 try {
@@ -2912,7 +3220,9 @@ class StripeWebhookController extends Controller
                     $shopBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat + $shippingAmount, strtoupper($shopPayment->currency ?? 'GBP'));
                     $platformFee = $shopBreakdown['platform_fee'] + $shopBreakdown['compliance_fee'] + $shopBreakdown['admin_fee'];
                     $stripeFee = $shopBreakdown['stripe_fee'];
-                    $gross = $shopBreakdown['total_supporter_pays'];
+                    $gross = $shopPayment->total_paid && $shopPayment->total_paid > 0 
+                        ? (float) $shopPayment->total_paid 
+                        : $shopBreakdown['total_supporter_pays'];
                     $creatorAmount = $amount + $shippingAmount;
 
                     \App\Models\FinancialTransaction::updateOrCreate(
@@ -3018,6 +3328,7 @@ class StripeWebhookController extends Controller
                             'to_user_id' => $shopPayment->shop->user_id,
                             'product_type' => 'shop',
                             'amount' => $shopPayment->amount,
+                            'total_paid' => $shopPayment->total_paid,
                             'currency' => $shopPayment->currency,
                             'payment_method' => 'stripe',
                             'payment_details' => json_encode($session->id, true),
@@ -3202,16 +3513,24 @@ class StripeWebhookController extends Controller
             }
 
             foreach ($wishItems as $item) {
+                $amount = (float) $item['amount'];
+                $tax = (float) ($item['tax'] ?? 0);
+                $vat = (float) ($item['vat_amount'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 1);
+                $totalPaid = $amount + $tax + $vat;
+
                 // 1. Create StripePaymentItems if missing
                 $paymentItem = StripePaymentItems::updateOrCreate(
                     [
                         'stripe_payment_detail_id' => $payment->id,
                         'wish_item_id' => $item['wish_id'],
-                        'amount' => $item['amount'],
+                        'amount' => $amount,
                     ],
                     [
-                        'quantity' => $item['quantity'] ?? 1,
-                        'tax' => 0, // Tax/Fees handled in FinancialTransaction
+                        'quantity' => $quantity,
+                        'total_paid' => $totalPaid,
+                        'tax' => $tax, 
+                        'vat_amount' => $vat,
                         'created_at' => $payment->created_at,
                         'updated_at' => now(),
                     ]
@@ -3219,11 +3538,11 @@ class StripeWebhookController extends Controller
 
                 // 2. Create FinancialTransaction if missing
                 $creator = User::find($payment->owner_id);
-                $amount = (float) $item['amount'];
-                $vat = 0; // Standardize later via sync command if needed
-                $platformFee = 0; // Standardize later via sync command if needed
-                $stripeFee = 0;
-                $gross = $amount; // Webhook uses minimal reconstruction; full fees synced via cron
+                $currency = strtoupper($payment->currency ?? 'GBP');
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+                $gross = $totalPaid; 
                 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -3256,6 +3575,28 @@ class StripeWebhookController extends Controller
             }
 
             Log::info("Synced wish payment items from metadata", ['session_id' => $session->id, 'items_count' => count($wishItems)]);
+
+            // 4. Record UserPayment
+            try {
+                $existingUserPayment = UserPayment::where('payment_details', json_encode($session->id, true))->exists();
+                if (!$existingUserPayment) {
+                    $totalAmount = ($session->amount_total ?? 0) / 100;
+                    UserPayment::create([
+                        'from_user_id' => $payment->user_id ?? null,
+                        'to_user_id' => $payment->owner_id,
+                        'product_type' => 'wish item',
+                        'amount' => $payment->amount_subtotal,
+                        'total_paid' => $totalAmount,
+                        'currency' => $payment->currency,
+                        'payment_method' => 'stripe',
+                        'payment_details' => json_encode($session->id, true),
+                        'paid_at' => Carbon::now(),
+                        'status' => 'paid',
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('StripeWebhookController: Failed to record UserPayment for wish', ['error' => $e->getMessage()]);
+            }
 
         } catch (\Exception $e) {
             Log::error("Failed to sync wish payment items from metadata: " . $e->getMessage(), ['session_id' => $session->id]);
@@ -3345,14 +3686,20 @@ class StripeWebhookController extends Controller
             $paymentRecord = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
             $sessionId = $paymentRecord->stripe_session_id ?? null;
 
+            // Fallback: Resolve session_id from Deliverables if missing (crucial for subscription renewals)
+            if (!$sessionId && $paymentIntentId) {
+                $sessionId = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)->value('session_id');
+            }
+
             // Source models: [class, payment_intent column, session column, status column]
             $sourceModels = [
                 [\App\Models\TaskPurchase::class,        'payment_intent_id',        'stripe_session_id', 'status'],
                 [\App\Models\TipGoalsPayment::class,     null,                        'session_id',        'status'],
                 [\App\Models\ShopPayment::class,         null,                        'session_id',        'payment_status'],
                 [\App\Models\StripePaymentDetail::class, 'stripe_payment_intent_id',  'session_id',        'payment_status'],
-                [\App\Models\MembershipPayment::class,   null,                        'session_id',        'status'],
-                [\App\Models\BillPayment::class,         null,                        'session_id',        'status'],
+                [\App\Models\MembershipPayment::class,   'stripe_id',                 'session_id',        'status'],
+                [\App\Models\BillPayment::class,         'stripe_id',                 'session_id',        'status'],
+                [\App\Models\WishItemSubscription::class,'stripe_id',                 'session_id',        'status'],
             ];
 
             // Map risk-ledger status to source-model friendly status
@@ -3369,17 +3716,41 @@ class StripeWebhookController extends Controller
                 // Find ALL matching records (not just first) via PI or session
                 $query = $modelClass::query();
                 $query->where(function ($q) use ($piCol, $sessionCol, $paymentIntentId, $sessionId) {
-                    if ($piCol) {
+                    if ($piCol && $paymentIntentId) {
                         $q->where($piCol, $paymentIntentId);
                     }
-                    if ($sessionId) {
-                        $q->orWhere($sessionCol, $sessionId);
-                    }
-                    if (!$piCol && !$sessionId) {
-                        // For models without a PI column and no session, try PI as session fallback
-                        $q->where($sessionCol, $paymentIntentId);
+                    
+                    if ($sessionCol) {
+                        if ($sessionId) $q->orWhere($sessionCol, $sessionId);
+                        if ($paymentIntentId) $q->orWhere($sessionCol, $paymentIntentId);
                     }
                 });
+
+                // Extra check for renewals (Bills, Memberships, Wish Subscriptions)
+                if (empty($records) || $records->isEmpty()) {
+                    if ($modelClass === \App\Models\BillPayment::class || 
+                        $modelClass === \App\Models\MembershipPayment::class ||
+                        $modelClass === \App\Models\WishItemSubscription::class) {
+                        
+                        $productTypeMap = [
+                            \App\Models\BillPayment::class => 'bill',
+                            \App\Models\MembershipPayment::class => 'membership',
+                            \App\Models\WishItemSubscription::class => 'wish_subscription'
+                        ];
+                        
+                        $subscriptionId = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)
+                            ->orWhere('session_id', $sessionId)
+                            ->whereIn('product_type', [$productTypeMap[$modelClass] ?? '', 'wish_subscription_renewal', 'wish_subscription_content'])
+                            ->get()
+                            ->map(fn($d) => json_decode($d->metadata, true)['subscription_id'] ?? json_decode($d->metadata, true)['stripe_subscription_id'] ?? null)
+                            ->filter()
+                            ->first();
+                        
+                        if ($subscriptionId) {
+                            $query->orWhere('stripe_id', $subscriptionId);
+                        }
+                    }
+                }
 
                 $records = $query->get();
                 foreach ($records as $record) {
@@ -3422,9 +3793,8 @@ class StripeWebhookController extends Controller
                 ->get();
             foreach ($deliverables as $deliverable) {
                 $deliverableStatus = match($newStatus) {
-                    'refunded' => 'refunded',
                     'failed', 'blocked' => 'failed',
-                    default => $deliverable->status, // Don't overwrite delivered/pending with 'succeeded'
+                    default => $deliverable->status, 
                 };
                 if ($deliverableStatus !== $deliverable->status) {
                     $deliverable->update(['status' => $deliverableStatus]);

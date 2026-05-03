@@ -336,6 +336,11 @@ class PayoutService
                 ]);
             }
 
+            $actualPayouts = [];
+            $skippedPayouts = [];
+            $actualPlatformTotal = 0;
+            $actualCreatorCount = 0;
+
             foreach ($previewData['payouts'] as $creatorId => $data) {
                 // Process each creator's payout
                 $netPayout = (int) ($data['net_payout'] ?? 0);
@@ -347,7 +352,10 @@ class PayoutService
                 if ($netPayout > 0) {
                     $creator = User::where('uuid', $creatorId)->first();
                     if (!$creator || !$creator->account_id) {
-                        Log::warning("Payout: creator {$creatorId} has no connected account — skipping payout.");
+                        $reason = !$creator ? "Creator not found" : "No connected Stripe account";
+                        Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
+                        $data['failure_reason'] = $reason;
+                        $skippedPayouts[$creatorId] = $data;
                         continue;
                     }
 
@@ -376,7 +384,7 @@ class PayoutService
                             ],
                         ], $creator->account_id);
 
-                        $previewData['payouts'][$creatorId]['stripe_payout_id'] = $payout->id;
+                        $data['stripe_payout_id'] = $payout->id;
                         Log::info("Payout created for creator {$creatorId}: {$netPayout} {$currency} — payout {$payout->id}");
 
                         // Record individual payout
@@ -422,14 +430,45 @@ class PayoutService
                             "Your payout of {$currencySymbol}{$amountMajor} has been sent to your account.",
                             $creator->email
                         );
+
+                        // Success - add to actual totals
+                        $actualPayouts[$creatorId] = $data;
+                        $actualPlatformTotal += $netPayout;
+                        $actualCreatorCount++;
+
                     } catch (\Exception $e) {
-                        Log::error("Payout execution failed for creator {$creatorId}: " . $e->getMessage());
+                        $errorMsg = $e->getMessage();
+                        Log::error("Payout execution failed for creator {$creatorId}: " . $errorMsg);
+                        
+                        // Record failed payout attempt for creator history
+                        try {
+                            \App\Models\PayoutRecord::create([
+                                'creator_id' => $creatorId,
+                                'payout_run_id' => $run->id,
+                                'stripe_payout_id' => 'failed_' . uniqid(),
+                                'amount_minor' => (int) $netPayout,
+                                'currency' => $currency,
+                                 'status' => 'failed',
+                                 'failure_message' => $errorMsg,
+                                 'metadata' => [
+                                     'error' => $errorMsg,
+                                     'attempted_at' => now()->toDateTimeString()
+                                 ]
+                            ]);
+                        } catch (\Exception $logEx) {
+                            Log::error("Failed to record failed payout record: " . $logEx->getMessage());
+                        }
+
+                        $data['failure_reason'] = $errorMsg;
+                        $skippedPayouts[$creatorId] = $data;
                         continue;
                     }
                 } elseif ($isBelowThreshold) {
                     // Skip marking payments as processed if below threshold
                     // They will be picked up in the next run
                     Log::info("Payout skipped for creator {$creatorId}: Amount below threshold — will retry in next run.");
+                    $data['failure_reason'] = "Below minimum threshold (£1.00)";
+                    $skippedPayouts[$creatorId] = $data;
                     continue;
                 } else {
                     // Handle zero payout but mark IDs (e.g. only adjustments or holds processed)
@@ -449,8 +488,18 @@ class PayoutService
                             'updated_at' => now(),
                         ]);
                     }
+
+                    // Zero payout is still a processed creator
+                    $actualPayouts[$creatorId] = $data;
+                    $actualCreatorCount++;
                 }
             }
+
+            // Update run totals to reflect only what was actually processed
+            $previewData['payouts'] = $actualPayouts;
+            $previewData['skipped_payouts'] = $skippedPayouts;
+            $previewData['platform_total'] = $actualPlatformTotal;
+            $previewData['creator_count'] = $actualCreatorCount;
 
             $run->totals = $previewData;
             $run->save();
@@ -536,9 +585,29 @@ class PayoutService
             // Always use FinancialTransaction.reserve_amount (net-based) as the canonical reserve
             $fts = $this->getAllFinancialTransactionsForPayment($p);
 
-            if ($fts->isNotEmpty() && $fts->sum('reserve_amount') > 0) {
-                $reserveMinor = (int) round($fts->sum('reserve_amount') * 100);
-                $description = $fts->first()->description ?: 'Pending Payment';
+            if ($fts->isNotEmpty()) {
+                // Check if any FT is for a TaskPurchase and if it's completed
+                $isTaskButNotComplete = false;
+                foreach ($fts as $ft) {
+                    if ($ft->source_type === \App\Models\TaskPurchase::class) {
+                        $task = \App\Models\TaskPurchase::find($ft->source_id);
+                        if (!$task || !in_array($task->status, ['completed', 'completed_accepted'])) {
+                            $isTaskButNotComplete = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if ($isTaskButNotComplete) {
+                    continue; // Skip this reserve if the underlying task is not complete
+                }
+
+                if ($fts->sum('reserve_amount') > 0) {
+                    $reserveMinor = (int) round($fts->sum('reserve_amount') * 100);
+                    $description = $fts->first()->description ?: 'Pending Payment';
+                } else {
+                    continue;
+                }
             } elseif ((int) ($p->reserve_amount_minor ?? 0) > 0) {
                 // Legacy fallback: Payment.reserve_amount_minor
                 $reserveMinor = (int) $p->reserve_amount_minor;

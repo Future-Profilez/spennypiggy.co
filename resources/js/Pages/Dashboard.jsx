@@ -588,7 +588,7 @@ export default function Dashboard(props) {
                                                                     ) : (
                                                                         ""
                                                                     )}
-                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 ? (
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && (auth?.user?.subscription_status == 3 || auth?.user?.subscription_status == 0) ? (
                                                                         <SiteSubscription 
                                                                             auth={auth}
                                                                             subscription_status={auth?.user?.subscription_status}

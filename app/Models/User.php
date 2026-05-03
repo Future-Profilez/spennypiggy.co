@@ -88,7 +88,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'grace_period_ends_at',
         'is_in_grace_period',
         'grace_period_days_remaining',
-        'social_url'
+        'social_url',
+        'upcoming_payment_date',
+        'subscription_end',
+        'is_subscription_cancelled',
     ];
     protected $with = ['social_links'];
 
@@ -159,51 +162,59 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function getSubscriptionStatusAttribute()
     {
-        $now = Carbon::now();
-        
         // 1. Check for active subscription period in MonthlyCharge table
         // We check for statuses that indicate a paid or active subscription
-        $activeSub = $this->allMonthlyCharges()
-            ->whereIn('status', ['paid', 'active', 'renew'])
-            ->where(function($q) use ($now) {
-                $q->where('current_start_subscription_date', '<=', $now)
-                  ->where('current_end_subscription_date', '>=', $now);
-            })
-            ->exists();
-            
-        if ($activeSub) {
-            return 1; // ACTIVE
-        }
+        // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
+        $latest = $this->allMonthlyCharges()
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
+            ->first();
 
-        // 2. Check for active trial period in MonthlyCharge table
-        $activeTrial = $this->allMonthlyCharges()
-            ->where('status', 'trialing')
-            ->where(function($q) use ($now) {
-                $q->where('current_start_trial_date', '<=', $now)
-                  ->where('current_end_trial_date', '>=', $now);
-            })
-            ->exists();
+        if ($latest) {
+            $nowDate = Carbon::now();
             
-        if ($activeTrial) {
-            return 2; // FREE_TRIAL
-        }
-
-        // 3. Fallback: If is_subscribed is 1, but no date-matched record exists, 
-        // check if there's any 'active' or 'paid' record at all (legacy or edge case)
-        if ($this->is_subscribed) {
-            $anyActive = $this->allMonthlyCharges()
-                ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
-                ->exists();
-            if ($anyActive) {
-                // If we have a record but dates don't match today, it might be a sync delay
-                // We'll return the status of the latest record
-                $latest = $this->allMonthlyCharges()->first();
-                if ($latest) {
-                    if ($latest->status === 'trialing') return 2;
-                    if (in_array($latest->status, ['paid', 'active', 'renew'])) return 1;
+            // Check if within paid period (including canceled but not yet expired)
+            if (in_array($latest->status, ['paid', 'active', 'renew', 'canceled'])) {
+                $startDate = $latest->current_start_subscription_date ? Carbon::parse($latest->current_start_subscription_date)->startOfDay() : null;
+                $endDate = $latest->current_end_subscription_date ? Carbon::parse($latest->current_end_subscription_date)->endOfDay() : null;
+                
+                if ($startDate && $endDate) {
+                    if ($nowDate->between($startDate, $endDate)) {
+                        return 1; // ACTIVE
+                    }
+                    
+                    if ($nowDate->greaterThan($endDate)) {
+                        return 0; // EXPIRED
+                    }
                 }
-                return 1; 
             }
+
+            // Check if within trial period
+            if ($latest->status === 'trialing') {
+                $trialStart = $latest->current_start_trial_date ? Carbon::parse($latest->current_start_trial_date)->startOfDay() : null;
+                $trialEnd = $latest->current_end_trial_date ? Carbon::parse($latest->current_end_trial_date)->endOfDay() : null;
+
+                if ($trialStart && $trialEnd) {
+                    if ($nowDate->between($trialStart, $trialEnd)) {
+                        return 2; // FREE_TRIAL
+                    }
+                    
+                    if ($nowDate->greaterThan($trialEnd)) {
+                        return 0; // EXPIRED (Trial ended)
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback: If is_subscribed is 1, be lenient to allow payments
+        // This handles cases where dates might be slightly off or sync is pending
+        if ($this->is_subscribed) {
+            if ($latest && !in_array($latest->status, ['failed', 'canceled', 'unpaid'])) {
+                if ($latest->status === 'trialing') return 2;
+                return 1; // Assume active if is_subscribed is 1 and we have a valid-looking record
+            }
+            
+            // If is_subscribed is 1 but no records found, still return 1 to allow payment
+            return 1; 
         }
 
         return 3; // INACTIVE
@@ -229,6 +240,54 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         if ($status === 2) return 'Free Trial';
         
         return 'Inactive';
+    }
+
+    /**
+     * Get the next upcoming payment date for the subscription
+     */
+    public function getUpcomingPaymentDateAttribute()
+    {
+        $latest = $this->allMonthlyCharges()
+            ->whereNotNull('upcoming_payment')
+            ->first();
+
+        return $latest ? $latest->upcoming_payment->format('d M Y') : null;
+    }
+
+    /**
+     * Get the current subscription end date
+     */
+    public function getSubscriptionEndAttribute()
+    {
+        $latest = $this->allMonthlyCharges()
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
+            ->first();
+
+        if ($latest) {
+            $date = $latest->current_end_subscription_date ?? $latest->current_end_trial_date;
+            return $date ? $date->format('d M Y') : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if the auto-renewal is cancelled
+     */
+    public function getIsSubscriptionCancelledAttribute()
+    {
+        $latest = $this->allMonthlyCharges()
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
+            ->first();
+
+        if (!$latest) return false;
+
+        // It's cancelled if status is explicitly 'canceled' 
+        // OR if it's active/trialing but has no upcoming payment (meaning auto-renewal is off)
+        // OR if cancelled_at is explicitly set
+        return $latest->status === 'canceled' || 
+               $latest->upcoming_payment === null || 
+               $latest->cancelled_at !== null;
     }
 
     // ───────────────────────

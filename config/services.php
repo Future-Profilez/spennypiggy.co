@@ -45,6 +45,8 @@ return [
     'uploadcare' => [
         'public' => env('UPLOADCARE_PUBLIC_KEY'),
         'secret' => env('UPLOADCARE_SECRET_KEY'),
+        'cdn' => env('UPLOADCARE_CDN', 'https://ucarecdn.com/'),
+        'host' => env('UPLOADCARE_HOST', 'https://api.uploadcare.com/'),
     ],
 
     'intercom' => [

@@ -22,6 +22,7 @@ class BillPayment extends Model
         'guest_name',
         'guest_email',
         'amount',
+        'total_paid',
         'currency',
         'recurring_for',
         'tax',

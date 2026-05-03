@@ -37,7 +37,7 @@ class UserIntro extends Model
     {
         $url = false;
         if (!empty($this->uuid)) {
-            $url = env("UPLOADCARE_CDN") . $this->uuid . '/';
+            $url = config("services.uploadcare.cdn", "https://ucarecdn.com/") . $this->uuid . '/';
         }
         return $url;
     }
@@ -52,14 +52,14 @@ class UserIntro extends Model
                     ->accept('application/vnd.uploadcare-v0.7+json')
                     ->contentType('application/json')
                     ->withHeaders([
-                        'Authorization' => "Uploadcare.Simple " . env("UPLOADCARE_PUBLIC_KEY") . ":" . env('UPLOADCARE_SECRET_KEY')
+                        'Authorization' => "Uploadcare.Simple " . config("services.uploadcare.public") . ":" . config('services.uploadcare.secret')
                     ])
-                    ->get(env("UPLOADCARE_HOST") . "convert/video/status/$this->poster_token/");
+                    ->get(config("services.uploadcare.host", "https://api.uploadcare.com/") . "convert/video/status/$this->poster_token/");
 
                 if ($req->successful()) {
                     $res = json_decode($req->body());
                     if ($res->status == "success") {
-                        $url = env("UPLOADCARE_CDN") . $res->result->uuid . "/nth/0/";
+                        $url = config("services.uploadcare.cdn", "https://ucarecdn.com/") . $res->result->uuid . "/nth/0/";
                         
                         // Update the model to store the final URL and clear the token
                         // This prevents future network calls for this video
@@ -68,14 +68,14 @@ class UserIntro extends Model
                         $this->save();
                     } else {
                         // Fallback to the original UUID if still processing
-                        $url = env("UPLOADCARE_CDN") . $this->uuid . "/";
+                        $url = config("services.uploadcare.cdn", "https://ucarecdn.com/") . $this->uuid . "/";
                     }
                 } else {
-                    $url = env("UPLOADCARE_CDN") . $this->uuid . "/";
+                    $url = config("services.uploadcare.cdn", "https://ucarecdn.com/") . $this->uuid . "/";
                 }
             } catch (\Exception $e) {
                 Log::warning("Uploadcare status check failed for UserIntro {$this->id}: " . $e->getMessage());
-                $url = env("UPLOADCARE_CDN") . $this->uuid . "/";
+                $url = config("services.uploadcare.cdn", "https://ucarecdn.com/") . $this->uuid . "/";
             }
         } elseif (empty($this->poster)) {
             $uuid = Uploadcare::generateThumb($this->uuid, $this->duration);
@@ -85,13 +85,13 @@ class UserIntro extends Model
                 $this->poster_token = $uuid['result']['result'][0]['token'];
 
                 $this->save();
-                // $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
-                // $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
+                // $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(config('services.uploadcare.secret'), 300));
+                // $config = Configuration::create(config('services.uploadcare.public'), config('services.uploadcare.secret'))->setAuthUrlConfig($authUrlConfig);
                 // $api = new Api($config);
                 // $api->file()->deleteFile($uuid['result']['result'][0]['uuid']);
                 // $api->file()->deleteFile($uuid['result']['result'][1]['thumbnails_group_uuid']);
 
-                $url = env("UPLOADCARE_CDN") . $this->poster . "/nth/0/";
+                $url = config("services.uploadcare.cdn", "https://ucarecdn.com/") . $this->poster . "/nth/0/";
             } else {
                 $url = false;
             }

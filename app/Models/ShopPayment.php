@@ -17,6 +17,7 @@ class ShopPayment extends Model
         'uuid',
         'session_id',
         'amount',
+        'total_paid',
         'tax_amount',
         'vat_tax_amount',
         'shipping_amount',

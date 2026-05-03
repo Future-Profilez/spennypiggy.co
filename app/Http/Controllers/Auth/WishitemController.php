@@ -1012,17 +1012,24 @@ class WishitemController extends Controller
 
         // ✅ Calculate product details (refactored block)
         $calculateProduct = function ($wishitem, $currency, $amount, $accountId = null) {
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($wishitem->price, $wishitem->user->default_currency);
+            $vatPercent = (float) ($wishitem->user->vat_amount_percentage ?? 0);
+            $basePrice = (float) $wishitem->price;
+            $vatAmount = ($basePrice * $vatPercent) / 100;
+            $priceWithVat = $basePrice + $vatAmount;
+
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $wishitem->user->default_currency);
 
             if ($wishitem->subscription == 2) {
                 // For crowdfunding, we need to calculate the gross-up total for the requested amount
                 $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
+                $vatAmountCrowdfund = ($price * $vatPercent) / 100;
+                $priceWithVatCrowdfund = $price + $vatAmountCrowdfund;
 
                 // Use new gross-up flow for consistent fee calculation
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $wishitem->user->default_currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCrowdfund, $wishitem->user->default_currency);
 
                 $total = $breakdown['total_supporter_pays'];
-                $tax = $breakdown['application_fee'];
+                $tax = $breakdown['total_fees'];
 
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripeProduct = $stripe->products->create([
@@ -1043,9 +1050,9 @@ class WishitemController extends Controller
 
                 return [$price, $tax, $stripeProduct->id];
             } elseif ($wishitem->subscription == 0) {
-                return [$wishitem->price, $breakdown['application_fee'], $wishitem->stripe_product_id];
+                return [$wishitem->price, $breakdown['total_fees'], $wishitem->stripe_product_id];
             } else {
-                return [$wishitem->price, $breakdown['application_fee'], null];
+                return [$wishitem->price, $breakdown['total_fees'], null];
             }
         };
 
@@ -1431,7 +1438,7 @@ class WishitemController extends Controller
                 $decrypted = Crypt::decryptString($value);
                 return $decrypted ?: '';
             } catch (\Exception $e) {
-                \Log::error('Decryption failed: ' . $e->getMessage());
+                Log::error('Decryption failed: ' . $e->getMessage());
                 // If decryption fails, it might be a plain text value
                 return $value ?: '';
             }
@@ -1655,6 +1662,7 @@ class WishitemController extends Controller
             $ryeProductPayment->user_id = Auth::id();
             $ryeProductPayment->currency = $chargeCurrency;
             $ryeProductPayment->amount = $finalTotalAmount; // Store total paid by supporter
+            $ryeProductPayment->total_paid = $finalTotalAmount;
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
@@ -2953,14 +2961,18 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
-        $tax = round(($price * config('app.suprise_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
+        // Use new gross-up flow for consistent fee calculation
+        $vatPercent = (float) ($owner->vat_amount_percentage ?? 0);
+        $priceWithVat = $price + (($price * $vatPercent) / 100);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $owner->default_currency);
+        $total = $breakdown['total_supporter_pays'];
+        $tax = $breakdown['total_fees'];
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
-            "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+            "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round($total * 100, 0)],
         ], [
             'stripe_account' => $owner->account_id,
         ]);

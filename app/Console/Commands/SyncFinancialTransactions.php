@@ -53,10 +53,81 @@ class SyncFinancialTransactions extends Command
         // 6. Sync Tips
         $this->syncTips($userId);
 
-        // 7. Sync Orphan Checkouts (Records in StripePaymentDetail that never created items)
+        // 7. Sync Rye Products
+        $this->syncRyeProducts($userId);
+
+        // 8. Sync Orphan Checkouts (Records in StripePaymentDetail that never created items)
         $this->syncOrphanCheckouts($userId);
 
         $this->info('Sync completed successfully!');
+    }
+
+    private function syncRyeProducts($userId = null)
+    {
+        $this->info('Syncing Rye Products...');
+
+        $query = \App\Models\RyeProductPayment::query();
+        // Since RyeProductPayment doesn't have creator_id directly, we need to join with ProductOrderDetail
+        // or rely on metadata if available. For now, let's assume we can find it via ProductOrderDetail.
+        
+        $query->where('status', 'succeeded');
+
+        $query->chunk(100, function ($payments) {
+            foreach ($payments as $payment) {
+                // Try to find the creator from ProductOrderDetail
+                $orderDetail = \App\Models\ProductOrderDetail::where('order_id', $payment->id)->first();
+                if (!$orderDetail || !$orderDetail->creater_id) {
+                    // Fallback to searching by session if order_id link is broken
+                    if ($payment->stripe_session_id) {
+                        $orderDetail = \App\Models\ProductOrderDetail::where('session_id', $payment->stripe_session_id)->first();
+                    }
+                }
+
+                if (!$orderDetail || !$orderDetail->creater_id) continue;
+
+                $creatorId = $orderDetail->creater_id;
+                $creator = User::find($creatorId);
+                
+                $amount = (float) $payment->amount;
+                $vat = (float) ($payment->vat_amount ?? 0);
+                $platformFee = (float) ($payment->tax ?? 0);
+                $stripeFee = 0;
+                $gross = $payment->total_paid && $payment->total_paid > 0 
+                    ? (float) $payment->total_paid 
+                    : ($amount + $vat + $platformFee + $stripeFee);
+                $creatorAmount = $amount; // For Rye, amount stored is usually what supporter paid? 
+                // Wait, in WishitemController: $ryeProductPayment->amount = $finalTotalAmount;
+                // So for Rye, amount IS the gross amount. 
+                // Let's refine this if needed, but for now follow the pattern.
+
+                $riskData = $this->getPaymentRiskData($payment->stripe_session_id, 'completed', $payment->stripe_payment_intent_id);
+                $status = $riskData['status'];
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
+
+                FinancialTransaction::updateOrCreate(
+                    [
+                        'source_type' => \App\Models\RyeProductPayment::class,
+                        'source_id' => $payment->id,
+                    ],
+                    [
+                        'user_id' => $creatorId,
+                        'supporter_id' => $payment->user_id,
+                        'type' => 'income',
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
+                        'vat_amount' => $vat,
+                        'net_amount' => $creatorAmount,
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
+                        'currency' => strtoupper($payment->currency ?? 'GBP'),
+                        'status' => $status,
+                        'description' => 'Rye Product Purchase',
+                        'transaction_date' => $payment->created_at,
+                    ]
+                );
+            }
+        });
     }
 
     private function syncOrphanCheckouts($userId)
@@ -194,7 +265,7 @@ class SyncFinancialTransactions extends Command
             $query->where('stripe_payment_intent_id', $paymentIntentId);
         }
 
-        $paymentLog = $query->first();
+        $paymentLog = $query->orderByRaw("CASE WHEN status = 'disputed' THEN 1 WHEN status = 'refunded' THEN 2 WHEN status = 'review_hold' THEN 3 WHEN status = 'succeeded' THEN 4 ELSE 5 END")->first();
 
         if ($paymentLog) {
             $data['status'] = match($paymentLog->status) {
@@ -291,9 +362,17 @@ class SyncFinancialTransactions extends Command
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
                 $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
-                $platformFee = $payment->tax ?? 0;
-                $stripeFee = $payment->stripe_fee_actual ?? 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
+                
+                $currency = strtoupper($payment->currency ?? 'GBP');
+                
+                // Use actual fee breakdown for consistent display
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+
+                $gross = $payment->total_paid && $payment->total_paid > 0 
+                    ? (float) $payment->total_paid 
+                    : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);
@@ -347,7 +426,9 @@ class SyncFinancialTransactions extends Command
                 $adminFee = (float) \App\Helpers::administrationFeeInCurrency($currency);
                 $platformFee = (float) ($purchase->platform_fee ?? 0) + $adminFee;
                 $stripeFee = 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $gross = $purchase->total_paid && $purchase->total_paid > 0 
+                    ? (float) $purchase->total_paid 
+                    : ($amount + $vat + $platformFee + $stripeFee);
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($purchase->stripe_session_id, 'completed', $purchase->payment_intent_id);
@@ -405,9 +486,17 @@ class SyncFinancialTransactions extends Command
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
                 $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
-                $platformFee = $payment->tax ?? 0;
-                $stripeFee = $payment->stripe_fee_actual ?? 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
+                
+                $currency = strtoupper($payment->currency ?? 'GBP');
+                
+                // Use actual fee breakdown for consistent display
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+
+                $gross = $payment->total_paid && $payment->total_paid > 0 
+                    ? (float) $payment->total_paid 
+                    : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);
@@ -473,9 +562,17 @@ class SyncFinancialTransactions extends Command
 
                 $amount = $item->amount;
                 $vat = $this->calculateVatIfMissing($amount, $item->vat_amount, $creator);
-                $platformFee = $item->tax ?? 0;
-                $stripeFee = 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
+                
+                $currency = strtoupper($item->payment->currency ?? 'GBP');
+                
+                // Use actual fee breakdown for consistent display
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+                
+                $gross = $item->total_paid && $item->total_paid > 0 
+                    ? (float) $item->total_paid 
+                    : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($item->payment->session_id);
@@ -534,14 +631,16 @@ class SyncFinancialTransactions extends Command
                 $shippingAmount = $payment->shipping_amount ?? 0;
                 $vat = $this->calculateVatIfMissing($amount + $shippingAmount, $payment->vat_tax_amount, $creator);
                 
-                // Ensure platform fee is correctly identified from the shop payment record
-                $platformFee = $payment->tax_amount ?? 0;
-                if ($platformFee <= 0 && $payment->tax && $payment->tax > 0) {
-                    $platformFee = $payment->tax;
-                }
+                $currency = strtoupper($payment->currency ?? 'GBP');
                 
-                $stripeFee = 0;
-                $gross = $amount + $shippingAmount + $vat + $platformFee + $stripeFee;
+                // Use actual fee breakdown for consistent display
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $shippingAmount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+                
+                $gross = $payment->total_paid && $payment->total_paid > 0 
+                    ? (float) $payment->total_paid 
+                    : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount + $shippingAmount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);
@@ -594,11 +693,17 @@ class SyncFinancialTransactions extends Command
 
                 $amount = $payment->amount;
                 $vat = $this->calculateVatIfMissing($amount, $payment->vat_amount, $creator);
-                $platformFee = $payment->tax ?? 0;
+                
+                $currency = strtoupper($payment->currency ?? 'GBP');
+                
+                // Use actual fee breakdown for consistent display
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = $breakdown['application_fee'];
+                $stripeFee = $breakdown['stripe_fee'];
+
                 $gross = $payment->total_paid && $payment->total_paid > 0
                     ? (float) $payment->total_paid
-                    : ((float) $amount + (float) $vat + (float) $platformFee);
-                $stripeFee = max(0, $gross - $platformFee - $amount - $vat);
+                    : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
                 $riskData = $this->getPaymentRiskData($payment->session_id);

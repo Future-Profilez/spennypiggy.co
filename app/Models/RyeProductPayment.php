@@ -19,6 +19,7 @@ class RyeProductPayment extends Model
         'user_id',
         'currency',
         'amount',
+        'total_paid',
         'tax',
         'message',
         'anonymous',

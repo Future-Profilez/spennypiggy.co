@@ -4,7 +4,7 @@ import BottomBar from './BottomBar';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
 import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
-// import IntercomProvider from '@/Components/IntercomProvider';
+import IntercomProvider from '@/Components/IntercomProvider';
 import Footer from '@/includes/Footer';
 import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
 export default function Guest({children, auth, className}) {
@@ -26,6 +26,7 @@ export default function Guest({children, auth, className}) {
         <PwaInstallPrompt />
         <FlashMessenger />
         <TermsUpdatePopup />
+        <IntercomProvider />
     </div>
 }
 

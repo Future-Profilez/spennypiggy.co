@@ -29,7 +29,7 @@ export default function SiteSubscription({ children, auth, subscription_status, 
 
     const isActive = resolvedStatus === "ACTIVE";
     const isTrial = resolvedStatus === "FREE_TRIAL";
-    const isCancelled = site_subscription?.is_cancelled;
+    const isCancelled = creatorUser?.is_subscription_cancelled;
     const isExpiredOrInactive = resolvedStatus === "EXPIRED" || resolvedStatus === "INACTIVE";
 
     const hasCapability = card_capabilities !== false;
@@ -44,6 +44,41 @@ export default function SiteSubscription({ children, auth, subscription_status, 
     const canActivate = isExpiredOrInactive || isEnabled || (isActive && isCancelled);
     
     const SUBSCRIPTIONBOX = () => { 
+        if (isActive || isTrial) {
+            return <>
+                <div className="flex flex-col gap-2 mt-2">
+                    <p className="text-[14px] text-gray-600">
+                        {isTrial ? "Trial period ends on: " : "Next renewal date: "}
+                        <span className="font-bold text-black">
+                            {creatorUser?.upcoming_payment_date || creatorUser?.subscription_end}
+                        </span>
+                    </p>
+                    
+                    {!isCancelled ? (
+                        <Link 
+                            href="/mandatory-cancel" 
+                            method="post" 
+                            as="button"
+                            className="text-start text-sm text-red-600 hover:text-red-800 underline font-medium"
+                            onBefore={() => confirm("Are you sure you want to cancel your auto-renewal? You will keep access until the end of your current period.")}
+                        >
+                            Cancel Auto-Renewal
+                        </Link>
+                    ) : (
+                        <Link 
+                            href="/mandatory-resume" 
+                            method="post" 
+                            as="button"
+                            className="text-start text-sm text-green-600 hover:text-green-800 underline font-medium"
+                            onBefore={() => confirm("Would you like to re-enable your auto-renewal? You will avoid any interruption to your creator tools.")}
+                        >
+                            Renew Subscription (Re-enable Auto-renewal)
+                        </Link>
+                    )}
+                </div>
+            </>
+        }
+
         return <>
             <p className="mb-4 text-[15px] font-poppins text-start text-gray-700">
                     Enjoy a{" "}
@@ -98,14 +133,18 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                         </p>
                         {isCancelled && (
                             <p className="mb-4 text-[15px] font-poppins text-start text-red-600">
-                                Your subscription has been cancelled but you still have access until {site_subscription.subscription_end}. Renew now to avoid losing access to creator tools.
+                                Your subscription has been cancelled but you still have access until {creatorUser?.subscription_end}. Renew now to avoid losing access to creator tools.
                             </p>
                         )}
+                        <SUBSCRIPTIONBOX />
                     </>
                 ) : isTrial ? (
-                    <p className="mb-3 text-[18px] font-poppins text-start text-green-700">
-                        Your free trial is active.
-                    </p>
+                    <>
+                        <p className="mb-3 text-[18px] font-poppins text-start text-green-700">
+                            Your free trial is active.
+                        </p>
+                        <SUBSCRIPTIONBOX />
+                    </>
                 ) : (
                     ""
                 )}

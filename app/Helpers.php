@@ -285,6 +285,7 @@ class Helpers
             'reserve_amount' => $reserveAmount,
             'application_fee' => round($applicationFee, $precision),
             'stripe_fee' => $actualStripeFee,
+            'total_fees' => round($applicationFee + $actualStripeFee, $precision),
             'total_supporter_pays' => $totalSupporterPays,
             'net_to_creator' => $netToCreator,
         ];
@@ -398,14 +399,14 @@ class Helpers
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
         ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
             'target' => $uuid,
         ]);
 
         $response = Http::withHeaders([
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
         ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
 
         if (!$response->successful()) {

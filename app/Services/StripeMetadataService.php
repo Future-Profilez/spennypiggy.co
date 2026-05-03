@@ -331,8 +331,12 @@ class StripeMetadataService
      * @param string $deliverableStatus
      * @return string
      */
-    private function mapDeliverableStatusToDeliveryStatus(string $deliverableStatus): string
+    private function mapDeliverableStatusToDeliveryStatus(?string $deliverableStatus): string
     {
+        if ($deliverableStatus === null) {
+            return 'pending';
+        }
+
         return match($deliverableStatus) {
             'delivered' => 'completed',
             'completed_accepted' => 'completed',

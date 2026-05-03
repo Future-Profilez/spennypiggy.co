@@ -1,7 +1,7 @@
 import { Link, usePage, router } from "@inertiajs/react";
 import { route } from 'ziggy-js';
 import spennypiggy from "../../assets/img/logo.png";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
 import { SiBuymeacoffee } from "react-icons/si";
@@ -27,6 +27,44 @@ import { MdClose } from "react-icons/md";
 import { AiOutlineLogout } from "react-icons/ai";
 import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
+import { 
+    SettingsIcon, 
+    HeartIcon, 
+    ShoppingBagIcon, 
+    ClipboardIcon, 
+    HandCoinsIcon, 
+    ShieldCheckIcon, 
+    SearchIcon, 
+    MenuIcon, 
+    ShoppingCartIcon,
+    XIcon,
+    LogoutIcon,
+    DashboardIcon,
+    UserIcon,
+    LockIcon,
+    EyeIcon,
+    HouseIcon,
+} from "@animateicons/react/lucide";
+import { 
+    ClipboardList, 
+    Coins, 
+    Shield, 
+    Calculator, 
+    Home, 
+    Gift, 
+    LayoutDashboard, 
+    FileText, 
+    HelpCircle, 
+    Lightbulb, 
+    Calendar, 
+    Cookie,
+    LogOut,
+    CalendarIcon,
+    CoinsIcon,
+    FileTextIcon,
+    GiftIcon,
+    ShieldIcon
+} from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
 export default function Header({ classMagicword }) {
@@ -92,6 +130,37 @@ export default function Header({ classMagicword }) {
             );
         };
     }, [fetchCounter, dispatch]);
+
+    const NavLinkWithIcon = ({ href, icon: Icon, label, onClick, activeColor, isExternal = false, ...props }) => {
+        const iconRef = useRef(null);
+        const Component = isExternal ? 'a' : Link;
+
+        return (
+            <li>
+                <Component
+                    onClick={onClick}
+                    href={href}
+                    onMouseEnter={() => iconRef.current?.startAnimation?.()}
+                    onMouseLeave={() => iconRef.current?.stopAnimation?.()}
+                    className={`${getNavLinkClass(href)} rounded-xl border-[3px] border-transparent hover:border-black ${activeColor} hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+                    {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    {...props}
+                >
+                    <span className="inline-flex justify-center items-center ml-2">
+                        <Icon
+                            ref={iconRef}
+                            className="text-gray-800 group-hover:text-black transition-colors"
+                            size={24}
+                        />
+                    </span>
+                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
+                        {label}
+                    </span>
+                </Component>
+            </li>
+        );
+    };
+
     return (
         <>
             {/* <ReactDebugTest /> */}
@@ -104,21 +173,10 @@ export default function Header({ classMagicword }) {
                                 className=" menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
-                                <svg
-                                    width="49"
-                                    height="48"
-                                    viewBox="0 0 49 48"
-                                    fill="#F94F96"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781"
-                                        stroke="#F94F96"
-                                        strokeWidth="2.625"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
+                                <MenuIcon
+                                    size={48}
+                                    color="#F94F96"
+                                />
                             </div>
                             <Link
                                 className="hidden md:block focus:border-0 ml-3 text-[30px]"
@@ -173,31 +231,10 @@ export default function Header({ classMagicword }) {
                                 className="ms-2 md:ms-3 discover-icon  "
                             >
                                 <div className="bg-[#F94F96] rounded-full p-2 md:p-1 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                                    <svg
-                                        width="24"
-                                        height="24"
-                                        viewBox="0 0 36 36"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <g clipPath="url(#clip0_1439_828)">
-                                            <path
-                                                fillRule="evenodd"
-                                                clipRule="evenodd"
-                                                d="M15.7504 3C13.7173 3.00017 11.7137 3.48655 9.90677 4.41854C8.09985 5.35054 6.54202 6.70113 5.36323 8.35763C4.18445 10.0141 3.4189 11.9285 3.13044 13.9411C2.84199 15.9536 3.039 18.006 3.70505 19.9269C4.37109 21.8478 5.48685 23.5816 6.95924 24.9836C8.43162 26.3856 10.2179 27.4152 12.1692 27.9864C14.1204 28.5576 16.1799 28.654 18.1759 28.2674C20.1719 27.8808 22.0466 27.0224 23.6434 25.764L29.1214 31.242C29.4043 31.5152 29.7832 31.6664 30.1765 31.663C30.5698 31.6596 30.946 31.5018 31.2241 31.2237C31.5022 30.9456 31.66 30.5694 31.6634 30.1761C31.6668 29.7828 31.5156 29.4039 31.2424 29.121L25.7644 23.643C27.2464 21.7629 28.1691 19.5036 28.427 17.1236C28.6849 14.7436 28.2676 12.339 27.2227 10.1851C26.1779 8.03125 24.5477 6.21503 22.5188 4.94435C20.49 3.67366 18.1443 2.99984 15.7504 3ZM6.00038 15.75C6.00038 13.1641 7.02761 10.6842 8.85609 8.85571C10.6846 7.02723 13.1645 6 15.7504 6C18.3362 6 20.8162 7.02723 22.6447 8.85571C24.4732 10.6842 25.5004 13.1641 25.5004 15.75C25.5004 18.3359 24.4732 20.8158 22.6447 22.6443C20.8162 24.4728 18.3362 25.5 15.7504 25.5C13.1645 25.5 10.6846 24.4728 8.85609 22.6443C7.02761 20.8158 6.00038 18.3359 6.00038 15.75Z"
-                                                fill="#FFFFFF"
-                                            />
-                                        </g>
-                                        <defs>
-                                            <clipPath id="clip0_1439_828">
-                                                <rect
-                                                    width="36"
-                                                    height="36"
-                                                    fill="white"
-                                                />
-                                            </clipPath>
-                                        </defs>
-                                    </svg>
+                                    <SearchIcon
+                                        size={28}
+                                        color="#ffffff"
+                                    />
                                 </div>
                             </Link>
 
@@ -211,10 +248,10 @@ export default function Header({ classMagicword }) {
                                         : ""
                                 }`}
                             >
-                                <div className="bg-[#F94F96] p-1 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                                    <LiaShoppingCartSolid
+                                <div className="bg-[#F94F96] p-2 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                    <ShoppingCartIcon
                                         color="#ffffff"
-                                        size={32}
+                                        size={27}
                                     />
                                 </div>
                                 {count > 0 ? (
@@ -248,21 +285,10 @@ export default function Header({ classMagicword }) {
                                 className="block ps-2 me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
-                                <svg
-                                    width="49"
-                                    height="48"
-                                    viewBox="0 0 49 48"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781"
-                                        stroke="#05EFB8"
-                                        strokeWidth="2.625"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
+                                <MenuIcon
+                                    size={48}
+                                    color="#05EFB8"
+                                />
                             </div>
                         </div>
                     </div>
@@ -292,7 +318,7 @@ export default function Header({ classMagicword }) {
                     <button 
                         onClick={toggleClass}
                         className="absolute top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-full p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
-                        <MdClose color="#000" size={"2rem"} />
+                        <XIcon color="#000" size={32} />
                     </button>
                     <div className="overflow-y-auto overflow-x-hidden   flex-grow">
                         <div className="pb-[110px] pt-[60px] px-2">
@@ -331,250 +357,100 @@ export default function Header({ classMagicword }) {
                                 <>
                                     {auth?.user?.username ? (
                                         <>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={"/account"}
-                                                    className={`${getNavLinkClass("/account")} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <IoSettingsOutline
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        My Account
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/${
-                                                        (auth &&
-                                                            auth?.user
-                                                                ?.username) ||
-                                                        ""
-                                                    }`}
-                                                    className={`${getNavLinkClass(`/${(auth && auth?.user?.username) || ""}`)} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <FaHeart
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        {auth?.user?.role == 1
-                                                            ? "My Wishlist"
-                                                            : "My Profile"}
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                                    className={`${getNavLinkClass("https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk")} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}>
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <SlCalender
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Subscription Billing
-                                                    </span>
-                                                </a>
-                                            </li>
+                                            <NavLinkWithIcon
+                                                href="/account"
+                                                onClick={toggleClass}
+                                                icon={SettingsIcon}
+                                                label="My Account"
+                                                activeColor="hover:bg-yellow-300"
+                                            />
+                                            <NavLinkWithIcon
+                                                href={`/${auth?.user?.username || ""}`}
+                                                onClick={toggleClass}
+                                                icon={HeartIcon}
+                                                label={auth?.user?.role == 1 ? "My Wishlist" : "My Profile"}
+                                                activeColor="hover:bg-pink-400"
+                                            />
+                                            <NavLinkWithIcon
+                                                href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
+                                                icon={CalendarIcon}
+                                                label="Subscription Billing"
+                                                activeColor="hover:bg-[#A2E4B8]"
+                                                isExternal={true}
+                                            />
                                         </>
                                     ) :""}
                                     
                                     {auth?.user?.username && (
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/shop`}
-                                                    className={`${getNavLinkClass('/shop')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <FaBasketShopping
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Shop
-                                                    </span>
-                                                </Link>
-                                            </li>
+                                        <NavLinkWithIcon
+                                            href="/shop"
+                                            onClick={toggleClass}
+                                            icon={ShoppingBagIcon}
+                                            label="Shop"
+                                            activeColor="hover:bg-[#b892ff]"
+                                        />
                                     )}
 
                                     {auth &&
                                     auth.user &&
                                     auth.user.role ==1 ? (
                                         <>
-                                         <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/task/dashboard`}
-                                                    className={`${getNavLinkClass('/task/dashboard')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <BiTask
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Tasks
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/earnings`}
-                                                    className={`${getNavLinkClass('/earnings')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <GiTwoCoins
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Earnings
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={route('creator.disputes.index')}
-                                                    className={`${getNavLinkClass(route('creator.disputes.index'))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <BiShield
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Disputes Center
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            {auth?.user?.role == 1 && <li>
-                                                <Link
-                                                    onClick={toggleClass}
+                                            <NavLinkWithIcon
+                                                href="/task/dashboard"
+                                                onClick={toggleClass}
+                                                icon={ClipboardList}
+                                                label="Tasks"
+                                                activeColor="hover:bg-[#A2E4B8]"
+                                            />
+                                            <NavLinkWithIcon
+                                                href="/earnings"
+                                                onClick={toggleClass}
+                                                icon={CoinsIcon}
+                                                label="Earnings"
+                                                activeColor="hover:bg-[#ff6b6b]"
+                                            />
+                                            <NavLinkWithIcon
+                                                href={route('creator.disputes.index')}
+                                                onClick={toggleClass}
+                                                icon={Shield}
+                                                label="Disputes Center"
+                                                activeColor="hover:bg-[#A2E4B8]"
+                                            />
+                                            {auth?.user?.role == 1 && (
+                                                <NavLinkWithIcon
                                                     href={route('financial.dashboard')}
-                                                    className={`${getNavLinkClass(route('financial.dashboard'))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <SlCalculator
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span> 
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Finance & Tax
-                                                    </span>
-                                                </Link>
-                                            </li>}
-                                            <li>
-                                                <Link
                                                     onClick={toggleClass}
-                                                    href={`/membership-dashboard`}
-                                                    className={`${getNavLinkClass('/membership-dashboard')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <FaHouseChimneyUser
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Membership Dashboard
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/admin/feature-suggestions`}
-                                                    className={`${getNavLinkClass('/admin/feature-suggestions')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#EFEA7B] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <FaLightbulb
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Feature Suggestions
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            {/* <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/admin/system-diagnostics`}
-                                                    className={`${getNavLinkClass('/admin/system-diagnostics')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-indigo-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <TbSettingsCog
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        System Diagnostics
-                                                    </span>
-                                                </Link>
-                                            </li> */}
+                                                    icon={Calculator}
+                                                    label="Finance & Tax"
+                                                    activeColor="hover:bg-yellow-300"
+                                                />
+                                            )}
+                                            <NavLinkWithIcon
+                                                href="/membership-dashboard"
+                                                onClick={toggleClass}
+                                                icon={HouseIcon}
+                                                label="Membership Dashboard"
+                                                activeColor="hover:bg-pink-400"
+                                            />
+                                            <NavLinkWithIcon
+                                                href="/admin/feature-suggestions"
+                                                onClick={toggleClass}
+                                                icon={Lightbulb}
+                                                label="Feature Suggestions"
+                                                activeColor="hover:bg-[#EFEA7B]"
+                                            />
                                         </>
                                     ) : (
                                         ""
                                     )}
                                     {auth?.user?.username ? (
-                                        <>
-                                            {/* <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/purchases`}
-                                                    className={getNavLinkClass('/purchases')}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-4">
-                                                        <SiBuymeacoffee
-                                                            color="#fff"
-                                                            size={"1.2rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                        All Purchases
-                                                    </span>
-                                                </Link>
-                                            </li> */}
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/history`}
-                                                    className={`${getNavLinkClass('/history')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <SiBuymeacoffee
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Support History
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                           
-                                        </>
+                                        <NavLinkWithIcon
+                                            href="/history"
+                                            onClick={toggleClass}
+                                            icon={CoinsIcon}
+                                            label="Support History"
+                                            activeColor="hover:bg-[#b892ff]"
+                                        />
                                     ) : (
                                         ""
                                     )}
@@ -584,268 +460,120 @@ export default function Header({ classMagicword }) {
                                     ""
                                 ) : (
                                     <>
-                                        <li>
-                                            <Link
-                                                onClick={toggleClass}
-                                                href={route("register")}
-                                                className={`${getNavLinkClass(route("register"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-2">
-                                                    <FaUserAlt
-                                                        className="text-gray-800 group-hover:text-black transition-colors"
-                                                        size={"1.5rem"}
-                                                    />
-                                                </span>
-                                                <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                    Sign Up
-                                                </span>
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link
-                                                onClick={toggleClass}
-                                                href={route("login")}
-                                                className={`${getNavLinkClass(route("login"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-2">
-                                                    <IoIosUnlock
-                                                        className="text-gray-800 group-hover:text-black transition-colors"
-                                                        size={"1.5rem"}
-                                                    />
-                                                </span>
-                                                <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                    Login
-                                                </span>
-                                            </Link>
-                                        </li>
+                                        <NavLinkWithIcon
+                                            href={route("register")}
+                                            onClick={toggleClass}
+                                            icon={UserIcon}
+                                            label="Sign Up"
+                                            activeColor="hover:bg-[#A2E4B8]"
+                                        />
+                                        <NavLinkWithIcon
+                                            href={route("login")}
+                                            onClick={toggleClass}
+                                            icon={LockIcon}
+                                            label="Login"
+                                            activeColor="hover:bg-yellow-300"
+                                        />
                                     </>
                                 )}
 
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("leaderboard")}
-                                        className={`${getNavLinkClass(route("leaderboard"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <FaRegStar
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                            Leaderboard
-                                        </span>
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={"/giftstore"}
-                                        className={`${getNavLinkClass('/giftstore')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <FiGift
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                            Gift Store
-                                        </span>
-                                    </Link>
-                                </li>
+                                <NavLinkWithIcon
+                                    href={route("leaderboard")}
+                                    onClick={toggleClass}
+                                    icon={LayoutDashboard}
+                                    label="Leaderboard"
+                                    activeColor="hover:bg-[#ff6b6b]"
+                                />
+                                <NavLinkWithIcon
+                                    href="/giftstore"
+                                    onClick={toggleClass}
+                                    icon={Gift}
+                                    label="Gift Store"
+                                    activeColor="hover:bg-[#b892ff]"
+                                />
                                 {auth?.user?.role == 1 && (
-                                    <li>
-                                        <Link
-                                            onClick={toggleClass}
-                                            href={`/refer-and-earn`}
-                                            className={`${getNavLinkClass('/refer-and-earn')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                        >
-                                            <span className="inline-flex justify-center items-center ml-2">
-                                                <GiTwoCoins
-                                                    className="text-gray-800 group-hover:text-black transition-colors"
-                                                    size={"1.5rem"}
-                                                />
-                                            </span>
-                                            <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                Refer & Earn
-                                            </span>
-                                        </Link>
-                                    </li>
+                                    <NavLinkWithIcon
+                                        href="/refer-and-earn"
+                                        onClick={toggleClass}
+                                        icon={CoinsIcon}
+                                        label="Refer & Earn"
+                                        activeColor="hover:bg-[#A2E4B8]"
+                                    />
                                 )}
 
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("how-it-works")}
-                                        className={`${getNavLinkClass(route("how-it-works"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <TbSettingsCog
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                            How it works
-                                        </span>
-                                    </Link>
-                                </li>
+                                <NavLinkWithIcon
+                                    href={route("how-it-works")}
+                                    onClick={toggleClass}
+                                    icon={SettingsIcon}
+                                    label="How it works"
+                                    activeColor="hover:bg-yellow-300"
+                                />
 
-                                <li>
-                                    <div
-                                        onClick={toggleClass}
-                                        className={`livechat ${getNavLinkClass()} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group cursor-pointer`}
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <MdOutlineSupportAgent
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                            Need help ?
-                                        </span>
-                                    </div>
-                                </li>
+                                <NavLinkWithIcon
+                                    href="#"
+                                    onClick={toggleClass}
+                                    icon={HelpCircle}
+                                    label="Need help ?"
+                                    activeColor="hover:bg-pink-400"
+                                />
                                 <li className="bg-black h-[3px] w-full max-w-[85%] m-auto mt-3"></li>
                             </ul>
                             <ul className="pt-3 text-black space-y-2">
-                                <li>
-                                    <a
-                                        target="_blank"
-                                        onClick={toggleClass}
-                                        href="https://blog.spennypiggy.co"
-                                        className={`${getNavLinkClass("https://blog.spennypiggy.co")} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <ImBlog
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                            Blog
-                                        </span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("terms-and-conditions")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <MdOutlinePrivacyTip
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span
-                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
-                                        >
-                                            Privacy Policy
-                                        </span>
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("terms-and-conditions")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <BsCookie
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span
-                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
-                                        >
-                                            Cookies Policy
-                                        </span>
-                                    </Link>
-                                </li>
-
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("terms-and-conditions")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <LuBookMinus
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span
-                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
-                                        >
-                                            Acceptable Use Policy
-                                        </span>
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("terms-and-conditions")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <GiInjustice
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span
-                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
-                                        >
-                                            Terms
-                                        </span>
-                                    </Link>
-                                </li>
-                                <li>
-                                    <a
-                                        onClick={toggleClass}
-                                        target="_blank"
-                                        href={route("promotion-terms")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
-                                    >
-                                        <span className="inline-flex justify-center items-center ml-2">
-                                            <CiDiscount1
-                                                className="text-gray-800 group-hover:text-black transition-colors"
-                                                size={"1.5rem"}
-                                            />
-                                        </span>
-                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                            Promotion Terms
-                                        </span>
-                                    </a>
-                                </li>
+                                <NavLinkWithIcon
+                                    href="https://blog.spennypiggy.co"
+                                    onClick={toggleClass}
+                                    icon={FileText}
+                                    label="Blog"
+                                    activeColor="hover:bg-[#A2E4B8]"
+                                    isExternal={true}
+                                />
+                                <NavLinkWithIcon
+                                    href={route("terms-and-conditions")}
+                                    onClick={toggleClass}
+                                    icon={ShieldIcon}
+                                    label="Privacy Policy"
+                                    activeColor="hover:bg-yellow-300"
+                                />
+                                <NavLinkWithIcon
+                                    href={route("terms-and-conditions")}
+                                    onClick={toggleClass}
+                                    icon={Cookie}
+                                    label="Cookies Policy"
+                                    activeColor="hover:bg-pink-400"
+                                />
+                                <NavLinkWithIcon
+                                    href={route("terms-and-conditions")}
+                                    onClick={toggleClass}
+                                    icon={FileTextIcon}
+                                    label="Acceptable Use Policy"
+                                    activeColor="hover:bg-[#b892ff]"
+                                />
+                                <NavLinkWithIcon
+                                    href={route("terms-and-conditions")}
+                                    onClick={toggleClass}
+                                    icon={ShieldIcon}
+                                    label="Terms"
+                                    activeColor="hover:bg-yellow-300"
+                                />
+                                <NavLinkWithIcon
+                                    href={route("promotion-terms")}
+                                    onClick={toggleClass}
+                                    icon={GiftIcon}
+                                    label="Promotion Terms"
+                                    activeColor="hover:bg-pink-400"
+                                    isExternal={true}
+                                />
 
                                 {auth && auth?.user?.username ? (
-                                    <li className="block pe-3">
-                                        <Link
-                                            onClick={toggleClass}
-                                            method="post"
-                                            href={route("logout")}
-                                            as="button"
-                                            className="relative  w-full flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
-                                        >
-                                            <span className="inline-flex justify-center items-center ml-2">
-                                                <AiOutlineLogout
-                                                    className="text-gray-800 group-hover:text-black transition-colors"
-                                                    size={"1.5rem"}
-                                                />
-                                            </span>
-                                            <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                    Logout
-                                            </span>
-                                        </Link>
-                                    </li>
+                                    <NavLinkWithIcon
+                                        href={route("logout")}
+                                        onClick={toggleClass}
+                                        method="post"
+                                        as="button"
+                                        icon={LogOut}
+                                        label="Logout"
+                                        activeColor="hover:bg-[#ff6b6b]"
+                                    />
                                 ) : (
                                     ""
                                 )}

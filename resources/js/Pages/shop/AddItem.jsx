@@ -9,7 +9,7 @@ import st from "../../../css/uploader.module.css";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import GlobalUploader from "@/uploadcare/Uploader";
 import Popup from "@/Components/Popup";
-import { AiOutlineShop } from "react-icons/ai";
+import { ShoppingBagIcon } from "@animateicons/react/lucide";
 import Select from "react-select";
 import CountriesShipping from "./CountriesShipping";
 import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
@@ -478,7 +478,7 @@ export default function AddItem(props) {
             return (
                 <div className=" flex items-center">
                     <div className="p-1 rounded-[30px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                        <AiOutlineShop color="var(--pink)" size="1.5rem" />
+                        <ShoppingBagIcon color="var(--pink)" size={24} />
                     </div>
                     <div className="pl-3 text-left">
                         <h2 className="text-lg font-normal font-GillSans uppercase ">
@@ -631,7 +631,7 @@ export default function AddItem(props) {
                             </div>
 
                             <h2 className="text-md font-normal mb-3 mt-3">
-                                Item image
+                                Item image*
                             </h2>
                             {isEdit ? (
                                 <img
@@ -966,9 +966,9 @@ export default function AddItem(props) {
                                         ${haveQuestion ? "after:transition-all after:translate-x-full bg-blue-600" : "bg-gray-200"}
                                         `}
                                         ></div>
-                                        <span className="ml-3 text-base font-medium text-gray-900">
+                                        <span className="ml-3 text-base font-medium text-gray-900 inline-flex items-center">
                                             Ask a question (optional)
-                                            <button className="tooltipbtn">
+                                            <button className="tooltipbtn ml-1">
                                                 ?
                                                 <p>
                                                     {" "}
@@ -1006,9 +1006,9 @@ export default function AddItem(props) {
                                                         : "bg-gray-200"
                                                 }`}
                                             ></div>
-                                            <span className="ml-3 text-md font-medium text-gray-900">
+                                            <span className="ml-3 text-md font-medium text-gray-900 inline-flex items-center">
                                                 Limit slots (optional)
-                                                <button className="tooltipbtn">
+                                                <button className="tooltipbtn ml-1">
                                                     {" "}
                                                     ?
                                                     <p>
@@ -1120,7 +1120,7 @@ export default function AddItem(props) {
                                 )}
 
                                 <div className="hidden ad-setting my-2">
-                                    <div className="inline-flex items-centercursor-pointer">
+                                    <div className="inline-flex items-center cursor-pointer">
                                         <div
                                             onClick={handleQty}
                                             className={` cursor-pointer relative w-11 h-6   peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
@@ -1130,10 +1130,10 @@ export default function AddItem(props) {
                                                 : "bg-gray-200"
                                         } `}
                                         ></div>
-                                        <span className="ml-3 text-md font-medium text-gray-900">
+                                        <span className="ml-3 text-md font-medium text-gray-900 inline-flex items-center">
                                             Allow buyer to choose a quantity
                                             (optional){" "}
-                                            <button className="tooltipbtn">
+                                            <button className="tooltipbtn ml-1">
                                                 ?
                                                 <p>
                                                     Your supporters will be able to

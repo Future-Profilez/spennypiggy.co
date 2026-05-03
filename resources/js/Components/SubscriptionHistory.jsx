@@ -42,7 +42,17 @@ const getSubscriptionPhase = (subscription) => {
         ? new Date(subscription.current_end_subscription_date)
         : null;
 
-    // 🚫 If canceled
+    // 🟢 SUBSCRIPTION ACTIVE (Priority check)
+    if (subStart && subEnd && today >= subStart && today <= subEnd) {
+        return "subscription_active";
+    }
+
+    // � TRIAL ACTIVE
+    if (trialStart && trialEnd && today >= trialStart && today <= trialEnd) {
+        return "trial_active";
+    }
+
+    // � If canceled
     if (subscription.status === "canceled") {
         if (trialEnd && today <= trialEnd) {
             return "trial_canceled";
@@ -60,12 +70,7 @@ const getSubscriptionPhase = (subscription) => {
         return "trial_expired";
     }
 
-    // 🟢 SUBSCRIPTION ACTIVE
-    if (subStart && subEnd && today >= subStart && today <= subEnd) {
-        return "subscription_active";
-    }
-
-    // 🔴 SUBSCRIPTION EXPIRED
+    //  SUBSCRIPTION EXPIRED
     if (subEnd && today > subEnd) {
         return "subscription_expired";
     }
@@ -74,15 +79,32 @@ const getSubscriptionPhase = (subscription) => {
 };
 
 const getDisplayAmount = (subscription, phase) => {
-    if (phase.includes("trial")) {
+    if (phase.includes("trial") || subscription.amount == 0) {
         return 0;
     }
     return subscription.amount;
 };
 
 const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
-    const getStatusInfo = (status) => {
-        const statusConfig = {
+    const getStatusInfo = (status, phase) => {
+    // If it's an active phase but status says something else, prioritize the phase
+    if (phase === "subscription_active") {
+        return {
+            class: "bg-green-100 text-green-700 border border-green-200",
+            text: "Active",
+            icon: <CheckCircle2 size={12} className="mr-1" />,
+        };
+    }
+    
+    if (phase === "trial_active") {
+        return {
+            class: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+            text: "Trial",
+            icon: <Clock size={12} className="mr-1" />,
+        };
+    }
+
+    const statusConfig = {
             paid: {
                 class: "bg-green-100 text-green-700 border border-green-200",
                 text: "Paid",
@@ -160,33 +182,13 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     };
 
     const getExpiryDate = (subscription, phase) => {
-        if (phase === "trial_active" || phase === "trial_expired") {
-            return formatDate(subscription.current_end_trial_date);
-        }
-
-        if (
-            phase === "subscription_active" ||
-            phase === "subscription_expired"
-        ) {
-            return formatDate(subscription.current_end_subscription_date);
-        }
-
-        return "N/A";
+        const date = subscription.current_end_subscription_date || subscription.current_end_trial_date;
+        return formatDate(date);
     };
 
     const getStartDate = (subscription, phase) => {
-        if (phase === "trial_active" || phase === "trial_expired") {
-            return formatDate(subscription.current_start_trial_date);
-        }
-
-        if (
-            phase === "subscription_active" ||
-            phase === "subscription_expired"
-        ) {
-            return formatDate(subscription.current_start_subscription_date);
-        }
-
-        return "N/A";
+        const date = subscription.current_start_subscription_date || subscription.current_start_trial_date;
+        return formatDate(date);
     };
 
     const getRenewalDate = (subscription, phase) => {
@@ -197,6 +199,25 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
             return formatDate(subscription.upcoming_payment);
         }
         return null;
+    };
+
+    const getDisplayStatus = (phase, subscription) => {
+        switch (phase) {
+            case "trial_active":
+                return "trialing";
+            case "trial_expired":
+                return "trial_expired";
+            case "subscription_active":
+                return "active";
+            case "subscription_expired":
+                return "incomplete_expired";
+            case "canceled":
+                return "canceled";
+            case "trial_canceled":
+                return "trial_canceled";
+            default:
+                return subscription.status;
+        }
     };
 
     if (!subscriptionHistory || subscriptionHistory.length === 0) {
@@ -221,25 +242,6 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
         );
     }
 
-    const getDisplayStatus = (phase, subscription) => {
-        switch (phase) {
-            case "trial_active":
-                return "trialing";
-            case "trial_expired":
-                return "trial_expired";
-            case "subscription_active":
-                return "active";
-            case "subscription_expired":
-                return "incomplete_expired";
-            case "canceled":
-                return "canceled";
-            case "trial_canceled":
-                return "trial_canceled";
-            default:
-                return subscription.status;
-        }
-    };
-
     return (
         <div className="bg-white border-t pt-6 border-gray-200 overflow-hidden">
             <div className="pb-4">
@@ -248,11 +250,11 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
                 </p>
             </div>
 
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 pb-4 scrollbar-hide">
+            <div className="space-y-4 overflow-y-auto pr-2 pb-4 scrollbar-hide">
                 {subscriptionHistory.map((subscription, index) => {
                     const phase = getSubscriptionPhase(subscription);
                     const displayStatus = getDisplayStatus(phase, subscription);
-                    const statusInfo = getStatusInfo(displayStatus);
+                    const statusInfo = getStatusInfo(displayStatus, phase);
                     const nextPayment = getRenewalDate(subscription, phase);
                     const hasEnded =
                         phase === "trial_expired" ||

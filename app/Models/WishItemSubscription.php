@@ -22,6 +22,7 @@ class WishItemSubscription extends Model
         'guest_email',
         'currency',
         'amount',
+        'total_paid',
         'tax',
         'vat_tax_amount',
         'recurring_for',

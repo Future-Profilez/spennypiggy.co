@@ -718,6 +718,7 @@ class TaskController extends Controller
             'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
             'charge_id' => $chargeId,
             'amount' => $amount,
+            'total_paid' => (float) ($session->amount_total ?? 0) / $multiplier,
             'currency' => $currency,
             'status' => 'paid', // Always paid in sync handler (and especially for local dev)
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
@@ -815,6 +816,12 @@ class TaskController extends Controller
 
             if ($supporter) {
                 Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
+
+                \App\Helpers::sendNotification(
+                    "Task Purchased! 🎉",
+                    "You've successfully purchased the task: " . $task->title . ". The creator has been notified.",
+                    $supporter->email
+                );
             }
         } catch (\Exception $e) {
             Log::error("Failed to send task purchase email/notification in sync handler", ['error' => $e->getMessage()]);
@@ -883,6 +890,14 @@ class TaskController extends Controller
                     $supporter->email
                 );
             }
+
+            // Confirm to creator that proof was submitted
+            Mail::to($creator->email)->send(new \App\Mail\TaskProofSubmittedCreatorMail($purchase, $task));
+            Helpers::sendNotification(
+                "Proof Submitted ✅",
+                "Your proof for '{$task->title}' has been submitted and is awaiting review.",
+                $creator->email
+            );
         } catch (\Exception $e) {
         }
 
@@ -968,6 +983,14 @@ class TaskController extends Controller
                         $creator->email
                     );
                 }
+
+                // Notify supporter that they accepted the proof
+                Mail::to($supporter->email)->send(new \App\Mail\TaskProofAcceptedSupporterMail($purchase, $task, $creator));
+                Helpers::sendNotification(
+                    "Task Complete! ✅",
+                    "You accepted the proof for '{$task->title}'. The order is now complete.",
+                    $supporter->email
+                );
             } catch (\Exception $e) {
             }
 
@@ -1070,9 +1093,17 @@ class TaskController extends Controller
                 // Notify Creator about rejection
                 try {
                     Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
-                    Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review.", $creator->email);
+                    Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review and resubmit.", $creator->email);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to notify creator about rejection: " . $e->getMessage());
+                }
+
+                // Confirm to supporter that rejection was submitted
+                try {
+                    Mail::to($supporter->email)->send(new \App\Mail\TaskProofRejectedSupporterMail($purchase, $task));
+                    Helpers::sendNotification("Revision Requested 🔄", "You've requested changes for '{$task->title}'. The creator will resubmit shortly.", $supporter->email);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to notify supporter about rejection: " . $e->getMessage());
                 }
             }
         }

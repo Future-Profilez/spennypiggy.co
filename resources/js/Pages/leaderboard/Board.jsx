@@ -6,7 +6,7 @@ import Avatar from "@/includes/Avatar";
 import axios from "axios";
 import { useState, useMemo } from "react";
 import { crown } from "@/includes/Icons";
-import { RiVerifiedBadgeFill } from "react-icons/ri";
+import { BadgeCheckIcon } from "lucide-react";
 import LeaderboardStars from "./LeaderboardStars";
 import RecentSupporters from "./RecentSupporters";
 import DeviceID from "@/includes/DeviceID";
@@ -120,7 +120,7 @@ export default function Board(props) {
                                 <h2 className="!text-[12px] sm:!text-lg font-bold pt-2 capitalize  justify-center">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
-                                        <RiVerifiedBadgeFill  size={'1.2rem'} className="ml-1 inline-block text-pink" />
+                                        <BadgeCheckIcon  size={'1.2rem'} className="ml-1 inline-block text-pink" />
                                         : ''}
                                 </h2>
                                 <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">

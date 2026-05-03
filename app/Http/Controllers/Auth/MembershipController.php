@@ -32,6 +32,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
@@ -103,7 +104,7 @@ class MembershipController extends Controller
         // Use new gross-up flow
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
         $totalPrice = $breakdown['total_supporter_pays'];
-        $taxAmount = $breakdown['application_fee']; // We'll store application fee as tax_amount for consistency in DB
+        $taxAmount = $breakdown['total_fees']; // Store total fees (Platform + Stripe) for consistency
 
         $mem = new Membership();
         $mem->user_id = Auth::id();
@@ -239,60 +240,104 @@ class MembershipController extends Controller
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $connectedAccountId = $user->account_id;
 
-                $priceChanged = $old_price != $price || $old_level != $newLevel;
+                // Check if product exists in Stripe
+                $stripeProduct = null;
+                try {
+                    $stripeProduct = $stripe->products->retrieve($mem->product_id, [], ['stripe_account' => $connectedAccountId]);
+                } catch (Exception $e) {
+                    Log::warning("Stripe Product not found for membership {$mem->uuid}, will attempt to recreate. Error: " . $e->getMessage());
+                }
 
-                if ($priceChanged) {
-                    // Get currency metadata to handle zero-decimal currencies properly
-                    $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
-                    $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                // Get currency metadata to handle zero-decimal currencies properly
+                $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-                    $pricePayload = [
-                        'unit_amount_decimal' => (string) round($totalPriceGrossedUp * $multiplier),
-                        'currency' => $currency,
-                        'product' => $mem->product_id,
+                if (!$stripeProduct) {
+                    // Recreate the product if it's missing from Stripe
+                    $productPayload = [
+                        "name"  => "Membership: {$newLevel} (Total value including all fees)",
+                        "images" => [$mem->perma_link],
+                        "default_price_data"    =>  [
+                            "currency"  => $currency,
+                            "unit_amount_decimal"   => round($totalPriceGrossedUp * $multiplier, 2, PHP_ROUND_HALF_UP),
+                        ],
+                        "url"   =>  env('APP_URL') . '/' . $user->username,
+                        'metadata' => [
+                            'membership_level' => $newLevel,
+                            'creator_id' => $user->id,
+                            'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                            'total_charge_amount' => (string)($totalPriceGrossedUp * 100),
+                        ]
                     ];
 
-                    if ($newLevel !== 'lifetime') {
-                        $pricePayload['recurring'] = [
-                            'interval' => StripeControl::$periods['monthly'],
-                            'interval_count' => 1,
+                    if ($newLevel != 'lifetime') {
+                        $productPayload['default_price_data']['recurring']  =   [
+                            'interval'  =>  StripeControl::$periods["monthly"],
+                            'interval_count'    =>  1
                         ];
                     }
 
-                    $newPrice = $stripe->prices->create($pricePayload, [
-                        'stripe_account' => $connectedAccountId
+                    $stripeProduct = StripeControl::createProduct($productPayload, $connectedAccountId);
+                    
+                    $mem->update([
+                        'product_id' => $stripeProduct->id,
+                        'price_id' => $stripeProduct->default_price,
+                        'approved' => 0,
                     ]);
 
-                    $mem->price_id = $newPrice->id;
+                    Log::info("Recreated Stripe Product for membership {$mem->uuid}: " . $stripeProduct->id);
+                } else {
+                    $priceChanged = $old_price != $price || $old_level != $newLevel;
 
-                    $stripe->products->update($mem->product_id, [
-                        'default_price' => $newPrice->id,
+                    if ($priceChanged) {
+                        $pricePayload = [
+                            'unit_amount_decimal' => (string) round($totalPriceGrossedUp * $multiplier),
+                            'currency' => $currency,
+                            'product' => $mem->product_id,
+                        ];
+
+                        if ($newLevel !== 'lifetime') {
+                            $pricePayload['recurring'] = [
+                                'interval' => StripeControl::$periods['monthly'],
+                                'interval_count' => 1,
+                            ];
+                        }
+
+                        $newPrice = $stripe->prices->create($pricePayload, [
+                            'stripe_account' => $connectedAccountId
+                        ]);
+
+                        $mem->price_id = $newPrice->id;
+
+                        $stripe->products->update($mem->product_id, [
+                            'default_price' => $newPrice->id,
+                        ], [
+                            'stripe_account' => $connectedAccountId
+                        ]);
+
+                        $stripe->prices->update($oldPriceId, [
+                            'active' => false
+                        ], [
+                            'stripe_account' => $connectedAccountId
+                        ]);
+                    }
+
+                    $product = $stripe->products->update($mem->product_id, [
+                        "name" => "Membership: {$newLevel} (Total value including all fees)",
+                        "images" => [$mem->perma_link],
+                        "url" => env('APP_URL') . '/' . $user->username . '/memberships',
+                        'metadata' => [
+                            'membership_level' => $newLevel,
+                            'creator_id' => $user->id,
+                            'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                            'total_charge_amount' => (string)($totalPriceGrossedUp * 100),
+                        ]
                     ], [
                         'stripe_account' => $connectedAccountId
                     ]);
 
-                    $stripe->prices->update($oldPriceId, [
-                        'active' => false
-                    ], [
-                        'stripe_account' => $connectedAccountId
-                    ]);
+                    $mem->product_id = $product->id;
                 }
-
-                $product = $stripe->products->update($mem->product_id, [
-                    "name" => "Membership: {$newLevel} (Total value including all fees)",
-                    "images" => [$mem->perma_link],
-                    "url" => env('APP_URL') . '/' . $user->username . '/memberships',
-                    'metadata' => [
-                        'membership_level' => $newLevel,
-                        'creator_id' => $user->id,
-                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
-                        'total_charge_amount' => (string)($totalPriceGrossedUp * 100),
-                    ]
-                ], [
-                    'stripe_account' => $connectedAccountId
-                ]);
-
-                $mem->product_id = $product->id;
                 if ($mem->edited_status === 0 || $mem->edited_status === 3) {
                     $mem->edited_status = 1;
                 }
@@ -481,13 +526,28 @@ class MembershipController extends Controller
 
             if ($user) {
                 $now = Carbon::now();
-                $hasActiveSameTier = MembershipPayment::where('user_id', $user->id)
+                // Check if the user has an active membership record that also has active access (not refunded)
+                $hasActiveSameTier = MembershipPayment::where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                        ->orWhere('guest_email', $user->email);
+                })
                     ->where('membership_id', $membership->id)
                     ->where('status', 'paid')
                     ->where(function ($q) use ($now) {
                         $q->whereNull('end')->orWhere('end', '>', $now);
                     })
                     ->whereNotNull('stripe_id')
+                    ->whereExists(function ($query) use ($user, $membership) {
+                        $query->select(DB::raw(1))
+                            ->from('deliverables')
+                            ->where('deliverables.item_id', $membership->id)
+                            ->where('deliverables.product_type', 'membership')
+                            ->where('deliverables.status', 'delivered')
+                            ->where(function ($q) use ($user) {
+                                $q->where('deliverables.gifter_id', $user->id)
+                                    ->orWhere('deliverables.customer_email', $user->email);
+                            });
+                    })
                     ->exists();
 
                 if ($hasActiveSameTier) {
@@ -505,8 +565,9 @@ class MembershipController extends Controller
                 'guest_email' => $request->email,
                 'currency' => $chargeCurrency, // Force Creator's Currency
                 'amount' => $price,
-                'tax' => $applicationFeeAmount,
-                'vat_tax_amount' => $breakdown['compliance_fee'] + $breakdown['admin_fee'], // Storing other fees in vat for now
+                'total_paid' => $finalTotalAmount,
+                'tax' => $breakdown['total_fees'],
+                'vat_tax_amount' => $price * $vatPercent / 100, // Store actual VAT amount
                 'recurring_for' => $reccure ?? null,
                 'recurring_type' => in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message' => $request->message,
@@ -905,6 +966,15 @@ class MembershipController extends Controller
                 $userPayment->to_user_id = $mem->membership->user_id;
                 $userPayment->product_type = 'membership';
                 $userPayment->amount = $mem->amount;
+                
+                // Ensure total_paid is updated in MembershipPayment if missing
+                if (!$mem->total_paid || $mem->total_paid <= 0) {
+                    $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+                    $mem->total_paid = (float) ($session->amount_total / $multiplier);
+                    $mem->save();
+                }
+                
+                $userPayment->total_paid = $mem->total_paid;
                 $userPayment->currency = $mem->currency;
                 $userPayment->payment_method = 'stripe';
                 $userPayment->payment_details = json_encode($session, true);
@@ -924,7 +994,9 @@ class MembershipController extends Controller
                     $memBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'));
                     $platformFee = $memBreakdown['platform_fee'] + $memBreakdown['compliance_fee'] + $memBreakdown['admin_fee'];
                     $stripeFee = $memBreakdown['stripe_fee'];
-                    $gross = $memBreakdown['total_supporter_pays'];
+                    $gross = $mem->total_paid && $mem->total_paid > 0 
+                        ? (float) $mem->total_paid 
+                        : $memBreakdown['total_supporter_pays'];
                     $creatorAmount = $amount;
 
                     FinancialTransaction::updateOrCreate(

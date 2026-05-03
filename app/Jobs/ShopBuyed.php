@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class ShopBuyed implements ShouldQueue
 {
@@ -46,8 +47,17 @@ class ShopBuyed implements ShouldQueue
      */
     public function handle()
     {
-        if((isset($this->payment->shop->user) && $this->payment->shop->user->notification_send == 1) || (empty($this->payment->shop->user))){
-            EmailService::shopBuyed($this->payment, $this->anon,$this->amountUserPay);
+        $this->payment->loadMissing(['shop.user']);
+
+        $creatorEmail = $this->payment->shop?->user?->email;
+        if (!$creatorEmail) {
+            Log::warning('ShopBuyed: creator email missing', [
+                'shop_payment_id' => $this->payment->id ?? null,
+                'shop_id' => $this->payment->shop_id ?? null,
+            ]);
+            return;
         }
+
+        EmailService::shopBuyed($this->payment, $this->anon, $this->amountUserPay);
     }
 }

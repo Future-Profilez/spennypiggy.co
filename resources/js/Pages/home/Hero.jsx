@@ -11,7 +11,7 @@ import TrustBox from './TrustBox';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import Popup from '@/Components/Popup';
-import { FaRocket } from 'react-icons/fa';
+import { RocketIcon, HouseIcon } from "@animateicons/react/lucide";
 
 export default function Hero({auth}) {
 
@@ -63,10 +63,7 @@ export default function Hero({auth}) {
             <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
               <li>
                 <a href="#home" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'home')}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 12.204C2 9.915 2 8.771 2.52 7.823C3.038 6.874 3.987 6.286 5.884 5.108L7.884 3.867C9.889 2.622 10.892 2 12 2C13.108 2 14.11 2.622 16.116 3.867L18.116 5.108C20.013 6.286 20.962 6.874 21.481 7.823C22 8.771 22 9.915 22 12.203V13.725C22 17.625 22 19.576 20.828 20.788C19.657 22 17.771 22 14 22H10C6.229 22 4.343 22 3.172 20.788C2 19.576 2 17.626 2 13.725V12.204Z" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M12 15V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+                  <HouseIcon size={24} color="currentColor" />
                 </a>
               </li>
               <li>
@@ -129,13 +126,13 @@ export default function Hero({auth}) {
                         <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} 
                           className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
                           <span className="relative z-10">My Wishlist</span>
-                          <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                          <RocketIcon size={24} className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                           <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </Link>
                         :  <Link href="/register"
                         className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden">
                             <span className="relative z-10">Create your page</span>
-                            <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                            <RocketIcon size={24} className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           </Link>
                       }
