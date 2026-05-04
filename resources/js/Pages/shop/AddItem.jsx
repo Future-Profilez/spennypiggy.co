@@ -1008,7 +1008,7 @@ export default function AddItem(props) {
                                             ></div>
                                             <span className="ml-3 text-md font-medium text-gray-900 inline-flex items-center">
                                                 Limit slots (optional)
-                                                <button className="tooltipbtn ml-1">
+                                                <button type="button" className="tooltipbtn ml-1">
                                                     {" "}
                                                     ?
                                                     <p>
@@ -1133,7 +1133,7 @@ export default function AddItem(props) {
                                         <span className="ml-3 text-md font-medium text-gray-900 inline-flex items-center">
                                             Allow buyer to choose a quantity
                                             (optional){" "}
-                                            <button className="tooltipbtn ml-1">
+                                            <button type="button" className="tooltipbtn ml-1">
                                                 ?
                                                 <p>
                                                     Your supporters will be able to
