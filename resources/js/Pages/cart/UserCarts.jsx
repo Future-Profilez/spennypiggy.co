@@ -16,10 +16,18 @@ export default function UserCarts(props) {
     const turnstileRef = useRef(null);
     const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart, currency } = props;
-    const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { format, formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
     const datas = props.data;
     const card_capabilities = datas?.card_capabilities;
-    const chargeCurrency = useMemo(() => (datas?.user?.default_currency || currency || "GBP"), [datas?.user?.default_currency, currency]);
+    
+    // Derived currency from items (priority: item currency > creator currency > prop currency > GBP)
+    const itemCurrency = useMemo(() => {
+        const firstItemCurrency = datas?.items?.[0]?.currency;
+        const creatorCurrency = datas?.user?.currency || datas?.user?.default_currency;
+        return (firstItemCurrency || creatorCurrency || props.currency || "GBP").toUpperCase();
+    }, [datas?.items, datas?.user?.currency, datas?.user?.default_currency, props.currency]);
+
+    const chargeCurrency = itemCurrency;
     const debugEnabled = useMemo(() => {
         try {
             return window.location.search.includes('debug_cart_checkout=1');
@@ -68,38 +76,8 @@ export default function UserCarts(props) {
         }
     }, [debugEnabled, debugStorageKey, debugEvents]);
     
-    // Helper to identify zero decimal currencies
-    const isZeroDecimalCurrency = (curr) => {
-        const zeroDecimalCurrencies = [
-            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
-            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
-        ];
-        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
-    };
-
-    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
-        const isZeroDecimal = isZeroDecimalCurrency(curr);
-        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
-        const priceWithVat = listedPrice + vatAmount;
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100; 
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
-        const adminFee = adminFeeInCurrency(curr); 
-        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-        if (totalDeductionRate >= 1) return priceWithVat;
-        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        
-        // Rounding logic to match backend (Helpers.php)
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
-    };
+    const isCreator = auth?.user?.id === datas?.user?.id;
+    const vatPercentage = datas?.user?.vat_amount_percentage || 0;
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
@@ -513,28 +491,42 @@ export default function UserCarts(props) {
         });
     };
 
-     function updateTotals() {
-        const subtotalValue =
-            items &&
-            items.reduce(
-                (total, item) => +total + +item.price * (+item.quantity || 1),
-                0
-            );
-        setsubtotal(subtotalValue);
-        
-        // Calculate fees based on the difference between Total Supporter Pays and Listed Price
-        const feesValue =
-            items &&
-            items.reduce(
-                (total, item) => {
-                    const itemCurrency = item?.currency || datas?.user?.default_currency || chargeCurrency;
-                    const unitTotal = item?.supporter_total ?? calculateTotalSupporterPays(item.price, itemCurrency, datas?.user?.vat_amount_percentage);
-                    const unitFee = unitTotal - parseFloat(item.price || 0);
-                    return +total + unitFee * (+item.quantity || 1);
-                },
-                0
-            );
-        setFee(feesValue);
+    function updateTotals() {
+        if (!items || items.length === 0) {
+            setsubtotal(0);
+            setFee(0);
+            return;
+        }
+
+        // 1. Calculate Total Net (Price + VAT + Shipping)
+        const totalNetWithVatAndShipping = items.reduce((total, item) => {
+            // Get baseline shipping price (matching ProfileProduct.jsx logic)
+            const shippingPrice = item?.type === 'physical' ? (() => {
+                const shippingRates = item?.shop_shipping_info || [];
+                const baselineRate = shippingRates.find(s => 
+                    s.country?.toLowerCase() === 'all' || 
+                    s.country?.toLowerCase() === 'worldwide'
+                ) || shippingRates[0];
+                return parseFloat(baselineRate?.shipping_price || 0);
+            })() : 0;
+
+            const vatAmount = (parseFloat(item.price || 0) * vatPercentage) / 100;
+            const itemNetPlusVatPlusShipping = parseFloat(item.price || 0) + vatAmount + shippingPrice;
+            
+            return total + (itemNetPlusVatPlusShipping * (+item.quantity || 1));
+        }, 0);
+
+        // 2. Calculate Total Gross (Supporter Pays) - Fixed fees added ONCE here for optimized transaction
+        const breakdown = calculateTotalSupporterPays(totalNetWithVatAndShipping, chargeCurrency);
+        const totalGross = breakdown.total_supporter_pays;
+
+        // 3. Calculate Total Base Net (Listed Price only) for the subtotal display
+        const totalBaseNet = items.reduce((total, item) => {
+            return total + (parseFloat(item.price || 0) * (+item.quantity || 1));
+        }, 0);
+
+        setsubtotal(totalBaseNet);
+        setFee(totalGross - totalBaseNet);
     }
 
     const quantityUpdate = (type, amount, tax) => {
@@ -605,11 +597,27 @@ export default function UserCarts(props) {
                                 {items &&
                                     items.map((c, i) => {
                                         const itemCurrency = c?.currency || datas?.user?.default_currency || chargeCurrency;
-                                        const itemTotalPrice = c?.supporter_total ?? calculateTotalSupporterPays(c.price, itemCurrency, datas?.user?.vat_amount_percentage);
+                                        
+                                        // Calculate total price using the same logic as Shop Detail page
+                                        // Get baseline shipping price (matching ProfileProduct.jsx logic)
+                                        const shippingPrice = c?.type === 'physical' ? (() => {
+                                            const shippingRates = c?.shop_shipping_info || [];
+                                            const baselineRate = shippingRates.find(s => 
+                                                s.country?.toLowerCase() === 'all' || 
+                                                s.country?.toLowerCase() === 'worldwide'
+                                            ) || shippingRates[0];
+                                            return parseFloat(baselineRate?.shipping_price || 0);
+                                        })() : 0;
+
+                                        const vatAmount = (parseFloat(c.price || 0) * vatPercentage) / 100;
+                                        const basePriceToGrossUp = parseFloat(c.price || 0) + vatAmount + shippingPrice;
+                                        
+                                        const breakdown = calculateTotalSupporterPays(basePriceToGrossUp, itemCurrency);
+                                        const itemTotalPrice = breakdown.total_supporter_pays;
+
                                         return (
                                             <CartItem
                                                 currency={itemCurrency}
-                                                // currency={datas?.user && datas?.user?.default_currency}
                                                 quantityUpdate={quantityUpdate}
                                                 removeCart={removeCart}
                                                 data={c}
@@ -622,16 +630,6 @@ export default function UserCarts(props) {
                             </div>
 
                             <div className="cartTotal pt-3 pb-6">
-                                {/* <div className="fading cartSubTotal text-right mt-2">
-                                    <span>Subtotal : </span>
-                                    <strong className="!text-right text-black">
-                                        {auth?.user ? 
-                                            formatMultiPrice(subtotal || "", datas?.user && currency) : 
-                                            formatMultiPrice((subtotal || 0) + (fee || 0), datas?.user && currency)
-                                        }
-                                    </strong>
-                                </div> */}
-
                                 <div className="fading cartSubTotal text-right mt-2">
                                     <strong className="!text-black">Total :</strong>
                                     <strong className="!text-right !text-black">

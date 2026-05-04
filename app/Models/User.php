@@ -163,54 +163,60 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function getSubscriptionStatusAttribute()
     {
         // 1. Check for active subscription period in MonthlyCharge table
-        // We check for statuses that indicate a paid or active subscription
-        // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
-        $latest = $this->allMonthlyCharges()
+        // We look through all charges to find one that is CURRENTLY active.
+        // We prioritize ACTIVE > FREE_TRIAL > EXPIRED.
+        $allCharges = $this->allMonthlyCharges()
             ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
-            ->first();
+            ->get();
 
-        if ($latest) {
-            $nowDate = Carbon::now();
-            
+        $nowDate = Carbon::now();
+        $hasExpiredRecord = false;
+
+        foreach ($allCharges as $charge) {
             // Check if within paid period (including canceled but not yet expired)
-            if (in_array($latest->status, ['paid', 'active', 'renew', 'canceled'])) {
-                $startDate = $latest->current_start_subscription_date ? Carbon::parse($latest->current_start_subscription_date)->startOfDay() : null;
-                $endDate = $latest->current_end_subscription_date ? Carbon::parse($latest->current_end_subscription_date)->endOfDay() : null;
+            if (in_array($charge->status, ['paid', 'active', 'renew', 'canceled'])) {
+                $startDate = $charge->current_start_subscription_date ? Carbon::parse($charge->current_start_subscription_date)->startOfDay() : null;
+                $endDate = $charge->current_end_subscription_date ? Carbon::parse($charge->current_end_subscription_date)->endOfDay() : null;
                 
                 if ($startDate && $endDate) {
                     if ($nowDate->between($startDate, $endDate)) {
                         return 1; // ACTIVE
                     }
-                    
                     if ($nowDate->greaterThan($endDate)) {
-                        return 0; // EXPIRED
+                        $hasExpiredRecord = true;
                     }
                 }
             }
 
             // Check if within trial period
-            if ($latest->status === 'trialing') {
-                $trialStart = $latest->current_start_trial_date ? Carbon::parse($latest->current_start_trial_date)->startOfDay() : null;
-                $trialEnd = $latest->current_end_trial_date ? Carbon::parse($latest->current_end_trial_date)->endOfDay() : null;
+            if ($charge->status === 'trialing') {
+                $trialStart = $charge->current_start_trial_date ? Carbon::parse($charge->current_start_trial_date)->startOfDay() : null;
+                $trialEnd = $charge->current_end_trial_date ? Carbon::parse($charge->current_end_trial_date)->endOfDay() : null;
 
                 if ($trialStart && $trialEnd) {
                     if ($nowDate->between($trialStart, $trialEnd)) {
                         return 2; // FREE_TRIAL
                     }
-                    
                     if ($nowDate->greaterThan($trialEnd)) {
-                        return 0; // EXPIRED (Trial ended)
+                        $hasExpiredRecord = true;
                     }
                 }
             }
         }
 
+        // If we found any expired record but no active ones, return EXPIRED
+        if ($hasExpiredRecord) {
+            return 0; // EXPIRED
+        }
+
         // 2. Fallback: If is_subscribed is 1, be lenient to allow payments
         // This handles cases where dates might be slightly off or sync is pending
         if ($this->is_subscribed) {
-            if ($latest && !in_array($latest->status, ['failed', 'canceled', 'unpaid'])) {
-                if ($latest->status === 'trialing') return 2;
-                return 1; // Assume active if is_subscribed is 1 and we have a valid-looking record
+            // Try to find any valid-looking record even if dates are missing/off
+            $latestValid = $allCharges->first();
+            if ($latestValid && !in_array($latestValid->status, ['failed', 'canceled', 'unpaid'])) {
+                if ($latestValid->status === 'trialing') return 2;
+                return 1; // Assume active
             }
             
             // If is_subscribed is 1 but no records found, still return 1 to allow payment
@@ -479,7 +485,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function allMonthlyCharges()
     {
-        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderBy('created_at', 'desc');
+        return $this->hasMany(MonthlyCharge::class, 'user_id')
+            ->orderByRaw('COALESCE(current_end_subscription_date, current_end_trial_date, created_at) DESC');
     }
 
     public function followers()

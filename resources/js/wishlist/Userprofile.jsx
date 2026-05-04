@@ -1,6 +1,7 @@
 import { lazy, useState, useRef } from "react";
 import userphoto from "../../assets/siteicon.png";
 import { usePage } from "@inertiajs/react";
+import { route } from 'ziggy-js';
 const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 const ShareProfile = lazy(() => import("./ShareProfile"));
 const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { lazy } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
+import { route } from 'ziggy-js';
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
@@ -360,7 +361,7 @@ export default function Accountsetting(props) {
                                 classes="w-full" 
                                 text={
                                     <SettingItem
-                                        icon={GiftIcon}
+                                        icon={Gift}
                                         title="Platform Subscription"
                                         subtitle={
                                             site_subscription?.subscription_status_code === 1 || site_subscription?.subscription_status_code === 2

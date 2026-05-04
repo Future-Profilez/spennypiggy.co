@@ -18,7 +18,7 @@ import { Link, usePage } from "@inertiajs/react";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
-    const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { format, formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
     const {
         imagesize,
         currency,
@@ -34,42 +34,6 @@ export default function Wishlistbox(props) {
         trackClick,
         isOverlay,
     } = props;
-
-    // Helper to identify zero decimal currencies
-    const isZeroDecimalCurrency = (curr) => {
-        const zeroDecimalCurrencies = [
-            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
-            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
-        ];
-        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
-    };
-
-    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
-        const isZeroDecimal = isZeroDecimalCurrency(curr);
-        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
-        const priceWithVat = listedPrice + vatAmount;
-
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100; 
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
-        const adminFee = adminFeeInCurrency(curr); 
-        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-        
-        if (totalDeductionRate >= 1) return priceWithVat;
-
-        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        
-        // Rounding logic to match backend (Helpers.php)
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
-    };
 
     const effectiveAuth = auth || globalAuth;
     const isCreator = effectiveAuth?.user?.id === itm?.user_id;
@@ -253,10 +217,9 @@ export default function Wishlistbox(props) {
                                     <span>
                                         {formatMultiPrice(
                                             calculateTotalSupporterPays(
-                                                itm.price, 
-                                                itm?.currency || "GBP",
-                                                itm?.user?.vat_amount_percentage || 0
-                                            ), 
+                                                (parseFloat(itm.price || 0) * (1 + (itm?.user?.vat_amount_percentage || 0) / 100)), 
+                                                itm?.currency || "GBP"
+                                            ).total_supporter_pays, 
                                             itm?.currency || "GBP"
                                         )}
                                     </span>

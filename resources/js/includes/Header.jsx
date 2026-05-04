@@ -59,11 +59,8 @@ import {
     Calendar, 
     Cookie,
     LogOut,
-    CalendarIcon,
-    CoinsIcon,
-    FileTextIcon,
-    GiftIcon,
-    ShieldIcon
+    Shield as ShieldIcon,
+    FileText as FileTextIcon
 } from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
@@ -373,7 +370,7 @@ export default function Header({ classMagicword }) {
                                             />
                                             <NavLinkWithIcon
                                                 href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                                icon={CalendarIcon}
+                                                icon={Calendar}
                                                 label="Subscription Billing"
                                                 activeColor="hover:bg-[#A2E4B8]"
                                                 isExternal={true}
@@ -391,21 +388,19 @@ export default function Header({ classMagicword }) {
                                         />
                                     )}
 
-                                    {auth &&
-                                    auth.user &&
-                                    auth.user.role ==1 ? (
+                                    {auth && auth.user ?
+                                        <NavLinkWithIcon
+                                            href="/task/dashboard" activeColor="hover:bg-[#A2E4B8]"
+                                            onClick={toggleClass} icon={ClipboardList} label="Tasks"
+                                        /> 
+                                    : ''}
+                                    
+                                    {auth && auth.user && auth.user.role ==1 ? (
                                         <>
-                                            <NavLinkWithIcon
-                                                href="/task/dashboard"
-                                                onClick={toggleClass}
-                                                icon={ClipboardList}
-                                                label="Tasks"
-                                                activeColor="hover:bg-[#A2E4B8]"
-                                            />
                                             <NavLinkWithIcon
                                                 href="/earnings"
                                                 onClick={toggleClass}
-                                                icon={CoinsIcon}
+                                                icon={Coins}
                                                 label="Earnings"
                                                 activeColor="hover:bg-[#ff6b6b]"
                                             />
@@ -447,7 +442,7 @@ export default function Header({ classMagicword }) {
                                         <NavLinkWithIcon
                                             href="/history"
                                             onClick={toggleClass}
-                                            icon={CoinsIcon}
+                                            icon={Coins}
                                             label="Support History"
                                             activeColor="hover:bg-[#b892ff]"
                                         />
@@ -495,7 +490,7 @@ export default function Header({ classMagicword }) {
                                     <NavLinkWithIcon
                                         href="/refer-and-earn"
                                         onClick={toggleClass}
-                                        icon={CoinsIcon}
+                                        icon={Coins}
                                         label="Refer & Earn"
                                         activeColor="hover:bg-[#A2E4B8]"
                                     />
@@ -558,7 +553,7 @@ export default function Header({ classMagicword }) {
                                 <NavLinkWithIcon
                                     href={route("promotion-terms")}
                                     onClick={toggleClass}
-                                    icon={GiftIcon}
+                                    icon={Gift}
                                     label="Promotion Terms"
                                     activeColor="hover:bg-pink-400"
                                     isExternal={true}

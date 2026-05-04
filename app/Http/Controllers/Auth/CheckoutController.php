@@ -222,6 +222,9 @@ class CheckoutController extends Controller
             $grandTotalSupporterPays = 0;
             $grandTotalCreatorTransfer = 0;
 
+            $totalNetToGrossUp = 0;
+            $lineItems = [];
+
             foreach ($getdata as $dd) {
                 // Skip cart items without valid wish relationship
                 if (!$dd->wish_item_id || !$dd->wish) {
@@ -248,34 +251,33 @@ class CheckoutController extends Controller
                 $vatAmount = $itemAmount * $vatPercent / 100;
                 $itemAmountWithVat = $itemAmount + $vatAmount;
 
-                // Calculate breakdown using gross-up logic for this item in creator's currency
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $chargeCurrency);
+                // Accumulate net amount for batch gross-up (one fixed fee per transaction)
+                $totalNetToGrossUp += $itemAmountWithVat * $dd->quantity;
 
-                $finalTotalAmount = $breakdown['total_supporter_pays'];
-                $applicationFeeAmount = $breakdown['application_fee'];
-                $creatorNet = $breakdown['net_to_creator'];
-                $creatorTransferAmount = round($itemAmountWithVat, $precision, PHP_ROUND_HALF_UP);
-
-                $productName = $dd->wish->wishname ?? 'Wish Item';
-                $lineItems[] = [
-                    'quantity' => $dd->quantity,
-                    'price_data' => [
-                        'currency' => $chargeCurrency,
-                        'product_data' => [
-                            'name' => "Total value of item including all fees",
-                            'description' => $productName . ' from ' . ($dd->owner->name ?? 'Creator'),
-                        ],
-                        'unit_amount' => (int) round($finalTotalAmount * $multiplier),
-                    ]
-                ];
-
-                // Accumulate totals
+                // Accumulate base totals
                 $subtotal += $itemAmount * $dd->quantity;
-                $totalApplicationFee += $applicationFeeAmount * $dd->quantity;
-                $totalCreatorNet += $creatorNet * $dd->quantity;
-                $grandTotalSupporterPays += $finalTotalAmount * $dd->quantity;
-                $grandTotalCreatorTransfer += $creatorTransferAmount * $dd->quantity;
+                $grandTotalCreatorTransfer += $itemAmountWithVat * $dd->quantity;
             }
+
+            // Calculate optimized breakdown for the entire cart group
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($totalNetToGrossUp, $chargeCurrency);
+            $grandTotalSupporterPays = $breakdown['total_supporter_pays'];
+            $totalApplicationFee = $breakdown['application_fee'];
+            $totalCreatorNet = $breakdown['net_to_creator'];
+
+            // Since Stripe Checkout line items must add up to the total, we need to adjust
+            // We'll use one line item for the whole cart to ensure the gross-up total is exact
+            $lineItems = [[
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $chargeCurrency,
+                    'product_data' => [
+                        'name' => "Total Basket for " . ($owner->name ?? 'Creator'),
+                        'description' => "Includes platform and processing fees",
+                    ],
+                    'unit_amount' => (int) round($grandTotalSupporterPays * $multiplier),
+                ]
+            ]];
 
             // Check if we have any valid line items after processing
             if (empty($lineItems)) {
@@ -1072,15 +1074,11 @@ class CheckoutController extends Controller
             }
 
             $sessionId = session('session_id');
-            // Log::info("Updating payment status", ['session_id' => $sessionId]);
 
             StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
-            // Log::info("Payment update result", ['updated_rows' => $updateResult]);
-
-            // Amount must be GBP (you already store subtotal in GBP)
 
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
 

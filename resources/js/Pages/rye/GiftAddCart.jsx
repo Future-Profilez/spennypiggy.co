@@ -15,7 +15,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     // console.log("data",data);
 
-    const { format, formatMultiPrice } = PriceFormat();
+    const { format, formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
     const [close, setClose] = useState(action);
     const [loading, setLoading] = useState(false);
@@ -167,7 +167,20 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                     {data?.title}
                 </div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    {data.price.displayValue}
+                    <div className="flex flex-col items-center">
+                        <span>
+                            {formatMultiPrice(
+                                calculateTotalSupporterPays(
+                                    data.price.value / 100, 
+                                    data.price.currency
+                                ).total_supporter_pays, 
+                                data.price.currency
+                            )}
+                        </span>
+                        <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                            *Includes platform and payment processing fees
+                        </span>
+                    </div>
                 </div>
                 <div className=" pb-2">
                     <LoaderButton

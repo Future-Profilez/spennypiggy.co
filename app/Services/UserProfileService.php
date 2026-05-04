@@ -604,11 +604,14 @@ class UserProfileService
             $eventType === 'customer.subscription.trial_will_end' ||
             ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')
         ) {
+            $trialStartAt = $subscription->trial_start ? Carbon::createFromTimestamp($subscription->trial_start) : $stripeStart;
+            $trialEndAt = $subscription->trial_end ? Carbon::createFromTimestamp($subscription->trial_end) : $stripeEnd;
+
             // Check if we already have a record for this specific trial period for this user
             $trialExists = MonthlyCharge::where('stripe_id', $subscriptionId)
                 ->where('user_id', $resolvedUserId ?? $subs->user_id ?? null)
-                ->whereDate('current_start_trial_date', $stripeStart->toDateString())
-                ->whereDate('current_end_trial_date', $stripeEnd->toDateString())
+                ->whereDate('current_start_trial_date', $trialStartAt->toDateString())
+                ->whereDate('current_end_trial_date', $trialEndAt->toDateString())
                 ->exists();
 
             if ($trialExists) {
@@ -620,10 +623,10 @@ class UserProfileService
                 'name' => $customer->name ?? 'Creator',
                 'email' => $customer->email,
                 'stripe_id' => $subscriptionId,
-                'current_start_trial_date' => $stripeStart->toDateString(),
-                'current_end_trial_date' => $stripeEnd->toDateString(),
+                'current_start_trial_date' => $trialStartAt->toDateString(),
+                'current_end_trial_date' => $trialEndAt->toDateString(),
                 'status' => 'trialing',
-                'upcoming_payment' => $stripeEnd,
+                'upcoming_payment' => $trialEndAt,
             ]);
 
             if ($newSub->user) {

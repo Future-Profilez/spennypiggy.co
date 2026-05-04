@@ -32,8 +32,9 @@ export default function ProfileProduct({ item, IsloggedIn }) {
     })() : 0;
 
     const vatPercent = item?.user?.vat_amount_percentage ?? user?.vat_amount_percentage ?? 0;
-    const basePriceWithShipping = basePrice + shippingPrice;
-    const supporterPays = calculateTotalSupporterPays(basePriceWithShipping, item?.currency || "GBP", vatPercent)?.total_supporter_pays ?? basePriceWithShipping;
+    const vatAmount = (basePrice * vatPercent) / 100;
+    const basePriceWithShippingAndVat = basePrice + vatAmount + shippingPrice;
+    const supporterPays = calculateTotalSupporterPays(basePriceWithShippingAndVat, item?.currency || "GBP")?.total_supporter_pays ?? basePriceWithShippingAndVat;
     
     return (
         <article 
@@ -55,11 +56,10 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                     <div className="">
                         <div className="block border border-black rounded-[20px] overflow-hidden relative">
                             <img
-                                className="object-cover h-[130px] sm:h-[200px] w-full"
+                                className="object-cover h-[130px] sm:h-[160px] w-full"
                                 src={item.perma_link}
                                 alt={item.name}
                                 onError={(e) => {
-                                    console.warn('Shop item image failed to load:', item.perma_link);
                                     e.target.style.backgroundColor = '#f3f4f6';
                                     e.target.style.display = 'flex';
                                     e.target.style.alignItems = 'center';
@@ -93,53 +93,53 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                     </span>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className=" mb-4 flex items-center justify-between">
                     <div className="flex flex-col">
                         <h2 className="font-black text-lg sm:text-2xl text-black">
                             {variants.length && !isOwner ? 'From ' : ''}
                             {formatMultiPrice(isOwner ? basePrice : supporterPays, item?.currency || "GBP") || "FREE"}
                         </h2>
                         {!isOwner && (
-                            <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                            <span className="text-[13px] text-gray-500 font-normal mt-1 leading-tight">
                                 *Includes platform and payment processing fees{item?.type === 'physical' ? (shippingPrice > 0 ? " and shipping" : ". Free shipping") : ""}
                             </span>
                         )}
                     </div>
-
-                    {isOwner ? (
-                        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                            <AddItem 
-                                classes="font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 text-black text-sm sm:text-base uppercase"
-                                pre_title={item.name} title="Edit Item"
-                                pre_description={item.description} 
-                                pre_price={item.price} 
-                                product_type={item.type}
-                                item={item} isEdit={true}
-                                IsloggedIn={IsloggedIn}
-                            />
-                        </div>
-                    ) : auth?.user ? (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                router.visit(url);
-                            }}
-                            className="font-black cursor-pointer bg-yellow-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 text-black text-sm sm:text-base uppercase"
-                        >
-                            Buy Now
-                        </button>
-                    ) : (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                router.visit(url);
-                            }}
-                            className="font-black cursor-pointer bg-yellow-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 text-black text-sm sm:text-base uppercase"
-                        >
-                            Buy Now
-                        </button>
-                    )}
                 </div>
+
+                {isOwner ? (
+                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                        <AddItem 
+                            classes="font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 text-black text-sm sm:text-base uppercase"
+                            pre_title={item.name} title="Edit Item"
+                            pre_description={item.description} 
+                            pre_price={item.price} 
+                            product_type={item.type}
+                            item={item} isEdit={true}
+                            IsloggedIn={IsloggedIn}
+                        />
+                    </div>
+                ) : auth?.user ? (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            router.visit(url);
+                        }}
+                        className="font-black cursor-pointer bg-yellow-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 text-black text-sm sm:text-base uppercase"
+                    >
+                        Buy Now
+                    </button>
+                ) : (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            router.visit(url);
+                        }}
+                        className="font-black cursor-pointer bg-yellow-300 border-2 border-black px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 text-black text-sm sm:text-base uppercase"
+                    >
+                        Buy Now
+                    </button>
+                )}
             </div>
         </article>
     );

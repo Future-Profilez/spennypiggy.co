@@ -768,6 +768,69 @@ class TaskController extends Controller
             ])),
         ]);
 
+        // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+        try {
+            $taskCreator = $purchase->creator;
+            $amount = $purchase->amount;
+            
+            // Replicate logic from SyncFinancialTransactions command
+            $vat = isset($metadata->vat_amount) ? ((float) $metadata->vat_amount / $multiplier) : 0;
+            $vatPercent = (float) ($metadata->vat_percent ?? 0);
+            if ((!$vat || $vat <= 0) && $vatPercent > 0) {
+                $vat = round(((float) $amount * $vatPercent) / 100, 2, PHP_ROUND_HALF_UP);
+            } else if ((!$vat || $vat <= 0) && $taskCreator && $taskCreator->vat_amount_percentage > 0) {
+                $vat = round(((float) $amount * (float) $taskCreator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+            }
+
+            $adminFee = (float) \App\Helpers::administrationFeeInCurrency($currency);
+            $platformFee = (float) ($purchase->platform_fee ?? 0) + $adminFee;
+            $stripeFee = 0;
+            $gross = $purchase->total_paid && $purchase->total_paid > 0 
+                ? (float) $purchase->total_paid 
+                : ($amount + $vat + $platformFee + $stripeFee);
+            $creatorAmount = $amount;
+
+            // Risk/Reserve logic
+            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $taskCreator->uuid);
+            $reserveRate = (float) ($metrics->reserve_percent ?? 0);
+            
+            $reserveAmount = 0;
+            $reserveStatus = 'none';
+
+            if ($reserveRate > 0) {
+                $reserveAmount = round($creatorAmount * $reserveRate / 100, 2);
+                $reserveStatus = 'held';
+            } else if ($taskCreator->created_at && $taskCreator->created_at->diffInDays(now()) <= 30) {
+                $reserveAmount = round($creatorAmount * 0.10, 2);
+                $reserveStatus = 'held';
+            }
+
+            \App\Models\FinancialTransaction::updateOrCreate(
+                [
+                    'source_type' => \App\Models\TaskPurchase::class,
+                    'source_id' => $purchase->id,
+                ],
+                [
+                    'user_id' => $purchase->creator_id,
+                    'supporter_id' => $purchase->supporter_id,
+                    'type' => 'income',
+                    'gross_amount' => $gross,
+                    'platform_fee' => $platformFee,
+                    'stripe_fee' => $stripeFee,
+                    'vat_amount' => $vat,
+                    'net_amount' => $creatorAmount,
+                    'reserve_amount' => $reserveAmount,
+                    'reserve_status' => $reserveStatus,
+                    'currency' => $currency,
+                    'status' => 'completed',
+                    'description' => 'Task Purchase: ' . ($task->title ?? 'Task'),
+                    'transaction_date' => $purchase->created_at,
+                ]
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to sync TaskPurchase to FinancialTransaction in createTaskPurchaseSync: ' . $e->getMessage(), ['purchase_id' => $purchase->id]);
+        }
+
         // Dispatch job to process the deliverable (certificate generation)
         ProcessWishItemDeliverable::dispatchSync($deliverable);
 
@@ -1125,7 +1188,6 @@ class TaskController extends Controller
         $currencySymbol = \App\Models\Currency::where('ISO', $purchase->task->currency)->value('symbol') ?? '$';
 
         return Inertia::render('Tasks/Order', [
-            'auth' => Auth::user(),
             'purchase' => $purchase,
             'task' => $purchase->task,
             'isCreator' => Auth::id() === $purchase->creator_id,

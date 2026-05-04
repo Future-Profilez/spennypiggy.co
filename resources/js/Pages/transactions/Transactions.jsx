@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
+import Modal from '@/Components/Modal';
 import LoadingScreen from '@/includes/LoadingScreen';
 import Nocontent from '@/includes/Nocontent';
 import axios from 'axios';
@@ -450,6 +452,16 @@ export default function Transactions(props) {
                                 {String(e.status).replaceAll('_', ' ')}
                               </span>
                             ) : null}
+                            {/* Task/Shop Specific Item Status */}
+                            {e?.item_status && (
+                              <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                                ['completed', 'completed_accepted', 'delivered', 'shipped'].includes(e.item_status) 
+                                  ? 'bg-blue-300 text-black' 
+                                  : 'bg-orange-300 text-black'
+                              }`}>
+                                {e.item_status.replace(/_/g, ' ')}
+                              </span>
+                            )}
                             {e?.category === 'received' && e?.reserve_status === 'held' && e?.status === 'completed' && Number(e?.reserve_amount || 0) > 0 && (
                                <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-blue-400 text-white">
                                  Reserved
@@ -531,9 +543,9 @@ export default function Transactions(props) {
                           <div className={`${e?.status === 'completed' ? 'text-green-600' : 'text-gray-500'} font-black text-xl md:text-2xl`}>
                             {amountFor(e)}
                           </div>
-                          {e?.status && e.status !== 'completed' ? (
+                          {e?.is_included_in_totals === false ? (
                             <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest mt-1">
-                              Not included in totals
+                              Earning not included for this item
                             </div>
                           ) : null}
                           {Number(e?.vat_amount || 0) > 0 ? (
@@ -557,9 +569,10 @@ export default function Transactions(props) {
                           {auth?.user?.role === 1 && (
                             <button
                               onClick={() => handleTwitterClick(e)}
-                              className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                              className="flex items-center gap-2 p-2 !px-3 h-[40px] rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
                               title="Share on X" >
-                              <TwitterIcon size={16} className="group-hover:scale-110 transition-transform" />
+                              <TwitterIcon size={14} className="group-hover:scale-110 transition-transform" />
+                              <span className='text-sm'>Post on twitter</span>
                             </button>
                           )}
                           {e.category === 'received' && e.uuid && !String(e.uuid).startsWith('exp-') && (
