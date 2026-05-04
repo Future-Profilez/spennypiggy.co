@@ -48,8 +48,8 @@ export default function ReserveWidget({ className = '' }) {
 
             <div className="mt-5 p-4 bg-yellow-50/50 rounded-2xl">
                 <p className="text-sm text-gray-700 mb-2 leading-relaxed">
-                    Funds are typically held for up to 90 days to cover potential disputes, after which they are automatically released to your balance.
-                </p>
+                    Funds are typically held for up to 30 days to cover potential disputes, after which they are automatically released to your balance.
+                </p> 
                 <p className="text-xs text-gray-500 italic leading-relaxed">
                     Note - We SP don't hold or have access to your funds, we just control the payments timing, amounts and speed based on our payments policy linked to your individual level of risk.
                 </p>

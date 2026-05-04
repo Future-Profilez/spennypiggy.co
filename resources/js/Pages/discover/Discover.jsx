@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Head, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import TopBar from './components/TopBar';
 import FeaturedCarousel from './components/FeaturedCarousel';

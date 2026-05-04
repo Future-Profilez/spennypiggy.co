@@ -137,32 +137,43 @@ class PayoutService
                 ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
                 ->values();
 
-            // Filter out physical shop payments and manual tasks that are NOT yet completed
+            // Filter out Physical Shop payments and Timed Tasks that are NOT yet completed
             $payments = $payments->filter(function ($p) {
-                if ($p->stripe_session_id) {
+                $sessionId = $p->stripe_session_id;
+                $intentId = $p->stripe_payment_intent_id;
+
+                if ($sessionId || $intentId) {
                     // 1. Shop Payments (Physical)
                     $shopPayment = \App\Models\ShopPayment::with(['shop', 'deliverable'])
-                        ->where('session_id', $p->stripe_session_id)
+                        ->where(function ($q) use ($sessionId) {
+                            if ($sessionId) $q->where('session_id', $sessionId);
+                            else $q->whereRaw('1=0');
+                        })
                         ->first();
                         
                     if ($shopPayment && $shopPayment->shop && $shopPayment->shop->type === 'physical') {
-                        // If it's a physical shop item, it must be marked as 'delivered' to be paid out
+                        // Shop Physical: ONLY include if status is 'delivered' (Completed)
                         if (!$shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
-                            return false; // Exclude from this payout run (funds reserved)
+                            return false; 
                         }
                     }
 
-                    // 2. Paid Tasks (Manual/Timed)
-                    $taskPurchase = \App\Models\TaskPurchase::where('stripe_session_id', $p->stripe_session_id)
-                        ->orWhere('payment_intent_id', $p->stripe_payment_intent_id)
+                    // 2. Paid Tasks (Timed)
+                    $taskPurchase = \App\Models\TaskPurchase::where(function ($q) use ($sessionId, $intentId) {
+                            if ($sessionId) $q->orWhere('stripe_session_id', $sessionId);
+                            if ($intentId) $q->orWhere('payment_intent_id', $intentId);
+                        })
                         ->first();
 
                     if ($taskPurchase) {
-                        // Only include completed tasks (Instant or accepted Timed tasks)
-                        // Statuses: 'completed' (Instant), 'completed_accepted' (Timed/Manual)
-                        if (!in_array($taskPurchase->status, ['completed', 'completed_accepted'])) {
-                            return false; // Exclude from this payout run (funds reserved)
+                        $taskType = $taskPurchase->task->type ?? 'timed';
+                        if ($taskType === 'timed') {
+                            // Task Timed: ONLY include if status is completed/accepted/paid_out
+                            if (!in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                                return false;
+                            }
                         }
+                        // Note: Instant tasks are included by default if payment succeeded and not on hold
                     }
                 }
                 return true;
@@ -586,20 +597,30 @@ class PayoutService
             $fts = $this->getAllFinancialTransactionsForPayment($p);
 
             if ($fts->isNotEmpty()) {
-                // Check if any FT is for a TaskPurchase and if it's completed
-                $isTaskButNotComplete = false;
+                // Check if this payment is actually "Confirmed/Paid" (included in Gross)
+                $isIncludedInGross = true;
                 foreach ($fts as $ft) {
                     if ($ft->source_type === \App\Models\TaskPurchase::class) {
                         $task = \App\Models\TaskPurchase::find($ft->source_id);
-                        if (!$task || !in_array($task->status, ['completed', 'completed_accepted'])) {
-                            $isTaskButNotComplete = true;
-                            break;
+                        if ($task && ($task->task->type ?? 'timed') === 'timed') {
+                            if (!in_array($task->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                                $isIncludedInGross = false;
+                                break;
+                            }
+                        }
+                    } elseif ($ft->source_type === \App\Models\ShopPayment::class) {
+                        $shopPayment = \App\Models\ShopPayment::find($ft->source_id);
+                        if ($shopPayment && ($shopPayment->shop->type ?? 'digital') === 'physical') {
+                            if (($shopPayment->deliverable->status ?? 'pending') !== 'delivered') {
+                                $isIncludedInGross = false;
+                                break;
+                            }
                         }
                     }
                 }
-                
-                if ($isTaskButNotComplete) {
-                    continue; // Skip this reserve if the underlying task is not complete
+
+                if (!$isIncludedInGross) {
+                    continue; // Skip reserves for unfulfilled tasks/shop items
                 }
 
                 if ($fts->sum('reserve_amount') > 0) {

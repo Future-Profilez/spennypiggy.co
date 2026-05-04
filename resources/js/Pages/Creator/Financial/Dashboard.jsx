@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import { 
     WalletIcon, 
     TrendingUpIcon, 
@@ -163,7 +164,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     <div className="w-2 h-2 rounded-full bg-[#05EFB8]"></div>
                                     Net Earnings
                                 </div>
-                                <div className="text-2xl md:text-3xl font-bold text-[#05EFB8] mt-2">{formatCurrency(summary.profit, displayCurrency)}</div>
+                                <div className="text-2xl md:text-3xl font-bold text-[#05EFB8] mt-2">{formatCurrency(summary.net_earning, displayCurrency)}</div>
                                 <div className="text-[12px] text-gray-500 mt-2 font-bold">What you keep after expenses.</div>
                             </div>
                         </div>
@@ -208,11 +209,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                     {/* Payment Status Breakdown */}
                     {(() => {
                         const STATUS_CONFIG = [
-                            { key: 'completed', label: 'Paid',        color: '#22c55e', bg: 'bg-green-500/10',  border: 'border-green-500/20',  text: 'text-green-400',  inPayout: true,  note: 'Included in payout' },
-                            { key: 'pending',   label: 'Pending',     color: '#facc15', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', inPayout: false, note: 'Awaiting confirmation' },
-                            { key: 'review_hold', label: 'Review Hold', color: '#a78bfa', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', inPayout: false, note: 'Not in payout or reserve' },
-                            { key: 'disputed',  label: 'Disputed',    color: '#f97316', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-400', inPayout: false, note: 'Not in payout or reserve' },
-                            { key: 'refunded',  label: 'Refunded',    color: '#ef4444', bg: 'bg-red-500/10',    border: 'border-red-500/20',    text: 'text-red-400',    inPayout: false, note: 'Deducted from future payout' },
+                            { key: 'paid',         label: 'Paid',         color: '#22c55e', bg: 'bg-green-500/10',  border: 'border-green-500/20',  text: 'text-green-400',  inPayout: true,  note: 'Included in payout' },
+                            { key: 'pending',      label: 'Pending',      color: '#facc15', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', inPayout: false, note: 'Awaiting completion' },
+                            { key: 'review_hold',  label: 'Review Hold',  color: '#a78bfa', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', inPayout: false, note: 'On temporary hold' },
+                            { key: 'dispute_hold', label: 'Dispute Hold', color: '#f97316', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-400', inPayout: false, note: 'Under investigation' },
+                            { key: 'refunds',      label: 'Refunds',      color: '#ef4444', bg: 'bg-red-500/10',    border: 'border-red-500/20',    text: 'text-red-400',    inPayout: false, note: 'Deducted from balance' },
                         ];
 
                         const statusMap = {};
@@ -223,8 +224,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     {STATUS_CONFIG.map(({ key, label, bg, border, text, inPayout, note }) => {
                                         const s = statusMap[key];
                                         return (
-                                            <div className={`bg-gray-900/40  border-2 ${border} !rounded-[25px]  overflow-hidden  `}>
-                                            <div key={key} className={`p-4 ${bg}  flex flex-col gap-1`}>
+                                            <div key={key} className={`bg-gray-900/40  border-2 ${border} !rounded-[25px]  overflow-hidden  `}>
+                                            <div className={`p-4 ${bg}  flex flex-col gap-1`}>
                                                 <div className={`text-[16px] font-bold uppercase tracking-widest ${text}`}>{label}</div>
                                                 <div className="text-2xl font-bold text-white">{formatCurrency(s?.total ?? 0, displayCurrency)}</div>
                                                 <div className="text-[15px] text-gray-500">{s?.count ?? 0} payment{(s?.count ?? 0) !== 1 ? 's' : ''}</div>
@@ -295,7 +296,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
                                 <div className="text-xl font-bold text-white">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
                                 <div className="text-[10px] text-gray-600 mt-1">
-                                    Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, holds & disputes.'}
+                                    Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, unfulfilled tasks & disputes.'}
                                 </div>
                             </div>
                             <div className="text-right">
@@ -533,7 +534,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         </thead>
                                         <tbody className="divide-y divide-gray-800">
                                             {recent_transactions.map((tx) => {
-                                                const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending'));
+                                                const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out;
                                                 return (
                                                 <tr key={tx.uuid} className={`hover:bg-white/5 transition-colors ${isPending ? 'opacity-40 grayscale-[0.4]' : ''}`}>
                                                     <td className="px-6 py-4 text-[14px] text-gray-400 whitespace-nowrap">
@@ -563,9 +564,15 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                             
                                                     </td>
                                                 <td className={`px-4 md:px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? tx.net_amount : tx.gross_amount, tx.currency)}
+                                                    {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? (tx.gross_amount || tx.net_amount) : tx.gross_amount, tx.currency)}
                                                         
-                                                        <p>{tx.reserve_amount > 0 && ['completed', 'review_hold'].includes(tx.status) && (
+                                                        <div className="mt-1">
+                                                            {tx.shipping_amount > 0 && (
+                                                                <div className="text-[10px] text-gray-500 font-bold uppercase italic">
+                                                                    Incl. {formatCurrency(tx.shipping_amount, tx.currency)} shipping
+                                                                </div>
+                                                            )}
+                                                            {tx.reserve_amount > 0 && ['completed', 'review_hold'].includes(tx.status) && (
                                                             <div className={`flex text-center mt-1 flex-col gap-0.5 px-1.5 py-1 rounded-xl border ${
                                                                 tx.reserve_status === 'released'
                                                                     ? 'bg-green-500/5 border-green-500/20 text-green-500'
@@ -578,30 +585,38 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                                     {formatCurrency(tx.reserve_amount, tx.currency)} of your earnings
                                                                 </span>
                                                             </div>
-                                                        )}</p>
+                                                        )}</div>
                                                 </td>
                                                     <td className="px-6 py-4 text-sm text-right">
                                                         <div className="flex flex-col items-end gap-1">
-                                                            {tx.item_status && (
+                                                            {tx.display_status && (
                                                                 <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                                                    tx.item_status.endsWith('completed') || tx.item_status.endsWith('delivered') || tx.item_status.endsWith('accepted') ? 'bg-green-500/10 text-green-400' : 
-                                                                    tx.item_status.startsWith('task') ? 'bg-blue-500/10 text-blue-400' : 
-                                                                    tx.item_status.startsWith('order') ? 'bg-orange-500/10 text-orange-400' :
+                                                                    tx.display_status === 'paid' ? 'bg-green-500/10 text-green-400' : 
+                                                                    tx.display_status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
+                                                                    tx.display_status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' :
+                                                                    tx.display_status === 'dispute_hold' ? 'bg-orange-500/10 text-orange-400' :
+                                                                    tx.display_status === 'refunds' ? 'bg-red-500/10 text-red-400' :
                                                                     'bg-gray-500/10 text-gray-400'
-                                                                }`}>{tx.item_status.replace('_', ' ')}
+                                                                }`}>{tx.display_status.replace('_', ' ')}
                                                                 </span>
                                                             )}
-                                                            <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                                                tx.status === 'completed' ? 'bg-green-500/10 text-green-400' : 
-                                                                tx.status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' : 
-                                                                tx.status === 'disputed' ? 'bg-orange-500/10 text-orange-400' : 
-                                                                tx.status === 'refunded' ? 'bg-red-500/10 text-red-400' : 
-                                                                tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
-                                                                tx.status === 'task_pending' ? 'bg-blue-500/10 text-blue-400' : 
-                                                                tx.status === 'order_pending' ? 'bg-orange-500/10 text-orange-400' :
-                                                                'bg-gray-500/10 text-gray-400'
-                                                            }`}>{tx.status?.replace('_', ' ')}
-                                                            </span>
+                                                            {/* Order Status */}
+                                                            {tx.order_status && (
+                                                                <span className="px-2 py-0.5 whitespace-nowrap rounded-md text-[9px] font-medium uppercase tracking-wider bg-white/5 text-white/60 border border-white/10">
+                                                                    Order: {tx.order_status.replace('_', ' ')}
+                                                                </span>
+                                                            )}
+                                                            {/* Payment Status (Always show if success but order pending to avoid confusion) */}
+                                                            {tx.payment_status === 'completed' && tx.display_status !== 'paid' && (
+                                                                <span className="px-2 py-0.5 whitespace-nowrap rounded-md text-[9px] font-bold uppercase tracking-wider bg-green-500/10 text-green-500/80 border border-green-500/20">
+                                                                    Payment: Success
+                                                                </span>
+                                                            )}
+                                                            {tx.payment_status && tx.payment_status !== 'completed' && (
+                                                                <span className="px-2 py-0.5 whitespace-nowrap rounded-md text-[9px] font-medium uppercase tracking-wider bg-blue-500/5 text-blue-400/80 border border-blue-500/10">
+                                                                    Payment: {tx.payment_status.replace('_', ' ')}
+                                                                </span>
+                                                            )}
                                                             {tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (
                                                                 <a 
                                                                     href={route('financial.evidence-pack', { uuid: tx.uuid })} 

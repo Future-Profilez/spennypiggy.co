@@ -439,8 +439,8 @@ Route::middleware('auth')->group(function () {
                                     ->whereDate('current_end_trial_date', '>=', $now);
                             });
                         })
-                        // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
-                        ->latest()
+                        // Order by end date DESC to get the most recently active period first
+                        ->orderByRaw('COALESCE(current_end_subscription_date, current_end_trial_date, created_at) DESC')
                         ->first();
 
                     // If no active period found, get the most recent one

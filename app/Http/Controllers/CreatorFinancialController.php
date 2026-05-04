@@ -52,38 +52,45 @@ class CreatorFinancialController extends Controller
 
         $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->where(function ($q) {
-                $q->where(function ($sq) {
-                    $sq->where('source_type', '!=', \App\Models\TaskPurchase::class)
-                       ->where('source_type', '!=', \App\Models\ShopPayment::class);
-                })
-                ->orWhereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('task_purchases')
-                        ->whereColumn('task_purchases.id', 'financial_transactions.source_id')
-                        ->whereIn('task_purchases.status', ['completed', 'completed_accepted']);
-                })
-                ->orWhereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('shop_payments')
-                        ->join('deliverables', 'deliverables.session_id', '=', 'shop_payments.session_id')
-                        ->whereColumn('shop_payments.id', 'financial_transactions.source_id')
-                        ->where('deliverables.status', 'delivered');
-                });
-            })
-            ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id']);
+            ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id', 'source_id', 'vat_amount']);
+
+        // Collect Shop IDs for analytics shipping
+        $analyticsShopIds = $incomeForAnalytics->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
+        $analyticsShopShipping = [];
+        if (!empty($analyticsShopIds)) {
+            $analyticsShopShipping = \App\Models\ShopPayment::whereIn('id', $analyticsShopIds)->pluck('shipping_amount', 'id')->toArray();
+        }
 
         $monthlyStats = $incomeForAnalytics
+            ->filter(function ($tx) use ($analyticsShopShipping) {
+                $base = class_basename($tx->source_type);
+                if ($base === 'TaskPurchase' && $tx->source) {
+                    $taskType = $tx->source->task->type ?? 'timed';
+                    if ($taskType === 'timed') {
+                        return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out']);
+                    }
+                } elseif ($base === 'ShopPayment' && $tx->source) {
+                    $shopType = $tx->source->shop->type ?? 'digital';
+                    if ($shopType === 'physical') {
+                        $itemStat = $tx->source->deliverable->status ?? 'processing';
+                        return $itemStat === 'delivered';
+                    }
+                }
+                return $tx->status === 'completed';
+            })
             ->groupBy(function ($tx) {
                 return optional($tx->transaction_date)->format('Y-m');
             })
-            ->map(function ($items, $month) use ($displayCurrency) {
-                $total = $items->sum(function ($tx) use ($displayCurrency) {
+            ->map(function ($items, $month) use ($displayCurrency, $analyticsShopShipping) {
+                $total = $items->sum(function ($tx) use ($displayCurrency, $analyticsShopShipping) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->net_amount ?? 0);
-                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                    $net = (float) ($tx->net_amount ?? 0);
+                    $vat = (float) ($tx->vat_amount ?? 0);
+                    $gross = $net + $vat;
+
+                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
                 return (object) ['month' => $month, 'total' => $total];
             })
@@ -91,12 +98,31 @@ class CreatorFinancialController extends Controller
             ->values();
 
         $tributeTypes = $incomeForAnalytics
+            ->filter(function ($tx) use ($analyticsShopShipping) {
+                $base = class_basename($tx->source_type);
+                if ($base === 'TaskPurchase' && $tx->source) {
+                    $taskType = $tx->source->task->type ?? 'timed';
+                    if ($taskType === 'timed') {
+                        return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out']);
+                    }
+                } elseif ($base === 'ShopPayment' && $tx->source) {
+                    $shopType = $tx->source->shop->type ?? 'digital';
+                    if ($shopType === 'physical') {
+                        $itemStat = $tx->source->deliverable->status ?? 'processing';
+                        return $itemStat === 'delivered';
+                    }
+                }
+                return $tx->status === 'completed';
+            })
             ->groupBy('source_type')
-            ->map(function ($items, $sourceType) use ($displayCurrency) {
-                $total = $items->sum(function ($tx) use ($displayCurrency) {
+            ->map(function ($items, $sourceType) use ($displayCurrency, $analyticsShopShipping) {
+                $total = $items->sum(function ($tx) use ($displayCurrency, $analyticsShopShipping) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->net_amount ?? 0);
-                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                    $net = (float) ($tx->net_amount ?? 0);
+                    $vat = (float) ($tx->vat_amount ?? 0);
+                    $gross = $net + $vat;
+
+                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
                 $count = $items->count();
 
@@ -124,56 +150,131 @@ class CreatorFinancialController extends Controller
         // Status breakdown — counts and totals per status for the tax year
         $allStatusTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->where(function ($q) {
-                $q->where(function ($sq) {
-                    $sq->where('source_type', '!=', \App\Models\TaskPurchase::class)
-                       ->where('source_type', '!=', \App\Models\ShopPayment::class);
-                })
-                ->orWhereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('task_purchases')
-                        ->whereColumn('task_purchases.id', 'financial_transactions.source_id')
-                        ->whereIn('task_purchases.status', ['completed', 'completed_accepted']);
-                })
-                ->orWhereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('shop_payments')
-                        ->join('deliverables', 'deliverables.session_id', '=', 'shop_payments.session_id')
-                        ->whereColumn('shop_payments.id', 'financial_transactions.source_id')
-                        ->where('deliverables.status', 'delivered');
-                });
-            })
-            ->get(['status', 'net_amount', 'currency']);
+            ->with('source')
+            ->get(['status', 'net_amount', 'currency', 'source_type', 'source_id', 'vat_amount']);
+
+        // Collect all Shop IDs for status breakdown shipping
+        $allShopIds = $allStatusTx->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
+        $allShopShipping = [];
+        if (!empty($allShopIds)) {
+            $allShopShipping = \App\Models\ShopPayment::whereIn('id', $allShopIds)->pluck('shipping_amount', 'id')->toArray();
+        }
 
         $statusBreakdown = $allStatusTx
-            ->groupBy('status')
-            ->map(function ($items, $status) use ($displayCurrency) {
-                $total = $items->sum(function ($tx) use ($displayCurrency) {
+            ->groupBy(function($tx) {
+                $base = class_basename($tx->source_type);
+                
+                // 1. Task Logic
+                if ($base === 'TaskPurchase' && $tx->source) {
+                    $taskType = $tx->source->task->type ?? 'timed';
+                    if ($taskType === 'timed') {
+                        if (in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                            $s = 'paid';
+                        } else {
+                            $s = 'pending';
+                        }
+                    } else {
+                        $s = match($tx->status) {
+                            'completed' => 'paid',
+                            'review_hold' => 'review_hold',
+                            'disputed' => 'dispute_hold',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+                    }
+                }
+                // 2. Shop Logic
+                elseif ($base === 'ShopPayment' && $tx->source) {
+                    $shopType = $tx->source->shop->type ?? 'digital';
+                    if ($shopType === 'physical') {
+                        $itemStat = $tx->source->deliverable->status ?? 'processing';
+                        if ($itemStat === 'delivered') {
+                            $s = 'paid';
+                        } else {
+                            $s = 'pending';
+                        }
+                    } else {
+                        $s = match($tx->status) {
+                            'completed' => 'paid',
+                            'review_hold' => 'review_hold',
+                            'disputed' => 'dispute_hold',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+                    }
+                } else {
+                    $s = match($tx->status) {
+                        'completed' => 'paid',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'dispute_hold',
+                        'refunded' => 'refunds',
+                        default => 'pending'
+                    };
+                }
+
+                // Final check for payment-level holds regardless of item status
+                if ($tx->status === 'review_hold') return 'review_hold';
+                if ($tx->status === 'disputed') return 'dispute_hold';
+                if ($tx->status === 'refunded') return 'refunds';
+
+                return $s;
+            })
+            ->map(function ($items, $status) use ($displayCurrency, $allShopShipping) {
+                $total = $items->sum(function ($tx) use ($displayCurrency, $allShopShipping) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->net_amount ?? 0);
-                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                    $net = (float) ($tx->net_amount ?? 0);
+                    $vat = (float) ($tx->vat_amount ?? 0);
+                    $gross = $net + $vat;
+
+                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
                 return ['status' => $status, 'count' => $items->count(), 'total' => $total];
             })
             ->values();
 
-        // Recent Transactions (Filtered by Tax Year) — only finalized statuses
+        // Recent Transactions (Filtered by Tax Year)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->with('supporter:id,name,username,email')
+            ->with(['supporter:id,name,username,email', 'source' => function($morphTo) {
+                $morphTo->morphWith([
+                    \App\Models\TaskPurchase::class => ['task'],
+                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
+                    \App\Models\StripePaymentItems::class => []
+                ]);
+            }])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
             ->take(20)
-            ->get()
-            ->map(function ($tx) {
+            ->get();
+
+        // Collect Shop IDs for shipping info
+        $shopIds = $income->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
+        $shopShipping = [];
+        if (!empty($shopIds)) {
+            $shopShipping = \App\Models\ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
+        }
+
+        $income = $income->map(function ($tx) use ($shopShipping) {
                 $tx->display_date = $tx->transaction_date;
-                $tx->id = $tx->id; // Ensure ID is available for stable sorting
+                $tx->id = $tx->id; 
                 $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
 
                 $base = class_basename($tx->source_type);
+                
+                // Get Source Title for description
+                $sourceTitle = null;
+                if ($base === 'TaskPurchase' && isset($tx->source->task)) {
+                    $sourceTitle = $tx->source->task->title;
+                } elseif ($base === 'ShopPayment' && isset($tx->source->shop)) {
+                    $sourceTitle = $tx->source->shop->name;
+                } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
+                    $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+                }
+
                 $tx->label = match($base) {
                     'StripePaymentItems' => 'Wish Gift',
                     'ShopPayment' => 'Shop Purchase',
@@ -184,20 +285,98 @@ class CreatorFinancialController extends Controller
                     default => str_replace(['Payment', 'Purchase'], '', $base)
                 };
 
-                // Special handling for Task status display in ledger
-                if ($base === 'TaskPurchase') {
-                    $task = \App\Models\TaskPurchase::find($tx->source_id);
-                    if ($task) {
-                        $tx->item_status = 'task_' . ($task->status === 'paid' ? 'pending' : $task->status);
-                    }
+                // Update description to include title
+                if ($sourceTitle) {
+                    $tx->description = $tx->label . ': ' . $sourceTitle;
                 }
 
-                // Special handling for Shop status display in ledger
+                // Calculate Creator Gross (Net + VAT) instead of Total Paid (Gross from DB)
+                // Note: net_amount for Shop already includes shipping_amount
+                $shipping = 0;
                 if ($base === 'ShopPayment') {
-                    $shop = \App\Models\ShopPayment::with('deliverable')->find($tx->source_id);
-                    if ($shop) {
-                        $tx->item_status = 'order_' . ($shop->deliverable->status ?? 'pending');
+                    $shipping = (float)($shopShipping[$tx->source_id] ?? 0);
+                    if ($shipping > 0) {
+                        $tx->shipping_amount = $shipping;
                     }
+                }
+                
+                $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
+
+                $tx->display_status = 'pending';
+                $tx->order_status = null;
+                $tx->payment_status = $tx->status;
+                $tx->is_grayed_out = false;
+
+                // 1. Task Logic
+                if ($base === 'TaskPurchase' && $tx->source) {
+                    $taskType = $tx->source->task->type ?? 'timed';
+                    $tx->order_status = $tx->source->status;
+                    
+                    if ($taskType === 'timed') {
+                        $tx->display_status = match($tx->source->status) {
+                            'completed', 'completed_accepted', 'paid_out' => 'paid',
+                            'escalated' => 'dispute_hold', 
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+
+                        // Overwrite with payment holds if applicable
+                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
+                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
+
+                        if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                            $tx->is_grayed_out = true;
+                        }
+                    } else {
+                        // Instant Task
+                        $tx->display_status = match($tx->status) {
+                            'completed' => 'paid',
+                            'review_hold' => 'review_hold',
+                            'disputed' => 'dispute_hold',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+                    }
+                }
+                // 2. Shop Logic
+                elseif ($base === 'ShopPayment' && $tx->source) {
+                    $shopType = $tx->source->shop->type ?? 'digital';
+                    if ($shopType === 'physical') {
+                        $itemStat = $tx->source->deliverable->status ?? 'processing';
+                        $tx->order_status = $itemStat;
+                        $tx->display_status = match($itemStat) {
+                            'delivered' => 'paid',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+                        
+                        // Overwrite with payment holds if applicable
+                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
+                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
+
+                        if ($itemStat !== 'delivered') {
+                            $tx->is_grayed_out = true;
+                        }
+                    } else {
+                        // Instant Shop
+                        $tx->display_status = match($tx->status) {
+                            'completed' => 'paid',
+                            'review_hold' => 'review_hold',
+                            'disputed' => 'dispute_hold',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+                    }
+                }
+                // 3. Other Types
+                else {
+                    $tx->display_status = match($tx->status) {
+                        'completed' => 'paid',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'dispute_hold',
+                        'refunded' => 'refunds',
+                        default => 'pending'
+                    };
                 }
 
                 return $tx;
@@ -240,47 +419,41 @@ class CreatorFinancialController extends Controller
         // Top Supporters with Category Breakdown
         $supporterTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
-            ->where(function ($q) {
-                $q->where(function ($sq) {
-                    $sq->where('source_type', '!=', \App\Models\TaskPurchase::class)
-                       ->where('source_type', '!=', \App\Models\ShopPayment::class);
-                })
-                ->orWhereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('task_purchases')
-                        ->whereColumn('task_purchases.id', 'financial_transactions.source_id')
-                        ->whereIn('task_purchases.status', ['completed', 'completed_accepted']);
-                })
-                ->orWhereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('shop_payments')
-                        ->join('deliverables', 'deliverables.session_id', '=', 'shop_payments.session_id')
-                        ->whereColumn('shop_payments.id', 'financial_transactions.source_id')
-                        ->where('deliverables.status', 'delivered');
-                });
-            })
             ->with(['supporter:id,name,username,avatar'])
-            ->get(['supporter_id', 'net_amount', 'currency', 'source_type', 'transaction_date']);
+            ->get(['supporter_id', 'net_amount', 'currency', 'source_type', 'transaction_date', 'status', 'source_id', 'vat_amount']);
+
+        // Collect Shop IDs for supporter shipping
+        $supporterShopIds = $supporterTx->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
+        $supporterShopShipping = [];
+        if (!empty($supporterShopIds)) {
+            $supporterShopShipping = \App\Models\ShopPayment::whereIn('id', $supporterShopIds)->pluck('shipping_amount', 'id')->toArray();
+        }
 
         $topSupporters = $supporterTx
             ->groupBy('supporter_id')
-            ->map(function ($items) use ($displayCurrency) {
-                $total = $items->sum(function ($tx) use ($displayCurrency) {
+            ->map(function ($items) use ($displayCurrency, $supporterShopShipping) {
+                $total = $items->sum(function ($tx) use ($displayCurrency, $supporterShopShipping) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->net_amount ?? 0);
-                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                    $net = (float) ($tx->net_amount ?? 0);
+                    $vat = (float) ($tx->vat_amount ?? 0);
+                    $gross = $net + $vat;
+
+                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
 
                 $breakdown = $items
                     ->groupBy('source_type')
-                    ->mapWithKeys(function ($group, $sourceType) use ($displayCurrency) {
-                        $amount = $group->sum(function ($tx) use ($displayCurrency) {
+                    ->mapWithKeys(function ($group, $sourceType) use ($displayCurrency, $supporterShopShipping) {
+                        $amount = $group->sum(function ($tx) use ($displayCurrency, $supporterShopShipping) {
                             $from = strtoupper($tx->currency ?? 'GBP');
-                            $value = (float) ($tx->net_amount ?? 0);
-                            return $from === $displayCurrency ? $value : \App\Helpers::priceFormat($from, $value, $displayCurrency);
+                            $net = (float) ($tx->net_amount ?? 0);
+                            $vat = (float) ($tx->vat_amount ?? 0);
+                            $gross = $net + $vat;
+
+                            return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                         });
 
                         $base = class_basename($sourceType);
@@ -376,21 +549,46 @@ class CreatorFinancialController extends Controller
         $year = $request->input('year', $this->financialService->getCurrentTaxYear());
         $dates = $this->financialService->getTaxYearDates($year);
         
-        // Income (Filtered by Tax Year) — only finalized statuses
+        // Income (Filtered by Tax Year)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->with('supporter:id,name,username,email')
+            ->with(['supporter:id,name,username,email', 'source' => function($morphTo) {
+                $morphTo->morphWith([
+                    \App\Models\TaskPurchase::class => ['task'],
+                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
+                    \App\Models\StripePaymentItems::class => []
+                ]);
+            }])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
-            ->get()
-            ->map(function ($tx) {
+            ->get();
+
+        // Collect Shop IDs for shipping info
+        $shopIds = $income->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
+        $shopShipping = [];
+        if (!empty($shopIds)) {
+            $shopShipping = \App\Models\ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
+        }
+
+        $income = $income->map(function ($tx) use ($shopShipping) {
                 $tx->display_date = $tx->transaction_date;
                 $tx->id = $tx->id;
                 $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
                 
                 $base = class_basename($tx->source_type);
+
+                // Get Source Title for description
+                $sourceTitle = null;
+                if ($base === 'TaskPurchase' && isset($tx->source->task)) {
+                    $sourceTitle = $tx->source->task->title;
+                } elseif ($base === 'ShopPayment' && isset($tx->source->shop)) {
+                    $sourceTitle = $tx->source->shop->name;
+                } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
+                    $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+                }
+
                 $tx->label = match($base) {
                     'StripePaymentItems' => 'Wish Gift',
                     'ShopPayment' => 'Shop Purchase',
@@ -401,20 +599,98 @@ class CreatorFinancialController extends Controller
                     default => str_replace(['Payment', 'Purchase'], '', $base)
                 };
 
-                // Special handling for Task status display in ledger
-                if ($base === 'TaskPurchase') {
-                    $task = \App\Models\TaskPurchase::find($tx->source_id);
-                    if ($task) {
-                        $tx->item_status = 'task_' . ($task->status === 'paid' ? 'pending' : $task->status);
+                // Update description to include title
+                if ($sourceTitle) {
+                    $tx->description = $tx->label . ': ' . $sourceTitle;
+                }
+
+                // Calculate Creator Gross (Net + VAT) instead of Total Paid (Gross from DB)
+                // Note: net_amount for Shop already includes shipping_amount
+                $shipping = 0;
+                if ($base === 'ShopPayment') {
+                    $shipping = (float)($shopShipping[$tx->source_id] ?? 0);
+                    if ($shipping > 0) {
+                        $tx->shipping_amount = $shipping;
                     }
                 }
 
-                // Special handling for Shop status display in ledger
-                if ($base === 'ShopPayment') {
-                    $shop = \App\Models\ShopPayment::with('deliverable')->find($tx->source_id);
-                    if ($shop) {
-                        $tx->item_status = 'order_' . ($shop->deliverable->status ?? 'pending');
+                $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
+
+                $tx->display_status = 'pending';
+                $tx->order_status = null;
+                $tx->payment_status = $tx->status;
+                $tx->is_grayed_out = false;
+
+                // 1. Task Logic
+                if ($base === 'TaskPurchase' && $tx->source) {
+                    $taskType = $tx->source->task->type ?? 'timed';
+                    $tx->order_status = $tx->source->status;
+                    
+                    if ($taskType === 'timed') {
+                        $tx->display_status = match($tx->source->status) {
+                            'completed', 'completed_accepted', 'paid_out' => 'paid',
+                            'escalated' => 'dispute_hold', 
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+
+                        // Overwrite with payment holds if applicable
+                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
+                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
+
+                        if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                            $tx->is_grayed_out = true;
+                        }
+                    } else {
+                        // Instant Task
+                        $tx->display_status = match($tx->status) {
+                            'completed' => 'paid',
+                            'review_hold' => 'review_hold',
+                            'disputed' => 'dispute_hold',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
                     }
+                }
+                // 2. Shop Logic
+                elseif ($base === 'ShopPayment' && $tx->source) {
+                    $shopType = $tx->source->shop->type ?? 'digital';
+                    if ($shopType === 'physical') {
+                        $itemStat = $tx->source->deliverable->status ?? 'processing';
+                        $tx->order_status = $itemStat;
+                        $tx->display_status = match($itemStat) {
+                            'delivered' => 'paid',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+                        
+                        // Overwrite with payment holds if applicable
+                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
+                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
+
+                        if ($itemStat !== 'delivered') {
+                            $tx->is_grayed_out = true;
+                        }
+                    } else {
+                        // Instant Shop
+                        $tx->display_status = match($tx->status) {
+                            'completed' => 'paid',
+                            'review_hold' => 'review_hold',
+                            'disputed' => 'dispute_hold',
+                            'refunded' => 'refunds',
+                            default => 'pending'
+                        };
+                    }
+                }
+                // 3. Other Types
+                else {
+                    $tx->display_status = match($tx->status) {
+                        'completed' => 'paid',
+                        'review_hold' => 'review_hold',
+                        'disputed' => 'dispute_hold',
+                        'refunded' => 'refunds',
+                        default => 'pending'
+                    };
                 }
 
                 return $tx;
@@ -589,15 +865,48 @@ class CreatorFinancialController extends Controller
         $transactions = FinancialTransaction::where('user_id', $user->id)
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->with(['source' => function($morphTo) {
+                $morphTo->morphWith([
+                    \App\Models\TaskPurchase::class => ['task'],
+                    \App\Models\ShopPayment::class => ['shop'],
+                    \App\Models\StripePaymentItems::class => []
+                ]);
+            }])
             ->get()
             ->map(function ($transaction) {
+                $base = class_basename($transaction->source_type);
+                $label = match($base) {
+                    'StripePaymentItems' => 'Wish Gift',
+                    'ShopPayment' => 'Shop Purchase',
+                    'TipGoalsPayment' => 'Support/Tip',
+                    'MembershipPayment' => 'Membership',
+                    'TaskPurchase' => 'Task',
+                    'BillPayment' => 'Bill',
+                    default => str_replace(['Payment', 'Purchase'], '', $base)
+                };
+
+                // Get Source Title for description
+                $sourceTitle = null;
+                if ($base === 'TaskPurchase' && isset($transaction->source->task)) {
+                    $sourceTitle = $transaction->source->task->title;
+                } elseif ($base === 'ShopPayment' && isset($transaction->source->shop)) {
+                    $sourceTitle = $transaction->source->shop->name;
+                } elseif ($base === 'StripePaymentItems' && isset($transaction->source)) {
+                    $sourceTitle = $transaction->source->wish_name ?? $transaction->source->name;
+                }
+
+                $description = $transaction->description;
+                if ($sourceTitle) {
+                    $description = $label . ': ' . $sourceTitle;
+                }
+
                 return [
                     'date' => $transaction->transaction_date,
                     'type' => $transaction->type,
                     'category' => 'Income',
-                    'description' => $transaction->description,
-                    'gross_amount' => $transaction->type === 'income' ? $transaction->net_amount : $transaction->gross_amount,
-                    'net_amount' => $transaction->type === 'income' ? $transaction->net_amount : $transaction->gross_amount,
+                    'description' => $description,
+                    'gross_amount' => $transaction->type === 'income' ? ((float)$transaction->net_amount + (float)($transaction->vat_amount ?? 0)) : $transaction->gross_amount,
+                    'net_amount' => $transaction->net_amount,
                     'currency' => $transaction->currency,
                     'status' => $transaction->status,
                 ];

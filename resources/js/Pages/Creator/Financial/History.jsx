@@ -1,6 +1,7 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import { 
     DownloadIcon, 
     ChevronLeftIcon, 
@@ -69,7 +70,7 @@ export default function History({ auth, transactions }) {
                                 </thead>
                                 <tbody className="divide-y-[2px] divide-black">
                                     {transactions.data.map((tx) => {
-                                        const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending'));
+                                        const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out;
                                         return (
                                         <tr key={tx.uuid} className={`hover:bg-yellow-50/50 transition-colors group ${isPending ? 'opacity-30 grayscale-[0.4]' : ''}`}>
                                             <td className="px-6 py-4 text-xs font-bold text-gray-800 whitespace-nowrap border-r-[2px] border-black group-hover:text-black">
@@ -116,28 +117,43 @@ export default function History({ auth, transactions }) {
                                                 )}
                                             </td>
                                             <td className={`px-6 py-4 text-lg md:text-xl text-right font-black whitespace-nowrap border-r-[2px] border-black ${tx.type === 'income' ? 'text-[#00A84E]' : 'text-[#E83F3F]'}`}>
-                                                {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.type === 'income' ? tx.net_amount : tx.gross_amount, tx.currency)}
+                                                {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.type === 'income' ? (tx.gross_amount || tx.net_amount) : tx.gross_amount, tx.currency)}
+                                                {tx.shipping_amount > 0 && (
+                                                    <div className="text-[9px] text-gray-500 font-black uppercase italic mt-1">
+                                                        Incl. {formatCurrency(tx.shipping_amount, tx.currency)} shipping
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-xs text-center">
                                                 <div className="flex flex-col items-center gap-2">
-                                                    {tx.item_status && (
+                                                    {tx.display_status && (
                                                         <span className={`inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border-[1.5px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
-                                                            tx.item_status.endsWith('completed') || tx.item_status.endsWith('delivered') || tx.item_status.endsWith('accepted') ? 'bg-[#90FFB1] text-black' : 
-                                                            tx.item_status.startsWith('task') ? 'bg-[#90E0FF] text-black' : 
-                                                            tx.item_status.startsWith('order') ? 'bg-[#FFB190] text-black' :
+                                                            tx.display_status === 'paid' ? 'bg-[#90FFB1] text-black' : 
+                                                            tx.display_status === 'pending' ? 'bg-[#FFE951] text-black' : 
+                                                            tx.display_status === 'review_hold' ? 'bg-[#C590FF] text-black' :
+                                                            tx.display_status === 'dispute_hold' ? 'bg-[#FFB190] text-black' :
+                                                            tx.display_status === 'refunds' ? 'bg-[#FF9090] text-black' :
                                                             'bg-gray-300 text-black'
-                                                        }`}>{tx.item_status.replace('_', ' ')}
+                                                        }`}>{tx.display_status.replace('_', ' ')}
                                                         </span>
                                                     )}
-                                                    <span className={`inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border-[1.5px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
-                                                        tx.status === 'completed' ? 'bg-[#90FFB1] text-black' : 
-                                                        tx.status === 'review_hold' ? 'bg-[#C590FF] text-black' : 
-                                                        tx.status === 'disputed' ? 'bg-[#FFB190] text-black' : 
-                                                        tx.status === 'refunded' ? 'bg-[#FF9090] text-black' : 
-                                                        tx.status === 'pending' ? 'bg-[#FFE951] text-black' : 
-                                                        'bg-gray-300 text-black'
-                                                    }`}>{tx.status?.replace('_', ' ')}
-                                                    </span>
+                                                    {/* Order Status */}
+                                                    {tx.order_status && (
+                                                        <span className="inline-block px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-[0.05em] bg-white/10 text-white/70 border border-white/20">
+                                                            Order: {tx.order_status.replace('_', ' ')}
+                                                        </span>
+                                                    )}
+                                                    {/* Payment Status (Always show if success but order pending to avoid confusion) */}
+                                                    {tx.payment_status === 'completed' && tx.display_status !== 'paid' && (
+                                                        <span className="inline-block px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-[0.05em] bg-green-500/10 text-green-600 border border-green-500/20">
+                                                            Payment: Success
+                                                        </span>
+                                                    )}
+                                                    {tx.payment_status && tx.payment_status !== 'completed' && (
+                                                        <span className="inline-block px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-[0.05em] bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                                            Payment: {tx.payment_status.replace('_', ' ')}
+                                                        </span>
+                                                    )}
                                                     {tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (
                                                         <a 
                                                             href={route('financial.evidence-pack', { uuid: tx.uuid })} 

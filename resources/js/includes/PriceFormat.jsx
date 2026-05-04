@@ -4,6 +4,15 @@ export default function PriceFormat() {
     // ✅ Hook called at top level (LEGAL)
     const { rates, global_currency, currencies, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
 
+    const adminFeeInCurrency = (currency) => {
+        const upCurrency = (currency || "GBP").toUpperCase();
+        const rate = rates?.[upCurrency];
+        const digits = currencies?.[upCurrency]?.ISOdigits ?? 2;
+        const fee = upCurrency === "GBP" ? 1 : Number(rate);
+        const safeFee = !fee || !isFinite(fee) || fee <= 0 ? 1 : fee;
+        return Number(Number(safeFee).toFixed(digits));
+    };
+
     /**
      * Calculate what the supporter actually pays (Gross-up logic)
      * 
@@ -22,13 +31,12 @@ export default function PriceFormat() {
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         
-        // Platform fees — confirmed rates
-        const platformFeeRate = 0.17;  // 17%
-        const complianceFeeRate = 0.02; // 2%
+        // Platform fees — use props with correct fallbacks matching backend
+        const platformFeeRate = (platform_fee_percentage || 17) / 100;
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
         
         // Admin fee in target currency
-        const conversion_rate = rates?.[upCurrency] || 1;
-        const adminFee = upCurrency === "GBP" ? 1 : Number(conversion_rate);
+        const adminFee = adminFeeInCurrency(upCurrency);
 
         // Gross-up formula
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
@@ -199,14 +207,7 @@ export default function PriceFormat() {
     };
 
     return {
-        adminFeeInCurrency: (currency) => {
-            const upCurrency = (currency || "GBP").toUpperCase();
-            const rate = rates?.[upCurrency];
-            const digits = currencies?.[upCurrency]?.ISOdigits ?? 2;
-            const fee = upCurrency === "GBP" ? 1 : Number(rate);
-            const safeFee = !fee || !isFinite(fee) || fee <= 0 ? 1 : fee;
-            return Number(Number(safeFee).toFixed(digits));
-        },
+        adminFeeInCurrency,
         formatMultiPrice,
         usdtogbp,
         calculateTotalSupporterPays,

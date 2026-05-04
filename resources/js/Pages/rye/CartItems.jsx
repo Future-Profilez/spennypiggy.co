@@ -12,7 +12,7 @@ import AllCountries from '../../includes/AllCountries';
 export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     const { turnstileSiteKey } = usePage().props;
     const turnstileRef = useRef(null);
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [totalPrice, setTotalPrice] = useState(0);
     const [isChecked, setIsChecked] = useState(false);
@@ -137,15 +137,18 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     }, [datatoMap]); // Recalculate whenever datatoMap changes
 
     const calculateTotalPrice = () => {
-        let newTotalPrice = 0;
-        if (datatoMap) {
-            // Check if datatoMap is not null or undefined
+        let baseTotal = 0;
+        let currency = 'USD';
+        if (datatoMap && datatoMap.length > 0) {
+            currency = datatoMap[0]?.product?.price?.currency || 'USD';
             datatoMap.forEach((item) => {
-                newTotalPrice +=
-                    (item.product.price.value / 100) * item.quantity; // Correct price calculation
+                baseTotal += (item.product.price.value / 100) * item.quantity;
             });
         }
-        setTotalPrice(newTotalPrice);
+        
+        // Rye items are grossed up as a batch in the backend
+        const breakdown = calculateTotalSupporterPays(baseTotal, currency);
+        setTotalPrice(breakdown.total_supporter_pays);
     };
 
     const removeItem = async (productId) => {

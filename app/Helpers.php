@@ -762,6 +762,35 @@ class Helpers
                 ]);
                 break;
 
+            case 'task':
+            case 'task_purchase':
+                $buyer = $paymentModel->supporter ?? null;
+                $creator = $paymentModel->creator ?? null;
+                $task = $paymentModel->task ?? $paymentModel;
+
+                $baseMetadata = array_merge($commonFields, [
+                    'type' => 'task_purchase',
+                    'purpose' => 'Task Purchase Payment',
+                    'payment_category' => 'task_purchase',
+                    'product_type' => 'task',
+
+                    // Buyer Information
+                    'buyer_id' => (string) ($paymentModel->supporter_id ?? $paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $buyer ? $buyer->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_email' => $buyer ? $buyer->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+
+                    // Creator Information
+                    'creator_id' => (string) ($paymentModel->creator_id ?? ''),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+
+                    // Task Details
+                    'task_id' => (string) ($paymentModel->task_id ?? $task->id ?? ''),
+                    'task_title' => $task ? $task->title : 'Task',
+                    'deliverable_type' => 'digital_task',
+                ]);
+                break;
+
             case 'site_subscription':
             case 'mandatory_subscription':
                 $subscriber = $paymentModel->user ?? null;

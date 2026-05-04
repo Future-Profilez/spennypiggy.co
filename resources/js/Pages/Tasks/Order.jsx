@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Head, useForm, Link } from "@inertiajs/react";
+import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
 import GlobalUploader from "@/uploadcare/Uploader";
 import PriceFormat from "@/includes/PriceFormat";
 import userphoto from "../../../assets/siteicon.png";
 
 const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
-    // Determine target date: either passed directly or calculated
     const finalTargetDate = targetDate
         ? new Date(targetDate)
         : createdAt && hours
@@ -14,7 +13,6 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
           : null;
 
     if (!finalTargetDate) return null;
-
     const calculateTimeLeft = () => {
         const difference = +finalTargetDate - +new Date();
 
@@ -29,7 +27,6 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
             seconds: Math.floor((difference / 1000) % 60),
         };
     };
-
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
     useEffect(() => {
@@ -47,7 +44,6 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
     if (!timeLeft) {
         return <span className="text-red-600">Overdue</span>;
     }
-
     return (
         <span className="text-pink-600">
             {timeLeft.days > 0 && `${timeLeft.days}d `}
@@ -57,55 +53,11 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
 };
 
 export default function Order({ auth, purchase, task, isCreator, isSupporter, currencySymbol, gracePeriodHours = 1 }) {
-    const { platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
-
-    const isZeroDecimalCurrency = (curr) => {
-        const zeroDecimalCurrencies = [
-            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
-            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
-        ];
-        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
-    };
-
-    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
-        const listedPrice = parseFloat(price || 0);
-        const vat = parseFloat(vatAmount || 0);
-        const isZeroDecimal = isZeroDecimalCurrency(curr);
-
-        const priceWithVat = listedPrice + vat;
-
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100;
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
-        const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-
-        if (totalDeductionRate >= 1) return priceWithVat;
-
-        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
-    };
-
-    // Grace Period Logic
     const GRACE_PERIOD_HOURS = gracePeriodHours;
-    const slaDeadline = purchase.sla_deadline
-        ? new Date(purchase.sla_deadline)
-        : purchase.created_at && task.sla_hours
-          ? new Date(
-                new Date(purchase.created_at).getTime() +
-                    task.sla_hours * 3600000,
-            )
-          : null;
+    const slaDeadline = purchase.sla_deadline ? new Date(purchase.sla_deadline) : purchase.created_at && task.sla_hours ? new Date( new Date(purchase.created_at).getTime() + task.sla_hours * 3600000, ) : null;
 
     const [isGraceActive, setIsGraceActive] = useState(false);
-
     useEffect(() => {
         if (slaDeadline) {
             const checkGrace = () => {

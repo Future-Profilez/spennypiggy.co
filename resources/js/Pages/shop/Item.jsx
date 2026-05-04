@@ -5,12 +5,11 @@ import PriceFormat from "../../includes/PriceFormat";
 import BuyShopItem from "./BuyShopItem";
 import { 
     ChevronLeftIcon, 
-    PercentIcon, 
     TwitterIcon, 
     InstagramIcon, 
     FacebookIcon 
 } from "@animateicons/react/lucide";
-import { Rss } from "lucide-react";
+import { Rss, Percent } from "lucide-react";
 import axios from "axios";
 import AllContries from "../../includes/AllCountries";
 
@@ -44,7 +43,7 @@ export default function ShopDetailItem(props) {
         const shareUrl = `https://feedly.com/i/subscription/feed/${encodeURIComponent(url)}`;
         window.open(shareUrl, "_blank", "noopener,noreferrer");
     };
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
     const {
         global_currency,
         turnstileSiteKey,
@@ -52,61 +51,9 @@ export default function ShopDetailItem(props) {
         transaction_fee_percentage,
     } = usePage().props;
 
-    // Helper to identify zero decimal currencies
-    const isZeroDecimalCurrency = (curr) => {
-        const zeroDecimalCurrencies = [
-            "BIF",
-            "CLP",
-            "DJF",
-            "GNF",
-            "JPY",
-            "KMF",
-            "KRW",
-            "MGA",
-            "PYG",
-            "RWF",
-            "UGX",
-            "VND",
-            "VUV",
-            "XAF",
-            "XOF",
-            "XPF",
-        ];
-        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
-    };
-
-    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-        const listedPrice = parseFloat(price || 0);
-        const isZeroDecimal = isZeroDecimalCurrency(curr);
-        const vatAmount = (listedPrice * (vatPercent || 0)) / 100;
-        const priceWithVat = listedPrice + vatAmount;
-
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100;
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
-        const adminFee = adminFeeInCurrency(curr);
-        const totalDeductionRate =
-            stripeFeeRate + platformFeeRate + complianceFeeRate;
-
-        if (totalDeductionRate >= 1) return priceWithVat;
-
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
-
-        // Rounding logic to match backend (Helpers.php)
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
-    };
-
     const isOwner = auth?.user?.id === shop?.user_id;
     const vatPercentage = shop?.user?.vat_amount_percentage || 0;
+    const itemCurrency = (shop?.currency || shop?.user?.default_currency || "GBP").toUpperCase();
 
     const hasVariants = false;
     const [price, setPrice] = useState(shop.price);
@@ -156,8 +103,11 @@ export default function ShopDetailItem(props) {
         getIp();
     }, []); // run once on mount — shop.uuid won't change after render
 
-    const baseSpecialPrice = (parseFloat(shop?.special_member_price) || 0) + (parseFloat(shippingPrice) || 0);
-    const baseRegularPrice = (parseFloat(price) || 0) + (parseFloat(shippingPrice) || 0);
+    const vatAmountSpecial = (parseFloat(shop?.special_member_price) || 0) * vatPercentage / 100;
+    const baseSpecialPriceToGrossUp = (parseFloat(shop?.special_member_price) || 0) + vatAmountSpecial + (parseFloat(shippingPrice) || 0);
+
+    const vatAmountRegular = (parseFloat(price) || 0) * vatPercentage / 100;
+    const baseRegularPriceToGrossUp = (parseFloat(price) || 0) + vatAmountRegular + (parseFloat(shippingPrice) || 0);
 
     return (
         <>
@@ -280,7 +230,7 @@ export default function ShopDetailItem(props) {
                                 shop.special_member_price ? (
                                     <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[30px]  p-3 ">
                                         <div className="discount-tag w-[50px] h-[50px] mr-2 flex items-center justify-center">
-                                            <PercentIcon size={32} className="text-pink-600" />
+                                            <Percent size={32} className="text-pink-600" />
                                         </div>
                                         <div className="w-full pr-4 discount-text sm:flex items-center justify-between">
                                             <div className="pr-3">
@@ -288,10 +238,9 @@ export default function ShopDetailItem(props) {
                                                     Only{" "}
                                                     {formatMultiPrice(
                                                         calculateTotalSupporterPays(
-                                                            (parseFloat(shop.special_member_price) || 0) + (parseFloat(shippingPrice) || 0),
-                                                            shop?.currency || "GBP",
-                                                            vatPercentage
-                                                        ),
+                                                            baseSpecialPriceToGrossUp,
+                                                            shop?.currency || "GBP"
+                                                        ).total_supporter_pays,
                                                         shop?.currency || "GBP",
                                                     )}{" "}
                                                     for members
@@ -392,28 +341,28 @@ export default function ShopDetailItem(props) {
                                                             {isOwner ? (
                                                                 <div className="flex flex-col">
                                                                     <div className="flex items-baseline">
-                                                                        <span>{formatMultiPrice(shop?.special_member_price, shop?.currency || "GBP")}</span>
+                                                                        <span>{formatMultiPrice(shop?.special_member_price, itemCurrency)}</span>
                                                                         <span className="line-through text-gray-400 text-xl ml-2">
-                                                                            {formatMultiPrice(price, shop?.currency || "GBP")}
+                                                                            {formatMultiPrice(price, itemCurrency)}
                                                                         </span>
                                                                     </div>
                                                                     {parseFloat(shippingPrice) > 0 && (
-                                                                        <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, shop?.currency || "GBP")} shipping</span>
+                                                                        <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, itemCurrency)} shipping</span>
                                                                     )}
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex flex-col">
                                                                         <div className="flex items-baseline">
-                                                                            <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
+                                                                            <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPriceToGrossUp, itemCurrency).total_supporter_pays, itemCurrency)}</span>
                                                                             <span className="line-through text-gray-400 text-xl ml-2">
-                                                                                {formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}
+                                                                                {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp, itemCurrency).total_supporter_pays, itemCurrency)}
                                                                             </span>
                                                                         </div>
                                                                         <span className="text-sm font-bold text-green-600 mt-1 uppercase tracking-wide flex items-center gap-1">
-                                                                            <PercentIcon size={18} className="text-lg" /> Member Discount Applied
+                                                                            <Percent size={18} className="text-lg" /> Member Discount Applied
                                                                         </span>
                                                                         <span className="!text-[14px] text-gray-500 font-normal mt-1 leading-tight">
-                                                                            *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {shop?.currency || "GBP"}.
+                                                                            *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
                                                                         </span>
                                                                     </div>
                                                             )}
@@ -421,16 +370,26 @@ export default function ShopDetailItem(props) {
                                                     ) : price > 0 ? (
                                                         isOwner ? (
                                                             <div className="flex flex-col">
-                                                                <span>{formatMultiPrice(price, shop?.currency || "GBP")}</span>
+                                                                <span>{formatMultiPrice(price, itemCurrency)}</span>
                                                                 {parseFloat(shippingPrice) > 0 && (
-                                                                    <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, shop?.currency || "GBP")} shipping</span>
+                                                                    <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, itemCurrency)} shipping</span>
                                                                 )}
                                                             </div>
                                                         ) : (
                                                             <div className="flex flex-col">
-                                                                <span>{formatMultiPrice(calculateTotalSupporterPays(baseRegularPrice, shop?.currency || "GBP", vatPercentage), shop?.currency || "GBP")}</span>
+                                                                <div className="flex items-baseline">
+                                                                    <span className="text-4xl font-bold">
+                                                                        {formatMultiPrice(
+                                                                            calculateTotalSupporterPays(
+                                                                                baseRegularPriceToGrossUp,
+                                                                                itemCurrency
+                                                                            ).total_supporter_pays,
+                                                                            itemCurrency
+                                                                        )}
+                                                                    </span>
+                                                                </div>
                                                                 <span className="text-[14px] text-gray-500 font-normal mt-1 leading-tight">
-                                                                    *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {shop?.currency || "GBP"}.
+                                                                    *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
                                                                 </span>
                                                             </div>
                                                         )

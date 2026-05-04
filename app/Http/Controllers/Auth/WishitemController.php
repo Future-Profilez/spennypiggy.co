@@ -1017,16 +1017,17 @@ class WishitemController extends Controller
             $vatAmount = ($basePrice * $vatPercent) / 100;
             $priceWithVat = $basePrice + $vatAmount;
 
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $wishitem->user->default_currency);
+            $itemCurrency = $wishitem->currency ?: ($wishitem->user->default_currency ?: 'GBP');
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $itemCurrency);
 
             if ($wishitem->subscription == 2) {
                 // For crowdfunding, we need to calculate the gross-up total for the requested amount
-                $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
+                $price = Helpers::priceFormat($currency, $amount, $itemCurrency);
                 $vatAmountCrowdfund = ($price * $vatPercent) / 100;
                 $priceWithVatCrowdfund = $price + $vatAmountCrowdfund;
 
                 // Use new gross-up flow for consistent fee calculation
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCrowdfund, $wishitem->user->default_currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCrowdfund, $itemCurrency);
 
                 $total = $breakdown['total_supporter_pays'];
                 $tax = $breakdown['total_fees'];
@@ -2520,7 +2521,7 @@ class WishitemController extends Controller
                         'tax' => $wish->tax,
                         'surprisemessage' => $wish->message ?? '',
                         'quantity' => $wish->quantity ?? '',
-                        'currency' => $wish->wish->currency ?? '',
+                        'currency' => $wish->wish->currency ?? ($wish->owner->default_currency ?? 'GBP'),
                     ];
                 }
             }
@@ -2542,14 +2543,6 @@ class WishitemController extends Controller
                 $total = 0;
                 $fee = 0;
                 foreach ($value as $k => $v) {
-                    // if ($v['wish']['subscription'] == 2) {
-                    //     $price = $v['amount'];
-                    //     $priceid = $v['priceid'];
-                    // } else {
-                    //     $price = $v['wish']['price'] ;
-                    //     $priceid = $v['wish']['price_id'];
-                    // }
-
                     $price = $v['amount'] ? $v['amount'] : $v['wish']['price'];
                     $tax = $v['tax'] ? $v['tax'] : $v['wish']['tax_amount'];
                     $priceid = $v['priceid'] ? $v['priceid'] : $v['wish']['price_id'];
@@ -2571,7 +2564,7 @@ class WishitemController extends Controller
                             'category' => $v['wish']['category'],
                             'url' => $v['url'],
                             'quantity' => $v['quantity'],
-                            'currency' => $v['wish']['currency'],
+                            'currency' => $v['wish']['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'),
                         ];
                     } else {
                         $cart[$key]['items'][$k] = [
@@ -2584,7 +2577,7 @@ class WishitemController extends Controller
                             'url' => $v['url'],
                             'surprise_message' => $v['surprisemessage'],
                             'quantity' => $v['quantity'],
-                            'currency' => $v['currency'],
+                            'currency' => $v['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'),
                         ];
                     }
 

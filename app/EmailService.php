@@ -35,6 +35,7 @@ use App\Mail\FeatureSuggestionMail;
 use App\Models\AppService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\FacadesLog;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -350,7 +351,7 @@ class EmailService
             // Create deliverable record for email tracking
             try {
                 \App\Models\Deliverable::create([
-                    'uuid' => \Str::uuid(),
+                    'uuid' => Str::uuid(),
                     'product_id' => $payment->payment->stripe_product_id ?? 'thank_you_email',
                     'price_id' => $payment->payment->stripe_price_id ?? null,
                     'creator_id' => $payment->payment->owner->id ?? null,
@@ -626,7 +627,7 @@ class EmailService
 
     public static function billContentDelivery($data, $curr)
     {
-        \Log::info('EmailService::billContentDelivery started', [
+        Log::info('EmailService::billContentDelivery started', [
             'bill_payment_id' => $data->id ?? 'null',
             'bill_id' => $data->bill->id ?? 'null',
             'currency' => $curr,
@@ -637,12 +638,12 @@ class EmailService
             // Use CheckoutToUser mail class for consistency with existing system
             Mail::to($data->guest_email)->send(new CheckoutToUser($data, $curr));
 
-            \Log::info('EmailService::billContentDelivery sent successfully', [
+            Log::info('EmailService::billContentDelivery sent successfully', [
                 'bill_payment_id' => $data->id,
                 'recipient_email' => $data->guest_email
             ]);
         } catch (TransportException $e) {
-            \Log::error('EmailService::billContentDelivery failed', [
+            Log::error('EmailService::billContentDelivery failed', [
                 'bill_payment_id' => $data->id ?? 'null',
                 'error' => $e->getMessage()
             ]);
@@ -656,11 +657,11 @@ class EmailService
             $emails = ['naveen@internetbusinesssolutionsindia.com', 'support@spennypiggy.co'];
             Mail::to($emails)->send(new FeatureSuggestionMail($data));
             
-            \Log::info('EmailService::featureSuggestion - Email sent successfully', [
+            Log::info('EmailService::featureSuggestion - Email sent successfully', [
                 'emails' => $emails
             ]);
         } catch (\Exception $e) {
-            \Log::error('EmailService::featureSuggestion - Failed to send email', [
+            Log::error('EmailService::featureSuggestion - Failed to send email', [
                 'error' => $e->getMessage()
             ]);
         }

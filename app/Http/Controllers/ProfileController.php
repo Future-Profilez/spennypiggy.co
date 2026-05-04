@@ -1742,12 +1742,14 @@ class ProfileController extends Controller
         $receivedAll = \App\Models\FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->where('status', 'completed')
-            ->get(['net_amount', 'currency']);
+            ->with('source')
+            ->get();
 
         $sentAll = \App\Models\FinancialTransaction::where('supporter_id', $user->id)
             ->where('type', 'income')
             ->where('status', 'completed')
-            ->get(['gross_amount', 'currency']);
+            ->with('source')
+            ->get();
 
         $allCurrencies = $receivedAll
             ->pluck('currency')
@@ -1794,10 +1796,27 @@ class ProfileController extends Controller
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
-        $receivedTotal = $receivedAll->sum(function ($tx) use ($convert, $displayCurrency) {
+        $filterEarnings = function ($tx) {
+            // If it's a Task purchase, only include if it's actually finished/completed
+            if ($tx->source_type === \App\Models\TaskPurchase::class) {
+                if (!$tx->source) return false;
+                return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out', 'delivered']);
+            }
+            return true;
+        };
+
+        $receivedTotal = $receivedAll->filter($filterEarnings)->sum(function ($tx) use ($convert, $displayCurrency) {
+            $tx->is_included_in_totals = true; // Mark as included
             $from = strtoupper($tx->currency ?? 'GBP');
             $amount = (float) ($tx->net_amount ?? 0);
             return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
+        });
+
+        // Mark excluded ones
+        $receivedAll->each(function($tx) use ($filterEarnings) {
+            if (!isset($tx->is_included_in_totals)) {
+                $tx->is_included_in_totals = $filterEarnings($tx);
+            }
         });
 
         $sentTotal = $sentAll->sum(function ($tx) use ($convert, $displayCurrency) {
@@ -1916,11 +1935,26 @@ class ProfileController extends Controller
             ->with([
                 'user:id,name,username,avatar',
                 'supporter:id,name,username,avatar',
+                'source',
             ])
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
             ->limit($limit + 1)
             ->get();
+
+        // Load deliverables for shop payments
+        $shopPaymentIds = $rows->where('source_type', \App\Models\ShopPayment::class)->pluck('source_id');
+        if ($shopPaymentIds->isNotEmpty()) {
+            $deliverables = \App\Models\Deliverable::whereIn('session_id', function($q) use ($shopPaymentIds) {
+                $q->select('session_id')->from('shop_payments')->whereIn('id', $shopPaymentIds);
+            })->get()->keyBy('session_id');
+
+            $rows->each(function($tx) use ($deliverables) {
+                if ($tx->source_type === \App\Models\ShopPayment::class && $tx->source) {
+                    $tx->source->setRelation('deliverable', $deliverables->get($tx->source->session_id));
+                }
+            });
+        }
 
         $hasMore = $rows->count() > $limit;
         $rows = $rows->take($limit)->values();
@@ -1993,9 +2027,39 @@ class ProfileController extends Controller
             $status = $tx->status;
             $reserveAmount = (float) ($tx->reserve_amount ?? 0);
 
+            // Item status for tasks/shops
+            $itemStatus = null;
+            if ($tx->source_type === \App\Models\TaskPurchase::class && $tx->source) {
+                $itemStatus = match($tx->source->status) {
+                    'completed', 'completed_accepted', 'paid_out' => 'task_complete',
+                    'delivered' => 'task_delivered',
+                    'pending_review' => 'task_review_pending',
+                    'paid', 'assigned' => 'task_pending',
+                    default => 'task_' . $tx->source->status
+                };
+            } else if ($tx->source_type === \App\Models\ShopPayment::class && $tx->source) {
+                $deliverableStatus = $tx->source->deliverable ? $tx->source->deliverable->status : 'processing';
+                $itemStatus = match($deliverableStatus) {
+                    'delivered' => 'item_complete',
+                    'shipped' => 'item_shipped',
+                    'processing' => 'item_processing',
+                    default => 'item_' . $deliverableStatus
+                };
+            }
+
+            // Inclusion logic for UI messages
+            $isIncluded = true;
+            if ($tx->type === 'income' && $tx->source_type === \App\Models\TaskPurchase::class) {
+                $taskStatus = $tx->source->status ?? null;
+                $isIncluded = in_array($taskStatus, ['completed', 'completed_accepted', 'paid_out', 'delivered']);
+            } else if ($tx->status !== 'completed') {
+                $isIncluded = false;
+            }
+
             // Gifter view normalization
             if ($tab === 'sent') {
                 $reserveAmount = 0; // Hide reserves from gifter
+                $isIncluded = true; // Gifter always sees their spend in their local totals
                 
                 // Gifter only sees 'completed' or 'refunded'
                 if ($status === 'refunded') {
@@ -2016,6 +2080,8 @@ class ProfileController extends Controller
                 'currency' => strtolower($from),
                 'display_currency' => strtolower($displayCurrency),
                 'status' => $status,
+                'item_status' => $itemStatus,
+                'is_included_in_totals' => $isIncluded,
                 'reserve_status' => $tab === 'sent' ? 'none' : $tx->reserve_status,
                 'reserve_amount' => $reserveAmount,
                 'is_success' => $status === 'completed',

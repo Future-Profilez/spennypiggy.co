@@ -185,7 +185,7 @@ export default function SupportStory({ creator, gifter }) {
               {!isThankyou && (
                 <button
                   onClick={() => shareIndividualEvent(ev)}
-                  className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                  className="p-2 h-[30px] rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
                   title="Share on X"
                 >
                   <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
