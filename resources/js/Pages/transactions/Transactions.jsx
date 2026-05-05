@@ -7,7 +7,6 @@ import Nocontent from '@/includes/Nocontent';
 import axios from 'axios';
 import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
-import Modal from '@/Components/Modal';
 import { 
   ChevronLeftIcon, 
   ExternalLinkIcon, 

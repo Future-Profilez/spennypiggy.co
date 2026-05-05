@@ -22,6 +22,7 @@ export default function OrdersLists({ type = 'sales' }) {
    const { global_currency, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
    const [orderloading, setOrderLoading] = useState(false);
    const [orders, setOrders] = useState([]);
+   const [userCurrency, setUserCurrency] = useState(global_currency);
 
    const [allEarning, setAllEarning] = useState(0);
    const [monthEarning, setmonthEarning] = useState(0);
@@ -67,6 +68,7 @@ export default function OrdersLists({ type = 'sales' }) {
          setAllEarning(res.data.all_time);
          setmonthEarning(res.data.thirtydays);
          setclaims(res.data.total_claims);
+         setUserCurrency(res.data.user_currency || global_currency);
          setOrderLoading(false);
         })
        .catch(err =>{
@@ -78,6 +80,8 @@ export default function OrdersLists({ type = 'sales' }) {
    useEffect(()=>{
       fetchorders();
    }, [type]);
+
+   console.log(orders);
 
   return <>
 
@@ -91,11 +95,11 @@ export default function OrdersLists({ type = 'sales' }) {
             <p className='text-gray-500'>Claims</p>
          </div>
          <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{formatMultiPrice(monthEarning, global_currency)}</h2>
+            <h2 className='font-bold text-2xl' >{formatMultiPrice(monthEarning, userCurrency)}</h2>
             <p className='text-gray-500'>Last 30 Days</p>
          </div>
          <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{formatMultiPrice(allEarning, global_currency)}</h2>
+            <h2 className='font-bold text-2xl' >{formatMultiPrice(allEarning, userCurrency)}</h2>
             <p className='text-gray-500'>All Time</p>
          </div>
       </div>
@@ -138,23 +142,29 @@ export default function OrdersLists({ type = 'sales' }) {
                         </Link>
                      </div>
                      <div className=" flex flex-vert-center flex-col items-end">
+                        {console.log(item)}
                         <div className=" text-dark  font-cr-medium  text-sm  block  leading-4">
-                           {item && item.amount ? (
+                           {item && item?.gross_amount ? (
                               type === 'sales' ? (
-                                 <> {formatMultiPrice((item.amount), item?.currency || 'GBP') }</>
+                                 <>
+                                    <div className="font-bold">{formatMultiPrice(item.net_amount || 0, item?.currency || userCurrency)}</div>
+                                 </>
                               ) : (
-                                 <> {formatMultiPrice(calculateTotalSupporterPays(parseFloat(item.amount) + parseFloat(item.shipping_amount || 0) + parseFloat(item.tax_amount || 0) + parseFloat(item.vat_tax_amount || 0), item?.currency || 'GBP'), item?.currency || 'GBP') }</>
+                                 <>
+                                    <div className="font-bold">{formatMultiPrice(item.gross_amount || 0, item?.currency || userCurrency)}</div>
+                                 </>
                               )
                            ) : "FREE"}
                         </div>
-                        {type === 'sales' && item && parseFloat(item.shipping_amount || 0) > 0 && (
-                           <div className="text-[11px] text-gray-500 mt-1">
-                              + {formatMultiPrice(item.shipping_amount, item?.currency || 'GBP')} shipping
+                        {type === 'sales' && item && item.gross_amount > 0 && (
+                           <div className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-gray-200 w-full text-right">
+                              <div>Fee: {formatMultiPrice(item.platform_fee || 0, item?.currency || userCurrency)}</div>
+                              <div>Stripe: {formatMultiPrice(item.stripe_fee || 0, item?.currency || userCurrency)}</div>
                            </div>
                         )}
-                        {type === 'purchases' && item && (parseFloat(item.amount) > 0 || parseFloat(item.shipping_amount || 0) > 0) && (
+                        {type === 'purchases' && item && item.gross_amount > 0 && (
                            <div className="text-[10px] text-gray-400 mt-1">
-                              Includes fees & shipping
+                              Total paid with fees
                            </div>
                         )}
                         {(item.payment_status === 'refunded' || item.is_deactivated || item.shop?.type === 'physical') && (

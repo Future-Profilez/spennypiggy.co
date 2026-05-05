@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
 use App\StripeControl;
 use Carbon\Carbon;
 use Exception;
@@ -1622,58 +1623,72 @@ class ShopsController extends Controller
         $type = $request->query('type', 'sales');
 
         if ($type === 'purchases') {
-            $orders = ShopPayment::with('shop.user')
-                ->where('user_id', $user->id)
-                ->whereIn('payment_status', ['paid', 'refunded'])
-                ->orderBy('id', 'desc')
+            // Gifter's view: what they paid for
+            $transactions = FinancialTransaction::where('supporter_id', $user->id)
+                ->where('source_type', 'App\\Models\\ShopPayment')
+                ->where('status', 'completed')
+                ->orderBy('transaction_date', 'desc')
                 ->get();
             
-             // Map orders to format expected by frontend
-            $formattedOrders = $orders->map(function ($order) {
-                $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)
-                    ->where('product_type', 'shop_item')
-                    ->where('item_id', $order->shop_id)
-                    ->first();
+            $formattedOrders = $transactions->map(function ($tx) {
+                try {
+                    // Get the ShopPayment and related data
+                    $shopPayment = ShopPayment::find($tx->source_id);
+                    if (!$shopPayment) {
+                        return null;
+                    }
 
-                if (($deliverable->hidden_from_gifter ?? false) === true) {
+                    $deliverable = \App\Models\Deliverable::where('session_id', $shopPayment->session_id)
+                        ->where('product_type', 'shop_item')
+                        ->where('item_id', $shopPayment->shop_id)
+                        ->first();
+
+                    if (($deliverable->hidden_from_gifter ?? false) === true) {
+                        return null;
+                    }
+
+                    // Determine delay status
+                    $isDelayed = false;
+                    if ($shopPayment->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $tx->status !== 'refunded') {
+                        if (Carbon::parse($tx->transaction_date)->addDays(7)->isPast()) {
+                            $isDelayed = true;
+                        }
+                    }
+
+                    return [
+                        'id' => $shopPayment->id,
+                        'uuid' => $shopPayment->uuid,
+                        'gross_amount' => $tx->gross_amount,
+                        'platform_fee' => $tx->platform_fee,
+                        'stripe_fee' => $tx->stripe_fee,
+                        'vat_amount' => $tx->vat_amount,
+                        'currency' => $tx->currency,
+                        'transaction_date' => $tx->transaction_date,
+                        'created_at' => $shopPayment->created_at,
+                        'name' => $shopPayment->shop->user->name ?? 'Unknown',
+                        'username' => $shopPayment->shop->user->username ?? '',
+                        'email' => $shopPayment->shop->user->email ?? '',
+                        'avatar_url' => $shopPayment->shop->user->avatar_url ?? null,
+                        'shop' => $shopPayment->shop,
+                        'quantity' => $shopPayment->quantity,
+                        'shipping_amount' => $shopPayment->shipping_amount ?? 0,
+                        'shipping_info' => $shopPayment->shipping_info,
+                        'status' => $deliverable->status ?? 'pending',
+                        'payment_status' => $tx->status,
+                        'is_deactivated' => $deliverable->is_deactivated ?? false,
+                        'is_delayed' => $isDelayed,
+                        'tracking_id' => $deliverable->tracking_id ?? null,
+                        'courier_name' => $deliverable->courier_name ?? null,
+                        'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
+                        'shipped_at' => $deliverable->shipped_at ?? null,
+                        'ask_question' => $shopPayment->ask_question,
+                        'answer' => $shopPayment->answer,
+                        'message' => $shopPayment->message,
+                    ];
+                } catch (\Exception $e) {
+                    Log::error('Error processing transaction in ordersList purchases', ['error' => $e->getMessage(), 'tx_id' => $tx->id]);
                     return null;
                 }
-                // Determine delay status
-                $isDelayed = false;
-                if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
-                    if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
-                        $isDelayed = true;
-                    }
-                }
-
-                return [
-                    'id' => $order->id,
-                    'uuid' => $order->uuid,
-                    'amount' => $order->amount,
-                    'tax_amount' => $order->tax_amount ?? 0,
-                    'vat_tax_amount' => $order->vat_tax_amount ?? 0,
-                    'shipping_amount' => $order->shipping_amount ?? 0,
-                    'currency' => $order->currency,
-                    'created_at' => $order->created_at,
-                    'name' => $order->shop->user->name ?? 'Unknown',
-                    'username' => $order->shop->user->username ?? '',
-                    'email' => $order->shop->user->email ?? '',
-                    'avatar_url' => $order->shop->user->avatar_url ?? null,
-                    'shop' => $order->shop,
-                    'quantity' => $order->quantity,
-                    'shipping_info' => $order->shipping_info,
-                    'status' => $deliverable->status ?? 'pending',
-                    'payment_status' => $order->payment_status,
-                    'is_deactivated' => $deliverable->is_deactivated ?? false,
-                    'is_delayed' => $isDelayed,
-                    'tracking_id' => $deliverable->tracking_id ?? null,
-                    'courier_name' => $deliverable->courier_name ?? null,
-                    'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
-                    'shipped_at' => $deliverable->shipped_at ?? null,
-                    'ask_question' => $order->ask_question,
-                    'answer' => $order->answer,
-                    'message' => $order->message,
-                ];
             });
 
             $formattedOrders = $formattedOrders->filter();
@@ -1683,74 +1698,96 @@ class ShopsController extends Controller
                 'orders' => $formattedOrders,
                 'all_time' => 0,
                 'thirtydays' => 0,
-                'total_claims' => $formattedOrders->count()
+                'total_claims' => $formattedOrders->count(),
+                'user_currency' => $user->default_currency
             ]);
         }
 
-        // Default to sales
-        $orders = ShopPayment::with('shop')
-            ->whereHas('shop', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->whereIn('payment_status', ['paid', 'refunded'])
-            ->orderBy('id', 'desc')
+        // Default to sales: creator's earnings
+        $transactions = FinancialTransaction::where('user_id', $user->id)
+            ->where('source_type', 'App\\Models\\ShopPayment')
+            ->where('status', 'completed')
+            ->orderBy('transaction_date', 'desc')
             ->get();
 
-        $allTime = $orders->sum('amount');
-        $thirtyDays = $orders->where('created_at', '>=', Carbon::now()->subDays(30))->sum('amount');
+        // Calculate totals from net_amount (creator's earnings)
+        $allTime = $transactions->sum('net_amount');
+        $thirtyDays = $transactions
+            ->where('transaction_date', '>=', Carbon::now()->subDays(30))
+            ->sum('net_amount');
 
         // Map orders to format expected by frontend
-        $formattedOrders = $orders->map(function ($order) {
-            $buyer = User::find($order->user_id);
-            $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)
-                ->where('product_type', 'shop_item')
-                ->where('item_id', $order->shop_id)
-                ->first();
-            
-            // Determine delay status
-            $isDelayed = false;
-            if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
-                if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
-                    $isDelayed = true;
+        $formattedOrders = $transactions->map(function ($tx) {
+            try {
+                $shopPayment = ShopPayment::find($tx->source_id);
+                if (!$shopPayment) {
+                    return null;
                 }
-            }
 
-            return [
-                'id' => $order->id,
-                'uuid' => $order->uuid,
-                'amount' => $order->amount,
-                'tax_amount' => $order->tax_amount ?? 0,
-                'vat_tax_amount' => $order->vat_tax_amount ?? 0,
-                'shipping_amount' => $order->shipping_amount ?? 0,
-                'currency' => $order->currency,
-                'created_at' => $order->created_at,
-                'name' => $order->name ?? ($buyer->name ?? 'Anonymous'),
-                'username' => $buyer->username ?? '',
-                'email' => $order->email ?? ($buyer->email ?? ''),
-                'avatar_url' => $buyer->avatar_url ?? null,
-                'shop' => $order->shop,
-                'quantity' => $order->quantity,
-                'shipping_info' => $order->shipping_info,
-                'status' => $deliverable->status ?? 'pending',
-                'payment_status' => $order->payment_status,
-                'is_deactivated' => $deliverable->is_deactivated ?? false,
-                'is_delayed' => $isDelayed,
-                'tracking_id' => $deliverable->tracking_id ?? null,
-                'courier_name' => $deliverable->courier_name ?? null,
-                'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
-                'shipped_at' => $deliverable->shipped_at ?? null,
-                'ask_question' => $order->ask_question,
-                'answer' => $order->answer,
-                'message' => $order->message,
-            ];
+                $buyer = User::find($tx->supporter_id);
+                $deliverable = \App\Models\Deliverable::where('session_id', $shopPayment->session_id)
+                    ->where('product_type', 'shop_item')
+                    ->where('item_id', $shopPayment->shop_id)
+                    ->first();
+
+                // Determine delay status
+                $isDelayed = false;
+                if ($shopPayment->shop->type === 'physical' && 
+                    ($deliverable->status ?? 'pending') !== 'delivered' && 
+                    ($deliverable->is_deactivated ?? false) !== true && 
+                    $tx->status !== 'refunded') {
+                    if (Carbon::parse($tx->transaction_date)->addDays(7)->isPast()) {
+                        $isDelayed = true;
+                    }
+                }
+
+                return [
+                    'id' => $shopPayment->id,
+                    'uuid' => $shopPayment->uuid,
+                    'gross_amount' => $tx->gross_amount,
+                    'net_amount' => $tx->net_amount,
+                    'platform_fee' => $tx->platform_fee,
+                    'stripe_fee' => $tx->stripe_fee,
+                    'vat_amount' => $tx->vat_amount,
+                    'reserve_amount' => $tx->reserve_amount,
+                    'currency' => $tx->currency,
+                    'transaction_date' => $tx->transaction_date,
+                    'created_at' => $shopPayment->created_at,
+                    'name' => $shopPayment->name ?? ($buyer->name ?? 'Anonymous'),
+                    'username' => $buyer->username ?? '',
+                    'email' => $shopPayment->email ?? ($buyer->email ?? ''),
+                    'avatar_url' => $buyer->avatar_url ?? null,
+                    'shop' => $shopPayment->shop,
+                    'quantity' => $shopPayment->quantity,
+                    'shipping_amount' => $shopPayment->shipping_amount ?? 0,
+                    'shipping_info' => $shopPayment->shipping_info,
+                    'status' => $deliverable->status ?? 'pending',
+                    'payment_status' => $tx->status,
+                    'is_deactivated' => $deliverable->is_deactivated ?? false,
+                    'is_delayed' => $isDelayed,
+                    'tracking_id' => $deliverable->tracking_id ?? null,
+                    'courier_name' => $deliverable->courier_name ?? null,
+                    'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
+                    'shipped_at' => $deliverable->shipped_at ?? null,
+                    'ask_question' => $shopPayment->ask_question,
+                    'answer' => $shopPayment->answer,
+                    'message' => $shopPayment->message,
+                ];
+            } catch (\Exception $e) {
+                Log::error('Error processing transaction in ordersList sales', ['error' => $e->getMessage(), 'tx_id' => $tx->id]);
+                return null;
+            }
         });
+
+        $formattedOrders = $formattedOrders->filter();
 
         return response()->json([
             'status' => true,
             'orders' => $formattedOrders,
             'all_time' => $allTime,
             'thirtydays' => $thirtyDays,
-            'total_claims' => $formattedOrders->count()
+            'total_claims' => $formattedOrders->count(),
+            'user_currency' => $user->default_currency
         ]);
     }
 
