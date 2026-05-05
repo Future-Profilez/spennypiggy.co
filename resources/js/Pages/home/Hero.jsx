@@ -116,19 +116,24 @@ export default function Hero({auth}) {
           <div className="containerbox relative w-full">
             <div className="welcome px-4" >
                 <div className="welcomeLeft mx-auto w-full text-center">
-                    <h2 className="headingSm animate-jump shadow-none uppercase !text-white font-gulfs stroke-none !text-4xl sm:!text-4xl md:!text-7xl xl:!text-[80px] max-w-4xl mx-auto text-center leading-tight">
+                    <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-tight text-4xl sm:text-5xl md:text-6xl xl:text-[70px] max-w-5xl mx-auto text-center leading-[1.1] md:leading-[1]">
                       The everything 
-                      <div className='animate-jump block mt-2 text-4xl md:text-6xl xl:text-8xl'>
-                        <span className="text-gradient-wishlist animate-pulse">
+                      <div className='block mt-2 text-4xl md:text-7xl xl:text-[80px]'>
+                        <span className="text-gradient-wishlist drop-shadow-[0_0_30px_rgba(249,79,150,0.3)]">
                             wishlist
                         </span>
                       </div>
                     </h2>
-                    <h3 className="text-center text-xl uppercase text-yellow-400 font-bold tracking-widest mt-6 mb-4">
-                        Built for Creators
-                    </h3>
-                    <h3 className="text-center text-xl md:text-2xl text-gray-300 font-medium mb-8 max-w-2xl mx-auto leading-[25px] md:leading-relaxed">
-                    Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.
+                    <div className="flex items-center justify-center mt-6 mb-4">
+                      <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-yellow-400/50"></div>
+                      <h3 className="text-center text-sm md:text-lg uppercase text-yellow-400 font-gulfs tracking-[0.3em] px-4">
+                          Built for Creators
+                      </h3>
+                      <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-yellow-400/50"></div>
+                    </div>
+                    <h3 className="text-center text-lg md:text-2xl text-gray-400 font-poppins font-light mb-12 max-w-3xl mx-auto leading-relaxed opacity-90">
+                      Get paid with secure, trackable income — with built-in 
+                      <span className="text-white font-medium"> protection against disputes and chargebacks.</span>
                     </h3>
                     <div className="pt-4 wishlistbtn wishlistbtnFixed mx-auto relative inline-block">
                       
@@ -157,7 +162,7 @@ export default function Hero({auth}) {
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           </Link>
                       }
-                      <span className="absolute -top-4 right-[0px]  md:right-[-20px] bg-pink-500 text-white text-[14px] font-bold px-2 py-1 rounded-full animate-wiggle 
+                      <span className="absolute -top-5 -right-4 bg-gradient-to-r from-pink-500 to-rose-600 text-white text-[12px] font-gulfs uppercase tracking-widest px-3 py-1 rounded-full shadow-lg border border-white/10 animate-bounce
                       ">It's Free 🎉</span>
                     
                     </div>

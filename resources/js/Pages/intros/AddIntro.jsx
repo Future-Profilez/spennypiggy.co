@@ -8,6 +8,7 @@ import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
 import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
 import { useRef } from 'react';
+import { useMemo } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { Maximize } from 'lucide-react';
 
@@ -149,13 +150,16 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
   const popupVideoRef = useRef(null);
   const [popupNeedsInteraction, setPopupNeedsInteraction] = useState(false);
 
-  const cacheBuster = intro?.updated_at || new Date().getTime();
+  const cacheVersion = useMemo(
+    () => intro?.updated_at || intro?.uuid || `${Date.now()}`,
+    [intro?.updated_at, intro?.uuid]
+  );
   const popupVideoUrl = fullVideoUrl
-    ? `${fullVideoUrl}${fullVideoUrl.includes('?') ? '&' : '?'}v=${cacheBuster}`
+    ? `${fullVideoUrl}${fullVideoUrl.includes('?') ? '&' : '?'}v=${cacheVersion}`
     : '';
 
   const posterUrl = intro?.poster_url 
-    ? `${intro.poster_url}${intro.poster_url.includes('?') ? '&' : '?'}v=${intro.updated_at || new Date().getTime()}` 
+    ? `${intro.poster_url}${intro.poster_url.includes('?') ? '&' : '?'}v=${cacheVersion}` 
     : wishlistbannerimg;
 
   useEffect(() => {
