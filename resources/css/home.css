@@ -661,7 +661,7 @@ select#country{width:150px;}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
 .headingMd{font-size:45px !important;line-height:47px !important;}
-.headermain{padding-top:15px;padding-bottom:15px;}
+.headermain{padding-top:10px;padding-bottom:10px;}
 .closemega{position:absolute;right:31px;top:30px;}
 .closemega svg{width:43px;top:10px;}
 .headtitle,.howitmain p br{display:none;}

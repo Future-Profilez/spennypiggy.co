@@ -191,10 +191,10 @@ function InstantTabSystem({
                 className={`
                     relative px-5 py-2 text-sm md:text-base font-black uppercase 
                     transition-all duration-300 min-w-max whitespace-nowrap
-                    select-none touch-manipulation tracking-widest border-[3px] border-black rounded-[20px]
+                    select-none touch-manipulation tracking-widest border-[3px] border-black rounded-[17px]
                     ${isEffectivelyActive 
                         ? 'text-black bg-yellow-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' 
-                        : 'text-black bg-white hover:bg-yellow-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
+                        : 'text-black bg-white hover:bg-yellow-100 sshadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
                     }
                     ${shouldShowLoading ? 'opacity-90 animate-pulse' : ''}
                     disabled:pointer-events-none
@@ -213,7 +213,7 @@ function InstantTabSystem({
     return (
         <div className='relative pb-2 mt-4'>
             <div className="w-full flex items-center justify-between py-2 relative">
-                <div className={`flex !pe-[100px] ${IsloggedIn ? 'max-w-[85%]' : 'max-w-[100%]'} overflow-x-auto scrollbar-hide space-x-3 md:space-x-4 pb-2 pt-1 px-0`}>
+                <div className={`flex !pe-[100px] ${IsloggedIn ? 'max-w-[85%]' : 'max-w-[100%]'} overflow-x-auto scrollbar-hide space-x-3 md:space-x-3 pb-2 pt-1 px-0`}>
                     {tabs.map((tab) => (
                         <TabButton
                             key={tab.id}
