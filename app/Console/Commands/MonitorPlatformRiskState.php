@@ -50,12 +50,12 @@ class MonitorPlatformRiskState extends Command
                 SELECT COUNT(*) AS total_tx
                 FROM payments
                 WHERE status IN ('succeeded','review_hold','refunded','disputed')
-                AND created_at >= NOW() - INTERVAL '30 days'
+                AND created_at >= NOW() - INTERVAL 30 DAY
             ),
             dp AS (
                 SELECT COUNT(*) AS total_disputes
                 FROM disputes
-                WHERE created_at >= NOW() - INTERVAL '30 days'
+                WHERE created_at >= NOW() - INTERVAL 30 DAY
             )
             SELECT 
                 tx.total_tx, 
@@ -83,13 +83,13 @@ class MonitorPlatformRiskState extends Command
                 SELECT COALESCE(SUM(amount),0) AS gmv_24h
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '24 hours'
+                AND created_at >= NOW() - INTERVAL 24 HOUR
             ),
             avg_7d AS (
                 SELECT COALESCE(SUM(amount),0)/7 AS avg_daily_7d
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '7 days'
+                AND created_at >= NOW() - INTERVAL 7 DAY
             )
             SELECT 
                 last_24h.gmv_24h, 
@@ -127,14 +127,14 @@ class MonitorPlatformRiskState extends Command
                 SELECT COALESCE(SUM(amount),0) AS gmv
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '7 days'
+                AND created_at >= NOW() - INTERVAL 7 DAY
             ),
             prev_week AS (
                 SELECT COALESCE(SUM(amount),0) AS gmv
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '14 days'
-                AND created_at < NOW() - INTERVAL '7 days'
+                AND created_at >= NOW() - INTERVAL 14 DAY
+                AND created_at < NOW() - INTERVAL 7 DAY
             )
             SELECT 
                 this_week.gmv AS gmv_this_week, 
@@ -162,14 +162,14 @@ class MonitorPlatformRiskState extends Command
             WITH creator_tx AS (
                 SELECT creator_id, COUNT(*) AS tx
                 FROM payments
-                WHERE created_at >= NOW() - INTERVAL '7 days'
+                WHERE created_at >= NOW() - INTERVAL 7 DAY
                 AND status IN ('succeeded','review_hold','refunded','disputed')
                 GROUP BY creator_id
             ),
             creator_dp AS (
                 SELECT creator_id, COUNT(*) AS disputes
                 FROM disputes
-                WHERE created_at >= NOW() - INTERVAL '7 days'
+                WHERE created_at >= NOW() - INTERVAL 7 DAY
                 GROUP BY creator_id
             ),
             rates AS (

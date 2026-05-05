@@ -228,7 +228,7 @@ class UserProfileService
     /**
      * Get user's posts with optimized queries and subscription access logic
      */
-    public function getUserPosts(int $userId, string $module = 'all', int $perPage = 10, int $page = 1)
+    public function getUserPosts(int $userId, string $module = 'all', int $perPage = 5, int $page = 1)
     {
         return $this->executePostsQuery($userId, $module, $perPage, $page);
     }
@@ -676,6 +676,9 @@ class UserProfileService
                     'currency' => $currency,
                     'tax' => $tax,
                     'upcoming_payment' => ($subscription->cancel_at_period_end) ? null : $stripeEnd,
+                    'cancelled_at' => ($subscription->cancel_at_period_end) 
+                        ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : ($existing->cancelled_at ?? now())) 
+                        : null,
                 ];
 
                 // Only update dates if they were null or if we are explicitly in a subscription period
@@ -717,6 +720,7 @@ class UserProfileService
                 'tax' => $tax,
                 'status' => 'active',
                 'upcoming_payment' => ($subscription->cancel_at_period_end) ? null : $stripeEnd,
+                'cancelled_at' => ($subscription->cancel_at_period_end) ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : now()) : null,
             ]);
 
             if ($newSub->user) {
@@ -796,8 +800,17 @@ class UserProfileService
                 $updateData = [
                     'status' => $newStatus,
                     'upcoming_payment' => ($subscription->cancel_at_period_end || in_array($subscription->status, ['canceled', 'unpaid'])) ? null : $stripeEnd,
-                    'cancelled_at' => ($subscription->cancel_at_period_end || $subscription->status === 'canceled') ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : now()) : $target->cancelled_at,
+                    'cancelled_at' => ($subscription->cancel_at_period_end || $subscription->status === 'canceled') 
+                        ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : ($target->cancelled_at ?? now())) 
+                        : null,
                 ];
+
+                Log::info("MonthlyCharge Sync: Updating record", [
+                    'sub_id' => $subscriptionId,
+                    'cancel_at_period_end' => $subscription->cancel_at_period_end,
+                    'new_upcoming' => $updateData['upcoming_payment'],
+                    'new_cancelled_at' => $updateData['cancelled_at']
+                ]);
 
                 // Only update dates if it's the same period or if dates were missing
                 if ($isSamePeriod || (!$target->current_start_subscription_date && !$target->current_start_trial_date)) {

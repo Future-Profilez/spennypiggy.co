@@ -77,7 +77,7 @@ class NotificationController extends Controller
             'json' => [
                 'notification' => [
                     'title' => $request->query('title')  ?? '🎉 You\'re in! Let\'s get started.',
-                    'content' => $request->query('content') ?? 'Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!',
+                    'content' => $request->query('content') ?? 'Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.',
                     'category' => 'general',
                     'recipients' => [
                         ['email' => $request->query('email')],

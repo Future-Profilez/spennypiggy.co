@@ -94,7 +94,7 @@ const CreatorActivityWidget = (props) => {
     const suggestions = getSuggestions(activityStatus.status, activityStatus.content_count || activityStatus.current_content || 0);
     return (
         <>
-        <div className={`rounded-[30px] border-2 p-4 md:p-6 ${getStatusColor(activityStatus.status)} ${className} !bg-white border-black shadow-[4px_4px_0px_rgba(0,0,0,0.9)]`}>
+        <div className={`rounded-[30px] border-2 p-4 md:p-6 mt-6 lg:mt-0  ${getStatusColor(activityStatus.status)} ${className} !bg-white border-black shadow-[4px_4px_0px_rgba(0,0,0,0.9)]`}>
             <div className="lg:flex items-center justify-between">
                 <div className="md:flex items-centerx gap-3 lg:max-w-[70%] me-3">
                     <div>

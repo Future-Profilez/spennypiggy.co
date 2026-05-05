@@ -235,7 +235,7 @@ const MagicBellNotification = () => {
                 }}
               />
             )}
-            <div className="magicbell-wrapper fixed md:absolute right-0 md:right-[20px] top-[0px] md:top-[30px] md:mt-[-15px] z-[9999] w-[calc(100%-20px)] md:w-[450px] mx-[10px] md:mx-0 overflow-hidden rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white border border-gray-100">
+            <div className="magicbell-wrapper fixed md:absolute right-0 md:right-[20px] top-[80px] md:top-[30px] md:mt-[-20px] z-[9999] w-[calc(100%-30px)] md:w-[450px] mx-[15px] md:mx-0 overflow-hidden rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white border border-gray-100">
               <NotificationInbox 
                 className='notification-inbox' 
                 width={"100%"} 

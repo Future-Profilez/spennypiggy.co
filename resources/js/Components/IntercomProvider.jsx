@@ -18,26 +18,22 @@ export default function IntercomProvider() {
     const initializedRef = useRef(false);
 
     useEffect(() => {
+        // If user changed, shutdown first to prevent session leakage or blank screens
+        if (initializedRef.current && window.Intercom.lastUserId !== loggedInUserId) {
+            console.log('Intercom: User changed or logged out, forcing shutdown');
+            window.Intercom('shutdown');
+            initializedRef.current = false;
+            window.Intercom.lastUserId = null;
+        }
+
         if (!isEnabled || !appId) {
-            if (typeof window.Intercom === 'function') {
-                console.log('Intercom: Shutting down (Disabled or no AppID)');
-                window.Intercom('shutdown');
-                initializedRef.current = false;
-            }
             return;
         }
 
-        // If user logged out (no loggedInUserId), shutdown to clear session
-        if (initializedRef.current && !loggedInUserId) {
-            if (typeof window.Intercom === 'function') {
-                console.log('Intercom: Shutting down (User logged out)');
-                window.Intercom('shutdown');
-                initializedRef.current = false;
-                window.Intercom.lastUserId = null;
-            }
-            // Even after logout, we might want to boot as anonymous if that's the desired behavior
-            // For now, let's just shutdown to solve the "still showing logged in" issue.
-            return; 
+        if (!loggedInUserId) {
+            // For guest users, we can boot as anonymous if needed, 
+            // but for now we ensure it's shutdown if it was logged in
+            return;
         }
 
         // 1. Initialize Intercom function if it doesn't exist
@@ -66,12 +62,6 @@ export default function IntercomProvider() {
             app_id: appId
         };
 
-        console.log('--- Intercom Debug Start ---');
-        console.log('App ID:', appId);
-        console.log('Boot Data:', settings);
-        console.log('--- Intercom Debug End ---');
-
-        // If user changed, shutdown first to prevent session leakage or blank screens
         if (initializedRef.current && window.Intercom.lastUserId !== loggedInUserId) {
             window.Intercom('shutdown');
             initializedRef.current = false;

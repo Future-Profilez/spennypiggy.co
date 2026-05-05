@@ -9,7 +9,7 @@ import debounce from 'lodash/debounce';
 import { 
     FlameIcon, 
     CircleCheckIcon, 
-    PoundSterlingIcon 
+    PoundSterlingIcon,
 } from "@animateicons/react/lucide";
 import { Gift } from "lucide-react";
 import IntroVideos from './IntrosVideos';

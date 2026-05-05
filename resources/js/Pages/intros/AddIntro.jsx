@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
 import { useRef } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { Maximize } from 'lucide-react';
 
 export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
 
@@ -81,79 +82,135 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     });
   }
 
-  const ProfileIntro = () => {
-    return <>
-      <Popup space="0" size="md" action={close} classes={`w-full`}
-        text={<div className='mt-3 relative'>
+  const videoRef = useRef(null);
+  const [needsInteraction, setNeedsInteraction] = useState(false);
 
-        {IsloggedIn ? <button onClick={removeVideo} className='!z-2 !py-2 !px-4 rounded-xl bg-red-600 remove-story text-sm text-white' >Remove</button> : ''}
+  const rawUrl = intro?.perma_link || '';
+  const isEdge = typeof navigator !== 'undefined' && (/Edg\//.test(navigator.userAgent) || /Edge\//.test(navigator.userAgent));
 
-        <div className='isintro  relative border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] cursor-pointer overflow-hidden'>
-          <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'>
-            Intro video
-          </div>
-          
-          <img 
-            alt="Intro video placeholder" 
-            width={400} 
-            height={350} 
-            src={intro?.poster_url || wishlistbannerimg} 
-            className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px]' 
-            onError={(e) => {
-              if (e.target.src !== wishlistbannerimg) {
-                e.target.src = wishlistbannerimg;
-              }
-            }}
-          />
-          
-          <div className='cursor-pointer playicon' >
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="32" cy="32" r="32" fill="#F94F97"/>
-            <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
-            </svg>
-          </div>
+  const teaserUrl = intro?.uuid
+    ? `https://ucarecdn.com/${intro.uuid}/video/-/cut/00:00:00/00:00:08/-/format/mp4/`
+    : rawUrl;
 
-          {IsloggedIn && intro && intro.approved !== 1 ? 
-          <div className='text-sm mb-0  
-          alert bg-black text-yellow-400 w-full  absolute z-1 bottom-0 left-0 
-          rounded p-2 px-3'
-           >Profile intro video is waiting for approval. 
-           Currently only you can see this intro.</div> 
-          : ''}
-          
-        </div>
-        </div>} >
-          <div className='video-payer-pop' >
-            <video
-              playsInline
-              muted
-              autoPlay
-              controls
-              controlsList="nodownload"
-              disablePictureInPicture
-              poster={intro && intro.poster_url || undefined}
-            >
-              <source
-                 src={
-                   intro && intro.uuid
-                     ? `https://ucarecdn.com/${intro.uuid}/`
-                     : (intro && intro.perma_link
-                         ? intro.perma_link
-                         : '')
-                 }
-                 type="video/mp4"
-               />
-            </video>
-          </div>
-      </Popup>
-    </>
-  }
+  const fullVideoUrl = intro?.uuid
+    ? `https://ucarecdn.com/${intro.uuid}/video/-/format/mp4/`
+    : rawUrl;
+
+  const [previewSrc, setPreviewSrc] = useState('');
+
+  useEffect(() => {
+    const src = isEdge ? fullVideoUrl : teaserUrl;
+    if (!src) return;
+    setNeedsInteraction(false);
+    setPreviewSrc(src);
+  }, [isEdge, teaserUrl, fullVideoUrl]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !previewSrc) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.src = previewSrc;
+    video.load();
+    video.play().catch((err) => {
+      if (err.name !== 'AbortError') setNeedsInteraction(true);
+    });
+  }, [previewSrc]);
+
+  const posterUrl = intro?.poster_url 
+    ? `${intro.poster_url}${intro.poster_url.includes('?') ? '&' : '?'}v=${intro.updated_at || new Date().getTime()}` 
+    : wishlistbannerimg;
 
   return (
     <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
       {intro ?
         <div className='relative'>
-          <ProfileIntro />
+
+          {/* Video card — rendered as div, NOT inside a button (video inside button = invalid HTML, breaks Edge autoplay) */}
+          <div className='relative'>
+            {IsloggedIn ? <button onClick={removeVideo} className='!z-2 !py-2 !px-4 rounded-xl bg-red-600 remove-story text-sm text-white'>Remove</button> : ''}
+
+            <div
+              className='isintro relative border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] cursor-pointer overflow-hidden bg-[#f3f4f6]'
+              onClick={() => setClose(true)}
+            >
+              <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'>
+                Intro video
+              </div>
+
+              <video
+                ref={videoRef}
+                muted
+                loop
+                playsInline
+                autoPlay
+                preload="metadata"
+                poster={posterUrl}
+                className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px] max-h-[300px] block'
+                onPlaying={() => setNeedsInteraction(false)}
+                onPlay={() => setNeedsInteraction(false)}
+                onError={() => {
+                  const video = videoRef.current;
+                  if (!video) return;
+                  const next = previewSrc === teaserUrl ? fullVideoUrl
+                             : previewSrc === fullVideoUrl ? rawUrl
+                             : null;
+                  if (!next || next === previewSrc) return;
+                  setPreviewSrc(next);
+                  video.muted = true;
+                  video.src = next;
+                  video.load();
+                  video.play().catch(() => {});
+                }}
+              />
+
+              {needsInteraction && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (videoRef.current) {
+                      videoRef.current.play().then(() => setNeedsInteraction(false)).catch(() => {});
+                    }
+                  }}
+                >
+                  <div className="bg-white/90 rounded-full p-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
+                      <polygon points="5,3 19,12 5,21" />
+                    </svg>
+                  </div>
+                </div>
+              )}
+
+              <div className='absolute bottom-4 right-4 z-10 bg-[#F94F97] p-2 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:scale-110 transition-transform'>
+                <Maximize size={20} strokeWidth={3} />
+              </div>
+
+              {IsloggedIn && intro && intro.approved !== 1 ?
+                <div className='text-sm mb-0 alert bg-black text-yellow-400 w-full absolute z-1 bottom-0 left-0 rounded p-2 px-3'>
+                  Profile intro video is waiting for approval. Currently only you can see this intro.
+                </div>
+              : ''}
+            </div>
+          </div>
+
+          {/* Popup trigger button is hidden — open/close controlled via action prop */}
+          <Popup space="0" size="md" action={close} onHide={() => setClose(false)} classes="!hidden" text="">
+            <div className='video-payer-pop'>
+              <video
+                playsInline
+                muted
+                autoPlay
+                controls
+                controlsList="nodownload"
+                disablePictureInPicture
+                poster={posterUrl}
+                className="w-full h-full"
+                src={fullVideoUrl}
+              />
+            </div>
+          </Popup>
         </div>
         :
         <>

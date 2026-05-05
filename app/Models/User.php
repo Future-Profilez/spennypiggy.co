@@ -282,18 +282,34 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function getIsSubscriptionCancelledAttribute()
     {
+        // Unset the relation to ensure we're not using a cached version of the charges
+        $this->unsetRelation('allMonthlyCharges');
+        
         $latest = $this->allMonthlyCharges()
             ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
             ->first();
 
         if (!$latest) return false;
 
-        // It's cancelled if status is explicitly 'canceled' 
-        // OR if it's active/trialing but has no upcoming payment (meaning auto-renewal is off)
-        // OR if cancelled_at is explicitly set
-        return $latest->status === 'canceled' || 
-               $latest->upcoming_payment === null || 
-               $latest->cancelled_at !== null;
+        // Force a fresh check of the actual status in the database
+        $latest->refresh();
+
+        $isCancelled = $latest->status === 'canceled' || 
+                       $latest->upcoming_payment === null || 
+                       $latest->cancelled_at !== null;
+
+        if (app()->environment('local')) {
+            \Log::debug("User {$this->id} is_subscription_cancelled check", [
+                'charge_id' => $latest->id,
+                'stripe_id' => $latest->stripe_id,
+                'status' => $latest->status,
+                'upcoming' => $latest->upcoming_payment,
+                'cancelled_at' => $latest->cancelled_at,
+                'result' => $isCancelled
+            ]);
+        }
+
+        return $isCancelled;
     }
 
     // ───────────────────────

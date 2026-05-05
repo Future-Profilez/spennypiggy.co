@@ -13,9 +13,11 @@ import {
   ExternalLinkIcon, 
   TwitterIcon
 } from "@animateicons/react/lucide";
-import { FileText, Filter, CalendarIcon } from "lucide-react";
+import { FileText, Filter, Calendar } from "lucide-react";
 
 export default function Transactions(props) {
+  const twitterIconRef = useRef(null);
+  const downloadIconRef = useRef(null);
   const { auth, initial, display_currency, spend_summary } = props || {};
   const { currencies } = usePage().props;
   const [data, setData] = useState(() => initial || { events: [], has_more: false, next_before: null, stats: { received: {}, sent: {} } });
@@ -307,9 +309,11 @@ export default function Transactions(props) {
             )}
             
             {auth?.user?.role === 1 && (
-              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px] bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px] bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                onMouseEnter={() => twitterIconRef.current?.startAnimation()}
+              >
                 <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
-                  <TwitterIcon size={20} className="text-black" />
+                  <TwitterIcon ref={twitterIconRef} size={20} className="text-black" />
                   <span className="font-black text-black text-sm uppercase tracking-widest">Creator Feature: Announce on X</span>
                 </div>
                 <p className="text-gray-800 font-bold text-sm leading-relaxed">
@@ -375,7 +379,14 @@ export default function Transactions(props) {
                   placeholder="Search by user, wish, shop, membership level, task…"
                   className="flex-1 w-full bg-white border-[3px] border-black rounded-full px-4 py-3 text-black font-bold placeholder-gray-500 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:ring-0 focus:outline-none"
                 />
-                <button onClick={toCSV} className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-white border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">Export CSV</button>
+                <button 
+                  onClick={toCSV} 
+                  className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-white border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2"
+                  onMouseEnter={() => downloadIconRef.current?.startAnimation()}
+                >
+                  <ExternalLinkIcon ref={downloadIconRef} size={16} />
+                  Export CSV
+                </button>
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -581,9 +592,15 @@ export default function Transactions(props) {
                                 href={route('financial.evidence-pack', { uuid: e.uuid })} 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-pink-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1"
+                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-pink-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 group/evidence"
+                                onMouseEnter={(e) => {
+                                    const icon = e.currentTarget.querySelector('svg');
+                                    if (icon && icon.__animate_start) icon.__animate_start();
+                                }}
                             >
-                                <FileText size={12} />
+                                <FileText 
+                                    size={12} 
+                                />
                                 Evidence Pack
                             </a>
                           )}
