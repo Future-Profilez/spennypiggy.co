@@ -19,7 +19,6 @@ class IntercomService
             'enabled' => true,
             'appId' => $appId,
             'boot' => [
-                'api_base' => 'https://api-iam.intercom.io',
                 'app_id' => $appId,
                 'custom_launcher_selector' => '.livechat',
             ],
