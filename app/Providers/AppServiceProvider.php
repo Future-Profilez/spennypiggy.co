@@ -58,6 +58,10 @@ class AppServiceProvider extends ServiceProvider
             // Use temporary storage path in Lambda
             app()->useStoragePath('/tmp/storage');
         }
+
+        $this->app->singleton(\App\Services\ResourcePreloadService::class, function ($app) {
+            return new \App\Services\ResourcePreloadService();
+        });
     }
 
     /**

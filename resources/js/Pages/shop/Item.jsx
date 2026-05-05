@@ -231,7 +231,7 @@ export default function ShopDetailItem(props) {
                                     <span className="capitalize">
                                         {(shop?.category &&
                                             shop.category.map((c, i) => {
-                                                return `${c?.category?.category !== null ? c?.category?.category : ""} `;
+                                                return `${c?.category?.category !== null ? c?.category?.category : ""}${i>=1 ? ',' : ''}`;
                                             })) ||
                                             "Not Available"}
                                     </span>

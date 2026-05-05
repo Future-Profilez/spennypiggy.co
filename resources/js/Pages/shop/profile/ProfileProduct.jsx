@@ -55,6 +55,9 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                     )}
                     <div className="">
                         <div className="block border border-black rounded-[20px] overflow-hidden relative">
+                            <span className={`absolute top-2 left-2 text-[13px] px-3 py-1 rounded-lg border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${item.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                                {item.type === 'physical' ? 'Physical' : 'Digital'}
+                            </span>
                             <img
                                 className="object-cover h-[130px] sm:h-[160px] w-full"
                                 src={item.perma_link}
@@ -84,9 +87,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                         <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
                             {item.name}
                         </h2>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-lg border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${item.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
-                            {item.type === 'physical' ? 'Physical' : 'Digital'}
-                        </span>
+                        
                     </div>
                     <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-2">
                         {item.description}

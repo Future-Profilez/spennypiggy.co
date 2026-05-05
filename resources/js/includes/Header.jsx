@@ -410,7 +410,7 @@ export default function Header({ classMagicword }) {
                                         />
                                     )}
 
-                                    {auth && auth.user ?
+                                    {auth && auth.user && auth.user.role == 1 ?
                                         <NavLinkWithIcon
                                             href="/task/dashboard" activeColor="hover:bg-[#A2E4B8]"
                                             onClick={toggleClass} icon={ClipboardIcon} label="Tasks"

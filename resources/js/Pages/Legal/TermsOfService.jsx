@@ -13,8 +13,6 @@ export default function TermsOfService(props) {
                         Terms of Service
                     </h1>
                     <div className="prose prose-pink max-w-none">
-                        <h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">SPENNY PIGGY</h2>
-<h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">TERMS OF SERVICE</h2>
 <p className="mb-4 text-gray-700 leading-relaxed italic">Last Updated: 23 April 2026</p>
 <p className="mb-4 text-gray-700 leading-relaxed">Please read the following important terms and conditions and check that they contain everything which you accept and nothing that you are not willing to agree to.</p>
 <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">Definitions</h2>

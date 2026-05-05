@@ -3,6 +3,8 @@ import ModernImage from '../../Components/ModernImage';
 import itsfree from "../../../assets/img/itsfree.png";
 import itsfreemob from "../../../assets/img/itsfree-mob.png";
 import herobanner from '../../../assets/new/HeroBg.png';
+import herobannerWebp from '../../../assets/new/HeroBg.webp';
+import herobannerAvif from '../../../assets/new/HeroBg.avif';
 
 // 1x1 transparent placeholder for critical LCP optimization
 const transparentPixel = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB2aWV3Qm94PSIwIDAgMSAxIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+';
@@ -108,6 +110,19 @@ export default function Hero({auth}) {
         />
         <div id="home" className="bg-black relative min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center py-2 md:py-24">
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+              {/* Optimized Hero Background Image */}
+              <picture className="absolute inset-0 w-full h-full">
+                   <source srcSet={herobannerAvif} type="image/avif" />
+                   <source srcSet={herobannerWebp} type="image/webp" />
+                   <img 
+                     src={herobanner} 
+                     alt="" 
+                     className="w-full h-full object-cover opacity-60" 
+                     loading="eager"
+                     fetchpriority="high"
+                   />
+               </picture>
+              
               <div className="absolute top-[-40px] left-0 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-50 floating-shape animate-float"></div>
               <div className="absolute top-20 right-10 w-72 h-72 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-float-delayed" style={{animationDelay: '1s'}}></div>
               <div className="absolute -bottom-10 left-1/3 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-pulse" style={{animationDelay: '2s'}}></div>

@@ -29,31 +29,34 @@ export default defineConfig((env) => {
     ].filter(Boolean),
     build: {
         sourcemap: false,
-        // rollupOptions: {
-        //     output: ssrBuild ? {
-        //         entryFileNames: 'ssr.js',
-        //     } : {
-        //         // manualChunks: {
-        //         //     'vendor-react': ['react', 'react-dom'],
-        //         //     'vendor-inertia': ['@inertiajs/react'],
-        //         //     'vendor-other': ['axios', 'react-bootstrap']
-        //         // },
-        //         chunkFileNames: 'js/[name]-[hash].js',
-        //         entryFileNames: 'js/[name]-[hash].js',
-        //         assetFileNames: (assetInfo) => {
-        //             if (assetInfo.name.endsWith('.css')) {
-        //                 return 'css/[name]-[hash][extname]';
-        //             }
-        //             if (/\.(png|jpe?g|svg|gif|webp|ico)$/i.test(assetInfo.name)) {
-        //                 return 'images/[name]-[hash][extname]';
-        //             }
-        //             return 'assets/[name]-[hash][extname]';
-        //         }
-        //     }
-        // },
+        rollupOptions: {
+            output: ssrBuild ? {
+                entryFileNames: 'ssr.js',
+            } : {
+                manualChunks: {
+                    'vendor-core': ['react', 'react-dom', '@inertiajs/react', 'axios'],
+                    'vendor-ui': ['@headlessui/react', '@heroicons/react', 'lucide-react', 'react-icons'],
+                    'vendor-charts': ['recharts'],
+                    'vendor-uploadcare': ['@uploadcare/blocks'],
+                    'vendor-utils': ['clsx', 'canvas-confetti', 'aos', 'swiper'],
+                    'vendor-sentry': ['@sentry/react', '@sentry/replay']
+                },
+                chunkFileNames: 'js/[name]-[hash].js',
+                entryFileNames: 'js/[name]-[hash].js',
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name.endsWith('.css')) {
+                        return 'css/[name]-[hash][extname]';
+                    }
+                    if (/\.(png|jpe?g|svg|gif|webp|ico)$/i.test(assetInfo.name)) {
+                        return 'images/[name]-[hash][extname]';
+                    }
+                    return 'assets/[name]-[hash][extname]';
+                }
+            }
+        },
         target: 'es2020',
         minify: 'esbuild',
-        chunkSizeWarningLimit: 1000,
+        chunkSizeWarningLimit: 1500,
     },
     ssr: {
         noExternal: true

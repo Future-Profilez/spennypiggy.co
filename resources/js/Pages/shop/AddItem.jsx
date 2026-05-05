@@ -44,7 +44,7 @@ const updatedVarients = (data) => {
 
 export default function AddItem(props) {
     const { auth, user } = usePage().props;
-    const defaultCurrency = (user && user.default_currency) || "GBP";
+    const defaultCurrency = (user?.default_currency) || (auth?.user?.default_currency) || "GBP";
 
     const {
         item,

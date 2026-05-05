@@ -243,13 +243,7 @@ export default function Userprofile({ IsloggedIn }) {
                                                                     <p className="text-sm font-bold text-gray-500">They won't be notified that you blocked them.</p>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex gap-4">
-                                                                <button 
-                                                                    onClick={() => setShowBlockConfirm(false)}
-                                                                    className="flex-1 bg-white border-2 border-black py-3 rounded-xl font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none transition-all"
-                                                                >
-                                                                    Cancel
-                                                                </button>
+                                                            <div className="flex justify-center">
                                                                 <button 
                                                                     onClick={blockUser}
                                                                     className="flex-1 bg-red-600 text-white border-2 border-black py-3 rounded-xl font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none transition-all"

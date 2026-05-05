@@ -151,10 +151,11 @@ class ShopsController extends Controller
 
         $user = User::find(Auth::id());
 
-        if (Helpers::checkBlockData($request) == 1) {
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
             return response()->json([
                 'status' => false,
-                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦"
+                'msg' => "The word or emoji '{$blockedWord}' is not allowed as per our policies."
             ]);
         }
 
@@ -350,9 +351,9 @@ class ShopsController extends Controller
             }
         }
 
-        if (Helpers::checkBlockData($request) == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
+            return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
         }
 
         $file = [];
@@ -511,8 +512,29 @@ class ShopsController extends Controller
                             'stripe_account' => $user->account_id,
                         ]);
                     } else {
-                        $stripe_client = StripeControl::updateSubscription($shop->stripe_product_id, $productPayload, $user->account_id);
-                        $shop->price_id = $stripe_client->default_price;
+                        $newPrice = $stripe->prices->create([
+                            'product' => $shop->stripe_product_id,
+                            'currency' => $currency,
+                            'unit_amount_decimal' => round($createpriceid * $multiplier, 2, PHP_ROUND_HALF_UP),
+                        ], ['stripe_account' => $user->account_id]);
+
+                        $updatePayload = $productPayload;
+                        unset($updatePayload['default_price_data']);
+                        $updatePayload['default_price'] = $newPrice->id;
+                        $updatePayload['metadata']['shop_item_name'] = $request->name ?? $shop->name;
+
+                        $stripe_client = StripeControl::updateSubscription($shop->stripe_product_id, $updatePayload, $user->account_id);
+                        
+                        // Deactivate old price
+                        if (!empty($shop->price_id)) {
+                            try {
+                                $stripe->prices->update($shop->price_id, ['active' => false], ['stripe_account' => $user->account_id]);
+                            } catch (Exception $e) {
+                                Log::error("Failed to deactivate old price for shop item: " . $e->getMessage());
+                            }
+                        }
+                        
+                        $shop->price_id = $newPrice->id;
                     }
                     $shop->stripe_product_id = $stripe_client->id;
                     $shop->approved = 0;
@@ -721,12 +743,11 @@ class ShopsController extends Controller
             ],
         ]);
 
-        $checkdata = Helpers::checkBlockData($request);
-        if ($checkdata == 1) {
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
             return response()->json([
                 'status' => false,
-                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦",
+                'msg' => "The word or emoji '{$blockedWord}' is not allowed as per our policies.",
             ]);
         }
 

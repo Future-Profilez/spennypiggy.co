@@ -3364,25 +3364,42 @@ class StripeWebhookController extends Controller
 
             $schedule = $account->settings->payouts->schedule->interval;
             if ($schedule !== 'manual') {
-                Log::warning("Stripe Risk: Account {$account->id} changed payout schedule to {$schedule}. Reverting and locking.");
-                
                 $creator = \App\Models\User::where('account_id', $account->id)->first();
                 if ($creator) {
-                    // Auto-lock the account
-                    $creator->suspended_account = 1;
-                    $creator->save();
-                    $creator->tokens()->delete();
+                    // Check if creator is already live and verified
+                    // If they are still onboarding (identity not verified or profile not approved), 
+                    // just revert the schedule without locking the account.
+                    $isLive = ($creator->identity_status == 1 && $creator->profile_status_lock == 2);
 
-                    // Mark as HIGH RISK with minimum 20% reserve
-                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
-                    $metrics->risk_level = 'high';
-                    $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
-                    $metrics->save();
+                    // Check if the user was resolving issues. 
+                    // If they have pending requirements, we assume they were fixing something 
+                    // and Stripe might have reset the schedule automatically.
+                    $hasRequirements = !empty($account->requirements->currently_due) || 
+                                     !empty($account->requirements->eventually_due) ||
+                                     !empty($account->requirements->past_due);
 
-                    // Revert to manual
+                    if ($isLive && !$hasRequirements) {
+                        Log::warning("Stripe Risk: Live Account {$account->id} changed payout schedule to {$schedule} without pending requirements. Reverting and locking.");
+                        
+                        // Auto-lock the account
+                        $creator->suspended_account = 1;
+                        $creator->save();
+                        $creator->tokens()->delete();
+
+                        // Mark as HIGH RISK with minimum 20% reserve
+                        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+                        $metrics->risk_level = 'high';
+                        $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
+                        $metrics->save();
+                        
+                        Log::warning("Stripe Risk: Account {$account->id} locked and marked HIGH RISK due to payout schedule manipulation.");
+                    } else {
+                        $reason = $hasRequirements ? "resolving requirements" : "onboarding";
+                        Log::info("Stripe Risk: Account {$account->id} ({$reason}) changed payout schedule to {$schedule}. Reverting without locking.");
+                    }
+
+                    // Always revert to manual
                     \App\StripeControl::ensureManualPayoutSchedule($account->id);
-
-                    Log::warning("Stripe Risk: Account {$account->id} locked and marked HIGH RISK due to payout schedule manipulation.");
                 }
             }
         } catch (\Exception $e) {

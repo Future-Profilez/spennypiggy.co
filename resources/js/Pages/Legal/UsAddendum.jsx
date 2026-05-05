@@ -13,8 +13,6 @@ export default function UsAddendum(props) {
                         US Addendum
                     </h1>
                     <div className="prose prose-pink max-w-none">
-                        <h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">SPENNY PIGGY</h2>
-                        <h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">US ADDENDUM</h2>
                         <p className="mb-4 text-gray-700 leading-relaxed italic">Issue Date: 23 April 2026</p>
                         
                         <p className="mb-6 text-gray-700 leading-relaxed">

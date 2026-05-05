@@ -426,7 +426,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
         >
             <div className="editprofileModal  wishlistModal  ">
                 <div className="editprofileModalInner ">
-                    <div className="wishinfo  p-4  ">
+                    <div className="wishinfo !p-0 lg:!p-4  ">
                         <h2 className="mb-4 !text-start font-GillSans uppercase text-large  mb-1 pr-5">
                             {editpop ? " Edit Wish" : "Add A Wish"}
                         </h2>
@@ -486,7 +486,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         />
                                     </div>
                                     {data.price > 0 && (
-                                        <div className="mt-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px] border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-sm text-gray-600">Fans pay:</span>
                                                 <span className="font-bold text-gray-900">
