@@ -1704,6 +1704,7 @@ class ProfileController extends Controller
             'source_id' => $request->source_id,
             'message' => $request->message
         ]);
+        
         return response()->json(['status' => true, 'reply' => [
             'id' => $reply->id,
             'user_id' => $reply->user_id,

@@ -266,7 +266,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 <video
                   key={popupVideoUrl}
                   ref={popupVideoRef}
-                  playsInline
+                  // playsInline
                   muted
                   autoPlay
                   controls

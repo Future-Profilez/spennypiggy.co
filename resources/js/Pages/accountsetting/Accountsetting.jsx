@@ -47,6 +47,7 @@ import {
     Shield, 
     LogOut, 
     Gift, 
+    GiftIcon,
     LayoutDashboard, 
     History, 
     Percent, 
