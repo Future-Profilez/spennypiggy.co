@@ -86,24 +86,20 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
   const [needsInteraction, setNeedsInteraction] = useState(false);
 
   const rawUrl = intro?.perma_link || '';
-  const isEdge = typeof navigator !== 'undefined' && (/Edg\//.test(navigator.userAgent) || /Edge\//.test(navigator.userAgent));
-
-  const teaserUrl = intro?.uuid
-    ? `https://ucarecdn.com/${intro.uuid}/video/-/cut/00:00:00/00:00:08/-/format/mp4/`
-    : rawUrl;
 
   const fullVideoUrl = intro?.uuid
-    ? `https://ucarecdn.com/${intro.uuid}/video/-/format/mp4/`
+    ? `https://ucarecdn.com/${intro.uuid}/`
     : rawUrl;
 
   const [previewSrc, setPreviewSrc] = useState('');
 
   useEffect(() => {
-    const src = isEdge ? fullVideoUrl : teaserUrl;
+    const src = fullVideoUrl || rawUrl;
     if (!src) return;
     setNeedsInteraction(false);
     setPreviewSrc(src);
-  }, [isEdge, teaserUrl, fullVideoUrl]);
+  }, [fullVideoUrl, rawUrl]);
+
 
   useEffect(() => {
     const video = videoRef.current;
@@ -113,14 +109,82 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     video.defaultMuted = true;
     video.src = previewSrc;
     video.load();
-    video.play().catch((err) => {
-      if (err.name !== 'AbortError') setNeedsInteraction(true);
-    });
+
+    const tryPlay = () => {
+      video.play().catch((err) => {
+        if (err.name !== 'AbortError') setNeedsInteraction(true);
+      });
+    };
+
+    const onTimeUpdate = () => {
+      if (video.currentTime >= 8) {
+        video.currentTime = 0;
+      }
+    };
+
+    video.addEventListener('canplay', tryPlay, { once: true });
+    video.addEventListener('timeupdate', onTimeUpdate);
+    return () => {
+      video.removeEventListener('canplay', tryPlay);
+      video.removeEventListener('timeupdate', onTimeUpdate);
+    };
   }, [previewSrc]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (close === true) {
+      video.pause();
+      return;
+    }
+    if (close === false) {
+      if (needsInteraction) return;
+      const id = setTimeout(() => {
+        video.play().catch(() => {});
+      }, 0);
+      return () => clearTimeout(id);
+    }
+  }, [close, needsInteraction]);
+
+  const popupVideoRef = useRef(null);
+  const [popupNeedsInteraction, setPopupNeedsInteraction] = useState(false);
+
+  const cacheBuster = intro?.updated_at || new Date().getTime();
+  const popupVideoUrl = fullVideoUrl
+    ? `${fullVideoUrl}${fullVideoUrl.includes('?') ? '&' : '?'}v=${cacheBuster}`
+    : '';
 
   const posterUrl = intro?.poster_url 
     ? `${intro.poster_url}${intro.poster_url.includes('?') ? '&' : '?'}v=${intro.updated_at || new Date().getTime()}` 
     : wishlistbannerimg;
+
+  useEffect(() => {
+    const video = popupVideoRef.current;
+    if (!video) return;
+
+    if (close === true && popupVideoUrl) {
+      setPopupNeedsInteraction(false);
+      const id = setTimeout(() => {
+        video.muted = true;
+        video.defaultMuted = true;
+        if (video.src !== popupVideoUrl) {
+          video.src = popupVideoUrl;
+          video.load();
+        }
+        video.play().catch((err) => {
+          if (err?.name !== 'AbortError') setPopupNeedsInteraction(true);
+        });
+      }, 0);
+      return () => clearTimeout(id);
+    }
+
+    if (close === false) {
+      setPopupNeedsInteraction(false);
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    }
+  }, [close, popupVideoUrl]);
 
   return (
     <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
@@ -152,14 +216,10 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 onPlay={() => setNeedsInteraction(false)}
                 onError={() => {
                   const video = videoRef.current;
-                  if (!video) return;
-                  const next = previewSrc === teaserUrl ? fullVideoUrl
-                             : previewSrc === fullVideoUrl ? rawUrl
-                             : null;
-                  if (!next || next === previewSrc) return;
-                  setPreviewSrc(next);
+                  if (!video || previewSrc === rawUrl) return;
+                  setPreviewSrc(rawUrl);
                   video.muted = true;
-                  video.src = next;
+                  video.src = rawUrl;
                   video.load();
                   video.play().catch(() => {});
                 }}
@@ -198,17 +258,43 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
           {/* Popup trigger button is hidden — open/close controlled via action prop */}
           <Popup space="0" size="md" action={close} onHide={() => setClose(false)} classes="!hidden" text="">
             <div className='video-payer-pop'>
-              <video
-                playsInline
-                muted
-                autoPlay
-                controls
-                controlsList="nodownload"
-                disablePictureInPicture
-                poster={posterUrl}
-                className="w-full h-full"
-                src={fullVideoUrl}
-              />
+              <div className="relative w-full">
+                <video
+                  key={popupVideoUrl}
+                  ref={popupVideoRef}
+                  playsInline
+                  muted
+                  autoPlay
+                  controls
+                  controlsList="nodownload"
+                  disablePictureInPicture
+                  preload="metadata"
+                  poster={posterUrl}
+                  className="w-full h-full"
+                  src={popupVideoUrl}
+                  onPlay={() => setPopupNeedsInteraction(false)}
+                  onPlaying={() => setPopupNeedsInteraction(false)}
+                />
+                {popupNeedsInteraction && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const v = popupVideoRef.current;
+                      if (!v) return;
+                      v.muted = true;
+                      v.defaultMuted = true;
+                      v.play().then(() => setPopupNeedsInteraction(false)).catch(() => {});
+                    }}
+                  >
+                    <div className="bg-white/90 rounded-full p-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
+                        <polygon points="5,3 19,12 5,21" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </Popup>
         </div>

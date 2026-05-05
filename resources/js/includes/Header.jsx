@@ -252,7 +252,7 @@ export default function Header({ classMagicword }) {
                             >
                                 <div className="bg-[#F94F96] rounded-full !p-3 md:!p-2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <SearchIcon
-                                        size={28}
+                                        // size={28}
                                         color="#ffffff"
                                     />
                                 </div>
@@ -302,7 +302,7 @@ export default function Header({ classMagicword }) {
                                 </div>
                             )}
                             <div
-                                className="block ps-2 me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
+                                className="block ps-2 mt-[10px] me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
                                 <MenuIcon

@@ -108,17 +108,17 @@ export default function Hero({auth}) {
         />
         <div id="home" className="bg-black relative min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center py-2 md:py-24">
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-              <div className="absolute top-0 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-float"></div>
-              <div className="absolute top-20 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-float-delayed" style={{animationDelay: '1s'}}></div>
+              <div className="absolute top-[-40px] left-0 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-50 floating-shape animate-float"></div>
+              <div className="absolute top-20 right-10 w-72 h-72 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-float-delayed" style={{animationDelay: '1s'}}></div>
               <div className="absolute -bottom-10 left-1/3 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-pulse" style={{animationDelay: '2s'}}></div>
           </div>
 
           <div className="containerbox relative w-full">
-            <div className="welcome" >
+            <div className="welcome px-4" >
                 <div className="welcomeLeft mx-auto w-full text-center">
-                    <h2 className="headingSm animate-jump shadow-none uppercase !text-white font-gulfs stroke-none !text-3xl sm:!text-4xl md:!text-7xl xl:!text-[80px] max-w-4xl mx-auto text-center leading-tight">
+                    <h2 className="headingSm animate-jump shadow-none uppercase !text-white font-gulfs stroke-none !text-4xl sm:!text-4xl md:!text-7xl xl:!text-[80px] max-w-4xl mx-auto text-center leading-tight">
                       The everything 
-                      <div className='animate-jump block mt-2 text-3xl md:text-6xl xl:text-8xl'>
+                      <div className='animate-jump block mt-2 text-4xl md:text-6xl xl:text-8xl'>
                         <span className="text-gradient-wishlist animate-pulse">
                             wishlist
                         </span>
@@ -127,7 +127,7 @@ export default function Hero({auth}) {
                     <h3 className="text-center text-xl uppercase text-yellow-400 font-bold tracking-widest mt-6 mb-4">
                         Built for Creators
                     </h3>
-                    <h3 className="text-center text-xl md:text-2xl text-gray-300 font-medium mb-8 max-w-2xl mx-auto leading-relaxed">
+                    <h3 className="text-center text-xl md:text-2xl text-gray-300 font-medium mb-8 max-w-2xl mx-auto leading-[25px] md:leading-relaxed">
                     Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.
                     </h3>
                     <div className="pt-4 wishlistbtn wishlistbtnFixed mx-auto relative inline-block">
@@ -157,7 +157,7 @@ export default function Hero({auth}) {
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           </Link>
                       }
-                      <span className="absolute -top-4 -right-3 bg-pink-500 text-white text-[14px] font-bold px-2 py-1 rounded-full animate-wiggle 
+                      <span className="absolute -top-4 right-[0px]  md:right-[-20px] bg-pink-500 text-white text-[14px] font-bold px-2 py-1 rounded-full animate-wiggle 
                       ">It's Free 🎉</span>
                     
                     </div>
