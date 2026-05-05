@@ -43,78 +43,78 @@ export default function PaymentSlider() {
       loop={true}
       grabCursor={false}
     >
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={`text-white max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={`text-white max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Plaid"} src={PaymentIcon1} />
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` text-white  max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` text-white  max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Cash App"} src={PaymentIcon3} />
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` text-white  max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` text-white  max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Master Card"} src={PaymentIcon6} />
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` text-white max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` text-white max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="50" height="50" viewBox="0 0 50 50">
                     <path d="M 9.984375 15.001953 C 9.149375 15.041953 8.1182969 15.573313 7.5292969 16.320312 C 6.9892969 16.964312 6.5275313 18.010188 6.6445312 18.992188 C 7.5875313 19.074188 8.5301406 18.500438 9.1191406 17.773438 C 9.6991406 17.026437 10.082375 16.024953 9.984375 15.001953 z M 18 17 L 18 32 L 20.375 32 L 20.375 27 L 23.625 27 C 26.608 27 28.75 24.925 28.75 22 C 28.75 19.075 26.647125 17 23.703125 17 L 18 17 z M 20.375 19 L 23.125 19 C 25.172 19 26.375 20.105 26.375 22 C 26.375 23.895 25.182 25 23.125 25 L 20.375 25 L 20.375 19 z M 9.875 19.5 C 8.5 19.5 7.517 20.25 6.875 20.25 C 6.223 20.25 5.25 19.509766 4.125 19.509766 C 2.75 19.509766 1.4033594 20.372859 0.69335938 21.630859 C -0.76564063 24.145859 0.31460937 27.869016 1.7246094 29.916016 C 2.4156094 30.930016 3.25 32 4.375 32 C 5.406 31.961 5.755 31.375 7 31.375 C 8.254 31.375 8.625 32 9.75 32 C 10.875 32 11.556094 30.969078 12.246094 29.955078 C 13.034094 28.805078 13.356 27.684 13.375 27.625 C 13.356 27.606 11.197734 26.77725 11.177734 24.28125 C 11.158734 22.19525 12.879031 21.200578 12.957031 21.142578 C 11.984031 19.700578 10.375 19.5 10 19.5 L 9.875 19.5 z M 34.199219 21 C 31.710219 21 29.870734 22.395453 29.802734 24.314453 L 31.912109 24.314453 C 32.086109 23.402453 32.948859 22.804688 34.130859 22.804688 C 35.563859 22.804688 36.373047 23.460969 36.373047 24.667969 L 36.375 25.5 L 33.443359 25.654297 C 30.722359 25.815297 29.25 26.908594 29.25 28.808594 C 29.25 30.727594 30.770219 32.001953 32.949219 32.001953 C 34.421219 32.001953 35.78725 31.270328 36.40625 30.111328 L 36.455078 30.111328 L 36.455078 31.886719 L 38.623047 31.886719 L 38.623047 24.515625 C 38.624047 22.376625 36.882219 21 34.199219 21 z M 39.5 21 L 43.507812 31.949219 L 43.292969 32.615234 C 42.930969 33.744234 42.344828 34.177734 41.298828 34.177734 C 41.119828 34.177734 40.781 34.159625 40.625 34.140625 L 40.625 35.945312 C 40.783 35.980313 41.332906 36 41.503906 36 C 43.810906 36 44.896703 35.132047 45.845703 32.498047 L 50 21 L 47.595703 21 L 44.808594 29.884766 L 44.759766 29.884766 L 41.972656 21 L 39.5 21 z M 36.375 27 L 36.367188 27.867188 C 36.367188 29.254188 35.166125 30.242188 33.578125 30.242188 C 32.329125 30.242188 31.535156 29.653953 31.535156 28.751953 C 31.535156 27.820953 32.300672 27.279359 33.763672 27.193359 L 36.375 27 z"></path>
                 </svg>
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` text-white max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` text-white max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 0 48 48">
                 <path fill="#03A9F4" d="M41.765,38H6.235C4.439,38,3,36.63,3,34.848v-22.62C3,10.445,4.439,9,6.235,9h35.529C43.56,9,45,10.445,45,12.228v22.62C45,36.63,43.56,38,41.765,38z"></path><path fill="#FFF" d="M36.847,23.277c0.069-1.101,0.354-1.613,0.926-1.613c0.548,0,0.848,0.527,0.886,1.613H36.847z M40.953,23.935c0-1.23-0.27-2.203-0.781-2.885c-0.54-0.697-1.346-1.05-2.359-1.05c-2.088,0-3.396,1.546-3.396,4.022c0,1.384,0.345,2.427,1.038,3.085C36.072,27.702,36.958,28,38.085,28c1.047,0,2.017-0.251,2.632-0.655l-0.268-1.688c-0.607,0.331-1.31,0.511-2.095,0.511c-0.47,0-0.806-0.103-1.044-0.308c-0.262-0.219-0.408-0.572-0.46-1.076h4.068C40.944,24.669,40.953,24.106,40.953,23.935z M31.057,25.533c-0.221,0.377-0.531,0.58-0.89,0.58c-0.241,0-0.472-0.053-0.669-0.147v-3.718c0.428-0.441,0.814-0.491,0.942-0.491c0.631,0,0.941,0.681,0.941,2.017C31.384,24.534,31.269,25.126,31.057,25.533z M33.113,20.709c-0.438-0.571-1.059-0.853-1.845-0.853c-0.712,0-1.343,0.302-1.934,0.936l-0.142-0.784H27V31l2.481-0.416l0.017-2.799c0.387,0.121,0.779,0.185,1.131,0.185c0.627,0,1.53-0.157,2.235-0.926c0.667-0.73,0.996-1.862,0.996-3.361C33.86,22.358,33.615,21.353,33.113,20.709z M23.527,20.008H26V28h-2.473V20.008z M24.784,19.233c0.718,0,1.3-0.594,1.3-1.313c0-0.733-0.584-1.32-1.3-1.32c-0.738,0-1.323,0.587-1.323,1.32C23.461,18.64,24.046,19.233,24.784,19.233z M22.463,19.9c-0.705,0-1.279,0.372-1.491,1.031l-0.15-0.921h-2.17V28h2.482v-5.25c0.312-0.382,0.749-0.52,1.362-0.52c0.127,0,0.256,0,0.438,0.026v-2.294C22.751,19.921,22.6,19.9,22.463,19.9z M17.68,21.855l0.308-1.848h-1.601v-2.245l-2.129,0.354l-0.309,1.891L13.2,20.13l-0.277,1.726h1.024v3.622c0,0.941,0.238,1.599,0.72,1.998c0.421,0.335,1.011,0.493,1.843,0.493c0.654,0,1.043-0.112,1.297-0.184v-1.959c-0.133,0.041-0.48,0.115-0.716,0.115c-0.48,0-0.705-0.25-0.705-0.825v-3.265h1.294V21.855z M10.531,23.05c-0.707-0.265-1.118-0.473-1.118-0.803c0-0.275,0.229-0.434,0.646-0.434c0.737,0,1.509,0.281,2.023,0.544l0.3-1.829C11.964,20.326,11.113,20,9.94,20c-0.84,0-1.535,0.22-2.014,0.621c-0.532,0.429-0.802,1.043-0.802,1.786c0,1.347,0.824,1.918,2.166,2.402c0.857,0.308,1.154,0.527,1.154,0.868c0,0.322-0.274,0.514-0.795,0.514c-0.624,0-1.641-0.31-2.327-0.703l-0.282,1.853C7.616,27.663,8.676,28,9.788,28c0.887,0,1.622-0.21,2.102-0.606c0.568-0.432,0.844-1.077,0.844-1.905C12.736,24.106,11.891,23.531,10.531,23.05L10.531,23.05z"></path>
                 </svg>
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full">
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`b text-white g-gray-900 w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2">
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`b text-white g-gray-900 w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 0 48 48">
                 <path fill="#1565C0" d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"></path><path fill="#FFF" d="M15.186 19l-2.626 7.832c0 0-.667-3.313-.733-3.729-1.495-3.411-3.701-3.221-3.701-3.221L10.726 30v-.002h3.161L18.258 19H15.186zM17.689 30L20.56 30 22.296 19 19.389 19zM38.008 19h-3.021l-4.71 11h2.852l.588-1.571h3.596L37.619 30h2.613L38.008 19zM34.513 26.328l1.563-4.157.818 4.157H34.513zM26.369 22.206c0-.606.498-1.057 1.926-1.057.928 0 1.991.674 1.991.674l.466-2.309c0 0-1.358-.515-2.691-.515-3.019 0-4.576 1.444-4.576 3.272 0 3.306 3.979 2.853 3.979 4.551 0 .291-.231.964-1.888.964-1.662 0-2.759-.609-2.759-.609l-.495 2.216c0 0 1.063.606 3.117.606 2.059 0 4.915-1.54 4.915-3.752C30.354 23.586 26.369 23.394 26.369 22.206z"></path><path fill="#FFC107" d="M12.212,24.945l-0.966-4.748c0,0-0.437-1.029-1.573-1.029c-1.136,0-4.44,0-4.44,0S10.894,20.84,12.212,24.945z"></path>
                 </svg>
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Plaid"} src={PaymentIcon1} />
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Cash App"} src={PaymentIcon3} />
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Master Card"} src={PaymentIcon6} />
             </div>
           </div>
         </SwiperSlide>
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="50" height="50" viewBox="0 0 50 50">
                     <path d="M 9.984375 15.001953 C 9.149375 15.041953 8.1182969 15.573313 7.5292969 16.320312 C 6.9892969 16.964312 6.5275313 18.010188 6.6445312 18.992188 C 7.5875313 19.074188 8.5301406 18.500438 9.1191406 17.773438 C 9.6991406 17.026437 10.082375 16.024953 9.984375 15.001953 z M 18 17 L 18 32 L 20.375 32 L 20.375 27 L 23.625 27 C 26.608 27 28.75 24.925 28.75 22 C 28.75 19.075 26.647125 17 23.703125 17 L 18 17 z M 20.375 19 L 23.125 19 C 25.172 19 26.375 20.105 26.375 22 C 26.375 23.895 25.182 25 23.125 25 L 20.375 25 L 20.375 19 z M 9.875 19.5 C 8.5 19.5 7.517 20.25 6.875 20.25 C 6.223 20.25 5.25 19.509766 4.125 19.509766 C 2.75 19.509766 1.4033594 20.372859 0.69335938 21.630859 C -0.76564063 24.145859 0.31460937 27.869016 1.7246094 29.916016 C 2.4156094 30.930016 3.25 32 4.375 32 C 5.406 31.961 5.755 31.375 7 31.375 C 8.254 31.375 8.625 32 9.75 32 C 10.875 32 11.556094 30.969078 12.246094 29.955078 C 13.034094 28.805078 13.356 27.684 13.375 27.625 C 13.356 27.606 11.197734 26.77725 11.177734 24.28125 C 11.158734 22.19525 12.879031 21.200578 12.957031 21.142578 C 11.984031 19.700578 10.375 19.5 10 19.5 L 9.875 19.5 z M 34.199219 21 C 31.710219 21 29.870734 22.395453 29.802734 24.314453 L 31.912109 24.314453 C 32.086109 23.402453 32.948859 22.804688 34.130859 22.804688 C 35.563859 22.804688 36.373047 23.460969 36.373047 24.667969 L 36.375 25.5 L 33.443359 25.654297 C 30.722359 25.815297 29.25 26.908594 29.25 28.808594 C 29.25 30.727594 30.770219 32.001953 32.949219 32.001953 C 34.421219 32.001953 35.78725 31.270328 36.40625 30.111328 L 36.455078 30.111328 L 36.455078 31.886719 L 38.623047 31.886719 L 38.623047 24.515625 C 38.624047 22.376625 36.882219 21 34.199219 21 z M 39.5 21 L 43.507812 31.949219 L 43.292969 32.615234 C 42.930969 33.744234 42.344828 34.177734 41.298828 34.177734 C 41.119828 34.177734 40.781 34.159625 40.625 34.140625 L 40.625 35.945312 C 40.783 35.980313 41.332906 36 41.503906 36 C 43.810906 36 44.896703 35.132047 45.845703 32.498047 L 50 21 L 47.595703 21 L 44.808594 29.884766 L 44.759766 29.884766 L 41.972656 21 L 39.5 21 z M 36.375 27 L 36.367188 27.867188 C 36.367188 29.254188 35.166125 30.242188 33.578125 30.242188 C 32.329125 30.242188 31.535156 29.653953 31.535156 28.751953 C 31.535156 27.820953 32.300672 27.279359 33.763672 27.193359 L 36.375 27 z"></path>
                 </svg>
@@ -122,9 +122,9 @@ export default function PaymentSlider() {
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 0 48 48">
                 <path fill="#03A9F4" d="M41.765,38H6.235C4.439,38,3,36.63,3,34.848v-22.62C3,10.445,4.439,9,6.235,9h35.529C43.56,9,45,10.445,45,12.228v22.62C45,36.63,43.56,38,41.765,38z"></path><path fill="#FFF" d="M36.847,23.277c0.069-1.101,0.354-1.613,0.926-1.613c0.548,0,0.848,0.527,0.886,1.613H36.847z M40.953,23.935c0-1.23-0.27-2.203-0.781-2.885c-0.54-0.697-1.346-1.05-2.359-1.05c-2.088,0-3.396,1.546-3.396,4.022c0,1.384,0.345,2.427,1.038,3.085C36.072,27.702,36.958,28,38.085,28c1.047,0,2.017-0.251,2.632-0.655l-0.268-1.688c-0.607,0.331-1.31,0.511-2.095,0.511c-0.47,0-0.806-0.103-1.044-0.308c-0.262-0.219-0.408-0.572-0.46-1.076h4.068C40.944,24.669,40.953,24.106,40.953,23.935z M31.057,25.533c-0.221,0.377-0.531,0.58-0.89,0.58c-0.241,0-0.472-0.053-0.669-0.147v-3.718c0.428-0.441,0.814-0.491,0.942-0.491c0.631,0,0.941,0.681,0.941,2.017C31.384,24.534,31.269,25.126,31.057,25.533z M33.113,20.709c-0.438-0.571-1.059-0.853-1.845-0.853c-0.712,0-1.343,0.302-1.934,0.936l-0.142-0.784H27V31l2.481-0.416l0.017-2.799c0.387,0.121,0.779,0.185,1.131,0.185c0.627,0,1.53-0.157,2.235-0.926c0.667-0.73,0.996-1.862,0.996-3.361C33.86,22.358,33.615,21.353,33.113,20.709z M23.527,20.008H26V28h-2.473V20.008z M24.784,19.233c0.718,0,1.3-0.594,1.3-1.313c0-0.733-0.584-1.32-1.3-1.32c-0.738,0-1.323,0.587-1.323,1.32C23.461,18.64,24.046,19.233,24.784,19.233z M22.463,19.9c-0.705,0-1.279,0.372-1.491,1.031l-0.15-0.921h-2.17V28h2.482v-5.25c0.312-0.382,0.749-0.52,1.362-0.52c0.127,0,0.256,0,0.438,0.026v-2.294C22.751,19.921,22.6,19.9,22.463,19.9z M17.68,21.855l0.308-1.848h-1.601v-2.245l-2.129,0.354l-0.309,1.891L13.2,20.13l-0.277,1.726h1.024v3.622c0,0.941,0.238,1.599,0.72,1.998c0.421,0.335,1.011,0.493,1.843,0.493c0.654,0,1.043-0.112,1.297-0.184v-1.959c-0.133,0.041-0.48,0.115-0.716,0.115c-0.48,0-0.705-0.25-0.705-0.825v-3.265h1.294V21.855z M10.531,23.05c-0.707-0.265-1.118-0.473-1.118-0.803c0-0.275,0.229-0.434,0.646-0.434c0.737,0,1.509,0.281,2.023,0.544l0.3-1.829C11.964,20.326,11.113,20,9.94,20c-0.84,0-1.535,0.22-2.014,0.621c-0.532,0.429-0.802,1.043-0.802,1.786c0,1.347,0.824,1.918,2.166,2.402c0.857,0.308,1.154,0.527,1.154,0.868c0,0.322-0.274,0.514-0.795,0.514c-0.624,0-1.641-0.31-2.327-0.703l-0.282,1.853C7.616,27.663,8.676,28,9.788,28c0.887,0,1.622-0.21,2.102-0.606c0.568-0.432,0.844-1.077,0.844-1.905C12.736,24.106,11.891,23.531,10.531,23.05L10.531,23.05z"></path>
                 </svg>
@@ -132,9 +132,9 @@ export default function PaymentSlider() {
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full">
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2">
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 0 48 48">
                 <path fill="#1565C0" d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"></path><path fill="#FFF" d="M15.186 19l-2.626 7.832c0 0-.667-3.313-.733-3.729-1.495-3.411-3.701-3.221-3.701-3.221L10.726 30v-.002h3.161L18.258 19H15.186zM17.689 30L20.56 30 22.296 19 19.389 19zM38.008 19h-3.021l-4.71 11h2.852l.588-1.571h3.596L37.619 30h2.613L38.008 19zM34.513 26.328l1.563-4.157.818 4.157H34.513zM26.369 22.206c0-.606.498-1.057 1.926-1.057.928 0 1.991.674 1.991.674l.466-2.309c0 0-1.358-.515-2.691-.515-3.019 0-4.576 1.444-4.576 3.272 0 3.306 3.979 2.853 3.979 4.551 0 .291-.231.964-1.888.964-1.662 0-2.759-.609-2.759-.609l-.495 2.216c0 0 1.063.606 3.117.606 2.059 0 4.915-1.54 4.915-3.752C30.354 23.586 26.369 23.394 26.369 22.206z"></path><path fill="#FFC107" d="M12.212,24.945l-0.966-4.748c0,0-0.437-1.029-1.573-1.029c-1.136,0-4.44,0-4.44,0S10.894,20.84,12.212,24.945z"></path>
                 </svg>
@@ -142,33 +142,33 @@ export default function PaymentSlider() {
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Plaid"} src={PaymentIcon1} />
             </div>
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Cash App"}  src={PaymentIcon3} />
             </div>
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <img className='max-w-[80px]' alt={"Master Card"} src={PaymentIcon6} />
             </div>
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="50" height="50" viewBox="0 0 50 50">
                     <path d="M 9.984375 15.001953 C 9.149375 15.041953 8.1182969 15.573313 7.5292969 16.320312 C 6.9892969 16.964312 6.5275313 18.010188 6.6445312 18.992188 C 7.5875313 19.074188 8.5301406 18.500438 9.1191406 17.773438 C 9.6991406 17.026437 10.082375 16.024953 9.984375 15.001953 z M 18 17 L 18 32 L 20.375 32 L 20.375 27 L 23.625 27 C 26.608 27 28.75 24.925 28.75 22 C 28.75 19.075 26.647125 17 23.703125 17 L 18 17 z M 20.375 19 L 23.125 19 C 25.172 19 26.375 20.105 26.375 22 C 26.375 23.895 25.182 25 23.125 25 L 20.375 25 L 20.375 19 z M 9.875 19.5 C 8.5 19.5 7.517 20.25 6.875 20.25 C 6.223 20.25 5.25 19.509766 4.125 19.509766 C 2.75 19.509766 1.4033594 20.372859 0.69335938 21.630859 C -0.76564063 24.145859 0.31460937 27.869016 1.7246094 29.916016 C 2.4156094 30.930016 3.25 32 4.375 32 C 5.406 31.961 5.755 31.375 7 31.375 C 8.254 31.375 8.625 32 9.75 32 C 10.875 32 11.556094 30.969078 12.246094 29.955078 C 13.034094 28.805078 13.356 27.684 13.375 27.625 C 13.356 27.606 11.197734 26.77725 11.177734 24.28125 C 11.158734 22.19525 12.879031 21.200578 12.957031 21.142578 C 11.984031 19.700578 10.375 19.5 10 19.5 L 9.875 19.5 z M 34.199219 21 C 31.710219 21 29.870734 22.395453 29.802734 24.314453 L 31.912109 24.314453 C 32.086109 23.402453 32.948859 22.804688 34.130859 22.804688 C 35.563859 22.804688 36.373047 23.460969 36.373047 24.667969 L 36.375 25.5 L 33.443359 25.654297 C 30.722359 25.815297 29.25 26.908594 29.25 28.808594 C 29.25 30.727594 30.770219 32.001953 32.949219 32.001953 C 34.421219 32.001953 35.78725 31.270328 36.40625 30.111328 L 36.455078 30.111328 L 36.455078 31.886719 L 38.623047 31.886719 L 38.623047 24.515625 C 38.624047 22.376625 36.882219 21 34.199219 21 z M 39.5 21 L 43.507812 31.949219 L 43.292969 32.615234 C 42.930969 33.744234 42.344828 34.177734 41.298828 34.177734 C 41.119828 34.177734 40.781 34.159625 40.625 34.140625 L 40.625 35.945312 C 40.783 35.980313 41.332906 36 41.503906 36 C 43.810906 36 44.896703 35.132047 45.845703 32.498047 L 50 21 L 47.595703 21 L 44.808594 29.884766 L 44.759766 29.884766 L 41.972656 21 L 39.5 21 z M 36.375 27 L 36.367188 27.867188 C 36.367188 29.254188 35.166125 30.242188 33.578125 30.242188 C 32.329125 30.242188 31.535156 29.653953 31.535156 28.751953 C 31.535156 27.820953 32.300672 27.279359 33.763672 27.193359 L 36.375 27 z"></path>
                 </svg>
@@ -176,9 +176,9 @@ export default function PaymentSlider() {
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full" >
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  -md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2" >
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px]  shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 0 48 48">
                 <path fill="#03A9F4" d="M41.765,38H6.235C4.439,38,3,36.63,3,34.848v-22.62C3,10.445,4.439,9,6.235,9h35.529C43.56,9,45,10.445,45,12.228v22.62C45,36.63,43.56,38,41.765,38z"></path><path fill="#FFF" d="M36.847,23.277c0.069-1.101,0.354-1.613,0.926-1.613c0.548,0,0.848,0.527,0.886,1.613H36.847z M40.953,23.935c0-1.23-0.27-2.203-0.781-2.885c-0.54-0.697-1.346-1.05-2.359-1.05c-2.088,0-3.396,1.546-3.396,4.022c0,1.384,0.345,2.427,1.038,3.085C36.072,27.702,36.958,28,38.085,28c1.047,0,2.017-0.251,2.632-0.655l-0.268-1.688c-0.607,0.331-1.31,0.511-2.095,0.511c-0.47,0-0.806-0.103-1.044-0.308c-0.262-0.219-0.408-0.572-0.46-1.076h4.068C40.944,24.669,40.953,24.106,40.953,23.935z M31.057,25.533c-0.221,0.377-0.531,0.58-0.89,0.58c-0.241,0-0.472-0.053-0.669-0.147v-3.718c0.428-0.441,0.814-0.491,0.942-0.491c0.631,0,0.941,0.681,0.941,2.017C31.384,24.534,31.269,25.126,31.057,25.533z M33.113,20.709c-0.438-0.571-1.059-0.853-1.845-0.853c-0.712,0-1.343,0.302-1.934,0.936l-0.142-0.784H27V31l2.481-0.416l0.017-2.799c0.387,0.121,0.779,0.185,1.131,0.185c0.627,0,1.53-0.157,2.235-0.926c0.667-0.73,0.996-1.862,0.996-3.361C33.86,22.358,33.615,21.353,33.113,20.709z M23.527,20.008H26V28h-2.473V20.008z M24.784,19.233c0.718,0,1.3-0.594,1.3-1.313c0-0.733-0.584-1.32-1.3-1.32c-0.738,0-1.323,0.587-1.323,1.32C23.461,18.64,24.046,19.233,24.784,19.233z M22.463,19.9c-0.705,0-1.279,0.372-1.491,1.031l-0.15-0.921h-2.17V28h2.482v-5.25c0.312-0.382,0.749-0.52,1.362-0.52c0.127,0,0.256,0,0.438,0.026v-2.294C22.751,19.921,22.6,19.9,22.463,19.9z M17.68,21.855l0.308-1.848h-1.601v-2.245l-2.129,0.354l-0.309,1.891L13.2,20.13l-0.277,1.726h1.024v3.622c0,0.941,0.238,1.599,0.72,1.998c0.421,0.335,1.011,0.493,1.843,0.493c0.654,0,1.043-0.112,1.297-0.184v-1.959c-0.133,0.041-0.48,0.115-0.716,0.115c-0.48,0-0.705-0.25-0.705-0.825v-3.265h1.294V21.855z M10.531,23.05c-0.707-0.265-1.118-0.473-1.118-0.803c0-0.275,0.229-0.434,0.646-0.434c0.737,0,1.509,0.281,2.023,0.544l0.3-1.829C11.964,20.326,11.113,20,9.94,20c-0.84,0-1.535,0.22-2.014,0.621c-0.532,0.429-0.802,1.043-0.802,1.786c0,1.347,0.824,1.918,2.166,2.402c0.857,0.308,1.154,0.527,1.154,0.868c0,0.322-0.274,0.514-0.795,0.514c-0.624,0-1.641-0.31-2.327-0.703l-0.282,1.853C7.616,27.663,8.676,28,9.788,28c0.887,0,1.622-0.21,2.102-0.606c0.568-0.432,0.844-1.077,0.844-1.905C12.736,24.106,11.891,23.531,10.531,23.05L10.531,23.05z"></path>
                 </svg>
@@ -186,9 +186,9 @@ export default function PaymentSlider() {
           </div>
         </SwiperSlide>
 
-        <SwiperSlide className="!w-auto overflow-visible h-full">
-          <div className={` max-h-[100px] h-[80px] min-w-[100px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
-            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[20px] md:rounded-[30px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
+        <SwiperSlide className="!w-auto overflow-visible h-full mb-2">
+          <div className={` max-h-[120px] h-[100px] min-w-[120px] md:max-h-[130px] md:h-[130px] md:min-w-[130px] flex justify-center items-center  `}>
+            <div className={`bg-white w-full min-h-[70px] flex  items-center justify-center   px-4 py-1 border-[2px] !border-pink-500 rounded-[15px] md:rounded-[20px]  md:rotate-[45deg] shadow-[4px_4px_0_0_#ec4899]`}>
                 <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 0 48 48">
                 <path fill="#1565C0" d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"></path><path fill="#FFF" d="M15.186 19l-2.626 7.832c0 0-.667-3.313-.733-3.729-1.495-3.411-3.701-3.221-3.701-3.221L10.726 30v-.002h3.161L18.258 19H15.186zM17.689 30L20.56 30 22.296 19 19.389 19zM38.008 19h-3.021l-4.71 11h2.852l.588-1.571h3.596L37.619 30h2.613L38.008 19zM34.513 26.328l1.563-4.157.818 4.157H34.513zM26.369 22.206c0-.606.498-1.057 1.926-1.057.928 0 1.991.674 1.991.674l.466-2.309c0 0-1.358-.515-2.691-.515-3.019 0-4.576 1.444-4.576 3.272 0 3.306 3.979 2.853 3.979 4.551 0 .291-.231.964-1.888.964-1.662 0-2.759-.609-2.759-.609l-.495 2.216c0 0 1.063.606 3.117.606 2.059 0 4.915-1.54 4.915-3.752C30.354 23.586 26.369 23.394 26.369 22.206z"></path><path fill="#FFC107" d="M12.212,24.945l-0.966-4.748c0,0-0.437-1.029-1.573-1.029c-1.136,0-4.44,0-4.44,0S10.894,20.84,12.212,24.945z"></path>
                 </svg>

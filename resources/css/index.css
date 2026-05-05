@@ -19,7 +19,7 @@ div{animation:load 0.4s linear;} */
   
   .text-gradient-wishlist{
     display: inline-block;
-    background-image: linear-gradient(to right, rgb(253 224 71), rgb(236 72 153), rgb(168 85 247));
+    background-image: linear-gradient(135deg, #FACC15 0%, #F94F96 50%, #8C53FB 100%);
     background-clip: text;
     -webkit-background-clip: text;
   }

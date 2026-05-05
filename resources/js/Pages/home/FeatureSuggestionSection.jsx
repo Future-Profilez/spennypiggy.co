@@ -6,18 +6,29 @@ export default function FeatureSuggestionSection({ auth }) {
     const [showModal, setShowModal] = useState(false);
 
     return (
-        <section className="bg-black py-32 relative overflow-hidden border-t border-white/5">
+        <section className="bg-black py-24 md:py-32 relative overflow-hidden border-t border-white/5">
+            {/* Background decorative elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-900/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-yellow-500/5 rounded-full filter blur-[100px]"></div>
+            </div>
+
             <div className="containerbox relative z-10 px-4 mx-auto text-center">
-                <div className="max-w-5xl mx-auto">
-                    <div className="fading inline-flex items-center justify-center w-28 h-28 bg-white/5 border border-white/10 rounded-[35px] mb-10 transform -rotate-6 hover:rotate-0 transition-all duration-700 hover:border-[#EFEA7B] hover:shadow-[0_0_50px_rgba(239,234,123,0.3)] group cursor-default backdrop-blur-sm">
-                        <FaLightbulb className="text-[#EFEA7B] text-6xl transition-all duration-500 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_#EFEA7B]" />
+                <div className="max-w-4xl mx-auto">
+                    <div className="fading flex justify-center mb-10">
+                        <div className="relative group cursor-default">
+                            <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
+                            <div className="relative w-24 h-24 bg-[#0d0d0d] border border-white/10 rounded-[30px] flex items-center justify-center shadow-2xl transform transition-transform duration-700 group-hover:scale-110">
+                                <FaLightbulb className="text-[#EFEA7B] text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
+                            </div>
+                        </div>
                     </div>
                     
-                    <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white mb-4 uppercase leading-none tracking-tight">
-                        Have a <span className="bg-gradient-to-r from-[#EFEA7B] via-[#F94F96] to-[#924DFF] bg-clip-text text-transparent animate-gradient-x">Brilliant</span> Idea?
+                    <h2 className="fading text-4xl md:text-5xl lg:text-6xl font-gulfs text-white mb-6 uppercase tracking-tight leading-[1.1]">
+                        Have a <span className="text-gradient-wishlist">Brilliant</span> Idea?
                     </h2>
                     
-                    <p className="fading text-gray-400 text-xl md:text-2xl font-poppins mb-6 leading-relaxed max-w-3xl mx-auto opacity-80">
+                    <p className="fading text-gray-400 text-lg md:text-xl font-poppins mb-12 leading-relaxed max-w-2xl mx-auto opacity-90">
                         We're constantly building and improving Spenny Piggy for our community. 
                         Is there a feature you'd love to see? Let us know and help shape the future of the platform!
                     </p>
@@ -25,18 +36,13 @@ export default function FeatureSuggestionSection({ auth }) {
                     <div className="fading">
                         <button 
                             onClick={() => setShowModal(true)}
-                            className="group relative inline-flex items-center justify-center px-8 py-4 font-gulfs uppercase text-xl md:text-xl text-white bg-transparent rounded-full border-2 border-white/20 transition-all duration-500 hover:border-transparent hover:text-black overflow-hidden active:scale-95 shadow-2xl"
+                            className="group relative inline-flex items-center gap-6 bg-white text-black font-gulfs uppercase text-lg md:text-xl py-4 px-10 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 hover:-rotate-1 transition-all duration-500 overflow-hidden"
                         >
-                            <span className="relative z-10 flex items-center gap-6">
-                                Suggest a Feature
-                                <FaRocket className="text-xl transition-all duration-500 group-hover:translate-x-4 group-hover:-translate-y-4 group-hover:scale-125" />
-                            </span>
+                            <span className="relative z-10">Suggest a Feature</span>
+                            <FaRocket className="relative z-10 text-xl group-hover:translate-x-3 group-hover:-translate-y-3 transition-transform duration-500" />
                             
-                            {/* Animated Background Gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#EFEA7B] via-[#F94F96] to-[#924DFF] opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0"></div>
-                            
-                            {/* Glow Effect */}
-                            <div className="absolute -inset-1 bg-gradient-to-r from-[#EFEA7B] via-[#F94F96] to-[#924DFF] rounded-full blur opacity-0 group-hover:opacity-50 transition-opacity duration-500 z-0"></div>
+                            {/* Hover Gradient Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         </button>
                     </div>
                 </div>

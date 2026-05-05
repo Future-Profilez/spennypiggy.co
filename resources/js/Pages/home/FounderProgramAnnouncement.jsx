@@ -46,46 +46,52 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                 Join our exclusive founder community. Limited to the first <span className="text-green-400 font-semibold">{config.maxFounderSeats}</span> creators!
                             </span>
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto items-stretch">
                             {/* Card 1: Monthly Bonus */}
-                            <div className="fading group bg-[#0d0d0d] p-5 md:p-6 rounded-[3.5rem] border border-white/5 flex items-center space-x-4 hover:bg-[#151515] transition-all duration-500">
-                                <div className="relative shrink-0">
+                            <div className="fading group bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/5 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 h-full">
+                                <div className="relative shrink-0 mb-6">
                                     <div className="absolute inset-0 bg-yellow-400/20 blur-xl rounded-full group-hover:bg-yellow-400/30 transition-all duration-500"></div>
-                                    <div className="relative w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg">
-                                        <FaTrophy className="text-black text-xl md:text-2xl" />
+                                    <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg">
+                                        <FaTrophy className="text-black text-2xl md:text-3xl" />
                                     </div>
                                 </div>
-                                <div className="text-left">
-                                    <h4 className="text-white font-bold text-base md:text-lg leading-tight">{config.bonusPercentage}% Monthly Bonus</h4>
-                                    <p className="text-gray-500 text-[10px] md:text-xs leading-tight">Extra earnings on every support</p>
+                                <div className="flex-1 flex flex-col">
+                                    <h4 className="text-white font-bold text-lg md:text-xl mb-4">{config.bonusPercentage}% Monthly Bonus</h4>
+                                    <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+                                        Boost your earnings with a permanent {config.bonusPercentage}% monthly bonus on all revenue. Every tip, membership, and sale automatically triggers an extra payout, rewarding your hard work with more money every month.
+                                    </p>
                                 </div>
                             </div>
 
                             {/* Card 2: Founder Status */}
-                            <div className="fading group bg-[#0d0d0d] p-5 md:p-6 rounded-[3.5rem] border border-white/5 flex items-center space-x-4 hover:bg-[#151515] transition-all duration-500">
-                                <div className="relative shrink-0">
+                            <div className="fading group bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/5 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 h-full">
+                                <div className="relative shrink-0 mb-6">
                                     <div className="absolute inset-0 bg-pink-500/20 blur-xl rounded-full group-hover:bg-pink-500/30 transition-all duration-500"></div>
-                                    <div className="relative w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                                        <FaCrown className="text-white text-xl md:text-2xl" />
+                                    <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                                        <FaCrown className="text-white text-2xl md:text-3xl" />
                                     </div>
                                 </div>
-                                <div className="text-left">
-                                    <h4 className="text-white font-bold text-base md:text-lg leading-tight">Founder Status</h4>
-                                    <p className="text-gray-500 text-[10px] md:text-xs leading-tight">Exclusive profile badge & VIP</p>
+                                <div className="flex-1 flex flex-col">
+                                    <h4 className="text-white font-bold text-lg md:text-xl mb-4">Founder Status</h4>
+                                    <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+                                        Gain exclusive recognition with a unique founder badge, priority search ranking, and VIP support. This prestigious status establishes your authority and highlights your role as a leading creator in our community.
+                                    </p>
                                 </div>
                             </div>
 
                             {/* Card 3: Priority Qualification */}
-                            <div className="fading group bg-[#0d0d0d] p-5 md:p-6 rounded-[3.5rem] border border-white/5 flex items-center space-x-4 hover:bg-[#151515] transition-all duration-500 md:col-span-2 lg:col-span-1">
-                                <div className="relative shrink-0">
+                            <div className="fading group bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/5 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 md:col-span-2 lg:col-span-1 h-full">
+                                <div className="relative shrink-0 mb-6">
                                     <div className="absolute inset-0 bg-green-400/20 blur-xl rounded-full group-hover:bg-green-400/30 transition-all duration-500"></div>
-                                    <div className="relative w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-emerald-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-                                        <FaGift className="text-black text-xl md:text-2xl" />
+                                    <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-emerald-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                                        <FaGift className="text-black text-2xl md:text-3xl" />
                                     </div>
                                 </div>
-                                <div className="text-left">
-                                    <h4 className="text-white font-bold text-base md:text-lg leading-tight">Priority Qualification</h4>
-                                    <p className="text-gray-500 text-[10px] md:text-xs leading-tight">Hit {config.currencySymbol}{config.minMonthlyEarnings} in 30 days</p>
+                                <div className="flex-1 flex flex-col">
+                                    <h4 className="text-white font-bold text-lg md:text-xl mb-4">Priority Qualification</h4>
+                                    <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+                                        Earn {config.currencySymbol}{config.minMonthlyEarnings.toLocaleString()} in your first 30 days to automatically unlock lifetime bonuses and rewards. Act fast—only {config.maxFounderSeats} seats are available for this exclusive program to reward our most successful creators.
+                                    </p>
                                 </div>
                             </div>
                         </div>

@@ -268,10 +268,9 @@ export default function Header({ classMagicword }) {
                                         : ""
                                 }`}
                             >
-                                <div className="bg-[#F94F96] p-2 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                <div className="bg-[#F94F96] p-3 md:p-2 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <ShoppingCartIcon
                                         color="#ffffff"
-                                        size={27}
                                     />
                                 </div>
                                 {count > 0 ? (
