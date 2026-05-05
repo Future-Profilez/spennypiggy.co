@@ -1,35 +1,10 @@
 import { Link } from "@inertiajs/react";
-import ModernImage from '../Components/ModernImage';
-import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FounderBadge from "@/Components/FounderBadge";
-import { CircleCheckIcon } from "@animateicons/react/lucide";
-import { useRef, useEffect } from "react";
 
 const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
 
 export default function Avatar({ imgclass,hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick, nolink }) {
-  const badgeRef = useRef(null);
-  const timeoutRef = useRef(null);
-
-  useEffect(() => {
-    const startLoop = () => {
-        if (badgeRef.current) {
-            badgeRef.current.startAnimation?.();
-        }
-        // Verification badge loops more frequently to be noticed
-        const nextDelay = 3000 + Math.random() * 2000;
-        timeoutRef.current = setTimeout(startLoop, nextDelay);
-    };
-    
-    const initialDelay = Math.random() * 2000;
-    const initialTimeout = setTimeout(startLoop, initialDelay);
-    
-    return () => {
-        clearTimeout(initialTimeout);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [role, profile_status_lock]);
 
   return (
     <>
@@ -91,11 +66,7 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
 
       {username && !nolink ? (
         <div className="avatar-wrap">
-          <Link 
-            href={url || `/${link || username}`} 
-            className="useravatar group/avatar" 
-            onClick={onClick}
-            onMouseEnter={() => badgeRef.current?.startAnimation()}
+          <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
             <div className={`avatar !border-2 !border-white !overflow-visible relative rounded-[20px] ${imgclass}`}>
               <img
@@ -121,14 +92,10 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
                 is_founder ? (
                   <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
                 ) : (
-                  <div className="absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-pink-500 rounded-full p-[1px]">
-                    <CircleCheckIcon
-                      ref={badgeRef}
-                      size="1.5rem"
-                      duration={1.2}
-                      className="text-pink"
-                    />
-                  </div>
+                  <RiVerifiedBadgeFill
+                    size="1.5rem"
+                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-pink-500 rounded-full p-[1px]"
+                  />
                 )
               )}
             </div>
@@ -150,12 +117,12 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
         </div>
       ) : (
         <div className="avatar-wrap">
-          <div className="useravatar group/avatar" onMouseEnter={() => badgeRef.current?.startAnimation()}>
-            <div className={`avatar !border-2 !border-white !overflow-visible relative rounded-[20px] ${imgclass}`}>
+          <div className="useravatar">
+            <div className={`avatar ${imgclass}`}>
               <img
                 src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
-                className="img-fluid bg-gray-200 !rounded-[17px]" 
+                className="img-fluid"
                 loading="lazy"
                 decoding="async"
                 style={{
@@ -171,20 +138,6 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
                   e.target.src = defaultAvatar;
                 }}
               />
-              {role && profile_status_lock && (
-                is_founder ? (
-                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
-                ) : (
-                  <div className="absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-pink-500 rounded-full p-[1px]">
-                    <CircleCheckIcon
-                      ref={badgeRef}
-                      size="1.5rem"
-                      duration={1.2}
-                      className="text-pink"
-                    />
-                  </div>
-                )
-              )}
             </div>
             <div className="avatar-content">
               <h2 className={`${namecolor || ''}`}>{name}</h2>
