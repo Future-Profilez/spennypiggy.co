@@ -459,6 +459,19 @@ export default function Login({ status, canResetPassword }) {
         }
     };
 
+    const getPasskeyButtonText = () => {
+        return "LOG IN WITH PASSKEY";
+    };
+
+    const getPasskeyButtonStyle = () => {
+        return "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-all duration-200 active:shadow-none active:translate-x-[1px] active:translate-y-[1px]";
+    };
+
+    const handlePasskeyAction = (e) => {
+        e.preventDefault();
+        handlePasskeyLogin(false);
+    };
+
     return (
         <GuestLayout className="bg-[#A2E4B8]">
             <Head title="Log in" description="Log in to your account" />
@@ -619,25 +632,37 @@ export default function Login({ status, canResetPassword }) {
                                     </LoaderButton>
                                 </div>
 
-                                {/* Single Smart Passkey Button for Email Users */}
-                                {/* {isWebAuthnSupported() && hasPasskey === true && (
-                                    <div className="space-y-2">
+                                {/* Smart Passkey Button */}
+                                {isWebAuthnSupported() && (
+                                    <div className="space-y-2 pt-2">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <div className="w-full border-t border-gray-200"></div>
+                                            </div>
+                                            <div className="relative flex justify-center text-xs uppercase">
+                                                <span className="px-2 bg-white text-gray-500">
+                                                    Or use passkey
+                                                </span>
+                                            </div>
+                                        </div>
                                         <LoaderButton
                                             type="button"
                                             onClick={handlePasskeyAction}
-                                            disabled={passkeyLoading}
-                                            className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent ${getPasskeyButtonStyle()} hover:!text-white pr-6 !text-black w-full ${passkeyLoading ? "opacity-70 cursor-not-allowed" : ""}`}
-                                            spinnerclass="fill-white"
+                                            disabled={passkeyLoading || loading}
+                                            className={`relative flex flex-row items-center text-lg px-4 py-[8px] focus:outline-none text-gray-700 border-l-4 border-transparent ${getPasskeyButtonStyle()} hover:!text-black pr-6 !text-black w-full ${(passkeyLoading || loading) ? "opacity-70 cursor-not-allowed" : ""}`}
+                                            spinnerclass="fill-black"
                                         >
-                                            {passkeyLoading
-                                                ? "LOGGING WITH PASSKEY..."
-                                                : getPasskeyButtonText()}
+                                            <div className="flex items-center justify-center w-full space-x-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                                    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/>
+                                                    <path d="M12 6c-3.309 0-6 2.691-6 6s2.691 6 6 6 6-2.691 6-6-2.691-6-6-6zm0 10c-2.206 0-4-1.794-4-4s1.794-4 4-4 4 1.794 4 4-1.794 4-4 4z"/>
+                                                    <path d="M12 9c-1.654 0-3 1.346-3 3s1.346 3 3 3 3-1.346 3-3-1.346-3-3-3z"/>
+                                                </svg>
+                                                <span>{passkeyLoading ? "LOGGING IN..." : getPasskeyButtonText()}</span>
+                                            </div>
                                         </LoaderButton>
-                                        <p className="text-xs text-gray-500 text-center">
-                                            Use your fingerprint, face ID, or security key to login instantly
-                                        </p>
                                     </div>
-                                )} */}
+                                )}
                             </form>
                         </div>
                     </div>

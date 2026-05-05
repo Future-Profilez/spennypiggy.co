@@ -19,13 +19,13 @@ export default function TopEarners({ creators, periodLabel }) {
           Top <span className="text-gradient-wishlist">Earners</span>{periodLabel ? ` — ${periodLabel}` : ''}
         </h2>
         {periodLabel === 'Week' ? (
-          <p className="text-center text-gray-300 mb-12 text-lgfading ">From Monday 00:00 to Sunday 23:59 (UK time). Covers the full current week.</p>
+          <p className="text-center text-gray-300 mb-6 text-lgfading ">From Monday 00:00 to Sunday 23:59 (UK time). Covers the full current week.</p>
         ) : periodLabel === 'Today' ? (
-          <p className="text-center text-gray-300 mb-12 text-lgfading ">Data from today only (UK time). Updates in real time.</p>
+          <p className="text-center text-gray-300 mb-6 text-lgfading ">Data from today only (UK time). Updates in real time.</p>
         ) : periodLabel === 'Month' ? (
-          <p className="text-center text-gray-300 mb-12 text-lgfading ">Stats for the current month (UK time).Includes all activity so far this month.</p>
+          <p className="text-center text-gray-300 mb-6 text-lgfading ">Stats for the current month (UK time).Includes all activity so far this month.</p>
         ) : (
-          <p className="text-center text-gray-300 mb-12 text-lgfading ">Total activity since launch. Includes all historical data.</p>
+          <p className="text-center text-gray-300 mb-6 text-lgfading ">Total activity since launch. Includes all historical data.</p>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {creators.map((c, idx) => (

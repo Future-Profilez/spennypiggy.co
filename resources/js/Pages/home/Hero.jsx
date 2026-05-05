@@ -116,24 +116,22 @@ export default function Hero({auth}) {
           <div className="containerbox relative w-full">
             <div className="welcome px-4" >
                 <div className="welcomeLeft mx-auto w-full text-center">
-                    <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-tighter text-4xl sm:text-5xl md:text-8xl xl:text-[100px] max-w-5xl mx-auto text-center leading-[0.9] md:leading-[0.85]">
+                    <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-tight text-4xl sm:text-5xl md:text-6xl xl:text-[70px] max-w-5xl mx-auto text-center leading-[1.1] md:leading-[1]">
                       The everything 
-                      <div className='block mt-4 text-5xl md:text-9xl xl:text-[130px]'>
-                        <span className="text-gradient-wishlist drop-shadow-[0_0_40px_rgba(249,79,150,0.4)]">
+                      <div className='block mt-2 text-4xl md:text-7xl xl:text-[80px]'>
+                        <span className="text-gradient-wishlist drop-shadow-[0_0_30px_rgba(249,79,150,0.3)]">
                             wishlist
                         </span>
                       </div>
                     </h2>
-                    
-                    <div className="flex items-center justify-center mt-12 mb-8">
-                      <div className="h-[1px] w-20 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
-                      <h3 className="text-center text-xs md:text-xl uppercase text-yellow-400 font-gulfs tracking-[0.4em] px-6">
+                    <div className="flex items-center justify-center mt-6 mb-4">
+                      <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-yellow-400/50"></div>
+                      <h3 className="text-center text-sm md:text-lg uppercase text-yellow-400 font-gulfs tracking-[0.3em] px-4">
                           Built for Creators
                       </h3>
-                      <div className="h-[1px] w-20 bg-gradient-to-l from-transparent via-yellow-400/50 to-transparent"></div>
+                      <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-yellow-400/50"></div>
                     </div>
-
-                    <h3 className="text-center text-lg md:text-2xl text-gray-400 font-poppins font-light mb-14 max-w-3xl mx-auto leading-relaxed opacity-95">
+                    <h3 className="text-center text-lg md:text-2xl text-gray-400 font-poppins font-light mb-12 max-w-3xl mx-auto leading-relaxed opacity-90">
                       Get paid with secure, trackable income — with built-in 
                       <span className="text-white font-medium"> protection against disputes and chargebacks.</span>
                     </h3>

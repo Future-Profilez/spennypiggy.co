@@ -63,13 +63,15 @@ class WebAuthnCheckController extends Controller
                 })
                 ->exists();
 
-            // If we don't have a device-specific passkey, we shouldn't prompt for auto-login
-            // but we can still show the manual passkey button
-            $canAutoLogin = $hasDevicePasskey;
+            // If we have ANY passkey, we can suggest using it
+            // The frontend uses 'has_passkey' to decide whether to prompt for setup
+            // and whether to attempt passkey login.
+            $canUsePasskey = $hasPasskey;
 
             return response()->json([
-                'has_passkey' => $canAutoLogin, // Frontend expects this to mean "can I use a passkey right now on this device"
-                'has_any_passkey' => $hasPasskey, // True if they have a passkey on ANY device
+                'has_passkey' => $canUsePasskey, 
+                'has_any_passkey' => $hasPasskey,
+                'has_device_passkey' => $hasDevicePasskey,
                 'passkeys' => $passkeys,
                 'user_exists' => true,
                 'user_id' => $user->id

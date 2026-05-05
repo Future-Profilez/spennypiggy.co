@@ -661,7 +661,7 @@ select#country{width:150px;}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
 .headingMd{font-size:45px !important;line-height:47px !important;}
-.headermain{padding-top:10px;padding-bottom:10px;}
+.headermain{padding-top:7px;padding-bottom:7px;}
 .closemega{position:absolute;right:31px;top:30px;}
 .closemega svg{width:43px;top:10px;}
 .headtitle,.howitmain p br{display:none;}
@@ -781,7 +781,7 @@ select#country{width:150px;}
 .loveboxes h3.headingSm{margin-bottom:6px;}
 .editprofileModalInner,.innermodel{width:100% !important;}
 .welcomeTitle{margin:auto;}
-button.cartLink svg{width:34px;height:34px;}
+/* button.cartLink svg{width:34px;height:34px;} */
 .carticon svg{width:30px;}
 .wishlistbox{flex-wrap:wrap;justify-content:center !important;}
 .wishlistcntbox{margin-bottom:20px;}
@@ -859,7 +859,6 @@ select#country{width:100%;}
 .user-links{padding:14px;}
 .user-links p{font-size:14px;}
 .isintro span,.isintro span img{max-height:340px;}
-.discover-icon svg{width:30px;height:30px;}
 .sno p{font-size:16px;}
 }
 @media (max-width:575px){.wishlistbutton{padding:5px 25px !important;}
