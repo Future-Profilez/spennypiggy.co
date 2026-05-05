@@ -80,12 +80,16 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
                         }
                     }
                     
-                    // Android Chrome prefers platform attachment explicitly
+                    // Ensure we request a resident key (discoverable credential) for userless login
                     if (!options.authenticatorSelection) {
                         options.authenticatorSelection = {
                             authenticatorAttachment: "platform",
-                            userVerification: "required"
+                            userVerification: "required",
+                            residentKey: "required"
                         };
+                    } else {
+                        options.authenticatorSelection.residentKey = "required";
+                        options.authenticatorSelection.authenticatorAttachment = "platform";
                     }
                     
                     setPublicKeyOptions(options);

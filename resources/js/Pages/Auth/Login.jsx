@@ -626,8 +626,7 @@ export default function Login({ status, canResetPassword }) {
                                     <LoaderButton
                                         disabled={loading}
                                         className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 bg-black !text-white w-full`}
-                                        spinnerclass="fill-white"
-                                    >   
+                                        spinnerclass="fill-white" >   
                                         {loading || passkeyLoading ? "Logging In..." : "LOG IN"}
                                     </LoaderButton>
                                 </div>
