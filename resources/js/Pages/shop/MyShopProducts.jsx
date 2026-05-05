@@ -52,7 +52,7 @@ export default function MyShopProducts({lists, loading, update}) {
   return (
     <div className='shopLists pt-12' > 
          <h2 className='font-GillSans uppercase text-xl mb-3' >My Products</h2>
-         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6' >
+         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' >
 
          {loading ? <LoadingScreen /> : 
             <>
@@ -206,7 +206,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                                 </div>
                                             </Menu.Items>
                                         </Transition>
-                                    </Menu.Items>
+                                    </Menu>
                                 </div>
                             </div>
                             <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-1">
