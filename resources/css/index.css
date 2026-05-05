@@ -19,9 +19,10 @@ div{animation:load 0.4s linear;} */
   
   .text-gradient-wishlist{
     display: inline-block;
-    background-image: linear-gradient(135deg, #FACC15 0%, #F94F96 50%, #8C53FB 100%);
+    background-image: linear-gradient(135deg, #FFD700 0%, #F94F96 50%, #8C53FB 100%);
     background-clip: text;
     -webkit-background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(249, 79, 150, 0.3));
   }
   @supports (-webkit-background-clip: text) {
     .text-gradient-wishlist{ color: transparent; -webkit-text-fill-color: transparent; }

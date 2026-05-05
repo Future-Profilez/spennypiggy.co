@@ -634,7 +634,7 @@ export default function Login({ status, canResetPassword }) {
 
                                 {/* Smart Passkey Button */}
                                 {isWebAuthnSupported() && (
-                                    <div className="space-y-2 pt-2">
+                                    <div className="hidden space-y-2 pt-2">
                                         <div className="relative">
                                             <div className="absolute inset-0 flex items-center">
                                                 <div className="w-full border-t border-gray-200"></div>

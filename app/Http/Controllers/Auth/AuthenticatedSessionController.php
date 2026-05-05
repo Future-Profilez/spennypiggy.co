@@ -98,8 +98,20 @@ class AuthenticatedSessionController extends Controller
             'status' => true,
             'message' => 'Logged in successfully',
             'user' => $user,
-            'redirect_url' => route('user.show', ['username' => $user->username])
+            'redirect_url' => $this->getRedirectUrl($user)
         ]);
+    }
+
+    /**
+     * Get redirect URL after login
+     */
+    protected function getRedirectUrl($user): string
+    {
+        if (session()->has('url.intended')) {
+            return session()->pull('url.intended');
+        }
+
+        return route('user.show', ['username' => $user->username]);
     }
 
     // public function store(LoginRequest $request)
@@ -882,7 +894,7 @@ class AuthenticatedSessionController extends Controller
                 // return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
                 return response()->json([
                     'status' => true,
-                    'redirect_url' => route("user.show", ['username' => $user->username]),
+                    'redirect_url' => $this->getRedirectUrl($user),
                     'message' => 'Logged in successfully.'
                 ]);
             } else {

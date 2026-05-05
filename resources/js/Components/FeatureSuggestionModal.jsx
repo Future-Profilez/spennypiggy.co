@@ -51,7 +51,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="lg">
-            <div className="relative overflow-hidden bg-[#0d0d0d] border border-white/10 rounded-[40px] shadow-2xl">
+            <div className="relative overflow-hidden bg-[#0d0d0d] border border-white/10   shadow-2xl">
                 {/* Background Glows */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-600/10 rounded-full filter blur-[80px]"></div>
@@ -61,7 +61,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                 {/* Header Decoration */}
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#EFEA7B] via-[#F94F96] to-[#924DFF] z-10"></div>
                 
-                <form onSubmit={submit} className="p-8 md:p-10 relative z-10 max-h-[85vh] overflow-auto custom-scrollbar">
+                <form onSubmit={submit} className="p-8 md:p-10 relative z-10 max-h-[70vh] overflow-auto custom-scrollbar">
                     <div className="flex items-center justify-between mb-10">
                         <div className="flex items-center gap-6">
                             <div className="relative group">
