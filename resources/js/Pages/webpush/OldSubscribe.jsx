@@ -44,7 +44,7 @@ export default function OldSubscribe() {
             ReceivePushNotification();
             if(subscribed){
                setTimeout(() => {
-                  axios.get(`/test-push?email=${auth && auth.user && auth.user.email}&title=🎉 You're in! Let's get started.&content=Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!`).then((resp) => {
+                  axios.get(`/test-push?email=${auth && auth.user && auth.user.email}&title=🎉 You're in! Let's get started.&content=Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.`).then((resp) => {
                   }).catch((error) => {
                     console.error("error", error);
                   });

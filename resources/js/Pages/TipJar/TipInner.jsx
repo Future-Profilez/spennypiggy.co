@@ -407,6 +407,7 @@ export default function TipInner({classes, idd}) {
                     </div>
                 </div> : ''}
 
+              {amount > 0 ? <>
                 <div className="mb-3"> 
                   <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Just a small token of appreciation 💖'}
                   onChange={(e) => setData('message', e.target.value)}
@@ -434,8 +435,6 @@ export default function TipInner({classes, idd}) {
                     </div>
                   </>
                 }
-
-              {amount > 0 ? <>
               <div className='termselect mt-3 mb-3'>
                   <label htmlFor="keepanonymous">
                     <p className='text-[15px] text-gray-900 font-normal'>
@@ -453,8 +452,6 @@ export default function TipInner({classes, idd}) {
                   setData('agree', checked);
                   setData('digital_waiver', checked);
               }} />
-              </> : ''}
-
 
               {turnstileSiteKey ? (
                 <div className="flex justify-center my-3">
@@ -466,6 +463,7 @@ export default function TipInner({classes, idd}) {
                   />
                 </div>
               ) : null}
+              </> : ''}
 
               {user?.role === 1 && card_capabilities === false && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-[20px] relative mb-4"  >

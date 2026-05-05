@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { 
     HouseIcon,
@@ -57,13 +57,33 @@ export default function BottomNavigation({ activeTab = 'home' }) {
 
 const NavItem = ({ item, active }) => {
     const iconRef = useRef(null);
+    const timeoutRef = useRef(null);
     const IconComponent = item.icon;
+
+    useEffect(() => {
+        const startLoop = () => {
+            if (iconRef.current) {
+                iconRef.current.startAnimation?.();
+            }
+            // Schedule next animation with some randomness (4-7 seconds)
+            const nextDelay = 4000 + Math.random() * 3000;
+            timeoutRef.current = setTimeout(startLoop, nextDelay);
+        };
+        
+        // Initial random delay to stagger animations
+        const initialDelay = Math.random() * 3000;
+        const initialTimeout = setTimeout(startLoop, initialDelay);
+        
+        return () => {
+            clearTimeout(initialTimeout);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
     
     return (
         <Link
             href={item.href}
             onMouseEnter={() => iconRef.current?.startAnimation?.()}
-            onMouseLeave={() => iconRef.current?.stopAnimation?.()}
             className={`flex flex-col items-center justify-center px-2 sm:px-3 py-2 rounded-[30px]   transition-all duration-200 ${
                 active 
                     ? 'text-[#05EFB8] bg-[#05EFB8]/10 scale-105' 
@@ -73,6 +93,7 @@ const NavItem = ({ item, active }) => {
             <IconComponent 
                 ref={iconRef}
                 size={24}
+                duration={1.5}
                 color="currentColor"
                 className={`mb-1 transition-transform duration-200 ${
                     active ? 'text-[#05EFB8]' : 'text-gray-500'

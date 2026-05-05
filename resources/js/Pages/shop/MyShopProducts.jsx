@@ -115,8 +115,21 @@ export default function MyShopProducts({lists, loading, update}) {
                      <div className='relative'>
                         <Menu as="div" className="relative inline-block text-left">
                            <div>
-                              <Menu.Button className="inline-flex w-full justify-center rounded-[30px]  px-3 py-2 text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
-                                 <EllipsisVerticalIcon size={24} color="#000" />
+                              <Menu.Button 
+                                 className="inline-flex w-full justify-center rounded-[30px]  px-3 py-2 text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 group/menu"
+                                 onMouseEnter={(e) => {
+                                     const icon = e.currentTarget.querySelector('svg');
+                                     if (icon && icon.__animate_start) icon.__animate_start();
+                                 }}
+                              >
+                                 <EllipsisVerticalIcon 
+                                    size={24} 
+                                    color="#000" 
+                                    onMount={(ctrl) => {
+                                        const btn = document.querySelectorAll('.group\\/menu')[i];
+                                        if (btn) btn.querySelector('svg').__animate_start = ctrl.startAnimation;
+                                    }}
+                                 />
                               </Menu.Button>
                            </div>
                            <Transition

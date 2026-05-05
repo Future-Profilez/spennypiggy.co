@@ -162,7 +162,7 @@ export default function Post({item}) {
           <p className="fading description text-gray-800 font-bold">{item?.content || ''}</p>
         </div>
 
-        <div className="interactions flex items-center mt-4 pt-4 "  >
+        <div className="interactions flex items-center mt-4 "  >
           <PostLike is_liked={item.liked} likes_count={item?.likes_count || 0} updatecount={updatecount} text={likes} post_uuid={item.uuid} />
           <div className="relative cursor-pointer hover:scale-110 transition-transform ml-4" onClick={()=>setShowComments(!showComments)}>
             <div dangerouslySetInnerHTML={{ __html: comment }} />

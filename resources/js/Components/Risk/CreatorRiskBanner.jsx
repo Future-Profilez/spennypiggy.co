@@ -43,7 +43,7 @@ export default function CreatorRiskBanner() {
 
     return (
         <>
-            <div className="space-y-4 mb-8 px-2 md:px-0 animate-fade-in-up">
+            <div className="space-y-4 mb-8  animate-fade-in-up">
                 {activeBanners.map((banner, index) => (
                     <div 
                         key={index} 

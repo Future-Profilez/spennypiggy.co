@@ -39,7 +39,7 @@ class ProfilePostController extends Controller
         ]);
 
         $page = $validated['page'] ?? 1;
-        $perPage = $validated['per_page'] ?? 10;
+        $perPage = $validated['per_page'] ?? 5;
         $filter = $validated['filter'] ?? 'all';
 
         // Resolve user by username or ID

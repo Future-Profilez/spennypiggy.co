@@ -8,13 +8,23 @@ import herobanner from '../../../assets/new/HeroBg.png';
 const transparentPixel = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB2aWV3Qm94PSIwIDAgMSAxIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+';
 import proud from '../../../assets/img/proud.png';
 import TrustBox from './TrustBox';
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Popup from '@/Components/Popup';
 import { RocketIcon, HouseIcon } from "@animateicons/react/lucide";
 
 export default function Hero({auth}) {
+  const houseIconRef = useRef(null);
+  const rocketIconRef1 = useRef(null);
+  const rocketIconRef2 = useRef(null);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+        houseIconRef.current?.startAnimation?.();
+        rocketIconRef1.current?.startAnimation?.();
+        rocketIconRef2.current?.startAnimation?.();
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   const sections = ['home', 'features', 'faq'];
   const [activeSection, setActiveSection] = useState('home');
@@ -62,8 +72,13 @@ export default function Hero({auth}) {
         <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
             <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
               <li>
-                <a href="#home" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'home')}>
-                  <HouseIcon size={24} color="currentColor" />
+                <a 
+                    href="#home" 
+                    className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-pink-500' : 'text-white'}`} 
+                    onClick={(e) => handleNavItemClick(e, 'home')}
+                    onMouseEnter={() => houseIconRef.current?.startAnimation()}
+                >
+                  <HouseIcon ref={houseIconRef} size={24} color="currentColor" duration={1.5} />
                 </a>
               </li>
               <li>
@@ -113,7 +128,7 @@ export default function Hero({auth}) {
                         Built for Creators
                     </h3>
                     <h3 className="text-center text-xl md:text-2xl text-gray-300 font-medium mb-8 max-w-2xl mx-auto leading-relaxed">
-                    Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
+                    Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.
                     </h3>
                     <div className="pt-4 wishlistbtn wishlistbtnFixed mx-auto relative inline-block">
                       
@@ -123,16 +138,22 @@ export default function Hero({auth}) {
                       </div>
                       {auth?.user?.username
                         ?
-                        <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} 
-                          className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
+                        <Link 
+                          href={`/${auth && auth?.user && auth?.user?.username || ''}`} 
+                          className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" 
+                          onMouseEnter={() => rocketIconRef1.current?.startAnimation()}
+                        >
                           <span className="relative z-10">My Wishlist</span>
-                          <RocketIcon size={24} className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                          <RocketIcon ref={rocketIconRef1} size={24} duration={1.5} className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                           <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </Link>
-                        :  <Link href="/register"
-                        className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden">
+                        :  <Link 
+                          href="/register"
+                          className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden"
+                          onMouseEnter={() => rocketIconRef2.current?.startAnimation()}
+                        >
                             <span className="relative z-10">Create your page</span>
-                            <RocketIcon size={24} className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                            <RocketIcon ref={rocketIconRef2} size={24} duration={1.5} className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           </Link>
                       }

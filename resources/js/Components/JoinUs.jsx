@@ -32,7 +32,7 @@ export default function JoinUs() {
                 <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-[30px]   pt-6 sm:p-10 text-center shadow-lg">
                     <h2
                         
-                        className="headingSm font-gulfs text-light shadow-none stroke-none mb-6 text-center"
+                        className="headingSm font-gulfs !text-white !text-3xl sm:!text-[50px] shadow-none stroke-none mb-6 text-center"
                     >
                         What are you waiting for?
                     </h2>
@@ -58,10 +58,10 @@ export default function JoinUs() {
                     </div>
                 </div>
             </section>
-            <div className="bg-black w-full flex justify-end  sm:mr-16">
+            <div className="bg-black w-full hidden md:flex justify-end  sm:mr-16">
                 <img
                     src={bottomImg}
-                    className="relative bottom-[-10px] z-50 max-w-[200px]"
+                    className="relative bottom-[-10px] z-[30] max-w-[140px] sm:max-w-[200px]"
                     alt="Decorative"
                 />
             </div>

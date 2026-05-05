@@ -13,7 +13,8 @@ import {
     ShieldCheckIcon, 
     ShareIcon,
     RocketIcon, 
-    BoltIcon, 
+    BoltIcon,
+    SparklesIcon,
 } from "@animateicons/react/lucide";
 import { 
     Wand2, 
@@ -25,17 +26,20 @@ import fundbasketimg from "../../../assets/img/fundbasketimg01.png";
 import yourwishlist from "../../../assets/img/yourwishlist01.png";
 import setuppaymentimg from "../../../assets/img/setuppaymentimg01.png";
 import sharlinkimg from "../../../assets/img/sharlinkimg.png";
+import { useRef } from 'react';
 
 const StepCard = ({ step, title, description, img, icon: Icon, color, shadowColor, index }) => {
+    const iconRef = useRef(null);
     return (
         <div 
             className={`group bg-gray-900 border-2 border-${color} rounded-[30px] p-6 md:p-8 relative hover:-translate-y-3 transition-all duration-300 shadow-[8px_8px_0px_0px_${shadowColor}] h-full flex flex-col`}
             data-aos="fade-up"
             data-aos-delay={index * 100}
+            onMouseEnter={() => iconRef.current?.startAnimation()}
         >
             {/* Floating Icon */}
             <div className={`absolute -top-6 -right-6 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg transform group-hover:rotate-12 transition-transform duration-300 bg-${color} text-black`}>
-                <Icon />
+                <Icon ref={iconRef} />
             </div>
 
             {/* Step Label */}
@@ -109,7 +113,7 @@ export default function Works(props) {
             title: "Set Up Page",
             description: "Craft your unique space. Publish a reward-based Wishlist or offer tailored memberships.",
             img: yourwishlist,
-            icon: Wand2,
+            icon: SparklesIcon,
             color: "pink-500",
             shadowColor: "#EC4899"
         },

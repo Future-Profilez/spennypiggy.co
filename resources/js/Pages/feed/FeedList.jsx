@@ -36,7 +36,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
     setError(null);
     
     try {
-      const options = { page: newPage, perPage: 10, filter: newFilter };
+      const options = { page: newPage, perPage: 5, filter: newFilter };
       const result = await getProfilePosts(username, options);
       
       if (append) {
@@ -71,7 +71,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
     setHasMore(true);
     if (!useApi && newFilter === 'all' && initialPosts?.length) {
       setPosts(initialPosts);
-      setHasMore(initialPosts.length >= 10); // Assume more if we got full page
+      setHasMore(initialPosts.length >= 5); // Assume more if we got full page
     } else {
       await fetchPosts(newFilter, 1, false);
     }
@@ -145,13 +145,13 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
             <Post key={`post-${post.uuid || post.id || i}`} item={post} />
           )}
           {hasMore && (
-            <div className="text-center py-6">
+            <div className="text-center py-4">
               {isLoadingMore ? (
                 <LoadMoreSkeleton />
               ) : (
                 <button
                   onClick={handleLoadMore}
-                  className="bg-yellow-300 text-black border-[3px] border-black font-black uppercase tracking-widest px-6 py-3 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]duration-200"
+                  className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]duration-200"
                   disabled={isLoadingMore}
                 >
                   Load More Posts

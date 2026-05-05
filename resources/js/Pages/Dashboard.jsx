@@ -586,7 +586,13 @@ export default function Dashboard(props) {
                                                     <Suspense fallback={ <LoadingScreen /> } >
                                                         <div className="flex flex-wrap about-sec self-start ">
                                                             <div className="w-full lg:w-1/2 h-auto ">
-                                                                <div className="!sticky !top-[100px]">
+                                                                <div className="!sticky !top-[113px]">
+                                                                {IsloggedIn || user?.intro?.approved == 1 ? (
+                                                                    <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+
                                                                 <DashboardStripeMigrationWarning
                                                                         migrationStatus={migration_status} />
 
@@ -770,11 +776,7 @@ export default function Dashboard(props) {
                                                                                 
                                                                         </div>
                                                                     </div>
-                                                                    {IsloggedIn || user?.intro?.approved == 1 ? (
-                                                                        <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
+                                                                  
                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
                                                                         <div className="mb-6 !mt-6 relative group">
                                                                             {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#F94F97] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}

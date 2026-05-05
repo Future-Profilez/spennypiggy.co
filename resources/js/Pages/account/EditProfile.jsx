@@ -121,7 +121,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                     crossorigin="anonymous"
                     style=" position:absolute;top:190px;left:310px;max-width:100px;object-fit:cover;"
                     />  
-                    <div style="margin-top:100px;padding:0 16px;height:50px;line-height:50px;border-radius:40px;text-align:center;font-size:22px;color:white;box-shadow:0 8px 20px rgba(0,0,0,0.4);" ><div style="height:50px; position relative; top:-30px; padding-bottom:16px; display:block;">https://spennypiggy.co/${data?.username || user?.username}</div></div>
+                    <div style="margin-top:100px;padding:0 16px;height:50px;line-height:50px;border-radius:40px;text-align:center;font-size:22px;color:white;box-shadow:0 8px 20px rgba(0,0,0,0.4);" ><div style="height:50px; letter-spacing:1px; position relative; top:-30px; padding-bottom:16px; display:block;">https://spennypiggy.co/${data?.username || user?.username}</div></div>
                 </div>
                 </div>
 
@@ -272,7 +272,9 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
         // Actually, let's keep it simple and not force regeneration unless needed.
         // But the previous code forced it. I'll comment it out to make updates faster unless user clicks generate.
         setLoading(true);
-        await generateSocialImage(); 
+        // Automatic social image generation removed to prevent potential Cloudflare blocks 
+        // due to large binary payloads. Users can generate it manually in Appearance tab.
+        // await generateSocialImage(); 
         
         post(route('edit-profile'), {
             preserveScroll: true,

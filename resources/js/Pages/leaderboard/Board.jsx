@@ -1,11 +1,11 @@
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-// import userphoto from "../../../assets/siteicon.png";
 import userphoto from "../../../assets/siteicon.png";
 import Avatar from "@/includes/Avatar";
 import axios from "axios";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { crown } from "@/includes/Icons";
+import { CircleCheckIcon } from "@animateicons/react/lucide";
 import { BadgeCheckIcon } from "lucide-react";
 import LeaderboardStars from "./LeaderboardStars";
 import RecentSupporters from "./RecentSupporters";
@@ -87,12 +87,28 @@ export default function Board(props) {
     };
 
     const Position = ({ p, position }) => {
+        const iconRef = useRef(null);
+
+        useEffect(() => {
+            if (p?.role == 1 && p?.profile_status_lock === 2) {
+                const startLoop = () => {
+                    iconRef.current?.startAnimation?.();
+                    const nextDelay = 3000 + Math.random() * 2000;
+                    return setTimeout(startLoop, nextDelay);
+                };
+                const initialDelay = Math.random() * 3000;
+                const initialTimeout = setTimeout(startLoop, initialDelay);
+                return () => clearTimeout(initialTimeout);
+            }
+        }, [p?.id]);
+
         return (
             <> 
                 {p && p.username ? (
                     <Link
                         href={`/${p.username}`}
                         onClick={() => trackSearchClick(p?.id, p?.username)}
+                        onMouseEnter={() => iconRef.current?.startAnimation?.()}
                         className={` position-${position} position text-center rounded-[30px]  md:rounded-[30px]   
                               border-[#F94F97] !shadow-none shadow-pink bg-white m-0`}
                     > {p.id}
@@ -117,10 +133,15 @@ export default function Board(props) {
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className="!text-[12px] sm:!text-lg font-bold pt-2 capitalize  justify-center">
+                                <h2 className="!text-[12px] sm:!text-lg font-bold pt-2 capitalize flex items-center justify-center group/name">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
-                                        <BadgeCheckIcon  size={'1.2rem'} className="ml-1 inline-block text-pink" />
+                                        <CircleCheckIcon 
+                                            ref={iconRef}
+                                            size={'1.2rem'} 
+                                            duration={1.2}
+                                            className="ml-1 inline-block text-pink" 
+                                        />
                                         : ''}
                                 </h2>
                                 <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">

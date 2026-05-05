@@ -44,6 +44,8 @@ import {
     LockIcon,
     EyeIcon,
     HouseIcon,
+    InfoIcon,
+    TriangleAlertIcon,
 } from "@animateicons/react/lucide";
 import { 
     ClipboardList, 
@@ -130,7 +132,28 @@ export default function Header({ classMagicword }) {
 
     const NavLinkWithIcon = ({ href, icon: Icon, label, onClick, activeColor, isExternal = false, ...props }) => {
         const iconRef = useRef(null);
+        const timeoutRef = useRef(null);
         const Component = isExternal ? 'a' : Link;
+
+        useEffect(() => {
+            const startLoop = () => {
+                if (iconRef.current) {
+                    iconRef.current.startAnimation?.();
+                }
+                // Schedule next animation with some randomness (4-7 seconds) for a natural feel
+                const nextDelay = 4000 + Math.random() * 3000;
+                timeoutRef.current = setTimeout(startLoop, nextDelay);
+            };
+            
+            // Initial random delay to stagger animations
+            const initialDelay = Math.random() * 3000;
+            const initialTimeout = setTimeout(startLoop, initialDelay);
+            
+            return () => {
+                clearTimeout(initialTimeout);
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            };
+        }, []);
 
         return (
             <li>
@@ -138,7 +161,6 @@ export default function Header({ classMagicword }) {
                     onClick={onClick}
                     href={href}
                     onMouseEnter={() => iconRef.current?.startAnimation?.()}
-                    onMouseLeave={() => iconRef.current?.stopAnimation?.()}
                     className={`${getNavLinkClass(href)} rounded-xl border-[3px] border-transparent hover:border-black ${activeColor} hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                     {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     {...props}
@@ -148,6 +170,7 @@ export default function Header({ classMagicword }) {
                             ref={iconRef}
                             className="text-gray-800 group-hover:text-black transition-colors"
                             size={24}
+                            duration={1.5}
                         />
                     </span>
                     <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
@@ -162,7 +185,7 @@ export default function Header({ classMagicword }) {
         <>
             {/* <ReactDebugTest /> */}
             
-            <div className="blackbg headermain fixed top-0 left-0 w-full z-40 py-4 ">
+            <div className="blackbg headermain fixed top-0 left-0 w-full z-[100] py-4 ">
                 <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center  justify-between ">
                         <div className="md:flex hidden leftspaces items-center justify-start">
@@ -227,7 +250,7 @@ export default function Header({ classMagicword }) {
                                 href={route("discover")}
                                 className="ms-2 md:ms-3 discover-icon  "
                             >
-                                <div className="bg-[#F94F96] rounded-full p-2 md:p-1 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                <div className="bg-[#F94F96] rounded-full !p-3 md:!p-2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <SearchIcon
                                         size={28}
                                         color="#ffffff"
@@ -295,7 +318,7 @@ export default function Header({ classMagicword }) {
 
             {isActive ? (
                 <div
-                    className={`fixed top-0 z-50 h-full w-full  rounded-r-xl
+                    className={`fixed top-0 z-[1000001] h-full w-full  rounded-r-xl
                     transform transition-transform duration-600 ease-in-out
                      {isActive ? 'opacity-100' : '-opacity-100'}
                     flex flex-col p-8 bg-[#0008]
@@ -307,14 +330,14 @@ export default function Header({ classMagicword }) {
                 ""
             )}
             <div
-                className={`fixed top-0 left-0 z-50 h-full w-full md:w-[500px]  rounded-r-xl
+                className={`fixed top-0 left-0 z-[1000002] h-full w-full md:w-[500px]  rounded-r-xl
                     transform transition-transform duration-500 ease-in-out 
                     ${isActive ? "translate-x-0" : "-translate-x-full  "}
                     flex flex-col p-8 select-none ${isActive ? "Open" : null}`} >
                 <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7] max-h-screen overflow-auto w-full sm:max-w-[320px] h-full">
                     <button 
                         onClick={toggleClass}
-                        className="absolute top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-full p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
+                        className="absolute h-[45px] top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-lg p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
                         <XIcon color="#000" size={32} />
                     </button>
                     <div className="overflow-y-auto overflow-x-hidden   flex-grow">
@@ -391,7 +414,7 @@ export default function Header({ classMagicword }) {
                                     {auth && auth.user ?
                                         <NavLinkWithIcon
                                             href="/task/dashboard" activeColor="hover:bg-[#A2E4B8]"
-                                            onClick={toggleClass} icon={ClipboardList} label="Tasks"
+                                            onClick={toggleClass} icon={ClipboardIcon} label="Tasks"
                                         /> 
                                     : ''}
                                     
@@ -400,14 +423,14 @@ export default function Header({ classMagicword }) {
                                             <NavLinkWithIcon
                                                 href="/earnings"
                                                 onClick={toggleClass}
-                                                icon={Coins}
+                                                icon={HandCoinsIcon}
                                                 label="Earnings"
                                                 activeColor="hover:bg-[#ff6b6b]"
                                             />
                                             <NavLinkWithIcon
                                                 href={route('creator.disputes.index')}
                                                 onClick={toggleClass}
-                                                icon={Shield}
+                                                icon={ShieldCheckIcon}
                                                 label="Disputes Center"
                                                 activeColor="hover:bg-[#A2E4B8]"
                                             />
@@ -415,7 +438,7 @@ export default function Header({ classMagicword }) {
                                                 <NavLinkWithIcon
                                                     href={route('financial.dashboard')}
                                                     onClick={toggleClass}
-                                                    icon={Calculator}
+                                                    icon={DashboardIcon}
                                                     label="Finance & Tax"
                                                     activeColor="hover:bg-yellow-300"
                                                 />
@@ -430,7 +453,7 @@ export default function Header({ classMagicword }) {
                                             <NavLinkWithIcon
                                                 href="/admin/feature-suggestions"
                                                 onClick={toggleClass}
-                                                icon={Lightbulb}
+                                                icon={InfoIcon}
                                                 label="Feature Suggestions"
                                                 activeColor="hover:bg-[#EFEA7B]"
                                             />
@@ -442,7 +465,7 @@ export default function Header({ classMagicword }) {
                                         <NavLinkWithIcon
                                             href="/history"
                                             onClick={toggleClass}
-                                            icon={Coins}
+                                            icon={HandCoinsIcon}
                                             label="Support History"
                                             activeColor="hover:bg-[#b892ff]"
                                         />
@@ -475,14 +498,14 @@ export default function Header({ classMagicword }) {
                                 <NavLinkWithIcon
                                     href={route("leaderboard")}
                                     onClick={toggleClass}
-                                    icon={LayoutDashboard}
+                                    icon={DashboardIcon}
                                     label="Leaderboard"
                                     activeColor="hover:bg-[#ff6b6b]"
                                 />
                                 <NavLinkWithIcon
                                     href="/giftstore"
                                     onClick={toggleClass}
-                                    icon={Gift}
+                                    icon={HeartIcon}
                                     label="Gift Store"
                                     activeColor="hover:bg-[#b892ff]"
                                 />
@@ -490,7 +513,7 @@ export default function Header({ classMagicword }) {
                                     <NavLinkWithIcon
                                         href="/refer-and-earn"
                                         onClick={toggleClass}
-                                        icon={Coins}
+                                        icon={HandCoinsIcon}
                                         label="Refer & Earn"
                                         activeColor="hover:bg-[#A2E4B8]"
                                     />
@@ -507,7 +530,7 @@ export default function Header({ classMagicword }) {
                                 <NavLinkWithIcon
                                     href="#"
                                     onClick={toggleClass}
-                                    icon={HelpCircle}
+                                    icon={InfoIcon}
                                     label="Need help ?"
                                     activeColor="hover:bg-pink-400"
                                 />
@@ -517,7 +540,7 @@ export default function Header({ classMagicword }) {
                                 <NavLinkWithIcon
                                     href="https://blog.spennypiggy.co"
                                     onClick={toggleClass}
-                                    icon={FileText}
+                                    icon={DashboardIcon}
                                     label="Blog"
                                     activeColor="hover:bg-[#A2E4B8]"
                                     isExternal={true}
@@ -525,35 +548,35 @@ export default function Header({ classMagicword }) {
                                 <NavLinkWithIcon
                                     href={route("terms-and-conditions")}
                                     onClick={toggleClass}
-                                    icon={ShieldIcon}
+                                    icon={ShieldCheckIcon}
                                     label="Privacy Policy"
                                     activeColor="hover:bg-yellow-300"
                                 />
                                 <NavLinkWithIcon
                                     href={route("terms-and-conditions")}
                                     onClick={toggleClass}
-                                    icon={Cookie}
+                                    icon={InfoIcon}
                                     label="Cookies Policy"
                                     activeColor="hover:bg-pink-400"
                                 />
                                 <NavLinkWithIcon
                                     href={route("terms-and-conditions")}
                                     onClick={toggleClass}
-                                    icon={FileTextIcon}
+                                    icon={DashboardIcon}
                                     label="Acceptable Use Policy"
                                     activeColor="hover:bg-[#b892ff]"
                                 />
                                 <NavLinkWithIcon
                                     href={route("terms-and-conditions")}
                                     onClick={toggleClass}
-                                    icon={ShieldIcon}
+                                    icon={ShieldCheckIcon}
                                     label="Terms"
                                     activeColor="hover:bg-yellow-300"
                                 />
                                 <NavLinkWithIcon
                                     href={route("promotion-terms")}
                                     onClick={toggleClass}
-                                    icon={Gift}
+                                    icon={HeartIcon}
                                     label="Promotion Terms"
                                     activeColor="hover:bg-pink-400"
                                     isExternal={true}
@@ -565,7 +588,7 @@ export default function Header({ classMagicword }) {
                                         onClick={toggleClass}
                                         method="post"
                                         as="button"
-                                        icon={LogOut}
+                                        icon={LogoutIcon}
                                         label="Logout"
                                         activeColor="hover:bg-[#ff6b6b]"
                                     />

@@ -100,9 +100,12 @@ class StripeController extends Controller
 
     public function resumeMandatorySubscription(Request $request)
     {
+        /** @var User $user */
         $user = Auth::user();
         
-        // Find the latest cancelled but active subscription for this user
+        if (!$user) {
+            return back()->with('error', 'User not found.');
+        }
         $charge = MonthlyCharge::where('user_id', $user->id)
             ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
             ->latest()
@@ -117,9 +120,20 @@ class StripeController extends Controller
             $subscription = $stripe->subscriptions->update($charge->stripe_id, [
                 'cancel_at_period_end' => false,
             ]);
+
+            Log::info("StripeController: Resumed subscription", [
+                'id' => $subscription->id,
+                'cancel_at_period_end' => $subscription->cancel_at_period_end,
+                'current_period_end' => $subscription->current_period_end
+            ]);
             
             // Sync the change locally
             app(\App\Services\UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
+
+            // Force a refresh of the local models to ensure the 'upcoming_payment' and 'cancelled_at' are correct
+            $charge->refresh();
+            $user->unsetRelation('allMonthlyCharges');
+            $user->refresh();
 
             return back()->with('success', 'Auto-renewal has been re-enabled successfully!');
         } catch (\Exception $e) {
@@ -3707,14 +3721,12 @@ class StripeController extends Controller
                 if ($user->subscription_status >= 1) {
                     // Subscription is now active locally (either fully active or trialing)
                     $msg = $user->subscription_status == 2 ? 'Your trial was synchronized.' : 'Your subscription was synchronized.';
-                    return to_route('user.show', ['username' => $user->username])
-                        ->with('success', $msg);
+                    return back()->with('success', $msg);
                 }
                 
                 // Fallback check if subscription_status didn't catch it but stripeSub is active/trialing
                 if (in_array($stripeSub->status, ['active', 'trialing'])) {
-                     return to_route('user.show', ['username' => $user->username])
-                        ->with('success', 'Your subscription is active on Stripe and has been synchronized.');
+                     return back()->with('success', 'Your subscription is active on Stripe and has been synchronized.');
                 }
 
                 if ($stripeSub->cancel_at_period_end) {
@@ -3728,20 +3740,17 @@ class StripeController extends Controller
                         // Sync the change locally
                         $this->userProfileService->syncMandatorySubscriptionStatus($resumedSub, 'manual_sync', $invoice, $user);
 
-                        return to_route('user.show', ['username' => $user->username])
-                            ->with('success', 'Your auto-renewal has been re-enabled successfully!');
+                        return back()->with('success', 'Your auto-renewal has been re-enabled successfully!');
                     } catch (\Exception $e) {
                         Log::warning("StripeController: Auto-resume failed in checkout flow: " . $e->getMessage());
                         $endDate = \Carbon\Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
-                        return to_route('user.show', ['username' => $user->username])
-                            ->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
+                        return back()->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
                     }
                 }
 
                 if ($user->subscription_status >= 1) {
                     // Fully active subscription — no action needed
-                    return to_route('user.show', ['username' => $user->username])
-                        ->with('success', 'You already have an active subscription.');
+                    return back()->with('success', 'You already have an active subscription.');
                 }
 
                 // If we found a subscription on Stripe but local status is not active, 
@@ -3749,8 +3758,7 @@ class StripeController extends Controller
                 // Since syncUserSubscription was just called and it's robust, 
                 // we should check again if it fixed the user status.
                 if ($user->is_subscribed) {
-                    return to_route('user.show', ['username' => $user->username])
-                        ->with('success', 'Your subscription was found and has been synchronized.');
+                    return back()->with('success', 'Your subscription was found and has been synchronized.');
                 }
 
                 // If it's still not active (e.g. past_due or unpaid), we should not allow a new checkout.

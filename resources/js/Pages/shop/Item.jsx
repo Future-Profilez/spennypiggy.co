@@ -1,6 +1,6 @@
 import Guest from "@/Layouts/GuestLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PriceFormat from "../../includes/PriceFormat";
 import BuyShopItem from "./BuyShopItem";
 import { 
@@ -14,6 +14,18 @@ import axios from "axios";
 import AllContries from "../../includes/AllCountries";
 
 export default function ShopDetailItem(props) {
+    const twitterRef = useRef(null);
+    const instaRef = useRef(null);
+    const fbRef = useRef(null);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            twitterRef.current?.startAnimation?.();
+            setTimeout(() => instaRef.current?.startAnimation?.(), 500);
+            setTimeout(() => fbRef.current?.startAnimation?.(), 1000);
+        }, 8000);
+        return () => clearInterval(interval);
+    }, []);
     const { vat_percent, auth, user, shop, card_capabilities } = props;
     const [IsloggedIn, setIsLoggedIn] = useState(
         (auth && auth.user && auth.user.username) ==
@@ -274,30 +286,45 @@ export default function ShopDetailItem(props) {
                                             <a
                                                 href={`https://twitter.com/intent/tweet?url=${url}`}
                                                 target="_blank"
-                                                className=" break-words text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                                className=" break-words text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/twitter"
                                                 aria-label="Twitter"
+                                                onMouseEnter={() => twitterRef.current?.startAnimation()}
                                             >
-                                                <TwitterIcon size={28} />
+                                                <TwitterIcon 
+                                                    ref={twitterRef}
+                                                    size={28} 
+                                                    duration={1.5}
+                                                />
                                             </a>
                                         </li>
 
                                         <li>
                                             <div
                                                 onClick={instashare}
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/insta"
                                                 aria-label="Instagram"
+                                                onMouseEnter={() => instaRef.current?.startAnimation()}
                                             >
-                                                <InstagramIcon size={28} />
+                                                <InstagramIcon 
+                                                    ref={instaRef}
+                                                    size={28} 
+                                                    duration={1.5}
+                                                />
                                             </div>
                                         </li>
 
                                         <li>
                                             <div
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/fb"
                                                 aria-label="Facebook"
                                                 onClick={fbShare}
+                                                onMouseEnter={() => fbRef.current?.startAnimation()}
                                             >
-                                                <FacebookIcon size={28} />
+                                                <FacebookIcon 
+                                                    ref={fbRef}
+                                                    size={28} 
+                                                    duration={1.5}
+                                                />
                                             </div>
                                         </li>
 

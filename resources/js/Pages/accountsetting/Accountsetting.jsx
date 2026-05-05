@@ -278,7 +278,11 @@ export default function Accountsetting(props) {
                 </div>
                 <div className="flex items-center gap-3">
                     {value && (
-                        <span className=" mt-4 md:mt-0 text-sm font-semibold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg border border-pink-500">
+                        <span className={`mt-4 md:mt-0 text-sm font-semibold px-3 py-1 rounded-lg border ${
+                            value.toLowerCase() === 'active' || value.toLowerCase() === 'connected' || value.toLowerCase() === 'enabled' || value.toLowerCase() === 'linked'
+                                ? 'text-green-600 bg-green-50 border-green-500' 
+                                : 'text-gray-600 bg-gray-50 border-pink-500'
+                        }`}>
                             {value}
                         </span>
                     )}
@@ -389,7 +393,7 @@ export default function Accountsetting(props) {
                             {subscription_history &&
                                 subscription_history.length > 0 && (
                                     <Popup
-                                        space="4"
+                                        space="4" size='md'
                                         classes="w-full"
                                         modalclass="pinkmodal"
                                         text={
