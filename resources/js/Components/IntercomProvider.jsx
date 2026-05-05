@@ -5,7 +5,7 @@ import { usePage } from '@inertiajs/react';
  * IntercomProvider
  * 
  * A robust Intercom integration that handles authentication,
- * identity verification, and prevents the "blank screen" issue.
+ * identity verification, and prevents session leakage.
  */
 export default function IntercomProvider() {
     const { props } = usePage();
@@ -18,25 +18,15 @@ export default function IntercomProvider() {
     const initializedRef = useRef(false);
 
     useEffect(() => {
-        // If user changed, shutdown first to prevent session leakage or blank screens
-        if (initializedRef.current && window.Intercom.lastUserId !== loggedInUserId) {
-            console.log('Intercom: User changed or logged out, forcing shutdown');
-            window.Intercom('shutdown');
-            initializedRef.current = false;
-            window.Intercom.lastUserId = null;
-        }
-
         if (!isEnabled || !appId) {
+            if (typeof window.Intercom === 'function') {
+                window.Intercom('shutdown');
+                initializedRef.current = false;
+            }
             return;
         }
 
-        if (!loggedInUserId) {
-            // For guest users, we can boot as anonymous if needed, 
-            // but for now we ensure it's shutdown if it was logged in
-            return;
-        }
-
-        // 1. Initialize Intercom function if it doesn't exist
+        // 1. Initialize Intercom stub if it doesn't exist
         if (typeof window.Intercom !== 'function') {
             var i = function() { i.c(arguments); };
             i.q = [];
@@ -56,27 +46,35 @@ export default function IntercomProvider() {
             x.parentNode.insertBefore(s, x);
         };
 
-        // 3. Boot or Update
-        const settings = {
-            ...bootData,
-            app_id: appId
-        };
-
-        if (initializedRef.current && window.Intercom.lastUserId !== loggedInUserId) {
-            window.Intercom('shutdown');
+        // 3. User changed or logged out? Shutdown first.
+        if (initializedRef.current && (window.Intercom.lastUserId !== loggedInUserId)) {
+            if (typeof window.Intercom === 'function') {
+                window.Intercom('shutdown');
+            }
             initializedRef.current = false;
+            window.Intercom.lastUserId = null;
         }
 
+        // 4. Boot Intercom
         if (!initializedRef.current) {
-            window.Intercom('boot', settings);
-            window.Intercom.lastUserId = loggedInUserId;
-            initializedRef.current = true;
-            loadScript();
-        } else {
-            window.Intercom('update', settings);
+            const settings = loggedInUserId 
+                ? { ...bootData, app_id: appId } 
+                : { app_id: appId, custom_launcher_selector: ".livechat" };
+            
+            if (typeof window.Intercom === 'function') {
+                window.Intercom('boot', settings);
+                window.Intercom.lastUserId = loggedInUserId;
+                initializedRef.current = true;
+                loadScript();
+            }
+        } else if (loggedInUserId) {
+            // Update existing session
+            if (typeof window.Intercom === 'function') {
+                window.Intercom('update', bootData);
+            }
         }
 
-    }, [appId, isEnabled, JSON.stringify(bootData)]);
+    }, [appId, isEnabled, loggedInUserId, JSON.stringify(bootData)]);
 
     return null;
 }
