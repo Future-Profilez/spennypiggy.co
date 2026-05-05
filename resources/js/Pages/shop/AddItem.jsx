@@ -702,7 +702,7 @@ export default function AddItem(props) {
                                     </div>
 
                                     <h2 className="font-bold pt-4 border-t border-gray-200 mb-2">
-                                        Shipping Information
+                                        Shipping Information*
                                     </h2>
                                     <input
                                         type="text"
