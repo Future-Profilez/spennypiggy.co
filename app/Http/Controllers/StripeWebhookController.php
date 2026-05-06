@@ -2696,7 +2696,7 @@ class StripeWebhookController extends Controller
 
                 if ($supporter) {
                     Helpers::sendNotification("Task Refunded 💸", "The task '{$task->title}' has been refunded.", $supporter->email);
-                    Mail::to($supporter->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => "The task was refunded."]));
+                    Mail::to($supporter->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->total_paid, 'currency' => $task->currency, 'message' => "The task was refunded."]));
                 }
 
                 if ($creator) {
