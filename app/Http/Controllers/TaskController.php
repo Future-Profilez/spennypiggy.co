@@ -882,9 +882,13 @@ class TaskController extends Controller
             if ($supporter) {
                 Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
 
+                // Get currency symbol for supporter notification
+                $currencySymbol = \App\Models\Currency::where('ISO', $purchase->currency)->value('symbol') ?? '$';
+                $formattedAmount = $currencySymbol . number_format($purchase->total_paid, 2);
+
                 \App\Helpers::sendNotification(
                     "Task Purchased! 🎉",
-                    "You've successfully purchased the task: " . $task->title . ". The creator has been notified.",
+                    "You've successfully purchased the task: " . $task->title . " for " . $formattedAmount . ". The creator has been notified.",
                     $supporter->email
                 );
             }
