@@ -3,7 +3,7 @@ import { Head, Link } from "@inertiajs/react";
 import userphoto from "../../../assets/siteicon.png";
 import Avatar from "@/includes/Avatar";
 import axios from "axios";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { crown } from "@/includes/Icons";
 import { CircleCheckIcon } from "@animateicons/react/lucide";
 import { BadgeCheckIcon } from "lucide-react";

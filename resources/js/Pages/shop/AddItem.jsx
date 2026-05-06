@@ -44,7 +44,7 @@ const updatedVarients = (data) => {
 
 export default function AddItem(props) {
     const { auth, user } = usePage().props;
-    const defaultCurrency = (user && user.default_currency) || "USD";
+    const defaultCurrency = (user?.default_currency) || (auth?.user?.default_currency) || "GBP";
 
     const {
         item,
@@ -954,12 +954,11 @@ export default function AddItem(props) {
                                     </button>
                                 </div>
                             </div>
-                            <details className="border-t pt-3 mt-4">
-                                <summary className="text-lg font-bold cursor-pointer">
-                                    Advanced Settings
-                                </summary>
 
-                                <div className="ad-setting my-2">
+                            <div className="space-y-6 pt-6">
+
+                                <p className='text-lg font-bold'>Advanced Settings</p>
+                                <div className="sad-setting my pt-4-2">
                                     <div className="inline-flex items-center cursor-pointer">
                                         <div
                                             onClick={handleHaveQuestion}
@@ -1037,7 +1036,7 @@ export default function AddItem(props) {
 
                                 {shopItem && shopItem.type !== "physical" ? (
                                     <>
-                                        <div className="ad-setting my-2">
+                                        <div className="hidden ad-setting my-2">
                                             <div className="inline-flex items-center cursor-pointer">
                                                 <label
                                                     className="relative flex items-center p-3 rounded-full cursor-pointer"
@@ -1148,7 +1147,8 @@ export default function AddItem(props) {
                                         </span>
                                     </div>
                                 </div>
-                            </details>
+                            </div>
+                            
 
                             <div className="isCheckedRefernce py-4">
                                 <label htmlFor="agreeterm" className="text-left">
@@ -1186,7 +1186,7 @@ export default function AddItem(props) {
                                 <button
                                     disabled={!isChecked}
                                     onClick={updateItem}
-                                    className="mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table"
+                                    className={`  mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table ${!isChecked ? "!opacity-[0.4] cursor-not-allowed" : ""}` }
                                 >
                                     {loading ? "Updating..." : "Update"}
                                 </button>
@@ -1194,7 +1194,7 @@ export default function AddItem(props) {
                                 <button
                                     disabled={!isChecked}
                                     onClick={addShopItem}
-                                    className="mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table"
+                                    className={`  mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table ${!isChecked ? "!opacity-[0.4] cursor-not-allowed" : ""}` }
                                 >
                                     {loading ? "Publishing..." : "Publish"}
                                 </button>

@@ -144,6 +144,25 @@
     <meta name="googlebot" content="index,follow" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
+    @inject('preloadService', 'App\Services\ResourcePreloadService')
+    @php
+        $pageComponent = $page['component'] ?? 'home';
+        $template = str_contains(strtolower($pageComponent), 'welcome') ? 'home' : 
+                   (str_contains(strtolower($pageComponent), 'dashboard') ? 'dashboard' : 
+                   (str_contains(strtolower($pageComponent), 'profile') ? 'profile' : 'default'));
+        
+        $preloadService->preloadCriticalResources($template);
+        
+        $criticalCssPath = storage_path("app/critical-css/{$template}.css");
+        $criticalCss = file_exists($criticalCssPath) ? file_get_contents($criticalCssPath) : null;
+    @endphp
+    
+    @if($criticalCss)
+        <style id="critical-css">{!! $criticalCss !!}</style>
+    @endif
+    
+    {!! $preloadService->renderPreloadTags() !!}
+
     {{-- Critical performance hints --}}
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//widget.trustpilot.com">

@@ -195,7 +195,7 @@ export default function AddBills(props) {
                                         />
                                     </div>
                                     {data.price > 0 && (
-                                        <div className="mt-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px] border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-sm text-gray-600">Fans pay:</span>
                                                 <span className="font-bold text-gray-900">

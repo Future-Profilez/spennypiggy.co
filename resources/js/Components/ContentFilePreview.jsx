@@ -95,7 +95,7 @@ export default function ContentFilePreview({
 
     return (
         <div className={`content-file-preview bg-white border border-gray-200 rounded-[15px]  lg:rounded-[20px]  p-3 shadow-sm ${className}`}>
-            <div className="flex items-start space-x-4">
+            <div className="md:flex items-start space-y-3 md:space-y-0 md:space-x-4">
                 {/* File preview based on type */}
                 <div className="flex-shrink-0">
                     {isImageFile ? (
@@ -213,7 +213,7 @@ export default function ContentFilePreview({
                             rel="noopener noreferrer"
                             href={`${fileUrl}/-/format/auto/-/quality/best/`}
                             download
-                            className="text-center inline-flex items-center px-3 py-1.5 border border-pink-300 text-sm font-medium rounded-[30px]  lg:rounded-[30px]  text-pink-700 bg-pink-50 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                            className="!text-center  items-center px-3 py-1.5 border border-pink-300 text-sm font-medium rounded-[30px]  lg:rounded-[30px]  text-pink-700 bg-pink-50 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
                         >
                             View
                         </a>

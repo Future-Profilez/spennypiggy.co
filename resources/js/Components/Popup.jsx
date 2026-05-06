@@ -52,7 +52,7 @@ export default function Popup(props) {
                 leave="ease-in duration-200"
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95" >
-                <Dialog.Panel className={`w-full ${fullscreen ? 'w-full h-full max-w-none' : maxWidthClass} transform overflow-hidden rounded-[50px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-left align-middle transition-all ${modalclass}  mymodal`}>
+                <Dialog.Panel className={`w-full ${fullscreen ? 'w-full h-full max-w-none' : maxWidthClass} transform overflow-hidden rounded-[35px] md:rounded-[40px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-left align-middle transition-all ${modalclass}  mymodal`}>
                   <div className={`p-0 ${bodyclass} `} >
                     {!hidecontrols ?
                     <div className='px-[30px] py-[20px] bg-pink-400 flex  !border-l-0 !border-r-0 !border-t-0 border-b-[3px] border-black items-center '>
@@ -65,7 +65,7 @@ export default function Popup(props) {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> 
                     </button>
                     <div className={`p-${space || 0} ${fullscreen ? '' : 'max-h-[65vh] overflow-y-auto customScrollbar'}`}>
-                       <div className="p-2 w-full"> {children}</div>
+                       <div className="md:p-2 w-full"> {children}</div>
                     </div> 
                   </div>
                 </Dialog.Panel>

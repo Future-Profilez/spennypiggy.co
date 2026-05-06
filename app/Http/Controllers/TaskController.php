@@ -121,8 +121,9 @@ class TaskController extends Controller
             'sla_hours' => 'required_if:type,timed|integer|min:1|max:168',
         ]);
 
-        if (Helpers::checkBlockData($request)) {
-            return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
+            return back()->withErrors(['title' => "The word or emoji '{$blockedWord}' is not allowed as per our policies. Please check the title, description and deliverable content."]);
         }
 
         $task = new Task();
@@ -218,8 +219,9 @@ class TaskController extends Controller
             'sla_hours' => 'required_if:type,timed|integer|min:1|max:168',
         ]);
 
-        if (Helpers::checkBlockData($request)) {
-            return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
+            return back()->withErrors(['title' => "The word or emoji '{$blockedWord}' is not allowed as per our policies. Please check the title, description and deliverable content."]);
         }
 
         $task->title = $request->title;

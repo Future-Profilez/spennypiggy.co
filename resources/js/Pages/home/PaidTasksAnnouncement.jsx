@@ -1,7 +1,10 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import { FaBolt, FaMagic, FaShieldAlt, FaRocket } from 'react-icons/fa';
 
 export default function PaidTasksAnnouncement() {
+    const { auth } = usePage().props;
+    const isCreator = auth && auth.user && auth.user.role === 1;
+
     return (
         <>
             <div className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative">
@@ -99,18 +102,20 @@ If a task isn’t delivered on time, refunds are handled according to your terms
                     <p className="text-center  pt-6 md:pt-12 text-white">Clear rules reduce disputes — no awkward reminders, no unpaid “promises”.</p>
 
                     {/* CTA Section */}
-                    <div className="mt-8 md:mt-12 lg:mt-20 text-center relative">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-32 bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-500 rounded-full blur-3xl opacity-20"></div>
-                        <Link  href="/task/dashboard" 
-                            className="relative inline-flex items-center gap-4 bg-white text-black font-black text-base md:text-xl py-3 px-12 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
-                            <span className="relative z-10">Turn Requests Into Income</span>
-                            <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </Link>
-                        <div className="mt-6 flex justify-center items-center gap-2 text-white/50 text-sm font-bold uppercase tracking-widest">
-                            ❤️ Built for creators who are tired of unpaid requests
+                    {isCreator && (
+                        <div className="mt-8 md:mt-12 lg:mt-20 text-center relative">
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-32 bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-500 rounded-full blur-3xl opacity-20"></div>
+                            <Link  href="/task/dashboard" 
+                                className="relative inline-flex items-center gap-4 bg-white text-black font-black text-base md:text-xl py-3 px-12 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
+                                <span className="relative z-10">Turn Requests Into Income</span>
+                                <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </Link>
+                            <div className="mt-6 flex justify-center items-center gap-2 text-white/50 text-sm font-bold uppercase tracking-widest">
+                                ❤️ Built for creators who are tired of unpaid requests
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </>

@@ -5,7 +5,7 @@
         "dev": "vite",
         "livebuild": "php vendor/bin/vapor deploy production --message='implementing stripe identity verification' --commit='619ad66b'",
         "devbuild": "php vendor/bin/vapor deploy development --message='implementing stripe identity verification' --commit='619ad66b'",
-        "build": "vite build && vite build",
+        "build": "vite build",
         "ssr:dev": "vite build --ssr resources/js/ssr-marketing.jsx --outDir bootstrap/ssr --watch & node bootstrap/ssr/ssr.js",
         "ssr:build": "vite build --ssr resources/js/ssr-marketing.jsx --outDir bootstrap/ssr",
         "build:fast": "vite build --mode=production --minify --no-sourcemap",

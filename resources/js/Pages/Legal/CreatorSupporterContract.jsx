@@ -13,13 +13,12 @@ export default function CreatorSupporterContract(props) {
                         Creator Supporter Contract
                     </h1>
                     <div className="prose prose-pink max-w-none">
-                        <h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">SPENNY PIGGY</h2>
-<h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">STANDARD CONTRACT BETWEEN</h2>
-<h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">SUPPORTERS AND CREATORS & PLATFORM ROLE</h2>
-<p className="mb-4 text-gray-700 leading-relaxed italic">Issue Date: 23 April 2026</p>
-<p className="mb-4 text-gray-700 leading-relaxed">Social Vortex Limited (England & Wales)  ·  Company No. 15233693</p>
-<p className="mb-4 text-gray-700 leading-relaxed">Registered Office: 55 Colmore Row, Birmingham, B3 2AA, United Kingdom  ·  VAT: GB452012540</p>
-<p className="mb-4 text-gray-700 leading-relaxed">US Entity: Social Vortex, Inc (Delaware, USA)</p>
+                        <h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">STANDARD CONTRACT BETWEEN</h2>
+                        <h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">SUPPORTERS AND CREATORS & PLATFORM ROLE</h2>
+                        <p className="mb-4 text-gray-700 leading-relaxed italic">Issue Date: 23 April 2026</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Social Vortex Limited (England & Wales)  ·  Company No. 15233693</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Registered Office: 55 Colmore Row, Birmingham, B3 2AA, United Kingdom  ·  VAT: GB452012540</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">US Entity: Social Vortex, Inc (Delaware, USA)</p>
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">1.  Introduction</h2>
                         <p className="mb-4 text-gray-700 leading-relaxed">1.1  This Standard Contract Between Supporters and Creators (the “Agreement”) governs each transaction entered into between a Supporter and a Creator on Spenny Piggy. This Agreement also sets out the limited role of Spenny Piggy in facilitating those transactions.</p>
                         <p className="mb-4 text-gray-700 leading-relaxed">1.2  This Agreement forms part of the Platform Legal Framework and must be read alongside the Spenny Piggy Terms of Service, the Payments, Payouts & Reserves Policy, the Creator Agreement, and the Supporter Terms.</p>
