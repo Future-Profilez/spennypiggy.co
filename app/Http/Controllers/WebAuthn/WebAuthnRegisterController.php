@@ -6,14 +6,22 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;  // Add this line!
 use Laragear\WebAuthn\Http\Requests\AttestationRequest;
 use Laragear\WebAuthn\Http\Requests\AttestedRequest;
+use Illuminate\Support\Facades\Log;
 
 class WebAuthnRegisterController
 {
     public function options(AttestationRequest $request)
     {
-        return $request
+        $options = $request
             ->secureRegistration()
             ->toCreate();
+            
+        Log::info('WebAuthn registration options generated', [
+            'options' => $options,
+            'user_id' => $request->user()?->id
+        ]);
+        
+        return $options;
     }
 
     public function register(AttestedRequest $request): JsonResponse
@@ -87,7 +95,7 @@ class WebAuthnRegisterController
                 'error' => 'Unknown error occurred'
             ], 400);
         } catch (\Exception $e) {
-            \Log::error('WebAuthn registration error', [
+            Log::error('WebAuthn registration error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

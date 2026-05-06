@@ -35,14 +35,14 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             </div>
                         </div>
 
-                        <h2 className="fading m-auto text-4xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 leading-tight uppercase tracking-tight">
-                            Join the <span className="text-gradient-founder drop-shadow-[0_0_20px_rgba(250,204,21,0.4)]">Founder</span> Program!
+                        <h2 className="fading m-auto text-5xl md:text-7xl lg:text-[70px] font-gulfs text-white mb-10 leading-[0.9] uppercase tracking-wide">
+                            Join the <span className="text-gradient-founder drop-shadow-[0_0_30px_rgba(250,204,21,0.5)]">Founder</span> Program!
                         </h2>
 
-                        <p className="fading m-auto pt-4 text-lg md:text-2xl text-gray-400 mb-12 max-w-3xl leading-relaxed font-poppins">
+                        <p className="fading m-auto pt-6 text-xl md:text-2xl text-gray-400 mb-20 max-w-2xl leading-relaxed font-poppins font-light">
                             Earn <span className="text-yellow-400 font-semibold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days and automatically qualify for a <span className="text-pink-500 font-semibold">{config.bonusPercentage}% monthly bonus</span>.
                             <br/>
-                            <span className="text-sm md:text-base opacity-60 mt-4 block">
+                            <span className="text-sm md:text-lg opacity-80 mt-6 block text-gray-500 uppercase tracking-widest">
                                 Join our exclusive founder community. Limited to the first <span className="text-green-400 font-semibold">{config.maxFounderSeats}</span> creators!
                             </span>
                         </p>

@@ -89,13 +89,13 @@ export default function ReferAndEarn({
         <Authenticated auth={auth?.user} user={auth?.user}>
             <Head title="Refer & Earn" />
 
-            <div className="blackbg pt-6 pb-10">
+            <div className="bg-[#A2E4B8] pt-6 pb-10">
                 <div className="containerbox">
                     {/* ================= HEADER ================= */}
                     {/* ================= HEADER + REFERRAL LINK (MERGED) ================= */}
-                    <div className="mb-6 border-[3px] border-black shadow-pink rounded-[30px]  overflow-hidden">
+                    <div className="mb-6 border-[3px] border-black shadow-[6px_6px_0_0_#000] rounded-[30px]  overflow-hidden">
                         {/* Mac style bar */}
-                        <div className="p-4 pinkbg flex items-center border-b-[3px] border-black">
+                        <div className="p-4 pinkbg flex items-center border-b-[3px] border-black !border-t-[0px] !border-r-[0px] !border-l-[0px] border-black">
                             <span className="border-black border-2 bg-red-700 mr-2 w-5 h-5 rounded-full block"></span>
                             <span className="border-black border-2 bg-yellow-400 mr-2 w-5 h-5 rounded-full block"></span>
                             <span className="border-black border-2 bg-mint mr-2 w-5 h-5 rounded-full block"></span>
@@ -122,7 +122,7 @@ export default function ReferAndEarn({
                             </p>
 
                             {/* Referral Link Box */}
-                            <div className="border-2 border-black rounded-[30px]   p-4 md:p-5">
+                            <div className="py-2">
                                 <h2 className="text-lg font-GillSans uppercase mb-3">
                                     Your Referral Link
                                 </h2>
@@ -212,7 +212,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= HOW IT WORKS ================= */}
-                    <div className="pink-round p-6 mb-6">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-6 mb-6">
                         <h2 className="text-xl font-GillSans uppercase mb-4">
                             How You Earn £50
                         </h2>
@@ -248,7 +248,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= REDEEM ================= */}
-                    <div className="pink-round p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-GillSans uppercase mb-1">
                                 Redeem Referral Earnings
@@ -310,7 +310,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= REFERRAL TABLE ================= */}
-                    <div className="pink-round p-6">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-6">
                         <h2 className="text-xl font-GillSans uppercase mb-4">
                             Referred Creators
                         </h2>
@@ -411,7 +411,7 @@ export default function ReferAndEarn({
 /* ================= HELPERS ================= */
 
 const Stat = ({ label, value }) => (
-    <div className="pink-round p-5 text-center">
+    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-5 text-center">
         <div className="text-3xl font-bold">{value}</div>
         <div className="text-xs uppercase mt-1">{label}</div>
     </div>

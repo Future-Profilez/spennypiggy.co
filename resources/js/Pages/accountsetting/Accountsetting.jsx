@@ -141,6 +141,16 @@ export default function Accountsetting(props) {
         return Uint8Array.from(binary, (c) => c.charCodeAt(0));
     }
 
+    // Helper function to encode ArrayBuffer to base64url
+    function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    }
+
     const registerFingerprint = async () => {
         try {
             const { data } = await axios.post(
@@ -168,13 +178,36 @@ export default function Accountsetting(props) {
                 );
             }
 
+            // Ensure we request a resident key (discoverable credential) for userless login
+            if (!publicKey.authenticatorSelection) {
+                publicKey.authenticatorSelection = {
+                    authenticatorAttachment: "platform",
+                    userVerification: "required",
+                    residentKey: "required"
+                };
+            } else {
+                publicKey.authenticatorSelection.residentKey = "required";
+                publicKey.authenticatorSelection.authenticatorAttachment = "platform";
+            }
+
             const credential = await navigator.credentials.create({
                 publicKey,
             });
 
+            // Format the credential for the server (convert ArrayBuffers to base64url)
+            const formattedCredential = {
+                id: credential.id,
+                rawId: arrayBufferToBase64(credential.rawId),
+                type: credential.type,
+                response: {
+                    clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
+                    attestationObject: arrayBufferToBase64(credential.response.attestationObject),
+                },
+            };
+
             const response = await axios.post(
                 route("webauthn.register"),
-                credential,
+                formattedCredential,
             );
 
             if (response.data.success) {

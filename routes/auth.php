@@ -414,7 +414,7 @@ Route::middleware('auth')->group(function () {
                 try {
                     $user = Auth::user();
                     if (!$user) {
-                        return redirect()->route('login');
+                        return redirect()->route('login', ['message' => 'Please login to continue.']);
                     }
 
                     // ... existing logic ...

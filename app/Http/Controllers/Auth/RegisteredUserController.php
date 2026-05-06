@@ -269,7 +269,7 @@ class RegisteredUserController extends Controller
 
         /* =========================REDIRECT========================== */
         if ($user->email_verified_at) {
-            return redirect(route('user.show', $user->username))->with('success', 'Registration successful.');
+            return redirect()->intended(route('user.show', $user->username))->with('success', 'Registration successful.');
         }
 
         return redirect(route('verification.notice'));

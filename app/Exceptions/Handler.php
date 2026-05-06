@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\AuthenticationException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -59,7 +60,7 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $e){
         // Ensure ErrorPage renders even if APP_DEBUG is true for specific cases or all production-like errors
         
-        if ($e instanceof ValidationException) {
+        if ($e instanceof ValidationException || $e instanceof AuthenticationException) {
             return parent::render($request, $e);
         }
 
