@@ -10,11 +10,9 @@ export default function ReturnPolicy(props) {
             <LegalLayout activePage="ReturnPolicy">
                 <div className="mx-auto p-8 md:p-12">
                     <h1 className="text-3xl md:text-4xl font-black text-pink-600 mb-8 uppercase tracking-tighter">
-                        Return Policy
+                        RETURN, REFUND AND CANCELLATION POLICY
                     </h1>
                     <div className="prose prose-pink max-w-none">
-                        <h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">SPENNY PIGGY</h2>
-<h2 className="text-xl md:text-2xl font-black text-gray-900 mt-8 mb-4">RETURN, REFUND AND CANCELLATION POLICY</h2>
 <p className="mb-4 text-gray-700 leading-relaxed italic">Last Updated: 23 April 2026</p>
 <p className="mb-4 text-gray-700 leading-relaxed">Social Vortex Limited (England & Wales)  ·  Company No. 15233693</p>
 <p className="mb-4 text-gray-700 leading-relaxed">Registered Office: 55 Colmore Row, Birmingham, B3 2AA, United Kingdom  ·  VAT: GB452012540</p>

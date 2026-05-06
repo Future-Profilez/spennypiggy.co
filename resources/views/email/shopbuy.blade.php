@@ -25,6 +25,30 @@
                          {{ $anon == false ? $data->name : "Anonymous User" }} just claimed {{ $data->shop->name }} on Spenny Piggy for {{ $amountUserPay }} 🎁🥳 .
                      </td>
                  </tr>
+                 
+                 @if($data->shop->type === 'physical')
+                 <tr>
+                     <td style="padding: 15px 0;">
+                         <div style="padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: center;">
+                             <p style="font-family: Arial; font-size: 14px; color: #666; margin: 0; line-height: 1.4;">
+                                 📦 <strong>New Order to Fulfill!</strong><br><br>
+                                 Please make sure to process and ship this physical order. Once shipped, update the status in your dashboard so the gifter receives their tracking details.
+                             </p>
+                         </div>
+                     </td>
+                 </tr>
+                 @else
+                 <tr>
+                     <td style="padding: 15px 0;">
+                         <div style="padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: center;">
+                             <p style="font-family: Arial; font-size: 14px; color: #666; margin: 0; line-height: 1.4;">
+                                 📥 <strong>Digital Item Delivered!</strong><br><br>
+                                 The gifter has been sent an email containing the secure link to access the digital content for this item.
+                             </p>
+                         </div>
+                     </td>
+                 </tr>
+                 @endif
                  <tr>
                      <td style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
                          Go to <a href="{{ env('APP_URL') . '/history' }}">Spenny Piggy</a> where you can see your granted items, send a message to

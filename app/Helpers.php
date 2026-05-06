@@ -44,28 +44,32 @@ class Helpers
             return is_scalar($value) || (is_object($value) && method_exists($value, '__toString'));
         });
 
-        // Combine all the valid inputs into one string
-        $inputText = implode(' ', $stringValues);
-        
-        // Obfuscation check: normalize text (lowercase, remove spaces and special chars for a secondary check)
-        $normalizedText = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $inputText));
-
-        foreach ($blockedWords as $word) {
-            // 1. Direct match with word boundaries
-            if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
-                return true;
-            }
+        foreach ($stringValues as $value) {
+            $value = (string) $value;
             
-            // 2. Obfuscation match (e.g. "s e x" or "s.e.x" becomes "sex")
-            $normalizedWord = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $word));
-            if (strlen($normalizedWord) > 2 && str_contains($normalizedText, $normalizedWord)) {
-                return true;
+            foreach ($blockedWords as $word) {
+                // 1. Direct match with word boundaries
+                if (preg_match("/\b" . preg_quote($word, '/') . "\b/i", $value)) {
+                    return $word;
+                }
+                
+                // 2. Obfuscation match (e.g. "s e x" or "s.e.x" becomes "sex")
+                $regexChars = [];
+                $chars = mb_str_split($word);
+                foreach ($chars as $char) {
+                    $regexChars[] = preg_quote($char, '/');
+                }
+                $obfuscatedPattern = implode('[\W_]*', $regexChars);
+                
+                if (preg_match("/(?<!\p{L})" . $obfuscatedPattern . "(?!\p{L})/iu", $value)) {
+                    return $word;
+                }
             }
-        }
 
-        foreach ($blockedEmojis as $emoji) {
-            if (mb_strpos($inputText, $emoji) !== false) {
-                return true;
+            foreach ($blockedEmojis as $emoji) {
+                if (mb_strpos($value, $emoji) !== false) {
+                    return $emoji;
+                }
             }
         }
 

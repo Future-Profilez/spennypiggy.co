@@ -114,6 +114,19 @@ class SendShopOrderReminderEmail extends Command
                 $payment,
                 $deliverable
             ));
+            
+            // Notify Creator via Push
+            $title = "⏳ Order Fulfillment Reminder";
+            $content = "Don't forget to fulfill your pending order for " . ($payment->shop->name ?? 'Shop Item') . ".";
+            \App\Helpers::sendNotification($title, $content, $creator->email);
+            
+            // Also notify the Gifter that the creator has been reminded
+            $gifterEmail = $deliverable->customer_email;
+            if ($gifterEmail) {
+                $gifterTitle = "📦 Update on your order";
+                $gifterContent = "We have sent a reminder to the creator to process your order for " . ($payment->shop->name ?? 'Shop Item') . " soon.";
+                \App\Helpers::sendNotification($gifterTitle, $gifterContent, $gifterEmail);
+            }
 
             $deliverable->increment('system_reminder_count');
             $deliverable->update(['last_system_reminder_at' => Carbon::now()]);

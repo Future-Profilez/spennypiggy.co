@@ -38,22 +38,26 @@ export default function AddShopItem(props) {
       <Guest auth={auth.user} user={user}>
          <div className='bg-gray-200 min-vh-100' >
             <div className='containerbox m-auto' >
-               <div className='py-8 md:py-16 max-w-[900px] m-auto' >
+               <div className='py-8 md:py-16 max-w-[900px] m-auto'>
                   <Head title={'Add Shop Item'}  />
                   <h2 className='font-GillSans uppercase text-3xl' >Shop</h2>
 
                   {isCreator && (
-                  <div className=" font-medium text-center text-gray-500 border-b border-gray-300 dark:text-gray-400 mt-3 mb-4  md:my-4">
-                     <ul className="flex flex-wrap-mb-px ">
+                  <div className=" font-medium text-center text-gray-500 dark:text-gray-400 mt-3 mb-4  md:my-4">
+                     <ul className="flex flex-wrap-mb-px gap-2 !py-3 ">
+
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(1)} className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 1 ? 'border-gray-600 text-black' : ""}`}>Products</button>
+                           <button onClick={(e)=>setTab(1)} className={`text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 1 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white"} `}>Products</button>
                         </li>
+
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(2)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 2 ? 'border-gray-600 text-black' : ""}`}  >Orders</button>
+                           <button onClick={(e)=>setTab(2)}  className={`text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 2 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white"} `}  >Orders</button>
                         </li>
+
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(3)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 3 ? 'border-gray-600 text-black' : ""}`}  >My Purchases</button>
+                           <button onClick={(e)=>setTab(3)}  className={`text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 3 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white"} `}  >My Purchases</button>
                         </li>
+
                      </ul>
                   </div>
                   )}

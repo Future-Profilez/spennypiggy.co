@@ -177,9 +177,10 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================BLOCKED CONTENT CHECK========================== */
-        if (Helpers::checkBlockData($request) == 1) {
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
             throw ValidationException::withMessages([
-                'name' => 'Some words or emojis are not allowed.',
+                'name' => "The word or emoji '{$blockedWord}' is not allowed as per our policies.",
             ]);
         }
 

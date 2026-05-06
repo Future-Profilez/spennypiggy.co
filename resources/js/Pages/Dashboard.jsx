@@ -393,27 +393,29 @@ export default function Dashboard(props) {
                                                                     </div>
                                                                 </div>
 
-                                                                <Link
-                                                                    className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
-                                                                    href="/task/create"
-                                                                >
-                                                                    <div className=" flex items-center">
-                                                                        <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
-                                                                            <BiTask
-                                                                                color="#F94F97"
-                                                                                size="1.6rem"
-                                                                            />
+                                                                {auth?.user?.role === 1 && (
+                                                                    <Link
+                                                                        className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                        href="/task/create"
+                                                                    >
+                                                                        <div className=" flex items-center">
+                                                                            <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                                <BiTask
+                                                                                    color="#F94F97"
+                                                                                    size="1.6rem"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="pl-4 text-left">
+                                                                                <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
+                                                                                    Create Task
+                                                                                </h2>
+                                                                                <p className="text-sm font-bold text-gray-700">
+                                                                                    Offer something unique to your supporters.
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="pl-4 text-left">
-                                                                            <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
-                                                                                Create Task
-                                                                            </h2>
-                                                                            <p className="text-sm font-bold text-gray-700">
-                                                                                Offer something unique to your supporters.
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                </Link>
+                                                                    </Link>
+                                                                )}
 
                                                                 <AddItem
                                                                     classes="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"

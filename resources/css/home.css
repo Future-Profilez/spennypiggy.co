@@ -410,10 +410,10 @@ div#msgText p.valid svg path{stroke:#27b227;}
 .swiper-button-next,.swiper-button-prev{border-radius:10px;background:#fff;padding:10px;width:35px !important;height:35px !important;}
 .swiper-button-next:after,.swiper-button-prev:after{width:20px !important;height:20px !important;font-size:21px !important;margin-left:3px;color:#000;font-weight:bolder !important;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
-.tooltipbtn{width:13px;height:14px;background:#505050;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
+.tooltipbtn{width:18px;height:18px;background:#505050;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-flex;align-items:center;justify-content:center;position:relative;line-height:1;border:none;padding:0;cursor:pointer;}
 .text-small,.tooltipbtn p{font-size:14px;}
-.tooltipbtn p{position:absolute;background:#505050;padding:10px;border-radius:11px;max-width:190px;left:-118px;z-index:2;top:20px;width:230px;display:none;}
-.tooltipbtn{position:relative;}
+.tooltipbtn p{position:absolute;background:#505050;padding:10px;border-radius:11px;max-width:190px;left:-118px;z-index:2;top:28px;width:230px;display:none;}
+.tooltipbtn:hover p,.tooltipbtn:focus p{display:block;}
 .tooltipbtn p:after{content:"";width:10px;height:10px;background:#505050;position:absolute;right:60px;top:-3px;transform:rotate(45deg);}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}

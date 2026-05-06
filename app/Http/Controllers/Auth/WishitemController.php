@@ -107,10 +107,9 @@ class WishitemController extends Controller
             ]
         ]);
 
-        $checkdata = Helpers::checkBlockData($request);
-        if ($checkdata == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
+            return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
         } else {
             $user = User::find(Auth::id());
             $currency = $user->default_currency ?? 'gbp';
@@ -273,9 +272,9 @@ class WishitemController extends Controller
         //     "data" => $request->all()
         // ]);
 
-        if (Helpers::checkBlockData($request) == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
+            return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
         }
 
         // if (Helpers::checkUnsafeContent($request->thumbnail)) {
@@ -412,10 +411,9 @@ class WishitemController extends Controller
         $old_wish_name = $wish->wish_name;
         $old_price_id = $wish->price_id;
 
-        $checkdata = Helpers::checkBlockData($request);
-        if ($checkdata == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
+            return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
         }
 
         $old_price = $wish->price;
@@ -714,12 +712,11 @@ class WishitemController extends Controller
                 ],
             ]);
 
-            $checkdata = Helpers::checkBlockData($request);
-            if ($checkdata == 1) {
+            $blockedWord = Helpers::checkBlockData($request);
+            if ($blockedWord !== false) {
                 return response()->json([
                     'status' => false,
-                    'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦",
+                    'msg' => "The word or emoji '{$blockedWord}' is not allowed as per our policies.",
                 ]);
             }
 

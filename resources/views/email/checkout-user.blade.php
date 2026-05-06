@@ -22,7 +22,9 @@
                                 
                                 try {
                                     // Get amount from various possible sources
-                                    if (isset($data->amount_subtotal) && is_numeric($data->amount_subtotal)) {
+                                    if (isset($data->total_paid) && is_numeric($data->total_paid)) {
+                                        $convertedAmount = $data->total_paid;
+                                    } elseif (isset($data->amount_subtotal) && is_numeric($data->amount_subtotal)) {
                                         $convertedAmount = $data->amount_subtotal;
                                     } elseif (isset($data->amount) && is_numeric($data->amount)) {
                                         $convertedAmount = $data->amount;

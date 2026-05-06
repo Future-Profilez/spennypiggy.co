@@ -79,7 +79,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
-        <div className="sticky top-[100px] z-10 bg-[#A2E4B8] backdrop-blur-sm  transition-all">
+        <div className="sticky top-[75px] sm:top-[78px] md:top-[87px] z-10 bg-[#A2E4B8] backdrop-blur-sm pt-2  transition-all">
             <div className="container max-w-7xl mx-auto px-4 py-3">
                 {/* Search Bar */}
                 <div className="relative mb-4">

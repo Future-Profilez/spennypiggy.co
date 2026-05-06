@@ -11,7 +11,7 @@
                      <td
                          style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 16px; line-height: 23px;  color: 141414; text-align: left; text-align: center;">
                          <span style="color:#F94F97 ">
-                         Thank you for purchasing {{ $data->shop->user->name }}'s Shop Item ({{ $data->shop->name }}) for {{ $curr.$data->amount }} on Spenny Piggy 🐷🎁!
+                         Thank you for purchasing {{ $data->shop->user->name }}'s Shop Item ({{ $data->shop->name }}) for {{ $curr }}{{ number_format($data->amount + ($data->shipping_amount ?? 0) + ($data->vat_tax_amount ?? 0), 2) }} on Spenny Piggy 🐷🎁!
                          </span>
                      </td>
                  </tr>
