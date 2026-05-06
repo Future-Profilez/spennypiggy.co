@@ -108,87 +108,71 @@ export default function OrdersLists({ type = 'sales' }) {
       {type === 'sales' ? <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2> : <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >My Purchases</h2>}
 
       {orders && orders.length > 0 && (
-         <div  className="bg-white rounded-[30px]   px-0">
-            <div className="p-3 py-1 relative ">
+         <div  className=" ">
+            <div className="relative ">
                {orders.map((item, index) =>
-                  <div key={index} className={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>
-                     <Link href={`/${item.username}`} className="flex w-30">
-                        <div className="p-relative flex-shrink-0">
-                              <img className="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[30px]  object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
+                  <div key={index} className={`bg-white rounded-[20px] p-4 mb-4 flex items-center  justify-between ${index > 0 ? "border-t" : "" } w-full`}>
+                     {/* <Link href={`/${item.username}`} className="flex w-30"> */}
+                     <Link href={`/shop/item/${slug(item.shop.name)}/${item.shop.uuid}`} className="flex w-30">
+                        <div className="p-relative ">
+                              <img className="border border-gray-200 h-16 w-16 min-w-16 min-h-16 rounded-[15px]  object-cover" src={item?.shop?.perma_link} alt='user' />
                         </div>
-                        <div className=" ml-3 w-full w-[40%] flex-vert-center">
+                        <div className=" ml-3 w-fullr">
                            <div>
-                                 <div className="text-sm text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
-                                    <span className="limit-text-line-2">
-                                     {item.name}
+                                 <div className="text-normal text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
+                                    <span className="line-clamp-1">
+                                     {item?.shop?.name || ""}
                                     </span>
                                  </div>
-                                 <div className='hidden md:block '>
-                                    <div className="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
-                                       {item.email}
+                                 <div className=''>
+                                    <div className="text-break line-clamp-1 text-normal font-cr-regular text-[#666666]">
+                                       {item && item?.gross_amount ? (
+                                       type === 'sales' ? (
+                                             <div className="font-bold">{formatMultiPrice(item.net_amount || 0, item?.currency || userCurrency)}</div>
+                                       ) : (
+                                             <div className="font-bold">{formatMultiPrice(item.gross_amount || 0, item?.currency || userCurrency)}</div>
+                                       )
+                                    ) : "FREE"}
                                     </div>
                                  </div>
-                                 <div className="block md:hidden">
-                                    <div className="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
-                                       {item.shop.name}
-                                    </div>
-                                 </div>
+                                 
                            </div>
                         </div>
                      </Link>
-                     <div className="hidden md:block w-40 flex pd-l-16 flex-vert-center">
-                        <Link href={`/shop/item/${slug(item.shop.name)}/${item.shop.uuid}`} className=" text-dark  text-sm  font-cr-regular  flex">
-                           <span className="line-clamp-2 max-w-60  mr-3">{item.shop.name || ""}</span>
-                        </Link>
-                     </div>
-                     <div className=" flex flex-vert-center flex-col items-end">
-                        {console.log(item)}
-                        <div className=" text-dark  font-cr-medium  text-sm  block  leading-4">
-                           {item && item?.gross_amount ? (
-                              type === 'sales' ? (
-                                 <>
-                                    <div className="font-bold">{formatMultiPrice(item.net_amount || 0, item?.currency || userCurrency)}</div>
-                                 </>
-                              ) : (
-                                 <>
-                                    <div className="font-bold">{formatMultiPrice(item.gross_amount || 0, item?.currency || userCurrency)}</div>
-                                 </>
-                              )
-                           ) : "FREE"}
+ 
+                     <div className=" ">
+
+                        <p className='flex items-center'> <span className='me-2'>Status : </span>
+                           {(item.payment_status === 'refunded' || item.is_deactivated || item.shop?.type === 'physical') && (
+                              <div className="mt-1">
+                                 {item.payment_status === 'refunded' ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Refunded</span>
+                                 ) : item.is_deactivated ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Deactivated</span>
+                                 ) : item.status === 'delivered' ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Completed</span>
+                                 ) : item.status === 'shipped' ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Shipped</span>
+                                 ) : item.status === 'processing' ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Processing</span>
+                                 ) : item.is_delayed ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Delayed</span>
+                                 ) : (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Pending</span>
+                                 )}
+                              </div>
+                           )}
+                        </p>
+                        <div className='flex items-center'>
+                           <span className='me-2'>Seller : </span>
+                           <Link href={`/${item.username}`} className="flex text-sm text-blue-500 font-cr-regular">
+                              @{item.username}
+                           </Link>
                         </div>
-                        {type === 'sales' && item && item.gross_amount > 0 && (
-                           <div className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-gray-200 w-full text-right">
-                              <div>Fee: {formatMultiPrice(item.platform_fee || 0, item?.currency || userCurrency)}</div>
-                              <div>Stripe: {formatMultiPrice(item.stripe_fee || 0, item?.currency || userCurrency)}</div>
-                           </div>
-                        )}
-                        {type === 'purchases' && item && item.gross_amount > 0 && (
-                           <div className="text-[10px] text-gray-400 mt-1">
-                              Total paid with fees
-                           </div>
-                        )}
-                        {(item.payment_status === 'refunded' || item.is_deactivated || item.shop?.type === 'physical') && (
-                           <div className="mt-1">
-                              {item.payment_status === 'refunded' ? (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Refunded</span>
-                              ) : item.is_deactivated ? (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Deactivated</span>
-                              ) : item.status === 'delivered' ? (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Completed</span>
-                              ) : item.status === 'shipped' ? (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Shipped</span>
-                              ) : item.status === 'processing' ? (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Processing</span>
-                              ) : item.is_delayed ? (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Delayed</span>
-                              ) : (
-                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Pending</span>
-                              )}
-                           </div>
-                        )}
+
                      </div>
                      <div className="flex justify-between items-center">
-                        <div className=" text-[#4d4d4d] text-sm hidden lg:block pb-2 me-2">
+                        <div className=" text-[#4d4d4d] text-sm hidden lg:block pb-2 md:pb-0 me-2">
                             <TimeFormat dateString={item.created_at} />
                         </div>
                         <OrderDetail date={<TimeFormat dateString={item.created_at} />} item={item} text={'View Info'} classes="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-[20px] text-sm font-medium" onSuccess={fetchorders} />

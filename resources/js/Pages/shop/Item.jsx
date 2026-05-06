@@ -131,8 +131,7 @@ export default function ShopDetailItem(props) {
                             <div className="product-details max-w-[700px] px-2 mx-auto">
                                 <button
                                     className="flex md:hidden items-center text-xl mb-4 "
-                                    onClick={() => window.history.back()}
-                                >
+                                    onClick={() => window.history.back()} >
                                     <span className="mt-1">
                                         <ChevronLeftIcon size={24} />
                                     </span>{" "}
@@ -198,6 +197,25 @@ export default function ShopDetailItem(props) {
                                     </ol>
                                 </nav>
 
+                                {props.my_purchases && props.my_purchases.length > 0 && (
+                                    <div className="my-4 border-t border-gray-200 pt-4">
+                                        <h3 className="text-md font-semibold text-gray-800 mb-3">Your Purchases</h3>
+                                        <div className="space-y-3">
+                                            {props.my_purchases.map(purchase => (
+                                                <div key={purchase.id} className="bg-gray-50 !rounded-[20px] p-4 px-6 flex justify-between items-center text-sm">
+                                                    <div>
+                                                        <p className="font-medium text-lg text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
+                                                        <p className="text-normal text-gray-500 capitalize">Status: {purchase.status}</p>
+                                                    </div>
+                                                    <a href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-normal">
+                                                        View Details
+                                                    </a>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {isOwner && shop.edited_status == 0 && (
                                     <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-[20px] font-medium text-sm">
                                         <strong>Admin requested changes:</strong> {shop.edited_reason}
@@ -227,13 +245,11 @@ export default function ShopDetailItem(props) {
                                 </p>
 
                                 <p className=" text-base lg:leading-tight leading-normal text-black mt-3 mb-2">
-                                    Category :{" "}
+                                    Category : {" "}
                                     <span className="capitalize">
-                                        {(shop?.category &&
-                                            shop.category.map((c, i) => {
-                                                return `${c?.category?.category !== null ? c?.category?.category : ""}${i>=1 ? ',' : ''}`;
-                                            })) ||
-                                            "Not Available"}
+                                        {(shop?.category && shop.category.map((c, i) => {
+                                            return `${c?.category?.category !== null ? c?.category?.category : ""}${i>=0 && i<shop.category.length-1 ? ',' : ''}`;
+                                        })) || "Not Available"} 
                                     </span>
                                 </p>
 
@@ -475,24 +491,7 @@ export default function ShopDetailItem(props) {
                                         </>
                                     )}
                                 </div>
-                                {props.my_purchases && props.my_purchases.length > 0 && (
-                                    <div className="mt-6 border-t border-gray-200 pt-4">
-                                        <h3 className="text-md font-semibold text-gray-800 mb-3">Your Purchases</h3>
-                                        <div className="space-y-3">
-                                            {props.my_purchases.map(purchase => (
-                                                <div key={purchase.id} className="bg-gray-50 !rounded-[20px] p-4 flex justify-between items-center text-sm">
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
-                                                        <p className="text-xs text-gray-500 capitalize">Status: {purchase.status}</p>
-                                                    </div>
-                                                    <a href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-xs">
-                                                        View Details
-                                                    </a>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                
                             </div>
                         </div>
                     </div>
