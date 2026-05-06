@@ -447,6 +447,7 @@ class TaskController extends Controller
 
         $request->validate([
             'digital_waiver' => ['required', 'accepted'],
+            'gifter_message' => ['nullable', 'string', 'max:500'],
         ]);
 
         $price = $task->price;
@@ -531,6 +532,7 @@ class TaskController extends Controller
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
             'transfer_amount' => (string) round($creatorTransferAmount * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
+            'gifter_message' => $request->get('gifter_message') ?? '',
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
         ]);
@@ -882,9 +884,13 @@ class TaskController extends Controller
             if ($supporter) {
                 Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
 
+                // Get currency symbol for supporter notification
+                $currencySymbol = \App\Models\Currency::where('ISO', $purchase->currency)->value('symbol') ?? '$';
+                $formattedAmount = $currencySymbol . number_format($purchase->total_paid, 2);
+
                 \App\Helpers::sendNotification(
                     "Task Purchased! 🎉",
-                    "You've successfully purchased the task: " . $task->title . ". The creator has been notified.",
+                    "You've successfully purchased the task: " . $task->title . " for " . $formattedAmount . ". The creator has been notified.",
                     $supporter->email
                 );
             }

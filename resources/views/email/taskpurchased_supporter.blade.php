@@ -1,5 +1,28 @@
 @extends('email.default-2')
 @section('content')
+
+@php
+
+$currencyCode = $purchase->currency ?? $task->currency ?? 'USD';
+
+$currencySymbol = \App\Models\Currency::where('ISO', $currencyCode)->value('symbol') ?? '$';
+
+// Creator actual/base amount
+$creatorAmount = (float) ($purchase->amount ?? $task->price ?? 0);
+
+// Supporter paid amount
+$supporterPaid = (float) ($purchase->total_paid ?? 0);
+
+// VAT
+$vatAmount = (float) ($purchase->vat_amount ?? 0);
+
+// Final display amount
+$displayAmount = $supporterPaid > 0
+? $supporterPaid
+: $creatorAmount;
+
+@endphp
+
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
         <a href="{{ env('APP_URL') . '/' }}">
@@ -22,15 +45,15 @@
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
                     Thank you, {{ $supporter ? $supporter->name : "Guest" }}! <br>
-                    You just purchased the task <strong>{{ $task->title }}</strong> from {{ $task->creator->name }} for {{ $currencySymbol }}{{ $task->price }}.
+                    You just purchased the task <strong>{{ $task->title }}</strong> from {{ $task->creator->name }} for {{ $currencySymbol }}{{ $displayAmount }}.
                 </td>
             </tr>
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     @if($task->type === 'instant')
-                        This is an instant task. Your content is ready below!
+                    This is an instant task. Your content is ready below!
                     @else
-                        This is a timed task. The creator has been notified and will submit proof or content once it's done. You will receive another email when it is ready.
+                    This is a timed task. The creator has been notified and will submit proof or content once it's done. You will receive another email when it is ready.
                     @endif
                 </td>
             </tr>
@@ -43,7 +66,9 @@
                 </td>
             </tr>
             @endif
-            <tr style="line-height: 10px; height: 10px;"><td></td></tr>
+            <tr style="line-height: 10px; height: 10px;">
+                <td></td>
+            </tr>
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">
                     <a href="{{ env('APP_URL') . '/task/dashboard' }}"
@@ -52,7 +77,9 @@
                     </a>
                 </td>
             </tr>
-            <tr style="line-height: 10px; height: 10px;"><td></td></tr>
+            <tr style="line-height: 10px; height: 10px;">
+                <td></td>
+            </tr>
 
         </table>
     </td>
