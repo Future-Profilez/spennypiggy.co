@@ -445,6 +445,7 @@ class TaskController extends Controller
 
         $request->validate([
             'digital_waiver' => ['required', 'accepted'],
+            'gifter_message' => ['nullable', 'string', 'max:500'],
         ]);
 
         $price = $task->price;
@@ -529,6 +530,7 @@ class TaskController extends Controller
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
             'transfer_amount' => (string) round($creatorTransferAmount * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
+            'gifter_message' => $request->get('gifter_message') ?? '',
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
         ]);
