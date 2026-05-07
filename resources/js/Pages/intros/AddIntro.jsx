@@ -6,7 +6,7 @@ import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
-import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
+import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.png";
 import { useRef } from 'react';
 import { useMemo } from 'react';
 import { router, usePage } from '@inertiajs/react';

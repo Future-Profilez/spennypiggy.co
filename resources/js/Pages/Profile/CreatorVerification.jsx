@@ -1,6 +1,6 @@
-import { Link, usePage } from "@inertiajs/react";
+import { Link, usePage, router } from "@inertiajs/react";
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AddIntro from "../intros/AddIntro";
 import EditProfile from "../account/EditProfile";
 import AddPost from "../feed/AddPost";
@@ -29,7 +29,20 @@ const CustomProgressBar = ({ now, max }) => {
 };
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
-    const { auth, user, global_currency, slinks } = usePage().props;
+    const { auth: initialAuth, user: initialUser, global_currency, slinks: initialSlinks } = usePage().props;
+    
+    // Use local state so background polling doesn't trigger a full page re-render
+    const [auth, setAuth] = useState(initialAuth);
+    const [user, setUser] = useState(initialUser);
+    const [slinks, setSlinks] = useState(initialSlinks);
+
+    // Keep local state in sync if page props change from elsewhere
+    useEffect(() => {
+        setAuth(initialAuth);
+        setUser(initialUser);
+        setSlinks(initialSlinks);
+    }, [initialAuth, initialUser, initialSlinks]);
+
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);
     const [filledSteps, setFilledSteps] = useState(0);
@@ -60,6 +73,60 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             window.location.reload(false);
         }
     };
+
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const fetchLatestVerificationData = async () => {
+        try {
+            const response = await axios.get(window.location.href, {
+                headers: {
+                    'X-Inertia': 'true',
+                    'X-Inertia-Partial-Data': 'auth,user,slinks',
+                    'X-Inertia-Partial-Component': 'Dashboard'
+                }
+            });
+            
+            if (response.data && response.data.props) {
+                if (response.data.props.auth) setAuth(response.data.props.auth);
+                if (response.data.props.user) setUser(response.data.props.user);
+                if (response.data.props.slinks) setSlinks(response.data.props.slinks);
+            }
+        } catch (error) {
+            console.error("Failed to fetch verification status", error);
+        }
+    };
+
+    const refreshSteps = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        await fetchLatestVerificationData();
+        setIsRefreshing(false);
+    };
+
+    const pollCount = useRef(0);
+
+    useEffect(() => {
+        let interval;
+        if (creatorUser?.stripe_details_submitted !== 1) {
+            interval = setInterval(() => {
+                // To save server load, don't poll if the tab is not visible/active
+                if (document.hidden) return;
+
+                // Limit maximum automatic polling to 20 times to avoid infinite polling 
+                if (pollCount.current >= 20) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                pollCount.current += 1;
+                fetchLatestVerificationData();
+                
+            }, 5000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [creatorUser?.stripe_details_submitted]);
 
     useEffect(() => {
         let steps = 0;
@@ -266,9 +333,18 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             `}</style>
 
             <div className="profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]   mb-4 p-3 lg:!p-8">
-                <h2 className="mb-1 text-[20px] uppercase font-bold">
-                    Profile Verification
-                </h2>
+                <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-[20px] uppercase font-bold">
+                        Profile Verification
+                    </h2>
+                    <button 
+                        onClick={refreshSteps} 
+                        disabled={isRefreshing}
+                        className="bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-1 rounded-full text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 disabled:opacity-50"
+                    >
+                        {isRefreshing ? "Refreshing..." : "Refresh"}
+                    </button>
+                </div>
                 <p className="text-gray-500 mb-3">
                     Complete these steps and let your fans fund your lifestyle.
                 </p>

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300">
+  <defs>
+    <linearGradient id="bgWave" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1A0040"/>
+      <stop offset="100%" stop-color="#000D40"/>
+    </linearGradient>
+    <linearGradient id="w1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF2D9B"/>
+      <stop offset="100%" stop-color="#FF8C00"/>
+    </linearGradient>
+    <linearGradient id="w2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00CFFF"/>
+      <stop offset="100%" stop-color="#7928CA"/>
+    </linearGradient>
+    <linearGradient id="w3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F5A0"/>
+      <stop offset="100%" stop-color="#00CFFF"/>
+    </linearGradient>
+    <linearGradient id="w4" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFE94D"/>
+      <stop offset="100%" stop-color="#FF2D9B"/>
+    </linearGradient>
+    <filter id="waveGlow">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bgWave)"/>
+
+  <!-- Background dots -->
+  <g fill="white" opacity="0.25">
+    <circle cx="60" cy="40" r="1.5"/> <circle cx="180" cy="20" r="1"/>
+    <circle cx="300" cy="50" r="1.5"/> <circle cx="420" cy="25" r="1"/>
+    <circle cx="540" cy="45" r="2"/> <circle cx="660" cy="15" r="1"/>
+    <circle cx="780" cy="40" r="1.5"/> <circle cx="900" cy="25" r="1"/>
+    <circle cx="1020" cy="50" r="2"/> <circle cx="1140" cy="30" r="1.5"/>
+    <circle cx="100" cy="260" r="1"/> <circle cx="350" cy="275" r="1.5"/>
+    <circle cx="600" cy="265" r="1"/> <circle cx="850" cy="280" r="2"/>
+    <circle cx="1100" cy="270" r="1.5"/>
+  </g>
+
+  <!-- Wave layers - bright colored flowing waves -->
+  <!-- Wave 1 pink-orange (bottom large) -->
+  <path d="M0,220 Q100,180 200,210 Q300,240 400,200 Q500,160 600,195 Q700,230 800,200 Q900,170 1000,200 Q1100,230 1200,205 L1200,300 L0,300 Z"
+        fill="url(#w1)" opacity="0.7"/>
+
+  <!-- Wave 2 cyan-purple -->
+  <path d="M0,200 Q150,160 300,190 Q450,220 600,175 Q750,130 900,170 Q1050,210 1200,180 L1200,300 L0,300 Z"
+        fill="url(#w2)" opacity="0.55"/>
+
+  <!-- Wave 3 green-cyan -->
+  <path d="M0,240 Q200,210 400,235 Q600,260 800,230 Q1000,200 1200,230 L1200,300 L0,300 Z"
+        fill="url(#w3)" opacity="0.5"/>
+
+  <!-- Wave 4 yellow-pink (top accent) -->
+  <path d="M0,80 Q150,50 300,75 Q450,100 600,60 Q750,20 900,55 Q1050,90 1200,65 L1200,0 L0,0 Z"
+        fill="url(#w4)" opacity="0.55"/>
+
+  <!-- Wave top cyan -->
+  <path d="M0,60 Q200,35 400,60 Q600,85 800,50 Q1000,15 1200,45 L1200,0 L0,0 Z"
+        fill="url(#w2)" opacity="0.4"/>
+
+  <!-- Flowing lines (thin wave strokes) -->
+  <g fill="none" filter="url(#waveGlow)">
+    <path d="M0,150 Q100,120 200,145 Q300,170 400,140 Q500,110 600,140 Q700,170 800,145 Q900,120 1000,145 Q1100,170 1200,150"
+          stroke="#FF2D9B" stroke-width="2.5" opacity="0.7"/>
+    <path d="M0,160 Q150,135 300,158 Q450,181 600,152 Q750,123 900,152 Q1050,181 1200,160"
+          stroke="#00CFFF" stroke-width="2" opacity="0.6"/>
+    <path d="M0,140 Q120,115 240,138 Q360,161 480,132 Q600,103 720,132 Q840,161 960,140 Q1080,119 1200,140"
+          stroke="#FFE94D" stroke-width="1.5" opacity="0.5"/>
+    <path d="M0,170 Q130,148 260,168 Q390,188 520,160 Q650,132 780,160 Q910,188 1040,168 Q1120,153 1200,170"
+          stroke="#00F5A0" stroke-width="2" opacity="0.55"/>
+  </g>
+
+  <!-- Neon sparkles -->
+  <g filter="url(#waveGlow)">
+    <path d="M200,110 L204,124 L218,128 L204,132 L200,146 L196,132 L182,128 L196,124 Z" fill="#FF2D9B"/>
+    <path d="M600,90 L604,102 L616,106 L604,110 L600,122 L596,110 L584,106 L596,102 Z" fill="#FFE94D"/>
+    <path d="M1000,110 L1004,122 L1016,126 L1004,130 L1000,142 L996,130 L984,126 L996,122 Z" fill="#00F5A0"/>
+    <path d="M400,160 L403,170 L413,173 L403,176 L400,186 L397,176 L387,173 L397,170 Z" fill="#00CFFF"/>
+    <path d="M800,155 L803,165 L813,168 L803,171 L800,181 L797,171 L787,168 L797,165 Z" fill="#7928CA"/>
+    <path d="M100,200 L103,210 L113,213 L103,216 L100,226 L97,216 L87,213 L97,210 Z" fill="#FF8C00"/>
+    <path d="M1100,200 L1103,210 L1113,213 L1103,216 L1100,226 L1097,216 L1087,213 L1097,210 Z" fill="#FF2D9B"/>
+  </g>
+
+  <!-- Bright dots -->
+  <g filter="url(#waveGlow)">
+    <circle cx="300" cy="130" r="5" fill="#FF2D9B"/>
+    <circle cx="700" cy="120" r="4" fill="#00CFFF"/>
+    <circle cx="500" cy="180" r="5" fill="#FFE94D"/>
+    <circle cx="900" cy="175" r="4" fill="#00F5A0"/>
+    <circle cx="100" cy="160" r="3" fill="#FF8C00"/>
+    <circle cx="1100" cy="160" r="3" fill="#7928CA"/>
+  </g>
+</svg>

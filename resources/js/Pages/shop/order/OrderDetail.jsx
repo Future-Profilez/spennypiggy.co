@@ -117,7 +117,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
          classes={`${classes ? classes : "px-3 py-2"}`} >
             <div className='p-0' >
                <div className='flex items-center justify-between gap-2 mb-2'>
-                   <h2 className='font-bold text-xl capitalize'>{item.name} claimed {item.shop.name}.</h2>
+                   <h2 className='font-bold text-xl capitalize'>{item?.name || 'User'} claimed {item?.shop?.name || 'an item'}.</h2>
                    <span className={`px-3 py-1 rounded-lg border-2 border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                        {item?.shop?.type === 'physical' ? 'Physical' : 'Digital'}
                    </span>
@@ -152,10 +152,10 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                 )}
                <div className=' border-t pt-2 mt-3'>
                   <strong>Shop Item</strong>
-                  <p>{item.shop.name}</p>
+                  <p>{item?.shop?.name || 'Unknown Item'}</p>
                </div>
 
-               {item.shop.success_page_value && (
+               {item?.shop?.success_page_value && (
                   <div className=' border-t pt-2 mt-3'>
                      <strong>Shop Content</strong>
                      {item.shop.success_page_type === 'url' ? (
@@ -176,10 +176,10 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                )}
                <div className=' border-t pt-2 mt-3'>
                   <strong>Email</strong>
-                  <p>{item.email}</p>
+                  <p>{item?.email}</p>
                </div>
 
-               {isPhysical && item.expected_delivery_date && (
+               {isPhysical && item?.expected_delivery_date && (
                   <div className=' border-t pt-2 mt-3'>
                      <strong>Expected Delivery Date</strong>
                      <p className='whitespace-pre-wrap'>{item.expected_delivery_date.split('T')[0]}</p>
@@ -190,7 +190,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                   <strong>Quantity</strong>
                   <p>{item.quantity || 1}</p>
                </div> */}
-               {!isPhysical && item.shop.reward_file_url && (
+               {!isPhysical && item?.shop?.reward_file_url && (
                   <div className=' border-t pt-2 mt-3'>
                      <strong>Digital File</strong>
                      <p>
@@ -205,7 +205,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                      </p>
                   </div>
                )}
-               {item.shop.ask_question ? <div className=' border-t pt-2 mt-3'>
+               {item?.shop?.ask_question ? <div className=' border-t pt-2 mt-3'>
                   <strong>Question</strong>
                   <p>{item.shop.ask_question || ""} ?</p>
                   

@@ -1,4 +1,4 @@
-import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
+import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 
 /**
  * Simple VideoPlayer Component

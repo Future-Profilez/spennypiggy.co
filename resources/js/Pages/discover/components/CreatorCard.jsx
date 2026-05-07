@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import wishlistbannerimg from "../../../../assets/img/wishlistbannerimg.jpg";
+import wishlistbannerimg from "../../../../assets/img/wishlistbannerimg.png";
 import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
 import { RiFireLine  } from 'react-icons/ri';

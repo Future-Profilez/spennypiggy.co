@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Head, Link, usePage } from "@inertiajs/react";
-import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-import { addicon } from "@/includes/Icons";
+import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 const Wishlist = lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = lazy(() => import("@/wishlist/Wishlistbox"));
 import Userprofile from "@/wishlist/Userprofile";
@@ -31,7 +30,7 @@ import Guest from "@/Layouts/GuestLayout";
 import useWidthCount from "@/Components/useWidthCount";
 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy,} from "@dnd-kit/sortable";
-import { closestCenter, closestCorners, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects, MeasuringStrategy, defaultDropAnimation } from "@dnd-kit/core";
+import { closestCorners, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects, MeasuringStrategy, defaultDropAnimation } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
 const ProfileProductLists = lazy(() => import("./shop/profile/ProfileProductLists"),);
