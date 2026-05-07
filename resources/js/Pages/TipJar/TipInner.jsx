@@ -351,7 +351,7 @@ export default function TipInner({classes, idd}) {
       }
     } catch (err) {
       console.error(err)
-      toast.error(err?.response?.data?.error || "OTP Verification failed.");
+      toast.error(err?.response?.data?.error || "OTP Verification failedss.");
     } finally {
       setVerifyingOtp(false);
     }

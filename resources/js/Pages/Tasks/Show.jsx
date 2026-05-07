@@ -295,7 +295,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                 toast.error("Verification failed.");
             }
         } catch (error) {
-            toast.error(error.response?.data?.error || "OTP Verification failed.");
+            toast.error(error.response?.data?.error || "OTP Verification failedss.");
         } finally {
             setVerifyingOtp(false);
         }
