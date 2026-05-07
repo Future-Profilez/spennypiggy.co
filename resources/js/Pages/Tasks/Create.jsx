@@ -151,7 +151,7 @@ export default function Create({ auth, currencySymbol }) {
                                 >
                                     {/* Title */}
                                     <div className="mb-0">
-                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Title</label>
+                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Title*</label>
                                         <input
                                             type="text"
                                             maxLength={100}
@@ -176,7 +176,7 @@ export default function Create({ auth, currencySymbol }) {
 
                                     {/* Description */}
                                     <div className="mb-0">
-                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Description</label>
+                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Description*</label>
                                         <textarea
                                             className="w-full border-2 border-black rounded-[20px] md:rounded-[25px] p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
                                             rows="4"
@@ -199,7 +199,7 @@ export default function Create({ auth, currencySymbol }) {
                                         {/* Price */}
                                         <div className="mb-0">
                                             <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500 flex items-center gap-2">
-                                                Price ({currencySymbol})
+                                                Price ({currencySymbol})*
                                                 {data.type === 'timed' && (
                                                     <div className="group relative">
                                                         <Info size={14} className="text-blue-500 cursor-help" />

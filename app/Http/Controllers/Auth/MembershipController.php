@@ -928,7 +928,8 @@ class MembershipController extends Controller
 
                 // ✅ ALWAYS send MembershipMailToUser - this is the confirmation email to the gifter
                 // This should be sent regardless of CheckoutMailToUser success/failure
-                MembershipMailToUser::dispatch($mem, $amountWithcurrency);
+                $amountWithcurrencies = $symbol->symbol . $mem->total_paid;
+                MembershipMailToUser::dispatch($mem, $amountWithcurrencies);
                 Log::info('MembershipController: MembershipMailToUser dispatched for gifter confirmation', [
                     'membership_payment_id' => $mem->id,
                     'gifter_email' => $mem->guest_email,
