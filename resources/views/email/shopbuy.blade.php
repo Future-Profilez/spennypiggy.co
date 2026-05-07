@@ -5,12 +5,12 @@
                      width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none"></a></td>
      </tr>
      <tr>
-         <td align="center" style="padding:10px 10px 20px 10px;">
-             <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
-                 <tr>
-                     <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
-                         New <span style="color: #8C52FF">Shop Item</span> claimed on <br> Spenny Piggy 🎁 </td>
-                 </tr>
+        <td align="center" style="padding:10px 10px 20px 10px;">
+            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; margin: 0 auto; text-align: center;">
+                <tr>
+                    <td style="font-family: Arial, sans-serif; font-weight: bold; font-size: 21px; color: #000000; line-height: 26px; padding: 0 0 25px 0; text-align: center;" align="center">
+                        New <span style="color: #8C52FF">Shop Item</span> claimed on <br> Spenny Piggy 🎁 </td>
+                </tr>
                  <tr>
                      <td style="line-height:20px;height:20px;"></td>
                  </tr>
@@ -22,7 +22,11 @@
                  <tr>
                     <td style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                         Lucky you! <br></br>
-                        {{ $anon == false ? ($data->name ?? 'A customer') : "Anonymous User" }} just claimed {{ $data->shop->name ?? 'a shop item' }} on Spenny Piggy for {{ $amountUserPay }} 🎁🥳 .
+                        @php
+                            $fanName = $anon == false ? ucwords($data->name ?? 'A customer') : "Anonymous User";
+                            $itemName = $data->shop?->name ?? 'a shop item';
+                        @endphp
+                        {{ $fanName }} just claimed {{ $itemName }} on Spenny Piggy for {{ $amountUserPay }} 🎁🥳 .
                     </td>
                 </tr>
                  

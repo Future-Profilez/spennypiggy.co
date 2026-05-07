@@ -16,7 +16,7 @@
                                  ? $data->total_paid 
                                  : ($data->amount + ($data->shipping_amount ?? 0) + ($data->vat_tax_amount ?? 0));
                          @endphp
-                         Thank you for purchasing {{ $data->shop->user->name }}'s Shop Item ({{ $data->shop->name }}) for {{ $curr }}{{ number_format($totalPaid, 2) }} on Spenny Piggy 🐷🎁!
+                         Thank you for purchasing {{ ucwords($data->shop->user->name) }}'s Shop Item ({{ $data->shop->name }}) for {{ $curr }}{{ number_format($totalPaid, 2) }} on Spenny Piggy 🐷🎁!
                          </span>
                      </td>
                  </tr>
@@ -73,24 +73,24 @@
                     </tr>
                 @endif
 
-                @if($data->shop->type === 'digital' && !empty($data->shop->success_page_value))
-                    <tr>
-                        <td style="padding: 15px 0;">
-                            <div style="padding: 15px; background-color: #f0f7ff; border-radius: 8px; border-left: 4px solid #007bff; text-align: left;">
-                                <p style="font-family: Arial; font-size: 14px; font-weight: bold; color: #007bff; margin: 0 0 10px 0;">
-                                    🗝️ Your Digital Access:
-                                </p>
-                                @if($data->shop->success_page_type === 'url')
-                                    <p style="font-family: Arial; font-size: 14px; color: #333; margin: 0; line-height: 1.4;">
-                                        Access your content here: <a href="{{ $data->shop->success_page_value }}" style="color: #007bff; text-decoration: underline;" target="_blank">{{ $data->shop->success_page_value }}</a>
-                                    </p>
-                                @else
-                                    <p style="font-family: Arial; font-size: 14px; color: #333; margin: 0; line-height: 1.4; white-space: pre-wrap;">{{ $data->shop->success_page_value }}</p>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
-                @endif
+                @if(!empty($data->shop->success_page_value))
+                     <tr>
+                         <td style="padding: 15px 0;">
+                             <div style="padding: 15px; background-color: #f0f7ff; border-radius: 8px; border-left: 4px solid #007bff; text-align: left;">
+                                 <p style="font-family: Arial; font-size: 14px; font-weight: bold; color: #007bff; margin: 0 0 10px 0;">
+                                     🚀 Confirmation Message:
+                                 </p>
+                                 @if($data->shop->success_page_type === 'url')
+                                     <p style="font-family: Arial; font-size: 14px; color: #333; margin: 0; line-height: 1.4;">
+                                         Access your content here: <a href="{{ $data->shop->success_page_value }}" style="color: #007bff; text-decoration: underline;" target="_blank">{{ $data->shop->success_page_value }}</a>
+                                     </p>
+                                 @else
+                                     <p style="font-family: Arial; font-size: 14px; color: #333; margin: 0; line-height: 1.4; white-space: pre-wrap;">{{ $data->shop->success_page_value }}</p>
+                                 @endif
+                             </div>
+                         </td>
+                     </tr>
+                 @endif
                  <tr>
                      <td style="height: 10px;line-height: 10px;">
                      </td>

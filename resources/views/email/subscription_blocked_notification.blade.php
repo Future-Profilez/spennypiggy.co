@@ -61,7 +61,7 @@
             
             <tr>
                 <td style="font-size: 16px; color: #1e293b; padding: 0 0 16px 0; text-align: center;">
-                    Hi {{ $creator->name }}! 👋
+                    Hi {{ ucwords($creator->name) }}! 👋
                 </td>
             </tr>
             

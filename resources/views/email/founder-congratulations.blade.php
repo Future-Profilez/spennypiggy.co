@@ -10,7 +10,7 @@
             style="max-width: 400px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                    🎉 Congratulations, <span style="color: #8C52FF">{{ $creator->name }}</span>! 🐷
+                    🎉 Congratulations, <span style="color: #8C52FF">{{ ucwords($creator->name) }}</span>! 🐷
                 </td>
             </tr>
             <tr>

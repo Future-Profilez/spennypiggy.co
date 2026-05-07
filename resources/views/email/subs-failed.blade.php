@@ -25,7 +25,7 @@
                  <tr>
                      <td
                          style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         Hello {{ $sub->guest_name }}! <br><br>
+                         Hello {{ ucwords($sub->guest_name) }}! <br><br>
                          Your payment for subscription of wish item {{ $sub->wish_item->wishname }} is in {{ $sub->status }} status on
                          Spenny Piggy.
                      </td>

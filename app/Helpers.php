@@ -469,11 +469,14 @@ class Helpers
                     ]);
 
                     $amountUserPay = (float)($shopPayment->total_paid ?? $shopPayment->amount);
+                    $originalItemPrice = (float)($shopPayment->amount); // The base price creator receives for the item
+                    
                     $multiplier = self::isZeroDecimalCurrency($shopPayment->currency) ? 1 : 100;
                     $totalPaidAmount = $shopPayment->total_paid && $shopPayment->total_paid > 0 
                         ? $shopPayment->total_paid 
                         : (float) ($shopPayment->amount + ($shopPayment->shipping_amount ?? 0) + ($shopPayment->vat_tax_amount ?? 0));
                     $amountWithcurrency = ($symbol ?? '£') . number_format($totalPaidAmount, 2);
+                    $originalPriceWithCurrency = ($symbol ?? '£') . number_format($originalItemPrice, 2);
 
                     // --- CREATOR NOTIFICATION BLOCK ---
                     try {
@@ -503,21 +506,22 @@ class Helpers
                             Log::info('Helpers::sendShopPurchaseEmails: Notifying Creator', [
                                 'uuid' => $shopPayment->uuid,
                                 'email' => $creatorEmail,
-                                'name' => $creator->name
+                                'name' => $creator->name,
+                                'showing_price' => $originalItemPrice
                             ]);
                             
-                            // Creator Email
+                            // Creator Email - Send ONLY the original item price
                             try {
-                                \App\EmailService::shopBuyed($shopPayment, (bool)$shopPayment->anonymous, $amountUserPay, $symbol);
+                                \App\EmailService::shopBuyed($shopPayment, (bool)$shopPayment->anonymous, $originalItemPrice, $symbol);
                             } catch (\Throwable $e) {
                                 Log::error('Helpers::sendShopPurchaseEmails: Creator Email failed', ['error' => $e->getMessage()]);
                             }
                             
-                            // Creator Push
+                            // Creator Push - Send ONLY the original item price
                             try {
-                                $fanName = ucfirst($shopPayment->user?->name ?? ($shopPayment->name ?? 'A Fan'));
+                                $fanName = ucfirst(ucwords($shopPayment->user?->name ?? ($shopPayment->name ?? 'A Fan')));
                                 $creatorTitle = "📦 New Shop Order!";
-                                $creatorContent = "$fanName placed an order in your shop. Time to fulfill it!.";
+                                $creatorContent = "$fanName placed an order in your shop for $originalPriceWithCurrency. Time to fulfill it!.";
                                 self::sendNotification($creatorTitle, $creatorContent, $creatorEmail);
                             } catch (\Throwable $e) {
                                 Log::error('Helpers::sendShopPurchaseEmails: Creator Push failed', ['error' => $e->getMessage()]);

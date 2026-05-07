@@ -36,12 +36,12 @@ class ShopBuyedMail extends Mailable
      */
     public function build()
     {
-        // Ensure relationships are loaded if this is being handled in the queue
-        if (!$this->data->relationLoaded('shop')) {
-            $this->data->load(['shop']);
+        // Ensure relationships are loaded with trashed items if this is being handled in the queue or if relationships were cleared
+        if (!$this->data->relationLoaded('shop') || $this->data->shop === null) {
+            $this->data->load(['shop' => function($q) { $q->withTrashed(); }, 'shop.user']);
         }
 
-        $name = $this->anon ? 'Anonymous user' : ($this->data->name ?? 'A customer');
+        $name = $this->anon ? 'Anonymous user' : ucwords($this->data->name ?? 'A customer');
         $itemName = $this->data->shop?->name ?? 'Shop Item';
         $subject = "{$name} purchased {$itemName}";
 

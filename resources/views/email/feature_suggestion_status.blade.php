@@ -16,21 +16,21 @@
                             🚀 Your idea has been accepted!
                         </h1>
                         <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin: 0;">
-                            Hi {{ $suggestion->name ?? 'there' }}, great news — your idea is on our roadmap!
+                            Hi {{ ucwords($suggestion->name ?? 'there') }}, great news — your idea is on our roadmap!
                         </p>
                     @elseif($suggestion->status === 'under_review')
                         <h1 style="font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #141414; margin: 0 0 8px 0;">
                             🔍 Your idea is under review
                         </h1>
                         <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin: 0;">
-                            Hi {{ $suggestion->name ?? 'there' }}, our team is actively looking into your suggestion.
+                            Hi {{ ucwords($suggestion->name ?? 'there') }}, our team is actively looking into your suggestion.
                         </p>
                     @elseif($suggestion->status === 'rejected')
                         <h1 style="font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #141414; margin: 0 0 8px 0;">
                             💬 An update on your suggestion
                         </h1>
                         <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin: 0;">
-                            Hi {{ $suggestion->name ?? 'there' }}, thank you for sharing your idea with us.
+                            Hi {{ ucwords($suggestion->name ?? 'there') }}, thank you for sharing your idea with us.
                         </p>
                     @endif
                 </td>

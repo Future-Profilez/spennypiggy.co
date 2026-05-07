@@ -25,7 +25,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                        Hello <strong style="color:#8C52FF;">{{ $name ?? 'there' }}</strong>!<br><br>
+                        Hello <strong style="color:#8C52FF;">{{ ucwords($name ?? 'there') }}</strong>!<br><br>
                         We're excited to welcome you to a community of thousands of creators in over 20 countries.
                     </td>
                 </tr>

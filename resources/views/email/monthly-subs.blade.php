@@ -24,7 +24,7 @@
                   </tr>
                   <tr>
                         <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                           Hello <strong style="color:#8C52FF;">{{ $sub->name }}</strong>!<br><br>
+                           Hello <strong style="color:#8C52FF;">{{ ucwords($sub->name) }}</strong>!<br><br>
                            Your payment for monthly subscription is <strong style="color:#8C52FF;">{{ $sub->status }}</strong> on Spenny Piggy.
                         </td>
                   </tr>

@@ -22,10 +22,9 @@
                  </tr>
                  <tr>
  
-                     <td
-                         style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        Thanks for supporting {{ $tip->creator->name }}'s Tip Jar with <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($amount, 2) }}</strong>!<br><br>You've just made their day a little brighter 😍🎁
-                     </td>
+                     <td style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
+                        Thanks for supporting {{ ucwords($tip->creator->name) }}'s Tip Jar with <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($amount, 2) }}</strong>!<br><br>You've just made their day a little brighter 😍🎁
+                    </td>
                  </tr>
                  <tr>
                      <td

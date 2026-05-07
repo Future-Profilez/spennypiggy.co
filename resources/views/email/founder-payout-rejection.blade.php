@@ -113,7 +113,7 @@
             <strong>⚠️ Action Required:</strong> We encountered an issue processing your founder bonus payout.
         </div>
 
-        <p>Hi {{ $creator->name }},</p>
+        <p>Hi {{ ucwords($creator->name) }},</p>
 
         <p>We attempted to process your founder bonus payout but encountered an issue with the payment. Don't worry - your bonus is still secure and we'll help you resolve this quickly.</p>
 
@@ -142,7 +142,7 @@
 
         <div class="cta">
             <a href="{{ config('app.url') }}/founder/bonus" class="button">View Founder Dashboard</a>
-            <a href="mailto:support@spennypiggy.co?subject=Founder Bonus Payout Issue - {{ $creator->name }}" class="button button-secondary">Contact Support</a>
+            <a href="mailto:support@spennypiggy.co?subject=Founder Bonus Payout Issue - {{ ucwords($creator->name) }}" class="button button-secondary">Contact Support</a>
         </div>
 
         <p>Once you've resolved the issue, we'll automatically retry the payout during our next processing cycle (7th of each month). If you need immediate assistance, please don't hesitate to reach out to our support team.</p>

@@ -10,7 +10,7 @@
             <tr>
                 <td
                     style="font-family: Arial; font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
-                    {{ $bill_pay->anonymous == 1 ? 'Someone' : $bill_pay->user->name }} subscribed to your <span
+                    {{ $bill_pay->anonymous == 1 ? 'Someone' : ucwords($bill_pay->user->name) }} subscribed to your <span
                         style="color: #8C52FF"> {{ ucwords(str_replace('_',' ',$bill_pay->bill->name)) }} </span> Bill of {{ $amountWithVat }} on Spenny Piggy 🐷🎁!
                 </td>
             </tr>

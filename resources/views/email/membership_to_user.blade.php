@@ -10,7 +10,7 @@
                  style="max-width: 296px; width: 100%; text-align: center;">
                  <tr>
                      <td style=" font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
-                         You have successfully subscribed <span style="color: #8C52FF">{{ $mem->membership->user->name }}</span> {{ $mem->membership->level }} Membership of amount {{ $amountWithcurrency }} on Spenny Piggy 🐷🎁!
+                         You have successfully subscribed <span style="color: #8C52FF">{{ ucwords($mem->membership->user->name) }}</span> {{ $mem->membership->level }} Membership of amount {{ $amountWithcurrency }} on Spenny Piggy 🐷🎁!
                      </td>
                  </tr>
      
@@ -32,11 +32,10 @@
                          
                          <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: left;">
                              <p style="font-family: Arial; font-size: 16px; font-weight: bold; color: #333; margin: 0 0 5px 0;">Membership Benefits</p>
-                            <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px;">You can now access members-only posts of {{ $mem->membership->user->name }}.</p>
-                            <ul style="font-family: Arial; font-size: 14px; color: #666; margin: 0 0 15px 0; padding-left: 20px;">
-                                 <li>Exclusive Member-Only Posts</li>
-                                 <li>Special Intro Videos</li>
-                                 <li>Direct Support to {{ $mem->membership->user->name }}</li>
+                            <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px;">You can now access members-only posts of {{ ucwords($mem->membership->user->name) }}.</p>
+                            <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 5px;"><strong>Your Benefits:</strong></p>
+                            <ul style="font-family: Arial; font-size: 14px; color: #666; margin: 0; padding-left: 20px; line-height: 1.6;">
+                                 <li>Direct Support to {{ ucwords($mem->membership->user->name) }}</li>
                              </ul>
                              <div style="text-align: center;">
                                  @php

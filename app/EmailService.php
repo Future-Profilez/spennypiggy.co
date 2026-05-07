@@ -89,31 +89,43 @@ class EmailService
 
     public static function shopBuyed($data, $anon, $amountUserPay, $symbol = '£')
     {
-        Log::info('EmailService::shopBuyed called', [
-            'shop_payment_id' => $data->id ?? null,
-            'anon' => $anon,
-            'amount' => $amountUserPay,
-            'symbol' => $symbol
-        ]);
-
         try {
+            // Force reload shop and user with trashed items to ensure we find the creator
             $data->load(['shop' => function($q) { $q->withTrashed(); }, 'shop.user']);
 
-            $toEmail = $data->shop?->user?->email;
+            $creator = $data->shop?->user;
+            
+            // Manual fallback if relationship loading failed
+            if (!$creator && $data->shop_id) {
+                $shop = \App\Models\Shop::withTrashed()->find($data->shop_id);
+                $creator = $shop?->user;
+                if (!$creator && $shop?->user_id) {
+                    $creator = \App\Models\User::find($shop->user_id);
+                }
+            }
+
+            $toEmail = $creator?->email;
+
+            Log::info('EmailService::shopBuyed - Attempting to send to creator', [
+                'shop_payment_id' => $data->id ?? null,
+                'email' => $toEmail ?? 'NOT_FOUND',
+                'shop_id' => $data->shop_id ?? 'NOT_FOUND',
+                'amount' => $amountUserPay
+            ]);
+
             if (!$toEmail) {
-                Log::warning('EmailService::shopBuyed skipped: missing creator email', [
-                    'shop_payment_id' => $data->id ?? null,
-                    'shop_id' => $data->shop_id ?? null,
+                Log::warning('EmailService::shopBuyed - Creator email not found. Skipping email.', [
+                    'shop_payment_id' => $data->id ?? null
                 ]);
                 return;
             }
 
-            Log::info('EmailService::shopBuyed sending to creator', ['email' => $toEmail]);
             $amountWithSymbol = $symbol . number_format($amountUserPay, 2);
             Mail::to($toEmail)->send(new ShopBuyedMail($data, $anon, $amountWithSymbol));
-            Log::info('EmailService::shopBuyed sent successfully');
+            
+            Log::info('EmailService::shopBuyed - Creator email sent successfully', ['email' => $toEmail]);
         } catch (\Throwable $e) {
-            Log::error('EmailService::shopBuyed failed', [
+            Log::error('EmailService::shopBuyed - Failed to send creator email', [
                 'error' => $e->getMessage(),
                 'shop_payment_id' => $data->id ?? null,
             ]);

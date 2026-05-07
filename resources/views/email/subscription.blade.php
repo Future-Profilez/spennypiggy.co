@@ -25,7 +25,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                        <strong style="color:#8C52FF;">{{ $sub->anonymous == 1 ? 'Someone' : $sub->user->name }}</strong> subscribed to your wish <strong style="color:#8C52FF;">{{ $sub->wish_item->wishname }}</strong>!<br><br>
+                        <strong style="color:#8C52FF;">{{ $sub->anonymous == 1 ? 'Someone' : ucwords($sub->user->name) }}</strong> subscribed to your wish <strong style="color:#8C52FF;">{{ $sub->wish_item->wishname }}</strong>!<br><br>
                         They'll be supporting you with <strong style="color:#8C52FF;">{{ $creatorFinalAmount }}</strong> on a <strong style="color:#8C52FF;">{{ $sub->wish_item->subscription_period }}</strong> basis.
                     </td>
                 </tr>

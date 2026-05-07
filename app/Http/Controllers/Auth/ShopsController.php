@@ -1471,7 +1471,8 @@ class ShopsController extends Controller
 
         // Update metadata with creator note
         if ($request->has('creator_note')) {
-            $metadata = $deliverable->metadata ?? [];
+            $raw = $deliverable->metadata;
+            $metadata = is_array($raw) ? $raw : (is_string($raw) ? (json_decode($raw, true) ?? []) : []);
             $metadata['creator_note'] = $request->creator_note;
             $deliverable->metadata = $metadata;
         }
