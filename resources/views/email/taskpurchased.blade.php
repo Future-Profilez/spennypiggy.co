@@ -22,7 +22,7 @@
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
                     Great news! <br>
-                    {{ $supporter ? $supporter->name : "A Guest" }} just purchased your task <strong>{{ $task->title }}</strong> for {{ $currencySymbol }}{{ $task->price }}.
+                    {{ $supporter ? ucwords($supporter->name) : "A Guest" }} just purchased your task <strong>{{ $task->title }}</strong> for {{ $currencySymbol }}{{ $task->price }}.
                 </td>
             </tr>
             <tr>

@@ -1030,7 +1030,14 @@ class CheckoutController extends Controller
                 if (isset($dd->user) && $dd->user->email) {
                     $CreatorName = !empty($dd->owner->name) ? ucfirst($dd->owner->name) : 'A Creator';
                     $titles = "✨ Wish Sent Successfully!";
-                    $contents = "You've sent a wish to $CreatorName. They'll be notified right away!.";
+                    
+                    // Format total paid for notification
+                    $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+                    $totalPaidAmount = $existingPayment->amount_total ?? (float) ($session->amount_total / $multiplier);
+                    $currencySymbol = \App\Models\Currency::where('iso', strtoupper($session->currency))->value('symbol') ?? '£';
+                    $formattedTotal = $currencySymbol . number_format($totalPaidAmount, 2);
+                    
+                    $contents = "You've sent a wish to $CreatorName. Total paid: {$formattedTotal}. They'll be notified right away!";
                     $emails = $dd->user->email ?? null;
                     Helpers::sendNotification($titles, $contents, $emails);
                 }

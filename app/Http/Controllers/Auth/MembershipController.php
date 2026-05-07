@@ -911,8 +911,10 @@ class MembershipController extends Controller
                 // this job is for creator
                 //  MembershipMail::dispatch($mem, $amountWithCurr);
 
-                $amountWithcurrency = $symbol->symbol . $mem->amount;
-                
+                $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+                $totalPaidAmount = $mem->total_paid && $mem->total_paid > 0 ? $mem->total_paid : (float) ($session->amount_total / $multiplier);
+                $amountWithcurrency = ($symbol->symbol ?? '£') . number_format($totalPaidAmount, 2);
+
                 Log::info('MembershipController: Starting membership email handling', [
                     'membership_payment_id' => $mem->id,
                     'membership_id' => $mem->membership->id,
@@ -939,7 +941,7 @@ class MembershipController extends Controller
                 // below is membership pwa for fans
                 $CreatorName = ucfirst($mem->membership->user->name) ?? 'A Creator';
                 $title = "🏆 Membership Activated!";
-                $content = "You've subscribed to $CreatorName ’s membership. Enjoy the perks!.";
+                $content = "You've subscribed to $CreatorName ’s membership for {$amountWithcurrency}. Enjoy the perks!.";
                 $email = $mem->guest_email ?? $mem->user->email;
 
                 Helpers::sendNotification($title, $content, $email);

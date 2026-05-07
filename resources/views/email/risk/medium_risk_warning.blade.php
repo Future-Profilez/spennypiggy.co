@@ -17,7 +17,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 16px; line-height: 24px; color: #141414; text-align: left;">
-                        Hello {{ $user->name }},
+                        Hello {{ ucwords($user->name) }},
                     </td>
                 </tr>
                 <tr>

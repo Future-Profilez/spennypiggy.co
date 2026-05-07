@@ -44,9 +44,9 @@ $displayAmount = $supporterPaid > 0
 
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
-                    Thank you, {{ $supporter ? $supporter->name : "Guest" }}! <br>
-                    You just purchased the task <strong>{{ $task->title }}</strong> from {{ $task->creator->name }} for {{ $currencySymbol }}{{ $displayAmount }}.
-                </td>
+                     Thank you, {{ $supporter ? ucwords($supporter->name) : "Guest" }}! <br>
+                     You just purchased the task <strong>{{ $task->title }}</strong> from {{ ucwords($task->creator->name) }} for {{ $currencySymbol }}{{ number_format($displayAmount, 2) }}.
+                 </td>
             </tr>
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">

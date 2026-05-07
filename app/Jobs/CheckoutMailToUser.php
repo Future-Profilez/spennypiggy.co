@@ -10,8 +10,11 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\FacadesLog;
-use Illuminate\SupportStr;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use App\Services\StripeMetadataService;
+use Stripe\StripeClient;
 
 class CheckoutMailToUser implements ShouldQueue
 {
@@ -184,7 +187,7 @@ class CheckoutMailToUser implements ShouldQueue
             $paymentIntentId = null;
             if ($this->payment->session_id) {
                 try {
-                    $stripe = new StripeStripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                     $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
                     $paymentIntentId = $session->payment_intent ?? null;
                     Log::info('CheckoutMailToUser: Retrieved payment intent from session', [
@@ -367,7 +370,7 @@ class CheckoutMailToUser implements ShouldQueue
             
             // Fallback: try to get from Stripe session metadata
             if (!empty($this->payment->session_id)) {
-                $stripe = new StripeStripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
                 
                 // Try new flattened format first
@@ -550,7 +553,7 @@ class CheckoutMailToUser implements ShouldQueue
             $paymentIntentId = null;
             if ($this->payment->session_id) {
                 try {
-                    $stripe = new StripeStripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                     $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
                     $paymentIntentId = $session->payment_intent ?? null;
                     Log::info('CheckoutMailToUser: Retrieved payment intent from session (item deliverable)', [
@@ -626,7 +629,7 @@ class CheckoutMailToUser implements ShouldQueue
             // Update Stripe payment intent metadata immediately for deliverables with payment intents
             if ($deliverable->payment_intent_id && $status === 'delivered') {
                 try {
-                    $stripeMetadataService = app(\App\ServicesStripeMetadataService::class);
+                    $stripeMetadataService = app(StripeMetadataService::class);
                     $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                         'checkout_processed_at' => now()->toISOString(),
                         'immediate_delivery' => 'true'
@@ -669,7 +672,7 @@ class CheckoutMailToUser implements ShouldQueue
             $metadata = json_decode($deliverable->metadata, true);
             $wishName = $metadata['wish_name'] ?? 'Digital Content';
             
-            $notification = \DB::table('deliverable_notifications')->insert([
+            $notification = DB::table('deliverable_notifications')->insert([
                 'uuid' => Str::uuid(),
                 'deliverable_id' => $deliverable->id,
                 'user_id' => $this->payment->user_id,
@@ -1024,6 +1027,7 @@ class CheckoutMailToUser implements ShouldQueue
                 'session_id' => $this->payment->session_id,
                 'amount_subtotal' => $this->payment->amount_subtotal,
                 'amount_total' => $this->payment->amount_total,
+                'total_paid' => $this->payment->amount_total, // Prioritize total paid for email template
                 'currency' => $this->payment->currency,
                 'user_id' => $this->payment->user_id,
                 'user' => $this->payment->user,

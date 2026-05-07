@@ -83,13 +83,16 @@ export default function MyShopProducts({lists, loading, update}) {
                                  </div>
                               )}
 
-                              <div className="block border border-black rounded-[20px] overflow-hidden relative">
+                              <Link 
+                                 href={s.perma_link ? `/shop/item/${slug(s.name)}/${s.uuid}` : '#'}
+                                 className="block border border-black rounded-[20px] overflow-hidden relative group/img"
+                              >
                                  <span className={`absolute top-2 left-2 text-[13px] px-3 py-1 rounded-lg border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] z-[5] ${s.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                                        {s.type === 'physical' ? 'Physical' : 'Digital'}
                                  </span>
                                  
                                  <img
-                                       className="object-cover h-[130px] sm:h-[160px] w-full"
+                                       className="object-cover h-[130px] sm:h-[160px] w-full group-hover/img:scale-105 transition-transform duration-500"
                                        src={s.perma_link}
                                        alt={s.name}
                                        onError={(e) => {
@@ -104,9 +107,13 @@ export default function MyShopProducts({lists, loading, update}) {
                                  {s.ai_generated == 1 && (
                                        <div className="absolute bottom-2 left-2 z-1 bg-pink-400 border-2 border-black font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg px-2 py-1 text-[10px] text-black">
                                           MADE WITH AI
-                                       </div>
+                                        </div>
                                  )}
-                              </div>
+                                 
+                                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span className="bg-white border-2 border-black px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">View Detail</span>
+                                 </div>
+                              </Link>
                            </div>
 
                            <div className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3">
@@ -144,7 +151,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                              leaveFrom="transform opacity-100 scale-100"
                                              leaveTo="transform opacity-0 scale-95"
                                           >
-                                             <Menu.Items className="p-2 absolute right-7 mt-[-40px] w-40 origin-top-right divide-y divide-gray-100 rounded-[20px] bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black focus:outline-none z-40">
+                                             <Menu.Items className="p-2 absolute right-7 mt-[-40px] w-40 origin-top-right divide-y divide-gray-100 rounded-[20px] bg-white border-2 border-black focus:outline-none z-40">
                                                    <div className="px-1 py-1">
                                                       <Menu.Item>
                                                          {({ active }) => (
@@ -235,7 +242,9 @@ export default function MyShopProducts({lists, loading, update}) {
                                           <span>Worldwide: {shippingDetails.worldwide}</span>
                                        )}
                                  </div>
-                              )}
+                              ) || <div className='opacity-0 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500 font-bold uppercase'>
+                                      No Shipping
+                                 </div>}
                            </div>
 
                            <div className="flex items-center gap-2 mt-auto">

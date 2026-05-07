@@ -25,7 +25,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                        Hey <strong style="color:#8C52FF;">{{ $name ?? 'there' }}</strong>!<br><br>
+                        Hey <strong style="color:#8C52FF;">{{ ucwords($name ?? 'there') }}</strong>!<br><br>
                         Welcome to Spenny Piggy! Your wishlist has been added successfully.
                     </td>
                 </tr>

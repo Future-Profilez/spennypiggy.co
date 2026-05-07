@@ -9,7 +9,7 @@
         <tr>
             <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                 <span style="color:#F94F97 ">
-                    Thank you for granting {{ $user_name }}'s bill ({{$bill_pay->bill->name}}) of {{ $amountWithCurr }} on Spenny Piggy 🐷🎁
+                    Thank you for granting {{ ucwords($user_name) }}'s bill ({{$bill_pay->bill->name}}) of {{ $amountWithCurr }} on Spenny Piggy 🐷🎁
                 </span>
             </td>
         </tr>
@@ -24,7 +24,7 @@
                 </div>
                 
                 <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: center;">
-                    <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px;">You can now see subscription-only posts of {{ $bill_pay->bill->user->name }}.</p>
+                    <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px;">You can now see subscription-only posts of {{ ucwords($bill_pay->bill->user->name) }}.</p>
                     @php
                         $accessUrl = isset($deliverable->uuid) 
                            ? route('deliverable.access', $deliverable->uuid) 

@@ -207,9 +207,9 @@ export default function ShopDetailItem(props) {
                                                         <p className="font-medium text-lg text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
                                                         <p className="text-normal text-gray-500 capitalize">Status: {purchase.status}</p>
                                                     </div>
-                                                    <a href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-normal">
+                                                    <Link href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-normal">
                                                         View Details
-                                                    </a>
+                                                    </Link>
                                                 </div>
                                             ))}
                                         </div>
@@ -237,12 +237,29 @@ export default function ShopDetailItem(props) {
                                     )}
                                 </div>
 
-                                <h2 className="font-GillSans uppercase text-3xl pt-4 pb-3">
-                                    {shop.name}
-                                </h2>
+                                <div className="flex items-center gap-3 pt-4 pb-3">
+                                    <h2 className="font-GillSans uppercase text-3xl">
+                                        {shop.name}
+                                    </h2>
+                                    <span className={`px-3 py-1 rounded-lg border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                                        {shop.type === 'physical' ? 'Physical' : 'Digital'}
+                                    </span>
+                                </div>
                                 <p className=" text-lg lg:leading-tight leading-normal text-gray-600">
                                     {shop.description}
                                 </p>
+
+                                {shop.type === 'physical' && shop.shipping_information && (
+                                    <div className="mt-4 p-5 bg-blue-50 border-[1px] border-gray-300 rounded-[24px] animate-in fade-in slide-in-from-top-2 duration-500">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-xl">🚚</span>
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-800">Shipping Information</h3>
+                                        </div>
+                                        <p className="text-sm font-bold text-blue-900 leading-relaxed italic">
+                                            "{shop.shipping_information}"
+                                        </p>
+                                    </div>
+                                )}
 
                                 <p className=" text-base lg:leading-tight leading-normal text-black mt-3 mb-2">
                                     Category : {" "}

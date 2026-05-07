@@ -20,7 +20,7 @@
                 <tr>
                     <td
                         style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                        <b>Hi {{ $user->name ?? 'User' }} 👋</b><br><br>
+                        <b>Hi {{ ucwords($user->name ?? 'User') }} 👋</b><br><br>
                         <span style="color:#F94F97;">
                             <b>Your subscription has started!</b>
                         </span>

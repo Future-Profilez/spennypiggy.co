@@ -12,9 +12,9 @@
 </tr>
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; margin: 0 auto; text-align: center;">
             <tr>
-                <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
+                <td style="font-family: Arial, sans-serif; font-weight: bold; font-size: 22px; color: #000000; line-height: 30px; padding: 0 0 25px 0; text-align: center;" align="center">
                     Action Required: <span style="color: #F94F97">Pending Order</span> ⏳
                 </td>
             </tr>
@@ -29,7 +29,7 @@
             </tr>
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                    Hi {{ $creator->name }}, <br>
+                    Hi {{ ucwords($creator->name) }}, <br>
                     You have a pending physical shop order waiting for fulfillment.
                 </td>
             </tr>

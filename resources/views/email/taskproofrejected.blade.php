@@ -22,7 +22,7 @@
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
                     Attention Needed <br>
-                    <strong>{{ $supporter->name }}</strong> has rejected your proof for the task <strong>{{ $task->title }}</strong>.
+                    <strong>{{ ucwords($supporter->name) }}</strong> has rejected your proof for the task <strong>{{ $task->title }}</strong>.
                 </td>
             </tr>
              <tr>

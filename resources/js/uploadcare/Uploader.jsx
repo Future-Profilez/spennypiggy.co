@@ -6,7 +6,7 @@ import { useAlerts } from "@/Components/Alerts";
 import axios from "axios"; 
 LR.registerBlocks(LR); 
 
-const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true }, ref) => {
+const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true }, ref) => {
   const { successAlert, errorAlert } = useAlerts();
   const [files, setFiles] = useState([]);
   const [checkIsUploading, setCheckIsUploading] = useState(false);
@@ -216,10 +216,8 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
           {files.map((file) => (
             <div className="uploadcare-view-wrap" key={file.uuid}>
               {file.isImage ? (
-                <img
-                  className="rounded border"
-                  width="25%"
-                  alt="Preview"
+                <img className={`rounded border ${imgclasses}`}
+                  width="25%" alt="Preview"
                   src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
                 />
               ) : (

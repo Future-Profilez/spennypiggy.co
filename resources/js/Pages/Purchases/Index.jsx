@@ -212,7 +212,12 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                     {deliverable.customer_email}
                                                     </p>
                                                 )}
-                                                <button className='cursor-none uppercase text-xs bg-black rounded-full px-3 py-1 mt-2 text-white '>{deliverable?.product_type}</button>
+                                                <button className='cursor-none uppercase text-[10px] bg-black rounded-full px-3 py-1 mt-2 text-white font-black tracking-wider'>
+                                                    {deliverable?.product_type === 'shop_item' 
+                                                        ? (metadata?.type === 'physical' ? 'Physical Shop Item' : 'Digital Shop Item')
+                                                        : deliverable?.product_type.replace('_', ' ')
+                                                    }
+                                                </button>
                                             </div>
                                             <div className="mt-2">
                                                 <ul>

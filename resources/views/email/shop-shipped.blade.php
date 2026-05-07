@@ -27,7 +27,7 @@
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
                     Great news! <br>
-                    {{ $creator->name }} has shipped your shop item: <br>
+                    {{ ucwords($creator->name) }} has shipped your shop item: <br>
                     <span style="color: #F94F97">{{ $deliverable->metadata_json->shop_item_name ?? 'Shop Item' }}</span>
                 </td>
             </tr>
@@ -60,7 +60,7 @@
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">
-                    <a href="{{ env('APP_URL') . '/purchases' }}"
+                    <a href="{{ env('APP_URL') . '/shop?type=purchases' }}"
                         style="border-radius:30px; padding:13px 30px; width: 210px; text-decoration:none; border:none; background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer; display: inline-block;">View My Purchases</a>
                 </td>
             </tr>

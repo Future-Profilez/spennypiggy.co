@@ -13,10 +13,10 @@
                  <tr>
                      <td style=" font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
                          @if(request()->header('X-Is-Renewal') == 'true' || (isset($is_renewal) && $is_renewal))
-                             Your subscription for {{$creator_name}}'s wish <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> has been renewed! 🎉<br><br>
+                             Your subscription for {{ ucwords($creator_name) }}'s wish <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> has been renewed! 🎉<br><br>
                              You've been charged {{$amountTotal}} for your <span style="color: #8C52FF">{{ $sub->wish_item->subscription_period }}</span> subscription.
                          @else
-                             You have successfully subscribed a wish of {{$creator_name}} <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> on a <span style="color: #8C52FF">{{ $sub->wish_item->subscription_period }}</span> basis of amount {{$amountTotal}}.
+                             You have successfully subscribed a wish of {{ ucwords($creator_name) }} <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> on a <span style="color: #8C52FF">{{ $sub->wish_item->subscription_period }}</span> basis of amount {{$amountTotal}}.
                          @endif
                      </td>
                  </tr>

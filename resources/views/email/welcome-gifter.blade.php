@@ -22,7 +22,7 @@
                             <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Gift">
                         </div>
                         <div style="padding:12px 0 0 0; font-weight:600; font-size:16px; line-height:24px; color:#4D4D4D; text-align:center;">
-                            Hi <span style="color:#8C52FF; font-weight:800;">{{ $name ?? 'there' }}</span> — you’re all set to discover creators and make someone’s day with the perfect gift.
+                            Hi <span style="color:#8C52FF; font-weight:800;">{{ ucwords($name ?? 'there') }}</span> — you’re all set to discover creators and make someone’s day with the perfect gift.
                         </div>
                         <div style="padding:18px 0 0 0; text-align:center;">
                             <a href="{{ url('/discover') }}" style="border-radius:30px; padding:13px 30px 13px 30px; text-decoration:none; border:none; background-color:#F94F97; font-weight:800; font-size:15px; text-align:center; color:#ffffff; display:inline-block;">

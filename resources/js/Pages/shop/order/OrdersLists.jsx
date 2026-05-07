@@ -81,7 +81,6 @@ export default function OrdersLists({ type = 'sales' }) {
       fetchorders();
    }, [type]);
 
-   console.log(orders);
 
   return <>
 
@@ -89,98 +88,110 @@ export default function OrdersLists({ type = 'sales' }) {
       <>
 
       {type === 'sales' && (
-      <div className='grid md:grid-cols-3 gap-4 mb-6 ' >
-         <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{claims}</h2>
-            <p className='text-gray-500'>Claims</p>
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+            <h2 className='font-black text-3xl mb-1' >{claims}</h2>
+            <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Claims</p>
          </div>
-         <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{formatMultiPrice(monthEarning, userCurrency)}</h2>
-            <p className='text-gray-500'>Last 30 Days</p>
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+            <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(monthEarning, userCurrency)}</h2>
+            <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Last 30 Days</p>
          </div>
-         <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{formatMultiPrice(allEarning, userCurrency)}</h2>
-            <p className='text-gray-500'>All Time</p>
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+            <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(allEarning, userCurrency)}</h2>
+            <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>All Time</p>
          </div>
       </div>
       )}
 
-      {type === 'sales' ? <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2> : <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >My Purchases</h2>}
+      {type === 'sales' ? <h2 className='font-GillSans uppercase text-xl mb-4 pt-3' >Recent Claims</h2> : <h2 className='font-GillSans uppercase text-xl mb-4 pt-3' >My Purchases</h2>}
 
       {orders && orders.length > 0 && (
-         <div  className=" ">
-            <div className="relative ">
+         <div  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                {orders.map((item, index) =>
-                  <div key={index} className={`bg-white rounded-[20px] p-4 mb-4 flex items-center  justify-between ${index > 0 ? "border-t" : "" } w-full`}>
-                     {/* <Link href={`/${item.username}`} className="flex w-30"> */}
-                     <Link href={`/shop/item/${slug(item.shop.name)}/${item.shop.uuid}`} className="flex w-30">
-                        <div className="p-relative ">
-                              <img className="border border-gray-200 h-16 w-16 min-w-16 min-h-16 rounded-[15px]  object-cover" src={item?.shop?.perma_link} alt='user' />
-                        </div>
-                        <div className=" ml-3 w-fullr">
-                           <div>
-                                 <div className="text-normal text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
-                                    <span className="line-clamp-1">
-                                     {item?.shop?.name || ""}
-                                    </span>
-                                 </div>
-                                 <div className=''>
-                                    <div className="text-break line-clamp-1 text-normal font-cr-regular text-[#666666]">
-                                       {item && item?.gross_amount ? (
-                                       type === 'sales' ? (
-                                             <div className="font-bold">{formatMultiPrice(item.net_amount || 0, item?.currency || userCurrency)}</div>
+                  <article 
+                    key={index} 
+                    className="relative bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
+                  >
+                    <div className="p-3 md:p-4">
+                        <div className="relative">
+                            <div className="block border border-black rounded-[20px] overflow-hidden relative">
+                                <span className={`absolute top-2 left-2 text-[11px] px-3 py-1 rounded-lg border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] z-[5] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                                    {item?.shop?.type === 'physical' ? 'Physical' : 'Digital'}
+                                </span>
+                                
+                                <Link href={item.shop ? `/shop/item/${slug(item.shop.name)}/${item.shop.uuid}` : '#'}>
+                                    <img
+                                        className="object-cover h-[130px] sm:h-[160px] w-full"
+                                        src={item?.shop?.perma_link || 'https://via.placeholder.com/400?text=🛍️'}
+                                        alt={item?.shop?.name || "Product"}
+                                        onError={(e) => {
+                                            e.target.src = 'https://via.placeholder.com/400?text=🛍️';
+                                        }}
+                                    />
+                                 <div className="absolute top-2 right-2 flex items-center gap-2">
+                                       {item.payment_status === 'refunded' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-gray-200 text-gray-700 uppercase">Refunded</span>
+                                       ) : item.status === 'delivered' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-green-100 text-green-700 uppercase">Completed</span>
+                                       ) : item.status === 'shipped' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-blue-100 text-blue-700 uppercase">Shipped</span>
+                                       ) : item.status === 'processing' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-indigo-100 text-indigo-700 uppercase">Processing</span>
+                                       ) : item.is_delayed ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-red-100 text-red-700 uppercase">Delayed</span>
                                        ) : (
-                                             <div className="font-bold">{formatMultiPrice(item.gross_amount || 0, item?.currency || userCurrency)}</div>
-                                       )
-                                    ) : "FREE"}
-                                    </div>
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-yellow-100 text-yellow-700 uppercase">Pending</span>
+                                       )}
                                  </div>
-                                 
-                           </div>
-                        </div>
-                     </Link>
- 
-                     <div className=" ">
-
-                        <p className='flex items-center'> <span className='me-2'>Status : </span>
-                           {(item.payment_status === 'refunded' || item.is_deactivated || item.shop?.type === 'physical') && (
-                              <div className="mt-1">
-                                 {item.payment_status === 'refunded' ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Refunded</span>
-                                 ) : item.is_deactivated ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Deactivated</span>
-                                 ) : item.status === 'delivered' ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Completed</span>
-                                 ) : item.status === 'shipped' ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Shipped</span>
-                                 ) : item.status === 'processing' ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Processing</span>
-                                 ) : item.is_delayed ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Delayed</span>
-                                 ) : (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Pending</span>
-                                 )}
-                              </div>
-                           )}
-                        </p>
-                        <div className='flex items-center'>
-                           <span className='me-2'>Seller : </span>
-                           <Link href={`/${item.username}`} className="flex text-sm text-blue-500 font-cr-regular">
-                              @{item.username}
-                           </Link>
+                                </Link>
+                            </div>
                         </div>
 
-                     </div>
-                     <div className="flex justify-between items-center">
-                        <div className=" text-[#4d4d4d] text-sm hidden lg:block pb-2 md:pb-0 me-2">
-                            <TimeFormat dateString={item.created_at} />
+                        <div className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3">
+                            <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
+                                {item?.shop?.name || ""}
+                            </h2>
+                            <div className="flex flex-col gap-1 text-[13px] sm:text-sm font-bold text-gray-700">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-500 uppercase text-[11px]">{type === 'sales' ? 'Buyer' : 'Seller'}:</span>
+                                    <Link href={`/${item.username}`} className="text-blue-500 hover:underline">
+                                        @{item.username}
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
-                        <OrderDetail date={<TimeFormat dateString={item.created_at} />} item={item} text={'View Info'} classes="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-[20px] text-sm font-medium" onSuccess={fetchorders} />
-                     </div>
-               </div>
+
+                        <div className="mb-4 flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                                <h2 className="font-black text-lg sm:text-2xl text-black">
+                                    {item && item?.gross_amount ? (
+                                        type === 'sales' ? (
+                                            formatMultiPrice(item.net_amount || 0, item?.currency || userCurrency)
+                                        ) : (
+                                            formatMultiPrice(item.gross_amount || 0, item?.currency || userCurrency)
+                                        )
+                                    ) : "FREE"}
+                                </h2>
+                                <div className="text-gray-500 text-[11px] font-bold uppercase">
+                                    <TimeFormat dateString={item.created_at} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-auto">
+                            <OrderDetail 
+                                date={<TimeFormat dateString={item.created_at} />} 
+                                item={item} 
+                                text={'View Info'} 
+                                classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 text-black text-sm sm:text-base uppercase text-center block" 
+                                onSuccess={fetchorders} 
+                            />
+                        </div>
+                    </div>
+                </article>
             )}
          </div>
-      </div>
       )}
       </>
       : ''}

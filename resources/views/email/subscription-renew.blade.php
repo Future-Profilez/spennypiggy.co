@@ -49,7 +49,7 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'was updated', 'bod
 
 <tr>
     <td align="center" style="padding: 20px 0;">
-        <p style="font-size: 18px; color: #000; margin: 0;"><strong>Hello {{ $array['name'] ?? 'there' }}!</strong></p>
+        <p style="font-size: 18px; color: #000; margin: 0;"><strong>Hello {{ ucwords($array['name'] ?? 'there') }}!</strong></p>
         <p style="font-size: 16px; color: #333; margin-top: 10px;">{{ $status['desc'] }}</p>
     </td>
 </tr>

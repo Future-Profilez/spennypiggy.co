@@ -3579,8 +3579,14 @@ class StripeController extends Controller
                 /**************************TIP**JAR**PWA**START****************************************************/
                 // below is TIP JAR pwa for fans
                 $CreatorName = ucfirst($tip_pay->creator->name) ?? 'A Creator';
+                
+                $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+                $totalPaidAmount = $tip_pay->total_paid && $tip_pay->total_paid > 0 ? $tip_pay->total_paid : (float) ($session->amount_total / $multiplier);
+                $symbolStr = \App\Models\Currency::where('iso', strtoupper($tip_pay->currency))->value('symbol') ?? '£';
+                $amountWithcurrency = $symbolStr . number_format($totalPaidAmount, 2);
+                
                 $title = "🏅 You've unlocked a new badge!";
-                $content = "You just tipped to $CreatorName. Thanks for supporting them!.";
+                $content = "You just tipped {$amountWithcurrency} to $CreatorName. Thanks for supporting them!.";
                 $email = $tip_pay->guest_email ?? $tip_pay->user->email;
 
                 Helpers::sendNotification($title, $content, $email);

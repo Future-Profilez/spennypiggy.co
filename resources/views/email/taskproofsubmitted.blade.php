@@ -22,7 +22,7 @@
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
                     Good news! <br>
-                    <strong>{{ $creator->name }}</strong> has submitted proof for your task <strong>{{ $task->title }}</strong>.
+                    <strong>{{ ucwords($creator->name) }}</strong> has submitted proof for your task <strong>{{ $task->title }}</strong>.
                 </td>
             </tr>
             <tr>

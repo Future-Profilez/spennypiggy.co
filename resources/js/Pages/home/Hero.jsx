@@ -147,7 +147,7 @@ export default function Hero({auth}) {
                       </h3>
                       <div className="h-[1px] w-24 bg-gradient-to-l from-transparent via-yellow-400/50 to-transparent"></div>
                     </div> 
-                    <h3 className="text-center text-lg md:text-3xl text-gray-400 font-poppins font-light mb-10 md:mb-16 max-w-4xl mx-auto leading-relaxed opacity-100">
+                    <h3 className="text-center text-lg md:text-2xl text-gray-400 font-poppins font-light mb-10 md:mb-16 max-w-4xl mx-auto leading-relaxed opacity-100">
                       Get paid with secure, trackable income — with built-in 
                       <span className="text-white font-medium"> protection against disputes and chargebacks.</span>
                     </h3>

@@ -140,7 +140,6 @@ export default function Header({ classMagicword }) {
                 if (iconRef.current) {
                     iconRef.current.startAnimation?.();
                 }
-                // Schedule next animation with some randomness (4-7 seconds) for a natural feel
                 const nextDelay = 4000 + Math.random() * 3000;
                 timeoutRef.current = setTimeout(startLoop, nextDelay);
             };
