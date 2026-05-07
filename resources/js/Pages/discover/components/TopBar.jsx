@@ -75,21 +75,23 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
         { id: 'creators', label: 'Creators' },
         { id: 'wishes', label: 'Wish List' },
         { id: 'bills', label: 'Bills' },
-        { id: 'memberships', label: 'Memberships' }
+        { id: 'memberships', label: 'Memberships' },
+        { id: 'tasks', label: 'Tasks' },
+        { id: 'shops', label: 'Shops' }
     ];
 
     return (
         <div className="sticky top-[75px] sm:top-[78px] md:top-[87px] z-10 bg-[#A2E4B8] backdrop-blur-sm pt-2  transition-all">
-            <div className="container max-w-7xl mx-auto px-4 py-3">
+            <div className="container max-w-7xl mx-auto px-4 pb-0  md:pb-3 pt-3">
                 {/* Search Bar */}
-                <div className="relative mb-4">
+                <div className="relative mb-2 md:mb-4">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <RiSearchLine className="text-black font-black" size={24} />
                     </div>
                     <input
                         ref={inputRef}
                         type="text"
-                        className="w-full pl-12 pr-4 py-3 rounded-2xl border-[3px] border-black bg-[#fdfbf7] focus:bg-white focus:ring-0 focus:outline-none transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-lg font-black text-black placeholder-gray-600"
+                        className="w-full pl-12 pr-4 py-4 rounded-[20px] border-[3px] border-black bg-[#fdfbf7] focus:bg-white focus:ring-0 focus:outline-none transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-lg font-black text-black placeholder-gray-600"
                         placeholder="Search creators and wishes..."
                         value={query}
                         onChange={(e) => {
@@ -101,7 +103,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     />
                     {isFocused && (recentSearches.length > 0 || query) && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[30px]   shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[20px]   shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-2">
                                 {recentSearches.length > 0 && !query && (
                                     <>
@@ -119,7 +121,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                 className="hover:bg-gray-50 px-3 py-2 rounded-[30px]   cursor-pointer flex items-center gap-2 group"
                                             >
                                                 <RiTimeLine className="text-gray-400 group-hover:text-pink-500 transition-colors" />
-                                                <span className="text-gray-700 group-hover:text-gray-900">{term}</span>
+                                                <span className="text-gray-700 group-hover:text-gray-900 capitalize">{term}</span>
                                             </div>
                                         ))}
                                     </>
@@ -200,7 +202,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                 </div>
 
                 {onQuickFilter && Array.isArray(activeFilters) && (
-                    <div className="flex items-center ps-2 gap-3 overflow-x-auto no-scrollbar pb-3 pt-2 px-1">
+                    <div className="flex items-center ps-2 gap-3 overflow-x-auto no-scrollbar pb-3 pt-2">
                         {onFilterToggle && (
                             <button 
                                 onClick={onFilterToggle}
@@ -210,7 +212,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         )}
                         {quickFilters.map(filter => (
                             <button key={filter.id} onClick={() => onQuickFilter(filter.id)}
-                                className={`flex-shrink-0 px-5 py-2 rounded-xl text-sm md:text-base font-black uppercase tracking-widest transition-all whitespace-nowrap border-[3px] border-black ${
+                                className={`flex-shrink-0 px-5 py-2 rounded-xl text-[14px] font-black uppercase tracking-wider transition-all whitespace-nowrap border-[3px] border-black ${
                                     activeFilters.includes(filter.id) ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' : 'bg-[#fdfbf7] text-black shadow-none hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-100 hover:translate-x-[-1px] hover:translate-y-[-1px]'
                                 }`} > {filter.label} 
                             </button>

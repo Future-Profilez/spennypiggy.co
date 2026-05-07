@@ -12,7 +12,7 @@ import { useMemo } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { Maximize } from 'lucide-react';
 
-export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
+export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatus}){
 
   const [open, setOpen] = useState(false);
   const [loading,setloading] = useState(false);
@@ -205,9 +205,9 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     ? `${fullVideoUrl}${fullVideoUrl.includes('?') ? '&' : '?'}v=${cacheVersion}`
     : '';
 
-  const posterUrl = intro?.poster_url 
+  const posterUrl = (intro?.poster_url && intro.poster_url !== false)
     ? `${intro.poster_url}${intro.poster_url.includes('?') ? '&' : '?'}v=${cacheVersion}` 
-    : wishlistbannerimg;
+    : (user?.avatar_url || wishlistbannerimg);
 
   useEffect(() => {
     const video = popupVideoRef.current;
@@ -237,6 +237,8 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     }
   }, [close, popupVideoUrl]);
 
+  const [posterLoaded, setPosterLoaded] = useState(false);
+
   return (
     <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
       {intro ?
@@ -250,6 +252,9 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
               className='isintro relative border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] cursor-pointer overflow-hidden bg-[#f3f4f6]'
               onClick={() => setClose(true)}
             >
+              {!posterLoaded && (
+                  <div className="absolute inset-0 bg-white/50 animate-pulse z-[5]" />
+              )}
               <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'>
                 Intro video
               </div>
@@ -262,6 +267,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 autoPlay
                 preload="metadata"
                 poster={posterUrl}
+                onLoadedData={() => setPosterLoaded(true)}
                 className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px] max-h-[300px] block'
                 onPlaying={() => setNeedsInteraction(false)}
                 onPlay={() => setNeedsInteraction(false)}

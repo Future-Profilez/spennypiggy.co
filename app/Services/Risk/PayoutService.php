@@ -35,8 +35,11 @@ class PayoutService
             $query = $modelClass::query();
 
             if ($modelClass === \App\Models\StripePaymentItems::class) {
-                if (!$payment->stripe_session_id) continue;
-                $detailIds = \App\Models\StripePaymentDetail::where('session_id', $payment->stripe_session_id)->pluck('id');
+                if (!$payment->stripe_session_id && !$payment->stripe_payment_intent_id) continue;
+                $detailQuery = \App\Models\StripePaymentDetail::query();
+                if ($payment->stripe_session_id) $detailQuery->orWhere('session_id', $payment->stripe_session_id);
+                if ($payment->stripe_payment_intent_id) $detailQuery->orWhere('session_id', $payment->stripe_payment_intent_id);
+                $detailIds = $detailQuery->pluck('id');
                 if ($detailIds->isEmpty()) continue;
                 $query->whereIn('stripe_payment_detail_id', $detailIds);
             } else {
@@ -44,8 +47,15 @@ class PayoutService
                     if ($payment->stripe_session_id) {
                         $q->orWhere($sessionColumn, $payment->stripe_session_id);
                     }
-                    if ($modelClass === \App\Models\TaskPurchase::class && $payment->stripe_payment_intent_id) {
-                        $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
+                    if ($payment->stripe_payment_intent_id) {
+                        if ($modelClass === \App\Models\TaskPurchase::class) {
+                            $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
+                        } elseif ($modelClass === \App\Models\StripePaymentItems::class) {
+                            // Handled above
+                        } else {
+                            // Check if the model has a payment_intent_id column, or just fallback to checking session_id against it
+                            $q->orWhere($sessionColumn, $payment->stripe_payment_intent_id);
+                        }
                     }
                 });
             }
@@ -95,16 +105,21 @@ class PayoutService
         $platformTotal = 0;
 
         $dueReleases = $this->getDueReserveReleases($runDate);
+        $processedCreators = [];
 
         foreach ($creators as $creatorId) {
-            $creator = User::where('uuid', $creatorId)->first();
+            $creator = User::where('uuid', $creatorId)->orWhere('id', $creatorId)->first();
             if (!$creator) continue;
+            
+            // Prevent processing the same creator twice if they have mixed creator_id formats (id vs uuid)
+            if (in_array($creator->uuid, $processedCreators)) continue;
+            $processedCreators[] = $creator->uuid;
 
             // Fetch Metrics
             try {
-                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics($creatorId);
+                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics($creator->uuid);
             } catch (\Throwable) {
-                $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
+                $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
             }
             
             $delayDays = 0;
@@ -114,14 +129,14 @@ class PayoutService
             $cutoff = $runDate->copy()->subDays($delayDays);
 
             // Fetch Eligible Payments
-            $payments = Payment::where('creator_id', $creatorId)
+            $payments = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
                 ->where('status', 'succeeded')
                 ->whereNull('payout_run_id')
                 ->where('created_at', '<=', $cutoff)
                 ->orderByDesc('created_at')
                 ->get();
             
-            $holdIntentIds = Payment::where('creator_id', $creatorId)
+            $holdIntentIds = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
                 ->whereNull('payout_run_id')
                 ->whereIn('status', ['review_hold', 'disputed'])
                 ->whereNotNull('stripe_payment_intent_id')
@@ -137,8 +152,12 @@ class PayoutService
                 ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
                 ->values();
 
+            $pendingDeliverablesMinor = 0;
+            
+            \Illuminate\Support\Facades\Log::info("Creator: {$creator->uuid}, Payments before filter: " . $payments->count());
+
             // Filter out Physical Shop payments and Timed Tasks that are NOT yet completed
-            $payments = $payments->filter(function ($p) {
+            $payments = $payments->filter(function ($p) use (&$pendingDeliverablesMinor) {
                 $sessionId = $p->stripe_session_id;
                 $intentId = $p->stripe_payment_intent_id;
 
@@ -154,6 +173,10 @@ class PayoutService
                     if ($shopPayment && $shopPayment->shop && $shopPayment->shop->type === 'physical') {
                         // Shop Physical: ONLY include if status is 'delivered' (Completed)
                         if (!$shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
+                            $fts = $this->getAllFinancialTransactionsForPayment($p);
+                            if ($fts->isNotEmpty()) {
+                                $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
+                            }
                             return false; 
                         }
                     }
@@ -170,6 +193,10 @@ class PayoutService
                         if ($taskType === 'timed') {
                             // Task Timed: ONLY include if status is completed/accepted/paid_out
                             if (!in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                                $fts = $this->getAllFinancialTransactionsForPayment($p);
+                                if ($fts->isNotEmpty()) {
+                                    $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
+                                }
                                 return false;
                             }
                         }
@@ -203,7 +230,7 @@ class PayoutService
                 }
             }
 
-            $adjustments = Payment::where('creator_id', $creatorId)
+            $adjustments = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
                 ->whereIn('status', ['refunded', 'disputed'])
                 ->whereNotNull('payout_run_id')
                 ->whereNull('adjustment_payout_run_id')
@@ -212,7 +239,7 @@ class PayoutService
                 ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
                 ->values();
 
-            $reviewHold = Payment::where('creator_id', $creatorId)
+            $reviewHold = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
                 ->where('status', 'review_hold')
                 ->whereNull('payout_run_id')
                 ->where('created_at', '<=', $cutoff)
@@ -266,14 +293,15 @@ class PayoutService
                 $netPayout = 0;
             }
             
-            if ($payments->isEmpty() && $adjustments->isEmpty() && $reviewHold->isEmpty() && $negativeBalance === 0 && $reserveReleaseAmount === 0) {
+            if ($payments->isEmpty() && $adjustments->isEmpty() && $reviewHold->isEmpty() && $negativeBalance === 0 && $reserveReleaseAmount === 0 && $pendingDeliverablesMinor === 0) {
                 continue;
             }
 
-            $payouts[$creatorId] = [
+            $payouts[$creator->uuid] = [
                 'creator_name' => $creator->name,
                 'gross_amount' => $grossAmount,
                 'net_earnings' => $netEarningsMinor,
+                'pending_amount' => $pendingDeliverablesMinor,
                 'refund_dispute_amount' => $refundDisputeAmount,
                 'reserve_amount' => $totalReservesHeld, // This is what was held from the NEW payments
                 'reserve_release_amount' => $reserveReleaseAmount,
@@ -529,6 +557,14 @@ class PayoutService
      */
     public function getHeldReserves($creatorId)
     {
+        $creator = User::where('uuid', $creatorId)->orWhere('id', $creatorId)->first();
+        if (!$creator) {
+            return [
+                'total_held' => 0,
+                'breakdown' => []
+            ];
+        }
+
         $rates = \App\Models\Currency::rates();
         $convert = function ($amount, $from, $to = 'GBP') use ($rates) {
             $from = strtoupper($from ?: 'GBP');
@@ -547,7 +583,7 @@ class PayoutService
 
         foreach ($runs as $run) {
             $payouts = $run->totals['payouts'] ?? [];
-            $data = $payouts[$creatorId] ?? null;
+            $data = $payouts[$creator->uuid] ?? $payouts[$creator->id] ?? null;
 
             if ($data && isset($data['reserve_amount']) && $data['reserve_amount'] > 0 
                 && empty($data['reserve_released'])) {
@@ -572,7 +608,7 @@ class PayoutService
 
         // Add pending reserves from recent payments (Excluding Holds/Disputes)
         // Fetch ALL unpaid succeeded payments — filter by FT reserve, not Payment.reserve_amount_minor
-        $pendingPayments = \App\Models\Payment::where('creator_id', $creatorId)
+        $pendingPayments = \App\Models\Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
             ->whereNull('payout_run_id')
             ->where('status', 'succeeded')
             ->orderByDesc('created_at')
@@ -580,7 +616,7 @@ class PayoutService
             ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
             ->values();
 
-        $holdIntentIds = \App\Models\Payment::where('creator_id', $creatorId)
+        $holdIntentIds = \App\Models\Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
             ->whereNull('payout_run_id')
             ->whereIn('status', ['review_hold', 'disputed'])
             ->whereNotNull('stripe_payment_intent_id')

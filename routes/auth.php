@@ -194,7 +194,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             } elseif ($normalizedType === 'new') {
                 $filters['sortBy'] = 'New';
                 $filters['type'] = 'new';
-            } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships'])) {
+            } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships', 'tasks', 'shops'])) {
                 $filters['contentType'] = ucfirst($normalizedType);
             }
         } else {
@@ -290,17 +290,91 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     $cacheKey = 'discover_v3_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
     $ttl = Auth::check() ? 600 : 1800; // 10 mins for auth, 30 mins for guests
 
-    $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $getData);
+    $filters = $request->only(['search', 'contentType', 'sortBy', 'type']);
+    
+    // Fix: Ensure sortBy is correctly populated when type is used
+    if (isset($filters['type'])) {
+        $typeParam = strtolower($filters['type']);
+        if ($typeParam === 'trending') {
+            $filters['sortBy'] = 'Trending';
+        } elseif ($typeParam === 'new') {
+            $filters['sortBy'] = 'New';
+        }
+    }
+    
+    $limit = 10;
+    
+    // Check if we should show search results (Grid) or default sections (Carousels)
+    $isSearch = ($request->has('search') && strlen((string)$request->input('search')) > 0) || 
+               $request->has('type') || 
+               $request->has('contentType');
+
+    // Unified data fetching for ALL sections to avoid multiple round-trips
+    // We cache the entire block for 30 minutes to make it instant for everyone
+    $cacheKey = 'discover_final_v6_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
+    $ttl = 1800; // 30 minutes
+
+    $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, function() use ($discoveryService, $filters, $isSearch, $limit) {
+        if ($isSearch) {
+            $searchResults = [];
+            $ctype = $filters['contentType'] ?? 'All';
+            if ($ctype === 'Creators' || $ctype === 'All') $searchResults['creators'] = $discoveryService->getSearchCreators($filters);
+            if ($ctype === 'Wishes' || $ctype === 'All') $searchResults['wishes'] = $discoveryService->getSearchWishes($filters);
+            if ($ctype === 'Bills' || $ctype === 'All') $searchResults['bills'] = $discoveryService->getSearchBills($filters);
+            if ($ctype === 'Memberships' || $ctype === 'All') $searchResults['memberships'] = $discoveryService->getSearchMemberships($filters);
+            if ($ctype === 'Tasks' || $ctype === 'All') $searchResults['tasks'] = $discoveryService->getSearchTasks($filters);
+            if ($ctype === 'Shops' || $ctype === 'All') $searchResults['shops'] = $discoveryService->getSearchShops($filters);
+            
+            return [
+                'searchResults' => $searchResults,
+                'featuredCreators' => [],
+                'newVerifiedCreators' => [],
+                'featuredWishes' => [],
+                'topEarners' => [],
+                'featuredBills' => [],
+                'featuredMemberships' => [],
+                'featuredTasks' => [],
+                'featuredShops' => [],
+                'intros' => []
+            ];
+        }
+
+        return [
+            'filters' => $filters,
+            'featuredCreators' => $discoveryService->getTrendingCreators($limit),
+            'newVerifiedCreators' => $discoveryService->getNewVerifiedCreators($limit),
+            'intros' => \App\Models\UserIntro::where('approved', 1)
+                ->with(['user' => function($q) {
+                    $q->where('suspended_account', 0)->where('profile_status_lock', 2);
+                }])
+                ->whereHas('user', function($q) {
+                    $q->where('suspended_account', 0)->where('profile_status_lock', 2);
+                })
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get(),
+            'featuredWishes' => $discoveryService->getFeaturedWishes($limit),
+            'topEarners' => $discoveryService->getTopEarners('weekly', $limit)['data'],
+            'featuredBills' => $discoveryService->getFeaturedBills($limit),
+            'featuredMemberships' => $discoveryService->getFeaturedMemberships($limit),
+            'featuredTasks' => $discoveryService->getFeaturedTasks($limit),
+            'featuredShops' => $discoveryService->getFeaturedShops($limit),
+            'searchResults' => []
+        ];
+    });
 
     return Inertia::render('discover/Discover', [
+        'filters' => $filters,
         'featuredCreators' => $data['featuredCreators'],
         'newVerifiedCreators' => $data['newVerifiedCreators'],
+        'intros' => $data['intros'],
         'featuredWishes' => $data['featuredWishes'],
-        'topEarners' => $data['topEarnersData'],
+        'topEarners' => $data['topEarners'],
         'featuredBills' => $data['featuredBills'],
         'featuredMemberships' => $data['featuredMemberships'],
-        'filters' => $data['filters'],
-        'searchResults' => $data['searchResults'],
+        'featuredTasks' => $data['featuredTasks'],
+        'featuredShops' => $data['featuredShops'],
+        'searchResults' => $data['searchResults']
     ]);
 })->name("discover");
 

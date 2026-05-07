@@ -66,11 +66,25 @@ class UserProfileService
      */
     public function getAllProfileData(int $userId, ?int $categoryId = null): array
     {
+        $cacheKey = 'profile_all_data_' . $userId . '_' . ($categoryId ?? 'all');
         $isOwner = Auth::check() && Auth::id() === $userId;
-        // Execute all queries in parallel for maximum speed
+
+        // If not owner, we can cache this whole block for a few minutes
+        if (!$isOwner) {
+            return Cache::remember($cacheKey, 300, function() use ($userId, $categoryId) {
+                return $this->fetchRawProfileData($userId, $categoryId, false);
+            });
+        }
+
+        return $this->fetchRawProfileData($userId, $categoryId, true);
+    }
+
+    /**
+     * Internal helper to fetch all profile sections
+     */
+    private function fetchRawProfileData(int $userId, ?int $categoryId, bool $isOwner): array
+    {
         $data = [];
-        
-        // Optimized queries with minimal columns and proper indexes
         $data['wishes'] = $this->getOptimizedWishItems($userId, $categoryId, $isOwner);
         $data['memberships'] = $this->getOptimizedMemberships($userId, $isOwner);
         $data['bills'] = $this->getOptimizedBills($userId, $isOwner);
@@ -473,7 +487,7 @@ class UserProfileService
                 ->where('status', 'paid')
                 ->sum('amount');
 
-            $shopPayment = ShopPayment::whereHas('shop', fn ($q) => $q->where('user_id', $userId))
+            $shopPayment = \App\Models\ShopPayment::whereHas('shop', fn ($q) => $q->where('user_id', $userId))
                 ->where('payment_status', 'paid')
                 ->sum('amount');
 
@@ -495,7 +509,8 @@ class UserProfileService
                 'bill_payments' => $billPayment,
                 'membership_payments' => $memPayment,
                 'wish_payments' => $wishPayment,
-                'subscription_payments' => $subPayment
+                'subscription_payments' => $subPayment,
+                'shop_payments' => $shopPayment
             ];
         });
     }
@@ -516,11 +531,30 @@ class UserProfileService
     }
 
     /**
-     * Clear user-related caches
+     * Clear ALL profile related caches for a user
      */
     public function clearUserCaches(string $username, int $userId): void
     {
-        // Cache clearing disabled as caching is removed
+        // Clear basic profile cache
+        Cache::forget('user_profile_basic_' . $username);
+        
+        // Clear all data cache variations (common ones)
+        Cache::forget('profile_all_data_' . $userId . '_all');
+        
+        // Clear category variations if any exist
+        $categories = \App\Models\UserCategory::where('user_id', $userId)->pluck('id');
+        foreach ($categories as $catId) {
+            Cache::forget('profile_all_data_' . $userId . '_' . $catId);
+        }
+
+        // Clear other related caches
+        Cache::forget('user_categories_with_items_' . $userId);
+        Cache::forget('user_wishes_' . $userId . '_all_20');
+        Cache::forget('user_memberships_' . $userId);
+        Cache::forget('user_bills_' . $userId);
+        Cache::forget('user_shop_' . $userId);
+        
+        Log::info("Caches cleared for user: {$username} ({$userId})");
     }
 
     /**

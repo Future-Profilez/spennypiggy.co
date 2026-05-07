@@ -589,7 +589,7 @@ export default function Dashboard(props) {
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[113px]">
                                                                 {IsloggedIn || user?.intro?.approved == 1 ? (
-                                                                    <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
+                                                                    <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn} user={user}/>
                                                                 ) : (
                                                                     ""
                                                                 )}

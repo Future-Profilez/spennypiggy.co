@@ -9,8 +9,10 @@ import CreatorCard from './CreatorCard';
 import { trackSearchClick } from "@/includes/Analytics";
 import Bill from '../../bills/Bill';
 import Membership from '../../membership/Membership';
+import ProfileProduct from '../../shop/ProfileProduct';
+import ProfileTask from '../../Tasks/Profile/ProfileTask';
 
-export default function ResultsGrid({auth, global_currency, results, mode, setMode, totalCount, activeFilters, removeFilter, onLoadMore }) {
+export default function ResultsGrid({auth, global_currency, results, mode, activeFilters, removeFilter }) {
     const renderedItems = useMemo(() => {
         const items = [];
         (results || []).forEach((item, index) => {
@@ -38,6 +40,13 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                     break;
                 case 'membership':
                     card = <Membership  item={item} />;
+                    break;
+                case 'shop':
+                    card = <ProfileProduct item={item} />;
+                    break;
+                case 'task':
+                    // ProfileTask usually returns an <li>, but we can wrap it or just render it inside the grid
+                    card = <div className="h-full [&>li]:h-full [&>li]:mb-0"><ProfileTask task={item} IsloggedIn={false} profileUser={item.user} /></div>;
                     break;
                 default:
                     card = <Wishlistbox
@@ -113,13 +122,9 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
                 {renderedItems}
             </div>
-            {/* <div className="mt-6 text-center">
-                <button  onClick={onLoadMore} className="p-2 px-3 mb-6 text-gray-700 font-medium 
-                rounded-full hover:bg-gray-200 transition-colors" > Load More </button>
-            </div> */}
         </div>
     );
 }

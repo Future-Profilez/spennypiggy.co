@@ -118,14 +118,14 @@ export default function Hero({auth}) {
                 <div className="welcomeLeft mx-auto w-full text-center">
                     <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-wide text-4xl sm:text-6xl md:text-7xl xl:text-[80px] max-w-6xl mx-auto text-center leading-[0.85] md:leading-[0.8]">
                       The everything 
-                      <div className='block mt-2 md:mt-6 text-4xl md:text-7xl xl:text-[80px]'>
+                      <div className='block mt-2 md:mt-2 text-4xl md:text-7xl xl:text-[80px]'>
                         <span className="text-gradient-wishlist drop-shadow-[0_0_50px_rgba(249,79,150,0.5)] animate-pulse">
                             wishlist
                         </span> 
                       </div>
                     </h2>
                     
-                    <div className="flex items-center justify-center mt-4 md:mt-16 mb-6 md:mb-10">
+                    <div className="flex items-center justify-center mt-4 md:mt-12 mb-6 md:mb-8">
                       <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
                       <h3 className="text-center text-[16px] md:text-xl uppercase text-yellow-400 font-gulfs tracking-[0.2em] px-4">
                           Built for Creators
@@ -133,7 +133,7 @@ export default function Hero({auth}) {
                       <div className="h-[1px] w-24 bg-gradient-to-l from-transparent via-yellow-400/50 to-transparent"></div>
                     </div>
 
-                    <h3 className="text-center text-lg md:text-3xl text-gray-400 font-poppins font-light mb-16 max-w-4xl mx-auto leading-relaxed opacity-100">
+                    <h3 className="text-center text-lg md:text-2xl text-gray-400 font-poppins font-light mb-16 max-w-3xl mx-auto leading-relaxed opacity-100">
                       Get paid with secure, trackable income — with built-in 
                       <span className="text-white font-semibold"> protection against disputes and chargebacks.</span>
                     </h3>

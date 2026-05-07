@@ -7,7 +7,7 @@ import { RiFireLine  } from 'react-icons/ri';
 export default function CreatorCard({auth, item}) {
    return (
        <Link href={route('user.show', item.username)} onClick={() => trackSearchClick(item.id, item.username)} 
-       className="relative bg-white fading rounded-[30px] overflow-hidden flex flex-col items-center text-left group cursor-pointer block border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]bg-[#fdfbf7]">
+       className="relative bg-white fading rounded-[25px] md:rounded-[30px] overflow-hidden flex flex-col items-center text-left group cursor-pointer block border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]bg-[#fdfbf7]">
             <div className="h-full w-full max-h-[260px] overflow-hidden transition-colors !border-b-[3px] border-b-black relative">
                 <img src={item.cover_url || wishlistbannerimg} alt={item.name} 
                 className="w-full h-[100px] object-cover bg-white" loading="lazy" />
@@ -18,14 +18,15 @@ export default function CreatorCard({auth, item}) {
                     role={item.role}
                     hidename={true}
                     profile_status_lock={item.profile_status_lock == 2 ? true : false}
-                    name={item.name} link={item.username || null} src={item.avatar_url}
-                    subhead={`@${item.username || "anonymous"}`} username={item.username || ""}
-                    imgclass="!border-[2px] !border-[black] "
-                    // onClick={() => trackSearchClick(item.id, item.username)}
+                    // name={item.name} src={item.avatar_url}
+                    // subhead={`@${item.username || "anonymous"}`} 
+                    username={item.username || ""}
+                    nolink={true}
+                    imgclass="!border-[2px] !border-[black] rounded-[15px]"
                     />
                 </div>
             </div>
-           <div className='w-full p-4 flex-grow'>
+           <div className='w-full p-3 sm:p-4 flex-grow'>
                <h3 className="text-lg font-black text-black uppercase tracking-wider truncate w-full group-hover:text-pink-600 transition-colors">{item.name}</h3>
                <p className="text-sm font-bold text-gray-700 truncate w-full">@{item.username}</p>
                {/* <p className="text-xs mt-1 text-gray-500 truncate w-full px-1">{item.bio}</p> */}

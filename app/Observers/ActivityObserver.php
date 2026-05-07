@@ -48,6 +48,9 @@ class ActivityObserver
         // Clear earnings cache if a new payment is received
         $this->clearEarningsCache($model);
 
+        // Clear profile data cache for guests so they see new content immediately
+        $this->clearProfileCache($model);
+
         // Mark that this model was just created to prevent duplicate update logs
         $this->markAsJustCreated($model);
 
@@ -80,6 +83,9 @@ class ActivityObserver
 
         // Clear earnings cache if payment status changed to paid
         $this->clearEarningsCache($model);
+
+        // Clear profile data cache if content was updated
+        $this->clearProfileCache($model);
 
         // Get only the fields that changed
         $dirty = $model->getDirty();
@@ -190,6 +196,9 @@ class ActivityObserver
     {
         $modelName = class_basename($model);
 
+        // Clear profile data cache if content was deleted
+        $this->clearProfileCache($model);
+
         ActivityLogger::log(
             "{$modelName}_DELETED",
             (string) $model->id,
@@ -199,6 +208,39 @@ class ActivityObserver
                 'event' => 'deleted'
             ]
         );
+    }
+
+    /**
+     * Clear the profile data cache for the associated user
+     */
+    private function clearProfileCache(Model $model): void
+    {
+        $user = null;
+        
+        try {
+            if ($model instanceof \App\Models\User) {
+                $user = $model;
+            } elseif ($model instanceof \App\Models\WishItem) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Membership) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Bills) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Shop) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Post) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\UserIntro) {
+                $user = $model->user;
+            }
+
+            if ($user) {
+                $profileService = app(\App\Services\UserProfileService::class);
+                $profileService->clearUserCaches($user->username, $user->id);
+            }
+        } catch (\Throwable $e) {
+            // Silently fail
+        }
     }
 
     /**

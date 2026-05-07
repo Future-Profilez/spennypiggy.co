@@ -286,60 +286,7 @@ class ResourcePreloadService
      */
     private function preloadHeroImages(string $page): void
     {
-        $heroImagePaths = [
-            'home' => [
-                // Critical hero background image - prioritize WebP/AVIF formats
-                'resources/assets/new/HeroBg.webp',
-                'resources/assets/new/HeroBg.avif', 
-                'resources/assets/new/HeroBg.png',
-                // Mobile-specific hero background
-                'resources/assets/new/HeroBg-mobile.webp',
-                'resources/assets/new/HeroBg-mobile.avif',
-                'resources/assets/new/HeroBg-mobile.png',
-                // Other critical images
-                'resources/assets/img/itsfree.png',
-                'resources/assets/img/itsfree-mob.png'
-            ],
-            'profile' => [
-                // These are built assets, use asset() helper
-            ],
-            'dashboard' => [
-                // These are built assets, use asset() helper
-            ]
-        ];
-        
-        // Handle built assets (logo, siteicon) separately as they're served by Laravel
-        $builtAssets = [
-            'home' => [
-                'build/assets/logo-164abf9b.png',
-                'build/assets/siteicon-cf8a44f4.png'
-            ],
-            'profile' => [
-                'build/assets/logo-164abf9b.png',
-                'build/assets/siteicon-cf8a44f4.png'
-            ],
-            'dashboard' => [
-                'build/assets/logo-164abf9b.png'
-            ]
-        ];
-
-        // Preload Vite assets (resources/assets/*)
-        if (isset($heroImagePaths[$page])) {
-            foreach ($heroImagePaths[$page] as $imagePath) {
-                // In development, serve through Laravel since assets are in public folder
-                $imageUrl = app()->environment('local', 'development')
-                    ? url($imagePath)
-                    : asset($imagePath);
-                $this->preloadImage($imageUrl, true);
-            }
-        }
-        
-        // Preload built assets (always served by Laravel)
-        if (isset($builtAssets[$page])) {
-            foreach ($builtAssets[$page] as $imagePath) {
-                $this->preloadImage(asset($imagePath), true);
-            }
-        }
+        // Image preloading logic removed to avoid 404s on non-existent paths
     }
 
     /**
@@ -349,15 +296,18 @@ class ResourcePreloadService
     {
         // Optimized self-hosted fonts - ordered by priority (most critical first)
         $fontPaths = [
-            'resources/assets/fonts/optimized/CeraGRMedium.woff2',
-            'resources/assets/fonts/optimized/newfont.woff2', 
-            'resources/assets/fonts/optimized/CeraGRBold.woff2'
+            'resources/assets/fonts/CeraGRMedium.woff2',
+            'resources/assets/fonts/newfont.woff2', 
+            'resources/assets/fonts/CeraGRBold.woff2'
         ];
         
         $fonts = [];
         foreach ($fontPaths as $path) {
-            // In development, serve through Laravel since assets are in public folder
-            $fonts[] = url($path);
+            // Check if file exists in public folder or resources
+            $publicPath = public_path(str_replace('resources/', '', $path));
+            if (file_exists($publicPath)) {
+                $fonts[] = asset(str_replace('resources/', '', $path));
+            }
         }
 
         foreach ($fonts as $font) {

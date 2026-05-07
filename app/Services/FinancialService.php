@@ -201,6 +201,10 @@ class FinancialService
         $netPayoutMajor = $netPayoutMinor / 100;
         $payoutableDisplay = $convert('GBP', $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor;
 
+        $pendingAmountMinor = $payoutInfo['pending_amount'] ?? 0;
+        $pendingAmountMajor = $pendingAmountMinor / 100;
+        $pendingDisplay = $convert('GBP', $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor;
+
         // Calculate if there's a difference between current tax year earnings and total payoutable balance
         // The payoutable balance includes EVERYTHING. If it's higher than the current period's payoutable net (Net - Reserves), 
         // it means there's carry-over from previous periods.
@@ -222,6 +226,7 @@ class FinancialService
             'review_holds' => $reviewHoldsDisplay,
             'disputes' => $disputesDisplay,
             'payoutable_balance' => $payoutableDisplay,
+            'pending_balance' => $pendingDisplay,
             'carry_over_amount' => $carryOverDisplay,
             'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0,
 
@@ -232,6 +237,7 @@ class FinancialService
             'expenses_gbp' => $expensesGbp,
             'profit_gbp' => $netGbp - $expensesGbp,
             'held_reserves_gbp' => $heldReservesAmount,
+            'pending_balance_gbp' => $pendingAmountMajor,
             'review_holds_gbp' => $reviewHoldsAmount / 100,
             'disputes_gbp' => $disputesAmount / 100,
         ];

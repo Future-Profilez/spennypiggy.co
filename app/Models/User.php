@@ -579,6 +579,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return $this->hasMany(Task::class, 'creator_id');
     }
 
+    public function searchClicks()
+    {
+        return $this->hasMany(SearchClick::class, 'creator_id');
+    }
+
     // ───────────────────────
     // Performance Optimizations
     // ───────────────────────

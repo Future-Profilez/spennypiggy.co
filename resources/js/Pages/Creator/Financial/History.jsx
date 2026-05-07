@@ -5,10 +5,10 @@ import { route } from 'ziggy-js';
 import { 
     DownloadIcon, 
     ChevronLeftIcon, 
-    ChevronRightIcon,
-    ArrowLeftIcon,
-    FileTextIcon
+    ChevronRightIcon
 } from "@animateicons/react/lucide";
+import { ArrowLeftIcon, FileTextIcon } from "lucide-react";
+
 
 export default function History({ auth, transactions }) {
     const downloadIconRef = useRef(null);
@@ -201,6 +201,13 @@ const TransactionRow = ({ tx, formatCurrency }) => {
                             tx.display_status === 'refunds' ? 'bg-[#FF9090] text-black' :
                             'bg-gray-300 text-black'
                         }`}>{tx.display_status.replace('_', ' ')}
+                        </span>
+                    )}
+                    {tx.item_status && (
+                        <span className={`inline-block px-2 py-0.5 mt-1 rounded text-[8px] font-black uppercase tracking-[0.1em] border-[1px] border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                            tx.item_status === 'delivered' || tx.item_status === 'completed' || tx.item_status === 'paid_out' ? 'bg-[#90FFB1] text-black' : 'bg-[#FFE951] text-black'
+                        }`}>
+                            {tx.item_status.replace('_', ' ')}
                         </span>
                     )}
                     {tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (

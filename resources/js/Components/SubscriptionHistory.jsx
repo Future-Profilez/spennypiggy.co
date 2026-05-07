@@ -1,13 +1,10 @@
 import React, { useRef, useEffect } from "react";
 import {
-    CalendarIcon,
     CircleCheckIcon,
-    ClockIcon,
-    CircleXIcon,
     ArrowRightIcon,
-    CreditCardIcon,
     RefreshCwIcon,
 } from "@animateicons/react/lucide";
+import { CalendarIcon, ClockIcon, CircleXIcon } from "lucide-react";
 
 const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     const emptyIconRef = useRef(null);

@@ -292,16 +292,21 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             </Link> */}
                         </div>
                         <div className=" flex justify-between  ">
-                            <div>
+                            <div className="flex-1">
                                 <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
                                 <div className="text-xl font-bold text-white">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
                                 <div className="text-[10px] text-gray-600 mt-1">
                                     Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, unfulfilled tasks & disputes.'}
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="border-l border-gray-800 px-4 flex-1">
+                                <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Pending Fulfillment</div>
+                                <div className="text-xl font-bold text-yellow-500">{formatCurrency(summary.pending_balance || 0, displayCurrency)}</div>
+                                <div className="text-[10px] text-gray-600 mt-1">Awaiting delivery of tasks or shop items.</div>
+                            </div>
+                            <div className="text-right border-l border-gray-800 pl-4 flex-1">
                                 <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Status</div>
-                                <div className="bg-green-500/10 text-green-400 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Healthy</div>
+                                <div className="inline-block bg-green-500/10 text-green-400 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Healthy</div>
                             </div>
                         </div>
                     </div>

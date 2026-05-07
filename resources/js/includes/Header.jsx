@@ -345,7 +345,7 @@ export default function Header({ classMagicword }) {
                                 <Link 
                                     href={route('user.show', { username: auth.user.username })}
                                     onClick={toggleClass}
-                                    className="flex items-center gap-4 p-4 mb-6 bg-white border-[3px] border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                                    className="flex items-center gap-4 p-4 mb-6 bg-white sborder-[3px] sborder-black srounded-[20px] sshadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:sshadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
                                 >
                                     <div className="relative">
                                         <div className="w-14 h-14 rounded-xl border-[3px] border-black overflow-hidden bg-pink-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-3 transition-transform">

@@ -76,7 +76,7 @@ class LeaderBoardController extends Controller
                 'avatar' => $query->avatar_url,
                 'coverimg' =>  $query->cover_url,
                 'top' => $rank / 100,
-                'amount' => $query->total_amount,
+                'amount' => 0, // Privacy: Hide amount from public leaderboard
                 'currency' => $query->currency ?? 'GBP',
                 'supporters' => $query->total_supporters ?? 0,
                 'engagement' => $query->engagement_score ?? 0
