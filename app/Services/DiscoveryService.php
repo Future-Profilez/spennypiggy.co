@@ -261,9 +261,9 @@ class DiscoveryService
         if ($limit < 1) { $limit = 9; }
         if ($limit > 50) { $limit = 50; }
 
-        $cacheKey = 'top_earners_' . ($period ?: 'all_time') . '_limit_' . $limit;
+        $cacheKey = 'top_earners_v2_' . ($period ?: 'all_time') . '_limit_' . $limit;
         
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($period, $limit) {
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, function() use ($period, $limit) {
             $nowLondon = Carbon::now('Europe/London');
             $label = 'All Time';
 
@@ -287,9 +287,13 @@ class DiscoveryService
             $startUtc = $startLondon ? $startLondon->copy()->setTimezone('UTC') : null;
             $endUtc = $endLondon ? $endLondon->copy()->setTimezone('UTC') : null;
 
-            $earners = User::where('stripe_details_submitted', 1)
+            // Optimized query: Use selectRaw to calculate sum in one go if possible
+            // or keep withCount but ensure we only select necessary columns
+            $earners = User::query()
+                    ->where('stripe_details_submitted', 1)
                     ->where('suspended_account', 0)
-                    ->where('role', 1) // Only creators can be top earners
+                    ->where('role', 1)
+                    ->where('profile_status_lock', 2) // Only approved creators
                     ->withCount([
                         'paymentitems as total_payments' => function ($query) use ($startUtc, $endUtc, $period) {
                             $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
@@ -342,11 +346,6 @@ class DiscoveryService
                     ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency'])
                     ->map(function ($u, $index) {
                         $sum = ($u->total_payments ?? 0) + ($u->total_subscriptions ?? 0) + ($u->total_tips ?? 0) + ($u->total_member ?? 0) + ($u->total_bill ?? 0) + ($u->total_shop ?? 0);
-                        
-                        // ✅ FIX: Ensure we return the correct currency metadata
-                        // If the creator's default_currency is different from the currency of the payments,
-                        // we need to be careful. For now, we'll assume the sum matches the default_currency
-                        // but we fallback to GBP to prevent USD-drift issues.
                         $currency = $u->default_currency ?? 'GBP';
                         
                         return [

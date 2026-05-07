@@ -168,27 +168,30 @@ Route::get('/', function (DiscoveryService $discoveryService) {
     $period = request()->query('top_earners_period', '');
     $limit = (int) request()->query('top_earners_limit', 9);
 
-    if (Auth::check()) {
-        $trendingCreators = $discoveryService->getTrendingCreators();
-        $newVerifiedCreators = $discoveryService->getNewVerifiedCreators();
-        $topEarnersData = $discoveryService->getTopEarners($period, $limit);
-    } else {
-        $trendingCreators = \Illuminate\Support\Facades\Cache::remember('home_trending_creators', 900, function () use ($discoveryService) {
+    // Use shared cache for both guests and authenticated users for public discovery data
+    $trendingCreators = function() use ($discoveryService) {
+        return \Illuminate\Support\Facades\Cache::remember('home_trending_creators_v2', 900, function () use ($discoveryService) {
             return $discoveryService->getTrendingCreators();
         });
-        $newVerifiedCreators = \Illuminate\Support\Facades\Cache::remember('home_new_verified_creators', 900, function () use ($discoveryService) {
+    };
+
+    $newVerifiedCreators = function() use ($discoveryService) {
+        return \Illuminate\Support\Facades\Cache::remember('home_new_verified_creators_v2', 900, function () use ($discoveryService) {
             return $discoveryService->getNewVerifiedCreators();
         });
+    };
+
+    $topEarnersData = function() use ($discoveryService, $period, $limit) {
         $ttl = match ($period) {
             'daily' => 600,
             'weekly' => 1200,
             'monthly' => 1800,
             default => 1200,
         };
-        $topEarnersData = \Illuminate\Support\Facades\Cache::remember('home_top_earners_' . $period . '_' . $limit, $ttl, function () use ($discoveryService, $period, $limit) {
+        return \Illuminate\Support\Facades\Cache::remember('home_top_earners_v2_' . $period . '_' . $limit, $ttl, function () use ($discoveryService, $period, $limit) {
             return $discoveryService->getTopEarners($period, $limit);
         });
-    }
+    };
 
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -202,10 +205,11 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             'maxFounderSeats' => config('founder_bonus.limits.max_founder_seats'),
             'currencySymbol' => config('founder_bonus.display.currency_symbol'),
         ],
-        'trendingCreators' => $trendingCreators,
-        'newVerifiedCreators' => $newVerifiedCreators,
-        'topEarners' => $topEarnersData['data'],
-        'topEarnersLabel' => $topEarnersData['label'],
+        // Use Inertia::lazy to allow the page to load instantly while data fetches in background
+        'trendingCreators' => Inertia::lazy($trendingCreators),
+        'newVerifiedCreators' => Inertia::lazy($newVerifiedCreators),
+        'topEarners' => Inertia::lazy(fn() => $topEarnersData()['data']),
+        'topEarnersLabel' => Inertia::lazy(fn() => $topEarnersData()['label']),
     ]);
 })->name("home");
 
@@ -295,49 +299,48 @@ if (app()->environment('local')) {
     Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 }
 
-Route::get('/migrate-covers', function() {
-    // Checking both empty strings and default banner strings that might be stored
-    $users = \App\Models\User::whereNull('cover')
-        ->orWhere('cover', '')
-        ->orWhere('cover', 'like', '%wishlistbannerimg%')
-        ->orWhere('cover', 'like', '%default%')
-        ->get();
+// Route::get('/migrate-covers', function() {
+//     $users = \App\Models\User::whereNull('cover')
+//         ->orWhere('cover', '')
+//         ->orWhere('cover', 'like', '%wishlistbannerimg%')
+//         ->orWhere('cover', 'like', '%default%')
+//         ->get();
         
-    $creatorCovers = [
-        '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
-        '21de57a2-c786-4a5a-b7e4-2edcdb61fc42',
-        '6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2',
-        'fcdb1692-d64d-4de8-b7af-5e0556cdf6e8',
-        '40aaf556-fa59-4f8e-b482-e49726026499',
-        'a2cad976-2480-4c77-baa3-cb5df3cdc0d6',
-        'b81b3097-5c4c-4f48-aaf0-3687bc928a18',
-        '32c130a9-37e6-4934-8d72-a83a5d8bdaa6',
-        'e71ed424-f17a-47d9-b0e7-3e5eca4e51cb',
-        'dc1021e2-41a4-4dfa-8379-b27fb7e3834e',
-        '175e706f-ae6a-4920-a131-bf90502084f8',
-        'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
-        '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
-        'c3b7ff7a-719a-452a-ba8f-d074d916b395',
-        '133b057f-f069-4ea4-82e4-ba9184d721cd'
-    ];
+//     $creatorCovers = [
+//         '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
+//         '21de57a2-c786-4a5a-b7e4-2edcdb61fc42',
+//         '6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2',
+//         'fcdb1692-d64d-4de8-b7af-5e0556cdf6e8',
+//         '40aaf556-fa59-4f8e-b482-e49726026499',
+//         'a2cad976-2480-4c77-baa3-cb5df3cdc0d6',
+//         'b81b3097-5c4c-4f48-aaf0-3687bc928a18',
+//         '32c130a9-37e6-4934-8d72-a83a5d8bdaa6',
+//         'e71ed424-f17a-47d9-b0e7-3e5eca4e51cb',
+//         'dc1021e2-41a4-4dfa-8379-b27fb7e3834e',
+//         '175e706f-ae6a-4920-a131-bf90502084f8',
+//         'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
+//         '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
+//         'c3b7ff7a-719a-452a-ba8f-d074d916b395',
+//         '133b057f-f069-4ea4-82e4-ba9184d721cd'
+//     ];
 
-    $count = 0;
-    foreach ($users as $user) {
-        if ($user->role == 1) {
-            $user->cover = $creatorCovers[array_rand($creatorCovers)];
-        } else {
-            $user->cover = 'dc1021e2-41a4-4dfa-8379-b27fb7e3834e';
-        }
-        $user->cover_approved = 1;
-        $user->save();
-        $count++;
-    }
+//     $count = 0;
+//     foreach ($users as $user) {
+//         if ($user->role == 1) {
+//             $user->cover = $creatorCovers[array_rand($creatorCovers)];
+//         } else {
+//             $user->cover = 'dc1021e2-41a4-4dfa-8379-b27fb7e3834e';
+//         }
+//         $user->cover_approved = 1;
+//         $user->save();
+//         $count++;
+//     }
 
-    return response()->json([
-        'message' => "Successfully updated covers for $count users.",
-        'updated_count' => $count
-    ]);
-});
+//     return response()->json([
+//         'message' => "Successfully updated covers for $count users.",
+//         'updated_count' => $count
+//     ]);
+// });
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');

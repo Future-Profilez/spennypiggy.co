@@ -567,7 +567,7 @@ class StripeWebhookController extends Controller
         try {
             Log::info("Processing checkout session completed", [
                 'session_id' => $session->id,
-                'metadata' => $metadata ? (is_array($metadata) ? $metadata : $metadata->toArray()) : null
+                'metadata' => $metadata
             ]);
 
             try {
@@ -639,10 +639,7 @@ class StripeWebhookController extends Controller
             }
 
             // Check if this is a shop item purchase
-            $isShop = (isset($metadata['payment_category']) && $metadata['payment_category'] === 'shop_purchase') || 
-                      (isset($metadata['type']) && $metadata['type'] === 'shop');
-            
-            if ($isShop) {
+            if (isset($metadata->type) && $metadata->type === 'shop') {
                 $this->processShopItemPayment($session, $metadata);
             }
 
@@ -2699,7 +2696,7 @@ class StripeWebhookController extends Controller
 
                 if ($supporter) {
                     Helpers::sendNotification("Task Refunded 💸", "The task '{$task->title}' has been refunded.", $supporter->email);
-                    Mail::to($supporter->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->total_paid, 'currency' => $task->currency, 'message' => "The task was refunded."]));
+                    Mail::to($supporter->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => "The task was refunded."]));
                 }
 
                 if ($creator) {
@@ -3156,42 +3153,21 @@ class StripeWebhookController extends Controller
     {
         return DB::transaction(function () use ($session, $metadata) {
             try {
-                $paymentId = $metadata['payment_id'] ?? ($metadata['payment_uuid'] ?? null);
-                
-                $shopPayment = null;
-                if ($paymentId) {
-                    $shopPayment = ShopPayment::with(['shop', 'shop.user', 'user'])->where('uuid', $paymentId)->lockForUpdate()->first();
-                }
-                
-                // Fallback: search by session_id
-                if (!$shopPayment && $session->id) {
-                    $shopPayment = ShopPayment::with(['shop', 'shop.user', 'user'])->where('session_id', $session->id)->lockForUpdate()->first();
-                }
-
-                if (!$shopPayment) {
-                    Log::error("StripeWebhookController: No ShopPayment found for shop purchase", [
-                        'payment_id' => $paymentId,
-                        'session_id' => $session->id,
-                        'metadata' => $metadata
-                    ]);
+                $paymentId = $metadata->payment_id ?? null;
+                if (!$paymentId) {
+                    Log::error("StripeWebhookController: Missing payment_id in metadata for shop purchase");
                     return;
                 }
 
-                $deliverable = \App\Models\Deliverable::where('session_id', $shopPayment->session_id)
-                    ->where('product_type', 'shop_item')
-                    ->first();
+                $shopPayment = ShopPayment::with(['shop', 'shop.user', 'user'])->where('uuid', $paymentId)->lockForUpdate()->first();
+                if (!$shopPayment) {
+                    Log::error("StripeWebhookController: No ShopPayment found for UUID: $paymentId");
+                    return;
+                }
 
-                // Idempotency check: if already fully processed, we still try to send emails (lock handles duplicates)
-                // then skip re-processing of GMV/PWA
-                if ($shopPayment->payment_status === 'paid' && $deliverable) {
-                    Log::info("StripeWebhookController: Shop payment already processed, ensuring emails are sent", ['payment_id' => $paymentId]);
-                    
-                    $currencyStr = $shopPayment->currency ?? ($metadata['currency'] ?? 'GBP');
-                    $currency = \App\Models\Currency::where('iso', strtoupper($currencyStr))->first();
-                    $symbol = $currency->symbol ?? '£';
-                        
-                    Helpers::sendShopPurchaseEmails($shopPayment, $symbol, $deliverable);
-                    
+                // Idempotency check: if already paid, skip
+                if ($shopPayment->payment_status === 'paid') {
+                    Log::info("StripeWebhookController: Shop payment already processed", ['payment_id' => $paymentId]);
                     return;
                 }
 
@@ -3219,11 +3195,7 @@ class StripeWebhookController extends Controller
 
                 // 4. Save notification
                 $message = $username . " just purchased your shop item " . $shopPayment->shop->name;
-                if ($shopPayment->shop?->user) {
-                    NotificationSave::dispatch($message, $shopPayment->shop->user, $shopPayment->user, 'Shop');
-                } else {
-                    Log::warning('StripeWebhookController: Skip in-app notification - creator not found', ['payment_id' => $shopPayment->id]);
-                }
+                NotificationSave::dispatch($message, $shopPayment->shop->user, $shopPayment->user, 'Shop');
 
                 // 5. Update status
                 $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
@@ -3278,9 +3250,8 @@ class StripeWebhookController extends Controller
                 }
 
                 // 6. Get currency symbol and calculate net
-                $currencyStr = $shopPayment->currency ?? ($metadata['currency'] ?? 'GBP');
-                $currency = \App\Models\Currency::where('iso', strtoupper($currencyStr))->first();
-                $symbol = $currency?->symbol ?? '£';
+                $currency = \App\Models\Currency::where('iso', strtoupper($shopPayment->currency))->first();
+                $symbol = $currency->symbol ?? '£';
 
                 // Calculate creator net amount: gross-up from creator's listed price (no extra shop_tax)
                 $listedPriceToGrossUp = $shopPayment->amount + $shopPayment->vat_tax_amount + ($shopPayment->shipping_amount ?? 0);
@@ -3288,33 +3259,37 @@ class StripeWebhookController extends Controller
                 $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $shopPayment->shop->user->uuid);
                 $reserveRate = $metrics->reserve_percent ?? 0;
                 
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currencyStr, $reserveRate);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate);
                 $creatorNetAmount = $symbol . number_format($breakdown['net_to_creator'], 2);
 
-                // 7. Create deliverable record
+                // 7. Dispatch jobs
+                ShopBuyed::dispatch($shopPayment, $shopPayment->anonymous == 1, $creatorNetAmount);
+                
+                // 8. Create deliverable record
+                $deliverable = null;
                 try {
                     if (!\App\Models\Deliverable::where('session_id', $session->id)->exists()) {
                         $deliverable = \App\Models\Deliverable::create([
                             'uuid' => (string) \Illuminate\Support\Str::uuid(),
                             'product_id' => $shopPayment->shop->stripe_product_id ?? 'shop_' . $shopPayment->shop->id,
-                            'price_id' => $shopPayment->shop->price_id ?? null,
+                            'price_id' => $shopPayment->shop->price_id,
                             'item_id' => $shopPayment->shop->id,
                             'creator_id' => $shopPayment->shop->user_id,
                             'gifter_id' => $shopPayment->user_id,
                             'payment_intent_id' => $session->payment_intent ?? null,
                             'session_id' => $session->id,
-                            'deliverable_type' => (isset($shopPayment->shop->type) && strtolower($shopPayment->shop->type) === 'physical') ? 'shipping' : 'digital_file',
+                            'deliverable_type' => $shopPayment->shop->type == 'physical' ? 'shipping' : 'digital_file',
                             'product_type' => 'shop_item',
                             'transaction_amount' => $shopPayment->amount,
-                            'deliverable_url' => $shopPayment->shop->reward_file_url ?? null,
+                            'deliverable_url' => $shopPayment->shop->reward_file_url,
                             'customer_email' => $shopPayment->email ?? ($shopPayment->user->email ?? null),
                             'customer_name' => $shopPayment->name ?? ($shopPayment->user->name ?? null),
                             'payment_status' => 'paid',
                             'payment_currency' => strtoupper($shopPayment->currency ?? 'GBP'),
                             'anonymous' => $shopPayment->anonymous ?? false,
                             'message' => $shopPayment->message,
-                            'status' => (isset($shopPayment->shop->type) && strtolower($shopPayment->shop->type) === 'physical') ? 'pending' : 'delivered',
-                            'delivered_at' => (isset($shopPayment->shop->type) && strtolower($shopPayment->shop->type) === 'physical') ? null : now(),
+                            'status' => $shopPayment->shop->type == 'physical' ? 'pending' : 'delivered',
+                            'delivered_at' => $shopPayment->shop->type == 'physical' ? null : now(),
                             'metadata' => json_encode([
                                 'shop_item_id' => $shopPayment->shop->id,
                                 'shop_item_name' => $shopPayment->shop->name,
@@ -3331,10 +3306,20 @@ class StripeWebhookController extends Controller
                     Log::error('StripeWebhookController: Failed to create deliverable record for shop', ['error' => $e->getMessage()]);
                 }
 
-                // 8. Send emails and PWA notifications using unified helper with idempotency check
-                Helpers::sendShopPurchaseEmails($shopPayment, $symbol, $deliverable);
+                ShopBuyedUser::dispatch($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
 
-                // 9. Record UserPayment
+                // 9. Send PWA notifications
+                try {
+                    $creatorName = ucfirst($shopPayment->shop->user->name) ?? 'A Creator';
+                    Helpers::sendNotification("🛍️ Purchase Confirmed!", "You bought something from $creatorName ’s shop. They’ll process it soon.", $shopPayment->email ?? $shopPayment->user->email);
+
+                    $fanName = ucfirst($shopPayment->user->name ?? $shopPayment->name) ?? 'A Fan';
+                    Helpers::sendNotification("📦 New Shop Order!", "$fanName placed an order in your shop. Time to fulfill it!.", $shopPayment->shop->user->email);
+                } catch (\Exception $e) {
+                    Log::error('StripeWebhookController: Failed to send PWA notifications for shop', ['error' => $e->getMessage()]);
+                }
+
+                // 10. Record UserPayment
                 try {
                     $existingUserPayment = UserPayment::where('payment_details', json_encode($session->id, true))->exists();
                     if (!$existingUserPayment) {

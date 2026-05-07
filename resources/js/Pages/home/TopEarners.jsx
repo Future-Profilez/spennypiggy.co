@@ -1,10 +1,8 @@
 import Avatar from '@/includes/Avatar';
-import PriceFormat from '@/includes/PriceFormat';
 import { Link } from '@inertiajs/react';
 
 export default function TopEarners({ creators, periodLabel }) {
   if (!creators || creators.length === 0) return null;
-  const { formatMultiPrice } = PriceFormat();
 
   return (
     <section className="bg-black relative py-24">
@@ -43,8 +41,8 @@ export default function TopEarners({ creators, periodLabel }) {
                 // link={c.username}
               />
               <div className="text-right">
-                <div className="font-bold text-white group-hover:text-pink-400 transition-colors">{formatMultiPrice(c.total_amount, c.currency || 'GBP')}</div>
-                {periodLabel ? <div className="text-xs text-gray-400">{periodLabel} total</div> : ''}
+                <div className="font-bold text-white group-hover:text-pink-400 transition-colors uppercase tracking-widest text-xs">Verified</div>
+                {periodLabel ? <div className="text-xs text-gray-400">{periodLabel} star</div> : ''}
               </div>
             </div>
           </Link>

@@ -85,6 +85,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
 
   const videoRef = useRef(null);
   const [needsInteraction, setNeedsInteraction] = useState(false);
+  const [previewAutoStopped, setPreviewAutoStopped] = useState(false);
 
   const rawUrl = intro?.perma_link || '';
 
@@ -98,6 +99,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     const src = fullVideoUrl || rawUrl;
     if (!src) return;
     setNeedsInteraction(false);
+    setPreviewAutoStopped(false);
     setPreviewSrc(src);
   }, [fullVideoUrl, rawUrl]);
 
@@ -122,14 +124,59 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
         video.currentTime = 0;
       }
     };
+    let autoStopTimerId = null;
+    const onPlay = () => {
+      if (autoStopTimerId) return;
+      autoStopTimerId = setTimeout(() => {
+        video.pause();
+        setPreviewAutoStopped(true);
+        setNeedsInteraction(true);
+      }, 50000);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        video.pause();
+        return;
+      }
+      if (close === true) return;
+      if (previewAutoStopped) return;
+      if (needsInteraction) return;
+      video.play().catch(() => {});
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        if (!entry.isIntersecting) {
+          video.pause();
+          return;
+        }
+        if (document.hidden) return;
+        if (close === true) return;
+        if (previewAutoStopped) return;
+        if (needsInteraction) return;
+        video.play().catch(() => {});
+      },
+      { threshold: 0.2 }
+    );
+
 
     video.addEventListener('canplay', tryPlay, { once: true });
+    video.addEventListener('play', onPlay);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    observer.observe(video);
     video.addEventListener('timeupdate', onTimeUpdate);
     return () => {
       video.removeEventListener('canplay', tryPlay);
+      video.removeEventListener('play', onPlay);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      observer.disconnect();
+      if (autoStopTimerId) clearTimeout(autoStopTimerId);
       video.removeEventListener('timeupdate', onTimeUpdate);
     };
-  }, [previewSrc]);
+  }, [previewSrc, close, needsInteraction, previewAutoStopped]);
 
   useEffect(() => {
     const video = videoRef.current;

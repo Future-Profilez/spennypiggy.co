@@ -64,22 +64,6 @@ class CreatorFinancialController extends Controller
         }
 
         $monthlyStats = $incomeForAnalytics
-            ->filter(function ($tx) use ($analyticsShopShipping) {
-                $base = class_basename($tx->source_type);
-                if ($base === 'TaskPurchase' && $tx->source) {
-                    $taskType = $tx->source->task->type ?? 'timed';
-                    if ($taskType === 'timed') {
-                        return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out']);
-                    }
-                } elseif ($base === 'ShopPayment' && $tx->source) {
-                    $shopType = $tx->source->shop->type ?? 'digital';
-                    if ($shopType === 'physical') {
-                        $itemStat = $tx->source->deliverable->status ?? 'processing';
-                        return $itemStat === 'delivered';
-                    }
-                }
-                return $tx->status === 'completed';
-            })
             ->groupBy(function ($tx) {
                 return optional($tx->transaction_date)->format('Y-m');
             })
@@ -88,7 +72,11 @@ class CreatorFinancialController extends Controller
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $gross = $net + $vat;
+                    $shipping = 0;
+                    if ($tx->source_type === 'App\Models\ShopPayment') {
+                        $shipping = (float)($analyticsShopShipping[$tx->source_id] ?? 0);
+                    }
+                    $gross = $net + $vat + $shipping;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
@@ -98,29 +86,17 @@ class CreatorFinancialController extends Controller
             ->values();
 
         $tributeTypes = $incomeForAnalytics
-            ->filter(function ($tx) use ($analyticsShopShipping) {
-                $base = class_basename($tx->source_type);
-                if ($base === 'TaskPurchase' && $tx->source) {
-                    $taskType = $tx->source->task->type ?? 'timed';
-                    if ($taskType === 'timed') {
-                        return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out']);
-                    }
-                } elseif ($base === 'ShopPayment' && $tx->source) {
-                    $shopType = $tx->source->shop->type ?? 'digital';
-                    if ($shopType === 'physical') {
-                        $itemStat = $tx->source->deliverable->status ?? 'processing';
-                        return $itemStat === 'delivered';
-                    }
-                }
-                return $tx->status === 'completed';
-            })
             ->groupBy('source_type')
             ->map(function ($items, $sourceType) use ($displayCurrency, $analyticsShopShipping) {
                 $total = $items->sum(function ($tx) use ($displayCurrency, $analyticsShopShipping) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $gross = $net + $vat;
+                    $shipping = 0;
+                    if ($tx->source_type === 'App\Models\ShopPayment') {
+                        $shipping = (float)($analyticsShopShipping[$tx->source_id] ?? 0);
+                    }
+                    $gross = $net + $vat + $shipping;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
@@ -164,69 +140,32 @@ class CreatorFinancialController extends Controller
 
         $statusBreakdown = $allStatusTx
             ->groupBy(function($tx) {
-                $base = class_basename($tx->source_type);
-                
-                // 1. Task Logic
-                if ($base === 'TaskPurchase' && $tx->source) {
-                    $taskType = $tx->source->task->type ?? 'timed';
-                    if ($taskType === 'timed') {
-                        if (in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                            $s = 'paid';
-                        } else {
-                            $s = 'pending';
+                // If payment is succeeded but item is not completed/delivered, treat as 'pending'
+                if ($tx->status === 'completed') {
+                    if ($tx->source_type === 'App\Models\TaskPurchase' && $tx->source) {
+                        if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                            return 'pending';
                         }
-                    } else {
-                        $s = match($tx->status) {
-                            'completed' => 'paid',
-                            'review_hold' => 'review_hold',
-                            'disputed' => 'dispute_hold',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
                     }
-                }
-                // 2. Shop Logic
-                elseif ($base === 'ShopPayment' && $tx->source) {
-                    $shopType = $tx->source->shop->type ?? 'digital';
-                    if ($shopType === 'physical') {
+                    if ($tx->source_type === 'App\Models\ShopPayment' && $tx->source && ($tx->source->shop->type ?? null) === 'physical') {
                         $itemStat = $tx->source->deliverable->status ?? 'processing';
-                        if ($itemStat === 'delivered') {
-                            $s = 'paid';
-                        } else {
-                            $s = 'pending';
+                        if ($itemStat !== 'delivered') {
+                            return 'pending';
                         }
-                    } else {
-                        $s = match($tx->status) {
-                            'completed' => 'paid',
-                            'review_hold' => 'review_hold',
-                            'disputed' => 'dispute_hold',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
                     }
-                } else {
-                    $s = match($tx->status) {
-                        'completed' => 'paid',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'dispute_hold',
-                        'refunded' => 'refunds',
-                        default => 'pending'
-                    };
                 }
-
-                // Final check for payment-level holds regardless of item status
-                if ($tx->status === 'review_hold') return 'review_hold';
-                if ($tx->status === 'disputed') return 'dispute_hold';
-                if ($tx->status === 'refunded') return 'refunds';
-
-                return $s;
+                return $tx->status;
             })
             ->map(function ($items, $status) use ($displayCurrency, $allShopShipping) {
                 $total = $items->sum(function ($tx) use ($displayCurrency, $allShopShipping) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $gross = $net + $vat;
+                    $shipping = 0;
+                    if ($tx->source_type === 'App\Models\ShopPayment') {
+                        $shipping = (float)($allShopShipping[$tx->source_id] ?? 0);
+                    }
+                    $gross = $net + $vat + $shipping;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
@@ -302,81 +241,37 @@ class CreatorFinancialController extends Controller
                 
                 $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
 
-                $tx->display_status = 'pending';
-                $tx->order_status = null;
-                $tx->payment_status = $tx->status;
-                $tx->is_grayed_out = false;
-
-                // 1. Task Logic
+                // Handling for Task status display in ledger
                 if ($base === 'TaskPurchase' && $tx->source) {
-                    $taskType = $tx->source->task->type ?? 'timed';
-                    $tx->order_status = $tx->source->status;
-                    
-                    if ($taskType === 'timed') {
-                        $tx->display_status = match($tx->source->status) {
-                            'completed', 'completed_accepted', 'paid_out' => 'paid',
-                            'escalated' => 'dispute_hold', 
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-
-                        // Overwrite with payment holds if applicable
-                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
-                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
-
-                        if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                            $tx->is_grayed_out = true;
-                        }
-                    } else {
-                        // Instant Task
-                        $tx->display_status = match($tx->status) {
-                            'completed' => 'paid',
-                            'review_hold' => 'review_hold',
-                            'disputed' => 'dispute_hold',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-                    }
-                }
-                // 2. Shop Logic
-                elseif ($base === 'ShopPayment' && $tx->source) {
-                    $shopType = $tx->source->shop->type ?? 'digital';
-                    if ($shopType === 'physical') {
-                        $itemStat = $tx->source->deliverable->status ?? 'processing';
-                        $tx->order_status = $itemStat;
-                        $tx->display_status = match($itemStat) {
-                            'delivered' => 'paid',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-                        
-                        // Overwrite with payment holds if applicable
-                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
-                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
-
-                        if ($itemStat !== 'delivered') {
-                            $tx->is_grayed_out = true;
-                        }
-                    } else {
-                        // Instant Shop
-                        $tx->display_status = match($tx->status) {
-                            'completed' => 'paid',
-                            'review_hold' => 'review_hold',
-                            'disputed' => 'dispute_hold',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-                    }
-                }
-                // 3. Other Types
-                else {
-                    $tx->display_status = match($tx->status) {
-                        'completed' => 'paid',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'dispute_hold',
-                        'refunded' => 'refunds',
-                        default => 'pending'
+                    $tx->item_status = match($tx->source->status) {
+                        'completed', 'completed_accepted', 'paid_out' => 'task_complete',
+                        'delivered' => 'task_delivered',
+                        'pending_review' => 'task_review_pending',
+                        'paid', 'assigned' => 'task_pending',
+                        'escalated' => 'task_escalated',
+                        default => 'task_' . $tx->source->status
                     };
+
+                    // Gray out tasks that are not yet finalized (including escalated)
+                    if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                        $tx->is_grayed_out = true;
+                    }
+                }
+
+                // Handling for Shop status display in ledger
+                if ($base === 'ShopPayment' && $tx->source) {
+                    $itemStat = $tx->source->deliverable->status ?? 'processing';
+                    $tx->item_status = match($itemStat) {
+                        'delivered' => 'item_complete',
+                        'shipped' => 'item_shipped',
+                        'processing' => 'item_processing',
+                        default => 'item_' . $itemStat
+                    };
+
+                    // Gray out physical shop items that are not yet delivered
+                    if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
+                        $tx->is_grayed_out = true;
+                    }
                 }
 
                 return $tx;
@@ -439,7 +334,11 @@ class CreatorFinancialController extends Controller
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $gross = $net + $vat;
+                    $shipping = 0;
+                    if ($tx->source_type === 'App\Models\ShopPayment') {
+                        $shipping = (float)($supporterShopShipping[$tx->source_id] ?? 0);
+                    }
+                    $gross = $net + $vat + $shipping;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
@@ -451,7 +350,11 @@ class CreatorFinancialController extends Controller
                             $from = strtoupper($tx->currency ?? 'GBP');
                             $net = (float) ($tx->net_amount ?? 0);
                             $vat = (float) ($tx->vat_amount ?? 0);
-                            $gross = $net + $vat;
+                            $shipping = 0;
+                            if ($tx->source_type === 'App\Models\ShopPayment') {
+                                $shipping = (float)($supporterShopShipping[$tx->source_id] ?? 0);
+                            }
+                            $gross = $net + $vat + $shipping;
 
                             return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                         });
@@ -616,81 +519,37 @@ class CreatorFinancialController extends Controller
 
                 $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
 
-                $tx->display_status = 'pending';
-                $tx->order_status = null;
-                $tx->payment_status = $tx->status;
-                $tx->is_grayed_out = false;
-
-                // 1. Task Logic
+                // Handling for Task status display in ledger
                 if ($base === 'TaskPurchase' && $tx->source) {
-                    $taskType = $tx->source->task->type ?? 'timed';
-                    $tx->order_status = $tx->source->status;
-                    
-                    if ($taskType === 'timed') {
-                        $tx->display_status = match($tx->source->status) {
-                            'completed', 'completed_accepted', 'paid_out' => 'paid',
-                            'escalated' => 'dispute_hold', 
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-
-                        // Overwrite with payment holds if applicable
-                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
-                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
-
-                        if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                            $tx->is_grayed_out = true;
-                        }
-                    } else {
-                        // Instant Task
-                        $tx->display_status = match($tx->status) {
-                            'completed' => 'paid',
-                            'review_hold' => 'review_hold',
-                            'disputed' => 'dispute_hold',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-                    }
-                }
-                // 2. Shop Logic
-                elseif ($base === 'ShopPayment' && $tx->source) {
-                    $shopType = $tx->source->shop->type ?? 'digital';
-                    if ($shopType === 'physical') {
-                        $itemStat = $tx->source->deliverable->status ?? 'processing';
-                        $tx->order_status = $itemStat;
-                        $tx->display_status = match($itemStat) {
-                            'delivered' => 'paid',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-                        
-                        // Overwrite with payment holds if applicable
-                        if ($tx->status === 'review_hold') $tx->display_status = 'review_hold';
-                        if ($tx->status === 'disputed') $tx->display_status = 'dispute_hold';
-
-                        if ($itemStat !== 'delivered') {
-                            $tx->is_grayed_out = true;
-                        }
-                    } else {
-                        // Instant Shop
-                        $tx->display_status = match($tx->status) {
-                            'completed' => 'paid',
-                            'review_hold' => 'review_hold',
-                            'disputed' => 'dispute_hold',
-                            'refunded' => 'refunds',
-                            default => 'pending'
-                        };
-                    }
-                }
-                // 3. Other Types
-                else {
-                    $tx->display_status = match($tx->status) {
-                        'completed' => 'paid',
-                        'review_hold' => 'review_hold',
-                        'disputed' => 'dispute_hold',
-                        'refunded' => 'refunds',
-                        default => 'pending'
+                    $tx->item_status = match($tx->source->status) {
+                        'completed', 'completed_accepted', 'paid_out' => 'task_complete',
+                        'delivered' => 'task_delivered',
+                        'pending_review' => 'task_review_pending',
+                        'paid', 'assigned' => 'task_pending',
+                        'escalated' => 'task_escalated',
+                        default => 'task_' . $tx->source->status
                     };
+
+                    // Gray out tasks that are not yet finalized (including escalated)
+                    if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                        $tx->is_grayed_out = true;
+                    }
+                }
+
+                // Handling for Shop status display in ledger
+                if ($base === 'ShopPayment' && $tx->source) {
+                    $itemStat = $tx->source->deliverable->status ?? 'processing';
+                    $tx->item_status = match($itemStat) {
+                        'delivered' => 'item_complete',
+                        'shipped' => 'item_shipped',
+                        'processing' => 'item_processing',
+                        default => 'item_' . $itemStat
+                    };
+
+                    // Gray out physical shop items that are not yet delivered
+                    if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
+                        $tx->is_grayed_out = true;
+                    }
                 }
 
                 return $tx;

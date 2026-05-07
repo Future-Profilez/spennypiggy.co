@@ -45,6 +45,9 @@ class ActivityObserver
             return;
         }
 
+        // Clear earnings cache if a new payment is received
+        $this->clearEarningsCache($model);
+
         // Mark that this model was just created to prevent duplicate update logs
         $this->markAsJustCreated($model);
 
@@ -74,6 +77,9 @@ class ActivityObserver
             $this->clearJustCreatedFlag($model);
             return;
         }
+
+        // Clear earnings cache if payment status changed to paid
+        $this->clearEarningsCache($model);
 
         // Get only the fields that changed
         $dirty = $model->getDirty();
@@ -129,6 +135,48 @@ class ActivityObserver
                     'changed_fields' => array_keys($diff)
                 ]
             );
+        }
+    }
+
+    /**
+     * Clear the earnings cache for the creator associated with the model
+     *
+     * @param Model $model
+     * @return void
+     */
+    private function clearEarningsCache(Model $model): void
+    {
+        $creatorId = null;
+        $status = $model->status ?? $model->payment_status ?? null;
+        
+        // For created event, we always want to check if it's a paid record
+        // For updated event, we only clear if status changed to 'paid'
+        if ($status !== null && $status !== 'paid') {
+            return;
+        }
+
+        try {
+            if ($model instanceof \App\Models\TipGoalsPayment) {
+                $creatorId = $model->creator_id;
+            } elseif ($model instanceof \App\Models\BillPayment) {
+                $creatorId = $model->bill?->user_id;
+            } elseif ($model instanceof \App\Models\MembershipPayment) {
+                $creatorId = $model->membership?->user_id;
+            } elseif ($model instanceof \App\Models\StripePaymentDetail) {
+                $creatorId = $model->owner_id;
+            } elseif ($model instanceof \App\Models\WishItemSubscription) {
+                $creatorId = $model->wish_item?->user_id;
+            } elseif ($model instanceof \App\Models\ShopPayment) {
+                $creatorId = $model->shop?->user_id;
+            }
+
+            if ($creatorId) {
+                \Illuminate\Support\Facades\Cache::forget('user_earnings_v2_' . $creatorId);
+                // Also clear supporters count cache as a new payment usually means a new/active supporter
+                \Illuminate\Support\Facades\Cache::forget('user_supporters_count_v2_' . $creatorId);
+            }
+        } catch (\Throwable $e) {
+            // Silently fail to not block the main request
         }
     }
 

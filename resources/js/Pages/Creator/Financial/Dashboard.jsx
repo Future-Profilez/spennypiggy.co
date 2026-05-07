@@ -164,7 +164,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     <div className="w-2 h-2 rounded-full bg-[#05EFB8]"></div>
                                     Net Earnings
                                 </div>
-                                <div className="text-2xl md:text-3xl font-bold text-[#05EFB8] mt-2">{formatCurrency(summary.net_earning, displayCurrency)}</div>
+                                <div className="text-2xl md:text-3xl font-bold text-[#05EFB8] mt-2">{formatCurrency(summary.profit, displayCurrency)}</div>
                                 <div className="text-[12px] text-gray-500 mt-2 font-bold">What you keep after expenses.</div>
                             </div>
                         </div>
@@ -209,11 +209,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                     {/* Payment Status Breakdown */}
                     {(() => {
                         const STATUS_CONFIG = [
-                            { key: 'paid',         label: 'Paid',         color: '#22c55e', bg: 'bg-green-500/10',  border: 'border-green-500/20',  text: 'text-green-400',  inPayout: true,  note: 'Included in payout' },
-                            { key: 'pending',      label: 'Pending',      color: '#facc15', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', inPayout: false, note: 'Awaiting completion' },
-                            { key: 'review_hold',  label: 'Review Hold',  color: '#a78bfa', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', inPayout: false, note: 'On temporary hold' },
-                            { key: 'dispute_hold', label: 'Dispute Hold', color: '#f97316', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-400', inPayout: false, note: 'Under investigation' },
-                            { key: 'refunds',      label: 'Refunds',      color: '#ef4444', bg: 'bg-red-500/10',    border: 'border-red-500/20',    text: 'text-red-400',    inPayout: false, note: 'Deducted from balance' },
+                            { key: 'completed', label: 'Paid',        color: '#22c55e', bg: 'bg-green-500/10',  border: 'border-green-500/20',  text: 'text-green-400',  inPayout: true,  note: 'Included in payout' },
+                            { key: 'pending',   label: 'Pending',     color: '#facc15', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', inPayout: false, note: 'Awaiting confirmation' },
+                            { key: 'review_hold', label: 'Review Hold', color: '#a78bfa', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', inPayout: false, note: 'Not in payout or reserve' },
+                            { key: 'disputed',  label: 'Disputed',    color: '#f97316', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-400', inPayout: false, note: 'Not in payout or reserve' },
+                            { key: 'refunded',  label: 'Refunded',    color: '#ef4444', bg: 'bg-red-500/10',    border: 'border-red-500/20',    text: 'text-red-400',    inPayout: false, note: 'Deducted from future payout' },
                         ];
 
                         const statusMap = {};
@@ -589,34 +589,26 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 </td>
                                                     <td className="px-6 py-4 text-sm text-right">
                                                         <div className="flex flex-col items-end gap-1">
-                                                            {tx.display_status && (
+                                                            {tx.item_status && (
                                                                 <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                                                    tx.display_status === 'paid' ? 'bg-green-500/10 text-green-400' : 
-                                                                    tx.display_status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
-                                                                    tx.display_status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' :
-                                                                    tx.display_status === 'dispute_hold' ? 'bg-orange-500/10 text-orange-400' :
-                                                                    tx.display_status === 'refunds' ? 'bg-red-500/10 text-red-400' :
+                                                                    tx.item_status.endsWith('completed') || tx.item_status.endsWith('delivered') || tx.item_status.endsWith('accepted') ? 'bg-green-500/10 text-green-400' : 
+                                                                    tx.item_status.startsWith('task') ? 'bg-blue-500/10 text-blue-400' : 
+                                                                    tx.item_status.startsWith('order') ? 'bg-orange-500/10 text-orange-400' :
                                                                     'bg-gray-500/10 text-gray-400'
-                                                                }`}>{tx.display_status.replace('_', ' ')}
+                                                                }`}>{tx.item_status.replace('_', ' ')}
                                                                 </span>
                                                             )}
-                                                            {/* Order Status */}
-                                                            {tx.order_status && (
-                                                                <span className="px-2 py-0.5 whitespace-nowrap rounded-md text-[9px] font-medium uppercase tracking-wider bg-white/5 text-white/60 border border-white/10">
-                                                                    Order: {tx.order_status.replace('_', ' ')}
-                                                                </span>
-                                                            )}
-                                                            {/* Payment Status (Always show if success but order pending to avoid confusion) */}
-                                                            {tx.payment_status === 'completed' && tx.display_status !== 'paid' && (
-                                                                <span className="px-2 py-0.5 whitespace-nowrap rounded-md text-[9px] font-bold uppercase tracking-wider bg-green-500/10 text-green-500/80 border border-green-500/20">
-                                                                    Payment: Success
-                                                                </span>
-                                                            )}
-                                                            {tx.payment_status && tx.payment_status !== 'completed' && (
-                                                                <span className="px-2 py-0.5 whitespace-nowrap rounded-md text-[9px] font-medium uppercase tracking-wider bg-blue-500/5 text-blue-400/80 border border-blue-500/10">
-                                                                    Payment: {tx.payment_status.replace('_', ' ')}
-                                                                </span>
-                                                            )}
+                                                            <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                                                tx.status === 'completed' ? 'bg-green-500/10 text-green-400' : 
+                                                                tx.status === 'review_hold' ? 'bg-purple-500/10 text-purple-400' : 
+                                                                tx.status === 'disputed' ? 'bg-orange-500/10 text-orange-400' : 
+                                                                tx.status === 'refunded' ? 'bg-red-500/10 text-red-400' : 
+                                                                tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 
+                                                                tx.status === 'task_pending' ? 'bg-blue-500/10 text-blue-400' : 
+                                                                tx.status === 'order_pending' ? 'bg-orange-500/10 text-orange-400' :
+                                                                'bg-gray-500/10 text-gray-400'
+                                                            }`}>{tx.status?.replace('_', ' ')}
+                                                            </span>
                                                             {tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (
                                                                 <a 
                                                                     href={route('financial.evidence-pack', { uuid: tx.uuid })} 

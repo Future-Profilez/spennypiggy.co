@@ -44,12 +44,7 @@ class FinancialService
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->with(['source' => function($q) {
-                $q->morphWith([
-                    \App\Models\TaskPurchase::class => ['task'],
-                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
-                ]);
-            }])
+            ->with('source')
             ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status', 'source_type', 'source_id']);
 
         // Fetch Reserves and Review Holds from PayoutService
@@ -57,12 +52,17 @@ class FinancialService
         $reserves = $payoutService->getHeldReserves($user->uuid);
         
         // Convert all minor units to major units (GBP)
+        // Note: getHeldReserves now includes both executed run reserves and pending payment reserves.
         $heldReservesAmount = ($reserves['total_held'] ?? 0) / 100;
 
-        // Review Holds, Disputed, and Refunded payments
-        $reviewHoldsAmount = 0;
-        $disputesAmount = 0;
-        $refundsAmount = 0;
+        // Review Holds and Disputed payments
+        $reviewHoldsAmount = \App\Models\Payment::where('creator_id', $user->uuid)
+            ->where('status', 'review_hold')
+            ->sum('amount');
+            
+        $disputesAmount = \App\Models\Payment::where('creator_id', $user->uuid)
+            ->where('status', 'disputed')
+            ->sum('amount');
 
         $grossDisplay = 0;
         $feesDisplay = 0;
@@ -74,9 +74,6 @@ class FinancialService
         $vatGbp = 0;
         $netGbp = 0;
         $reservesHeldGbp = 0;
-        $reviewHoldsGbp = 0;
-        $disputesGbp = 0;
-        $refundsGbp = 0;
 
         $expensesCollection = CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$startDate, $endDate])
@@ -137,84 +134,50 @@ class FinancialService
         }
 
         foreach ($incomeTx as $tx) {
+            // Task Completion Logic: Only count toward Gross/Net if completed
+            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source->status)) {
+                if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    continue;
+                }
+            }
+
+            // Shop Completion Logic: Only count toward Gross/Net if delivered (for physical items)
+            if ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source->shop)) {
+                if ($tx->source->shop->type === 'physical') {
+                    $deliverable = \App\Models\Deliverable::where('session_id', $tx->source->session_id)->first();
+                    if (!$deliverable || $deliverable->status !== 'delivered') {
+                        continue;
+                    }
+                }
+            }
+
             $from = strtoupper($tx->currency ?? 'GBP');
             $net = (float) ($tx->net_amount ?? 0);
             $vat = (float) ($tx->vat_amount ?? 0);
             $reserve = (float) ($tx->reserve_amount ?? 0);
-            $gross = $net + $vat;
+            
+            // Creator's Gross = Net (Price + Shipping) + VAT
+            // Note: net_amount for Shop already includes shipping_amount
+            $gross = $net + $vat; 
+            
             $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
 
-            $isIncluded = false;
-            $isPhysicalOrTimed = false;
+            $grossDisplay += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
+            $feesDisplay += $from === $displayCurrency ? $fees : ($convert($from, $fees, $displayCurrency) ?? $fees);
+            $vatDisplay += $from === $displayCurrency ? $vat : ($convert($from, $vat, $displayCurrency) ?? $vat);
+            
+            // Net for Profit calculation
+            $netDisplay += $from === $displayCurrency ? $net : ($convert($from, $net, $displayCurrency) ?? $net);
 
-            // 1. Task Logic
-            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source)) {
-                $taskType = $tx->source->task->type ?? 'timed';
-                if ($taskType === 'instant') {
-                    // Task Instant: Include if completed, except if hold/dispute/refund
-                    if ($tx->status === 'completed') {
-                        $isIncluded = true;
-                    }
-                } else {
-                    // Task Timed: ONLY if completed
-                    $isPhysicalOrTimed = true;
-                    if (in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                        $isIncluded = true;
-                    }
-                }
-            }
-            // 2. Shop Logic
-            elseif ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source)) {
-                $shopType = $tx->source->shop->type ?? 'digital';
-                if ($shopType === 'physical') {
-                    // Shop Physical: ONLY if completed (delivered)
-                    $isPhysicalOrTimed = true;
-                    $deliverable = $tx->source->deliverable;
-                    if ($deliverable && $deliverable->status === 'delivered') {
-                        $isIncluded = true;
-                    }
-                } else {
-                    // Shop Instant: Include if completed, except if hold/dispute/refund
-                    if ($tx->status === 'completed') {
-                        $isIncluded = true;
-                    }
-                }
-            }
-            // 3. Other Types (Wish, Bills, Membership, Support)
-            else {
-                if ($tx->status === 'completed') {
-                    $isIncluded = true;
-                }
+            if ($tx->reserve_status === 'held') {
+                $reservesHeldDisplay += $from === $displayCurrency ? $reserve : ($convert($from, $reserve, $displayCurrency) ?? $reserve);
+                $reservesHeldGbp += $from === 'GBP' ? $reserve : ($convert($from, $reserve, 'GBP') ?? $reserve);
             }
 
-            // Track Special Statuses (for specific columns)
-            if ($tx->status === 'review_hold') {
-                $reviewHoldsAmount += ($from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross));
-                $reviewHoldsGbp += ($from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross));
-            } elseif ($tx->status === 'disputed' || ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source) && ($tx->source->status ?? '') === 'escalated')) {
-                $disputesAmount += ($from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross));
-                $disputesGbp += ($from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross));
-            } elseif ($tx->status === 'refunded') {
-                $refundsAmount += ($from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross));
-                $refundsGbp += ($from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross));
-            }
-
-            if ($isIncluded) {
-                $grossDisplay += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
-                $feesDisplay += $from === $displayCurrency ? $fees : ($convert($from, $fees, $displayCurrency) ?? $fees);
-                $vatDisplay += $from === $displayCurrency ? $vat : ($convert($from, $vat, $displayCurrency) ?? $vat);
-                $netDisplay += $from === $displayCurrency ? $net : ($convert($from, $net, $displayCurrency) ?? $net);
-
-                if ($tx->reserve_status === 'held') {
-                    $reservesHeldDisplay += $from === $displayCurrency ? $reserve : ($convert($from, $reserve, $displayCurrency) ?? $reserve);
-                    $reservesHeldGbp += $from === 'GBP' ? $reserve : ($convert($from, $reserve, 'GBP') ?? $reserve);
-                }
-
-                $grossGbp += $from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross);
-                $feesGbp += $from === 'GBP' ? $fees : ($convert($from, $fees, 'GBP') ?? $fees);
-                $vatGbp += $from === 'GBP' ? $vat : ($convert($from, $vat, 'GBP') ?? $vat);
-                $netGbp += $from === 'GBP' ? $net : ($convert($from, $net, 'GBP') ?? $net);
-            }
+            $grossGbp += $from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross);
+            $feesGbp += $from === 'GBP' ? $fees : ($convert($from, $fees, 'GBP') ?? $fees);
+            $vatGbp += $from === 'GBP' ? $vat : ($convert($from, $vat, 'GBP') ?? $vat);
+            $netGbp += $from === 'GBP' ? $net : ($convert($from, $net, 'GBP') ?? $net);
         }
 
         $expensesDisplay = 0;
@@ -228,11 +191,8 @@ class FinancialService
 
         // Convert reserves and review holds to display currency
         $heldReservesDisplay = $convert('GBP', $heldReservesAmount, $displayCurrency) ?? ($heldReservesAmount);
-        
-        // Use the calculated amounts from the loop if they are more accurate for the current tax year
-        $reviewHoldsDisplay = $reviewHoldsAmount;
-        $disputesDisplay = $disputesAmount;
-        $refundsDisplay = $refundsAmount;
+        $reviewHoldsDisplay = $convert('GBP', $reviewHoldsAmount / 100, $displayCurrency) ?? ($reviewHoldsAmount / 100);
+        $disputesDisplay = $convert('GBP', $disputesAmount / 100, $displayCurrency) ?? ($disputesAmount / 100);
 
         // Calculate Expected Next Payout using PayoutService directly
         $payoutData = $payoutService->calculatePayouts();
@@ -257,12 +217,10 @@ class FinancialService
             'vat_collected' => $vatDisplay,
             'net_income' => $netDisplay,
             'expenses' => $expensesDisplay,
-            'net_earning' => $grossDisplay - $expensesDisplay,
             'profit' => $netDisplay - $expensesDisplay,
             'held_reserves' => $heldReservesDisplay,
             'review_holds' => $reviewHoldsDisplay,
             'disputes' => $disputesDisplay,
-            'refunds' => $refundsDisplay,
             'payoutable_balance' => $payoutableDisplay,
             'carry_over_amount' => $carryOverDisplay,
             'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0,
@@ -272,12 +230,10 @@ class FinancialService
             'vat_collected_gbp' => $vatGbp,
             'net_income_gbp' => $netGbp,
             'expenses_gbp' => $expensesGbp,
-            'net_earning_gbp' => $grossGbp - $expensesGbp,
             'profit_gbp' => $netGbp - $expensesGbp,
             'held_reserves_gbp' => $heldReservesAmount,
-            'review_holds_gbp' => $reviewHoldsGbp,
-            'disputes_gbp' => $disputesGbp,
-            'refunds_gbp' => $refundsGbp,
+            'review_holds_gbp' => $reviewHoldsAmount / 100,
+            'disputes_gbp' => $disputesAmount / 100,
         ];
     }
 

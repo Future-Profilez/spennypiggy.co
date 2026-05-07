@@ -287,8 +287,8 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     // Use cache for everyone, but shorter TTL for auth users if needed
     // However, discovery data is mostly global, so we can use a shared cache key
     // that depends on the request parameters.
-    $cacheKey = 'discover_v2_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
-    $ttl = Auth::check() ? 300 : 1200; // 5 mins for auth, 20 mins for guests
+    $cacheKey = 'discover_v3_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
+    $ttl = Auth::check() ? 600 : 1800; // 10 mins for auth, 30 mins for guests
 
     $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $getData);
 

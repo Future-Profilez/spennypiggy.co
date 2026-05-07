@@ -6,9 +6,9 @@ import {
     DownloadIcon, 
     ChevronLeftIcon, 
     ChevronRightIcon,
-    MoveLeftIcon
+    ArrowLeftIcon,
+    FileTextIcon
 } from "@animateicons/react/lucide";
-import { FileText } from "lucide-react";
 
 export default function History({ auth, transactions }) {
     const downloadIconRef = useRef(null);
@@ -46,7 +46,7 @@ export default function History({ auth, transactions }) {
                                 className="p-3 rounded-xl bg-white border-[2px] border-black hover:bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                                 onMouseEnter={() => backIconRef.current?.startAnimation()}
                             >
-                                <MoveLeftIcon ref={backIconRef} size={22} duration={1.5} />
+                                <ArrowLeftIcon ref={backIconRef} size={22} duration={1.5} />
                             </Link>
                             <div>
                                 <h1 className="text-3xl md:text-4xl font-black text-black tracking-tight leading-none uppercase">FULL HISTORY</h1>
@@ -94,7 +94,7 @@ export default function History({ auth, transactions }) {
                                             <td colSpan="6" className="px-6 py-16 text-center">
                                                 <div className="flex flex-col items-center gap-3">
                                                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center border-[3px] border-black border-dashed">
-                                                        <FileText size={24} className="text-gray-400" />
+                                                        <FileTextIcon size={24} className="text-gray-400" />
                                                     </div>
                                                     <span className="text-black font-black uppercase tracking-[0.15em] text-lg">No transactions found</span>
                                                 </div>
@@ -121,7 +121,21 @@ export default function History({ auth, transactions }) {
 }
 
 const TransactionRow = ({ tx, formatCurrency }) => {
+    const iconRef = useRef(null);
     const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out;
+
+    useEffect(() => {
+        if (tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-')) {
+            const startLoop = () => {
+                iconRef.current?.startAnimation?.();
+                const nextDelay = 5000 + Math.random() * 5000;
+                return setTimeout(startLoop, nextDelay);
+            };
+            const initialDelay = 2000 + Math.random() * 5000;
+            const initialTimeout = setTimeout(startLoop, initialDelay);
+            return () => clearTimeout(initialTimeout);
+        }
+    }, [tx.uuid, tx.type]);
 
     return (
         <tr className={`hover:bg-yellow-50/50 transition-colors group ${isPending ? 'opacity-30 grayscale-[0.4]' : ''}`}>
@@ -195,8 +209,9 @@ const TransactionRow = ({ tx, formatCurrency }) => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-2 py-0.5 bg-white border-[1.5px] border-black rounded-md text-[8px] font-black uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-0.5px] hover:translate-y-[-0.5px] flex items-center gap-1 group/evidence"
+                            onMouseEnter={() => iconRef.current?.startAnimation?.()}
                         >
-                            <FileText size={10} />
+                            <FileTextIcon ref={iconRef} size={10} duration={1.2} />
                             Evidence Pack
                         </a>
                     )}

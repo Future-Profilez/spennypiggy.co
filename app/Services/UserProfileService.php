@@ -418,7 +418,10 @@ class UserProfileService
      */
     public function getSupportersCount(int $userId): int
     {
-        $callback = function () use ($userId) {
+        $cacheKey = 'user_supporters_count_v2_' . $userId;
+        $ttl = (Auth::check() && Auth::id() === $userId) ? 300 : 3600; // 5 mins for owner, 1 hour for others
+
+        return Cache::remember($cacheKey, $ttl, function () use ($userId) {
             // Use raw SQL for better performance
             $query = "
                 SELECT COUNT(DISTINCT supporter) as count FROM (
@@ -438,14 +441,8 @@ class UserProfileService
             ";
             
             $result = DB::select($query, [$userId, $userId, $userId]);
-            return $result[0]->count ?? 0;
-        };
-
-        if (Auth::check()) {
-            return $callback();
-        }
-
-        return Cache::remember('user_supporters_count_' . $userId, 600, $callback);
+            return (int)($result[0]->count ?? 0);
+        });
     }
 
     /**
@@ -453,47 +450,54 @@ class UserProfileService
      */
     public function getUserEarnings(int $userId): array
     {
-        // Removed caching
-        $goalPayment = TipGoalsPayment::where('creator_id', $userId)
-            ->where('status', 'paid')
-            ->sum('amount');
-            
-        $billPayment = BillPayment::whereHas('bill', fn ($q) => $q->where('user_id', $userId))
-            ->where('status', 'paid')
-            ->sum('amount');
-            
-        $memPayment = MembershipPayment::whereHas('membership', fn ($q) => $q->where('user_id', $userId))
-            ->where('status', 'paid')
-            ->sum('amount');
-            
-        $wishPayment = StripePaymentDetail::where('owner_id', $userId)
-            ->where('payment_status', 'paid')
-            ->sum('amount_subtotal');
-            
-        $subPayment = WishItemSubscription::whereHas('wish_item', fn ($q) => $q->where('user_id', $userId))
-            ->where('status', 'paid')
-            ->sum('amount');
-
-        $totalEarnings = $goalPayment + $billPayment + $memPayment + $wishPayment + $subPayment;
+        $cacheKey = 'user_earnings_v2_' . $userId;
         
-        $target = match (true) {
-            $totalEarnings < 100 => 100,
-            $totalEarnings < 1000 => 1000,
-            $totalEarnings < 10000 => 10000,
-            $totalEarnings < 100000 => 100000,
-            $totalEarnings < 1000000 => 1000000,
-            default => 10000000,
-        };
+        return Cache::remember($cacheKey, 600, function() use ($userId) {
+            $goalPayment = TipGoalsPayment::where('creator_id', $userId)
+                ->where('status', 'paid')
+                ->sum('amount');
+                
+            $billPayment = BillPayment::whereHas('bill', fn ($q) => $q->where('user_id', $userId))
+                ->where('status', 'paid')
+                ->sum('amount');
+                
+            $memPayment = MembershipPayment::whereHas('membership', fn ($q) => $q->where('user_id', $userId))
+                ->where('status', 'paid')
+                ->sum('amount');
+                
+            $wishPayment = StripePaymentDetail::where('owner_id', $userId)
+                ->where('payment_status', 'paid')
+                ->sum('amount_subtotal');
+                
+            $subPayment = WishItemSubscription::whereHas('wish_item', fn ($q) => $q->where('user_id', $userId))
+                ->where('status', 'paid')
+                ->sum('amount');
 
-        return [
-            'fulfilled' => $totalEarnings,
-            'target' => $target,
-            'goal_payments' => $goalPayment,
-            'bill_payments' => $billPayment,
-            'membership_payments' => $memPayment,
-            'wish_payments' => $wishPayment,
-            'subscription_payments' => $subPayment
-        ];
+            $shopPayment = ShopPayment::whereHas('shop', fn ($q) => $q->where('user_id', $userId))
+                ->where('payment_status', 'paid')
+                ->sum('amount');
+
+            $totalEarnings = $goalPayment + $billPayment + $memPayment + $wishPayment + $subPayment + $shopPayment;
+            
+            $target = match (true) {
+                $totalEarnings < 100 => 100,
+                $totalEarnings < 1000 => 1000,
+                $totalEarnings < 10000 => 10000,
+                $totalEarnings < 100000 => 100000,
+                $totalEarnings < 1000000 => 1000000,
+                default => 10000000,
+            };
+
+            return [
+                'fulfilled' => $totalEarnings,
+                'target' => $target,
+                'goal_payments' => $goalPayment,
+                'bill_payments' => $billPayment,
+                'membership_payments' => $memPayment,
+                'wish_payments' => $wishPayment,
+                'subscription_payments' => $subPayment
+            ];
+        });
     }
 
     /**
@@ -532,8 +536,13 @@ class UserProfileService
 
         // 🛡️ Sync mandatory subscription if user is viewing their own profile and status is not active
         if (Auth::check() && Auth::id() === $user->id && $user->stripe_id) {
-            if ($user->subscription_status == 0) { // 0 = EXPIRED/NONE
+            // Rate limit sync to once every 6 hours per user to avoid blocking page loads
+            $syncCacheKey = 'last_stripe_sync_' . $user->id;
+            $needsSync = !Cache::has($syncCacheKey);
+
+            if ($needsSync && $user->subscription_status == 0) { // 0 = EXPIRED/NONE
                 $this->syncUserSubscription($user);
+                Cache::put($syncCacheKey, true, 21600); // 6 hours
                 // Refresh user model after sync
                 $user = $user->fresh();
                 $user->load([

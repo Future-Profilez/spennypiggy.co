@@ -1,8 +1,12 @@
 import React, { useRef, useEffect } from "react";
-import { Calendar, Clock, XCircle } from "lucide-react";
 import {
+    CalendarIcon,
     CircleCheckIcon,
+    ClockIcon,
+    CircleXIcon,
+    ArrowRightIcon,
     CreditCardIcon,
+    RefreshCwIcon,
 } from "@animateicons/react/lucide";
 
 const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
@@ -121,7 +125,7 @@ const StatusRow = ({ charge, index }) => {
         >
             <td className="py-4 px-3 text-gray-900 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-gray-400" />
+                    <CalendarIcon size={14} className="text-gray-400" />
                     {formatDate(charge.current_start_subscription_date || charge.current_start_trial_date)}
                 </div>
             </td>
@@ -138,9 +142,9 @@ const StatusRow = ({ charge, index }) => {
                     {charge.status === 'active' || charge.status === 'paid' ? (
                         <CircleCheckIcon ref={iconRef} size={12} duration={1.2} />
                     ) : charge.status === 'trialing' || charge.status === 'trial' ? (
-                        <Clock size={12} />
+                        <ClockIcon ref={iconRef} size={12} duration={1.2} />
                     ) : (
-                        <XCircle size={12} />
+                        <CircleXIcon ref={iconRef} size={12} duration={1.2} />
                     )}
                     {charge.status}
                 </span>
@@ -155,7 +159,7 @@ const StatusRow = ({ charge, index }) => {
             </td>
             <td className="py-4 px-3 text-gray-700 font-medium">
                 <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-gray-400" />
+                    <CalendarIcon size={14} className="text-gray-400" />
                     {formatDate(charge.current_end_subscription_date || charge.current_end_trial_date)}
                 </div>
             </td>

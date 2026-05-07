@@ -10,8 +10,8 @@ import {
     FlameIcon, 
     CircleCheckIcon, 
     PoundSterlingIcon,
+    GiftIcon
 } from "@animateicons/react/lucide";
-import { Gift } from "lucide-react";
 import IntroVideos from './IntrosVideos';
 import TopSupporters from '../leaderboard/TopSupporters';
 
