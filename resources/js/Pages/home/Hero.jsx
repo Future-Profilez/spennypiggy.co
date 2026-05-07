@@ -127,7 +127,7 @@ export default function Hero({auth}) {
                     
                     <div className="flex items-center justify-center mt-4 md:mt-16 mb-6 md:mb-10">
                       <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
-                      <h3 className="text-center text-[10px] md:text-xl uppercase text-yellow-400 font-gulfs tracking-[0.5em] px-8">
+                      <h3 className="text-center text-[16px] md:text-xl uppercase text-yellow-400 font-gulfs tracking-[0.2em] px-4">
                           Built for Creators
                       </h3>
                       <div className="h-[1px] w-24 bg-gradient-to-l from-transparent via-yellow-400/50 to-transparent"></div>
