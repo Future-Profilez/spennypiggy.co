@@ -313,7 +313,7 @@ export default function ShopDetailItem(props) {
                                 <div className="w-full">
                                     <div className="mb-1 mt-4 font-medium text-gray-500">
                                         Social
-                                    </div>
+                                    </div> 
                                     <ul className="mb-4 -ml-2 flex md:order-1 md:mb-0">
                                         <li>
                                             <a
