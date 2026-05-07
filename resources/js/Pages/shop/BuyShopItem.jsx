@@ -461,35 +461,6 @@ export default function BuyShopItem({
                                 Thank you for your purchase!
                             </h2>
                             <div className="border border-gray-200 p-3 rounded-[30px]  mt-4">
-                                <div className="mb-3 shop-item flex justify-between w-full items-center bg-white rounded-[30px] ">
-                                    <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[30px]  items-center">
-                                        <Link
-                                            href={`/shop/item/${slug(s.name)}/${
-                                                s.uuid
-                                            }`}
-                                            className="shop-img w-12 h-12 min-w-12"
-                                        >
-                                            <img
-                                                className="w-full h-full object-cover rounded-[30px]  "
-                                                src={s.perma_link}
-                                                alt=""
-                                            />
-                                        </Link>
-                                        <Link
-                                            href={`/shop/item/${slug(s.name)}/${
-                                                s.uuid
-                                            }`}
-                                            className="shop-text pl-3 "
-                                        >
-                                            <h2 className="text-md font-bold">
-                                                {s.name}
-                                            </h2>
-                                            <p className="text-gray-500 text-sm line-clamp-1 ">
-                                                {s.description}
-                                            </p>
-                                        </Link>
-                                    </div>
-                                </div>
 
                                 {shop.type === "physical" ? (
                                     <div className="text-center py-2">
@@ -688,10 +659,11 @@ export default function BuyShopItem({
                             {shop.type === "physical" ? (
                                 <>
                                     <div className="mb-3">
-                                        <p className="mb-2">
-                                            Shipping Information
+                                        <p className="mb-2 font-bold text-gray-700">
+                                            Shipping Information <span className="text-red-500">*</span>
                                         </p>
                                         <select
+                                            required
                                             className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                             name="country"
                                             onChange={handleShipInput}
@@ -713,42 +685,42 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
-                                            placeholder="Street Address"
+                                            placeholder="Street Address *"
                                         />
                                     </div>
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
-                                            placeholder="City"
+                                            placeholder="City *"
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
-                                                placeholder="State"
+                                                placeholder="State *"
                                             />
                                         </div>
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                                 onChange={handleShipInput}
                                                 name="postal_code"
                                                 type="text"
-                                                placeholder="Postal Code"
+                                                placeholder="Postal Code *"
                                             />
                                         </div>
                                     </div>

@@ -32,6 +32,7 @@ class ShopPayment extends Model
         'payment_status',
         'twitter_response',
         'quantity',
+        'shipping_info',
         'digital_waiver_confirmed_at',
         'digital_waiver_text',
     ];

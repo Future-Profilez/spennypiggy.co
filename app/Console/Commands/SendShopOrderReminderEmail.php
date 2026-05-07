@@ -70,14 +70,14 @@ class SendShopOrderReminderEmail extends Command
             }
 
             // 2. Check for 7-day second reminder
-            if ($createdAt->lte($sevenDaysAgo) && $deliverable->system_reminder_count < 2) {
+            if ($createdAt->lte($sevenDaysAgo) && $deliverable->system_reminder_count < 2 && !$deliverable->is_overdue) {
                 $this->sendReminder($deliverable);
                 $reminderCount++;
                 continue;
             }
 
             // 3. Check for 2-day first reminder
-            if ($createdAt->lte($twoDaysAgo) && $deliverable->system_reminder_count < 1) {
+            if ($createdAt->lte($twoDaysAgo) && $deliverable->system_reminder_count < 1 && !$deliverable->is_overdue) {
                 $this->sendReminder($deliverable);
                 $reminderCount++;
                 continue;
@@ -108,6 +108,19 @@ class SendShopOrderReminderEmail extends Command
         try {
             // Find the associated shop payment for the email content
             $payment = ShopPayment::where('session_id', $deliverable->session_id)->first();
+
+            if (!$payment) {
+                // Fallback: find by shop_id + gifter to handle session_id mismatch/null cases
+                $payment = ShopPayment::where('shop_id', $deliverable->item_id)
+                    ->where('user_id', $deliverable->gifter_id)
+                    ->latest()
+                    ->first();
+            }
+
+            if (!$payment) {
+                Log::warning("Skipping reminder for deliverable {$deliverable->id}: ShopPayment not found for session {$deliverable->session_id}");
+                return;
+            }
 
             Mail::to($creator->email)->send(new ShopOrderReminderMail(
                 $creator,

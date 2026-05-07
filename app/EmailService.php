@@ -35,7 +35,6 @@ use App\Mail\FeatureSuggestionMail;
 use App\Models\AppService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\FacadesLog;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -88,10 +87,17 @@ class EmailService
         }
     }
 
-    public static function shopBuyed($data, $anon, $amountUserPay)
+    public static function shopBuyed($data, $anon, $amountUserPay, $symbol = '£')
     {
+        Log::info('EmailService::shopBuyed called', [
+            'shop_payment_id' => $data->id ?? null,
+            'anon' => $anon,
+            'amount' => $amountUserPay,
+            'symbol' => $symbol
+        ]);
+
         try {
-            $data->loadMissing(['shop.user']);
+            $data->load(['shop' => function($q) { $q->withTrashed(); }, 'shop.user']);
 
             $toEmail = $data->shop?->user?->email;
             if (!$toEmail) {
@@ -102,8 +108,10 @@ class EmailService
                 return;
             }
 
-            Mail::to($toEmail)->send(new ShopBuyedMail($data, $anon, $amountUserPay));
-            Log::info('EmailService::shopBuyed sent', ['to' => $toEmail, 'shop_payment_id' => $data->id ?? null]);
+            Log::info('EmailService::shopBuyed sending to creator', ['email' => $toEmail]);
+            $amountWithSymbol = $symbol . number_format($amountUserPay, 2);
+            Mail::to($toEmail)->send(new ShopBuyedMail($data, $anon, $amountWithSymbol));
+            Log::info('EmailService::shopBuyed sent successfully');
         } catch (\Throwable $e) {
             Log::error('EmailService::shopBuyed failed', [
                 'error' => $e->getMessage(),
@@ -113,10 +121,15 @@ class EmailService
         }
     }
 
-    public static function shopBuyedUser($data, $url, $curr)
+    public static function shopBuyedUser($data, $url, $curr, $deliverable = null)
     {
+        Log::info('EmailService::shopBuyedUser called', [
+            'shop_payment_id' => $data->id ?? null,
+            'currency' => $curr
+        ]);
+
         try {
-            $data->loadMissing(['user', 'shop', 'shop.user']);
+            $data->load(['user', 'shop' => function($q) { $q->withTrashed(); }, 'shop.user']);
 
             $toEmail = $data->user?->email ?? $data->email;
             
@@ -127,13 +140,17 @@ class EmailService
                 return;
             }
 
-            $deliverable = \App\Models\Deliverable::where('session_id', $data->session_id)
-                ->where('product_type', 'shop_item')
-                ->first();
+            if (!$deliverable) {
+                Log::info('EmailService::shopBuyedUser: deliverable missing, attempting to resolve by session_id', ['session_id' => $data->session_id]);
+                $deliverable = \App\Models\Deliverable::where('session_id', $data->session_id)
+                    ->where('product_type', 'shop_item')
+                    ->first();
+            }
 
+            Log::info('EmailService::shopBuyedUser sending to buyer', ['email' => $toEmail]);
             Mail::to($toEmail)
                 ->send(new ShopBuyedMailUser($data, $url, $curr, $deliverable));
-            Log::info('EmailService::shopBuyedUser sent', ['to' => $toEmail, 'shop_payment_id' => $data->id ?? null]);
+            Log::info('EmailService::shopBuyedUser sent successfully');
         } catch (\Throwable $e) {
             Log::error('EmailService::shopBuyedUser failed', [
                 'error' => $e->getMessage(),
@@ -417,7 +434,12 @@ class EmailService
     public static function sendSubscribedMail($sub, $creatorFinalAmount)
     {
         try {
-            Mail::to($sub->wish_item->user->email)->send(new SubsMail($sub, $creatorFinalAmount));
+            $toEmail = $sub->wish_item?->user?->email;
+            if (empty($toEmail)) {
+                Log::warning('EmailService::sendSubscribedMail skipped: missing creator email');
+                return;
+            }
+            Mail::to($toEmail)->send(new SubsMail($sub, $creatorFinalAmount));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -436,7 +458,12 @@ class EmailService
     public static function sendMembershipMail($mem, $amountWithCurr)
     {
         try {
-            Mail::to($mem->membership->user->email)->send(new MemberMail($mem, $amountWithCurr));
+            $toEmail = $mem->membership?->user?->email;
+            if (empty($toEmail)) {
+                Log::warning('EmailService::sendMembershipMail skipped: missing creator email');
+                return;
+            }
+            Mail::to($toEmail)->send(new MemberMail($mem, $amountWithCurr));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

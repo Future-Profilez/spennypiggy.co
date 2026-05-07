@@ -68,6 +68,21 @@
             </tr>
             @endif
 
+            @if($deliverable->metadata && isset($deliverable->metadata['creator_note']) && $deliverable->metadata['creator_note'])
+            <tr>
+                <td style="padding: 10px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #fff4f8; border-radius: 12px; padding: 15px; border: 1px solid #f94f97; text-align: left;">
+                        <tr>
+                            <td style="font-family: Arial; font-size: 12px; color: #f94f97; text-transform: uppercase; font-weight: bold; padding-bottom: 5px;">Note from {{ $creator->name }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: Arial; font-size: 14px; font-weight: normal; color: #333333; line-height: 20px;">{{ $deliverable->metadata['creator_note'] }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            @endif
+
             <tr>
                 <td style="padding: 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     You can track your order status anytime in your purchases dashboard.

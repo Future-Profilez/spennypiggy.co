@@ -801,7 +801,6 @@ Route::prefix('shop')->group(function () {
         Route::post('/shipping-profile/save', [ShopsController::class, 'saveShippingProfile'])->name('shop.shipping-profile.save');
         Route::delete('/shipping-profile/{id}', [ShopsController::class, 'deleteShippingProfile'])->name('shop.shipping-profile.delete');
         Route::post('/fulfillment/{uuid}', [ShopsController::class, 'updateFulfillment'])->name('shop.fulfillment.update');
-        Route::post('/order/{uuid}/deactivate', [ShopsController::class, 'deactivateOrder'])->name('shop.order.deactivate');
     });
 });
 

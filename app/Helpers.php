@@ -446,6 +446,135 @@ class Helpers
         return false;
     }
 
+    /**
+     * Send shop purchase emails to both creator and buyer with idempotency check
+     */
+    public static function sendShopPurchaseEmails($shopPayment, $symbol, $deliverable = null): void
+    {
+        try {
+            $lockKey = 'shop_emails_sent_' . $shopPayment->uuid;
+            
+            // Try to acquire a lock for 10 minutes. If already locked, skip.
+            $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 600);
+            
+            if ($lock->get()) {
+                Log::info('Helpers::sendShopPurchaseEmails: START', ['uuid' => $shopPayment->uuid]);
+
+                try {
+                    // 1. Force reload ALL relationships with trashed items just in case
+                    $shopPayment->load([
+                        'shop' => function($q) { $q->withTrashed(); },
+                        'shop.user',
+                        'user'
+                    ]);
+
+                    $amountUserPay = (float)($shopPayment->total_paid ?? $shopPayment->amount);
+                    $multiplier = self::isZeroDecimalCurrency($shopPayment->currency) ? 1 : 100;
+                    $totalPaidAmount = $shopPayment->total_paid && $shopPayment->total_paid > 0 
+                        ? $shopPayment->total_paid 
+                        : (float) ($shopPayment->amount + ($shopPayment->shipping_amount ?? 0) + ($shopPayment->vat_tax_amount ?? 0));
+                    $amountWithcurrency = ($symbol ?? '£') . number_format($totalPaidAmount, 2);
+
+                    // --- CREATOR NOTIFICATION BLOCK ---
+                    try {
+                        $shop = $shopPayment->shop;
+                        
+                        // Fallback 1: If shop relationship failed, find by shop_id manually
+                        if (!$shop && $shopPayment->shop_id) {
+                            $shop = \App\Models\Shop::withTrashed()->find($shopPayment->shop_id);
+                            if ($shop) {
+                                Log::info('Helpers::sendShopPurchaseEmails: Shop found via manual fallback', ['shop_id' => $shopPayment->shop_id]);
+                            }
+                        }
+
+                        $creator = $shop?->user;
+                        
+                        // Fallback 2: If user relationship failed, find by user_id manually
+                        if (!$creator && $shop?->user_id) {
+                            $creator = \App\Models\User::find($shop->user_id);
+                            if ($creator) {
+                                Log::info('Helpers::sendShopPurchaseEmails: Creator found via manual fallback', ['user_id' => $shop->user_id]);
+                            }
+                        }
+
+                        $creatorEmail = $creator?->email;
+
+                        if ($creatorEmail && filter_var($creatorEmail, FILTER_VALIDATE_EMAIL)) {
+                            Log::info('Helpers::sendShopPurchaseEmails: Notifying Creator', [
+                                'uuid' => $shopPayment->uuid,
+                                'email' => $creatorEmail,
+                                'name' => $creator->name
+                            ]);
+                            
+                            // Creator Email
+                            try {
+                                \App\EmailService::shopBuyed($shopPayment, (bool)$shopPayment->anonymous, $amountUserPay, $symbol);
+                            } catch (\Throwable $e) {
+                                Log::error('Helpers::sendShopPurchaseEmails: Creator Email failed', ['error' => $e->getMessage()]);
+                            }
+                            
+                            // Creator Push
+                            try {
+                                $fanName = ucfirst($shopPayment->user?->name ?? ($shopPayment->name ?? 'A Fan'));
+                                $creatorTitle = "📦 New Shop Order!";
+                                $creatorContent = "$fanName placed an order in your shop. Time to fulfill it!.";
+                                self::sendNotification($creatorTitle, $creatorContent, $creatorEmail);
+                            } catch (\Throwable $e) {
+                                Log::error('Helpers::sendShopPurchaseEmails: Creator Push failed', ['error' => $e->getMessage()]);
+                            }
+                        } else {
+                            Log::warning('Helpers::sendShopPurchaseEmails: Creator notification skipped - invalid or missing email', [
+                                'uuid' => $shopPayment->uuid,
+                                'email_found' => $creatorEmail ?? 'NULL',
+                                'shop_exists' => $shopPayment->shop ? 'YES' : 'NO'
+                            ]);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Helpers::sendShopPurchaseEmails: Creator block fatal error', ['error' => $e->getMessage()]);
+                    }
+
+                    // --- GIFTER NOTIFICATION BLOCK ---
+                    try {
+                        // Gifter Email
+                        try {
+                            \App\EmailService::shopBuyedUser($shopPayment, $shopPayment->shop?->reward_file_url, $symbol, $deliverable);
+                        } catch (\Throwable $e) {
+                            Log::error('Helpers::sendShopPurchaseEmails: Gifter Email failed', ['error' => $e->getMessage()]);
+                        }
+
+                        // Gifter Push
+                        $gifterEmail = $shopPayment->email ?? ($shopPayment->user?->email ?? null);
+                        if ($gifterEmail && filter_var($gifterEmail, FILTER_VALIDATE_EMAIL)) {
+                            Log::info('Helpers::sendShopPurchaseEmails: Notifying Gifter (Push)', ['email' => $gifterEmail]);
+                            $creatorName = ucfirst($shopPayment->shop?->user?->name ?? 'A Creator');
+                            $gifterTitle = "🛍️ Purchase Confirmed!";
+                            $gifterContent = "You bought something from $creatorName ’s shop for {$amountWithcurrency}. They’ll process it soon.";
+                            self::sendNotification($gifterTitle, $gifterContent, $gifterEmail);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Helpers::sendShopPurchaseEmails: Gifter block fatal error', ['error' => $e->getMessage()]);
+                    }
+
+                    Log::info('Helpers::sendShopPurchaseEmails: FINISHED', ['uuid' => $shopPayment->uuid]);
+                } catch (\Throwable $e) {
+                    // Release lock on failure so the next call can retry
+                    $lock->release();
+                    Log::error('Helpers::sendShopPurchaseEmails: FATAL ERROR, lock released', [
+                        'uuid' => $shopPayment->uuid,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::info('Helpers::sendShopPurchaseEmails: Lock skipped (already sending)', ['uuid' => $shopPayment->uuid]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Helpers::sendShopPurchaseEmails: LOCK ERROR', [
+                'uuid' => $shopPayment->uuid,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public static function getCurrency($currency)
     {
 
@@ -472,6 +601,8 @@ class Helpers
      */
     public static function sendNotification($title, $content, $email)
     {
+        Log::info('Helpers::sendNotification: Preparing push', ['email' => $email, 'title' => $title]);
+
         $payload = [
             'notification' => [
                 'title' => $title,
@@ -482,28 +613,36 @@ class Helpers
             ]
         ];
         try {
+            $apiKey = env('MAGICBELL_API_KEY');
+            $apiSecret = env('MAGICBELL_API_SECRET');
+
+            if (empty($apiKey) || empty($apiSecret)) {
+                Log::error('Helpers::sendNotification: Missing MagicBell credentials');
+                return false;
+            }
+
             $response = Http::withHeaders([
-                'X-MAGICBELL-API-KEY' => env('MAGICBELL_API_KEY'),
-                'X-MAGICBELL-API-SECRET' => env("MAGICBELL_API_SECRET"),
+                'X-MAGICBELL-API-KEY' => $apiKey,
+                'X-MAGICBELL-API-SECRET' => $apiSecret,
                 'Accept' => 'application/json',
             ])->post('https://api.magicbell.com/notifications', $payload);
 
             Log::info('MagicBell API response status: ' . $response->status());
-            Log::info('MagicBell API response body: ' . $response->body());
-
+            
             if ($response->successful()) {
-                return response()->json(['message' => 'Push notification sent successfully!']);
+                return true;
             }
-            Log::error('Failed to send push notification: ' . $response->reason());
-            return response()->json([
-                'error' => 'Failed to send push notification !!',
+            
+            Log::error('Failed to send push notification', [
+                'status' => $response->status(),
                 'reason' => $response->reason(),
-                'status_code' => $response->status(),
-                'response_body' => $response->body(),
-            ], 500);
+                'body' => $response->body()
+            ]);
+
+            return false;
         } catch (\Exception $e) {
             Log::error('Error sending push notification: ' . $e->getMessage());
-            return response()->json(['error' => 'Error sending push notification: ' . $e->getMessage()], 500);
+            return false;
         }
     }
 
@@ -571,6 +710,7 @@ class Helpers
         $commonFields = [
             'platform' => 'SpennyPiggy',
             'payment_uuid' => (string) ($paymentModel->uuid ?? Uuid::uuid4()),
+            'payment_id' => (string) ($paymentModel->uuid ?? Uuid::uuid4()),
             'timestamp' => now()->format('Y-m-d H:i:s T'),
         ];
 
@@ -737,6 +877,7 @@ class Helpers
                 $shopItem = $paymentModel->shop ?? null;
 
                 $baseMetadata = array_merge($commonFields, [
+                    'type' => 'shop',
                     'purpose' => 'Shop Item Purchase Payment',
                     'payment_category' => 'shop_purchase',
                     'product_type' => 'shop_item',

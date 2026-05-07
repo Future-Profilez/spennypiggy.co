@@ -801,13 +801,16 @@ class BillsController extends Controller
 
                 $vatAmountPercentage = $bill_pay->vat_tax_amount ?? 0;
                 $amountWithVat = $symbol->symbol . ($bill_pay->amount + $vatAmountPercentage);
-                $amountWithCurr = $symbol->symbol . $bill_pay->amount;
+                
+                $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+                $totalPaidAmount = $bill_pay->total_paid && $bill_pay->total_paid > 0 ? $bill_pay->total_paid : (float) ($session->amount_total / $multiplier);
+                $amountWithCurr = ($symbol->symbol ?? '£') . number_format($totalPaidAmount, 2);
 
                 /**************************BILL**PWA**START****************************************************/
                 // below is BILL pwa for fans
                 $CreatorName = ucfirst($bill_pay->bill->user->name) ?? 'A Creator';
                 $title = "🧾 Bill Paid!";
-                $content = "You’ve successfully paid your bill to $CreatorName.";
+                $content = "You’ve successfully paid your bill to $CreatorName for {$amountWithCurr}.";
                 $email = $bill_pay->guest_email;
 
                 Helpers::sendNotification($title, $content, $email);

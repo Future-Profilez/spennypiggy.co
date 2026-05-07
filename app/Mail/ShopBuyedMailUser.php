@@ -39,6 +39,11 @@ class ShopBuyedMailUser extends Mailable
      */
     public function build()
     {
+        // Ensure relationships are loaded if this is being handled in the queue
+        if (!$this->data->relationLoaded('shop.user')) {
+            $this->data->load(['shop.user']);
+        }
+
         $creatorName = $this->data->shop?->user?->name ?? 'a creator';
         $itemName = $this->data->shop?->name ?? 'Shop Item';
         $subject = "Purchase confirmed: {$creatorName}'s {$itemName}";

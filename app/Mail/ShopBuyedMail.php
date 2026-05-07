@@ -36,6 +36,11 @@ class ShopBuyedMail extends Mailable
      */
     public function build()
     {
+        // Ensure relationships are loaded if this is being handled in the queue
+        if (!$this->data->relationLoaded('shop')) {
+            $this->data->load(['shop']);
+        }
+
         $name = $this->anon ? 'Anonymous user' : ($this->data->name ?? 'A customer');
         $itemName = $this->data->shop?->name ?? 'Shop Item';
         $subject = "{$name} purchased {$itemName}";

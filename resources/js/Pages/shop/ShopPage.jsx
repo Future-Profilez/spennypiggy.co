@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import AddShop from './AddShop';
 import MyShopProducts from './MyShopProducts';
+import ShopGuide from './ShopGuide';
 import axios from 'axios';
 import { useEffect } from 'react';
 import OrdersLists from './order/OrdersLists';
@@ -10,7 +11,19 @@ export default function AddShopItem(props) {
 
    const { auth, user } = props;
    const isCreator = auth?.user?.role == 1;
-   const [tab, setTab] = useState(isCreator ? 1 : 3);
+   
+   // Read 'type' from URL query params
+   const queryParams = new URLSearchParams(window.location.search);
+   const typeParam = queryParams.get('type');
+
+   const getInitialTab = () => {
+      if (typeParam === 'purchases') return 3;
+      if (typeParam === 'orders' || typeParam === 'sales') return 2;
+      if (typeParam === 'guide') return 4;
+      return isCreator ? 1 : 3;
+   };
+
+   const [tab, setTab] = useState(getInitialTab());
 
    const [loading, setLoading] = useState(false);
    const [lists, setLists] = useState([]);
@@ -43,19 +56,23 @@ export default function AddShopItem(props) {
                   <h2 className='font-GillSans uppercase text-3xl' >Shop</h2>
 
                   {isCreator && (
-                  <div className=" font-medium text-center text-gray-500 dark:text-gray-400 mt-3 mb-4  md:my-4">
-                     <ul className="flex flex-wrap-mb-px gap-2 !py-3 ">
+                  <div className=" font-medium text-center text-gray-500 dark:text-gray-400 mt-3 mb-4 md:my-4"> 
+                     <ul className="md:flex flex-wrap-mb-px gap-2 !py-3 ">
 
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(1)} className={`text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 1 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white"} `}>Products</button>
+                           <button onClick={(e)=>setTab(1)} className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 1 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}>Products</button>
                         </li>
 
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(2)}  className={`text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 2 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white"} `}  >Orders</button>
+                           <button onClick={(e)=>setTab(2)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 2 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >Orders</button>
                         </li>
 
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(3)}  className={`text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 3 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white"} `}  >My Purchases</button>
+                           <button onClick={(e)=>setTab(3)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 3 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >My Purchases</button>
+                        </li>
+
+                        <li className="me-2">
+                           <button onClick={(e)=>setTab(4)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block p-2 !px-4 border border-black rounded-[14px]  md:rounded-[16px] !text-black ${tab == 4 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >Shop Guide</button>
                         </li>
 
                      </ul>
@@ -87,6 +104,14 @@ export default function AddShopItem(props) {
                         aria-labelledby="tabs-home-tab"
                         data-twe-tab-active>
                            <OrdersLists type="purchases" />
+                     </div> : ''}
+
+                     {tab == 4 ? <div className=" transition-opacity duration-150 ease-linear"
+                        id="tabs-home"
+                        role="tabpanel"
+                        aria-labelledby="tabs-home-tab"
+                        data-twe-tab-active>
+                           <ShopGuide />
                      </div> : ''}
 
                   </div>

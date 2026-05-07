@@ -11,6 +11,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
    const [tracking, setTracking] = useState(item.tracking_id || '');
    const [courier, setCourier] = useState(item.courier_name || '');
    const [expectedDelivery, setExpectedDelivery] = useState(item.expected_delivery_date || '');
+   const [creatorNote, setCreatorNote] = useState(item.metadata?.creator_note || '');
    const [answerText, setAnswerText] = useState('');
    const [submittedAnswer, setSubmittedAnswer] = useState(item.answer || '');
    const { successAlert, errorAlert } = useAlerts();
@@ -23,29 +24,48 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
        setTracking(item.tracking_id || '');
        setCourier(item.courier_name || '');
        setExpectedDelivery(item.expected_delivery_date ? item.expected_delivery_date.split('T')[0] : '');
+       setCreatorNote(item.metadata?.creator_note || '');
        setSubmittedAnswer(item.answer || '');
    }, [item]);
 
    const isCreator = auth?.user?.role == 1;
    const isPhysical = item?.shop?.type === 'physical';
 
-   const deactivateOrder = async () => {
-       if (!confirm('Deactivate this order? It will remain visible to you and admin, but it will be hidden from the buyer.')) return;
-       setLoading(true);
-       try {
-           const res = await axios.post(`/shop/order/${item.uuid}/deactivate`, {});
-           if (res.data.status) {
-               successAlert(res.data.message);
-               setClose(true);
-               setTimeout(() => {
-                   setClose(false);
-                   if (onSuccess) onSuccess();
-               }, 100);
-           }
-       } catch (err) {
-           errorAlert(err?.response?.data?.message || 'Failed to deactivate');
+   const renderShippingInfo = () => {
+       if (!isPhysical) return null;
+       
+       if (!item.shipping_info) {
+           return (
+               <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mt-4">
+                   <h3 className="font-black text-red-800 uppercase text-sm mb-1">📍 Shipping Address</h3>
+                   <p className="text-sm font-bold text-red-600 italic">No shipping address provided for this physical order.</p>
+               </div>
+           );
        }
-       setLoading(false);
+       
+       try {
+           const address = typeof item.shipping_info === 'string' ? JSON.parse(item.shipping_info) : item.shipping_info;
+           return (
+               <div className="bg-blue-50 border-2 border-blue-200 rounded-[20px] mb-3 p-4 mt-4">
+                   <h3 className="font-black text-blue-800 uppercase text-sm mb-2 flex items-center gap-2">
+                       <span className="text-lg">📍</span> Shipping Address
+                   </h3>
+                   <div className="text-sm font-bold text-gray-800 space-y-1">
+                       <p>{address.street_address}</p>
+                       <p>{address.city}, {address.state} {address.postal_code}</p>
+                       <p className="uppercase">{address.country}</p>
+                   </div>
+               </div>
+           );
+       } catch (e) {
+           // Fallback for legacy plain text shipping info or parse error
+           return (
+               <div className="bg-blue-50 border-2 border-blue-200 rounded-x p-4 mt-4">
+                   <h3 className="font-black text-blue-800 uppercase text-sm mb-2">📍 Shipping Address</h3>
+                   <p className="text-sm font-bold text-gray-800 whitespace-pre-wrap">{String(item.shipping_info)}</p>
+               </div>
+           );
+       }
    };
 
    const updateFulfillment = async () => {
@@ -55,7 +75,8 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                status,
                tracking_id: tracking,
                courier_name: courier,
-               expected_delivery_date: expectedDelivery
+               expected_delivery_date: expectedDelivery,
+               creator_note: creatorNote
            });
            if (res.data.status) {
                successAlert(res.data.message);
@@ -95,34 +116,48 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
          text={text || 'open'}
          classes={`${classes ? classes : "px-3 py-2"}`} >
             <div className='p-0' >
-               <div className='flex justify-between items-start mb-4'>
-                   <h2 className='mb-2 pe-5 font-bold text-xl'>{item.name} claimed {item.shop.name}.</h2>
-                   {(item.payment_status === 'refunded' || item.is_deactivated || isPhysical) && (
-                       <div className="text-right">
-                           {item.payment_status === 'refunded' ? (
-                               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-gray-200 text-gray-700">Refunded</span>
-                           ) : item.is_deactivated ? (
-                               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-gray-200 text-gray-700">Deactivated</span>
-                           ) : item.status === 'delivered' ? (
-                               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">Completed</span>
-                           ) : item.is_delayed ? (
-                               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-700">Delayed</span>
-                           ) : (
-                               <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-yellow-100 text-yellow-700">Funds Reserved</span>
-                           )}
-                           {isCreator && item.status !== 'delivered' && (
-                               <p className="text-[10px] text-gray-500 mt-1 max-w-[150px]">Funds will be added to your payout once marked as delivered.</p>
-                           )}
-                       </div>
-                   )}
+               <div className='flex items-center justify-between gap-2 mb-2'>
+                   <h2 className='font-bold text-xl capitalize'>{item.name} claimed {item.shop.name}.</h2>
+                   <span className={`px-3 py-1 rounded-lg border-2 border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                       {item?.shop?.type === 'physical' ? 'Physical' : 'Digital'}
+                   </span>
                </div>
+                <p className='mb-2'>{date}</p>
+
+
+
+               {item.metadata?.creator_note && (
+                   <div className="mt-3 p-3 bg-pink-50 border border-pink-100 rounded-[20px]">
+                        <p className="text-xs font-black uppercase text-pink-600 mb-1">Note from Creator</p>
+                        <p className="text-sm text-gray-700">{item.metadata.creator_note}</p>
+                    </div>
+                )}
+                {renderShippingInfo()}
+
+                {(item.payment_status === 'refunded' || isPhysical) && (
+                    <div className="text-left">
+                        {item.payment_status === 'refunded' ? (
+                            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-gray-200 text-gray-700">Refunded</span>
+                        ) : item.status === 'delivered' ? (
+                            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">Completed</span>
+                        ) : item.is_delayed ? (
+                            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-700">Delayed</span>
+                        ) : (
+                            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-yellow-100 text-yellow-700">Funds Reserved</span>
+                        )}
+                        {isCreator && item.status !== 'delivered' && (
+                            <p className="text-[10px] text-gray-500 mt-3  ">Funds will be added to your payout once marked as delivered.</p>
+                        )}
+                    </div>
+                )}
                <div className=' border-t pt-2 mt-3'>
                   <strong>Shop Item</strong>
                   <p>{item.shop.name}</p>
                </div>
+
                {item.shop.success_page_value && (
                   <div className=' border-t pt-2 mt-3'>
-                     <strong>Confirmation Message</strong>
+                     <strong>Shop Content</strong>
                      {item.shop.success_page_type === 'url' ? (
                         <p>
                            <a 
@@ -143,26 +178,18 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                   <strong>Email</strong>
                   <p>{item.email}</p>
                </div>
-               {isPhysical && item.shipping_info && (
-                  <div className=' border-t pt-2 mt-3'>
-                     <strong>Shipping Info</strong>
-                     <p className='whitespace-pre-wrap'>{item.shipping_info}</p>
-                  </div>
-               )}
+
                {isPhysical && item.expected_delivery_date && (
                   <div className=' border-t pt-2 mt-3'>
                      <strong>Expected Delivery Date</strong>
                      <p className='whitespace-pre-wrap'>{item.expected_delivery_date.split('T')[0]}</p>
                   </div>
                )}
-               <div className=' border-t pt-2 mt-3'>
-                  <strong>Order Date</strong>
-                  <p>{date}</p>
-               </div>
-               <div className=' border-t pt-2 mt-3'>
+               
+               {/* <div className=' border-t pt-2 mt-3'>
                   <strong>Quantity</strong>
                   <p>{item.quantity || 1}</p>
-               </div>
+               </div> */}
                {!isPhysical && item.shop.reward_file_url && (
                   <div className=' border-t pt-2 mt-3'>
                      <strong>Digital File</strong>
@@ -208,7 +235,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                   {item.message ? <p className='text-sm mt-2'>Message : {item.message || ""}</p> : ''}
                </div> : ''}
 
-               {isPhysical && isCreator && !item.is_deactivated && item.payment_status !== 'refunded' && (
+               {isPhysical && isCreator && item.payment_status !== 'refunded' && (
                    <div className='border-t pt-4 mt-4'>
                        <h3 className='font-bold mb-3'>Fulfillment</h3>
                        <div className='grid gap-3'>
@@ -254,6 +281,17 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                                    className='w-full rounded-[15px] border-gray-300'
                                />
                            </div>
+                           <div>
+                               <label className='block text-sm mb-1 font-bold'>Creator Note (e.g. if there's an issue)</label>
+                               <textarea 
+                                   value={creatorNote}
+                                   onChange={e => setCreatorNote(e.target.value)}
+                                   className='w-full rounded-[15px] border-gray-300 text-sm'
+                                   placeholder="Add a note or update about the order..."
+                                   rows="3"
+                               />
+                               <p className='text-[10px] text-gray-500'>This note will be saved with the order details.</p>
+                           </div>
                            <button 
                                onClick={updateFulfillment}
                                disabled={loading}
@@ -265,18 +303,6 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                    </div>
                )}
 
-               {isCreator && (
-                   <div className='border-t pt-4 mt-4'>
-                       <button
-                           onClick={deactivateOrder}
-                           disabled={loading || item.is_deactivated}
-                           className='w-full bg-gray-900 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-black disabled:opacity-50'
-                       >
-                           {item.is_deactivated ? 'Order Deactivated' : 'Deactivate Order'}
-                       </button>
-                   </div>
-               )}
-
                {isPhysical && !isCreator && (
                    <div className='border-t pt-4 mt-4'>
                        <h3 className='font-bold mb-2'>Tracking Information</h3>
@@ -284,6 +310,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                            <p><strong>Status:</strong> <span className='capitalize'>{item.status || 'Pending'}</span></p>
                            {item.courier_name && <p><strong>Courier:</strong> {item.courier_name}</p>}
                            {item.tracking_id && <p><strong>Tracking ID:</strong> {item.tracking_id}</p>}
+                           
                        </div>
                    </div>
                )}
