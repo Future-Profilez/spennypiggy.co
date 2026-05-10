@@ -261,7 +261,7 @@ class TaskController extends Controller
         $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
 
         // Visibility Check: Only Creator can see unapproved tasks
-        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
+        if ((!$task->is_approved || $task->is_suspended) && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 
@@ -362,8 +362,8 @@ class TaskController extends Controller
         }
         $task = Task::where('uuid', $uuid)->firstOrFail();
 
-        // Prevent purchasing unapproved tasks
-        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
+        // Prevent purchasing unapproved or suspended tasks
+        if ((!$task->is_approved || $task->is_suspended) && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 
@@ -874,9 +874,14 @@ class TaskController extends Controller
             if ($creator) {
                 Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
 
+                $msgBody = ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title;
+                if (!empty($purchase->gifter_message)) {
+                    $msgBody .= " | Message: \"" . Str::limit($purchase->gifter_message, 50) . "\"";
+                }
+
                 Helpers::sendNotification(
                     "New Task Order! 💰",
-                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title,
+                    $msgBody,
                     $creator->email
                 );
             }

@@ -327,11 +327,11 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess }) {
                             rounded-full w-full max-w-[260px] mx-auto
                             transition-all
 
-                            border border-gray-400 dark:border-gray-600
-                            dark:bg-gray-800
-                            text-gray-900 dark:text-white
+                            border border-gray-400
 
-                            hover:bg-gray-50 dark:hover:bg-gray-700
+                            text-gray-900
+
+                            hover:bg-gray-50
 
                             disabled:opacity-70 disabled:cursor-not-allowed"
                                     spinnerclass="fill-pink-500"

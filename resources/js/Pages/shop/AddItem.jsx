@@ -212,7 +212,11 @@ export default function AddItem(props) {
         };
 
         async function getRewardFile(file) {
-            setrewardfile(file);
+            setrewardfile({
+                uuid: file?.uuid,
+                cdnUrlModifiers: file?.cdnUrlModifiers || null,
+                url: file?.cdnUrl || file?.originalUrl
+            });
         }
 
         const handleHaveQuestion = () => {
@@ -297,7 +301,6 @@ export default function AddItem(props) {
                 shipping: JSON.stringify(ships),
                 shipping_profile_id: null,
                 shipping_info: shipping_info,
-                varients: "",
                 image: thumb,
                 ai_generated: 0,
                 price: shopItem.price,
@@ -393,6 +396,26 @@ export default function AddItem(props) {
                                     Step {step} of 3
                                 </div>
                             </div>
+
+                            {item && item.is_suspended == 1 && (
+                                <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <h3 className="text-sm font-medium text-red-800">Item Suspended</h3>
+                                            {item.suspend_reason && (
+                                                <div className="mt-2 text-sm text-red-700">
+                                                    <p>{item.suspend_reason}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             
                             {/* Step Progress Bar */}
                             <div className="flex gap-2 h-1.5">
@@ -518,18 +541,24 @@ export default function AddItem(props) {
                                                 </div>
                                                 
                                                 {shopItem.price > 0 && (
-                                                    <div className="p-4 bg-green-50 rounded-[20px] border-[3px] border-green-200 mt-4 flex justify-between items-center">
-                                                        <div>
-                                                            <p className="text-[10px] font-black uppercase text-green-600 tracking-widest">You Receive</p>
-                                                            <p className="text-xl font-black text-green-700">
-                                                                {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(shopItem.price)}
-                                                            </p>
+                                                    <div className="p-4 bg-green-50 rounded-[20px] border-[3px] border-green-200 mt-4 flex flex-col gap-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <div>
+                                                                <p className="text-[10px] font-black uppercase text-green-600 tracking-widest">You Receive</p>
+                                                                <p className="text-xl font-black text-green-700">
+                                                                    {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(shopItem.price)}
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Fans Pay</p>
+                                                                <p className="text-lg font-bold text-gray-600">
+                                                                    {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(shopItem.price, defaultCurrency).total_supporter_pays)}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Fans Pay</p>
-                                                            <p className="text-lg font-bold text-gray-600">
-                                                                {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(shopItem.price, defaultCurrency).total_supporter_pays)}
-                                                            </p>
+                                                        <div>
+                                                            <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
+                                                            <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
                                                         </div>
                                                     </div>
                                                 )}

@@ -276,6 +276,9 @@ class AuthenticatedSessionController extends Controller
                 [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
             }
             $sociallinks = SocialLinks::where('user_id', $user->id)->first();
+            if ($sociallinks && $sociallinks->status != 1 && (!Auth::check() || Auth::id() !== $user->id)) {
+                $sociallinks = null;
+            }
             if ($page == 'about') {
                 $userIntro = $user->intro;
             }

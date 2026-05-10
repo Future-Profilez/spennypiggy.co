@@ -22,7 +22,10 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
   const [clear, setClear] = useState();
   const [msgMedia, setMsgMedia] = useState(null);
   const getFileUID = async (data) => {
-    setMsgMedia(data);
+    setMsgMedia({
+      uuid: data?.uuid,
+      url: data?.cdnUrl || data?.originalUrl
+    });
   };
 
   const uploaderRef = useRef();

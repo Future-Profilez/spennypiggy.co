@@ -82,4 +82,9 @@ class ShopPayment extends Model
     {
         return $this->hasOne(Deliverable::class, 'session_id', 'session_id');
     }
+
+    public function financialTransaction()
+    {
+        return $this->morphOne(FinancialTransaction::class, 'source');
+    }
 }

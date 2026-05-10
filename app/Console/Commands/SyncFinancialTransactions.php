@@ -169,7 +169,9 @@ class SyncFinancialTransactions extends Command
 
             // Fallback to wish_items JSON if flattened items not found
             if (empty($wishItems) && isset($metadata['wish_items'])) {
-                $wishItems = json_decode($metadata['wish_items'], true) ?: [];
+                $wishItems = is_string($metadata['wish_items']) 
+                    ? (json_decode($metadata['wish_items'], true) ?: []) 
+                    : $metadata['wish_items'];
             }
 
             if (empty($wishItems)) {

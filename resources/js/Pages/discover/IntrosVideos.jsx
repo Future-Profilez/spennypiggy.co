@@ -70,21 +70,48 @@ export default function IntroVideos(props) {
 
     const Intro = ({w}) => {
       const [imgLoaded, setImgLoaded] = useState(false);
+      const [videoError, setVideoError] = useState(false);
       const verified = w && w.user && ((w.user.role === 1) && (w.user.profile_status_lock === 2));
       const poster = (w && w?.poster_url && w.poster_url !== false) ? w.poster_url : (w && w?.user && w?.user?.avatar_url) || userphoto;
+      const introVideo = w && w?.perma_link ? w.perma_link : null;
+
+      const handlePreviewTimeUpdate = (e) => {
+        const v = e.currentTarget;
+        if (v.currentTime >= 3) {
+          v.pause();
+        }
+      };
 
       return  <div className="relative rounded-[30px]  h-[250px] md:h-[270px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
         <ProfileIntro data={w} poster={poster} text={
           <>
             <div className="h-full relative bg-gray-200">
-              <img
-                alt={"image"}
-                height={360}
-                src={poster}
-                onLoad={() => setImgLoaded(true)}
-                className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
-                width={260}
-              />
+              {!videoError && introVideo ? (
+                <video
+                  muted
+                  playsInline
+                  autoPlay
+                  preload="metadata"
+                  poster={poster}
+                  src={introVideo}
+                  onLoadedData={() => setImgLoaded(true)}
+                  onTimeUpdate={handlePreviewTimeUpdate}
+                  onError={() => {
+                    setVideoError(true);
+                    setImgLoaded(true);
+                  }}
+                  className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
+                />
+              ) : (
+                <img
+                  alt={"image"}
+                  height={360}
+                  src={poster}
+                  onLoad={() => setImgLoaded(true)}
+                  className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  width={260}
+                />
+              )}
               {!imgLoaded && (
                   <div className="absolute inset-0 bg-gray-300 animate-pulse z-10" />
               )}
@@ -137,7 +164,7 @@ export default function IntroVideos(props) {
 
         <div className='' >
           {loading ?
-          <div className='w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2'>
+          <div className='w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
               {Array(10).fill(0).map((_, i) => (
                   <div key={`intro-skeleton-${i}`} className="h-[250px] md:h-[270px] bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
               ))}
@@ -145,7 +172,7 @@ export default function IntroVideos(props) {
           :
           <>
             {intros && intros.length ?
-            <div className=' w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2'>
+            <div className=' w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
                 {intros.map((w, i)=> (
                     <Intro w={w} />
                 ))}

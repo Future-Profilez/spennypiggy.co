@@ -47,7 +47,7 @@ export default function Footer(props) {
                 <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#F94F96]/10 blur-[150px] rounded-full translate-y-1/2"></div>
 
                 <div className="containerbox mx-auto relative z-10">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mb-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start mb-8">
                         {/* Brand Section - Left Side */}
                         <div className="space-y-2">
                             <div className="space-y-8">
@@ -96,7 +96,7 @@ export default function Footer(props) {
                         </div>
 
                         {/* Navigation Columns - Right Side Balanced */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 sm:col-span-2">
                             <div className="">
                                 <h3 className="font-gulfs text-[#924DFF] text-2xl md:text-3xl tracking-wide md:tracking-widest uppercase transform origin-left">Help</h3>
                                 <ul className="space-y-3 font-poppins text-normal pt-4">
@@ -120,11 +120,12 @@ export default function Footer(props) {
 
                             <div className="">
                                 <h3 className="font-gulfs text-[#F94F96] text-2xl md:text-3xl tracking-wide md:tracking-widest uppercase transform rotate-1 origin-left">Legal</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-1 gap-x-4 gap-y-2 pt-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 pt-4">
                                     {[
                                         { name: "Privacy Policy", href: "https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e", external: true },
                                         { name: "Cookies Policy", href: "https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e", external: true },
                                         { name: "Terms & Conditions", route: "terms-and-conditions" },
+                                        { name: "Copyright Policy", route: "copyright-policy" },
                                         { name: "Creator Agreement", route: "creator-agreement" },
                                         { name: "Supporter Terms", route: "supporter-terms" },
                                         { name: "Contract", route: "creator-supporter-contract" },
@@ -185,7 +186,11 @@ export default function Footer(props) {
                         <div className="flex flex-col items-center lg:items-end gap-2">
                             <p className="text-xl font-gulfs text-white tracking-wider uppercase">Spenny Piggy</p>
                             <p className="text-sm text-gray-400 font-poppins">
-                                Copyright © {date && date.getFullYear()} . All rights reserved.
+                                {window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co' ? (
+                                    <>Copyright © {date && date.getFullYear()} Spenny Piggy. All rights reserved.</>
+                                ) : (
+                                    <>Copyright © {date && date.getFullYear()} Spenny Piggy Dev. All rights reserved.</>
+                                )}
                             </p>
                         </div>
                     </div>

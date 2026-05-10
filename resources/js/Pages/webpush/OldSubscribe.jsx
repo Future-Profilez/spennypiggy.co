@@ -1,5 +1,5 @@
 import { usePage } from "@inertiajs/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isSupported, WebPushClient } from '@magicbell/webpush';
 import toast from "react-hot-toast";
 import { RiNotificationBadgeFill } from "react-icons/ri";
@@ -11,13 +11,24 @@ export default function OldSubscribe() {
    const [subscribing, setSubscribing] = useState(false);
    const { auth } = usePage().props;
    const [client, setClient] = useState(null);
+   const openPromptTimeoutRef = useRef(null);
 
    useEffect(() => {
       const isSubscribed = localStorage.getItem('isSubscribed');
-      if(window && window.matchMedia('(display-mode: standalone)').matches && auth?.user?.email && isSubscribed !== "true"){
-      // if( auth?.user?.email && isSubscribed !== "true"){
-         setOpen(true);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+      if (isStandalone && auth?.user?.email && isSubscribed !== "true") {
+         // Delay push prompt so it doesn't clash with other onboarding popups (e.g., currency selector).
+         openPromptTimeoutRef.current = setTimeout(() => {
+            setOpen(true);
+         }, 60000);
       }
+
+      return () => {
+         if (openPromptTimeoutRef.current) {
+            clearTimeout(openPromptTimeoutRef.current);
+         }
+      };
    }, [auth?.user?.email]);
 
    const ReceivePushNotification  = () =>{
@@ -27,8 +38,14 @@ export default function OldSubscribe() {
       });
    }
 
-    const subscribe = async () => {
+   const subscribe = async () => {
       setSubscribing(true);
+      if (!window.isSecureContext || !("Notification" in window) || !(await isSupported())) {
+         toast.error("Push notifications are not supported on this device/browser.");
+         setSubscribing(false);
+         return;
+      }
+
       const pushClient = new WebPushClient({
             apiKey: '515ceed31a4ba4c745b165a12e3a523dc9e93db4',
             userEmail: auth && auth.user && auth.user.email,
@@ -53,8 +70,6 @@ export default function OldSubscribe() {
          } catch (error) {
             toast.error("Unable to subscribe for push notifications. Please try again after some time.", error);
             console.error("Subscription failed:", error);
-            localStorage.setItem('isSubscribed', "true");
-            setOpen(false);
          }
       }
       setSubscribing(false);
@@ -63,7 +78,7 @@ export default function OldSubscribe() {
     return (
         <>
          {open &&
-         <div className=" w-screen h-screen flex justify-center items-center z-[6000] bg-[#0009] fixed top-0 left-0">
+         <div className="w-screen h-screen flex justify-center items-center z-[1000005] bg-[#0009] fixed top-0 left-0 pointer-events-auto">
                <div id="toast-interactive" className="relative w-full max-w-xs p-4 text-gray-500 bg-white rounded-[30px]  shadow" role="alert">
                   <div className="block">
                      <div className=" mx-auto block items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-[30px]   mb-4">
@@ -77,7 +92,6 @@ export default function OldSubscribe() {
                               <button
                                  onClick={() => {
                                     if (!subscribing) {
-                                       setSubscribing(true);
                                        subscribe();
                                     }
                                  }}

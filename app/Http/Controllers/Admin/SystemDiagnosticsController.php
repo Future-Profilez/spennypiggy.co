@@ -17,6 +17,10 @@ use App\Models\Shop;
 use App\Models\Task;
 use App\Models\UserCart;
 use App\Models\Follow;
+use App\Models\FinancialTransaction;
+use App\Models\ReferralCode;
+use App\Models\CreatorReferral;
+use App\Models\CreatorReferralPayout;
 use Inertia\Inertia;
 
 class SystemDiagnosticsController extends Controller
@@ -39,6 +43,7 @@ class SystemDiagnosticsController extends Controller
     public function run()
     {
         $results = [
+            'routes_syntax' => $this->testRoutesAndSyntax(),
             'database' => $this->testDatabase(),
             'cache' => $this->testCache(),
             'signup_flow' => $this->testSignupFlow(),
@@ -57,6 +62,19 @@ class SystemDiagnosticsController extends Controller
             'push_notifications' => $this->testPushNotifications(),
             'uploadcare' => $this->testUploadcare(),
             'intercom' => $this->testIntercom(),
+            'queue_health' => $this->testQueueHealth(),
+            'recent_errors' => $this->testRecentErrorLog(),
+            'financial_integrity' => $this->testFinancialIntegrity(),
+            'referral_system' => $this->testReferralSystem(),
+            'storage_permissions' => $this->testStoragePermissions(),
+            'disk_space' => $this->testDiskSpace(),
+            'env_variables' => $this->testEnvironmentVariables(),
+            'stripe_webhook' => $this->testStripeWebhookConfig(),
+            'scheduled_tasks' => $this->testScheduledTasks(),
+            'pending_migrations' => $this->testPendingMigrations(),
+            'stripe_accounts_health' => $this->testStripeConnectedAccountsHealth(),
+            'app_response_time' => $this->testAppResponseTime(),
+            'stuck_payouts' => $this->testStuckPayouts(),
         ];
 
         $overallStatus = 'passed';
@@ -74,6 +92,90 @@ class SystemDiagnosticsController extends Controller
             'results' => $results,
             'timestamp' => now()->toDateTimeString(),
         ]);
+    }
+
+    private function testRoutesAndSyntax()
+    {
+        try {
+            $start = microtime(true);
+            $errors = [];
+            
+            // 1. Check all registered routes
+            $routes = \Illuminate\Support\Facades\Route::getRoutes();
+            $routeCount = 0;
+            
+            foreach ($routes as $route) {
+                $action = $route->getAction();
+                if (isset($action['controller'])) {
+                    $controllerAction = explode('@', $action['controller']);
+                    if (count($controllerAction) === 2) {
+                        $controller = $controllerAction[0];
+                        $method = $controllerAction[1];
+                        
+                        if (!class_exists($controller) && !interface_exists($controller)) {
+                            $errors[] = "Missing controller: {$controller}";
+                        } elseif (!method_exists($controller, $method)) {
+                            $errors[] = "Missing method: {$method} in {$controller}";
+                        }
+                    }
+                }
+                $routeCount++;
+            }
+
+            // 2. Check PHP syntax for critical directories (Routes, Controllers, Models)
+            $directories = [
+                base_path('routes'),
+                app_path('Http/Controllers'),
+                app_path('Models'),
+            ];
+            
+            $fileCount = 0;
+            foreach ($directories as $dir) {
+                if (!is_dir($dir)) continue;
+                $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+                foreach ($iterator as $file) {
+                    if ($file->isFile() && $file->getExtension() === 'php') {
+                        $fileCount++;
+                        $output = [];
+                        $returnVar = 0;
+                        
+                        // In web requests, PHP_BINARY can point to php-fpm; lint must run via CLI php.
+                        $phpBinary = $this->resolvePhpCliBinary();
+                        exec(escapeshellarg($phpBinary) . ' -l ' . escapeshellarg($file->getPathname()) . ' 2>&1', $output, $returnVar);
+                        
+                        if ($returnVar !== 0) {
+                            $errorOutput = implode(" ", $output);
+                            // Clean up standard php -l output
+                            $errorOutput = str_replace("Errors parsing", "", $errorOutput);
+                            $errors[] = "Syntax error in " . $file->getFilename() . ": " . trim($errorOutput);
+                        }
+                    }
+                }
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+            
+            if (count($errors) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => count($errors) . ' syntax/route errors found. Please check the details.',
+                    'errors' => $errors,
+                    'time_ms' => $time
+                ];
+            }
+            
+            return [
+                'status' => 'passed',
+                'message' => "Successfully verified {$routeCount} routes and checked syntax of {$fileCount} PHP files.",
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return [
+                'status' => 'failed',
+                'message' => 'Syntax check failed: ' . $e->getMessage()
+            ];
+        }
     }
 
     private function testDatabase()
@@ -94,6 +196,22 @@ class SystemDiagnosticsController extends Controller
                 'message' => 'Connection failed: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Resolve a PHP CLI binary suitable for `php -l` lint checks.
+     */
+    private function resolvePhpCliBinary(): string
+    {
+        $currentBinary = PHP_BINARY;
+        $binaryName = strtolower(basename($currentBinary));
+
+        // In FPM context this is commonly php-fpm/php-fpm8.x, which does not support `-l`.
+        if (str_contains($binaryName, 'php-fpm')) {
+            return 'php';
+        }
+
+        return $currentBinary;
     }
 
     private function testCache()
@@ -689,6 +807,680 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'failed',
                 'message' => 'Intercom check failed: ' . $e->getMessage(),
             ];
+        }
+    }
+
+    private function testQueueHealth()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            // Check failed jobs
+            $failedJobsCount = DB::table('failed_jobs')->count();
+            if ($failedJobsCount > 0) {
+                $latestFailed = DB::table('failed_jobs')->orderByDesc('failed_at')->first();
+                $issues[] = "{$failedJobsCount} failed job(s) in queue. Latest: " . ($latestFailed ? substr($latestFailed->exception, 0, 100) : 'unknown');
+            }
+
+            // Check pending jobs stuck for > 10 minutes
+            $stuckJobs = DB::table('jobs')
+                ->where('reserved_at', '<', now()->subMinutes(10)->timestamp)
+                ->whereNotNull('reserved_at')
+                ->count();
+            if ($stuckJobs > 0) {
+                $issues[] = "{$stuckJobs} job(s) appear stuck (reserved > 10 min ago).";
+            }
+
+            // Pending jobs count (just informational)
+            $pendingJobs = DB::table('jobs')->count();
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => 'Queue issues detected. Failed: ' . $failedJobsCount . ', Pending: ' . $pendingJobs,
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => "Queue is healthy. Pending jobs: {$pendingJobs}, Failed jobs: 0.",
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return [
+                'status' => 'warning',
+                'message' => 'Queue check skipped (table may not exist): ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    private function testRecentErrorLog()
+    {
+        try {
+            $start = microtime(true);
+            $logPath = storage_path('logs/laravel.log');
+
+            if (!file_exists($logPath)) {
+                return ['status' => 'warning', 'message' => 'Log file not found at ' . $logPath, 'time_ms' => 0];
+            }
+
+            // Read last 300 lines efficiently
+            $lines = [];
+            $file = new \SplFileObject($logPath, 'r');
+            $file->seek(PHP_INT_MAX);
+            $totalLines = $file->key();
+            $startLine = max(0, $totalLines - 300);
+
+            $file->seek($startLine);
+            while (!$file->eof()) {
+                $lines[] = $file->current();
+                $file->next();
+            }
+
+            // Extract ERROR/CRITICAL lines from last 24 hours
+            $errorLines = [];
+            $yesterday = now()->subDay()->format('Y-m-d');
+            $today = now()->format('Y-m-d');
+
+            foreach ($lines as $line) {
+                if (preg_match('/\[('. $today . '|' . $yesterday . ')/', $line) &&
+                    preg_match('/\.(ERROR|CRITICAL|ALERT|EMERGENCY)/i', $line)) {
+                    $errorLines[] = trim($line);
+                }
+            }
+
+            // Deduplicate similar errors (keep unique first 100 chars)
+            $unique = [];
+            $seen = [];
+            foreach ($errorLines as $err) {
+                $key = substr($err, 0, 100);
+                if (!in_array($key, $seen)) {
+                    $seen[] = $key;
+                    $unique[] = $err;
+                }
+            }
+            $unique = array_slice($unique, -20); // last 20 unique errors
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+            $errorCount = count($unique);
+
+            if ($errorCount > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => "{$errorCount} unique error(s) found in logs (last 24 hours). Review below.",
+                    'errors' => $unique,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => 'No ERROR/CRITICAL entries in logs in the last 24 hours.',
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'warning', 'message' => 'Could not read error log: ' . $e->getMessage()];
+        }
+    }
+
+    private function testFinancialIntegrity()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            // Check for negative net_amount
+            $negativeNet = FinancialTransaction::where('net_amount', '<', 0)->count();
+            if ($negativeNet > 0) {
+                $issues[] = "{$negativeNet} transaction(s) have negative net_amount.";
+            }
+
+            // Check for math mismatch: gross should >= net + fees (allow £0.01 rounding)
+            $mathMismatch = FinancialTransaction::whereRaw(
+                'ABS(gross_amount - (net_amount + platform_fee + stripe_fee + vat_amount)) > 0.02'
+            )->count();
+            if ($mathMismatch > 0) {
+                $issues[] = "{$mathMismatch} transaction(s) have amount calculation mismatch (gross ≠ net + fees).";
+            }
+
+            // Check for held reserve with zero reserve_amount
+            $badReserve = FinancialTransaction::where('reserve_status', 'held')
+                ->where(function ($q) {
+                    $q->whereNull('reserve_amount')->orWhere('reserve_amount', '<=', 0);
+                })->count();
+            if ($badReserve > 0) {
+                $issues[] = "{$badReserve} transaction(s) marked 'held' reserve but have no reserve_amount.";
+            }
+
+            // Check for pending transactions older than 7 days
+            $stalePending = FinancialTransaction::where('status', 'pending')
+                ->where('created_at', '<', now()->subDays(7))
+                ->count();
+            if ($stalePending > 0) {
+                $issues[] = "{$stalePending} transaction(s) have been 'pending' for more than 7 days.";
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+            $totalTx = FinancialTransaction::count();
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => "Financial integrity issues found in {$totalTx} total transactions.",
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => "All {$totalTx} financial transaction(s) passed integrity checks.",
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Financial integrity check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testReferralSystem()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            // Check ReferralCode table is accessible
+            $activeCodes = ReferralCode::where('is_active', 1)->count();
+
+            // Check for referrals stuck in PAYOUT_REQUESTED for > 14 days (admin forgot to approve)
+            $stuckPayouts = CreatorReferral::where('status', 'PAYOUT_REQUESTED')
+                ->where('updated_at', '<', now()->subDays(14))
+                ->count();
+            if ($stuckPayouts > 0) {
+                $issues[] = "{$stuckPayouts} referral(s) stuck in PAYOUT_REQUESTED for over 14 days — admin review needed.";
+            }
+
+            // Check for PENDING payouts older than 7 days
+            $oldPendingPayouts = CreatorReferralPayout::where('status', 'PENDING')
+                ->where('requested_at', '<', now()->subDays(7))
+                ->count();
+            if ($oldPendingPayouts > 0) {
+                $issues[] = "{$oldPendingPayouts} payout request(s) pending for over 7 days without admin action.";
+            }
+
+            // Check referral config
+            $rewardAmount = config('referral.reward_amount');
+            if (!$rewardAmount) {
+                $issues[] = "referral.reward_amount config is not set — payout calculations may be wrong.";
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'warning',
+                    'message' => "Referral system has {$activeCodes} active code(s) but issues detected.",
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => "Referral system OK. Active codes: {$activeCodes}. No stuck payouts.",
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Referral system check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testStoragePermissions()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            $paths = [
+                storage_path('logs'),
+                storage_path('app'),
+                storage_path('framework/cache'),
+                storage_path('framework/sessions'),
+                storage_path('framework/views'),
+            ];
+
+            foreach ($paths as $path) {
+                if (!is_dir($path)) {
+                    $issues[] = "Directory missing: {$path}";
+                } elseif (!is_writable($path)) {
+                    $issues[] = "Not writable: {$path}";
+                }
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => count($issues) . ' storage permission issue(s) detected.',
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => 'All storage directories exist and are writable.',
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Storage permission check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testDiskSpace()
+    {
+        try {
+            $start = microtime(true);
+            $path = storage_path();
+
+            $totalBytes = disk_total_space($path);
+            $freeBytes = disk_free_space($path);
+            $usedBytes = $totalBytes - $freeBytes;
+            $usedPercent = round(($usedBytes / $totalBytes) * 100, 1);
+            $freeGB = round($freeBytes / 1073741824, 2);
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if ($usedPercent >= 90) {
+                return [
+                    'status' => 'failed',
+                    'message' => "Disk is {$usedPercent}% full! Only {$freeGB} GB free. Immediate action needed.",
+                    'time_ms' => $time
+                ];
+            }
+
+            if ($usedPercent >= 75) {
+                return [
+                    'status' => 'warning',
+                    'message' => "Disk is {$usedPercent}% full. {$freeGB} GB free remaining.",
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => "Disk usage: {$usedPercent}%. {$freeGB} GB free available.",
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'warning', 'message' => 'Disk space check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testEnvironmentVariables()
+    {
+        try {
+            $start = microtime(true);
+            $missing = [];
+
+            $required = [
+                'APP_KEY'               => env('APP_KEY'),
+                'DB_HOST'               => env('DB_HOST'),
+                'DB_DATABASE'           => env('DB_DATABASE'),
+                'STRIPE_SECRET'         => config('services.stripe.secret') ?? env('STRIPE_SECRET'),
+                'STRIPE_KEY'            => config('services.stripe.key') ?? env('STRIPE_KEY'),
+                'STRIPE_WEBHOOK_SECRET' => config('services.stripe.webhook_secret') ?? env('STRIPE_WEBHOOK_SECRET'),
+                'MAGICBELL_API_KEY'     => env('MAGICBELL_API_KEY'),
+                'MAGICBELL_API_SECRET'  => env('MAGICBELL_API_SECRET'),
+                'UPLOADCARE_PUBLIC_KEY' => env('UPLOADCARE_PUBLIC_KEY'),
+                'UPLOADCARE_SECRET_KEY' => env('UPLOADCARE_SECRET_KEY'),
+                'MAIL_HOST'             => env('MAIL_HOST'),
+            ];
+
+            foreach ($required as $key => $value) {
+                if (empty($value)) {
+                    $missing[] = "{$key} is not set or empty.";
+                }
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($missing) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => count($missing) . ' required environment variable(s) are missing.',
+                    'errors' => $missing,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => 'All ' . count($required) . ' required environment variables are configured.',
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Environment check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testStripeWebhookConfig()
+    {
+        try {
+            $start = microtime(true);
+            $webhookSecret = config('services.stripe.webhook_secret') ?? env('STRIPE_WEBHOOK_SECRET');
+            $issues = [];
+
+            if (empty($webhookSecret)) {
+                $issues[] = 'STRIPE_WEBHOOK_SECRET is not set — Stripe webhook signature verification will fail.';
+            } elseif (!str_starts_with($webhookSecret, 'whsec_')) {
+                $issues[] = 'STRIPE_WEBHOOK_SECRET does not start with "whsec_" — may be invalid.';
+            }
+
+            $stripeKey = config('services.stripe.secret') ?? env('STRIPE_SECRET');
+            if (!empty($stripeKey) && str_starts_with($stripeKey, 'sk_live_') && app()->environment('local')) {
+                $issues[] = 'WARNING: Live Stripe key (sk_live_) used in local environment!';
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => 'Stripe webhook configuration issues found.',
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            $mode = str_starts_with($stripeKey ?? '', 'sk_live_') ? 'LIVE' : 'TEST';
+            return [
+                'status' => 'passed',
+                'message' => "Stripe webhook secret is configured. Mode: {$mode}.",
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Stripe webhook config check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testScheduledTasks()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            // Check if the schedule:run command cache key exists (set by our scheduler heartbeat)
+            $lastHeartbeat = Cache::get('scheduler_heartbeat');
+
+            if (!$lastHeartbeat) {
+                $issues[] = 'No scheduler heartbeat found. The cron job may not be running. Ensure "php artisan schedule:run" runs every minute.';
+            } else {
+                $minutesAgo = round((time() - $lastHeartbeat) / 60, 1);
+                if ($minutesAgo > 5) {
+                    $issues[] = "Scheduler heartbeat is {$minutesAgo} minutes old — cron may be down.";
+                }
+            }
+
+            // Check horizon or queue worker via cache key (if set by worker)
+            $queueWorkerAlive = Cache::get('queue_worker_heartbeat');
+            if (!$queueWorkerAlive) {
+                $issues[] = 'No queue worker heartbeat detected. Consider setting a heartbeat in a scheduled command.';
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (!empty($issues)) {
+                return [
+                    'status' => 'warning',
+                    'message' => 'Scheduler/Worker heartbeat check has warnings.',
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => 'Laravel scheduler heartbeat is active and recent.',
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'warning', 'message' => 'Scheduled tasks check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testPendingMigrations()
+    {
+        try {
+            $start = microtime(true);
+
+            // Get migrations already run
+            $ran = DB::table('migrations')->pluck('migration')->toArray();
+
+            // Get all migration files
+            $migrationPath = database_path('migrations');
+            $files = glob($migrationPath . '/*.php');
+            $pending = [];
+
+            foreach ($files as $file) {
+                $name = pathinfo($file, PATHINFO_FILENAME);
+                if (!in_array($name, $ran)) {
+                    $pending[] = $name;
+                }
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($pending) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => count($pending) . ' migration(s) not yet run. Run "php artisan migrate" on the server.',
+                    'errors' => $pending,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => 'All ' . count($ran) . ' migrations have been applied.',
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Migration check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testStripeConnectedAccountsHealth()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            // Get creators with stripe account_id who have recent transactions
+            $connectedCreators = User::whereNotNull('account_id')
+                ->whereRaw('TRIM(account_id) <> ""')
+                ->where('role', 1)
+                ->limit(20)
+                ->pluck('account_id', 'id');
+
+            if ($connectedCreators->isEmpty()) {
+                return ['status' => 'warning', 'message' => 'No Stripe connected accounts found to verify.', 'time_ms' => 0];
+            }
+
+            $client = StripeControl::getClient();
+            $restricted = 0;
+            $pendingReqs = 0;
+            $lookupFailures = 0;
+
+            foreach ($connectedCreators as $userId => $accountId) {
+                try {
+                    $account = $client->accounts->retrieve($accountId);
+
+                    if ($account->payouts_enabled === false) {
+                        $restricted++;
+                        $issues[] = "Creator #{$userId} (Stripe: {$accountId}): payouts DISABLED.";
+                    }
+
+                    if (!empty($account->requirements->currently_due)) {
+                        $pendingReqs++;
+                        $issues[] = "Creator #{$userId} (Stripe: {$accountId}): has pending requirements — " . implode(', ', array_slice($account->requirements->currently_due, 0, 3));
+                    }
+                } catch (\Exception $e) {
+                    $lookupFailures++;
+                    $issues[] = "Creator #{$userId}: Stripe account lookup failed — " . $e->getMessage();
+                }
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+            $checked = $connectedCreators->count();
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'warning',
+                    'message' => "Checked {$checked} accounts: {$restricted} payout-disabled, {$pendingReqs} with pending requirements, {$lookupFailures} lookup failures.",
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => "All {$checked} sampled Stripe connected accounts have payouts enabled.",
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Stripe accounts health check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testAppResponseTime()
+    {
+        try {
+            $start = microtime(true);
+            $appUrl = config('app.url');
+
+            if (empty($appUrl)) {
+                return ['status' => 'warning', 'message' => 'APP_URL is not configured.', 'time_ms' => 0];
+            }
+
+            $response = Http::timeout(10)->get($appUrl);
+            $time = round((microtime(true) - $start) * 1000, 2);
+            $statusCode = $response->status();
+
+            if ($time > 5000) {
+                return [
+                    'status' => 'failed',
+                    'message' => "Homepage response is critically slow: {$time}ms (HTTP {$statusCode}). Possible server overload.",
+                    'time_ms' => $time
+                ];
+            }
+
+            if ($time > 2000) {
+                return [
+                    'status' => 'warning',
+                    'message' => "Homepage response is slow: {$time}ms (HTTP {$statusCode}). Consider optimisation.",
+                    'time_ms' => $time
+                ];
+            }
+
+            if ($statusCode >= 500) {
+                return [
+                    'status' => 'failed',
+                    'message' => "Homepage returned HTTP {$statusCode}. Server error detected.",
+                    'time_ms' => $time
+                ];
+            }
+
+            if ($statusCode >= 400) {
+                return [
+                    'status' => 'warning',
+                    'message' => "Homepage responded in {$time}ms with HTTP {$statusCode}. Non-success response detected.",
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => "Homepage responded in {$time}ms with HTTP {$statusCode}.",
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'App response time check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testStuckPayouts()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            // Check FinancialTransactions in 'pending' for payout types > 3 days
+            $stuckPayoutTx = FinancialTransaction::where('type', 'like', '%payout%')
+                ->where('status', 'pending')
+                ->where('created_at', '<', now()->subDays(3))
+                ->count();
+
+            if ($stuckPayoutTx > 0) {
+                $issues[] = "{$stuckPayoutTx} payout transaction(s) stuck in 'pending' for over 3 days.";
+            }
+
+            // Check for users with account_id but suspended_account = true who have held reserves
+            $blockedWithReserve = User::where('suspended_account', 1)
+                ->whereNotNull('account_id')
+                ->whereHas('financialTransactions', function ($q) {
+                    $q->where('reserve_status', 'held')->where('status', 'completed');
+                })
+                ->count();
+
+            if ($blockedWithReserve > 0) {
+                $issues[] = "{$blockedWithReserve} suspended creator(s) have unreleased held reserves — admin action needed.";
+            }
+
+            // Check for weekly payout window overdue (Fridays) — if today is Mon-Thu and last payout was >10 days
+            $lastWeeklyPayout = FinancialTransaction::where('type', 'weekly_payout')
+                ->where('status', 'completed')
+                ->orderByDesc('created_at')
+                ->value('created_at');
+
+            if ($lastWeeklyPayout && now()->diffInDays($lastWeeklyPayout) > 10) {
+                $daysSince = now()->diffInDays($lastWeeklyPayout);
+                $issues[] = "Last weekly payout ran {$daysSince} days ago. Expected every 7 days (Fridays).";
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => 'Payout flow issues detected.',
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => 'No stuck payouts or blocked reserves found.',
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return ['status' => 'failed', 'message' => 'Stuck payouts check failed: ' . $e->getMessage()];
         }
     }
 }

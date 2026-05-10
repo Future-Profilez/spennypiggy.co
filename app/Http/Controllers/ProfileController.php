@@ -50,7 +50,6 @@ use App\Models\ShopShippingInfo;
 use App\Models\WishCategory;
 use App\StripeControl;
 use Intervention\Image\Facades\Image;
-use App\Models\ShopVarients;
 use App\Models\ShopPayment;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -442,10 +441,6 @@ class ProfileController extends Controller
         })->orWhere('user_id', $user->id)->delete();
 
         Post::where('user_id', $user->id)->delete();
-
-        ShopVarients::whereHas('shop', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->delete();
 
         ShopShippingInfo::whereHas('shop', function ($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -2147,7 +2142,7 @@ class ProfileController extends Controller
                     'event_type' => $type,
                     'source' => $source,
                     'source_id' => $sourceId,
-                ])->with('user:id,username,avatar')->orderBy('created_at', 'desc')->limit(5)->get()->map(function ($r) {
+                ])->with('user:id,username,avatar,avatar_approved,avatar_cdn_modifier')->orderBy('created_at', 'desc')->limit(5)->get()->map(function ($r) {
                     return [
                         'id' => $r->id,
                         'user_id' => $r->user_id,

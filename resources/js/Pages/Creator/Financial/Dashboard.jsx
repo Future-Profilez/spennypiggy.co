@@ -99,6 +99,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 </div>
                                 <p className="text-xs text-gray-500 mt-2 font-bold">You keep 100% of what you earn. Supporters cover all fees.</p>
                                 <p className="text-xs text-gray-500 mt-1 font-bold">Payouts are sent every Friday.</p>
+                                <p className="text-xs text-green-500 mt-1 font-bold flex items-center gap-1"><ShieldCheckIcon size={12} /> Your earnings are protected.</p>
                             </div>
                             <div className="md:flex w-full  justify-end gap-3">
                                 <button

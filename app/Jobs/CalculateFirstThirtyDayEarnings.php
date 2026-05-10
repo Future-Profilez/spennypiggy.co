@@ -45,8 +45,8 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
         Log::info("Found {$candidateCreators->count()} creators who are exactly 30 days old");
 
         // Check if we have available founder seats
-        $currentFounderCount = FounderBonus::getFounderCount();
-        $availableSeats = FounderBonus::MAX_FOUNDER_SEATS - $currentFounderCount;
+        $currentFounderCount = FounderBonus::getTotalFounderCount();
+        $availableSeats = FounderBonus::getMaxFounderSeats() - $currentFounderCount;
 
         if ($availableSeats <= 0) {
             Log::info('No available founder seats remaining');
@@ -66,7 +66,7 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
 
             Log::info("Creator {$creator->name} (ID: {$creator->id}) earned £{$first30DayEarnings} in first 30 days");
 
-            if ($first30DayEarnings >= FounderBonus::MIN_FIRST_30D_EARNINGS) {
+            if ($first30DayEarnings >= FounderBonus::getMinFirst30dEarnings()) {
                 // This creator qualifies! But we'll let the CheckFounderQualifications job handle the actual qualification
                 // This job is just for tracking and logging
                 Log::info("Creator {$creator->name} (ID: {$creator->id}) qualifies for founder status with £{$first30DayEarnings}");

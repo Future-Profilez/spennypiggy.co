@@ -558,7 +558,10 @@
         }
 
         if (!@json($isMarketingRoute) && isPWA()) {
-            document.getElementById('initial-loading-screen').style.display = 'flex';
+            const initialLoadingScreen = document.getElementById('initial-loading-screen');
+            if (initialLoadingScreen) {
+                initialLoadingScreen.style.display = 'flex';
+            }
         }
         
         // Failsafe: hide loading screen after 5 seconds no matter what

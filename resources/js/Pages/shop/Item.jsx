@@ -63,16 +63,12 @@ export default function ShopDetailItem(props) {
         transaction_fee_percentage,
     } = usePage().props;
 
-    const isOwner = auth?.user?.id === shop?.user_id;
+    const isOwner = Number(auth?.user?.id) === Number(shop?.user_id);
     const vatPercentage = shop?.user?.vat_amount_percentage || 0;
     const itemCurrency = (shop?.currency || shop?.user?.default_currency || "GBP").toUpperCase();
 
     const hasVariants = false;
     const [price, setPrice] = useState(shop.price);
-    const [selectedVarient, setSelectedVarient] = useState("no_varient");
-    const handleVarient = (e) => {
-        // no op
-    };
 
     const [currentCountry, setCurrentCountry] = useState();
     const getIp = async () => {
@@ -189,7 +185,7 @@ export default function ShopDetailItem(props) {
                                                         d="m1 9 4-4-4-4"
                                                     />
                                                 </svg>
-                                                <span className="ml-1 text-base font-medium text-gray-500 md:ml-2 dark:text-gray-400">
+                                                <span className="ml-1 text-base font-medium text-gray-500 md:ml-2">
                                                     {shop.name}
                                                 </span>
                                             </div>
@@ -219,6 +215,16 @@ export default function ShopDetailItem(props) {
                                 {isOwner && shop.edited_status == 0 && (
                                     <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-[20px] font-medium text-sm">
                                         <strong>Admin requested changes:</strong> {shop.edited_reason}
+                                    </div>
+                                )}
+                                {shop?.is_suspended == 1 && (
+                                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-r-[20px] font-medium text-sm">
+                                        <strong className="uppercase">Suspended</strong>
+                                        <div className="mt-1">
+                                            {shop?.suspend_reason
+                                                ? `Reason: ${shop.suspend_reason}`
+                                                : "This shop item has been suspended by admin."}
+                                        </div>
                                     </div>
                                 )}
 
@@ -394,6 +400,8 @@ export default function ShopDetailItem(props) {
                                         <h3 className="text-3xl font-bold flex flex-col">
                                             <div className="flex">
                                                 <div className="flex">
+
+                                                    
                                                     {shop &&
                                                     shop.is_member == 1 &&
                                                     shop.special_member_price ? (
@@ -461,11 +469,8 @@ export default function ShopDetailItem(props) {
                                             </div>
                                         </h3>
                                     </div>
-
-
-
-                                    
                                 </div>
+                                
                                 <div>
                                     {IsloggedIn ? (
                                         ""
@@ -488,9 +493,6 @@ export default function ShopDetailItem(props) {
                                                             shippingPrice
                                                         }
                                                         country={currentCountry}
-                                                        selectedVarient={
-                                                            selectedVarient
-                                                        }
                                                         vat_percent={
                                                             vat_percent
                                                         }

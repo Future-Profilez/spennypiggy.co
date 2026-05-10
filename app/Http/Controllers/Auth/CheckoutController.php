@@ -123,6 +123,12 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'No items in cart to checkout for this creator.');
             }
 
+            foreach ($getdata as $item) {
+                if ($item->wish && $item->wish->is_suspended) {
+                    return redirect()->back()->with('error', 'One or more items in your cart are suspended and cannot be purchased.');
+                }
+            }
+
             // Get creator by ID
             $owner = User::find($creator_id);
             if (!$owner) {
@@ -327,8 +333,8 @@ class CheckoutController extends Controller
             ]);
 
             $payload = [
-                'success_url' => route('checkout.success', [$creator_id]),
-                'cancel_url' => route('checkout.cancel', [$creator_id]),
+                'success_url' => route('checkout.success', [$creator_id]) . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel', [$creator_id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 "mode"  =>  "payment",
                 'line_items' => $lineItems, // This determines the total amount automatically
                 'payment_intent_data' => $paymentIntentData,
@@ -954,7 +960,7 @@ class CheckoutController extends Controller
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
 
         // Get the payment record to determine how to query cart items
-        $sessionId = session('session_id');
+        $sessionId = request()->query('session_id') ?? session('session_id');
         $paymentRecord = StripePaymentDetail::where('session_id', $sessionId)->first();
 
         if (Auth::check()) {
@@ -985,7 +991,7 @@ class CheckoutController extends Controller
         }
         try {
             // Check if payment has already been processed to avoid race condition with webhook
-            $sessionId = session('session_id');
+            $sessionId = request()->query('session_id') ?? session('session_id');
             Log::info("successCheckout called", [
                 'session_id' => $sessionId,
                 'creator_id' => $id,
@@ -1032,10 +1038,10 @@ class CheckoutController extends Controller
                     $titles = "✨ Wish Sent Successfully!";
                     
                     // Format total paid for notification
-                    $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
-                    $totalPaidAmount = $existingPayment->amount_total ?? (float) ($session->amount_total / $multiplier);
-                    $currencySymbol = \App\Models\Currency::where('iso', strtoupper($session->currency))->value('symbol') ?? '£';
-                    $formattedTotal = $currencySymbol . number_format($totalPaidAmount, 2);
+                    $paymentCurrency = $existingPayment->currency ?? $currency;
+                    $totalPaidAmount = $existingPayment->amount_total ?? ($dd->amount * $dd->quantity);
+                    $currencySymbol = \App\Models\Currency::where('iso', strtoupper($paymentCurrency))->value('symbol') ?? '£';
+                    $formattedTotal = $currencySymbol . number_format((float)$totalPaidAmount, 2);
                     
                     $contents = "You've sent a wish to $CreatorName. Total paid: {$formattedTotal}. They'll be notified right away!";
                     $emails = $dd->user->email ?? null;
@@ -1080,7 +1086,7 @@ class CheckoutController extends Controller
                 }
             }
 
-            $sessionId = session('session_id');
+            $sessionId = request()->query('session_id') ?? session('session_id');
 
             StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
@@ -1376,10 +1382,10 @@ class CheckoutController extends Controller
             if (strpos($errorMessage, 'token was invalid') !== false) {
                 Log::info("Ignoring Stripe token error and continuing checkout process");
                 // Continue with the checkout process despite the token error
-                return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successful.');
+                return redirect(route('thank-you', [$stripeid->owner->username ?? ($getdata[0]->owner->username ?? 'user')]))->with('success', 'Payment Successful.');
             }
 
-            return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Something went wrong!');
+            return redirect(route('user.show', [$stripeid->owner->username ?? ($getdata[0]->owner->username ?? 'user')]))->with('error', 'Something went wrong!');
         }
     }
 
@@ -1402,7 +1408,7 @@ class CheckoutController extends Controller
             'creator_id' => $id
         ]);
 
-        $sessionId = session('session_id');
+        $sessionId = request()->query('session_id') ?? session('session_id');
         if ($sessionId) {
             StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'unpaid',

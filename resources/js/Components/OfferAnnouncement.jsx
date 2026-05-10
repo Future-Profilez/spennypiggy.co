@@ -72,12 +72,12 @@ export default function OfferAnnouncement({
 
             {/* Content */}
             <div className="relative ">
-                <div className="flex items-center mb-3">
-                    <div className="p-2 bg-white/20 rounded-full mr-3">
-                        <FaGift className="w-6 h-6" />
+                <div className="sm:flex items-center mb-3">
+                    <div className="mb-3 sm:mb-0 p-3 flex justify-center items-center bg-white/20 rounded-[20px] sm:mr-3">
+                        <FaGift className="w-16 h-16 sm:w-12 sm:h-12" />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold">👑 Join the Founder Program!</h3>
+                        <h3 className="text-xl font-bold">Join the Founder Program! 👑 </h3>
                         <p className="text-sm opacity-90">Don't miss out on this amazing deal</p>
                     </div>
                 </div>

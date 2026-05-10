@@ -439,6 +439,10 @@ class MembershipController extends Controller
         $membership = Membership::with('user')->whereUuid($uuid)->first();
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
 
+        if ($membership->is_suspended) {
+            return redirect()->back()->with('error', 'This membership is currently suspended and cannot accept payments.');
+        }
+
         if (!$membership->user) {
             return redirect()->back()->with('error', 'Creator account not found or deactivated.');
         }

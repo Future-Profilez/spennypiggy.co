@@ -6,9 +6,34 @@ use App\Models\User;
 use App\Models\WishItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DiscoveryService
 {
+    private function applyApprovalFilter($query, string $table)
+    {
+        if (Schema::hasColumn($table, 'is_approved')) {
+            return $query->where('is_approved', 1);
+        }
+
+        if (Schema::hasColumn($table, 'approved')) {
+            return $query->where('approved', 1);
+        }
+
+        return $query;
+    }
+
+    private function applyUnsuspendedFilter($query, string $table)
+    {
+        if (Schema::hasColumn($table, 'is_suspended')) {
+            $query->where(function($q) {
+                $q->where('is_suspended', 0)->orWhereNull('is_suspended');
+            });
+        }
+
+        return $query;
+    }
+
     public function getTrendingCreators($limit = 12) {
         return \Illuminate\Support\Facades\Cache::remember('trending_creators_v4_limit_' . $limit, 3600, function() use ($limit) {
             // Simplified trending query: Just get recent active creators with some basic ranking
@@ -21,7 +46,7 @@ class DiscoveryService
                 ->with(['wishes' => function($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }, 'intro'])
-                ->get(['users.id', 'users.name', 'users.username', 'users.avatar', 'users.cover', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio'])
+                ->get(['users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_approved', 'users.avatar_cdn_modifier', 'users.cover', 'users.cover_approved', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio', 'users.bio_approved'])
                 ->map(function ($u) {
                     return [
                         'id' => $u->id,
@@ -60,7 +85,7 @@ class DiscoveryService
                 ->with(['wishes' => function($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }, 'intro'])
-                ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio'])
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved'])
                 ->map(function ($u) {
                     return [
                         'id' => $u->id,
@@ -142,7 +167,7 @@ class DiscoveryService
                 },
                 'intro'
             ])
-            ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio'])
+            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved'])
             ->map(function ($u) {
                 return [
                     'id' => $u->id,
@@ -165,8 +190,10 @@ class DiscoveryService
 
     public function getSearchWishes($filters, $limit = 24)
     {
-        $query = WishItem::query()
-            ->where('is_approved', 1)
+        $query = $this->applyUnsuspendedFilter(
+            $this->applyApprovalFilter(WishItem::query(), 'wish_items'),
+            'wish_items'
+        )
             ->whereHas('user', function($q) {
                 $q->where('suspended_account', 0)
                     ->where('profile_status_lock', 2);
@@ -219,7 +246,7 @@ class DiscoveryService
         }
 
         return $query->offset($offset)->limit($limit)
-            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier')
             ->get()
             ->map(function ($w) {
                 return [
@@ -282,7 +309,7 @@ class DiscoveryService
                     ->where('role', 1)
                     ->where('profile_status_lock', 2)
                     ->limit($limit)
-                    ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency'])
+                    ->get(['id','name','username','avatar','avatar_approved','avatar_cdn_modifier','cover','cover_approved','cover_cdn_modifier','profile_status_lock','role','default_currency'])
                     ->map(function ($u) {
                         return [
                             'id' => $u->id,
@@ -304,7 +331,10 @@ class DiscoveryService
     public function getFeaturedWishes($limit = 12)
     {
         return \Illuminate\Support\Facades\Cache::remember('featured_wishes_limit_' . $limit, 300, function() use ($limit) {
-            return WishItem::where('is_approved', 1)
+            return $this->applyUnsuspendedFilter(
+                    $this->applyApprovalFilter(WishItem::query(), 'wish_items'),
+                    'wish_items'
+                )
                 ->whereHas('user', function($q) {
                     $q->where('suspended_account', 0)
                       ->where('profile_status_lock', 2);
@@ -312,7 +342,7 @@ class DiscoveryService
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier')
                 ->get()
                 ->map(function ($w) {
                     return [
@@ -345,17 +375,17 @@ class DiscoveryService
                   ->orWhere('username', 'like', $term);
             })
             ->limit(5)
-            ->get(['id', 'name', 'username', 'avatar', 'role']);
-            // ->map(function ($u) {
-            //     return [
-            //         'type' => 'creator',
-            //         'text' => $u->name,
-            //         'subtext' => '@' . $u->username,
-            //         'image' => $u->avatar_url,
-            //         'url' => route('user.show', $u->username),
-            //         'verified' => $u->role === 1
-            //     ];
-            // });
+            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'role'])
+            ->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'text' => $u->name,
+                    'subtext' => '@' . $u->username,
+                    'search_term' => $u->username,
+                    'image' => $u->avatar_url,
+                    'type' => 'creator'
+                ];
+            });
 
         // $wishes = WishItem::query()
         //     ->where('is_approved', 1)
@@ -383,7 +413,11 @@ class DiscoveryService
     public function getFeaturedBills($limit = 12)
     {
         return \Illuminate\Support\Facades\Cache::remember('featured_bills_limit_' . $limit, 300, function() use ($limit) {
-            return \App\Models\Bills::where(function ($q) {
+            return $this->applyUnsuspendedFilter(
+                    $this->applyApprovalFilter(\App\Models\Bills::query(), 'bills'),
+                    'bills'
+                )
+                ->where(function ($q) {
                     $q->where('status', 'active')
                       ->orWhere('status', 1)
                       ->orWhereNull('status');
@@ -395,12 +429,13 @@ class DiscoveryService
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
                 ->get()
                 ->map(function ($b) {
                     return [
                         'id' => $b->id,
                         'uuid' => $b->uuid,
+                        'user_id' => $b->user_id,
                         'name' => $b->name,
                         'title' => $b->name,
                         'amount' => null, 
@@ -410,6 +445,10 @@ class DiscoveryService
                         'price' => $b->price ?? null,
                         'currency' => $b->currency ?? null,
                         'approved' => $b->approved ?? null,
+                        'is_approved' => $b->is_approved ?? null,
+                        'status' => $b->status ?? null,
+                        'is_suspended' => $b->is_suspended ?? null,
+                        'suspend_reason' => $b->suspend_reason ?? null,
                         'created_at' => $b->created_at,
                         'type' => 'Bill',
                         'user' => $b->user ? [
@@ -417,6 +456,7 @@ class DiscoveryService
                             'username' => $b->user->username,
                             'avatar_url' => $b->user->avatar_url,
                             'cover_url' => $b->user->cover_url,
+                            'vat_amount_percentage' => $b->user->vat_amount_percentage ?? 0,
                         ] : null,
                     ];
                 });
@@ -426,7 +466,11 @@ class DiscoveryService
     public function getFeaturedMemberships($limit = 12)
     {
         return \Illuminate\Support\Facades\Cache::remember('featured_memberships_limit_' . $limit, 300, function() use ($limit) {
-            return \App\Models\Membership::where(function ($q) {
+            return $this->applyUnsuspendedFilter(
+                    $this->applyApprovalFilter(\App\Models\Membership::query(), 'memberships'),
+                    'memberships'
+                )
+                ->where(function ($q) {
                     $q->where('status', 'active')
                       ->orWhere('status', 1)
                       ->orWhereNull('status');
@@ -438,12 +482,13 @@ class DiscoveryService
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
                 ->get()
                 ->map(function ($m) {
                     return [
                         'id' => $m->id,
                         'uuid' => $m->uuid,
+                        'user_id' => $m->user_id,
                         'name' => $m->level,
                         'level' => $m->level,
                         'title' => $m->level . ' Membership',
@@ -455,6 +500,10 @@ class DiscoveryService
                         'rewards' => $m->rewards ?? null,
                         'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
                         'approved' => $m->approved ?? null,
+                        'is_approved' => $m->is_approved ?? null,
+                        'status' => $m->status ?? null,
+                        'is_suspended' => $m->is_suspended ?? null,
+                        'suspend_reason' => $m->suspend_reason ?? null,
                         'created_at' => $m->created_at,
                         'type' => 'Membership',
                         'user' => $m->user ? [
@@ -462,6 +511,7 @@ class DiscoveryService
                             'username' => $m->user->username,
                             'avatar_url' => $m->user->avatar_url,
                             'cover_url' => $m->user->cover_url,
+                            'vat_amount_percentage' => $m->user->vat_amount_percentage ?? 0,
                         ] : null,
                     ];
                 });
@@ -470,7 +520,10 @@ class DiscoveryService
 
     public function getSearchBills($filters, $limit = 24)
     {
-        $query = \App\Models\Bills::query()
+        $query = $this->applyUnsuspendedFilter(
+            $this->applyApprovalFilter(\App\Models\Bills::query(), 'bills'),
+            'bills'
+        )
             ->where(function ($q) {
                 $q->where('status', 'active')
                   ->orWhere('status', 1)
@@ -507,12 +560,13 @@ class DiscoveryService
         }
 
         return $query->limit($limit)
-            ->with('user:id,name,username,avatar')
+            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
             ->get()
             ->map(function ($b) {
                 return [
                     'id' => $b->id,
                     'uuid' => $b->uuid,
+                    'user_id' => $b->user_id,
                     'name' => $b->name,
                     'title' => $b->name,
                     'amount' => null,
@@ -522,6 +576,10 @@ class DiscoveryService
                     'price' => $b->price ?? null,
                     'currency' => $b->currency ?? null,
                     'approved' => $b->approved ?? null,
+                    'is_approved' => $b->is_approved ?? null,
+                    'status' => $b->status ?? null,
+                    'is_suspended' => $b->is_suspended ?? null,
+                    'suspend_reason' => $b->suspend_reason ?? null,
                     'created_at' => $b->created_at,
                     'type' => 'Bill',
                     'user' => $b->user ? [
@@ -529,6 +587,7 @@ class DiscoveryService
                         'username' => $b->user->username,
                         'avatar_url' => $b->user->avatar_url,
                         'cover_url' => $b->user->cover_url,
+                        'vat_amount_percentage' => $b->user->vat_amount_percentage ?? 0,
                     ] : null,
                 ];
             });
@@ -536,7 +595,10 @@ class DiscoveryService
 
     public function getSearchMemberships($filters, $limit = 24)
     {
-        $query = \App\Models\Membership::query()
+        $query = $this->applyUnsuspendedFilter(
+            $this->applyApprovalFilter(\App\Models\Membership::query(), 'memberships'),
+            'memberships'
+        )
             ->where(function ($q) {
                 $q->where('status', 'active')
                   ->orWhere('status', 1)
@@ -571,12 +633,13 @@ class DiscoveryService
         }
 
         return $query->limit($limit)
-            ->with('user:id,name,username,avatar')
+            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
             ->get()
             ->map(function ($m) {
                 return [
                     'id' => $m->id,
                     'uuid' => $m->uuid,
+                    'user_id' => $m->user_id,
                     'name' => $m->level,
                     'level' => $m->level,
                     'title' => $m->level . ' Membership',
@@ -588,6 +651,10 @@ class DiscoveryService
                     'rewards' => $m->rewards ?? null,
                     'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
                     'approved' => $m->approved ?? null,
+                    'is_approved' => $m->is_approved ?? null,
+                    'status' => $m->status ?? null,
+                    'is_suspended' => $m->is_suspended ?? null,
+                    'suspend_reason' => $m->suspend_reason ?? null,
                     'created_at' => $m->created_at,
                     'type' => 'Membership',
                     'user' => $m->user ? [
@@ -595,6 +662,7 @@ class DiscoveryService
                         'username' => $m->user->username,
                         'avatar_url' => $m->user->avatar_url,
                         'cover_url' => $m->user->cover_url,
+                        'vat_amount_percentage' => $m->user->vat_amount_percentage ?? 0,
                     ] : null,
                 ];
             });
@@ -602,17 +670,21 @@ class DiscoveryService
 
     public function getSearchTasks($filters, $limit = 24)
     {
-        $query = \App\Models\Task::query()
+        $query = $this->applyUnsuspendedFilter(
+            $this->applyApprovalFilter(\App\Models\Task::query(), 'tasks'),
+            'tasks'
+        )
             ->where('status', 'active')
-            ->where('is_approved', 1)
             ->whereHas('creator', function($q) {
                 $q->where('suspended_account', 0)
                   ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
-             $query->where('title', 'like', '%' . $filters['search'] . '%')
-                   ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+            $query->where(function($q) use ($filters) {
+                $q->where('title', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+            });
         }
 
         $sort = $filters['sortBy'] ?? 'Trending';
@@ -625,15 +697,22 @@ class DiscoveryService
         }
 
         return $query->limit($limit)
-            ->with('creator:id,name,username,avatar')
+            ->with('creator:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier')
             ->get()
             ->map(function ($t) {
                 return [
                     'id' => $t->id,
                     'uuid' => $t->uuid,
                     'title' => $t->title,
+                    'description' => $t->description,
                     'price' => $t->price,
                     'currency' => $t->currency,
+                    'status' => $t->status,
+                    'category' => $t->category,
+                    'is_approved' => $t->is_approved,
+                    'is_suspended' => $t->is_suspended,
+                    'reason' => $t->reason ?? null,
+                    'suspend_reason' => $t->suspend_reason ?? null,
                     'media_url' => $t->media_url,
                     'type' => 'Task',
                     'user' => $t->creator ? [
@@ -649,23 +728,33 @@ class DiscoveryService
     public function getFeaturedTasks($limit = 12)
     {
         return \Illuminate\Support\Facades\Cache::remember('featured_tasks_limit_' . $limit, 1800, function() use ($limit) {
-            return \App\Models\Task::where('status', 'active')
-                ->where('is_approved', 1)
+            return $this->applyUnsuspendedFilter(
+                    $this->applyApprovalFilter(\App\Models\Task::query(), 'tasks'),
+                    'tasks'
+                )
+                ->where('status', 'active')
                 ->whereHas('creator', function($q) {
                     $q->where('suspended_account', 0)
                       ->where('profile_status_lock', 2);
                 })
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('creator:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->with('creator:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier')
                 ->get()
                 ->map(function ($t) {
                     return [
                         'id' => $t->id,
                         'uuid' => $t->uuid,
                         'title' => $t->title,
+                        'description' => $t->description,
                         'price' => $t->price,
                         'currency' => $t->currency,
+                        'status' => $t->status,
+                        'category' => $t->category,
+                        'is_approved' => $t->is_approved,
+                        'is_suspended' => $t->is_suspended,
+                        'reason' => $t->reason ?? null,
+                        'suspend_reason' => $t->suspend_reason ?? null,
                         'media_url' => $t->media_url,
                         'type' => 'Task',
                         'user' => $t->creator ? [
@@ -681,17 +770,21 @@ class DiscoveryService
 
     public function getSearchShops($filters, $limit = 24)
     {
-        $query = \App\Models\Shop::query()
+        $query = $this->applyUnsuspendedFilter(
+            $this->applyApprovalFilter(\App\Models\Shop::query(), 'shops'),
+            'shops'
+        )
             ->where('status', 1)
-            ->where('approved', 1)
             ->whereHas('user', function($q) {
                 $q->where('suspended_account', 0)
                   ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
-             $query->where('name', 'like', '%' . $filters['search'] . '%')
-                   ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+            $query->where(function($q) use ($filters) {
+                $q->where('name', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+            });
         }
 
         $sort = $filters['sortBy'] ?? 'Trending';
@@ -704,23 +797,42 @@ class DiscoveryService
         }
 
         return $query->limit($limit)
-            ->with('user:id,name,username,avatar')
+            ->with([
+                'user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage,default_currency',
+                'shop_shipping_info:id,shop_id,country,shipping_price',
+            ])
             ->get()
             ->map(function ($s) {
                 return [
                     'id' => $s->id,
                     'uuid' => $s->uuid,
+                    'user_id' => $s->user_id,
                     'name' => $s->name,
                     'title' => $s->name,
+                    'description' => $s->description,
                     'price' => $s->price,
                     'currency' => $s->currency,
+                    'status' => $s->status,
+                    'approved' => $s->approved ?? null,
+                    'is_approved' => $s->is_approved ?? null,
+                    'edited_status' => $s->edited_status ?? null,
+                    'edited_reason' => $s->edited_reason ?? null,
+                    'is_suspended' => $s->is_suspended ?? null,
+                    'suspend_reason' => $s->suspend_reason ?? null,
+                    'ai_generated' => $s->ai_generated ?? null,
+                    'perma_link' => $s->perma_link,
                     'image_url' => $s->perma_link,
-                    'type' => 'Shop',
+                    'type' => $s->type,
+                    'content_type' => 'Shop',
+                    'shop_shipping_info' => $s->shop_shipping_info ?? [],
                     'user' => $s->user ? [
+                        'id' => $s->user->id,
                         'name' => $s->user->name,
                         'username' => $s->user->username,
                         'avatar_url' => $s->user->avatar_url,
                         'cover_url' => $s->user->cover_url,
+                        'vat_amount_percentage' => $s->user->vat_amount_percentage ?? 0,
+                        'default_currency' => $s->user->default_currency ?? null,
                     ] : null,
                 ];
             });
@@ -729,31 +841,53 @@ class DiscoveryService
     public function getFeaturedShops($limit = 12)
     {
         return \Illuminate\Support\Facades\Cache::remember('featured_shops_limit_' . $limit, 1800, function() use ($limit) {
-            return \App\Models\Shop::where('status', 1)
-                ->where('approved', 1)
+            return $this->applyUnsuspendedFilter(
+                    $this->applyApprovalFilter(\App\Models\Shop::query(), 'shops'),
+                    'shops'
+                )
+                ->where('status', 1)
                 ->whereHas('user', function($q) {
                     $q->where('suspended_account', 0)
                       ->where('profile_status_lock', 2);
                 })
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->with([
+                    'user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage,default_currency',
+                    'shop_shipping_info:id,shop_id,country,shipping_price',
+                ])
                 ->get()
                 ->map(function ($s) {
                     return [
                         'id' => $s->id,
                         'uuid' => $s->uuid,
+                        'user_id' => $s->user_id,
                         'name' => $s->name,
                         'title' => $s->name,
+                        'description' => $s->description,
                         'price' => $s->price,
                         'currency' => $s->currency,
+                        'status' => $s->status,
+                        'approved' => $s->approved ?? null,
+                        'is_approved' => $s->is_approved ?? null,
+                        'edited_status' => $s->edited_status ?? null,
+                        'edited_reason' => $s->edited_reason ?? null,
+                        'is_suspended' => $s->is_suspended ?? null,
+                        'suspend_reason' => $s->suspend_reason ?? null,
+                        'ai_generated' => $s->ai_generated ?? null,
+                        'perma_link' => $s->perma_link,
                         'image_url' => $s->perma_link,
-                        'type' => 'Shop',
+                        'type' => $s->type,
+                        'content_type' => 'Shop',
+                        'shop_shipping_info' => $s->shop_shipping_info ?? [],
                         'user' => $s->user ? [
+                            'id' => $s->user->id,
                             'name' => $s->user->name,
                             'username' => $s->user->username,
                             'avatar_url' => $s->user->avatar_url,
                             'cover_url' => $s->user->cover_url,
+                            'vat_amount_percentage' => $s->user->vat_amount_percentage ?? 0,
+                            'default_currency' => $s->user->default_currency ?? null,
                         ] : null,
                     ];
                 });

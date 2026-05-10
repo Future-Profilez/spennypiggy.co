@@ -43,7 +43,11 @@ export default function IntercomProvider() {
             s.id = 'intercom-js';
             s.src = `https://widget.intercom.io/widget/${appId}`;
             const x = document.getElementsByTagName('script')[0];
-            x.parentNode.insertBefore(s, x);
+            if (x?.parentNode) {
+                x.parentNode.insertBefore(s, x);
+            } else {
+                document.head.appendChild(s);
+            }
         };
 
         // 3. User changed or logged out? Shutdown first.

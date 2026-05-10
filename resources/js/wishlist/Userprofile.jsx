@@ -18,6 +18,7 @@ import { useAlerts } from "@/Components/Alerts";
 import Popup from "@/Components/Popup";
 import FeatureSuggestionBanner from "@/Components/FeatureSuggestionBanner";
 import FeatureSuggestionModal from "@/Components/FeatureSuggestionModal";
+import ReportContentModal from "@/Components/ReportContentModal";
 
 export default function Userprofile({ IsloggedIn }) {
     const copyIconRef = useRef(null);
@@ -197,6 +198,7 @@ export default function Userprofile({ IsloggedIn }) {
                                 <>
                                     {!IsloggedIn ? (
                                         <div className="flex gap-1"> 
+                                            {user?.role == 1 && <ReportContentModal reportedUser={user} />}
                                             <FollowButton 
                                             targetUserId={opponantUser?.id} 
                                             isInitiallyFollowing={follow_status} />

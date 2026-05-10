@@ -150,12 +150,15 @@ class WishitemController extends Controller
 
 
             if ($request->subscription != 2) {
+                $currencyModel = \App\Models\Currency::where('ISO', strtoupper($currency))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
                 $productPayload = [
                     'name' => 'Total value of item including all fees',
                     'images' => [$wish->perma_link],
                     'default_price_data' => [
-                        'currency' => 'gbp',
-                        'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
+                        'currency' => strtolower($currency),
+                        'unit_amount_decimal' => number_format($createpriceid * $multiplier, 0, '.', ''), // Stripe expects string or int
                     ],
                     'metadata' => [
                         'creator_id' => $user->id,
@@ -336,33 +339,17 @@ class WishitemController extends Controller
         $this->userProfileService->clearUserCaches($user->username, $user->id);
 
         if (in_array($request->subscription, [0, 1])) {
-            $productPayload = [
-                "name"  =>  "Total value of item including all fees",
-                "images" => [$wish->perma_link],
-                "default_price_data"    =>  [
-                    "currency"  =>  $user->default_currency,
-                    "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
-                ],
-                "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/",
-                'metadata' => [
-                    'wish_name' => $wish->wishname,
-                ]
-            ];
-
-            if ($request->subscription == 1) {
-                $productPayload['default_price_data']['recurring']  =   [
-                    'interval'  =>  StripeControl::$periods[$request->subscription_period],
-                    'interval_count'    =>  1
-                ];
-            }
-
             try {
+                $currency = $user->default_currency ?? 'gbp';
+                $currencyModel = \App\Models\Currency::where('ISO', strtoupper($currency))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
                 $productPayload = [
                     'name' => 'Total value of item including all fees',
                     'images' => [$wish->perma_link],
                     'default_price_data' => [
-                        'currency' => 'gbp',
-                        'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
+                        'currency' => strtolower($currency),
+                        'unit_amount_decimal' => number_format($createpriceid * $multiplier, 0, '.', ''), // Stripe expects string or int
                     ],
                     'metadata' => [
                         'creator_id' => $user->id,
@@ -373,6 +360,13 @@ class WishitemController extends Controller
                         'product_type' => $request->subscription == 1 ? 'wish_subscription' : 'wish_onetime',
                     ],
                 ];
+
+                if ($request->subscription == 1) {
+                    $productPayload['default_price_data']['recurring']  =   [
+                        'interval'  =>  StripeControl::$periods[$request->subscription_period],
+                        'interval_count'    =>  1
+                    ];
+                }
 
                 // Add a URL if available
                 if (!empty($request->item_url)) {
@@ -757,7 +751,11 @@ class WishitemController extends Controller
     public function discover_all_wishes($order, $type, $price)
     {
         $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
-        $query = WishItem::whereNull('deleted_at')->where('is_approved', 1)->with("user")->whereHas('user', function ($q) use ($tag) {
+        $query = WishItem::whereNull('deleted_at')->where('is_approved', 1)
+            ->with(['user' => function($q) {
+                $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account']);
+            }])
+            ->whereHas('user', function ($q) use ($tag) {
             $q->whereNull('deleted_at')
                 ->where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0);
@@ -822,7 +820,8 @@ class WishitemController extends Controller
             $join->on('user_intros.id', '=', 'latest_intros.latest_id');
         })
             ->with(['user' => function ($q) use ($gender) {
-                $q->where('suspended_account', 0)
+                $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account'])
+                    ->where('suspended_account', 0)
                     ->whereNotNull('username')
                     ->where('username', '!=', '');
                 if ($gender != 'all') {

@@ -4,7 +4,7 @@ import messagereciev from '../../../assets/audio/bell.mp3';
 import { useMagicBellEvent } from '@magicbell/magicbell-react';
 import { useEffect, useState } from 'react';
 import { MdClose, MdCheckCircle, MdSettings, MdMoreHoriz, MdDeleteSweep } from 'react-icons/md';
-import { WebPushClient } from '@magicbell/webpush';
+import { WebPushClient, isSupported } from '@magicbell/webpush';
 
 const customTheme = {
   icon: {
@@ -172,10 +172,36 @@ const MagicBellNotification = () => {
   const serverURL = typeof window !== 'undefined' ? `${window.location.origin}/magicbell` : undefined;
 
   useEffect(() => {
-    const isSubscribed = localStorage.getItem('isSubscribed');
-    if (isSubscribed !== 'true') {
+    let isMounted = true;
+
+    const setupNotificationBanner = async () => {
+      const isSubscribed = localStorage.getItem('isSubscribed');
+      if (isSubscribed === 'true') return;
+
+      const supported = await isSupported().catch(() => false);
+      if (!isMounted) return;
+
+      // Permanently hide banner on unsupported browsers to avoid repeated noise.
+      if (!supported) {
+        localStorage.setItem('isSubscribed', 'true');
+        setShowBanner(false);
+        return;
+      }
+
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+        localStorage.setItem('isSubscribed', 'true');
+        setShowBanner(false);
+        return;
+      }
+
       setShowBanner(true);
-    }
+    };
+
+    setupNotificationBanner();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const notificationRecieve = async () => {
@@ -192,6 +218,19 @@ const MagicBellNotification = () => {
 
   const handleEnableNotifications = async () => {
     try {
+      const supported = await isSupported().catch(() => false);
+      if (!supported) {
+        localStorage.setItem('isSubscribed', 'true');
+        setShowBanner(false);
+        return;
+      }
+
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+        localStorage.setItem('isSubscribed', 'true');
+        setShowBanner(false);
+        return;
+      }
+
       const pushClient = new WebPushClient({
         apiKey: '515ceed31a4ba4c745b165a12e3a523dc9e93db4',
         userEmail: auth?.user?.email,
@@ -201,6 +240,12 @@ const MagicBellNotification = () => {
       localStorage.setItem('isSubscribed', 'true');
     } catch (error) {
       console.error('Push subscription failed:', error);
+      const errMessage = error?.message || '';
+      const deniedByBrowser = error?.name === 'NotAllowedError' || /not allowed|permission denied/i.test(errMessage);
+      const magicbellLoadFailure = error?.name === 'MagicBellError' || /load failed/i.test(errMessage);
+      if (deniedByBrowser || magicbellLoadFailure) {
+        localStorage.setItem('isSubscribed', 'true');
+      }
     }
     setShowBanner(false);
   };

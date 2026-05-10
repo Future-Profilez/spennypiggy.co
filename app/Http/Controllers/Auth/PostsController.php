@@ -341,27 +341,27 @@ class PostsController extends Controller
                 'is_approved' => $isApproved
             ]);
 
-            // Only send notifications if reply is NOT from the post owner
+            // Notify post owner if reply is from someone else (needs approval).
             if (!$isPostOwner) {
-                // Notify post owner about the reply
                 $name = ucfirst($user->name);
                 $title = "💬 New Reply Needing Approval!";
                 $content = "$name replied to a comment on your post ({$comment->post->title}). Please review and approve it.";
                 $email = $comment->post->user->email;
                 Helpers::sendNotification($title, $content, $email);
 
-                // Notify the commenter (if different from replier)
-                if ($comment->user_id !== $user->id) {
-                    $commenter = $comment->user;
-                    $name = ucfirst($user->name);
-                    $title = "↩️ Your Comment Got a Reply!";
-                    $content = "$name replied to one of your comments on the post ({$comment->post->title}).";
-                    $email = $commenter->email;
-                    Helpers::sendNotification($title, $content, $email);
-                }
-
                 $message = $user->name . " replied to a comment on your post " . $comment->post->title;
                 NotificationSave::dispatch($message, $comment->post->user, $user, 'Post Reply');
+            }
+
+            // Always notify original commenter when someone else replies
+            // (covers creator replying to gifter comments).
+            if ($comment->user_id !== $user->id) {
+                $commenter = $comment->user;
+                $name = ucfirst($user->name);
+                $title = "↩️ Your Comment Got a Reply!";
+                $content = "$name replied to one of your comments on the post ({$comment->post->title}).";
+                $email = $commenter->email;
+                Helpers::sendNotification($title, $content, $email);
             }
 
             return response()->json([

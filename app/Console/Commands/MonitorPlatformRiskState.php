@@ -271,28 +271,27 @@ class MonitorPlatformRiskState extends Command
 
         try {
 
-            if(env('APP_ENV') === 'production'){
-                $fixedRecipients = [
-                    'noreply@spennypiggy.co',
-                    'naveen@internetbusinesssolutionsindia.com',
-                ];
-            } else {
-                $fixedRecipients = [
-                    'naveen@internetbusinesssolutionsindia.com',
-                ];
+            $allRecipients = [
+                'naveen@internetbusinesssolutionsindia.com',
+            ];
+
+            if (app()->environment('production')) {
+                $allRecipients[] = 'noreply@spennypiggy.co';
+
+                $adminRecipients = Admin::query()
+                    ->whereNotNull('email')
+                    ->pluck('email')
+                    ->toArray();
+                
+                $allRecipients = array_merge($allRecipients, $adminRecipients);
+
+                $fallbackEmail = config('mail.from.address');
+                if ($fallbackEmail) {
+                    $allRecipients[] = $fallbackEmail;
+                }
             }
 
-            $adminRecipients = Admin::query()
-                ->whereNotNull('email')
-                ->pluck('email')
-                ->toArray();
-
-            $fallbackEmail = config('mail.from.address');
-            if ($fallbackEmail) {
-                $adminRecipients[] = $fallbackEmail;
-            }
-
-            $allRecipients = array_values(array_unique(array_filter(array_merge($fixedRecipients, $adminRecipients))));
+            $allRecipients = array_values(array_unique(array_filter($allRecipients)));
 
             foreach ($allRecipients as $email) {
                 Mail::to($email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));

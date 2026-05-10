@@ -332,8 +332,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 }
             `}</style>
 
-            <div className="profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]   mb-4 p-3 lg:!p-8">
-                <div className="flex justify-between items-center mb-1">
+            <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]   mb-4 p-4 lg:!p-8">
+                <div className="flex gap-3 items-center mb-3">
                     <h2 className="text-[20px] uppercase font-bold">
                         Profile Verification
                     </h2>

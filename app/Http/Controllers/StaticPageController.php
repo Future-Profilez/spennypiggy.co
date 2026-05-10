@@ -52,6 +52,11 @@ class StaticPageController extends Controller
         return Inertia::render('Legal/UsAddendum');
     }
 
+    public function copyrightPolicy()
+    {
+        return Inertia::render('Legal/CopyrightPolicy');
+    }
+
     public function acceptTerms(Request $request)
     {
         $user = $request->user();

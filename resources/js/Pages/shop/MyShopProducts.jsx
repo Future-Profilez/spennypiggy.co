@@ -1,18 +1,15 @@
-import { Link, usePage } from '@inertiajs/react';
-import {Fragment, useState, useEffect, useRef} from "react";
+import { Link } from '@inertiajs/react';
+import {Fragment, useState, useRef} from "react";
 import axios from 'axios';
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from "@animateicons/react/lucide";
 import toast from 'react-hot-toast';
 import AddItem from './AddItem';
 import LoadingScreen from '@/includes/LoadingScreen';
-import { Suspense } from 'react';
 import Nocontent from '@/includes/Nocontent';
 import PriceFormat from '@/includes/PriceFormat';
-import ShopGuide from './ShopGuide';
 
 export default function MyShopProducts({lists, loading, update}) {
-   const { auth } = usePage().props;
    const { formatMultiPrice } = PriceFormat();
    const editButtonRefs = useRef({});
 
@@ -54,11 +51,11 @@ export default function MyShopProducts({lists, loading, update}) {
     <div className='shopLists pt-16' > 
          {loading ? <LoadingScreen /> : 
             <>
-            {lists && !lists?.length ?
+            {lists && lists?.length ?
                <>
                   <h2 className='font-GillSans uppercase text-2xl md:text-3xl mb-3' >My Products</h2>
                   <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' >
-                     {lists && lists.length ? lists.map((s, i)=>{
+                     {lists.map((s, i)=>{
                         const isDeactivated = Number(s?.status) === 0;
                         const shippingDetails = getShippingDetails(s);
 
@@ -70,12 +67,22 @@ export default function MyShopProducts({lists, loading, update}) {
                            <div className="p-3 md:p-4">
                                  <div className="relative">
                                     {/* Status Badges/Messages */}
-                                    {s.approved == 0 && (
+                                    {s.is_suspended == 1 && (
+                                       <div className="absolute top-2 left-5 right-5 bg-red-600 border-2 border-black z-10 text-white text-xs font-black p-2 rounded-lg text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group/suspend">
+                                             Suspended
+                                             {s.suspend_reason && (
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/suspend:opacity-100 transition-opacity pointer-events-none">
+                                                   Reason: {s.suspend_reason}
+                                                </div>
+                                             )}
+                                       </div>
+                                    )}
+                                    {s.approved == 0 && s.is_suspended != 1 && (
                                        <div className="absolute top-2 left-5 right-5 bg-yellow-300 border-2 border-black z-10 text-black text-xs font-black p-2 rounded-lg text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                              Waiting for approval
                                        </div>
                                     )}
-                                    {isDeactivated && (
+                                    {isDeactivated && s.is_suspended != 1 && (
                                        <div className="absolute top-2 left-5 right-5 bg-gray-800 border-2 border-black z-10 text-white text-xs font-black p-2 rounded-lg text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                              Deactivated
                                        </div>
@@ -202,7 +209,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                                                      <button
                                                                         className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[12px] px-3 py-2 text-sm font-bold text-gray-900`}
                                                                         onClick={() => {
-                                                                           axios.get(`/shop/deactivate/${s.uuid}`).then(res => {
+                                                                           axios.get(`/shop/deactivate/${s.uuid}`).then(() => {
                                                                                  toast.success(s.status == 1 ? 'Deactivated' : 'Activated');
                                                                                  update && update();
                                                                            });
@@ -276,12 +283,11 @@ export default function MyShopProducts({lists, loading, update}) {
                            </div>
                         </article>
                         );
-                     }) : <Nocontent/>
-                     }
+                     })}
                   </div>
                </>
                :
-               <ShopGuide />
+               <Nocontent text="No products yet" />
             }
             </>
          }

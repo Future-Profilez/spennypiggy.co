@@ -6,12 +6,14 @@ import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
 import IntercomProvider from '@/Components/IntercomProvider';
 import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 const Footer = lazy(() => import('@/includes/Footer'));
 const Header = lazy(() => import('@/includes/Header'));
 
 export default function Authenticated(props){ 
 
+    const pageprops = usePage().props;
+        console.log(pageprops);
     const { auth, user, children, cart_count } = props;
 
     return <>

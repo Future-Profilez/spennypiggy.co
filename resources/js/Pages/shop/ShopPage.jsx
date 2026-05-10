@@ -66,7 +66,7 @@ export default function AddShopItem(props) {
                   <h2 className='font-GillSans uppercase text-3xl' >Shop</h2>
 
                   {isCreator && (
-                  <div className=" font-medium text-center text-gray-500 dark:text-gray-400 mt-3 mb-4 md:my-4"> 
+                  <div className=" font-medium text-center text-gray-500 mt-3 mb-4 md:my-4"> 
                      <ul className="md:flex flex-wrap-mb-px gap-2 !py-3 ">
 
                         <li className="me-2">

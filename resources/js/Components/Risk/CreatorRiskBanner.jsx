@@ -143,50 +143,50 @@ export default function CreatorRiskBanner() {
 function getBannerStyle(type) {
     switch (type) {
         case 'critical':
-            return 'bg-red-50/90 border-red-200 text-red-900 dark:bg-red-950/40 dark:border-red-800 dark:text-red-100';
+            return 'bg-red-50/90 border-red-200 text-red-900';
         case 'warning':
-            return 'bg-amber-50/90 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-100';
+            return 'bg-amber-50/90 border-amber-200 text-amber-900';
         case 'action_required':
-            return 'bg-orange-50/90 border-orange-200 text-orange-900 dark:bg-orange-950/40 dark:border-orange-800 dark:text-orange-100';
+            return 'bg-orange-50/90 border-orange-200 text-orange-900';
         case 'info':
         default:
-            return 'bg-blue-50/90 border-blue-200 text-blue-900 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-100';
+            return 'bg-blue-50/90 border-blue-200 text-blue-900';
     }
 }
 
 function getTitleColor(type) {
     switch (type) {
-        case 'critical': return 'text-red-800 dark:text-red-200';
-        case 'warning': return 'text-amber-800 dark:text-amber-200';
-        case 'action_required': return 'text-orange-800 dark:text-orange-200';
-        case 'info': default: return 'text-blue-800 dark:text-blue-200';
+        case 'critical': return 'text-red-800';
+        case 'warning': return 'text-amber-800';
+        case 'action_required': return 'text-orange-800';
+        case 'info': default: return 'text-blue-800';
     }
 }
 
 function getIconBg(type) {
     switch (type) {
-        case 'critical': return 'bg-white text-red-600 dark:bg-red-900 dark:text-red-200 shadow-sm';
-        case 'warning': return 'bg-white text-amber-600 dark:bg-amber-900 dark:text-amber-200 shadow-sm';
-        case 'action_required': return 'bg-white text-orange-600 dark:bg-orange-900 dark:text-orange-200 shadow-sm';
-        case 'info': default: return 'bg-white text-blue-600 dark:bg-blue-900 dark:text-blue-200 shadow-sm';
+        case 'critical': return 'bg-white text-red-600 shadow-sm';
+        case 'warning': return 'bg-white text-amber-600 shadow-sm';
+        case 'action_required': return 'bg-white text-orange-600 shadow-sm';
+        case 'info': default: return 'bg-white text-blue-600 shadow-sm';
     }
 }
 
 function getGradientOverlay(type) {
     switch (type) {
-        case 'critical': return 'from-red-100/50 to-transparent dark:from-red-900/20';
-        case 'warning': return 'from-amber-100/50 to-transparent dark:from-amber-900/20';
-        case 'action_required': return 'from-orange-100/50 to-transparent dark:from-orange-900/20';
-        case 'info': default: return 'from-blue-100/50 to-transparent dark:from-blue-900/20';
+        case 'critical': return 'from-red-100/50 to-transparent';
+        case 'warning': return 'from-amber-100/50 to-transparent';
+        case 'action_required': return 'from-orange-100/50 to-transparent';
+        case 'info': default: return 'from-blue-100/50 to-transparent';
     }
 }
 
 function getButtonStyles(type) {
     switch (type) {
-        case 'critical': return 'bg-red-600 text-white hover:bg-red-700 shadow-red-200/50 shadow-lg dark:shadow-none';
-        case 'warning': return 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200/50 shadow-lg dark:shadow-none';
-        case 'action_required': return 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-200/50 shadow-lg dark:shadow-none';
-        case 'info': default: return 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50 shadow-lg dark:shadow-none';
+        case 'critical': return 'bg-red-600 text-white hover:bg-red-700 shadow-red-200/50 shadow-lg';
+        case 'warning': return 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200/50 shadow-lg';
+        case 'action_required': return 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-200/50 shadow-lg';
+        case 'info': default: return 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50 shadow-lg';
     }
 }
 

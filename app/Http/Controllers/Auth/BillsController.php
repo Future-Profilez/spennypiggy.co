@@ -118,8 +118,8 @@ class BillsController extends Controller
             'metadata' => [
                 'bill_name' => $bill->name,
                 'creator_id' => $user->id,
-                'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
-                'total_charge_amount' => (string)($createPriceId * 100),
+                'creator_net_amount' => (string)($breakdown['net_to_creator'] * $multiplier),
+                'total_charge_amount' => (string)($createPriceId * $multiplier),
             ]
         ];
 
@@ -414,6 +414,11 @@ class BillsController extends Controller
             return redirect()->back()->with('error', 'Bill not found!');
         }
 
+        if ($bill->is_suspended) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'This bill is currently suspended and cannot accept payments.');
+        }
+
         if (!$bill->user) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Creator account not found or deactivated.');
@@ -685,7 +690,7 @@ class BillsController extends Controller
                         ]),
                         'application_fee_percent' => round(($applicationFeeAmount / $finalTotalAmount) * 100, 2),
                     ],
-                    'customer_email' => $user->email ?? $request->email,
+                    'customer' => $customer_id,
                     'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                     'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];

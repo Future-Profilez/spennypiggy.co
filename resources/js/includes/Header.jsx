@@ -87,12 +87,35 @@ export default function Header({ classMagicword }) {
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
     const [shows, setShows] = useState(false);
+    const menuTouchStartRef = useRef({ x: 0, y: 0 });
+    const suppressMenuClickUntilRef = useRef(0);
+
     const toggleClass = () => {
         setActive(!isActive);
         setTimeout(() => {
             setShows(!isActive);
         }, 300);
     };
+
+    const handleMenuTouchStart = useCallback((e) => {
+        const touch = e.touches?.[0];
+        if (!touch) return;
+
+        menuTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    }, []);
+
+    const handleMenuTouchMove = useCallback((e) => {
+        const touch = e.touches?.[0];
+        if (!touch) return;
+
+        const deltaX = Math.abs(touch.clientX - menuTouchStartRef.current.x);
+        const deltaY = Math.abs(touch.clientY - menuTouchStartRef.current.y);
+
+        // Finger movement means user is scrolling the drawer, not tapping a link.
+        if (deltaX > 8 || deltaY > 8) {
+            suppressMenuClickUntilRef.current = Date.now() + 350;
+        }
+    }, []);
 
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
@@ -155,10 +178,20 @@ export default function Header({ classMagicword }) {
             };
         }, []);
 
+        const handleNavClick = (e) => {
+            if (Date.now() < suppressMenuClickUntilRef.current) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            onClick?.(e);
+        };
+
         return (
             <li>
                 <Component
-                    onClick={onClick}
+                    onClick={handleNavClick}
                     href={href}
                     onMouseEnter={() => iconRef.current?.startAnimation?.()}
                     className={`${getNavLinkClass(href)} rounded-xl border-[3px] border-transparent hover:border-black ${activeColor} hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
@@ -339,12 +372,23 @@ export default function Header({ classMagicword }) {
                         className="absolute h-[45px] top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-lg p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
                         <XIcon color="#000" size={32} />
                     </button>
-                    <div className="overflow-y-auto overflow-x-hidden   flex-grow">
+                    <div
+                        className="overflow-y-auto overflow-x-hidden   flex-grow"
+                        onTouchStart={handleMenuTouchStart}
+                        onTouchMove={handleMenuTouchMove}
+                    >
                         <div className="pb-[110px] pt-[60px] px-2">
                             {auth?.user && (
                                 <Link 
                                     href={route('user.show', { username: auth.user.username })}
-                                    onClick={toggleClass}
+                                    onClick={(e) => {
+                                        if (Date.now() < suppressMenuClickUntilRef.current) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            return;
+                                        }
+                                        toggleClass();
+                                    }}
                                     className="flex items-center gap-4 p-4 mb-6 bg-white sborder-[3px] sborder-black srounded-[20px] sshadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:sshadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
                                 >
                                     <div className="relative">
@@ -410,7 +454,7 @@ export default function Header({ classMagicword }) {
                                         />
                                     )}
 
-                                    {auth && auth.user && auth.user.role == 1 ?
+                                    {auth && auth.user  ?
                                         <NavLinkWithIcon
                                             href="/task/dashboard" activeColor="hover:bg-[#A2E4B8]"
                                             onClick={toggleClass} icon={ClipboardIcon} label="Tasks"

@@ -40,7 +40,6 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-      - "php artisan subscription:sync"
 
   production:
     memory: 1024
@@ -87,7 +86,11 @@ environments:
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
-      - "php artisan subscription:sync"
+      - "php artisan config:clear"
+      - "php artisan config:cache"
+      - "php artisan route:clear"
+      - "php artisan view:clear"
+      - "php artisan event:clear"
 
 # - "php artisan app:notifications-pending-approval"
 # - "php artisan subscription:sync --all"

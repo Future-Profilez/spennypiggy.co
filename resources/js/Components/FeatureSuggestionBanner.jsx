@@ -39,10 +39,10 @@ export default function FeatureSuggestionBanner({ onSuggestClick }) {
                     
                     {/* Text content */}
                     <div className="flex-grow text-center md:text-left">
-                        <h3 className="font-gulfs text-lg md:text-xl text-black uppercase tracking-tight mb-1  transition-colors">
+                        <h3 className="font-gulfs text-xl md:text-xl text-black uppercase tracking-tight mb-1  transition-colors">
                             Want to suggest a feature?
                         </h3>
-                        <p className="text-gray-600 font-poppins text-xs md:text-sm leading-relaxed max-w-xl">
+                        <p className="text-gray-600 font-poppins text-sm md:text-sm leading-relaxed max-w-xl">
                             Help us shape the future of Spenny Piggy! Share your ideas and help us build a better platform for everyone.
                         </p>
                     </div>
@@ -51,7 +51,7 @@ export default function FeatureSuggestionBanner({ onSuggestClick }) {
                     <div className="flex items-center gap-3 flex-shrink-0 mt-2 md:mt-0">
                         <button 
                             onClick={onSuggestClick}
-                            className="bg-[#924DFF] text-white font-gulfs px-5 py-3 rounded-[15px] border-[3px] !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all uppercase text-[10px] md:text-xs tracking-widest active:scale-95"
+                            className="bg-[#924DFF] text-white font-gulfs px-5 py-3 rounded-[15px] border-[3px] !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all uppercase text-sm tracking-widest active:scale-95"
                         >
                             Suggest Now
                         </button>

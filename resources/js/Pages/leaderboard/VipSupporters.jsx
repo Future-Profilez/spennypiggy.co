@@ -85,7 +85,7 @@ export default function VipSupporters() {
                         <p className="font-bold text-gray-900 text-sm">{supporter.creators_supported_count}</p>
                         <div className="flex items-center justify-center mb-1">
                             <RiUserStarLine size={16} className="text-blue-500 mr-1" />
-                            <span className="text-xs text-gray-500">Supportors</span>
+                            <span className="text-xs text-gray-500">Supporters</span>
                         </div>
                     </div>
                     <div className="stat-item">

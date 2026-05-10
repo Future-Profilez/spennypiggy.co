@@ -105,8 +105,20 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     // Accessors
     // ───────────────────────
 
+    public function getBioAttribute($value)
+    {
+        if ($this->bio_approved != 1 && (!Auth::check() || Auth::id() !== $this->id)) {
+            return null;
+        }
+        return $value;
+    }
+
     public function getAvatarUrlAttribute()
     {
+        if ($this->avatar_approved != 1 && (!Auth::check() || Auth::id() !== $this->id)) {
+            return "https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/";
+        }
+
         if (!$this->avatar) return "https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/";
 
         $modifier = $this->avatar_cdn_modifier
@@ -125,6 +137,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function getCoverUrlAttribute()
     {
+        if ($this->cover_approved != 1 && (!Auth::check() || Auth::id() !== $this->id)) {
+            return false;
+        }
+
         if (!$this->cover) return false;
 
         $modifier = $this->cover_cdn_modifier
@@ -372,15 +388,12 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     private function isFullyVerified()
     {
-        // Skip verification check - always return true for creators
-        return $this->role == 1;
-
-        // Original verification logic (commented out):
-        // return $this->role == 1 && // Is creator
-        //        $this->is_subscribed == 1 && // Has subscription
-        //        $this->profile_status_lock == 2 && // Profile approved
-        //        $this->identity_status == 1 && // Identity verified
-        //        $this->stripe_details_submitted == 1; // Stripe connected
+        // Require all verification steps to be completed for creators
+        return $this->role == 1 && // Is creator
+               $this->is_subscribed == 1 && // Has subscription
+               $this->profile_status_lock == 2 && // Profile approved
+               $this->identity_status == 1 && // Identity verified
+               $this->stripe_details_submitted == 1; // Stripe connected
     }
 
     // ───────────────────────

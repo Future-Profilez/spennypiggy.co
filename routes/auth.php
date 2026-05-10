@@ -69,7 +69,6 @@ Route::middleware('guest')->group(function () {
     Route::get('reset-password/{token}', [App\Http\Controllers\Auth\NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])->name('password.store');
     Route::get('verify-token/{token}', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'authRedirects']);
-    Route::get('update-2fa-key', [ProfileController::class, 'update2FaKey']);
 });
 
 /*
@@ -182,7 +181,7 @@ Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'di
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
 
 // Discover route
-Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
+Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = null, $category = null) {
     $getData = function () use ($request, $discoveryService, $type, $category) {
         $filters = $request->only(['search', 'contentType']);
         // Normalize type and apply shortcut filters
@@ -213,7 +212,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
 
         // Check contentType from filters (which includes route params) or query params
         $activeContentType = $filters['contentType'] ?? ($request->input('contentType') ?? null);
-        $hasContentTypeParam = $activeContentType && in_array($activeContentType, ['Creators', 'Wishes', 'Bills', 'Memberships']);
+        $hasContentTypeParam = $activeContentType && in_array($activeContentType, ['Creators', 'Wishes', 'Bills', 'Memberships', 'Tasks', 'Shops']);
 
         // Grid view when searching or selecting a specific content type
         $isSearch = $hasSearchParam || $hasTypeParam || $hasContentTypeParam;
@@ -250,6 +249,12 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             if ($ctype === 'Memberships' || $ctype === 'All') {
                 $searchResults['memberships'] = $discoveryService->getSearchMemberships($filters);
             }
+            if ($ctype === 'Tasks' || $ctype === 'All') {
+                $searchResults['tasks'] = $discoveryService->getSearchTasks($filters);
+            }
+            if ($ctype === 'Shops' || $ctype === 'All') {
+                $searchResults['shops'] = $discoveryService->getSearchShops($filters);
+            }
         } else {
             // Section data (top 10) - ONLY fetch when not searching to save resources
             $limit = 10;
@@ -270,15 +275,21 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             $featuredBills = $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
 
             $featuredMemberships = $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
+
+            // Tasks & Shops
+            $featuredTasks = $sortBy ? $discoveryService->getSearchTasks(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedTasks($limit);
+            $featuredShops = $sortBy ? $discoveryService->getSearchShops(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedShops($limit);
         }
 
         return [
-            'featuredCreators' => $featuredCreators,
-            'newVerifiedCreators' => $newVerifiedCreators,
-            'featuredWishes' => $featuredWishes,
-            'topEarnersData' => $topEarnersData,
-            'featuredBills' => $featuredBills,
-            'featuredMemberships' => $featuredMemberships,
+            'featuredCreators' => $featuredCreators ?? [],
+            'newVerifiedCreators' => $newVerifiedCreators ?? [],
+            'featuredWishes' => $featuredWishes ?? [],
+            'topEarnersData' => $topEarnersData ?? [],
+            'featuredBills' => $featuredBills ?? [],
+            'featuredMemberships' => $featuredMemberships ?? [],
+            'featuredTasks' => $featuredTasks ?? [],
+            'featuredShops' => $featuredShops ?? [],
             'filters' => $filters,
             'searchResults' => $searchResults
         ];
@@ -291,6 +302,20 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     $ttl = Auth::check() ? 600 : 1800; // 10 mins for auth, 30 mins for guests
 
     $filters = $request->only(['search', 'contentType', 'sortBy', 'type']);
+    
+    // Merge route parameter into filters if not present in query string
+    if ($type) {
+        $normalizedType = strtolower($type);
+        if ($normalizedType === 'trending' || $normalizedType === 'new') {
+            if (!isset($filters['type'])) {
+                $filters['type'] = $normalizedType;
+            }
+        } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships', 'tasks', 'shops'])) {
+            if (!isset($filters['contentType'])) {
+                $filters['contentType'] = ucfirst($normalizedType);
+            }
+        }
+    }
     
     // Fix: Ensure sortBy is correctly populated when type is used
     if (isset($filters['type'])) {
@@ -305,9 +330,9 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     $limit = 10;
     
     // Check if we should show search results (Grid) or default sections (Carousels)
-    $isSearch = ($request->has('search') && strlen((string)$request->input('search')) > 0) || 
-               $request->has('type') || 
-               $request->has('contentType');
+    $isSearch = (isset($filters['search']) && strlen((string)$filters['search']) > 0) || 
+               isset($filters['type']) || 
+               isset($filters['contentType']);
 
     // Unified data fetching for ALL sections to avoid multiple round-trips
     // We cache the entire block for 30 minutes to make it instant for everyone
@@ -470,7 +495,6 @@ Route::middleware('auth')->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
-            Route::get('card-verification-failed/{id}', [AuthenticatedSessionController::class, 'cardVerificationFailed'])->name('card.verification.failed');
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
             Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
@@ -795,9 +819,6 @@ Route::middleware('auth')->group(function () {
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
 
-        Route::post('/report-content', [ProfileController::class, 'reportContent'])->name('report-content');
-
-
         Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
         Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
         Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
@@ -863,7 +884,8 @@ Route::get('send-automatically-follow-request-to-all', [PwaNotification::class, 
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'], '/buy/{uuid}/{legacy}', [ShopsController::class, 'buyShopItem']);
     Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
@@ -923,6 +945,7 @@ Route::controller(\App\Http\Controllers\StaticPageController::class)->group(func
     Route::get('/paid-tasks-terms', 'paidTasksTerms')->name("paid-tasks-terms");
     Route::get('/return-policy', 'returnPolicy')->name("return-policy");
     Route::get('/us-addendum', 'usAddendum')->name("us-addendum");
+    Route::get('/copyright-policy', 'copyrightPolicy')->name("copyright-policy");
     Route::post('/accept-terms', 'acceptTerms')->name("accept-terms")->middleware('auth');
 });
 
@@ -978,8 +1001,6 @@ Route::get('/problem-solving', function () {
     return $a;
 })->name("problem-solving");
 
-Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
-Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('username.check');
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 
@@ -993,7 +1014,6 @@ Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('us
 // Founder routes - must come before profile route to prevent interception
 Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/founder/data', [FounderBonusController::class, 'getData'])->name('founder.data');
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
     Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
     Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
@@ -1029,6 +1049,11 @@ Route::get('/shop/user_shop_category/{username}', [AuthenticatedSessionControlle
 
 Route::get('/{username}/wish/{id}', function ($username, $id) {
     $wish = WishItem::find($id);
+    $isOwner = auth()->check() && auth()->id() === (int) optional($wish)->user_id;
+
+    if (!$wish || ($wish->is_suspended && ! $isOwner)) {
+        abort(404);
+    }
     $uuid = $wish?->uuid ?? $id;
     request()->merge(['item' => $uuid]);
     return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');

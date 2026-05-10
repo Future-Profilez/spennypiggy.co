@@ -185,11 +185,6 @@ class Shop extends Model
         return $arr;
     }
 
-
-    public function shop_varients(){
-        return $this->hasMany(ShopVarients::class,'shop_id');
-    }
-
     public function shop_shipping_info()
     {
         return $this->hasMany(ShopShippingInfo::class);

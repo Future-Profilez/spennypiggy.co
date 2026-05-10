@@ -77,6 +77,41 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
         }
     };
 
+    const DiagnosticRow = ({ title, result, errors = [] }) => {
+        if (!result) return null;
+        return (
+            <li className={`px-6 py-5 border-l-4 ${result.status === 'passed' ? 'border-green-500 bg-white' : result.status === 'failed' ? 'border-red-500 bg-red-50' : 'border-yellow-500 bg-yellow-50'}`}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center w-full">
+                        <div className="flex-shrink-0 mr-4">
+                            {getStatusIcon(result.status)}
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="text-base font-semibold text-gray-900">{title}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{result.message}</p>
+                            
+                            {errors && errors.length > 0 && (
+                                <div className="mt-3 bg-red-100 p-3 rounded-md border border-red-200">
+                                    <h5 className="text-xs font-bold text-red-800 mb-2 uppercase tracking-wider">Error Details:</h5>
+                                    <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
+                                        {errors.map((err, i) => (
+                                            <li key={i}>{err}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    {result.time_ms && (
+                        <div className="ml-4 flex-shrink-0 text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {result.time_ms}ms
+                        </div>
+                    )}
+                </div>
+            </li>
+        );
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -160,296 +195,49 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                     )}
 
                     {results && (
-                        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                        <div className="bg-white shadow-lg overflow-hidden sm:rounded-lg border border-gray-200">
+                            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                                    Detailed Diagnostic Report
+                                </h3>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    Individual component test results are listed below.
+                                </p>
+                            </div>
                             <ul className="divide-y divide-gray-200">
                                 
-                                {/* Database */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.database.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Database Connectivity</p>
-                                                <p className="text-sm text-gray-500">{results.database.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.database.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.database.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Cache */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.cache.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Cache / Redis</p>
-                                                <p className="text-sm text-gray-500">{results.cache.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.cache.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.cache.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Signup Flow */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.signup_flow.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">User Sign Up Flow</p>
-                                                <p className="text-sm text-gray-500">{results.signup_flow.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.signup_flow.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.signup_flow.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Wish Items */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.wish_items.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Wish Items (Add/Edit/Delete)</p>
-                                                <p className="text-sm text-gray-500">{results.wish_items.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.wish_items.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.wish_items.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Bills */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.bills.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Bills (Add/Edit/Delete)</p>
-                                                <p className="text-sm text-gray-500">{results.bills.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.bills.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.bills.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Memberships */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.memberships.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Memberships (Add/Edit/Delete)</p>
-                                                <p className="text-sm text-gray-500">{results.memberships.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.memberships.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.memberships.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Shop Items */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.shop_items.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Shop Items (Add/Edit/Delete)</p>
-                                                <p className="text-sm text-gray-500">{results.shop_items.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.shop_items.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.shop_items.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Tasks */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.tasks.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Tasks (Add/Edit/Delete)</p>
-                                                <p className="text-sm text-gray-500">{results.tasks.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.tasks.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.tasks.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Cart Flow */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.cart_flow.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Add to Cart Flow</p>
-                                                <p className="text-sm text-gray-500">{results.cart_flow.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.cart_flow.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.cart_flow.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Social Flow */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.social_flow.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Social Flow (Follow/Unfollow)</p>
-                                                <p className="text-sm text-gray-500">{results.social_flow.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.social_flow.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.social_flow.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Profile Update */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.profile_update.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Profile Management (Update Bio/Name/Media)</p>
-                                                <p className="text-sm text-gray-500">{results.profile_update.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.profile_update.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.profile_update.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Search Engine */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.search_engine.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Platform Search Engine</p>
-                                                <p className="text-sm text-gray-500">{results.search_engine.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.search_engine.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.search_engine.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Stripe ID Flow */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.stripe_id_flow.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Stripe Connect & ID Verification</p>
-                                                <p className="text-sm text-gray-500">{results.stripe_id_flow.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.stripe_id_flow.time_ms && (
-                                            <div className="text-sm text-gray-500">{results.stripe_id_flow.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Stripe Payments */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.stripe_payments.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Stripe Payments Processing</p>
-                                                <p className="text-sm text-gray-500">{results.stripe_payments.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.stripe_payments.time_ms !== undefined && (
-                                            <div className="text-sm text-gray-500">{results.stripe_payments.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Emails */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.email.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Email Service</p>
-                                                <p className="text-sm text-gray-500">{results.email.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.email.time_ms !== undefined && (
-                                            <div className="text-sm text-gray-500">{results.email.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Push Notifications */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.push_notifications.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Push Notifications (MagicBell)</p>
-                                                <p className="text-sm text-gray-500">{results.push_notifications.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.push_notifications.time_ms !== undefined && (
-                                            <div className="text-sm text-gray-500">{results.push_notifications.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Uploadcare */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.uploadcare.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Image Hosting (Uploadcare)</p>
-                                                <p className="text-sm text-gray-500">{results.uploadcare.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.uploadcare.time_ms !== undefined && (
-                                            <div className="text-sm text-gray-500">{results.uploadcare.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
-
-                                {/* Intercom */}
-                                <li className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            {getStatusIcon(results.intercom.status)}
-                                            <div className="ml-3">
-                                                <p className="text-sm font-medium text-gray-900">Support Chat (Intercom)</p>
-                                                <p className="text-sm text-gray-500">{results.intercom.message}</p>
-                                            </div>
-                                        </div>
-                                        {results.intercom.time_ms !== undefined && (
-                                            <div className="text-sm text-gray-500">{results.intercom.time_ms}ms</div>
-                                        )}
-                                    </div>
-                                </li>
+                                <DiagnosticRow title="Code Syntax & Routes Integrity" result={results.routes_syntax} errors={results.routes_syntax?.errors} />
+                                <DiagnosticRow title="Database Connectivity" result={results.database} />
+                                <DiagnosticRow title="Cache / Redis" result={results.cache} />
+                                <DiagnosticRow title="User Sign Up Flow" result={results.signup_flow} />
+                                <DiagnosticRow title="Wish Items (Add/Edit/Delete)" result={results.wish_items} />
+                                <DiagnosticRow title="Bills (Add/Edit/Delete)" result={results.bills} />
+                                <DiagnosticRow title="Memberships (Add/Edit/Delete)" result={results.memberships} />
+                                <DiagnosticRow title="Shop Items (Add/Edit/Delete)" result={results.shop_items} />
+                                <DiagnosticRow title="Tasks (Add/Edit/Delete)" result={results.tasks} />
+                                <DiagnosticRow title="Add to Cart Flow" result={results.cart_flow} />
+                                <DiagnosticRow title="Social Flow (Follow/Unfollow)" result={results.social_flow} />
+                                <DiagnosticRow title="Profile Management (Update Bio/Name/Media)" result={results.profile_update} />
+                                <DiagnosticRow title="Platform Search Engine" result={results.search_engine} />
+                                <DiagnosticRow title="Stripe Connect & ID Verification" result={results.stripe_id_flow} />
+                                <DiagnosticRow title="Stripe Payments Processing" result={results.stripe_payments} />
+                                <DiagnosticRow title="Email Service" result={results.email} />
+                                <DiagnosticRow title="Push Notifications (MagicBell)" result={results.push_notifications} />
+                                <DiagnosticRow title="Image Hosting (Uploadcare)" result={results.uploadcare} />
+                                <DiagnosticRow title="Support Chat (Intercom)" result={results.intercom} />
+                                <DiagnosticRow title="Queue Health (Failed Jobs)" result={results.queue_health} errors={results.queue_health?.errors} />
+                                <DiagnosticRow title="Recent Error Log (Last 24h)" result={results.recent_errors} errors={results.recent_errors?.errors} />
+                                <DiagnosticRow title="Financial Data Integrity" result={results.financial_integrity} errors={results.financial_integrity?.errors} />
+                                <DiagnosticRow title="Referral & Earn System" result={results.referral_system} errors={results.referral_system?.errors} />
+                                <DiagnosticRow title="Storage Permissions" result={results.storage_permissions} errors={results.storage_permissions?.errors} />
+                                <DiagnosticRow title="Disk Space" result={results.disk_space} />
+                                <DiagnosticRow title="Environment Variables" result={results.env_variables} errors={results.env_variables?.errors} />
+                                <DiagnosticRow title="Stripe Webhook Config" result={results.stripe_webhook} errors={results.stripe_webhook?.errors} />
+                                <DiagnosticRow title="Scheduled Tasks / Cron" result={results.scheduled_tasks} errors={results.scheduled_tasks?.errors} />
+                                <DiagnosticRow title="Pending Database Migrations" result={results.pending_migrations} errors={results.pending_migrations?.errors} />
+                                <DiagnosticRow title="Stripe Connected Accounts Health" result={results.stripe_accounts_health} errors={results.stripe_accounts_health?.errors} />
+                                <DiagnosticRow title="App Homepage Response Time" result={results.app_response_time} />
+                                <DiagnosticRow title="Stuck Payouts & Blocked Reserves" result={results.stuck_payouts} errors={results.stuck_payouts?.errors} />
 
                             </ul>
                         </div>

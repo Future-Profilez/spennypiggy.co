@@ -24,7 +24,10 @@ export default function SayThanks(props) {
 
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = (data) => {
-      setMsgMedia(data);
+      setMsgMedia({
+         uuid: data?.uuid,
+         contentInfo: data?.contentInfo || null
+      });
    };
 
    const [close,setClose] = useState();

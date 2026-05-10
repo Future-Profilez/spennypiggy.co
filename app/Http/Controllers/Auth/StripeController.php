@@ -1437,6 +1437,14 @@ class StripeController extends Controller
                 ->with(['wish'])
                 ->get();
 
+            if (!empty($getdata) && $getdata->count() > 0) {
+                foreach ($getdata as $item) {
+                    if ($item->wish && $item->wish->is_suspended) {
+                        return redirect()->back()->with('error', 'One or more items in your cart are suspended and cannot be purchased.');
+                    }
+                }
+            }
+
             $lineItems = [];
             $totalApplicationFee = 0;
             $totalCreatorNet = 0;
@@ -1476,8 +1484,8 @@ class StripeController extends Controller
             $stripe = StripeControl::getClient();
 
             $sessionCreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.success', [$owner_id]),
-                'cancel_url' => route('checkout.cancel', [$owner_id]),
+                'success_url' => route('checkout.success', [$owner_id]) . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel', [$owner_id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 'line_items' => $lineItems,
                 'mode' => 'payment',
                 'payment_intent_data' => [
@@ -1574,7 +1582,7 @@ class StripeController extends Controller
                 }
             }
 
-            $sessionId = session('session_id');
+            $sessionId = request()->query('session_id') ?? session('session_id');
             StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
@@ -1620,7 +1628,7 @@ class StripeController extends Controller
     public function cancelCheckout($owner_id)
     {
         $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
-        $sessionId = session('session_id');
+        $sessionId = request()->query('session_id') ?? session('session_id');
         StripePaymentDetail::where('session_id', $sessionId)->update([
             'payment_status' => 'unpaid',
             'updated_at' => Carbon::now(),
@@ -1637,9 +1645,16 @@ class StripeController extends Controller
 
         try {
             // \Log::info(request()->query('name'));
-            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->with('owner')->get();
+            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->with('owner', 'wish')->get();
 
-            if (!empty($cart)) {
+            if (!empty($cart) && $cart->count() > 0) {
+                // Check if any cart item is suspended
+                foreach ($cart as $item) {
+                    if ($item->wish && $item->wish->is_suspended) {
+                        return redirect()->back()->with('error', 'One or more items in your cart are suspended and cannot be purchased.');
+                    }
+                }
+
                 // Get the creator from the first cart item to validate activity
                 $creator = $cart[0]->owner;
                 if (!$creator) {
@@ -1868,6 +1883,7 @@ class StripeController extends Controller
         $user = Auth::user();
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
         if (!$wish) return redirect()->back()->with('error', 'Wish item not found!');
+        if ($wish->is_suspended) return redirect()->back()->with('error', 'This item is currently suspended and cannot accept payments.');
         if (!$wish->user) return redirect()->back()->with('error', 'Creator not found!');
 
         $guestRestriction = Helpers::guestCheckoutRestriction('GBP', 0);
@@ -2036,7 +2052,7 @@ class StripeController extends Controller
             $connectedAccountId = $wish->user->account_id;
 
             $storeCustomer = ConnectedAccountCustomer::where([
-                'user_id' => $user->id,
+                'user_id' => $user->id ?? null,
                 'creator_id' => $wish->user->id,
                 'connected_account_id' => $connectedAccountId,
                 'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
@@ -2045,8 +2061,8 @@ class StripeController extends Controller
 
             if (!$storeCustomer) {
                 $customer = StripeControl::createCustomer([
-                    'email' => $user->email,
-                    'name' => $user->name,
+                    'email' => $user->email ?? $request->email,
+                    'name' => $user->name ?? $request->name,
                 ], $connectedAccountId);
             }
 
@@ -2058,7 +2074,7 @@ class StripeController extends Controller
 
             // Look for existing price with same currency
             $existingPrice = ConnectedAccountCustomer::where([
-                'user_id' => $user->id,
+                'user_id' => $user->id ?? null,
                 'creator_id' => $wish->user->id,
                 'connected_account_id' => $connectedAccountId,
                 'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
@@ -2095,14 +2111,14 @@ class StripeController extends Controller
             $existingSubscription = StripeControl::getActiveSubscriptionByCustomer($customer_id, $connectedAccountId);
             if ($existingSubscription && $existingSubscription->currency !== $chargeCurrency) {
                 $customer = StripeControl::createCustomer([
-                    'email' => $user->email,
-                    'name' => $user->name,
+                    'email' => $user->email ?? $request->email,
+                    'name' => $user->name ?? $request->name,
                 ], $connectedAccountId);
 
                 $customer_id = $customer->id;
 
                 ConnectedAccountCustomer::create([
-                    'user_id' => $user->id,
+                    'user_id' => $user->id ?? null,
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'stripe_customer_id' => $customer_id,
@@ -2115,7 +2131,7 @@ class StripeController extends Controller
 
             if (!$storeCustomer) {
                 ConnectedAccountCustomer::create([
-                    'user_id' => $user->id,
+                    'user_id' => $user->id ?? null,
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'stripe_customer_id' => $customer_id,
@@ -2168,7 +2184,7 @@ class StripeController extends Controller
                 'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
                 'payment_method_types' => ['card'],
                 'line_items' => $lineItems, // Total amount determined by line items
-                'customer_email' => $user->email,
+                'customer' => $customer_id,
                 'success_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
@@ -2202,6 +2218,10 @@ class StripeController extends Controller
                     ]),
                     'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                 ];
+
+                if ($user->email) {
+                    $paymentIntentData['receipt_email'] = $user->email;
+                }
 
                 // Direct Charges used
                 // Funds go to connected account, platform takes application fee.
@@ -3894,7 +3914,7 @@ class StripeController extends Controller
                     'subscription_purpose' => 'mandatory_platform_access',
                 ]),
             ]),
-            'customer_email' => $user->email,
+            'customer' => $user->stripe_id,
             'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
             'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
         ];
@@ -4278,10 +4298,35 @@ class StripeController extends Controller
 
     public function deleteConnectedAccount($accountId)
     {
+        // Only allow admins to delete connected accounts or the owner
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        if ((string)$user->role !== '2' && $user->account_id !== $accountId) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         try {
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY')); // move your secret to .env
 
             $deleted = $stripe->accounts->delete($accountId, []);
+            
+            // Clear local user account ID if it matches
+            if ($user->account_id === $accountId) {
+                $user->account_id = null;
+                $user->stripe_details_submitted = 0;
+                $user->save();
+            } else {
+                // If admin deleted it, find the user and clear it
+                $targetUser = \App\Models\User::where('account_id', $accountId)->first();
+                if ($targetUser) {
+                    $targetUser->account_id = null;
+                    $targetUser->stripe_details_submitted = 0;
+                    $targetUser->save();
+                }
+            }
 
             return response()->json([
                 'message' => 'Connected account deleted successfully.',

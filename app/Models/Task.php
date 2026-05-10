@@ -28,6 +28,7 @@ class Task extends Model
         'stripe_product_id',
         'stripe_price_id',
         'is_approved',
+        'is_suspended',
     ];
 
     public function scopeApproved($query)

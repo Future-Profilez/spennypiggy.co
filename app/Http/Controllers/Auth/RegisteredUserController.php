@@ -152,16 +152,24 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        /* =========================IP CHECK (LIVE ONLY)========================== */
+        /* =========================FRAUD PREVENTION CHECK (LIVE ONLY)========================== */
         $ip_address = $request->ip();
+        
+        // Solution C: Check device cookie/session first
+        // If they already have a "registered_device" cookie, block them immediately
+        if ($request->cookie('registered_device')) {
+            throw ValidationException::withMessages([
+                'email' => 'Multiple accounts from the same device are not allowed.',
+            ]);
+        }
 
         if (config('app.url') === 'https://spennypiggy.co') {
-            $ipExists = User::where('ip_address', $ip_address)
-                ->exists();
-
-            if ($ipExists) {
+            // Solution A: Max accounts per IP limit
+            $ipCount = User::where('ip_address', $ip_address)->count();
+            
+            if ($ipCount >= 3) {
                 throw ValidationException::withMessages([
-                    'email' => 'You can not create multiple accounts with the same IP address.',
+                    'email' => 'Too many accounts have been created from this IP address.',
                 ]);
             }
         }
@@ -241,6 +249,10 @@ class RegisteredUserController extends Controller
         ]);
 
         Auth::login($user);
+        
+        // Solution C: Set a long-lived cookie to identify this device
+        // This prevents the same device from creating another account, even if IP changes
+        \Illuminate\Support\Facades\Cookie::queue('registered_device', '1', 60 * 24 * 365 * 10); // 10 years
 
         /* =========================AUTO FOLLOW SPENNY========================== */
         $spenny = User::where('username', 'spenny_piggy')->first();

@@ -19,6 +19,10 @@ export default function Board(props) {
     const { auth, data, is_daily } = props;
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);
+    const formatSupporters = (count) => {
+        const safeCount = Number(count) || 0;
+        return `👥 ${safeCount} ${safeCount === 1 ? "supporter" : "supporters"}`;
+    };
 
     const filterPositions = (d) => {
         const newData = [...d];
@@ -78,7 +82,7 @@ export default function Board(props) {
                 {/* Display engagement metrics if available */}
                 {r?.supporters > 0 ? (
                     <p className="text-xs text-gray-500 md:pr-4">
-                        👥 {r.supporters} Supporters
+                        {formatSupporters(r.supporters)}
                     </p>
                 ):''}
             </div>
@@ -153,7 +157,7 @@ export default function Board(props) {
                                 {/* Display engagement metrics if available */}
                                 { p?.supporters > 0 ? (
                                     <p className="!text-[12px] md:!text-xs text-gray-600 text-center mt-1">
-                                        👥 {p.supporters} supporters
+                                        {formatSupporters(p.supporters)}
                                     </p>
                                 ) : null}
                             </div>

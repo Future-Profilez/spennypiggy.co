@@ -183,7 +183,10 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
     const [notificationsEnabled, setNotificationsEnabled] = useState(user?.notification_send === 1);
 
     const getImageUID = (e) => {
-        setData('avatar', e);
+        setData('avatar', {
+            uuid: e?.uuid,
+            cdnUrlModifiers: e?.cdnUrlModifiers || null
+        });
         setLocalAvatar(e?.uuid || '');
         setProfileDP(e.cdnUrl);
         setUploadingStart(false);
@@ -191,7 +194,10 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
 
     const getCoverUID = (e) => {
         setCoverImage(e.cdnUrl);
-        setData('cover', e);
+        setData('cover', {
+            uuid: e?.uuid,
+            cdnUrlModifiers: e?.cdnUrlModifiers || null
+        });
         setCoverUploadingStart(false)
     }
 

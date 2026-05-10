@@ -15,6 +15,7 @@ use App\Models\StripePaymentDetail;
 use App\Models\WishItemSubscription;
 use App\Models\Notification;
 use App\Models\MonthlyCharge;
+use App\Models\Task;
 use App\StripeControl;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -39,13 +40,13 @@ class UserProfileService
 
             return User::select([
                     'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
-                    'avatar', 'avatar_approved', 'cover', 'suspended_account',
+                    'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'suspended_account',
                     'social_image', 'account_id', 'stripe_details_submitted',
                     'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
                     'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'vat_amount_percentage'
                 ])
                 ->with([
-                    'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
+                    'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other,status,reason',
                     'user_categories:id,user_id,category,created_at',
                     // Include uuid so perma_link accessor can build a playable URL
                     'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at'
@@ -66,7 +67,7 @@ class UserProfileService
      */
     public function getAllProfileData(int $userId, ?int $categoryId = null): array
     {
-        $cacheKey = 'profile_all_data_' . $userId . '_' . ($categoryId ?? 'all');
+        $cacheKey = 'profile_all_data_' . $userId . '_' . ($categoryId ?? 'all') . '_' . $this->getProfileCacheVersion($userId);
         $isOwner = Auth::check() && Auth::id() === $userId;
 
         // If not owner, we can cache this whole block for a few minutes
@@ -101,9 +102,9 @@ class UserProfileService
     {
         $query = \App\Models\Task::where('creator_id', $userId);
         if (!$isOwner) {
-            $query->where('status', 'active')->where('is_approved', 1);
+            $query->where('status', 'active')->where('is_approved', 1)->where('is_suspended', 0);
         }
-        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason'])
+        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason'])
             ->latest()
             ->get()
             ->toArray();
@@ -116,11 +117,12 @@ class UserProfileService
     {
         $query = WishItem::select([
             'id', 'user_id', 'uuid', 'wishname', 'price', 'currency', 'thumbnail', 
-            'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason', 'tax_amount'
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')->where('user_id', $userId);
+            'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason', 'tax_amount', 'is_suspended', 'suspend_reason'
+        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+        ->where('user_id', $userId);
         
         if (!$isOwner) {
-            $query->where('is_approved', 1);
+            $query->where('is_approved', 1)->where('is_suspended', 0);
         }
         
         if ($categoryId && $categoryId !== 'all') {
@@ -141,11 +143,12 @@ class UserProfileService
     {
         $query = Membership::select([
             'id', 'user_id', 'uuid', 'name', 'level', 'price', 'currency', 
-            'thumbnail', 'approved', 'created_at'
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')->where('user_id', $userId);
+            'thumbnail', 'approved', 'created_at', 'is_suspended', 'suspend_reason'
+        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+        ->where('user_id', $userId);
         
         if (!$isOwner) {
-            $query->where('approved', 1);
+            $query->where('approved', 1)->where('is_suspended', 0);
         }
         
         return $query->latest()->get()->toArray();
@@ -158,11 +161,12 @@ class UserProfileService
     {
         $query = Bills::select([
             'id', 'user_id', 'uuid', 'name', 'price', 'currency', 'period',
-            'thumbnail', 'approved', 'created_at'
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')->where('user_id', $userId);
+            'thumbnail', 'approved', 'created_at', 'is_suspended', 'suspend_reason'
+        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+        ->where('user_id', $userId);
         
         if (!$isOwner) {
-            $query->where('approved', 1);
+            $query->where('approved', 1)->where('is_suspended', 0);
         }
         
         return $query->latest()->get()->toArray();
@@ -176,14 +180,14 @@ class UserProfileService
         $query = Shop::where('user_id', $userId)->where('status', 1);
         
         if ($isOwner) {
-            $query->with(['shop_varients', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
+            $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
         } else {
             $query->select([
                 'id', 'user_id', 'uuid', 'name', 'price', 'currency',
-                'image', 'approved', 'created_at', 'type', 'description', 'ai_generated'
+                'image', 'approved', 'created_at', 'type', 'description', 'ai_generated', 'is_suspended', 'suspend_reason'
             ])
-            ->with(['shop_varients:id,shop_id,name,price', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
-            ->where('approved', 1);
+            ->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+            ->where('approved', 1)->where('is_suspended', 0);
         }
         
         return $query->latest()->get()->toArray();
@@ -221,7 +225,7 @@ class UserProfileService
 
             // Apply approval filter for non-owners
             if (!$isOwner) {
-                $query->where('is_approved', 1);
+                $query->where('is_approved', 1)->where('is_suspended', 0);
             }
             
             return $query->orderBy('sort')
@@ -235,7 +239,7 @@ class UserProfileService
             return $callback();
         }
 
-        $cacheKey = 'user_wishes_' . $userId . '_' . ($categoryId ?? 'all') . '_' . $perPage;
+        $cacheKey = 'user_wishes_' . $userId . '_' . ($categoryId ?? 'all') . '_' . $perPage . '_' . $this->getProfileCacheVersion($userId);
         return Cache::remember($cacheKey, 600, $callback);
     }
 
@@ -364,7 +368,7 @@ class UserProfileService
             $isOwner = Auth::check() && Auth::id() === $userId;
             $query = Membership::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage');
             if (!$isOwner) {
-                $query->where('approved', 1);
+                $query->where('approved', 1)->where('is_suspended', 0);
             }
             return $query->latest()->get()->toArray();
         };
@@ -373,7 +377,7 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_memberships_' . $userId, 600, $callback);
+        return Cache::remember('user_memberships_' . $userId . '_' . $this->getProfileCacheVersion($userId), 600, $callback);
     }
 
     /**
@@ -387,7 +391,7 @@ class UserProfileService
             $query = Bills::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage');
 
             if (!$isOwner) {
-                $query->where('approved', 1);
+                $query->where('approved', 1)->where('is_suspended', 0);
             }
 
             return $query->latest()->get()->toArray();
@@ -397,7 +401,7 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_bills_' . $userId, 600, $callback);
+        return Cache::remember('user_bills_' . $userId . '_' . $this->getProfileCacheVersion($userId), 600, $callback);
     }
 
     /**
@@ -411,10 +415,10 @@ class UserProfileService
             $query = Shop::where('user_id', $userId)->where('status', 1);
 
             if ($isOwner) {
-                $query->with(['shop_varients', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
+                $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
             } else {
-                $query->with(['shop_varients:id,shop_id,name,price', 'shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
-                      ->where('approved', 1);
+                $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+                      ->where('approved', 1)->where('is_suspended', 0);
             }
 
             return $query->latest()->get()->toArray();
@@ -424,7 +428,33 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_shop_' . $userId, 600, $callback);
+        return Cache::remember('user_shop_' . $userId . '_' . $this->getProfileCacheVersion($userId), 600, $callback);
+    }
+
+    private function getProfileCacheVersion(int $userId): string
+    {
+        $timestamps = [
+            User::where('id', $userId)->value('updated_at'),
+            WishItem::where('user_id', $userId)->max('updated_at'),
+            Membership::where('user_id', $userId)->max('updated_at'),
+            Bills::where('user_id', $userId)->max('updated_at'),
+            Shop::where('user_id', $userId)->max('updated_at'),
+            Task::where('creator_id', $userId)->max('updated_at'),
+        ];
+
+        $latestUnix = 0;
+        foreach ($timestamps as $timestamp) {
+            if (! $timestamp) {
+                continue;
+            }
+
+            $parsed = strtotime((string) $timestamp);
+            if ($parsed > $latestUnix) {
+                $latestUnix = $parsed;
+            }
+        }
+
+        return (string) $latestUnix;
     }
 
     /**
@@ -611,6 +641,22 @@ class UserProfileService
         $subscriptionId = $subscription->id;
         $stripeStart = Carbon::createFromTimestamp($subscription->current_period_start);
         $stripeEnd   = Carbon::createFromTimestamp($subscription->current_period_end);
+        $normalizedStatus = $subscription->status === 'active' ? 'paid' : $subscription->status;
+        $updateIfDirty = static function ($model, array $attributes): bool {
+            $model->fill($attributes);
+            if (!$model->isDirty()) {
+                return false;
+            }
+            $model->save();
+            return true;
+        };
+        $syncUserSubscribed = static function (?User $targetUser, int $nextValue): bool {
+            if (!$targetUser || (int) $targetUser->is_subscribed === $nextValue) {
+                return false;
+            }
+            $targetUser->is_subscribed = $nextValue;
+            return $targetUser->save();
+        };
 
         // If this is an invoice sync, use the period dates from the invoice line item if available
         if ($invoice && isset($invoice->lines->data[0]->period)) {
@@ -673,7 +719,7 @@ class UserProfileService
             ]);
 
             if ($newSub->user) {
-                $newSub->user->update(['is_subscribed' => 1]);
+                $syncUserSubscribed($newSub->user, 1);
             }
 
             Log::info("MonthlyCharge Sync: Trial processed", ['sub_id' => $subscriptionId]);
@@ -714,7 +760,7 @@ class UserProfileService
 
             if ($existing) {
                 $updateData = [
-                    'status' => 'active',
+                    'status' => $normalizedStatus,
                     'amount' => max((float) ($existing->amount ?? 0), (float) $amount),
                     'currency' => $currency,
                     'tax' => $tax,
@@ -730,10 +776,10 @@ class UserProfileService
                     $updateData['current_end_subscription_date'] = $stripeEnd->toDateString();
                 }
 
-                $existing->update($updateData);
+                $updateIfDirty($existing, $updateData);
 
                 if ($existing->user) {
-                    $existing->user->update(['is_subscribed' => 1]);
+                    $syncUserSubscribed($existing->user, 1);
                 }
 
                 return $existing;
@@ -748,7 +794,7 @@ class UserProfileService
                 ->first();
 
             if ($trial) {
-                $trial->update(['status' => 'ended']);
+                $updateIfDirty($trial, ['status' => 'ended']);
             }
 
             $newSub = MonthlyCharge::create([
@@ -761,13 +807,13 @@ class UserProfileService
                 'amount' => $amount,
                 'currency' => $currency,
                 'tax' => $tax,
-                'status' => 'active',
+                'status' => $normalizedStatus,
                 'upcoming_payment' => ($subscription->cancel_at_period_end) ? null : $stripeEnd,
                 'cancelled_at' => ($subscription->cancel_at_period_end) ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : now()) : null,
             ]);
 
             if ($newSub->user) {
-                $newSub->user->update(['is_subscribed' => 1]);
+                $syncUserSubscribed($newSub->user, 1);
             }
 
             Log::info("MonthlyCharge Sync: Payment processed", ['sub_id' => $subscriptionId, 'period' => $stripeStart->toDateString()]);
@@ -777,7 +823,7 @@ class UserProfileService
         // PAYMENT FAILED
         if ($eventType === 'invoice.payment_failed') {
             if ($subs) {
-                $subs->update(['status' => 'failed', 'upcoming_payment' => null]);
+                $updateIfDirty($subs, ['status' => 'failed', 'upcoming_payment' => null]);
                 // Access is only removed if the period has actually expired (handled in User model)
             }
             Log::info("MonthlyCharge Sync: Payment Failed processed", ['sub_id' => $subscriptionId]);
@@ -787,7 +833,7 @@ class UserProfileService
         // DELETED
         if ($eventType === 'customer.subscription.deleted') {
             if ($subs) {
-                $subs->update(['status' => 'canceled', 'upcoming_payment' => null, 'cancelled_at' => now()]);
+                $updateIfDirty($subs, ['status' => 'canceled', 'upcoming_payment' => null, 'cancelled_at' => now()]);
             }
             Log::info("MonthlyCharge Sync: Subscription Deleted processed", ['sub_id' => $subscriptionId]);
             return $subs;
@@ -830,7 +876,7 @@ class UserProfileService
             }
 
             if ($target) {
-                $newStatus = $subscription->status === 'active' ? 'paid' : $subscription->status;
+                $newStatus = $normalizedStatus;
                 
                 // Determine if we should update dates or if this is a different period
                 $isSamePeriod = false;
@@ -871,15 +917,15 @@ class UserProfileService
                 }
                 
                 if ($target) {
-                    $target->update($updateData);
+                    $updateIfDirty($target, $updateData);
 
                     if (in_array($subscription->status, ['active', 'trialing'])) {
-                        if ($target->user) $target->user->update(['is_subscribed' => 1]);
+                        if ($target->user) $syncUserSubscribed($target->user, 1);
                     } else {
                         // Only set is_subscribed to 0 if the paid period has actually passed
                         $periodEnded = now()->greaterThanOrEqualTo($stripeEnd);
                         if ($periodEnded && $target->user) {
-                            $target->user->update(['is_subscribed' => 0]);
+                            $syncUserSubscribed($target->user, 0);
                         }
                     }
                     return $target;
@@ -903,8 +949,8 @@ class UserProfileService
                 ->first();
 
             if ($existingForPeriod) {
-                $existingForPeriod->update([
-                    'status' => $subscription->status === 'active' ? 'paid' : $subscription->status,
+                $updateIfDirty($existingForPeriod, [
+                    'status' => $normalizedStatus,
                     'upcoming_payment' => ($subscription->cancel_at_period_end || in_array($subscription->status, ['canceled', 'unpaid'])) ? null : $stripeEnd,
                     'cancelled_at' => ($subscription->cancel_at_period_end || $subscription->status === 'canceled') ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : now()) : $existingForPeriod->cancelled_at,
                 ]);
@@ -921,7 +967,7 @@ class UserProfileService
                 'name' => $customer->name ?? 'Creator',
                 'email' => $customer->email,
                 'stripe_id' => $subscriptionId,
-                'status' => $subscription->status === 'active' ? 'paid' : $subscription->status,
+                'status' => $normalizedStatus,
                 'currency' => $currency,
                 'amount' => $amount,
                 'upcoming_payment' => ($subscription->cancel_at_period_end || in_array($subscription->status, ['canceled', 'unpaid'])) ? null : $stripeEnd,
@@ -940,7 +986,7 @@ class UserProfileService
             $subs = MonthlyCharge::create($createData);
 
             if ($subs->user) {
-                $subs->user->update(['is_subscribed' => in_array($subscription->status, ['active', 'trialing']) ? 1 : 0]);
+                $syncUserSubscribed($subs->user, in_array($subscription->status, ['active', 'trialing']) ? 1 : 0);
             }
 
             Log::info("MonthlyCharge Sync: Created missing local record for sub", ['sub_id' => $subscriptionId, 'status' => $subscription->status]);

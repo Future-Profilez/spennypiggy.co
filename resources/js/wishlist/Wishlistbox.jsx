@@ -36,7 +36,7 @@ export default function Wishlistbox(props) {
     } = props;
 
     const effectiveAuth = auth || globalAuth;
-    const isCreator = effectiveAuth?.user?.id === itm?.user_id;
+    const isCreator = Number(effectiveAuth?.user?.id) === Number(itm?.user_id);
 
     const sortableId = itm?.id || itm?.uuid;
 
@@ -111,6 +111,18 @@ export default function Wishlistbox(props) {
                             </p>
                         )}
                     </div>
+                )}
+                {itm && itm.is_suspended == 1 ? (
+                    <div className="absolute top-18 w-full bg-red-600 text-white text-xs font-bold px-3 py-2 text-center shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help z-20">
+                        Suspended
+                        {itm.suspend_reason && (
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/suspend:opacity-100 transition-opacity pointer-events-none z-30">
+                                Reason: {itm.suspend_reason}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    ""
                 )}
                 {IsloggedIn ? (
                     <>
@@ -246,7 +258,7 @@ export default function Wishlistbox(props) {
                     )}
 
                     {itm && itm.subscription == 1 ? (
-                        <div className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-55px] right-6">
+                        <div className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-3 right-4">
                             Subscribable
                         </div>
                     ) : (

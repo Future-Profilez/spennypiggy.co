@@ -76,6 +76,7 @@ export default function Index({
 
     // Function to determine task status based on is_approved values
     const getTaskStatus = (task) => {
+        if (Number(task?.is_suspended) === 1) return "suspended";
         if (task.is_approved === 1) return "approved";
         if (task.is_approved === 2) return "rejected";
         return "pending"; // is_approved === 0 or null/undefined
@@ -85,6 +86,7 @@ export default function Index({
     const getStatusDisplay = (task) => {
         const status = getTaskStatus(task);
         const statusMap = {
+            suspended: "Suspended",
             approved: "Approved",
             rejected: "Rejected",
             pending: "Pending Review",
@@ -96,6 +98,7 @@ export default function Index({
     const getStatusBadgeColor = (task) => {
         const status = getTaskStatus(task);
         const colorMap = {
+            suspended: "bg-red-100 text-red-800 border-red-200",
             approved: "bg-green-100 text-green-800 border-green-200",
             rejected: "bg-red-100 text-red-800 border-red-200",
             pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -107,6 +110,34 @@ export default function Index({
         const status = getTaskStatus(task);
 
         switch (status) {
+            case "suspended":
+                return {
+                    title: "🚫 Task Suspended",
+                    message:
+                        task?.suspend_reason?.trim() ||
+                        "This task has been suspended by admin. Please contact support if you want to appeal.",
+                    color: "red",
+                    bgColor: "bg-red-50",
+                    borderColor: "!border-red-400",
+                    textColor: "text-red-800",
+                    lightTextColor: "text-red-700",
+                    icon: (
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v2m0 4h.01m-7.938 4h15.876c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L2.342 16.5c-.77.833.192 2.5 1.732 2.5z"
+                            />
+                        </svg>
+                    ),
+                };
+
             case "rejected":
                 return {
                     title: "⚠️ Action Required",
@@ -303,6 +334,11 @@ export default function Index({
                                                                     )}
                                                                 </span>
                                                             </div>
+                                                            {order.gifter_message && (
+                                                                <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-[20px] text-sm italic text-gray-700">
+                                                                    "{order.gifter_message}"
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div className="text-right">
                                                             <Link
@@ -712,6 +748,11 @@ export default function Index({
                                                         )}
                                                     </span>
                                                 </div>
+                                                {order.gifter_message && (
+                                                    <div className="mt-3 p-3 bg-gray-50 border border-gray-100 rounded-[20px] text-sm italic text-gray-600">
+                                                        "{order.gifter_message}"
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="text-right">
                                                 <Link

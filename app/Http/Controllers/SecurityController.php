@@ -164,7 +164,7 @@ class SecurityController extends Controller
             })
             ->where('id', '!=', Auth::id())
             ->limit(10)
-            ->get(['id', 'name', 'username', 'avatar', 'avatar_cdn_modifier']);
+            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier']);
 
         return response()->json([
             'status' => true,

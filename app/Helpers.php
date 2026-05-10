@@ -906,7 +906,6 @@ class Helpers
                     'shop_item_description' => $shopItem ? $shopItem->description : '',
                     'shop_item_type' => $shopItem ? $shopItem->type : 'digital',
                     'quantity_purchased' => (string) ($paymentModel->quantity ?? '1'),
-                    'variant_id' => (string) ($paymentModel->varient_id ?? ''),
                     'transaction_description' => 'Shop purchase: ' . ($shopItem ? $shopItem->name : 'item') . ' from ' . ($creator ? $creator->name : 'creator'),
                 ]);
                 break;

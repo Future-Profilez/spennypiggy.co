@@ -20,7 +20,6 @@ export default function BuyShopItem({
     s,
     open,
     isPaid,
-    selectedVarient,
     country,
     shippingPrice,
     card_capabilities,
@@ -312,7 +311,7 @@ export default function BuyShopItem({
         if (shop.type === "physical") {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
+                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
                     {
                         shipping_info: JSON.stringify(shipping_info),
                     }
@@ -352,7 +351,7 @@ export default function BuyShopItem({
         } else {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
+                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
                 )
                 .then((res) => {
                     if (res.data.status == false) {

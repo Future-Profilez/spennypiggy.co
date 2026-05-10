@@ -89,6 +89,13 @@ export default function Discover(props) {
 
     // Handle loading state for lazy props
     const searchLoading = isSearching && (searchResults === undefined || searchResults === null);
+    const shouldUseFeaturedForType = !!filters.type && !filters.contentType && !(searchQuery && searchQuery.trim().length > 0);
+    const displayedTasks = shouldUseFeaturedForType && !(searchResults?.tasks?.length)
+        ? (featuredTasks || [])
+        : (searchResults?.tasks || []);
+    const displayedShops = shouldUseFeaturedForType && !(searchResults?.shops?.length)
+        ? (featuredShops || [])
+        : (searchResults?.shops || []);
 
     const results = isSearching 
         ? (searchResults || [])
@@ -364,6 +371,12 @@ export default function Discover(props) {
                                 </div>
                             ) : searchResults ? (
                                 <div className="space-y-12">
+                                    {filters.contentType === 'Creators' && intros && intros.length > 0 && (
+                                        <div className="mb-4">
+                                            <IntroVideos intros={intros} />
+                                        </div>
+                                    )}
+
                                     {searchResults.creators && searchResults.creators.length > 0 && (
                                         <div className="pb-6 mt-5">
                                             <h2 className=" text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
@@ -468,16 +481,16 @@ export default function Discover(props) {
                                         </div>
                                     )}
 
-                                    {searchResults.tasks && searchResults.tasks.length > 0 && (
+                                    {displayedTasks && displayedTasks.length > 0 && (
                                         <div className="pb-6 ">
-                                            <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Tasks</span> : Showing  {searchResults.tasks.length} Results</h2>
+                                            <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Tasks</span> : Showing  {displayedTasks.length} Results</h2>
                                             {filters.contentType === 'Tasks' && !filters.type && !searchQuery && (
                                                 <p className="text-gray-600 mt-0">Explore featured tasks.</p>
                                             )}
                                             <ResultsGrid 
-                                                results={searchResults.tasks}
+                                                results={displayedTasks}
                                                 mode="task"
-                                                totalCount={searchResults.tasks.length}
+                                                totalCount={displayedTasks.length}
                                                 activeFilters={{}}
                                                 removeFilter={() => {}}
                                                 onLoadMore={handleLoadMore}
@@ -485,16 +498,16 @@ export default function Discover(props) {
                                         </div>
                                     )}
 
-                                    {searchResults.shops && searchResults.shops.length > 0 && (
+                                    {displayedShops && displayedShops.length > 0 && (
                                         <div className="pb-6 ">
-                                            <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Shop Items</span> : Showing  {searchResults.shops.length} Results</h2>
+                                            <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Shop Items</span> : Showing  {displayedShops.length} Results</h2>
                                             {filters.contentType === 'Shops' && !filters.type && !searchQuery && (
                                                 <p className="text-gray-600 mt-0">Explore featured shop items.</p>
                                             )}
                                             <ResultsGrid 
-                                                results={searchResults.shops}
+                                                results={displayedShops}
                                                 mode="shop"
-                                                totalCount={searchResults.shops.length}
+                                                totalCount={displayedShops.length}
                                                 activeFilters={{}}
                                                 removeFilter={() => {}}
                                                 onLoadMore={handleLoadMore}
@@ -502,7 +515,7 @@ export default function Discover(props) {
                                         </div>
                                     )}
 
-                                    {(!searchResults.creators?.length && !searchResults.wishes?.length && !searchResults.bills?.length && !searchResults.memberships?.length && !searchResults.tasks?.length && !searchResults.shops?.length) && (
+                                    {(!searchResults.creators?.length && !searchResults.wishes?.length && !searchResults.bills?.length && !searchResults.memberships?.length && !displayedTasks?.length && !displayedShops?.length) && (
                                         <div className="text-center py-20 px-10 bg-white rounded-[30px]   border border-dashed border-gray-200">
                                             <div className="text-gray-400 text-5xl mb-4">🔍</div>
                                             <h3 className="text-lg font-medium text-gray-900 mb-2">No matches found</h3>

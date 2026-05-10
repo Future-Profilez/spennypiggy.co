@@ -189,18 +189,59 @@ export default function EditMembership({ item }) {
                 <h2 className="uppercase font-GillSans pb-6 text-2xl font-bold text-left w-full">
                     Update Membership
                 </h2>
+                {item && item.is_suspended == 1 && (
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md text-left">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-red-800">Item Suspended</h3>
+                                {item.suspend_reason && (
+                                    <div className="mt-2 text-sm text-red-700">
+                                        <p>{item.suspend_reason}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <div className="membership-form-wrapper">
                     <div className="w-full">
-                        <label className="block text-left mb-2 font-semibold">
+                        <label className="block text-left mb-2 text-lg font-semibold text-gray-800">
                             Choose Membership Level
                         </label>
-                        <ul className="membership-levels">
+                        <p className="text-left text-sm text-gray-500 mb-4">Select the tier that best fits your membership offering.</p>
+                        <div className="flex flex-col gap-4 mb-6">
                             {memberships &&
                                 memberships.map((m, i) => {
+                                    const isSelected = data?.level === m.value;
+                                    const getTierIcon = (val) => {
+                                        switch(val) {
+                                            case 'bronze': return '🥉';
+                                            case 'silver': return '🥈';
+                                            case 'gold': return '🥇';
+                                            case 'platinum': return '💎';
+                                            case 'lifetime': return '👑';
+                                            default: return '⭐';
+                                        }
+                                    };
+                                    const getTierDescription = (val) => {
+                                      switch(val) {
+                                        case 'bronze': return 'A great starting point for your casual fans.';
+                                        case 'silver': return 'Step it up with more exclusive perks.';
+                                        case 'gold': return 'Premium access for your loyal supporters.';
+                                        case 'platinum': return 'The ultimate VIP experience.';
+                                        case 'lifetime': return 'One-time payment for endless access.';
+                                        default: return 'Awesome membership tier.';
+                                      }
+                                    };
                                     return (
-                                        <li
+                                        <div
                                             key={`membership-${i}`}
-                                            className="membership-level-item"
+                                            className="relative"
                                         >
                                             <input
                                                 className="cursor-pointer hidden"
@@ -209,23 +250,32 @@ export default function EditMembership({ item }) {
                                                 value={m.value}
                                                 name="level"
                                                 onChange={handleInput}
-                                                checked={data.level === m.value}
+                                                checked={isSelected}
                                             />
                                             <label
-                                                className={`cursor-pointer capitalize px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                                                    data &&
-                                                    data.level == m.value
-                                                        ? "active bg-purple-500 text-white"
-                                                        : "bg-gray-200 text-black hover:bg-gray-300"
+                                                className={`cursor-pointer flex items-center p-3 rounded-[30px] border-[3px] border-black transition-all duration-200 bg-white ${
+                                                    isSelected
+                                                        ? "shadow-[2px_2px_0px_0px_#ff4fa0] border-[#ff4fa0] translate-y-[2px]"
+                                                        : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                 }`}
                                                 htmlFor={m.value}
                                             >
-                                                {m.title}
+                                                <div className={`w-[50px] h-[50px] flex-shrink-0 rounded-[30px] flex items-center justify-center text-2xl mr-4 ${isSelected ? 'bg-pink-100' : 'bg-[#ffe8f2]'}`}>
+                                                    {getTierIcon(m.value)}
+                                                </div>
+                                                <div className="flex flex-col text-left">
+                                                    <span className={`uppercase font-black text-lg leading-tight ${isSelected ? 'text-[#ff4fa0]' : 'text-black'}`}>
+                                                        {m.title}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-600">
+                                                        {getTierDescription(m.value)}
+                                                    </span>
+                                                </div>
                                             </label>
-                                        </li>
+                                        </div>
                                     );
                                 })}
-                        </ul>
+                        </div>
                     </div>
 
                     <div className="w-full">
@@ -279,6 +329,9 @@ export default function EditMembership({ item }) {
                                 <p className="mt-2 text-xs text-gray-500 font-medium">
                                     Fans only see the total price to improve
                                     conversion
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500 font-medium">
+                                    Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.
                                 </p>
                             </div>
                         )}
@@ -364,7 +417,7 @@ export default function EditMembership({ item }) {
                     <button
                         onClick={updateMembership}
                         disabled={loading}
-                        className="membership-update-btn"
+                        className="membership-update-btn flex items-center justify-center text-center uppercase"
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -372,7 +425,7 @@ export default function EditMembership({ item }) {
                                 Processing...
                             </span>
                         ) : (
-                            "Update Membership"
+                            "UPDATE"
                         )}
                     </button>
                 </div>

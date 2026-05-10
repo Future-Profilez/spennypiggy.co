@@ -163,7 +163,11 @@
                     <tr>
                         <td
                             style="padding:0 0 10px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #666666; text-align: center; ">
-                            Copyright &copy; 2024 Spenny Piggy. All rights reserved.
+                            @if(app()->environment('production'))
+                                Copyright &copy; {{ date('Y') }} Spenny Piggy. All rights reserved.
+                            @else
+                                Copyright &copy; {{ date('Y') }} Spenny Piggy Dev. All rights reserved.
+                            @endif
                         </td>
                     </tr>
                 </table>

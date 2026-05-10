@@ -54,36 +54,38 @@ export default function Gifter({ IsloggedIn,  sLinks }){
             </div>
 
             {/* Supporter Offerings Card */}
-            <div className="relative group mb-10">
-                <div className="relative p-8 md:p-12 rounded-[30px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-                        <div>
-                            <h3 className="text-xs font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
-                                <div className="w-8 h-[3px] bg-pink-400 border border-black"></div>
-                                Your Exclusive Benefits
-                            </h3>
-                            <p className="text-black text-2xl font-black tracking-wide">As a SpennyPiggy Supporter, you enjoy:</p>
+            {IsloggedIn && (
+                <div className="relative group mb-10">
+                    <div className="relative p-8 md:p-12 rounded-[30px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+                            <div>
+                                <h3 className="text-xs font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
+                                    <div className="w-8 h-[3px] bg-pink-400 border border-black"></div>
+                                    Your Exclusive Benefits
+                                </h3>
+                                <p className="text-black text-2xl font-black tracking-wide">As a SpennyPiggy Supporter, you enjoy:</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[
+                                { title: "Zero Wait Time", desc: "Priority support responses for all your inquiries.", icon: "⚡" },
+                                { title: "Exclusive Badges", desc: "Unique identifiers that showcase your impact.", icon: "🎖️" },
+                                { title: "Creator Access", desc: "Direct early access to content and special drops.", icon: "🔓" },
+                                { title: "Impact Tracking", desc: "Detailed breakdown of how your support helps.", icon: "📊" },
+                                { title: "Private Feed", desc: "A unified feed of all creators you support.", icon: "📱" },
+                                { title: "Custom Flair", desc: "Unique visual styles for your profile and comments.", icon: "✨" },
+                            ].map((benefit, i) => (
+                                <div key={i} className="p-6 rounded-[30px] bg-white/5 border-[3px] border-black/20 hover:bg-white/10 hover:border-black/40 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-300">
+                                    <div className="text-3xl mb-4 drop-shadow-md">{benefit.icon}</div>
+                                    <h4 className="text-black font-black text-sm uppercase tracking-widest mb-2">{benefit.title}</h4>
+                                    <p className="text-black font-bold text-xs leading-relaxed">{benefit.desc}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[
-                            { title: "Zero Wait Time", desc: "Priority support responses for all your inquiries.", icon: "⚡" },
-                            { title: "Exclusive Badges", desc: "Unique identifiers that showcase your impact.", icon: "🎖️" },
-                            { title: "Creator Access", desc: "Direct early access to content and special drops.", icon: "🔓" },
-                            { title: "Impact Tracking", desc: "Detailed breakdown of how your support helps.", icon: "📊" },
-                            { title: "Private Feed", desc: "A unified feed of all creators you support.", icon: "📱" },
-                            { title: "Custom Flair", desc: "Unique visual styles for your profile and comments.", icon: "✨" },
-                        ].map((benefit, i) => (
-                            <div key={i} className="p-6 rounded-[30px] bg-white/5 border-[3px] border-black/20 hover:bg-white/10 hover:border-black/40 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-300">
-                                <div className="text-3xl mb-4 drop-shadow-md">{benefit.icon}</div>
-                                <h4 className="text-black font-black text-sm uppercase tracking-widest mb-2">{benefit.title}</h4>
-                                <p className="text-black font-bold text-xs leading-relaxed">{benefit.desc}</p>
-                            </div>
-                        ))}
-                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
   }

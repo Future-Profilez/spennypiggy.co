@@ -34,6 +34,16 @@
                     @endif
                 </td>
             </tr>
+
+            @if($purchase->gifter_message)
+            <tr>
+                <td style="padding: 15px; background-color: #f9f9f9; border-radius: 10px; border-left: 4px solid #F94F97; text-align: left; font-family: Arial; font-size: 14px; line-height: 20px; color: #333; font-style: italic;">
+                    <strong>Message from Supporter:</strong><br>
+                    "{{ $purchase->gifter_message }}"
+                </td>
+            </tr>
+            <tr style="line-height: 20px; height: 20px;"><td></td></tr>
+            @endif
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">

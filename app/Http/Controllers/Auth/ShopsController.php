@@ -15,7 +15,6 @@ use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
-use App\Models\ShopVarients;
 use App\Models\ShippingProfile;
 use App\Models\ShippingProfileZone;
 use App\Models\User;
@@ -62,7 +61,7 @@ class ShopsController extends Controller
             $query->where('approved', 1)->where('status', 1);
         }
 
-        $shops = $query->orderBy('id', 'desc')->with(['shop_varients', 'shop_shipping_info'])->get();
+        $shops = $query->orderBy('id', 'desc')->with(['shop_shipping_info'])->get();
 
         return response()->json([
             'status' => true,
@@ -130,10 +129,6 @@ class ShopsController extends Controller
                         'required',
                         'string',
                     ],
-                    "varients" => [
-                        'sometimes',
-                        'nullable'
-                    ]
                 ]
             );
         }
@@ -217,17 +212,6 @@ class ShopsController extends Controller
                 }
             }
 
-            if (!empty($request->varients)) {
-                $varients = json_decode($request->varients);
-                foreach ($varients as $value) {
-                    $var = new ShopVarients();
-                    $var->uuid = Uuid::uuid4();
-                    $var->shop_id = $shop->id;
-                    $var->name = $value->name;
-                    $var->price = (!empty($value->value) && $value->value !== "") ? $value->value : null;
-                    $var->save();
-                }
-            }
         }
 
         if ($request->has('shipping_info')) {
@@ -456,7 +440,7 @@ class ShopsController extends Controller
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-            $slug = strtolower(str_replace(" ", "_", $shop->name));
+            $slug = strtolower(str_replace(" ", "-", $shop->name));
             $productPayload = [
                 "name"  => "Total value of item including all fees",
                 "images" => [$shop->perma_link],
@@ -560,8 +544,6 @@ class ShopsController extends Controller
 
         ShopShippingInfo::where('shop_id', $shop->id)->delete();
 
-        ShopVarients::where('shop_id', $shop->id)->delete();
-
         ShopPayment::where('shop_id', $shop->id)->delete();
 
         $shop->delete();
@@ -578,7 +560,7 @@ class ShopsController extends Controller
 
     public function singleShopList($_slug, $uuid, $session_id = null)
     {
-        $shopQuery = Shop::where('uuid', $uuid)->with(['user', 'shop_varients', 'shop_shipping_info']);
+        $shopQuery = Shop::where('uuid', $uuid)->with(['user', 'shop_shipping_info']);
         
         $shop = $shopQuery->first();
 
@@ -588,7 +570,7 @@ class ShopsController extends Controller
         
         // Hide from public if not approved or deactivated, unless owner is viewing
         if (!Auth::check() || Auth::id() !== $shop->user_id) {
-            if ($shop->approved != 1 || $shop->status != 1) {
+            if ($shop->approved != 1 || $shop->status != 1 || $shop->is_suspended == 1) {
                 abort(404);
             }
         }
@@ -751,7 +733,7 @@ class ShopsController extends Controller
         ]);
     }
 
-    public function buyShopItem(Request $request, $shop_id, $varient_id)
+    public function buyShopItem(Request $request, $shop_id, $legacy = null)
     {
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
@@ -779,6 +761,13 @@ class ShopsController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Shop item not found.'
+                ]);
+            }
+
+            if ($shop->is_suspended) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This item is currently suspended and cannot accept payments.'
                 ]);
             }
 
@@ -890,17 +879,6 @@ class ShopsController extends Controller
                 }
             }
 
-            if ($varient_id != "no_varient") {
-                $var = ShopVarients::where('id', $varient_id)->where('shop_id', $shop->id)->first();
-                if (!$var) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Selected variant not found.'
-                    ]);
-                }
-                $amount = $var->price !== null ? round($var->price, 2, PHP_ROUND_HALF_UP) : $amount;
-            }
-            
             $amount = $amount * $requestedQuantity;
 
             // Add Shipping Price if physical item
@@ -1005,7 +983,6 @@ class ShopsController extends Controller
                 'currency' => $chargeCurrency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
-                'varient_id' => $varient_id != "no_varient" ? $varient_id : null,
                 'name' => request()->query('from') ?? null,
                 'email' => request()->query('email'),
                 'message' => $message ?? null,
@@ -1058,7 +1035,6 @@ class ShopsController extends Controller
                         'shop_item_id' => $shop->id,
                         'quantity' => $shopPaymentDetail->quantity,
                         'anonymous' => $shopPaymentDetail->anonymous,
-                        'varient_id' => $shopPaymentDetail->varient_id,
                         'creator_net_amount' => (string) $creatorTransferAmountMinor,
                         'total_charge_amount' => (string)$unitAmount,
                     ]),
@@ -1353,6 +1329,7 @@ class ShopsController extends Controller
             'tracking_id' => 'nullable|string',
             'courier_name' => 'nullable|string',
             'expected_delivery_date' => 'nullable|date',
+            'creator_note' => 'nullable|string',
         ]);
 
         $shopPayment = ShopPayment::where('uuid', $uuid)->with('shop')->firstOrFail();
@@ -1414,6 +1391,18 @@ class ShopsController extends Controller
             'courier_name' => $request->courier_name,
             'expected_delivery_date' => $request->expected_delivery_date,
         ];
+
+        if ($request->has('creator_note')) {
+            $metadata = $deliverable->metadata;
+            if (is_string($metadata)) {
+                $metadata = json_decode($metadata, true);
+            }
+            if (!is_array($metadata)) {
+                $metadata = [];
+            }
+            $metadata['creator_note'] = $request->creator_note;
+            $updateData['metadata'] = $metadata;
+        }
 
         if ($request->status === 'shipped' && !$deliverable->shipped_at) {
             $updateData['shipped_at'] = now();
@@ -1618,7 +1607,7 @@ class ShopsController extends Controller
         $type = $request->query('type', 'sales');
 
         if ($type === 'purchases') {
-            $orders = ShopPayment::with('shop.user')
+            $orders = ShopPayment::with(['shop.user', 'financialTransaction'])
                 ->where('user_id', $user->id)
                 ->whereIn('payment_status', ['paid', 'refunded'])
                 ->orderBy('id', 'desc')
@@ -1644,12 +1633,14 @@ class ShopsController extends Controller
 
                 return [
                     'id' => $order->id,
-                    'uuid' => $order->uuid,
-                    'amount' => $order->amount,
-                    'tax_amount' => $order->tax_amount ?? 0,
-                    'vat_tax_amount' => $order->vat_tax_amount ?? 0,
-                    'shipping_amount' => $order->shipping_amount ?? 0,
-                    'currency' => $order->currency,
+                'uuid' => $order->uuid,
+                'amount' => $order->amount,
+                'gross_amount' => (float) ($order->financialTransaction->gross_amount ?? $order->total_paid ?? ($order->amount + ($order->tax_amount ?? 0) + ($order->vat_tax_amount ?? 0) + ($order->shipping_amount ?? 0))),
+                'net_amount' => (float) ($order->financialTransaction->net_amount ?? $order->amount),
+                'tax_amount' => $order->tax_amount ?? 0,
+                'vat_tax_amount' => $order->vat_tax_amount ?? 0,
+                'shipping_amount' => $order->shipping_amount ?? 0,
+                'currency' => $order->currency,
                     'created_at' => $order->created_at,
                     'name' => $order->shop->user->name ?? 'Unknown',
                     'username' => $order->shop->user->username ?? '',
@@ -1669,6 +1660,7 @@ class ShopsController extends Controller
                     'ask_question' => $order->ask_question,
                     'answer' => $order->answer,
                     'message' => $order->message,
+                    'metadata' => $deliverable->metadata ?? null,
                 ];
             });
 
@@ -1684,7 +1676,7 @@ class ShopsController extends Controller
         }
 
         // Default to sales
-        $orders = ShopPayment::with('shop')
+        $orders = ShopPayment::with(['shop', 'financialTransaction'])
             ->whereHas('shop', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
@@ -1715,6 +1707,8 @@ class ShopsController extends Controller
                 'id' => $order->id,
                 'uuid' => $order->uuid,
                 'amount' => $order->amount,
+                'gross_amount' => (float) ($order->financialTransaction->gross_amount ?? $order->total_paid ?? ($order->amount + ($order->tax_amount ?? 0) + ($order->vat_tax_amount ?? 0) + ($order->shipping_amount ?? 0))),
+                'net_amount' => (float) ($order->financialTransaction->net_amount ?? $order->amount),
                 'tax_amount' => $order->tax_amount ?? 0,
                 'vat_tax_amount' => $order->vat_tax_amount ?? 0,
                 'shipping_amount' => $order->shipping_amount ?? 0,
@@ -1738,6 +1732,7 @@ class ShopsController extends Controller
                 'ask_question' => $order->ask_question,
                 'answer' => $order->answer,
                 'message' => $order->message,
+                'metadata' => $deliverable->metadata ?? null,
             ];
         });
 

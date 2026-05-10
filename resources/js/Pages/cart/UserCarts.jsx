@@ -566,8 +566,9 @@ export default function UserCarts(props) {
         });
         if (!card_capabilities) {
             toast.error("This creator cannot accept payments at the moment.");
-            if (debugEnabled)
-                window.alert("DEBUG: creator card_capabilities missing");
+            if (debugEnabled) {
+                console.warn("DEBUG: creator card_capabilities missing");
+            }
             return;
         }
         if (!auth?.user) {
@@ -598,10 +599,11 @@ export default function UserCarts(props) {
         if (!captchaToken && !skipCaptcha) {
             toast.error("Please complete the CAPTCHA verification.");
             pushDebug("blocked_missing_captcha", { turnstileSiteKey });
-            if (debugEnabled)
-                window.alert(
+            if (debugEnabled) {
+                console.warn(
                     "DEBUG: captchaToken is empty. Please complete captcha.",
                 );
+            }
             return;
         }
         setChecking(true);

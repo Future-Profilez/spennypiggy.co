@@ -21,8 +21,13 @@ class Kernel extends ConsoleKernel
             try {
                 \Illuminate\Support\Facades\Log::info('Scheduler heartbeat: executing at ' . now()->toDateTimeString() . ' using driver: ' . config('cache.default'));
                 
-                // Write to default cache - DISABLED for production stability
-                // \Illuminate\Support\Facades\Cache::put('scheduler_last_run', now()->toDateTimeString(), 600);
+                // Write to default cache for diagnostics
+                \Illuminate\Support\Facades\Cache::put('scheduler_heartbeat', time(), 600);
+                
+                // Dispatch a closure to the queue to verify the queue worker is running
+                dispatch(function () {
+                    \Illuminate\Support\Facades\Cache::put('queue_worker_heartbeat', time(), 600);
+                });
                 
                 // Explicitly write to dynamodb store if available - DISABLED
                 if (config('cache.stores.dynamodb')) {
@@ -35,22 +40,25 @@ class Kernel extends ConsoleKernel
             }
         })->everyMinute();
 
+        $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
+
         // Sync subscription status from Stripe every 15 minutes
         $schedule->command('subscription:sync')
                  ->everyFifteenMinutes()
                  ->withoutOverlapping();
 
-        // Sync all subscriptions status from Stripe every 15 minutes
-        $schedule->command('subscription:sync --all')
-                 ->everyFifteenMinutes()
-                 ->withoutOverlapping();
+        // Sync all subscriptions only on dev (too heavy for production scheduler)
+        if ($appUrl && str_contains($appUrl, 'dev.spennypiggy.co')) {
+            $schedule->command('subscription:sync --all')
+                     ->everyFifteenMinutes()
+                     ->withoutOverlapping();
+        }
 
         $schedule->command('finance:sync-transactions')
                  ->everyThirtyMinutes()
                  ->withoutOverlapping();
                  
         //
-        $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
         // $schedule->job(new SendMailSubscriptions)->everyMinute(); // Runs MyJob every hour
         $schedule->command("app:sync-exchange-rate")->hourly()->withoutOverlapping(4);
 
@@ -121,6 +129,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('payout:run-weekly')
                  ->weeklyOn(5, '10:00')
                  ->withoutOverlapping();
+
+        // Platform Diagnostics — runs daily, emails alert on failure/warning
+        $schedule->command('diagnostics:run')
+                 ->daily()
+                 ->withoutOverlapping(10)
+                 ->runInBackground();
     }
 
     /**

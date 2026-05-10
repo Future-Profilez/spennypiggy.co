@@ -143,7 +143,11 @@ class CreatorSubscriptionController extends Controller
      */
     public function getCreatorsNeedingWarnings(): JsonResponse
     {
-        // TODO: Add admin middleware
+        // Require admin access. Since 'role' 1 is creator, we must ensure only actual admins can access.
+        // Assuming admin might be role 2, or this should be moved to admin portal.
+        if (!auth()->user() || (string) auth()->user()->role === '1') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
         
         try {
             $creators = $this->subscriptionService->getCreatorsNeedingSubscriptionWarnings();

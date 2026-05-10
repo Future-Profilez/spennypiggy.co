@@ -18,8 +18,7 @@ export default function CreatorCard({auth, item}) {
                     role={item.role}
                     hidename={true}
                     profile_status_lock={item.profile_status_lock == 2 ? true : false}
-                    // name={item.name} src={item.avatar_url}
-                    // subhead={`@${item.username || "anonymous"}`} 
+                    src={item.avatar_url}
                     username={item.username || ""}
                     nolink={true}
                     imgclass="!border-[2px] !border-[black] rounded-[15px]"

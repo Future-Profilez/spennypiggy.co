@@ -10,7 +10,7 @@ import { trackSearchClick } from "@/includes/Analytics";
 import Bill from '../../bills/Bill';
 import Membership from '../../membership/Membership';
 import ProfileProduct from '../../shop/ProfileProduct';
-import ProfileTask from '../../Tasks/Profile/ProfileTask';
+import TaskItem from '@/Components/TaskItem';
 
 export default function ResultsGrid({auth, global_currency, results, mode, activeFilters, removeFilter }) {
     const renderedItems = useMemo(() => {
@@ -45,8 +45,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, activ
                     card = <ProfileProduct item={item} />;
                     break;
                 case 'task':
-                    // ProfileTask usually returns an <li>, but we can wrap it or just render it inside the grid
-                    card = <div className="h-full [&>li]:h-full [&>li]:mb-0"><ProfileTask task={item} IsloggedIn={false} profileUser={item.user} /></div>;
+                    card = <TaskItem task={item} IsloggedIn={false} profileUser={item.user} />;
                     break;
                 default:
                     card = <Wishlistbox
@@ -64,7 +63,10 @@ export default function ResultsGrid({auth, global_currency, results, mode, activ
             }
 
             items.push(
-                <div key={item.id} className="h-full">
+                <div
+                    key={item.id}
+                    className={`h-full ${mode === 'task' ? 'col-span-full' : ''}`}
+                >
                     {card}
                 </div>
             );

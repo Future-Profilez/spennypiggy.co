@@ -263,6 +263,8 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                             {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(data.price)}
                                                         </span>
                                                     </div>
+                                                    <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
+                                                    <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
                                                 </div>
                                             )}
                                             <InputError message={errors.price} className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block" />

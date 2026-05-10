@@ -10,7 +10,8 @@ class EnsureUserIsAdmin
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
-        if (!$user || (string) $user->role !== '1') {
+        // role 2 is Admin, role 1 is Creator, role 0 is Gifter
+        if (!$user || (string) $user->role !== '2') {
             abort(403);
         }
 

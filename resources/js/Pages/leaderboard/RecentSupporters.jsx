@@ -11,6 +11,22 @@ export default function RecentSupporters() {
   const [ loading, setLoading] = useState(false);
   const [ error, setError] = useState(null);
   const [ data, setData] = useState([]);
+  const formatRelativeTime = (dateLike) => {
+    if (!dateLike) return "Just now";
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) return "Just now";
+
+    const diffMs = Date.now() - date.getTime();
+    const minutes = Math.floor(diffMs / (1000 * 60));
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
 
   const fetchSupport = (period) => {
     setLoading(true);
@@ -53,7 +69,7 @@ export default function RecentSupporters() {
       </div>
       <div className="rank-stats ps-2">
         <p className="text-sm text-gray-500">
-          Just now
+          {formatRelativeTime(supporter.created_at)}
         </p>
       </div>
     </div>

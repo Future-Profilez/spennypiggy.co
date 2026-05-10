@@ -55,6 +55,7 @@ class LeaderBoardController extends Controller
 
         $perPage = 50;
         $page = request()->get('page', 1);
+        $totalUsers = max($users->count(), 1);
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
             $users->forPage($page, $perPage),
             $users->count(),
@@ -63,8 +64,9 @@ class LeaderBoardController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
         $data = [];
-        $rank = 1;
+        $rank = (($page - 1) * $perPage) + 1;
         foreach ($paginator as $query) {
+            $topPercent = round(($rank / $totalUsers) * 100, 2);
             $data[] = [
                 'id' => $query->id,
                 'rank' => $rank,
@@ -73,9 +75,8 @@ class LeaderBoardController extends Controller
                 'profile_status_lock' => $query->profile_status_lock,
                 'role' => $query->role,
                 'avatar' => $query->avatar_url,
-                'avatar' => $query->avatar_url,
                 'coverimg' =>  $query->cover_url,
-                'top' => $rank / 100,
+                'top' => $topPercent,
                 'amount' => 0, // Privacy: Hide amount from public leaderboard
                 'currency' => $query->currency ?? 'GBP',
                 'supporters' => $query->total_supporters ?? 0,
@@ -122,7 +123,19 @@ class LeaderBoardController extends Controller
 
         $users = User::where('stripe_details_submitted', 1)
             ->where('suspended_account', 0)
-            ->withCount(['followers as followers_count', 'following as following_count'])
+            ->withCount([
+                'followers as total_supporters' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
+                    if ($type == 'monthly') {
+                        $query->whereYear('follows.created_at', '=', $currentYear)
+                            ->whereMonth('follows.created_at', $currentMonth);
+                    } elseif ($type == 'weekly') {
+                        $query->whereBetween('follows.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
+                    } elseif ($type == 'daily') {
+                        $query->whereDate('follows.created_at', $currentDate);
+                    }
+                },
+                'following as following_count'
+            ])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
                     $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('stripe_payment_details.payment_status', 'paid');
@@ -197,7 +210,7 @@ class LeaderBoardController extends Controller
                 },
             ])
             ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
-            ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'default_currency']);
+            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'default_currency']);
 
         $users->map(function ($user) {
             // Calculate monetary metrics (for backward compatibility)
@@ -229,10 +242,10 @@ class LeaderBoardController extends Controller
             $user->currency = strtoupper($user->default_currency ?? 'GBP');
 
             // Calculate social engagement metrics
-            $user->total_supporters = $user->followers_count;
+            $user->total_supporters = (int) ($user->total_supporters ?? 0);
 
             // Calculate engagement score based on followers and content
-            $engagementScore = $user->followers_count * 2; // 2 points per follower
+            $engagementScore = $user->total_supporters * 2; // 2 points per supporter
 
             // Add bonus for verified creators
             if ($user->profile_status_lock == 2) {
@@ -303,7 +316,7 @@ class LeaderBoardController extends Controller
                 ])
                 ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips'))
                 ->take(3)
-                ->get();
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role']);
 
             $data = [];
             $rank = 1;
@@ -314,6 +327,8 @@ class LeaderBoardController extends Controller
                     'username' => $query->username ?? '',
                     'avatar' => $query->avatar_url,
                     'coverimg' =>  $query->cover_url,
+                    'profile_status_lock' => $query->profile_status_lock,
+                    'role' => $query->role,
                     'top' => $rank / 100,
                 ];
                 $rank++;
@@ -447,6 +462,7 @@ class LeaderBoardController extends Controller
                         'profile_status_lock' => $user->profile_status_lock ?? 1,
                         'amount' => $item->amount,
                         'currency' => $item->payment->currency,
+                        'created_at' => $item->created_at,
                     ];
                 }
             }
@@ -469,6 +485,7 @@ class LeaderBoardController extends Controller
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
                     'amount' => $sub->amount,
                     'currency' => $sub->currency,
+                    'created_at' => $sub->created_at,
                 ];
             }
 
@@ -490,6 +507,7 @@ class LeaderBoardController extends Controller
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
                     'amount' => $tip->amount,
                     'currency' => $tip->currency,
+                    'created_at' => $tip->created_at,
                 ];
             }
 
@@ -511,6 +529,7 @@ class LeaderBoardController extends Controller
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
                     'amount' => $member->amount,
                     'currency' => $member->currency,
+                    'created_at' => $member->created_at,
                 ];
             }
 
@@ -532,11 +551,14 @@ class LeaderBoardController extends Controller
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
                     'amount' => $bill->amount,
                     'currency' => $bill->currency,
+                    'created_at' => $bill->created_at,
                 ];
             }
 
-            // Sort by amount (optional)
-            usort($gifters, fn($a, $b) => $b['amount'] <=> $a['amount']);
+            // Sort by recency so "Recent Supporters" is actually recent.
+            usort($gifters, function ($a, $b) {
+                return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+            });
 
             $gifters = collect($gifters)->unique('username')->values()->take(5);
 
@@ -712,10 +734,15 @@ class LeaderBoardController extends Controller
     {
         try {
             $gifters = [];
+            $currencyRates = Currency::whereNotNull('conversion_rate')
+                ->pluck('conversion_rate', 'ISO')
+                ->mapWithKeys(fn($rate, $iso) => [strtoupper($iso) => (float) $rate])
+                ->toArray();
 
             // Helper to accumulate amounts by username
-            $addGifter = function (&$gifters, $user, $amount, $currency) {
+            $addGifter = function (&$gifters, $user, $amount, $currency) use ($currencyRates) {
                 $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+                $normalizedAmount = $this->normalizeToGbp((float) $amount, $currency, $currencyRates);
 
                 if (!isset($gifters[$username])) {
                     $gifters[$username] = [
@@ -727,11 +754,11 @@ class LeaderBoardController extends Controller
                         'role' => $user->role ?? 'Anonymous',
                         'profile_status_lock' => $user->profile_status_lock ?? 1,
                         'amount' => 0,
-                        'currency' => $currency,
+                        'currency' => 'GBP',
                     ];
                 }
 
-                $gifters[$username]['amount'] += $amount;
+                $gifters[$username]['amount'] += $normalizedAmount;
             };
 
             // Wishlist Payments
@@ -915,10 +942,12 @@ class LeaderBoardController extends Controller
         );
 
         $data = [];
-        $rank = 1;
+        $totalUsers = max($users->count(), 1);
+        $rank = (($page - 1) * $perPage) + 1;
         foreach ($paginator as $query) {
             // Calculate period-specific engagement metrics
             $periodFollowers = $this->calculatePeriodFollowers($query, $type);
+            $topPercent = round(($rank / $totalUsers) * 100, 2);
 
             $data[] = [
                 'id' => $query->id,
@@ -929,7 +958,7 @@ class LeaderBoardController extends Controller
                 'role' => $query->role,
                 'avatar' => $query->avatar_url,
                 'coverimg' =>  $query->cover_url,
-                'top' => $rank / 100,
+                'top' => $topPercent,
                 'amount' => $query->total_amount,
                 'currency' => $query->currency ?? 'GBP',
                 'supporters' => $periodFollowers > 0 ? $periodFollowers : $query->total_supporters ?? 0,
@@ -1962,12 +1991,17 @@ class LeaderBoardController extends Controller
             // Use the past 3 months for recent supporter activity
             $threeMonthsAgo = Carbon::now()->subMonths(3);
             $currentDate = Carbon::now();
+            $currencyRates = Currency::whereNotNull('conversion_rate')
+                ->pluck('conversion_rate', 'ISO')
+                ->mapWithKeys(fn($rate, $iso) => [strtoupper($iso) => (float) $rate])
+                ->toArray();
 
             $supporters = [];
 
             // Helper function to accumulate supporter data
-            $addSupporterData = function (&$supporters, $user, $amount, $currency, $type, $createdAt) {
+            $addSupporterData = function (&$supporters, $user, $amount, $currency, $type, $createdAt) use ($currencyRates) {
                 $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+                $normalizedAmount = $this->normalizeToGbp((float) $amount, $currency, $currencyRates);
 
                 if (!isset($supporters[$username])) {
                     $supporters[$username] = [
@@ -1982,13 +2016,13 @@ class LeaderBoardController extends Controller
                         'total_gifts' => 0,
                         'creators_supported' => [],
                         'support_types' => [],
-                        'currency' => $currency,
+                        'currency' => 'GBP',
                         'latest_support_date' => $createdAt,
                         'vip_score' => 0,
                     ];
                 }
 
-                $supporters[$username]['total_amount'] += $amount;
+                $supporters[$username]['total_amount'] += $normalizedAmount;
                 $supporters[$username]['total_gifts']++;
 
                 // Track unique support types
@@ -2169,6 +2203,17 @@ class LeaderBoardController extends Controller
         if ($score >= 50) return ['level' => 'Gold', 'icon' => '🥇', 'color' => '#f59e0b'];
         if ($score >= 30) return ['level' => 'Silver', 'icon' => '🥈', 'color' => '#6b7280'];
         return ['level' => 'Bronze', 'icon' => '🥉', 'color' => '#92400e'];
+    }
+
+    private function normalizeToGbp(float $amount, ?string $currency, array $currencyRates): float
+    {
+        $iso = strtoupper($currency ?: 'GBP');
+        $rate = (float) ($currencyRates[$iso] ?? 0);
+        if ($rate <= 0) {
+            return $amount;
+        }
+
+        return round($amount / $rate, 2, PHP_ROUND_HALF_UP);
     }
 
     /**
