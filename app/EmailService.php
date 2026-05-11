@@ -91,10 +91,12 @@ class EmailService
     {
         try {
             // Force reload shop and user with trashed items to ensure we find the creator
-            $data->load(['shop' => function($q) { $q->withTrashed(); }, 'shop.user']);
+            $data->load(['shop' => function ($q) {
+                $q->withTrashed();
+            }, 'shop.user']);
 
             $creator = $data->shop?->user;
-            
+
             // Manual fallback if relationship loading failed
             if (!$creator && $data->shop_id) {
                 $shop = \App\Models\Shop::withTrashed()->find($data->shop_id);
@@ -120,9 +122,11 @@ class EmailService
                 return;
             }
 
-            $amountWithSymbol = $symbol . number_format($amountUserPay, 2);
+            $cleanAmount = (float) preg_replace('/[^\d.]/', '', $amountUserPay);
+
+            $amountWithSymbol = $symbol . number_format($cleanAmount, 2);
             Mail::to($toEmail)->send(new ShopBuyedMail($data, $anon, $amountWithSymbol));
-            
+
             Log::info('EmailService::shopBuyed - Creator email sent successfully', ['email' => $toEmail]);
         } catch (\Throwable $e) {
             Log::error('EmailService::shopBuyed - Failed to send creator email', [
@@ -141,10 +145,12 @@ class EmailService
         ]);
 
         try {
-            $data->load(['user', 'shop' => function($q) { $q->withTrashed(); }, 'shop.user']);
+            $data->load(['user', 'shop' => function ($q) {
+                $q->withTrashed();
+            }, 'shop.user']);
 
             $toEmail = $data->user?->email ?? $data->email;
-            
+
             if (!$toEmail) {
                 Log::warning('EmailService::shopBuyedUser skipped: missing buyer email', [
                     'shop_payment_id' => $data->id ?? null,
@@ -695,7 +701,7 @@ class EmailService
         try {
             $emails = ['naveen@internetbusinesssolutionsindia.com', 'support@spennypiggy.co'];
             Mail::to($emails)->send(new FeatureSuggestionMail($data));
-            
+
             Log::info('EmailService::featureSuggestion - Email sent successfully', [
                 'emails' => $emails
             ]);
