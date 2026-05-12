@@ -20,6 +20,7 @@ export default function LegalLayout({ children, activePage }) {
 
     const navItems = [
         { name: 'Terms of Service', href: '/terms-and-conditions', component: 'TermsOfService', icon: FileText },
+        { name: 'Copyright & IP Policy', href: '/copyright-policy', component: 'CopyrightPolicy', icon: FileText },
         { name: 'Creator Agreement', href: '/creator-agreement', component: 'CreatorAgreement', icon: ShieldCheck },
         { name: 'Supporter Terms', href: '/supporter-terms', component: 'SupporterTerms', icon: Users },
         { name: 'Creator-Supporter Contract', href: '/creator-supporter-contract', component: 'CreatorSupporterContract', icon: Handshake },
@@ -127,5 +128,4 @@ export default function LegalLayout({ children, activePage }) {
         </div>
     );
 }
-
 

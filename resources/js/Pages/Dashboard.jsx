@@ -101,6 +101,16 @@ export default function Dashboard(props) {
         return stripe_requirements?.requirements?.some(r => r.type === 'card_payments_pending') || false;
     }, [stripe_requirements]);
 
+    const shouldShowFounderBanner = useMemo(() => {
+        if (!IsloggedIn || auth?.user?.role !== 1) return false;
+        const createdAt = auth?.user?.created_at || user?.created_at;
+        if (!createdAt) return false;
+        const createdTs = new Date(createdAt).getTime();
+        if (Number.isNaN(createdTs)) return false;
+        const diffDays = (Date.now() - createdTs) / (1000 * 60 * 60 * 24);
+        return diffDays <= 40;
+    }, [IsloggedIn, auth?.user?.role, auth?.user?.created_at, user?.created_at]);
+
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
@@ -490,7 +500,11 @@ export default function Dashboard(props) {
 
                         <div className="containerbox relative z-10">
                             <VersionUpdate />
-                            <OfferAnnouncement variant="default" />
+                            {shouldShowFounderBanner ? (
+                                <OfferAnnouncement variant="default" />
+                            ) : (
+                                ""
+                            )}
                             <div className="wishbanner relative ">
                                 <div className="relative border-b-4 border-black rounded-[30px] overflow-hidden">
                                     {user?.is_founder ? (

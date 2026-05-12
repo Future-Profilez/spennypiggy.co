@@ -42,7 +42,7 @@ class FinancialService
 
         $incomeTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->with('source')
             ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status', 'source_type', 'source_id']);
@@ -205,6 +205,36 @@ class FinancialService
         $pendingAmountMajor = $pendingAmountMinor / 100;
         $pendingDisplay = $convert('GBP', $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor;
 
+        $payoutPreview = null;
+        if ($payoutInfo) {
+            $netEarningsMajor = ((int) ($payoutInfo['net_earnings'] ?? 0)) / 100;
+            $reserveHeldMajor = ((int) ($payoutInfo['reserve_amount'] ?? 0)) / 100;
+            $reserveReleaseMajor = ((int) ($payoutInfo['reserve_release_amount'] ?? 0)) / 100;
+            $refundDisputeMajor = ((int) ($payoutInfo['refund_dispute_amount'] ?? 0)) / 100;
+            $reviewHoldMajor = ((int) ($payoutInfo['review_hold_amount'] ?? 0)) / 100;
+            $negativeBeforeMajor = ((int) ($payoutInfo['negative_balance_before'] ?? 0)) / 100;
+            $negativeAfterMajor = ((int) ($payoutInfo['negative_balance_after'] ?? 0)) / 100;
+
+            $payoutPreview = [
+                'run_date' => $payoutData['run_date'] ?? null,
+                'state' => $payoutInfo['state'] ?? null,
+                'cutoff_date' => $payoutInfo['cutoff_date'] ?? null,
+                'payment_count' => (int) ($payoutInfo['payment_count'] ?? 0),
+                'is_below_threshold' => (bool) ($payoutInfo['is_below_threshold'] ?? false),
+
+                'net_earnings' => $convert('GBP', $netEarningsMajor, $displayCurrency) ?? $netEarningsMajor,
+                'reserve_held' => $convert('GBP', $reserveHeldMajor, $displayCurrency) ?? $reserveHeldMajor,
+                'reserve_released' => $convert('GBP', $reserveReleaseMajor, $displayCurrency) ?? $reserveReleaseMajor,
+                'refund_disputes' => $convert('GBP', $refundDisputeMajor, $displayCurrency) ?? $refundDisputeMajor,
+                'review_holds' => $convert('GBP', $reviewHoldMajor, $displayCurrency) ?? $reviewHoldMajor,
+                'pending' => $pendingDisplay,
+                'negative_balance_before' => $convert('GBP', $negativeBeforeMajor, $displayCurrency) ?? $negativeBeforeMajor,
+                'negative_balance_after' => $convert('GBP', $negativeAfterMajor, $displayCurrency) ?? $negativeAfterMajor,
+
+                'net_payout' => $payoutableDisplay,
+            ];
+        }
+
         // Calculate if there's a difference between current tax year earnings and total payoutable balance
         // The payoutable balance includes EVERYTHING. If it's higher than the current period's payoutable net (Net - Reserves), 
         // it means there's carry-over from previous periods.
@@ -229,6 +259,7 @@ class FinancialService
             'pending_balance' => $pendingDisplay,
             'carry_over_amount' => $carryOverDisplay,
             'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0,
+            'payout_preview' => $payoutPreview,
 
             'gross_income_gbp' => $grossGbp,
             'fees_gbp' => $feesGbp,

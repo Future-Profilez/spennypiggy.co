@@ -19,7 +19,6 @@ class EnforceManualPayouts extends Command
 
         $users = User::query()
             ->whereNotNull('account_id')
-            ->where('stripe_details_submitted', 1)
             ->limit($limit)
             ->get(['id', 'uuid', 'account_id', 'email', 'username']);
 

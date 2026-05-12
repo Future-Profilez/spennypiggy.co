@@ -621,9 +621,10 @@ class PayoutService
 
         // Add pending reserves (not yet part of an executed payout run)
         // Use FinancialTransaction as source of truth for what the creator sees in the dashboard.
+        // EXCLUDE: review_hold, disputed, refunded as per user request.
         $pendingFts = \App\Models\FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold'])
+            ->where('status', 'completed')
             ->where('reserve_status', '!=', 'released')
             ->where('reserve_amount', '>', 0)
             ->with(['supporter:id,name,username'])

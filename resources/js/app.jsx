@@ -37,6 +37,7 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
         sendDefaultPii: false,
         ignoreErrors: [
             "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+            "NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD",
             "MagicBellError: Load failed",
             "AxiosError: Network Error",
             "AbortError: Abort due to cancellation of share.",
@@ -55,7 +56,7 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
                 type === "AbortError" ||
                 type === "AxiosError" ||
                 (type === "TypeError" && /load failed|cdnUrl/i.test(value)) ||
-                /permission denied|request is not allowed by the user agent|load failed|network error|response not ok:\s*403|insertBefore.*not a child of this node|abort due to cancellation of share|enableDidUserTypeOnKeyboardLogging|Java object is gone/i.test(value)
+                /permission denied|request is not allowed by the user agent|play\(\) failed because the user didn't interact|load failed|network error|response not ok:\s*403|insertBefore.*not a child of this node|abort due to cancellation of share|enableDidUserTypeOnKeyboardLogging|Java object is gone/i.test(value)
             ) {
                 return null;
             }

@@ -778,7 +778,7 @@ Route::middleware('auth')->group(function () {
 
         // Creator Financial Tools
         Route::prefix('financial')->name('financial.')->group(function () {
-            Route::get('/dashboard', [\App\Http\Controllers\CreatorFinancialController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard/{tab?}', [\App\Http\Controllers\CreatorFinancialController::class, 'index'])->name('dashboard');
             Route::post('/refresh', [\App\Http\Controllers\CreatorFinancialController::class, 'refresh'])->name('refresh');
             Route::get('/history', [\App\Http\Controllers\CreatorFinancialController::class, 'history'])->name('history');
             Route::post('/profile', [\App\Http\Controllers\CreatorFinancialController::class, 'updateProfile'])->name('profile.update');

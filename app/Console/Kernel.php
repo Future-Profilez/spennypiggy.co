@@ -57,6 +57,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('finance:sync-transactions')
                  ->everyThirtyMinutes()
                  ->withoutOverlapping();
+
+        // Extra sync right before Thursday midnight cutoff (5 mins before Friday)
+        $schedule->command('finance:sync-transactions')
+                 ->weeklyOn(4, '23:55')
+                 ->withoutOverlapping();
                  
         //
         // $schedule->job(new SendMailSubscriptions)->everyMinute(); // Runs MyJob every hour

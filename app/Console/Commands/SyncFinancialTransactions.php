@@ -12,6 +12,7 @@ use App\Models\ShopPayment;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
 use App\Models\UserCart;
+use App\Models\Payment;
 
 class SyncFinancialTransactions extends Command
 {
@@ -289,6 +290,79 @@ class SyncFinancialTransactions extends Command
         return $data;
     }
 
+    private function ensureRiskLedgerPayment(
+        User $creator,
+        float $netAmountMajor,
+        string $currency,
+        ?string $sessionId,
+        ?string $paymentIntentId,
+        string $financialStatus,
+        \Carbon\Carbon $createdAt,
+        float $reserveAmountMajor = 0.0
+    ): void {
+        if ((!$sessionId && !$paymentIntentId) || $netAmountMajor <= 0) {
+            return;
+        }
+
+        $status = match ($financialStatus) {
+            'completed' => 'succeeded',
+            'review_hold' => 'review_hold',
+            'disputed' => 'disputed',
+            'refunded' => 'refunded',
+            default => null,
+        };
+        if (!$status) {
+            return;
+        }
+
+        $amountMinor = (int) round($netAmountMajor * 100);
+        $reserveMinor = (int) round(max(0, $reserveAmountMajor) * 100);
+
+        $query = Payment::query();
+        if ($sessionId && $paymentIntentId) {
+            $query->where(function ($q) use ($sessionId, $paymentIntentId) {
+                $q->where('stripe_session_id', $sessionId)
+                    ->orWhere('stripe_payment_intent_id', $paymentIntentId);
+            });
+        } elseif ($sessionId) {
+            $query->where('stripe_session_id', $sessionId);
+        } else {
+            $query->where('stripe_payment_intent_id', $paymentIntentId);
+        }
+
+        $payment = $query->first();
+        if (!$payment) {
+            $payment = new Payment();
+        }
+
+        $currentStatus = (string) ($payment->status ?? '');
+        $finalStatus = in_array($currentStatus, ['review_hold', 'disputed', 'refunded'], true) ? $currentStatus : $status;
+
+        $payment->creator_id = (string) $creator->uuid;
+        $payment->amount = $amountMinor;
+        $payment->reserve_amount_minor = $reserveMinor;
+        $payment->currency = strtoupper($currency ?: 'GBP');
+        if ($sessionId) {
+            $payment->stripe_session_id = $sessionId;
+        }
+        if ($paymentIntentId) {
+            $payment->stripe_payment_intent_id = $paymentIntentId;
+        }
+        $payment->status = $finalStatus;
+
+        if (!$payment->exists) {
+            $payment->created_at = $createdAt;
+            $payment->updated_at = $createdAt;
+            $payment->save();
+        } else {
+            if ($payment->created_at && $payment->created_at->gt($createdAt)) {
+                $payment->created_at = $createdAt;
+            }
+            $payment->updated_at = now();
+            $payment->save();
+        }
+    }
+
     /**
      * Determine the reserve amount from creator's net amount.
      * Rule:
@@ -404,6 +478,17 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                $this->ensureRiskLedgerPayment(
+                    $creator,
+                    (float) $creatorAmount,
+                    (string) $currency,
+                    $payment->session_id ? (string) $payment->session_id : null,
+                    $payment->stripe_id ? (string) $payment->stripe_id : null,
+                    (string) $status,
+                    $payment->created_at,
+                    (float) ($reserve['amount'] ?? 0)
+                );
             }
         });
     }
@@ -461,6 +546,19 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $purchase->created_at,
                     ]
                 );
+
+                if ($taskCreator) {
+                    $this->ensureRiskLedgerPayment(
+                        $taskCreator,
+                        (float) $creatorAmount,
+                        (string) $currency,
+                        $purchase->stripe_session_id ? (string) $purchase->stripe_session_id : null,
+                        $purchase->payment_intent_id ? (string) $purchase->payment_intent_id : null,
+                        (string) $status,
+                        $purchase->created_at,
+                        (float) ($reserve['amount'] ?? 0)
+                    );
+                }
             }
         });
     }
@@ -527,6 +625,17 @@ class SyncFinancialTransactions extends Command
                         'description' => 'Bill Payment',
                         'transaction_date' => $payment->created_at,
                     ]
+                );
+
+                $this->ensureRiskLedgerPayment(
+                    $creator,
+                    (float) $creatorAmount,
+                    (string) $currency,
+                    $payment->session_id ? (string) $payment->session_id : null,
+                    $payment->stripe_id ? (string) $payment->stripe_id : null,
+                    (string) $status,
+                    $payment->created_at,
+                    (float) ($reserve['amount'] ?? 0)
                 );
             }
         });
@@ -604,6 +713,19 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $item->created_at,
                     ]
                 );
+
+                if ($creator) {
+                    $this->ensureRiskLedgerPayment(
+                        $creator,
+                        (float) $creatorAmount,
+                        (string) $currency,
+                        $item->payment->session_id ? (string) $item->payment->session_id : null,
+                        $item->payment->stripe_payment_intent_id ? (string) $item->payment->stripe_payment_intent_id : null,
+                        (string) $status,
+                        $item->payment->created_at ?? $item->created_at,
+                        (float) ($reserve['amount'] ?? 0)
+                    );
+                }
             }
         });
     }
@@ -672,6 +794,17 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                $this->ensureRiskLedgerPayment(
+                    $creator,
+                    (float) $creatorAmount,
+                    (string) $currency,
+                    $payment->session_id ? (string) $payment->session_id : null,
+                    null,
+                    (string) $status,
+                    $payment->created_at,
+                    (float) ($reserve['amount'] ?? 0)
+                );
             }
         });
     }
@@ -735,6 +868,19 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                if ($creator) {
+                    $this->ensureRiskLedgerPayment(
+                        $creator,
+                        (float) $creatorAmount,
+                        (string) $currency,
+                        $payment->session_id ? (string) $payment->session_id : null,
+                        null,
+                        (string) $status,
+                        $payment->created_at,
+                        (float) ($reserve['amount'] ?? 0)
+                    );
+                }
             }
         });
     }

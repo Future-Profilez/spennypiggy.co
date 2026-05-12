@@ -125,7 +125,7 @@ export default function Footer(props) {
                                         { name: "Privacy Policy", href: "https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e", external: true },
                                         { name: "Cookies Policy", href: "https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e", external: true },
                                         { name: "Terms & Conditions", route: "terms-and-conditions" },
-                                        { name: "Copyright Policy", route: "copyright-policy" },
+                                        { name: "Copyright & IP Policy", route: "copyright-policy" },
                                         { name: "Creator Agreement", route: "creator-agreement" },
                                         { name: "Supporter Terms", route: "supporter-terms" },
                                         { name: "Contract", route: "creator-supporter-contract" },
@@ -205,4 +205,3 @@ export default function Footer(props) {
         </>
     );
 }
-

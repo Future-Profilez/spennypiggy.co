@@ -8,6 +8,8 @@ import { Info, CheckCircle2, Clock, Zap, FileUp, AlertTriangle } from "lucide-re
 
 export default function Create({ auth, currencySymbol }) {
     const { global_currency } = usePage().props;
+    const task = usePage().props?.task ?? null;
+    const isEdit = Boolean(task);
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth.user.default_currency || 'GBP';
     const [showSummary, setShowSummary] = useState(false);
@@ -39,14 +41,14 @@ export default function Create({ auth, currencySymbol }) {
     ];
 
     const { data, setData, post, processing, errors } = useForm({
-        title: "",
-        description: "",
-        price: "",
+        title: task?.title ?? "",
+        description: task?.description ?? "",
+        price: task?.price ?? "",
         category: "Shoutout / Name Feature",
-        type: "timed",
-        sla_hours: 48,
+        type: task?.type ?? "timed",
+        sla_hours: task?.sla_hours ?? 48,
         deliverable_file: null,
-        deliverable_note: "",
+        deliverable_note: task?.deliverable_note ?? "",
         media_file: null,
     });
 
@@ -57,7 +59,7 @@ export default function Create({ auth, currencySymbol }) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
-        post(route("task.store"));
+        post(isEdit ? route("task.update", task.uuid) : route("task.store"));
     };
 
     const handleDeliverableUpload = (file) => {
@@ -70,7 +72,7 @@ export default function Create({ auth, currencySymbol }) {
 
     return (
         <Guest auth={auth.user} user={auth.user}>
-            <Head title="Create Task" />
+            <Head title={isEdit ? "Edit Task" : "Create Task"} />
             <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-screen font-public-sans">
                 <div className="container"> 
                     <div className="mx-auto max-w-[900px]"> 

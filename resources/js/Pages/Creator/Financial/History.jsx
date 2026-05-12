@@ -54,7 +54,7 @@ export default function History({ auth, transactions }) {
                                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
                                     All income and expenses ledger
                                 </p>
-                                <p className="text-[9px] text-gray-600 mt-1.5 font-black uppercase tracking-[0.15em] bg-gray-100 px-2 py-0.5 rounded-full border-2 border-black inline-block">
+                                <p className="text-[12px] text-gray-600 mt-1.5 font-black uppercase tracking-[0.15em] bg-gray-100 px-2 py-0.5 rounded-full border-2 border-black inline-block">
                                     You keep 100% • Supporters cover all fees
                                 </p>
                             </div>

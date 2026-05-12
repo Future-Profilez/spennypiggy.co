@@ -5,6 +5,7 @@ environments:
     memory: 2048
     queue-memory: 1024
     scheduler: true
+    nodejs: 18
     cli-timeout: 120
     cli-concurrency: 10
     cli-memory: 512
@@ -19,7 +20,7 @@ environments:
       - "composer install"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      # - "npm install --no-audit --no-fund"
+      - "npm install --include=optional --no-audit --no-fund"
       - "php artisan ziggy:generate"
       - "rm -rf public/build" 
       - "rm -rf bootstrap/ssr"
@@ -64,7 +65,7 @@ environments:
       # - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      # - "npm install --no-audit --no-fund"
+      - "npm install --include=optional --no-audit --no-fund"
       - "php artisan ziggy:generate"
       - "rm -rf public/build"
       - "rm -rf bootstrap/ssr"

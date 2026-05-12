@@ -218,7 +218,11 @@ const MagicBellNotification = () => {
   function playSound(url) {
     const audio = new Audio(url);
     audio.loop = false;
-    audio.play();
+    try {
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (e) {
+    }
   }
 
   const handleEnableNotifications = async () => {

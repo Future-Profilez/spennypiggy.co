@@ -586,23 +586,6 @@ export default function Transactions(props) {
                               <span className='text-sm'>Post on twitter</span>
                             </button>
                           )}
-                          {e.category === 'received' && e.uuid && !String(e.uuid).startsWith('exp-') && (
-                            <a 
-                                href={route('financial.evidence-pack', { uuid: e.uuid })} 
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-pink-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 group/evidence"
-                                onMouseEnter={(e) => {
-                                    const icon = e.currentTarget.querySelector('svg');
-                                    if (icon && icon.__animate_start) icon.__animate_start();
-                                }}
-                            >
-                                <FileText 
-                                    size={12} 
-                                />
-                                Evidence Pack
-                            </a>
-                          )}
                           {e.open_link ? (
                             e.open_link.startsWith('http') ? (
                               <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</a>

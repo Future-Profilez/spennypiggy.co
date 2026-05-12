@@ -456,6 +456,23 @@ if (app()->environment('local')) {
         ->name('debug.test-support-image');
 }
 
+// Creator Dispute Pack Public Download (served from admin storage)
+Route::get('/creator/dispute-packs/{disputeId}/{fileName}', function (\Illuminate\Http\Request $request, $disputeId, $fileName) {
+    if (!$request->hasValidSignature()) {
+        abort(\Illuminate\Http\Response::HTTP_FORBIDDEN, 'Invalid or expired link.');
+    }
+    
+    $fileName = basename($fileName);
+    $adminStoragePath = base_path('../admin.spennypiggy.co/storage/app/dispute-packs/');
+    $path = $adminStoragePath . $fileName;
+    
+    if (!\Illuminate\Support\Facades\File::exists($path)) {
+        abort(\Illuminate\Http\Response::HTTP_NOT_FOUND, 'Dispute pack not found.');
+    }
+
+    return response()->download($path, $fileName);
+})->middleware('signed')->name('creator.dispute-pack.download');
+
 // Creator Activity Routes
 Route::middleware('auth')->prefix('creator')->name('creator.')->group(function () {
     Route::get('/activity', [\App\Http\Controllers\CreatorActivityController::class, 'index'])->name('activity');
@@ -475,9 +492,11 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     Route::get('/disputes/{id}', [\App\Http\Controllers\Creator\DisputeController::class, 'show'])->name('disputes.show');
     Route::post('/disputes/{id}/submit', [\App\Http\Controllers\Creator\DisputeController::class, 'submitEvidence'])->name('disputes.submit');
 
+
+
     // Payout/Reserve Routes
     Route::get('/payouts/reserves', [\App\Http\Controllers\Api\CreatorPayoutController::class, 'getReserves'])->name('payouts.reserves');
-    Route::get('/finance', [\App\Http\Controllers\CreatorFinancialController::class, 'index'])->name('finance.index');
+
     Route::get('/finance/review-holds', [\App\Http\Controllers\Creator\ReviewHoldController::class, 'index'])->name('finance.review_holds');
 
     // Security Zone Routes

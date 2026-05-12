@@ -85,6 +85,9 @@ Route::prefix('payments')->group(function () {
 //     Route::get('/risk-status', [\App\Http\Controllers\Api\CreatorRiskController::class, 'getRiskStatus']);
 // });
 
+// Internal Sync Routes
+Route::post('/internal/sync-financials', [\App\Http\Controllers\Api\InternalSyncController::class, 'syncFinancials']);
+
 // Admin Dashboard & Exports
 Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);

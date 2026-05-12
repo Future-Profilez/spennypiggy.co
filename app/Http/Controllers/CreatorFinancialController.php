@@ -25,7 +25,7 @@ class CreatorFinancialController extends Controller
         $this->payoutService = $payoutService;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, $tab = 'overview')
     {
         $user = Auth::user();
         $year = $request->input('year', $this->financialService->getCurrentTaxYear());
@@ -173,11 +173,10 @@ class CreatorFinancialController extends Controller
             })
             ->values();
 
-        // Recent Transactions (Filtered by Tax Year)
-        $income = FinancialTransaction::where('user_id', $user->id)
+        // Recent Transactions (Filtered by Tax Year for overview, All for payouts)
+        $incomeQuery = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
-            ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with(['supporter:id,name,username,email', 'source' => function($morphTo) {
                 $morphTo->morphWith([
                     \App\Models\TaskPurchase::class => ['task'],
@@ -186,9 +185,13 @@ class CreatorFinancialController extends Controller
                 ]);
             }])
             ->orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->take(20)
-            ->get();
+            ->orderBy('id', 'desc');
+            
+        if ($tab !== 'payouts') {
+            $incomeQuery->whereBetween('transaction_date', [$dates['start'], $dates['end']])->take(20);
+        }
+        
+        $income = $incomeQuery->get();
 
         // Collect Shop IDs for shipping info
         $shopIds = $income->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
@@ -277,12 +280,15 @@ class CreatorFinancialController extends Controller
                 return $tx;
             });
 
-        $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
-            ->whereBetween('expense_date', [$dates['start'], $dates['end']])
+        $expensesQuery = \App\Models\CreatorExpense::where('user_id', $user->id)
             ->orderBy('expense_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->take(20)
-            ->get()
+            ->orderBy('id', 'desc');
+            
+        if ($tab !== 'payouts') {
+            $expensesQuery->whereBetween('expense_date', [$dates['start'], $dates['end']])->take(20);
+        }
+            
+        $expenses = $expensesQuery->get()
             ->map(function ($exp) {
                 // Mock FinancialTransaction structure for frontend compatibility
                 $tx = new \stdClass();
@@ -304,12 +310,15 @@ class CreatorFinancialController extends Controller
             });
 
         $recentTransactions = $income->concat($expenses)
-            ->sortBy([
-                ['display_date', 'desc'],
-                ['id', 'desc'],
-            ])
-            ->take(20)
-            ->values();
+            ->sortByDesc(function ($tx) {
+                return [$tx->display_date, $tx->id];
+            });
+            
+        if ($tab !== 'payouts') {
+            $recentTransactions = $recentTransactions->take(20);
+        }
+        
+        $recentTransactions = $recentTransactions->values();
 
         // Top Supporters with Category Breakdown
         $supporterTx = FinancialTransaction::where('user_id', $user->id)
@@ -403,7 +412,7 @@ class CreatorFinancialController extends Controller
                     'currency' => $p->currency,
                     'status' => $p->status,
                     'arrival_date' => $p->arrival_date ? $p->arrival_date->format('d M Y') : null,
-                    'failure_reason' => $p->status === 'failed' ? ($p->failure_message ?: ($p->metadata['error'] ?? 'Declined by Stripe')) : null,
+                    'failure_reason' => in_array($p->status, ['failed', 'skipped']) ? ($p->failure_message ?: ($p->metadata['error'] ?? 'Declined by Stripe')) : null,
                 ];
             });
 
@@ -432,6 +441,7 @@ class CreatorFinancialController extends Controller
         $nextPayoutAt = $cycleStart->copy()->addDays(7)->startOfDay();
 
         return Inertia::render('Creator/Financial/Dashboard', [
+            'active_tab' => $tab,
             'summary' => $summary,
             'tax_estimate' => $estimatedTax,
             'tax_year' => $dates['label'],

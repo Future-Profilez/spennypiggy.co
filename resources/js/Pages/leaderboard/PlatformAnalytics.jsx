@@ -155,16 +155,16 @@ export default function PlatformAnalytics() {
             <p className="text-gray-500 mb-6">Insights into platform performance and growth</p>
 
             {/* Overview Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <StatCard
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+                <StatCard 
                     title="Active Creators"
                     value={data.overview.active_creators?.toLocaleString()}
                     subtitle="Creating content this month"
                     icon={RiUser3Line}
                     color="text-blue-600"
                     trend={data.overview.creators_trend}
-                />
-                <StatCard
+                /> 
+                <StatCard 
                     title="Global Supporters"
                     value={data.overview.total_supporters?.toLocaleString()}
                     subtitle="People supporting creators"
