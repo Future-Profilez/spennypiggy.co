@@ -13,12 +13,17 @@ import DeviceID from "@/includes/DeviceID";
 import TopSupporters from "./TopSupporters";
 import CategoryLeaders from "./CategoryLeaders";
 import VipSupporters from "./VipSupporters";
+import GrowthTrends from "./GrowthTrends";
+import PlatformAnalytics from "./PlatformAnalytics";
 import { trackSearchClick } from "@/includes/Analytics";
+import { Share2Icon, SearchIcon } from "lucide-react";
+import confetti from 'canvas-confetti';
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const formatSupporters = (count) => {
         const safeCount = Number(count) || 0;
         return `👥 ${safeCount} ${safeCount === 1 ? "supporter" : "supporters"}`;
@@ -36,9 +41,69 @@ export default function Board(props) {
         filterPositions(data);
     }, [data]);
 
+    const myRankData = useMemo(() => {
+        if (!auth?.user) return null;
+        const inPositions = positions.find(p => p?.username === auth.user.username);
+        if (inPositions) return inPositions;
+        const inRanks = ranks.find(r => r?.username === auth.user.username);
+        return inRanks || null;
+    }, [positions, ranks, auth]);
+
+    const handleShare = () => {
+        if (!myRankData) return;
+        
+        // Trigger confetti on share
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#F94F97', '#8b5cf6', '#3b82f6', '#eab308']
+        });
+
+        const periodText = period === 'all' ? 'All-Time' : period;
+        const text = `I'm ranked #${myRankData.rank} on SpennyPiggy's ${periodText} Leaderboard! 🚀 Check it out:`;
+        
+        // Link to the user's actual profile page (spennypiggy.co/username)
+        const url = `${window.location.origin}/${auth.user.username}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: 'My SpennyPiggy Rank',
+                text: text,
+                url: url
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(`${text}\n${url}`);
+            alert("Share text copied to clipboard!");
+        }
+    };
+
     const [period, setPeriod] = useState("all");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    // Fire confetti once if user loads the page and is in top 10
+    useEffect(() => {
+        if (myRankData && myRankData.rank <= 10 && !loading) {
+            setTimeout(() => {
+                confetti({
+                    particleCount: 100,
+                    spread: 80,
+                    origin: { y: 0.3 },
+                    colors: ['#F94F97', '#8b5cf6', '#eab308']
+                });
+            }, 500);
+        }
+    }, [myRankData?.rank, loading]);
+
+    const filteredRanks = useMemo(() => {
+        if (!searchQuery.trim()) return ranks;
+        const q = searchQuery.toLowerCase();
+        return ranks.filter(r => 
+            (r.name && r.name.toLowerCase().includes(q)) || 
+            (r.username && r.username.toLowerCase().includes(q))
+        );
+    }, [ranks, searchQuery]);
+
     const switchTime = (e) => {
         setPeriod(e);
         setLoading(true);
@@ -68,7 +133,16 @@ export default function Board(props) {
                         <Avatar
                             role={r && r.role}
                             profile_status_lock={r && r.profile_status_lock === 2 ? true : false}
-                            name={(r && r.name) || "Anonymous"}
+                            name={
+                                <div className="flex items-center flex-wrap gap-1">
+                                    <span>{(r && r.name) || "Anonymous"}</span>
+                                    {r && r.rank <= 10 && (
+                                        <span className="text-[10px] sm:text-xs font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full whitespace-nowrap ml-1 flex items-center">
+                                            🌟 Rising Star
+                                        </span>
+                                    )}
+                                </div>
+                            }
                             link={(r && r.username) || ""}
                             subhead={`@${(r && r.username) || null}`}
                             username={(r && r.username) || null}
@@ -228,6 +302,24 @@ export default function Board(props) {
                 </h1>
                     <div className="flex flex-wrap items-start -mx-4">
                         <div className="w-full xl:w-2/3 px-4 mb-4">
+                            {myRankData && (
+                                <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-[30px] p-4 mb-6 flex items-center justify-between shadow-md text-white">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="text-3xl">🎉</div>
+                                        <div>
+                                            <h3 className="font-bold text-lg">You are ranked #{myRankData.rank}!</h3>
+                                            <p className="text-sm opacity-90">Top {myRankData.top}% of creators ({period === 'all' ? 'All-Time' : period})</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={handleShare}
+                                        className="flex items-center space-x-2 bg-white text-pink-600 px-4 py-2 rounded-full font-bold text-sm hover:bg-gray-100 transition-colors"
+                                    >
+                                        <Share2Icon size={16} />
+                                        <span>Share Status</span>
+                                    </button>
+                                </div>
+                            )}
                             <div className="p-2 md:!p-6 pinkbg rounded-[30px] mb-6">
                                 <div className="pt-4 md:pt-0 mt-6 mb-4 pb-4">
                                     <h1 className="btn-shadow text-center font-GillSans text-2xl md:text-3xl mb-3 uppercase text-white ">
@@ -294,18 +386,42 @@ export default function Board(props) {
                                     <div
                                         className={`${
                                             loading ? "opacity-50 pointer-events-none" : ""
-                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px]  `}
+                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px] mb-6 `}
                                     >
-                                        <h2 className=" font-GillSans text-left text-2xl uppercase text-gray-900 ">🔥 Rising Creators</h2>
-                                        <p className="mb-6">New creators gaining support fast</p>
-                                        {ranks.map((r, i) => {
-                                            return <Rank r={r} key={i} />;
-                                        })}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                                            <div>
+                                                <h2 className=" font-GillSans text-left text-2xl uppercase text-gray-900 ">🔥 Rising Creators</h2>
+                                                <p className="text-gray-600 text-sm">New creators gaining support fast</p>
+                                            </div>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <SearchIcon size={16} className="text-gray-400" />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Find a creator..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="pl-10 pr-4 py-2 border-2 border-gray-200 rounded-full w-full sm:w-64 focus:outline-none focus:border-pink-500 focus:ring-0 transition-colors"
+                                                />
+                                            </div>
+                                        </div>
+                                        {filteredRanks.length > 0 ? (
+                                            filteredRanks.map((r, i) => {
+                                                return <Rank r={r} key={i} />;
+                                            })
+                                        ) : (
+                                            <div className="text-center py-8 text-gray-500">
+                                                No creators found matching "{searchQuery}"
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     ""
                                 )}
                             <CategoryLeaders />
+                            <GrowthTrends />
+                            <PlatformAnalytics />
                         </div>
                         <div className="w-full xl:w-1/3 px-4 xl:self-start">
                             <div className="xl:sticky xl:top-24 z-10">

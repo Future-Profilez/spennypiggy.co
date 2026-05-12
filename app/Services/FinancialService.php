@@ -51,9 +51,9 @@ class FinancialService
         $payoutService = app(\App\Services\Risk\PayoutService::class);
         $reserves = $payoutService->getHeldReserves($user->uuid);
         
-        // Convert all minor units to major units (GBP)
-        // Note: getHeldReserves now includes both executed run reserves and pending payment reserves.
-        $heldReservesAmount = ($reserves['total_held'] ?? 0) / 100;
+        // getHeldReserves returns totals in major units (GBP)
+        // Note: includes both executed payout-run reserves and pending (unreleased) reserves.
+        $heldReservesAmount = (float) ($reserves['total_held'] ?? 0);
 
         // Review Holds and Disputed payments
         $reviewHoldsAmount = \App\Models\Payment::where('creator_id', $user->uuid)

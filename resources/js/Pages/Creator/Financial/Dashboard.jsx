@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Modal from '@/Components/Modal';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
+import axios from 'axios';
 import { 
     WalletIcon, 
     TrendingUpIcon, 
@@ -39,8 +41,12 @@ import {
     Area
 } from 'recharts';
 
-export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, payout_history = [] }) {
+export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [] }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [showReserveDetails, setShowReserveDetails] = useState(false);
+    const [reserveDetails, setReserveDetails] = useState(null);
+    const [reserveLoading, setReserveLoading] = useState(false);
+    const [reserveLoadError, setReserveLoadError] = useState(null);
     const logExpenseIconRef = useRef(null);
     const exportCsvIconRef = useRef(null);
 
@@ -77,9 +83,171 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
         total: parseFloat(item.total)
     })) || [];
 
+    const reserves = reserveDetails?.breakdown || [];
+    const reserveTotal = Number(reserveDetails?.total_held ?? summary?.held_reserves ?? 0);
+
+    const openReserveDetails = async () => {
+        setShowReserveDetails(true);
+        setReserveLoadError(null);
+        setReserveLoading(true);
+        try {
+            const res = await axios.get(route('creator.payouts.reserves'));
+            setReserveDetails(res.data);
+        } catch (e) {
+            setReserveLoadError(e?.response?.data?.error || e?.message || 'Failed to load reserves.');
+        } finally {
+            setReserveLoading(false);
+        }
+    };
+
+    const cycleWindowLabel = (() => {
+        if (!payout_cycle?.window_start || !payout_cycle?.window_end) return null;
+        const start = new Date(payout_cycle.window_start);
+        const end = new Date(payout_cycle.window_end);
+        const fmt = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
+        return `${fmt(start)} — ${fmt(end)}`;
+    })();
+
+    const nextPayoutLabel = (() => {
+        if (!payout_cycle?.next_payout_at) return null;
+        const d = new Date(payout_cycle.next_payout_at);
+        return d.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+    })();
+
     return (
         <AuthenticatedLayout auth={auth} user={auth.user}>
             <Head title="Financial Dashboard" />
+
+            <Modal show={showReserveDetails} onClose={() => setShowReserveDetails(false)} maxWidth="2xl">
+                <div className="bg-gray-950 text-white p-5 md:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <div className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Held Reserves</div>
+                            <div className="text-xl md:text-2xl font-bold mt-1">{formatCurrency(reserveTotal, displayCurrency)}</div>
+                            <div className="text-[12px] text-gray-500 font-bold mt-2">{reserve_reason || 'Reserves currently held on your earnings.'}</div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowReserveDetails(false)}
+                            className="px-3 py-2 rounded-xl bg-gray-900/60 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 transition-colors text-sm font-bold"
+                        >
+                            Close
+                        </button>
+                    </div>
+
+                    <div className="mt-5 max-h-[70vh] overflow-y-auto pr-1">
+                        {reserveLoading ? (
+                            <div className="text-gray-400 text-sm font-bold">Loading reserves…</div>
+                        ) : reserveLoadError ? (
+                            <div className="text-red-300 text-sm font-bold">{reserveLoadError}</div>
+                        ) : (reserves || []).length === 0 ? (
+                            <div className="text-gray-400 text-sm font-bold">No held reserves right now.</div>
+                        ) : (
+                            <div className="overflow-x-auto rounded-2xl border border-gray-800 bg-gray-900/40">
+                                <table className="w-full text-left">
+                                    <thead className="sticky top-0 bg-gray-950 border-b border-gray-800">
+                                        <tr className="text-gray-500 text-[12px] uppercase font-bold tracking-widest">
+                                            <th className="px-4 py-3">Date</th>
+                                            <th className="px-4 py-3">Supporter</th>
+                                            <th className="px-4 py-3">Description</th>
+                                            <th className="px-4 py-3">Releases</th>
+                                            <th className="px-4 py-3 text-right">Reserved</th>
+                                            <th className="px-4 py-3 text-right">Status</th>
+                                            <th className="px-4 py-3 text-right">Evidence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800">
+                                        {(reserves || []).map((r, idx) => {
+                                            const hasEvidence = !!r.financial_transaction_uuid && !String(r.financial_transaction_uuid).startsWith('exp-');
+                                            const txDate = r.transaction_date ? new Date(r.transaction_date) : null;
+                                            const dateLabel = txDate ? txDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : (r.run_date && r.run_date !== 'Pending' ? new Date(r.run_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—');
+                                            const timeLabel = txDate ? txDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+                                            const statusKey = (r.status || '').toString();
+                                            const statusMeta = (() => {
+                                                const map = {
+                                                    completed: { label: 'COMPLETED', cls: 'bg-green-500/10 text-green-400 border border-green-500/20' },
+                                                    review_hold: { label: 'REVIEW HOLD', cls: 'bg-purple-500/10 text-purple-300 border border-purple-500/20' },
+                                                    disputed: { label: 'DISPUTED', cls: 'bg-orange-500/10 text-orange-300 border border-orange-500/20' },
+                                                    refunded: { label: 'REFUNDED', cls: 'bg-red-500/10 text-red-300 border border-red-500/20' },
+                                                    pending: { label: 'PENDING', cls: 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20' },
+                                                };
+                                                return map[statusKey] || (statusKey ? { label: statusKey.replaceAll('_', ' ').toUpperCase(), cls: 'bg-gray-800 text-gray-300 border border-gray-700' } : null);
+                                            })();
+                                            return (
+                                                <tr key={`${r.financial_transaction_id || r.payout_run_id || idx}-${idx}`} className="hover:bg-white/5 transition-colors">
+                                                    <td className="px-4 py-3 text-[14px] text-gray-400 whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span>{dateLabel}</span>
+                                                            {timeLabel ? (
+                                                                <span className="text-[11px] text-gray-500 font-medium">{timeLabel}</span>
+                                                            ) : null}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm whitespace-nowrap">
+                                                        {r.supporter ? (
+                                                            <div className="flex flex-col">
+                                                                <span className="text-gray-200 font-medium capitalize">{r.supporter.name}</span>
+                                                                <span className="text-[15px] text-gray-500">@{r.supporter.username}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-500 italic text-[14px] capitalize">{r.source_type === 'transaction' ? 'Guest / System' : 'System'}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm min-w-[260px]">
+                                                        <div className="font-medium text-gray-200 line-clamp-2">{r.source_name || 'Reserve'}</div>
+                                                        <div className="text-[12px] text-gray-500 font-bold mt-1 uppercase">
+                                                            {r.label || (r.source_type === 'payout_run' ? 'Payout Run' : '')}
+                                                        </div>
+                                                        {r.source_type === 'payout_run' ? (
+                                                            <div className="text-[11px] text-gray-600 font-bold mt-1">
+                                                                Run: {r.payout_run_id}
+                                                            </div>
+                                                        ) : null}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-[13px] text-gray-300 font-bold whitespace-nowrap">
+                                                        {r.release_date || '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                        <div className="text-white font-bold">{formatCurrency((Number(r.amount || 0) / 100), (r.currency || displayCurrency))}</div>
+                                                        {r.source_type === 'transaction' && Number(r.net_amount || 0) > 0 && Number(r.reserve_amount || 0) > 0 ? (
+                                                            <div className="text-[10px] text-gray-500 font-bold mt-1">
+                                                                {Number(r.reserve_percent || 0)}% reserved • {formatCurrency(Number(r.reserve_amount || 0), (r.currency || displayCurrency))}
+                                                            </div>
+                                                        ) : null}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                        {statusMeta ? (
+                                                            <div className={`inline-block px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusMeta.cls}`}>
+                                                                {statusMeta.label}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-500">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                        {hasEvidence ? (
+                                                            <a
+                                                                href={route('financial.evidence-pack', { uuid: r.financial_transaction_uuid })}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-[11px] font-bold uppercase tracking-wider text-[#F94F96] hover:text-[#d83a7c]"
+                                                            >
+                                                                Evidence Pack
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-gray-600">—</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Modal>
 
             <div className='container mx-auto '>
                 <div className="py-8 px-4 sm:px-6 lg:px-8  space-y-8">
@@ -136,6 +304,66 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     <DownloadIcon ref={exportCsvIconRef} size={18} />
                                     <span>Export CSV</span>
                                 </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 shadow-xl">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <div className="text-gray-400 text-[12px] font-bold uppercase tracking-wider mb-1">Weekly Payout Window</div>
+                                    <div className="text-white text-lg md:text-xl font-bold">{cycleWindowLabel || '—'}</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Next payout: <span className="text-white">{nextPayoutLabel || '—'}</span></div>
+                                    {payout_cycle?.timezone ? (
+                                        <div className="text-[11px] text-gray-600 mt-1 font-bold uppercase tracking-widest">{payout_cycle.timezone} timezone</div>
+                                    ) : null}
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-[#05EFB8]/10 flex items-center justify-center border border-[#05EFB8]/20">
+                                    <WalletIcon size={18} className="text-[#05EFB8]" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={openReserveDetails}
+                            className="text-left bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 shadow-xl hover:border-purple-500/30 transition-colors"
+                        >
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <div className="text-gray-400 text-[12px] font-bold uppercase tracking-wider mb-1">Reserve Hold</div>
+                                    <div className="text-white text-lg md:text-xl font-bold">
+                                        {(reserve_policy?.effective_percent ?? 0) > 0 ? `${reserve_policy.effective_percent}%` : '0%'}
+                                    </div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">
+                                        Funds held: <span className="text-white">{formatCurrency(summary?.held_reserves ?? 0, displayCurrency)}</span>
+                                    </div>
+                                    {reserve_reason ? (
+                                        <div className="text-[12px] text-gray-500 mt-1 font-bold">{reserve_reason}</div>
+                                    ) : null}
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                                    <ShieldCheckIcon size={18} className="text-purple-300" />
+                                </div>
+                            </div>
+                        </button>
+
+                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 shadow-xl">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <div className="text-gray-400 text-[12px] font-bold uppercase tracking-wider mb-1">How Releases Work</div>
+                                    <div className="text-white text-sm md:text-base font-bold">Reserves release after 30 days</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Held reserves automatically become available for payout once the release date is reached.</div>
+                                    {reserve_policy?.onboarding_percent > 0 && reserve_policy?.onboarding_ends_at ? (
+                                        <div className="text-[12px] text-gray-500 mt-2 font-bold">
+                                            New creator hold ends: <span className="text-white">{reserve_policy.onboarding_ends_at}</span>
+                                        </div>
+                                    ) : null}
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                                    <HelpCircle size={18} className="text-yellow-300" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -246,7 +474,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 <ShieldCheckIcon size={80} className="text-blue-500" />
                             </div>
                         <div className="relative z-10 gap-6">
-                            <div className='pb-6'>
+                            <button type="button" onClick={openReserveDetails} className="text-left pb-6">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                                     Held Reserves
@@ -255,26 +483,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 <div className="text-[12px] text-gray-500 mt-2">
                                     {reserve_reason || 'Standard rolling reserve for platform safety.'}
                                 </div>
-                                {reserve_breakdown.length > 0 && (
-                                    <div className="mt-3 space-y-1">
-                                        {reserve_breakdown.slice(0, 3).map((r, i) => (
-                                            <div key={i} className="bg-gray-800/60 rounded-lg px-2 py-1.5 text-[10px]">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-300 font-bold truncate max-w-[120px]" title={r.source_name}>
-                                                        {r.source_name}
-                                                    </span>
-                                                    <span className="text-blue-300 font-bold ml-2 whitespace-nowrap">
-                                                        {formatCurrency(r.amount / 100, displayCurrency)}
-                                                    </span>
-                                                </div>
-                                                <div className="text-gray-500 mt-0.5">
-                                                    Releases: {r.release_date}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            </button>
                             {/* <Link href={route('creator.finance.review_holds')} className="block group/holds">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2 group-hover/holds:text-gray-300 transition-colors">
                                     <div className="w-2 h-2 rounded-full bg-purple-500"></div>

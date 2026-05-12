@@ -773,7 +773,7 @@ class BillsController extends Controller
         }
 
         if ($bill_pay->status !== 'initiated') {
-            return to_route('home')->with("error", 'Subscription already processed!');
+            return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with("success", 'Subscription already processed!');
         }
 
         try {

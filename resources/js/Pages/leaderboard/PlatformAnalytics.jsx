@@ -52,21 +52,21 @@ export default function PlatformAnalytics() {
     }, []);
 
     const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'text-blue-600' }) => (
-        <div className="stat-card bg-white rounded-[30px]   p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">{title}</h3>
+        <div className="stat-card bg-white rounded-[30px] p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-4 gap-2">
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide break-words">{title}</h3>
                     <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
                     {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
                 </div>
-                <div className={`p-3 rounded-[30px]   bg-gray-100`}>
+                <div className="shrink-0 p-3 rounded-[30px] bg-gray-100 flex items-center justify-center min-w-[48px]">
                     <Icon size={24} className={color} />
                 </div>
             </div>
             {trend && (
-                <div className="flex items-center">
-                    <RiArrowUpLine size={16} className={trend.positive ? 'text-green-500' : 'text-red-500'} />
-                    <span className={`text-sm ml-1 ${trend.positive ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="flex items-start mt-2">
+                    <RiArrowUpLine size={16} className={`shrink-0 mt-0.5 ${trend.positive ? 'text-green-500' : 'text-red-500'}`} />
+                    <span className={`text-sm ml-1 ${trend.positive ? 'text-green-600' : 'text-red-600'} leading-snug`}>
                         {trend.positive ? '+' : ''}{trend.percentage}% from last month
                     </span>
                 </div>
@@ -155,7 +155,7 @@ export default function PlatformAnalytics() {
             <p className="text-gray-500 mb-6">Insights into platform performance and growth</p>
 
             {/* Overview Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <StatCard
                     title="Active Creators"
                     value={data.overview.active_creators?.toLocaleString()}
@@ -179,23 +179,6 @@ export default function PlatformAnalytics() {
                     icon={RiArrowUpLine}
                     color="text-orange-600"
                 />
-            </div>
-
-            {/* Milestones Section */}
-            <div className="mb-8">
-                <div className="flex items-center mb-4">
-                    <RiFocus3Line size={24} className="text-blue-600" />
-                    <h3 className="text-lg font-semibold ml-2">Platform Milestones</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.milestones?.map((milestone, index) => (
-                        <MilestoneCard 
-                            key={index} 
-                            milestone={milestone} 
-                            isCompleted={milestone.current >= milestone.target}
-                        />
-                    ))}
-                </div>
             </div>
 
             {/* Top Countries */}

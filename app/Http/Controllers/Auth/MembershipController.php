@@ -877,7 +877,7 @@ class MembershipController extends Controller
             return to_route('home')->with("error", 'Insufficient data!');
         }
         if ($mem->status !== 'initiated') {
-            return to_route('home')->with("error", 'Subscription already processed!');
+            return to_route('user.show', ['username' => $mem->membership->user->username])->with("success", 'Subscription already processed!');
         }
         try {
             // Retrieve session from CONNECTED account

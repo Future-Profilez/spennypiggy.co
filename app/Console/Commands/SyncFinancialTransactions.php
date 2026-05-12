@@ -312,24 +312,22 @@ class SyncFinancialTransactions extends Command
             ];
         }
 
-        // 2. Otherwise fallback to current metric %
+        $reserveStatus = $riskData['reserve_status'] !== 'none' ? $riskData['reserve_status'] : 'held';
         $metric = $creator ? \App\Models\CreatorMetric::where('creator_id', $creator->uuid)->first() : null;
-        $riskReservePercent = (float) ($metric?->reserve_percent ?? 0);
+        $effectivePercent = 0;
 
-        if ($riskReservePercent > 0) {
-            $reserveStatus = $riskData['reserve_status'] !== 'none' ? $riskData['reserve_status'] : 'held';
-            return [
-                'amount' => round($netAmount * $riskReservePercent / 100, 2),
-                'status' => $reserveStatus,
-            ];
+        if ($creator) {
+            $effectivePercent = app(\App\Services\Risk\ReservePolicy::class)
+                ->getEffectiveReservePercent($creator, $metric, $paymentDate);
+        } else {
+            $effectivePercent = (int) ($metric?->reserve_percent ?? 0);
         }
 
-        // 3. New creator fallback: first 30 days → 10% reserve
-        if ($creator && $creator->created_at) {
-            $daysSinceJoined = (int) $creator->created_at->diffInDays($paymentDate);
-            if ($daysSinceJoined <= 30) {
-                return ['amount' => round($netAmount * 0.10, 2), 'status' => 'held'];
-            }
+        if ($effectivePercent > 0) {
+            return [
+                'amount' => round($netAmount * $effectivePercent / 100, 2),
+                'status' => $reserveStatus,
+            ];
         }
 
         return ['amount' => 0, 'status' => 'none'];

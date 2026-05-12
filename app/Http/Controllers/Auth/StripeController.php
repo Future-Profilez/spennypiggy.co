@@ -2297,7 +2297,7 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Insufficient data!');
         }
         if ($sub->status !== 'initiated') {
-            return to_route('home')->with("error", 'Subscription already processed!');
+            return to_route('user.show', ['username' => $sub->user->username])->with("success", 'Subscription already processed!');
         }
         try {
             // Retrieve session from connected account
@@ -3950,7 +3950,7 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Insufficient data!');
         }
         if ($sub->status !== 'initiated') {
-            return to_route('home')->with("error", 'Subscription already processed!');
+            return to_route('user.show', ['username' => $sub->user->username])->with("success", 'Subscription already processed!');
         }
 
         $user = User::where('id', $sub->user_id)->where('is_uk', 0)->first();

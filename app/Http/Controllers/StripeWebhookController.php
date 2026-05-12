@@ -3019,7 +3019,12 @@ class StripeWebhookController extends Controller
                 // This ensures the reserve percentage matches what the creator expects to see.
                 if ((int) ($payment->reserve_amount_minor ?? 0) === 0 || true) { // Force recalculation to ensure net-based
                     $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $payment->creator_id);
-                    $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                    $creator = \App\Models\User::where('uuid', (string) $payment->creator_id)
+                        ->orWhere('id', (string) $payment->creator_id)
+                        ->first();
+                    $reservePercent = $creator
+                        ? app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
+                        : (int) ($metrics->reserve_percent ?? 0);
                     if ($reservePercent > 0) {
                         // Calculate Net Amount
                         $netMinor = null;

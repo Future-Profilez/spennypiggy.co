@@ -178,7 +178,12 @@ const MagicBellNotification = () => {
       const isSubscribed = localStorage.getItem('isSubscribed');
       if (isSubscribed === 'true') return;
 
-      const supported = await isSupported().catch(() => false);
+      let supported = false;
+      try {
+        supported = isSupported();
+      } catch (e) {
+        supported = false;
+      }
       if (!isMounted) return;
 
       // Permanently hide banner on unsupported browsers to avoid repeated noise.
@@ -218,7 +223,12 @@ const MagicBellNotification = () => {
 
   const handleEnableNotifications = async () => {
     try {
-      const supported = await isSupported().catch(() => false);
+      let supported = false;
+      try {
+        supported = isSupported();
+      } catch (e) {
+        supported = false;
+      }
       if (!supported) {
         localStorage.setItem('isSubscribed', 'true');
         setShowBanner(false);

@@ -79,6 +79,8 @@ export default defineConfig((env) => {
     resolve: {
         alias: {
             '@': '/resources/js',
+            'react': path.resolve(process.cwd(), 'node_modules/react'),
+            'react-dom': path.resolve(process.cwd(), 'node_modules/react-dom'),
             ...(ssrBuild ? { 
                 '^html2canvas$': path.resolve(process.cwd(), 'resources/js/ssr-html2canvas-mock.js') 
             } : {}),

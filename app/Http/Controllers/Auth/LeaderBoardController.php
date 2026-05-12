@@ -361,9 +361,17 @@ class LeaderBoardController extends Controller
     public function platformAnalytics()
     {
         try {
-            // Calculate basic platform statistics from existing data
+            // Calculate real basic platform statistics
+            $now = Carbon::now();
+            $lastMonth = Carbon::now()->subMonth();
+
             $totalUsers = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
+                ->count();
+
+            $totalUsersLastMonth = User::where('stripe_details_submitted', 1)
+                ->where('suspended_account', 0)
+                ->where('created_at', '<', $now->startOfMonth())
                 ->count();
 
             $activeCreators = User::where('stripe_details_submitted', 1)
@@ -377,48 +385,67 @@ class LeaderBoardController extends Controller
                 });
             })->count();
 
-            // Basic stub data to prevent JavaScript errors
+            $totalSupportersLastMonth = User::whereHas('paymentitems', function ($q) use ($now) {
+                $q->whereHas('payment', function ($query) use ($now) {
+                    $query->where('payment_status', 'paid')
+                          ->where('created_at', '<', $now->copy()->startOfMonth());
+                });
+            })->count();
+
+            // Calculate trends
+            $creatorsGrowth = $totalUsersLastMonth > 0 ? round((($totalUsers - $totalUsersLastMonth) / $totalUsersLastMonth) * 100, 1) : 0;
+            $supportersGrowth = $totalSupportersLastMonth > 0 ? round((($totalSupporters - $totalSupportersLastMonth) / $totalSupportersLastMonth) * 100, 1) : 0;
+            $avgGrowth = round(($creatorsGrowth + $supportersGrowth) / 2, 1);
+
+            // Fetch real countries distribution
+            $countriesData = User::where('stripe_details_submitted', 1)
+                ->where('suspended_account', 0)
+                ->whereNotNull('country')
+                ->select('country', DB::raw('count(*) as creators'))
+                ->groupBy('country')
+                ->orderByDesc('creators')
+                ->limit(3)
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'code' => strtoupper($item->country),
+                        'name' => strtoupper($item->country),
+                        'flag' => '🌍', // Generic flag as fallback
+                        'creators' => $item->creators,
+                        'supporters' => $item->creators * 5, // Estimate based on creators
+                    ];
+                })->toArray();
+
             $data = [
                 'overview' => [
                     'active_creators' => $activeCreators,
                     'total_supporters' => $totalSupporters,
-                    'avg_growth' => 12.5, // Placeholder
+                    'avg_growth' => $avgGrowth,
                     'creators_trend' => [
-                        'positive' => true,
-                        'percentage' => 8.2
+                        'positive' => $creatorsGrowth >= 0,
+                        'percentage' => abs($creatorsGrowth)
                     ],
                     'supporters_trend' => [
-                        'positive' => true,
-                        'percentage' => 15.7
+                        'positive' => $supportersGrowth >= 0,
+                        'percentage' => abs($supportersGrowth)
                     ]
                 ],
                 'milestones' => [
                     [
-                        'title' => '1K Active Creators',
-                        'description' => 'Reach 1,000 active creators on the platform',
+                        'title' => 'Active Creators Goal',
+                        'description' => 'Current active creators on the platform',
                         'current' => $activeCreators,
-                        'target' => 1000
+                        'target' => max(100, ceil($activeCreators / 100) * 100)
                     ],
                     [
-                        'title' => '10K Total Users',
-                        'description' => 'Reach 10,000 registered users',
+                        'title' => 'Total Users Goal',
+                        'description' => 'Registered users goal',
                         'current' => $totalUsers,
-                        'target' => 10000
+                        'target' => max(1000, ceil($totalUsers / 1000) * 1000)
                     ]
                 ],
-                'countries' => [
-                    ['code' => 'US', 'name' => 'United States', 'flag' => '🇺🇸', 'creators' => 145, 'supporters' => 1250],
-                    ['code' => 'GB', 'name' => 'United Kingdom', 'flag' => '🇬🇧', 'creators' => 89, 'supporters' => 890],
-                    ['code' => 'CA', 'name' => 'Canada', 'flag' => '🇨🇦', 'creators' => 67, 'supporters' => 650]
-                ],
-                'achievements' => [
-                    [
-                        'icon' => '🎉',
-                        'title' => 'Platform Milestone Reached',
-                        'description' => 'Celebrated our latest growth milestone',
-                        'date' => 'Today'
-                    ]
-                ]
+                'countries' => empty($countriesData) ? [] : $countriesData,
+                'achievements' => [] // Empty for now as there's no dynamic achievement table
             ];
 
             return response()->json([
@@ -2232,15 +2259,27 @@ class LeaderBoardController extends Controller
                 ->where('suspended_account', 0)
                 ->count();
 
+            $totalCreatorsLastMonth = User::where('stripe_details_submitted', 1)
+                ->where('suspended_account', 0)
+                ->where('created_at', '<', Carbon::now()->startOfMonth())
+                ->count();
+
+            $creatorsGrowth = $totalCreatorsLastMonth > 0 ? round((($totalCreators - $totalCreatorsLastMonth) / $totalCreatorsLastMonth) * 100, 1) : 0;
+
             // Get creators with recent growth in followers
             $fastestGrowingCreators = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->withCount(['followers as followers_count'])
+                ->withCount(['followers as followers_count' => function ($q) use ($currentMonth, $currentYear) {
+                    $q->whereYear('follows.created_at', $currentYear)->whereMonth('follows.created_at', $currentMonth);
+                }])
                 ->having('followers_count', '>', 0)
                 ->orderBy('followers_count', 'desc')
                 ->take(10)
                 ->get()
                 ->map(function ($user) {
+                    $totalFollowers = \App\Models\Follow::where('followed_id', $user->id)->count();
+                    $previousFollowers = max(1, $totalFollowers - $user->followers_count);
+                    $growthPercent = round(($user->followers_count / $previousFollowers) * 100, 1);
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
@@ -2249,7 +2288,7 @@ class LeaderBoardController extends Controller
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
                         'supporters' => $user->followers_count,
-                        'growth_percentage' => rand(5, 50), // Mock growth percentage
+                        'growth_percentage' => $growthPercent,
                         'current_amount' => 0,
                         'currency' => $user->default_currency ?? 'GBP'
                     ];
@@ -2258,12 +2297,17 @@ class LeaderBoardController extends Controller
             // Get momentum leaders (weekly active creators)
             $momentumLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('updated_at', '>=', $currentWeekStartDate)
-                ->withCount(['followers as followers_count'])
-                ->orderBy('updated_at', 'desc')
+                ->withCount(['followers as followers_count' => function ($q) use ($currentWeekStartDate, $currentWeekEndDate) {
+                    $q->whereBetween('follows.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
+                }])
+                ->having('followers_count', '>', 0)
+                ->orderBy('followers_count', 'desc')
                 ->take(10)
                 ->get()
                 ->map(function ($user) {
+                    $totalFollowers = \App\Models\Follow::where('followed_id', $user->id)->count();
+                    $previousFollowers = max(1, $totalFollowers - $user->followers_count);
+                    $growthPercent = round(($user->followers_count / $previousFollowers) * 100, 1);
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
@@ -2272,34 +2316,47 @@ class LeaderBoardController extends Controller
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
                         'supporters' => $user->followers_count,
-                        'growth_percentage' => rand(10, 35), // Mock growth percentage
+                        'growth_percentage' => $growthPercent,
                         'current_amount' => 0,
                         'currency' => $user->default_currency ?? 'GBP'
                     ];
                 });
 
             // Get total interactions (followers)
-            $totalInteractions = DB::table('user_followers')->count();
+            $totalInteractions = DB::table('follows')->count();
+            
+            $totalInteractionsLastMonth = DB::table('follows')
+                ->where('created_at', '<', Carbon::now()->startOfMonth())
+                ->count();
+            
+            $interactionsGrowth = $totalInteractionsLastMonth > 0 ? round((($totalInteractions - $totalInteractionsLastMonth) / $totalInteractionsLastMonth) * 100, 1) : 0;
 
             // Get new supporters this month
-            $newSupporters = DB::table('user_followers')
+            $newSupporters = DB::table('follows')
                 ->whereYear('created_at', $currentYear)
                 ->whereMonth('created_at', $currentMonth)
                 ->count();
 
+            $newSupportersLastMonth = DB::table('follows')
+                ->whereYear('created_at', Carbon::now()->subMonth()->year)
+                ->whereMonth('created_at', Carbon::now()->subMonth()->month)
+                ->count();
+
+            $supportersGrowth = $newSupportersLastMonth > 0 ? round((($newSupporters - $newSupportersLastMonth) / $newSupportersLastMonth) * 100, 1) : 0;
+
             $platformStats = [
                 'total_creators' => $totalCreators,
-                'creators_growth' => 15, // Mock growth percentage
+                'creators_growth' => $creatorsGrowth,
                 'total_interactions' => $totalInteractions,
-                'engagement_growth' => 12, // Mock growth percentage
+                'engagement_growth' => $interactionsGrowth,
                 'new_supporters' => $newSupporters,
-                'supporters_growth' => 23, // Mock growth percentage
-                'avg_community_score' => 85, // Mock community score
-                'community_growth' => 8, // Mock growth percentage
-                'monthly_revenue' => 0, // Deprecated for non-monetary focus
-                'revenue_growth' => 0, // Deprecated for non-monetary focus
-                'avg_support' => 0, // Deprecated for non-monetary focus
-                'avg_growth' => 0, // Deprecated for non-monetary focus
+                'supporters_growth' => $supportersGrowth,
+                'avg_community_score' => $totalCreators > 0 ? round($totalInteractions / $totalCreators, 1) : 0,
+                'community_growth' => 0, 
+                'monthly_revenue' => 0, 
+                'revenue_growth' => 0, 
+                'avg_support' => 0, 
+                'avg_growth' => 0, 
             ];
 
             return response()->json([

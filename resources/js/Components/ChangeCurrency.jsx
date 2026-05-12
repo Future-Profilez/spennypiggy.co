@@ -36,6 +36,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
    }
 
    const changeCurrency = (e) => {
+      if (!e) return;
       get(route(`change.currency`, { c: e } ),{
             preserveScroll: true,
             onSuccess: (resp) => {

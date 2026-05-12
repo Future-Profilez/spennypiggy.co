@@ -409,18 +409,27 @@ class CreatorFinancialController extends Controller
 
         // Creator risk level for reserve messaging
         $creatorMetric = CreatorMetric::where('creator_id', $user->uuid)->first();
+        $reservePolicy = app(\App\Services\Risk\ReservePolicy::class)->getReservePolicySummary($user, $creatorMetric, now());
         $reserveReason = null;
-        if ($creatorMetric) {
-            if ($creatorMetric->risk_level === 'high') {
-                $reserveReason = 'High risk level detected on your account.';
-            } elseif ($creatorMetric->risk_level === 'medium') {
-                $reserveReason = 'Medium risk level applied to your account.';
-            } elseif ($creatorMetric->creator && $creatorMetric->creator->created_at?->diffInDays(now()) < 30) {
-                $reserveReason = 'New creator reserve (first 30 days).';
+        if (($reservePolicy['effective_percent'] ?? 0) > 0) {
+            if (($reservePolicy['onboarding_percent'] ?? 0) > 0 && ($reservePolicy['risk_level'] ?? null) === 'low') {
+                $reserveReason = "New creator reserve ({$reservePolicy['effective_percent']}%) until {$reservePolicy['onboarding_ends_at']}.";
+            } elseif (($reservePolicy['risk_level'] ?? null) === 'high') {
+                $reserveReason = "High risk reserve applied ({$reservePolicy['effective_percent']}%).";
+            } elseif (($reservePolicy['risk_level'] ?? null) === 'medium') {
+                $reserveReason = "Medium risk reserve applied ({$reservePolicy['effective_percent']}%).";
             } else {
-                $reserveReason = 'Standard rolling reserve for platform safety.';
+                $reserveReason = "Rolling reserve applied ({$reservePolicy['effective_percent']}%).";
             }
         }
+
+        $tz = config('app.timezone', 'UTC');
+        $nowTz = now($tz);
+        $day = (int) $nowTz->dayOfWeekIso;
+        $daysSinceFriday = $day >= 5 ? $day - 5 : $day + 2;
+        $cycleStart = $nowTz->copy()->startOfDay()->subDays($daysSinceFriday)->startOfDay();
+        $cycleEnd = $cycleStart->copy()->addDays(6)->endOfDay();
+        $nextPayoutAt = $cycleStart->copy()->addDays(7)->startOfDay();
 
         return Inertia::render('Creator/Financial/Dashboard', [
             'summary' => $summary,
@@ -442,6 +451,13 @@ class CreatorFinancialController extends Controller
             'status_breakdown' => $statusBreakdown,
             'reserve_breakdown' => $reserveBreakdown['breakdown'] ?? [],
             'reserve_reason' => $reserveReason,
+            'reserve_policy' => $reservePolicy,
+            'payout_cycle' => [
+                'timezone' => $tz,
+                'window_start' => $cycleStart->toDateTimeString(),
+                'window_end' => $cycleEnd->toDateTimeString(),
+                'next_payout_at' => $nextPayoutAt->toDateTimeString(),
+            ],
             'payout_history' => $payoutHistory,
         ]);
     }

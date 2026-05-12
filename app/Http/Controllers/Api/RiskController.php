@@ -267,7 +267,10 @@ class RiskController extends Controller
 
         $riskService = app(\App\Services\Risk\RiskService::class);
         $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
-        $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+        $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
+        $reservePercent = $creator
+            ? app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
+            : (int) ($metrics->reserve_percent ?? 0);
         $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
 
         $payment = \App\Models\Payment::create([
@@ -444,7 +447,10 @@ class RiskController extends Controller
 
         $riskService = app(\App\Services\Risk\RiskService::class);
         $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
-        $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+        $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
+        $reservePercent = $creator
+            ? app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
+            : (int) ($metrics->reserve_percent ?? 0);
         $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
 
         $payment = Payment::create([

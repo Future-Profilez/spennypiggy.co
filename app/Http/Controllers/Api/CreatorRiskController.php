@@ -24,6 +24,7 @@ class CreatorRiskController extends Controller
 
         $banners = [];
         $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
+        $policy = app(\App\Services\Risk\ReservePolicy::class)->getReservePolicySummary($user, $metrics, now());
         $creatorRules = \App\Models\RiskSetting::get('creator_rules', []);
         $newCreatorAgeDays = (int) ($creatorRules['new_creator_age_days'] ?? 30);
         $isNewCreator = $user->created_at?->diffInDays(now()) < $newCreatorAgeDays;
@@ -33,16 +34,18 @@ class CreatorRiskController extends Controller
             ->exists();
 
         // 1. RESERVE_APPLIED
-        if ($metrics->reserve_percent > 0 && $isStripeConnected && $hasAnyEarnings) {
+        if (($policy['effective_percent'] ?? 0) > 0 && $isStripeConnected && $hasAnyEarnings) {
             $isHighRisk = ($metrics->risk_level ?? null) === 'high';
             $isMediumRisk = ($metrics->risk_level ?? null) === 'medium';
 
             if ($isNewCreator && !$isHighRisk && !$isMediumRisk) {
+                $daysRemaining = (int) ($policy['onboarding_days_remaining'] ?? 0);
+                $endsAt = $policy['onboarding_ends_at'] ?? null;
                 $banners[] = [
                     'key' => 'RESERVE_APPLIED',
                     'type' => 'info',
                     'title' => 'New Creator Reserve',
-                    'body' => "A small portion of your earnings ({$metrics->reserve_percent}%) is temporarily reserved for 30 days to ensure payment security. These funds are automatically released to your available balance.",
+                    'body' => "A portion of your earnings ({$policy['effective_percent']}%) is temporarily reserved for 30 days. Funds auto-release after the rolling period." . ($endsAt ? " New-creator period ends on {$endsAt}" : "") . ($daysRemaining > 0 ? " ({$daysRemaining} days left)" : ""),
                     'action_url' => '/stripe/login',
                     'action_label' => 'View Payouts',
                     'action_method' => 'post',
@@ -55,11 +58,11 @@ class CreatorRiskController extends Controller
                     'key' => 'RESERVE_APPLIED',
                     'type' => 'warning',
                     'title' => 'Reserve Applied',
-                    'body' => "A small portion of your earnings ({$metrics->reserve_percent}%) is temporarily reserved for 30 days to ensure payment security. These funds are automatically released to your available balance.",
+                    'body' => "A portion of your earnings ({$policy['effective_percent']}%) is temporarily reserved for 30 days due to {$reason}. Funds auto-release after the rolling period.",
                     'action_url' => '/stripe/login',
                     'action_label' => 'View Payouts',
                     'action_method' => 'post',
-                    'what_happened' => "To protect against potential disputes and keep payouts stable, a rolling reserve is held. This means {$metrics->reserve_percent}% of your earnings is held temporarily before being released.",
+                    'what_happened' => "To protect against potential disputes and keep payouts stable, a rolling reserve is held. This means {$policy['effective_percent']}% of your earnings is held temporarily before being released.",
                     'what_to_do' => "Continue fulfilling orders and maintaining good standing. The reserve is reviewed automatically and may be lowered as your account history improves.",
                 ];
             }
@@ -147,7 +150,7 @@ class CreatorRiskController extends Controller
             'banners' => $banners,
             'metrics' => [
                 'dispute_rate_30d' => $metrics->dispute_rate_30d,
-                'reserve_percent' => $metrics->reserve_percent,
+                'reserve_percent' => $policy['effective_percent'] ?? $metrics->reserve_percent,
             ]
         ]);
     }

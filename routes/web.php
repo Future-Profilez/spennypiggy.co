@@ -367,6 +367,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/risk/off', [\App\Http\Controllers\Api\TestRiskController::class, 'clearRisk']);
         Route::post('/platform/freeze', [\App\Http\Controllers\Api\TestRiskController::class, 'triggerFreeze']);
         Route::post('/platform/normal', [\App\Http\Controllers\Api\TestRiskController::class, 'triggerNormal']);
+        Route::post('/creator/reserve', [\App\Http\Controllers\Api\TestRiskController::class, 'setReservePercent']);
+        Route::post('/creator/joined-days-ago', [\App\Http\Controllers\Api\TestRiskController::class, 'setCreatorJoinedDaysAgo']);
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

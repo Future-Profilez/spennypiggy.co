@@ -590,9 +590,10 @@ class PayoutService
                 
                 $releaseDate = $data['reserve_release_date'] ?? Carbon::parse($run->run_date)->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString();
                 $currency = $data['currency'] ?? 'GBP';
-                $amountGbp = $convert($data['reserve_amount'], $currency, 'GBP');
+                $amountGbp = $convert(((int) $data['reserve_amount']) / 100, $currency, 'GBP');
 
                 $held[] = [
+                    'source_type' => 'payout_run',
                     'payout_run_id' => $run->id,
                     'amount' => $data['reserve_amount'],
                     'currency' => $currency,
@@ -601,89 +602,100 @@ class PayoutService
                     'release_date' => $releaseDate,
                     'days_remaining' => max(0, Carbon::now()->diffInDays(Carbon::parse($releaseDate), false)),
                     'source_name' => 'Payout Run Reserve',
+                    'financial_transaction_id' => null,
+                    'financial_transaction_uuid' => null,
+                    'transaction_date' => null,
+                    'supporter' => null,
+                    'status' => null,
+                    'type' => null,
+                    'gross_amount' => null,
+                    'net_amount' => null,
+                    'reserve_amount' => null,
+                    'reserve_status' => null,
+                    'reserve_percent' => null,
+                    'label' => null,
                 ];
                 $totalHeldGbp += $amountGbp;
             }
         }
 
-        // Add pending reserves from recent payments (Excluding Holds/Disputes)
-        // Fetch ALL unpaid succeeded payments — filter by FT reserve, not Payment.reserve_amount_minor
-        $pendingPayments = \App\Models\Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
-            ->whereNull('payout_run_id')
-            ->where('status', 'succeeded')
-            ->orderByDesc('created_at')
-            ->get(['amount', 'reserve_amount_minor', 'status', 'created_at', 'stripe_session_id', 'stripe_payment_intent_id', 'creator_id', 'currency'])
-            ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
-            ->values();
+        // Add pending reserves (not yet part of an executed payout run)
+        // Use FinancialTransaction as source of truth for what the creator sees in the dashboard.
+        $pendingFts = \App\Models\FinancialTransaction::where('user_id', $creator->id)
+            ->where('type', 'income')
+            ->whereIn('status', ['completed', 'review_hold'])
+            ->where('reserve_status', '!=', 'released')
+            ->where('reserve_amount', '>', 0)
+            ->with(['supporter:id,name,username'])
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id')
+            ->get([
+                'id',
+                'uuid',
+                'supporter_id',
+                'source_type',
+                'source_id',
+                'type',
+                'status',
+                'description',
+                'gross_amount',
+                'net_amount',
+                'reserve_amount',
+                'reserve_status',
+                'currency',
+                'transaction_date',
+            ]);
 
-        $holdIntentIds = \App\Models\Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
-            ->whereNull('payout_run_id')
-            ->whereIn('status', ['review_hold', 'disputed'])
-            ->whereNotNull('stripe_payment_intent_id')
-            ->pluck('stripe_payment_intent_id')
-            ->toArray();
-        if (!empty($holdIntentIds)) {
-            $pendingPayments = $pendingPayments
-                ->reject(fn ($p) => $p->stripe_payment_intent_id && in_array($p->stripe_payment_intent_id, $holdIntentIds, true))
-                ->values();
-        }
+        foreach ($pendingFts as $ft) {
+            $reserveMajor = (float) ($ft->reserve_amount ?? 0);
+            if ($reserveMajor <= 0) continue;
 
-        foreach ($pendingPayments as $p) {
-            // Always use FinancialTransaction.reserve_amount (net-based) as the canonical reserve
-            $fts = $this->getAllFinancialTransactionsForPayment($p);
+            $reserveMinor = (int) round($reserveMajor * 100);
+            $currency = strtoupper((string) ($ft->currency ?: 'GBP'));
+            $amountGbp = $convert($reserveMajor, $currency, 'GBP');
+            $txDate = $ft->transaction_date ? Carbon::parse($ft->transaction_date) : Carbon::now();
+            $releaseAt = $txDate->copy()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS);
 
-            if ($fts->isNotEmpty()) {
-                // Check if this payment is actually "Confirmed/Paid" (included in Gross)
-                $isIncludedInGross = true;
-                foreach ($fts as $ft) {
-                    if ($ft->source_type === \App\Models\TaskPurchase::class) {
-                        $task = \App\Models\TaskPurchase::find($ft->source_id);
-                        if ($task && ($task->task->type ?? 'timed') === 'timed') {
-                            if (!in_array($task->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                                $isIncludedInGross = false;
-                                break;
-                            }
-                        }
-                    } elseif ($ft->source_type === \App\Models\ShopPayment::class) {
-                        $shopPayment = \App\Models\ShopPayment::find($ft->source_id);
-                        if ($shopPayment && ($shopPayment->shop->type ?? 'digital') === 'physical') {
-                            if (($shopPayment->deliverable->status ?? 'pending') !== 'delivered') {
-                                $isIncludedInGross = false;
-                                break;
-                            }
-                        }
-                    }
-                }
+            $base = class_basename((string) ($ft->source_type ?? ''));
+            $label = match ($base) {
+                'StripePaymentItems' => 'Wish Gift',
+                'ShopPayment' => 'Shop Purchase',
+                'TipGoalsPayment' => 'Support/Tip',
+                'MembershipPayment' => 'Membership',
+                'TaskPurchase' => 'Task',
+                'BillPayment' => 'Bill',
+                default => $base ? str_replace(['Payment', 'Purchase'], '', $base) : null
+            };
 
-                if (!$isIncludedInGross) {
-                    continue; // Skip reserves for unfulfilled tasks/shop items
-                }
-
-                if ($fts->sum('reserve_amount') > 0) {
-                    $reserveMinor = (int) round($fts->sum('reserve_amount') * 100);
-                    $description = $fts->first()->description ?: 'Pending Payment';
-                } else {
-                    continue;
-                }
-            } elseif ((int) ($p->reserve_amount_minor ?? 0) > 0) {
-                // Legacy fallback: Payment.reserve_amount_minor
-                $reserveMinor = (int) $p->reserve_amount_minor;
-                $description = 'Pending Payment';
-            } else {
-                continue; // No reserve on this payment
-            }
-
-            $amountGbp = $convert($reserveMinor, $p->currency, 'GBP');
+            $netAmount = (float) ($ft->net_amount ?? 0);
+            $reservePercent = $netAmount > 0 ? round(($reserveMajor / $netAmount) * 100, 1) : 0;
 
             $held[] = [
+                'source_type' => 'transaction',
                 'payout_run_id' => 'Pending',
                 'amount' => $reserveMinor,
-                'currency' => $p->currency,
+                'currency' => $currency,
                 'amount_gbp' => $amountGbp,
                 'run_date' => 'Pending',
-                'release_date' => $p->created_at ? $p->created_at->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString() : Carbon::now()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString(),
-                'days_remaining' => max(0, Carbon::now()->diffInDays($p->created_at ? $p->created_at->addDays(self::RESERVE_RELEASE_WINDOW_DAYS) : Carbon::now()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS), false)),
-                'source_name' => $description,
+                'release_date' => $releaseAt->toDateString(),
+                'days_remaining' => max(0, Carbon::now()->diffInDays($releaseAt, false)),
+                'source_name' => (string) ($ft->description ?: 'Pending Payment'),
+                'financial_transaction_id' => $ft->id,
+                'financial_transaction_uuid' => $ft->uuid ?? null,
+                'transaction_date' => $txDate->toIso8601String(),
+                'supporter' => $ft->supporter ? [
+                    'id' => $ft->supporter->id,
+                    'name' => $ft->supporter->name,
+                    'username' => $ft->supporter->username,
+                ] : null,
+                'status' => $ft->status,
+                'type' => $ft->type,
+                'gross_amount' => (float) ($ft->gross_amount ?? 0),
+                'net_amount' => $netAmount,
+                'reserve_amount' => $reserveMajor,
+                'reserve_status' => $ft->reserve_status,
+                'reserve_percent' => $reservePercent,
+                'label' => $label,
             ];
             $totalHeldGbp += $amountGbp;
         }

@@ -44,6 +44,7 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
             "TypeError: Load failed",
             "TypeError: null is not an object (evaluating 'i.cdnUrl')",
             "Error: Response not ok: 403",
+            "Error: Error invoking enableDidUserTypeOnKeyboardLogging: Java object is gone",
         ],
         beforeSend(event) {
             const value = event?.exception?.values?.[0]?.value || "";
@@ -54,7 +55,7 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
                 type === "AbortError" ||
                 type === "AxiosError" ||
                 (type === "TypeError" && /load failed|cdnUrl/i.test(value)) ||
-                /permission denied|request is not allowed by the user agent|load failed|network error|response not ok:\s*403|insertBefore.*not a child of this node|abort due to cancellation of share/i.test(value)
+                /permission denied|request is not allowed by the user agent|load failed|network error|response not ok:\s*403|insertBefore.*not a child of this node|abort due to cancellation of share|enableDidUserTypeOnKeyboardLogging|Java object is gone/i.test(value)
             ) {
                 return null;
             }
