@@ -2600,7 +2600,14 @@ class StripeController extends Controller
                     $message = 'Subscription Payment Successfully Paid.';
                 }
                 $this->userProfileService->clearUserCaches($sub->wish_item->user->username, $sub->wish_item->user->id);
-                return to_route('thank-you', ['username' => $sub->wish_item->user->username])->with('success', $message);
+                return to_route('thank-you', [
+                    'username' => $sub->wish_item->user->username,
+                    'type' => 'wish',
+                    'item_name' => $sub->wish_item->name,
+                    'amount' => $sub->amount ?? 0,
+                    'currency' => $sub->currency ?? 'GBP',
+                    'item_id' => $sub->wish_item->id
+                ])->with('success', $message);
             }
 
             SubscriptionFailed::dispatch($sub);
@@ -3656,7 +3663,13 @@ class StripeController extends Controller
                     $this->userProfileService->clearUserCaches($tip_pay->user->username, $tip_pay->user->id);
                 }
 
-                return to_route('user.show', ['username' => $tip_pay->creator->username])->with('success', "Thank you for your support!");
+                return to_route('thank-you', [
+                    'username' => $tip_pay->creator->username,
+                    'type' => 'support',
+                    'item_name' => $tip_pay->tipGoal ? $tip_pay->tipGoal->name : 'Support Payment',
+                    'amount' => $tip_pay->amount ?? 0,
+                    'currency' => $tip_pay->currency ?? 'GBP'
+                ])->with('success', "Thank you for your support!");
             }
 
             $tip_pay->save();

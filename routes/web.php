@@ -14,7 +14,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
-use App\Http\Controllers\PendingApprovalController;
 use App\StripeControl;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -440,8 +439,7 @@ Route::get('/pwa-debug', function () {
     ]);
 })->name('pwa.debug');
 
-// Manual trigger for pending approval job (accessible in all environments)
-Route::get('/pending-approval/manual-trigger', [PendingApprovalController::class, 'manualTrigger'])->name('pending-approval.trigger');
+Route::get('/app/check', [\App\Http\Controllers\AppController::class, 'appCheck'])->name('app.check');
 
 if (app()->environment('local')) {
     // create bypass entry for all users in userVerificationEntry

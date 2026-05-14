@@ -628,6 +628,24 @@ class ShopsController extends Controller
                 });
         }
 
+        $ogTitle = $shop->name;
+        $ogDescription = \Illuminate\Support\Str::limit(strip_tags($shop->description), 150);
+        
+        $ogImage = asset('siteicon.png');
+        if (!empty($shop->perma_link)) {
+            $ogImage = filter_var($shop->perma_link, FILTER_VALIDATE_URL) ? $shop->perma_link : asset($shop->perma_link);
+        } else if (!empty($shop->user->social_image)) {
+            $ogImage = filter_var($shop->user->social_image, FILTER_VALIDATE_URL) ? $shop->user->social_image : "https://ucarecdn.com/" . $shop->user->social_image . "/-/preview/";
+        } else if (!empty($shop->user->avatar)) {
+            $ogImage = filter_var($shop->user->avatar, FILTER_VALIDATE_URL) ? $shop->user->avatar : "https://ucarecdn.com/" . $shop->user->avatar . "/-/format/jpeg/";
+        }
+
+        $ogUrl = url()->current();
+
+        \App\SeoMeta::setOgData('website', $ogTitle, $ogDescription, $ogImage, $ogUrl);
+        \App\SeoMeta::setTwitterCard('summary_large_image', $ogTitle, $ogDescription, $ogImage);
+        \App\SeoMeta::addTag('title', $ogTitle . ' | Spennypiggy');
+
         return Inertia::render('shop/Item', [
             'shop' => $shop,
             'payment_id' => $session_id,
@@ -1101,10 +1119,14 @@ class ShopsController extends Controller
 
                 // If already paid, just redirect
                 if ($stripeid->payment_status === 'paid') {
-                    return redirect()->route('single-shop-list', [
-                        'slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                        'uuid' => $stripeid->shop->uuid,
-                        'session_id' => $stripeid->session_id
+                    return redirect()->route('thank-you', [
+                        'username' => $stripeid->shop->user->username,
+                        'type' => 'shop',
+                        'item_name' => $stripeid->shop->name,
+                        'amount' => $stripeid->amount ?? 0,
+                        'currency' => $stripeid->currency ?? 'GBP',
+                        'item_id' => $stripeid->shop->uuid,
+                        'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name)
                     ])->with('success', 'Payment Successful.');
                 }
 
@@ -1282,10 +1304,14 @@ class ShopsController extends Controller
                 // Clear user caches
                 app(UserProfileService::class)->clearUserCaches($stripeid->shop->user->username, $stripeid->shop->user->id);
 
-                return redirect()->route('single-shop-list', [
-                    'slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                    'uuid' => $stripeid->shop->uuid,
-                    'session_id' => $stripeid->session_id
+                return redirect()->route('thank-you', [
+                    'username' => $stripeid->shop->user->username,
+                    'type' => 'shop',
+                    'item_name' => $stripeid->shop->name,
+                    'amount' => $stripeid->amount ?? 0,
+                    'currency' => $stripeid->currency ?? 'GBP',
+                    'item_id' => $stripeid->shop->uuid,
+                    'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name)
                 ])->with('success', 'Payment Successful.');
             } catch (\Exception $e) {
                 Log::error("Error in successPayment: " . $e->getMessage());

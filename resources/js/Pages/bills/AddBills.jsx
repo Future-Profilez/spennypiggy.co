@@ -22,6 +22,7 @@ import { SlCalender } from "react-icons/sl";
 export default function AddBills(props) {
     const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
     const { global_currency, auth } = usePage().props;
+    const subscriberOnlyPostsCount = auth?.subscriber_only_posts_count || 0;
     const [thumbnail, setThumbnail] = useState("");
     const [close, setClose] = useState();
     const { updatebill, item, isEdit, editpop, text, classes, fetchBills } = props;
@@ -401,7 +402,7 @@ export default function AddBills(props) {
                                 ) : (
                                     <>
                                         <LoaderButton
-                                            disabled={loading}
+                                            disabled={loading || subscriberOnlyPostsCount === 0}
                                             type="submit"
                                             className="p w-full"
                                             spinnerclass="fill-red-600"
@@ -410,6 +411,11 @@ export default function AddBills(props) {
                                                 ? "Processing"
                                                 : "Add Bills"}
                                         </LoaderButton>
+                                        {subscriberOnlyPostsCount === 0 && (
+                                            <p className="mt-2 text-center text-red-500 text-sm">
+                                                You haven't added any subscriber-only posts yet. Please create at least one before adding a bill.
+                                            </p>
+                                        )}
                                     </>
                                 )}
                             </div>

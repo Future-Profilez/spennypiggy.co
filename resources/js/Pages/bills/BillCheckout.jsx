@@ -787,8 +787,6 @@ export default function BillCheckout(props) {
                         )}
                     </div>
                 </Popup>
-
-                <Toaster />
             </Authenticated>
         </>
     );

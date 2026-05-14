@@ -114,7 +114,7 @@ function BillItem(props) {
             {...attributes}
             {...listeners}
             style={IsloggedIn ? style : stylenone}
-            className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all`}
+            className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all `}
         >
             <div className="mb-3 sm:mb-4 bg-white relative !rounded-[25px] md:!rounded-[30px] !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
                 {itm && itm.is_suspended == 1 ? (
@@ -135,13 +135,13 @@ function BillItem(props) {
                     ""
                 )}
 
-                <div className="cursor-pointer relative bg-[#1c1c24]">
+                <div className="cursor-pointer relative !overflow-hidden !bg-white p-3 !pb-0">
                     <LazyLoadImage
                         alt="image"
                         effect="blur"
                         height={193}
                         src={imageSrc}
-                        className="object-cover w-full h-[180px] mx-auto"
+                        className=" !rounded-[20px] object-cover border-2 border-black w-full h-[180px] mx-auto"
                         width={220}
                     />
 
@@ -150,7 +150,7 @@ function BillItem(props) {
                     </div>
 
                     {IsloggedIn && (
-                        <Menu as="div" className="absolute top-4 right-4 z-10 inline-block text-left">
+                        <Menu as="div" className="absolute top-8 right-8 z-10 inline-block text-left">
                             <div>
                                 <Menu.Button className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
                                     <div className="dots">
@@ -193,13 +193,13 @@ function BillItem(props) {
 
                 <div
                     onClick={openAddtocart}
-                    className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-5 flex-grow"
+                    className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-4 flex-grow"
                 >
                     <div>
                         <h4 className="text-xl font-black !text-black text-center el1 uppercase tracking-wide">
                             {itm.name}
                         </h4>
-                        <h5 className="text-center font-black text-2xl text-black mt-3 mb-1 titleprice">
+                        <h5 className="text-center font-black text-2xl text-black mt-1 mb-1 titleprice">
                             {isCreator ? (
                                 formatMultiPrice(itm.price, itm?.currency || "GBP")
                             ) : (

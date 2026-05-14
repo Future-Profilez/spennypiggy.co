@@ -649,7 +649,6 @@ export default function SubCheckout(props) {
                     </div>
                 </Popup>
 
-                <Toaster />
             </Authenticated>
         </>
     );

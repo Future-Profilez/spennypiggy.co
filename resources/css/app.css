@@ -1204,3 +1204,6 @@ lr-config {
         padding-left: 60px !important;
     }
 }
+.popupmodal {
+    z-index: 999;
+}
