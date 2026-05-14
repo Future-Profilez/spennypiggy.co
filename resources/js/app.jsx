@@ -33,7 +33,7 @@ import Maintaince from "./Components/Maintaince.jsx";
 
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
-        dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
+        dsn: import.meta.env.VITE_SENTRY_DSN_PUBLIC,
         sendDefaultPii: false,
         ignoreErrors: [
             "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
@@ -64,15 +64,20 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
         },
         // Keep feedback, disable replays to reduce bandwidth
         integrations: [
+            Sentry.browserTracingIntegration(),
+            Sentry.replayIntegration(),
             Sentry.feedbackIntegration({
                 colorScheme: "system",
                 autoInject: false,
             }),
         ],
+        // Performance Monitoring
+        tracesSampleRate: 0.1,
         // Disable session replays completely and reduce on-error sampling
         replaysSessionSampleRate: 0,
         replaysOnErrorSampleRate: 0.05,
     });
+    console.warn("Sentry Initialized on spennypiggy.co");
 } 
 function setupGlobalCartFunctions(props) {
     const auth = props?.page?.props?.auth;

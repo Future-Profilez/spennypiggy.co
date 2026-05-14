@@ -1,9 +1,20 @@
-node_modules
 .git
+.github
+.vapor
+node_modules
+sources/*.pdf
+sources/finals launch actions/*.pdf
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/views/*.php
+storage/framework/sessions/*
 tests
-coverage
-storage/logs
-storage/framework
-bootstrap/cache
-.env
-.env.*
+phpunit.xml
+README.md
+*.md
+.env.backup
+.env.session
+composer.lock
+package-lock.json
+.phpunit.result.cache
+.DS_Store

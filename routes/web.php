@@ -814,6 +814,14 @@ Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagno
 Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
+Route::get('/debug-sentry', function () {
+    if (app()->bound('sentry')) {
+        app('sentry')->captureMessage('Sentry Test Message from spennypiggy.co Backend');
+        return response()->json(['message' => 'Sentry test message sent from Backend. Check your dashboard!']);
+    }
+    return response()->json(['error' => 'Sentry not bound in container'], 500);
+});
+
 require __DIR__ . '/auth.php';
 
 // Quick middleware test
