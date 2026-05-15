@@ -76,7 +76,7 @@ export default function Thankyou(props) {
     if (type === 'wish' && item_id) return `/${owner.username}/wish/${item_id}`;
     if (type === 'wish') return `/${owner.username}/wishes`;
     if (type === 'membership') return `/${owner.username}/bills`; // membership confirmation message routes to bills page
-    if (type === 'shop' && item_slug && item_id) return `/item/${item_slug}/${item_id}`;
+    if (type === 'shop' && item_slug && item_id) return `/shop/item/${item_slug}/${item_id}`;
     if (type === 'task' && item_id) return `/task/${item_id}`;
     return `/${owner.username}`;
   };

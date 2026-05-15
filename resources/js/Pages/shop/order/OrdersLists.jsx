@@ -155,9 +155,13 @@ export default function OrdersLists({ type = 'sales' }) {
                             <div className="flex flex-col gap-1 text-[13px] sm:text-sm font-bold text-gray-700">
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-500 uppercase text-[11px]">{type === 'sales' ? 'Buyer' : 'Seller'}:</span>
-                                    <Link href={`/${item.username}`} className="text-blue-500 hover:underline">
-                                        @{item.username}
-                                    </Link>
+                                    {item.username ? (
+                                        <Link href={`/${item.username}`} className="text-blue-500 hover:underline">
+                                            @{item.username}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-gray-500 italic text-[13px]">{item.name || 'Anonymous'}</span>
+                                    )}
                                 </div>
                             </div>
                         </div>

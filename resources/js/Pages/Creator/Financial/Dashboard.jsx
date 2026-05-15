@@ -349,7 +349,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                     </div>
                                                     <div className="text-[18px] text-gray-500 mt-2 font-bold">
                                                         Funds held: <span className="text-gray-900">{formatCurrency(summary?.held_reserves ?? 0, displayCurrency)}</span>
-                                                    </div> 
+                                                    </div>  
                                                     {reserve_reason && (
                                                         <div className="text-[12px] text-gray-400 mt-1 font-bold">{reserve_reason}</div>
                                                     )}

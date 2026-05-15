@@ -235,7 +235,6 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                                 <DiagnosticRow title="Stripe Webhook Config" result={results.stripe_webhook} errors={results.stripe_webhook?.errors} />
                                 <DiagnosticRow title="Scheduled Tasks / Cron" result={results.scheduled_tasks} errors={results.scheduled_tasks?.errors} />
                                 <DiagnosticRow title="Pending Database Migrations" result={results.pending_migrations} errors={results.pending_migrations?.errors} />
-                                <DiagnosticRow title="Stripe Connected Accounts Health" result={results.stripe_accounts_health} errors={results.stripe_accounts_health?.errors} />
                                 <DiagnosticRow title="App Homepage Response Time" result={results.app_response_time} />
                                 <DiagnosticRow title="Stuck Payouts & Blocked Reserves" result={results.stuck_payouts} errors={results.stuck_payouts?.errors} />
 

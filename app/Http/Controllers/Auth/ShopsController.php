@@ -1126,7 +1126,7 @@ class ShopsController extends Controller
                         'currency' => $stripeid->currency ?? 'GBP',
                         'item_id' => $stripeid->shop->uuid,
                         'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                        'is_instant' => $stripeid->shop->type === 'digital' ? '1' : '0'
+                        'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
                     ])->with('success', 'Payment Successful.');
                 }
 
@@ -1312,7 +1312,7 @@ class ShopsController extends Controller
                     'currency' => $stripeid->currency ?? 'GBP',
                     'item_id' => $stripeid->shop->uuid,
                     'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                    'is_instant' => $stripeid->shop->type === 'digital' ? '1' : '0'
+                    'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
                 ])->with('success', 'Payment Successful.');
             } catch (\Exception $e) {
                 Log::error("Error in successPayment: " . $e->getMessage());
@@ -1737,7 +1737,7 @@ class ShopsController extends Controller
         }
 
         // Default to sales
-        $orders = ShopPayment::with(['shop', 'financialTransaction'])
+        $orders = ShopPayment::with(['shop', 'financialTransaction', 'user'])
             ->whereHas('shop', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
@@ -1807,10 +1807,10 @@ class ShopsController extends Controller
                     'shipping_amount' => $order->shipping_amount ?? 0,
                     'currency' => $order->currency,
                     'created_at' => $order->created_at,
-                    'name' => $order->name ?? ($buyer->name ?? 'Anonymous'),
-                    'username' => $buyer->username ?? '',
-                    'email' => $order->email ?? ($buyer->email ?? ''),
-                    'avatar_url' => $buyer->avatar_url ?? null,
+                    'name' => $order->name ?? ($order->user?->name ?? 'Anonymous'),
+                    'username' => $order->user?->username ?? '',
+                    'email' => $order->email ?? ($order->user?->email ?? ''),
+                    'avatar_url' => $order->user?->avatar_url ?? null,
                     'shop' => $order->shop,
                     'quantity' => $order->quantity,
                     'shipping_info' => $order->shipping_info,
