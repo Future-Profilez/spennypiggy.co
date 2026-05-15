@@ -1491,6 +1491,7 @@ class StripeController extends Controller
                 'payment_intent_data' => [
                     'application_fee_amount' => (int)($totalApplicationFee * 100),
                     'receipt_email' => $user->email,
+                    'description' => "Wish/Cart Payment for {$getdata[0]->owner->username} (Total value including all fees)",
                 ],
                 'customer_email' => $user->email,
                 'metadata' => Helpers::buildStripeMetadata('wishlist', $getdata[0], [

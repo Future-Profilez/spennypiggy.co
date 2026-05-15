@@ -1027,6 +1027,14 @@ class ShopsController extends Controller
 
         $creatorTransferAmountMinor = (int) round(round($listedPriceToGrossUp, $precision, PHP_ROUND_HALF_UP) * $multiplier);
 
+        $metadata = Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
+            'shop_item_id' => $shop->id,
+            'quantity' => $shopPaymentDetail->quantity,
+            'anonymous' => $shopPaymentDetail->anonymous,
+            'creator_net_amount' => (string) $creatorTransferAmountMinor,
+            'total_charge_amount' => (string)$unitAmount,
+        ]);
+
         // Build session payload (platform checkout + destination transfer)
             $payload = [
                 'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
@@ -1045,17 +1053,12 @@ class ShopsController extends Controller
                 'mode' => 'payment',
                 'payment_method_types' => ['card'],
             'customer_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
+                'metadata' => $metadata,
                 'payment_intent_data' => [
                     'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                     'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
                     'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
-                    'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
-                        'shop_item_id' => $shop->id,
-                        'quantity' => $shopPaymentDetail->quantity,
-                        'anonymous' => $shopPaymentDetail->anonymous,
-                        'creator_net_amount' => (string) $creatorTransferAmountMinor,
-                        'total_charge_amount' => (string)$unitAmount,
-                    ]),
+                    'metadata' => $metadata,
                 ],
             ];
 
@@ -1117,7 +1120,10 @@ class ShopsController extends Controller
                     return redirect()->back()->with('error', 'Invalid payment ID.');
                 }
 
-                if ($stripeid->payment_status === 'paid') {
+                $existingUserPayment = \App\Models\UserPayment::where('payment_details', json_encode($stripeid->session_id, true))->exists();
+
+                // Idempotency check: if UserPayment already exists, the business logic has already run.
+                if ($existingUserPayment) {
                     return redirect()->route('thank-you', [
                         'username' => $stripeid->shop->user->username,
                         'type' => 'shop',
@@ -1199,6 +1205,7 @@ class ShopsController extends Controller
                 }
 
                 $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
+                $currencySymbol = $symbol->symbol ?? '£';
 
                 $message = $stripeid->message;
                 // Calculate creator net amount using the SAME logic as buyShopItem
@@ -1206,12 +1213,12 @@ class ShopsController extends Controller
 
                 $currencyModel = Currency::where('ISO', strtoupper($stripeid->currency))->first();
                 $digits = $currencyModel && $currencyModel->ISOdigits == 0 ? 0 : 2;
-                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($listedPriceToGrossUp, $digits);
+                $creatorNetAmount = $currencySymbol . number_format($listedPriceToGrossUp, $digits);
 
                 if ($stripeid->anonymous == 0) {
-                    ShopBuyed::dispatch($stripeid, false, $creatorNetAmount);
+                    ShopBuyed::dispatchSync($stripeid, false, $creatorNetAmount);
                 } else {
-                    ShopBuyed::dispatch($stripeid, true, $creatorNetAmount);
+                    ShopBuyed::dispatchSync($stripeid, true, $creatorNetAmount);
                 }
 
                 // Create/ensure deliverable record for shop item
@@ -1253,22 +1260,26 @@ class ShopsController extends Controller
                     Log::error('ShopsController: Failed to ensure deliverable record', ['error' => $e->getMessage(), 'shop_id' => $stripeid->shop->id ?? null, 'session_id' => $stripeid->session_id ?? null]);
                 }
 
-                ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
+                ShopBuyedUser::dispatchSync($stripeid, $stripeid->shop->reward_file_url, $currencySymbol);
 
                 /**************************SHOP**PWA**START****************************************************/
                 // below is SHOP pwa for fans
 
-                $CreatorName = ucfirst($stripeid->shop->user->name) ?? 'A Creator';
+                $CreatorName = ucfirst($stripeid->shop->user->name ?? 'A Creator');
                 $title = "🛍️ Purchase Confirmed!";
-                $content = "You bought something from $CreatorName ’s shop. They’ll process it soon.";
+                $content = $stripeid->shop->type !== 'physical' 
+                    ? "Your digital purchase from $CreatorName is complete and ready to access."
+                    : "You bought something from $CreatorName ’s shop. They’ll process it soon.";
                 $email = $stripeid->email ?? $stripeid->user->email;
 
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is wish pwa for creator
-                $FanName = ucfirst($stripeid->user->name ?? 'A Fan');
+                $FanName = ucfirst($stripeid->user->name ?? $stripeid->name ?? 'A Fan');
                 $title = "📦 New Shop Order!";
-                $content = "$FanName placed an order in your shop. Time to fulfill it!.";
+                $content = $stripeid->shop->type !== 'physical'
+                    ? "$FanName purchased a digital item from your shop. Delivery was completed automatically."
+                    : "$FanName placed an order in your shop. Time to fulfill it!.";
                 $email = $stripeid->shop->user->email;
 
                 Helpers::sendNotification($title, $content, $email);

@@ -105,6 +105,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     // Accessors
     // ───────────────────────
 
+    public function getNameAttribute($value)
+    {
+        return ucwords(strtolower($value));
+    }
+
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = ucwords(strtolower($value));
+    }
+
     public function getBioAttribute($value)
     {
         if ($this->bio_approved != 1 && (!Auth::check() || Auth::id() !== $this->id)) {

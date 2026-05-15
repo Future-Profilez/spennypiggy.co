@@ -319,9 +319,10 @@ class CheckoutController extends Controller
             $force3ds = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
             // Direct Charges Implementation
+            $metadata = $this->buildSafeMetadata($owner, $getdata, $totalCreatorNet);
             $paymentIntentData = [
                 'description' => "Spenny Piggy - Content purchase for {$owner->name} (Total value including all fees)",
-                'metadata' => $this->buildSafeMetadata($owner, $getdata, $totalCreatorNet),
+                'metadata' => $metadata,
                 'application_fee_amount' => (int) round($totalApplicationFee * $multiplier),
             ];
 
@@ -337,6 +338,7 @@ class CheckoutController extends Controller
                 'cancel_url' => route('checkout.cancel', [$creator_id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 "mode"  =>  "payment",
                 'line_items' => $lineItems, // This determines the total amount automatically
+                'metadata' => $metadata,
                 'payment_intent_data' => $paymentIntentData,
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
@@ -1017,7 +1019,14 @@ class CheckoutController extends Controller
                         $this->userProfileService->clearUserCaches($existingPayment->owner->username, $existingPayment->owner->id);
                         app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
                     }
-                    return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
+                    return redirect(route('thank-you', [
+                        'username' => $existingPayment->owner->username,
+                        'type' => 'wish',
+                        'item_name' => 'Multiple Items', // Simplify for this case
+                        'amount' => $existingPayment->amount_total ?? 0,
+                        'currency' => $existingPayment->currency ?? 'GBP',
+                        'session_id' => $existingPayment->session_id ?? null
+                    ]))->with('success', 'Payment Successful.');
                 }
                 
                 Log::info("Payment found but continuing processing", [
@@ -1375,7 +1384,8 @@ class CheckoutController extends Controller
                 'item_name' => $getdata->count() > 1 ? 'Multiple Items' : ($getdata->first()->wish->wishname ?? 'Gift'),
                 'amount' => $stripeid->amount_total ?? 0,
                 'currency' => $stripeid->currency ?? 'GBP',
-                'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null
+                'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null,
+                'session_id' => $stripeid->session_id ?? null
             ]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             $errorMessage = $th->getMessage();
@@ -1395,7 +1405,8 @@ class CheckoutController extends Controller
                     'item_name' => $getdata->count() > 1 ? 'Multiple Items' : ($getdata->first()->wish->wishname ?? 'Gift'),
                     'amount' => $stripeid->amount_total ?? 0,
                     'currency' => $stripeid->currency ?? 'GBP',
-                    'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null
+                    'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null,
+                    'session_id' => $stripeid->session_id ?? null
                 ]))->with('success', 'Payment Successful.');
             }
 

@@ -6,7 +6,7 @@ import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'r
 
 export default function Thankyou(props) {
 
-  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant} = props;
+  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant, wish_content} = props;
   const { global_currency, auth, user } = usePage().props;
 
   const getTitle = () => {
@@ -83,12 +83,84 @@ export default function Thankyou(props) {
 
   const messageLink = getMessageLink();
 
-  const BenefitsContent = () => (
-    <div className={`benefits-box ${messageLink ? 'cursor-pointer hover:bg-pink-100 transition-colors' : ''}`}>
-      <div className="benefits-title">BENEFITS INCLUDED</div>
-      <div className="benefits-text">{benefitsText}</div>
-    </div>
-  );
+  const BenefitsContent = () => {
+    let rewardLink = null;
+    let rewardText = null;
+
+    if (type === 'wish') {
+      if (item_id) {
+        rewardLink = `/${owner?.username}/wish/${item_id}`;
+        rewardText = "Access Content";
+      } else {
+        rewardLink = `/${owner?.username}/wishes`;
+        rewardText = "Access Content";
+      }
+    } else if (type === 'bill') {
+      rewardLink = `/${owner?.username}`;
+      rewardText = "See Creator's Subscriber-Only Posts";
+    } else if (type === 'membership') {
+      rewardLink = `/${owner?.username}`;
+      rewardText = "See Creator's Members-Only Posts";
+    } else if (type === 'support') {
+      rewardLink = `/${owner?.username}`;
+      rewardText = "See Creator's Supporters-Only Posts";
+    } else if (type === 'shop') {
+      if (String(is_instant) === '1' || String(is_instant) === 'true') {
+        rewardLink = `/shop?type=purchases`;
+        rewardText = "Go to Order Details";
+      }
+    } else if (type === 'task') {
+      if (item_id) {
+        rewardLink = `/task/dashboard?tab=purchases`;
+        rewardText = "Go to Order Details";
+      }
+    }
+
+    return (
+      <div className="benefits-box">
+        <div className="benefits-title">BENEFITS INCLUDED</div>
+        <div className="benefits-text">{benefitsText}</div>
+
+        {wish_content && type === 'wish' && (
+          <div className="mt-4 p-4 bg-white border-2 border-pink-200 rounded-xl shadow-sm">
+            <h4 className="text-pink-600 font-black text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
+               <FaCheckCircle /> Exclusive Content Unlocked
+            </h4>
+            
+            {wish_content.type && wish_content.type.includes('video') ? (
+               <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border border-gray-200 bg-black">
+                   <source src={wish_content.url} type={wish_content.type} />
+                   Your browser does not support the video tag.
+               </video>
+            ) : wish_content.type && wish_content.type.includes('audio') ? (
+               <audio controls controlsList="nodownload" className="w-full mt-2">
+                   <source src={wish_content.url} type={wish_content.type} />
+                   Your browser does not support the audio element.
+               </audio>
+            ) : (
+               <a href={wish_content.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 hover:opacity-90 transition-opacity">
+                   <img src={wish_content.url} alt={wish_content.name || "Exclusive Content"} className="w-full max-h-[250px] object-contain" />
+               </a>
+            )}
+            
+            {wish_content.name && (
+                <div className="mt-2 text-center text-xs text-gray-500 font-bold truncate px-2">
+                    {wish_content.name}
+                </div>
+            )}
+          </div>
+        )}
+
+        {rewardLink && !wish_content && (
+          <div className="mt-3">
+            <Link href={rewardLink} className="text-pink-500 font-bold hover:underline text-[13px] uppercase flex items-center gap-1">
+              {rewardText} <FaCheckCircle className="text-pink-500" />
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  };
 
     return (
         <Authenticated auth={auth?.user} user={user} >
@@ -279,13 +351,7 @@ export default function Thankyou(props) {
                             )}
                             
                             {benefitsText && (
-                            messageLink ? (
-                                <Link href={messageLink} className="block">
                                 <BenefitsContent />
-                                </Link>
-                            ) : (
-                                <BenefitsContent />
-                            )
                             )}
                         </div>
                         )}

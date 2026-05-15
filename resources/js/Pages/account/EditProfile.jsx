@@ -503,7 +503,23 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                         </div>
                                     </li>
                                     <li className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-sm font-medium text-gray-700">Bio</label>
+                                            {user?.bio && user?.bio_approved === 0 && (
+                                                <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">Pending Approval</span>
+                                            )}
+                                            {user?.bio && user?.bio_approved === 1 && (
+                                                <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full border border-green-200">Approved</span>
+                                            )}
+                                            {user?.bio && user?.bio_approved === 2 && (
+                                                <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full border border-red-200">Rejected</span>
+                                            )}
+                                        </div>
+                                        {user?.bio_approved === 2 && user?.edit_bio_reason && (
+                                            <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-[12px] border border-red-200">
+                                                <span className="font-bold">Rejection Reason:</span> {user.edit_bio_reason}
+                                            </div>
+                                        )}
                                         <textarea 
                                             onBlur={IsProfileChannged} 
                                             defaultValue={user?.bio || ''}

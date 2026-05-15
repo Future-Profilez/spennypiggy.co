@@ -84,7 +84,7 @@ class ShopBuyedUser implements ShouldQueue
                 'shop',
             ]);
 
-            $buyerEmail = $this->payment->user?->email;
+            $buyerEmail = $this->payment->email ?? $this->payment->user?->email;
 
             if (!$buyerEmail) {
                 Log::warning('ShopBuyedUser Job: Buyer email missing', [

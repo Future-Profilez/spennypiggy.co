@@ -626,32 +626,38 @@ class PayoutService
         // Add pending reserves (not yet part of an executed payout run)
         // Use FinancialTransaction as source of truth for what the creator sees in the dashboard.
         // EXCLUDE: review_hold, disputed, refunded as per user request.
+        // ALSO EXCLUDE: Unfulfilled physical shop items and timed tasks.
         $pendingFts = \App\Models\FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
             ->where('reserve_status', '!=', 'released')
             ->where('reserve_amount', '>', 0)
-            ->with(['supporter:id,name,username'])
+            ->with(['supporter:id,name,username', 'source' => function($morphTo) {
+                $morphTo->morphWith([
+                    \App\Models\TaskPurchase::class => ['task'],
+                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
+                ]);
+            }])
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
-            ->get([
-                'id',
-                'uuid',
-                'supporter_id',
-                'source_type',
-                'source_id',
-                'type',
-                'status',
-                'description',
-                'gross_amount',
-                'net_amount',
-                'reserve_amount',
-                'reserve_status',
-                'currency',
-                'transaction_date',
-            ]);
+            ->get();
 
         foreach ($pendingFts as $ft) {
+            // Check fulfillment status for Shop and Task
+            if ($ft->source_type === \App\Models\TaskPurchase::class && $ft->source) {
+                $taskType = $ft->source->task->type ?? 'timed';
+                if ($taskType === 'timed' && !in_array($ft->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    continue; // Skip reserve calculation for unfulfilled timed tasks
+                }
+            }
+            if ($ft->source_type === \App\Models\ShopPayment::class && $ft->source && $ft->source->shop) {
+                if ($ft->source->shop->type === 'physical') {
+                    if (!$ft->source->deliverable || $ft->source->deliverable->status !== 'delivered') {
+                        continue; // Skip reserve calculation for unfulfilled physical shop items
+                    }
+                }
+            }
+
             $reserveMajor = (float) ($ft->reserve_amount ?? 0);
             if ($reserveMajor <= 0) continue;
 

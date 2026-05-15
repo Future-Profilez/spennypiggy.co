@@ -561,6 +561,7 @@ class TaskController extends Controller
             'mode' => 'payment',
             'payment_intent_data' => [
                 'receipt_email' => $user->email,
+                'description' => "Task Payment for {$creator->username} (Total value including all fees)",
                 'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                 'metadata' => $complianceMetadata,
             ],

@@ -1070,6 +1070,49 @@ Route::prefix("wish")->name("wish.")->group(function () {
 
 Route::get('payment/thankyou/{username}', function ($username) {
     $owner = User::where('username', $username)->first();
+    
+    $wishContent = null;
+    if (request('type') === 'wish' && request('item_id')) {
+        $wish = \App\Models\WishItem::where('id', request('item_id'))->orWhere('uuid', request('item_id'))->first();
+        if ($wish && ($wish->content_file || $wish->reward)) {
+            // VERIFY PURCHASE SECURITY: Check if user actually purchased this item via session_id or auth
+            $hasPurchased = false;
+            
+            // 1. Check by session_id (works for both guests and logged-in users)
+            if (request('session_id')) {
+                $paymentExists = \App\Models\StripePaymentDetail::where('session_id', request('session_id'))
+                    ->whereIn('payment_status', ['paid', 'succeeded'])
+                    ->whereHas('items', function($q) use ($wish) {
+                        $q->where('wish_item_id', $wish->id);
+                    })->exists();
+                if ($paymentExists) {
+                    $hasPurchased = true;
+                }
+            }
+            
+            // 2. Fallback check for authenticated users (if session_id is missing/lost but they are logged in)
+            if (!$hasPurchased && auth()->check()) {
+                $userPaymentExists = \App\Models\StripePaymentDetail::where('user_id', auth()->id())
+                    ->whereIn('payment_status', ['paid', 'succeeded'])
+                    ->whereHas('items', function($q) use ($wish) {
+                        $q->where('wish_item_id', $wish->id);
+                    })->exists();
+                if ($userPaymentExists) {
+                    $hasPurchased = true;
+                }
+            }
+
+            // Only show content if purchase is verified
+            if ($hasPurchased) {
+                $wishContent = [
+                    'url' => $wish->content_file_url ?: $wish->reward_url,
+                    'type' => $wish->content_file_type ?: 'image',
+                    'name' => $wish->content_file_name,
+                ];
+            }
+        }
+    }
+
     return Inertia::render('Profile/Thankyou', [
         'owner' => $owner,
         'type' => request('type'),
@@ -1080,6 +1123,7 @@ Route::get('payment/thankyou/{username}', function ($username) {
         'item_id' => request('item_id'),
         'item_slug' => request('item_slug'),
         'is_instant' => request('is_instant'),
+        'wish_content' => $wishContent,
     ]);
 })->name("thank-you");
 

@@ -74,26 +74,32 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                         {/* // )} */}
                                     </div>
                                 </td>
-                                <td className={`px-4 md: border border-gray-200 px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    <span className="text-[15px]">{tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? (tx.gross_amount || tx.net_amount) : tx.gross_amount, tx.currency)}</span>
-                                    <div className="mt-2 flex justify-end">
+                                <td className={`px-6 py-4 text-sm text-right border border-gray-200 min-w-[180px]`}>
+                                    <div className={`font-mono font-bold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                        <span className="text-[16px]">{tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? (tx.gross_amount || tx.net_amount) : tx.gross_amount, tx.currency)}</span>
+                                    </div>
+                                    <div className="mt-1.5 space-y-1.5">
                                         {tx.shipping_amount > 0 && (
-                                            <div className="text-[10px] text-gray-400 font-bold uppercase italic text-right mb-1">
+                                            <div className="text-[10px] text-gray-400 font-bold uppercase italic leading-none">
                                                 Incl. {formatCurrency(tx.shipping_amount, tx.currency)} shipping
                                             </div>
                                         )}
                                         {tx.reserve_amount > 0 && !isPending && (
-                                            <div className={`flex text-center gap-0.5 px-3 py-1.5 rounded-xl border w-fit ${
-                                                tx.reserve_status === 'released'
-                                                    ? 'bg-green-50 border-green-200 text-green-700'
-                                                    : 'bg-blue-50 border-blue-100 text-blue-600'
-                                            }`}>
-                                                <span className="text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 tracking-wider">
-                                                    {tx.reserve_status === 'released' ? '✓ Reserve Settled' : <><ShieldCheckIcon size={12} className="text-yellow-600" /> {tx.reserve_percent}% Reserved</>}
-                                                </span>
-                                                <span className="text-[10px] font-semibold text-gray-500">
-                                                    {formatCurrency(tx.reserve_amount, tx.currency)} of your earnings
-                                                </span>
+                                            <div className="flex justify-end">
+                                                <div className={`flex flex-col items-end gap-0.5 rounded-xl w-fit ${
+                                                    tx.reserve_status === 'released'
+                                                        ? ' text-green-700'
+                                                        : 'text-blue-600'
+                                                }`}>
+                                                    <div className='flex gap-3'>
+                                                        <div className="whitespace-nowrap text-[13px] font-black uppercase flex items-center gap-1.5 tracking-widest">
+                                                            {tx.reserve_status === 'released' ? '✓ Settled' : <><ShieldCheckIcon size={12} className="text-yellow-600" /> {tx.reserve_percent}% Held</>}
+                                                        </div>
+                                                        <div className="whitespace-nowrap text-[13px] font-bold text-gray-900 uppercase tracking-tighter">
+                                                            {formatCurrency(tx.reserve_amount, tx.currency)} Reserved
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -113,11 +119,11 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                         </span>
                                         {tx.item_status && (
                                             <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                                tx.item_status.endsWith('completed') || tx.item_status.endsWith('delivered') || tx.item_status.endsWith('accepted') ? 'text-green-600' : 
-                                                tx.item_status.startsWith('task') ? 'text-blue-600' : 
-                                                tx.item_status.startsWith('order') ? 'text-orange-600' :
-                                                'text-gray-500'
-                                            }`}>Item: {tx.item_status.replace('_', ' ')}
+                                                ['complete', 'delivered', 'accepted'].some(s => tx.item_status.endsWith(s)) ? 'text-green-600 bg-green-50 border border-green-100' : 
+                                                tx.item_status === 'pending' || tx.item_status === 'processing' ? 'text-yellow-600 bg-yellow-50 border border-yellow-100' :
+                                                tx.item_status === 'shipped' ? 'text-blue-600 bg-blue-50 border border-blue-100' :
+                                                'text-gray-500 bg-gray-50 border border-gray-100'
+                                            }`}>Status: {tx.item_status.replace('_', ' ')}
                                             </span>
                                         )}
                                         {tx.type === 'income' && tx.status === 'disputed' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (

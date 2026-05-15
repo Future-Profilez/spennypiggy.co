@@ -44,10 +44,38 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                         </div>
                     </div>
 
-                    {IsloggedIn && user?.edit_bio_reason ? (
+                    {IsloggedIn && user?.bio_approved === 0 && user?.bio ? (
+                        <div className="mt-10 p-6 rounded-xl bg-yellow-100 border-[3px] border-yellow-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <p className="text-yellow-800 font-black text-xs tracking-widest uppercase mb-2">Under Review</p>
+                            <p className="text-gray-900 font-bold text-sm leading-relaxed">Your bio is currently pending approval by the admin.</p>
+                        </div>
+                    ) : null}
+
+                    {IsloggedIn && user?.bio_approved === 2 && user?.edit_bio_reason ? (
                         <div className="mt-10 p-6 rounded-xl bg-red-400 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             <p className="text-black font-black text-xs tracking-widest uppercase mb-2">Review Required</p>
                             <p className="text-gray-900 font-bold text-sm leading-relaxed">{user?.edit_bio_reason}</p>
+                        </div>
+                    ) : null}
+
+                    {IsloggedIn && sLinks?.status === 0 ? (
+                        <div className="mt-10 p-6 rounded-xl bg-yellow-100 border-[3px] border-yellow-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <p className="text-yellow-800 font-black text-xs tracking-widest uppercase mb-2">Social Links Under Review</p>
+                            <p className="text-gray-900 font-bold text-sm leading-relaxed">Your updated social links are currently pending approval by the admin.</p>
+                        </div>
+                    ) : null}
+
+                    {IsloggedIn && sLinks?.status === 2 && sLinks?.reason ? (
+                        <div className="mt-10 p-6 rounded-xl bg-red-400 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <p className="text-black font-black text-xs tracking-widest uppercase mb-2">Social Links Review Required</p>
+                            <p className="text-gray-900 font-bold text-sm leading-relaxed">{sLinks?.reason}</p>
+                        </div>
+                    ) : null}
+
+                    {IsloggedIn && sLinks?.status === 3 && sLinks?.reason ? (
+                        <div className="mt-10 p-6 rounded-xl bg-red-400 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <p className="text-black font-black text-xs tracking-widest uppercase mb-2">Social Links Edit Requested</p>
+                            <p className="text-gray-900 font-bold text-sm leading-relaxed">{sLinks?.reason}</p>
                         </div>
                     ) : null}
                 </div>

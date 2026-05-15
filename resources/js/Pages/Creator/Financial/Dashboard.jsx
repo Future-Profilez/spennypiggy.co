@@ -421,10 +421,10 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     </div>
 
                                     {/* Payment Status Breakdown */}
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {[
                                             { key: 'completed', label: 'Paid', bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-600', inPayout: true, note: 'Included in payout' },
-                                            { key: 'pending', label: 'Pending', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-600', inPayout: false, note: 'Awaiting confirmation' },
+                                            // { key: 'pending', label: 'Pending', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-600', inPayout: false, note: 'Awaiting confirmation' },
                                             { key: 'review_hold', label: 'Review Hold', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-600', inPayout: false, note: 'Not in payout or reserve' },
                                             { key: 'disputed', label: 'Disputed', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-600', inPayout: false, note: 'Not in payout or reserve' },
                                             { key: 'refunded', label: 'Refunded', bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-600', inPayout: false, note: 'Deducted from future payout' },
