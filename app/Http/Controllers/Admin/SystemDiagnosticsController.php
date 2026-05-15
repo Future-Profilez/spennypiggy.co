@@ -1377,7 +1377,16 @@ class SystemDiagnosticsController extends Controller
                 return ['status' => 'warning', 'message' => 'APP_URL is not configured.', 'time_ms' => 0];
             }
 
-            $response = Http::timeout(10)->get($appUrl);
+            $pingUrl = rtrim($appUrl, '/') . '/ping';
+            $response = Http::timeout(10)
+                ->withHeaders(['User-Agent' => 'SpennyPiggyDiagnostics/1.0'])
+                ->get($pingUrl);
+
+            if ($response->status() === 404) {
+                $response = Http::timeout(10)
+                    ->withHeaders(['User-Agent' => 'SpennyPiggyDiagnostics/1.0'])
+                    ->get($appUrl);
+            }
             $time = round((microtime(true) - $start) * 1000, 2);
             $statusCode = $response->status();
 

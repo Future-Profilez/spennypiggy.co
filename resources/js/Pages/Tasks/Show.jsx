@@ -339,9 +339,9 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     return (
         <Guest auth={auth?.user} user={auth?.user}>
             <Head title={task.title} />
-            <div className="bg-white px-3 py-3 min-h-screen">
-                <div className="max-w-3xl mx-auto">
-                    <Link href={route('task.dashboard')} className="inline-block mb-6 mt-6 text-black font-bold uppercase tracking-wide hover:text-pink-500 transition-colors">
+            <div className="bg-white px-4 py-8 min-h-screen">
+                <div className="max-w-6xl mx-auto">
+                    <Link href={route('task.dashboard')} className="inline-block mb-6 text-black font-bold uppercase tracking-wide hover:text-pink-500 transition-colors">
                         &larr; Back to Dashboard
                     </Link>
 
@@ -393,217 +393,215 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             </div>
                         )}
 
-                        {/* Retro Header */}
-                        
-
-                        {/* Media Cover */}
-                        {/* {task.media_url && (
-                            <div className="border-b-2 border-black">
-                                <img src={task.media_url} alt={task.title} className="w-full h-80 object-cover" />
-                            </div>
-                        )} */} 
-
-                        <div className="py-8">
-                            <div className='md:flex justify-between items-start'>
-                                <div>
-                                    <h1 className="text-2xl font-black font-fre uppercase font-light  text-gray-900  ">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 py-4">
+                            {/* Left Column - Task Details */}
+                            <div className="lg:col-span-8 space-y-8">
+                                <div className="bg-white border-2 border-black rounded-[20px] p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <h1 className="text-3xl md:text-4xl font-black font-fre uppercase text-gray-900 mb-4">
                                         {task.title}
                                     </h1>
-                                    <div className="mt-2 mb-4 prose prose-lg text-gray-600 leading-relaxed border-l-4 border-pink-300 pl-4">
+                                    
+                                    <div className="flex flex-wrap gap-2 mb-6">
+                                        <span className={`uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
+                                            task.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                        }`}>{task.status}</span>
+                                        <span className="uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border !bg-blue-100 text-blue-800 !border-blue-200">
+                                            {task.type} Delivery
+                                        </span>
+                                        {task?.sla_hours ? <span className="uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
+                                            {task.sla_hours === 168 ? '7d' : `${task.sla_hours}h`}
+                                        </span> : null}
+                                        <span className="uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
+                                            {task.category || 'Paid Task'}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed border-l-4 border-pink-300 pl-4 mb-8 whitespace-pre-wrap">
                                         {task.description}
                                     </div>
-                                </div> 
-                                <span className="text-2xl font-black text-pink font-anton tracking-wider text-right">
-                                    {isCreator ? (
-                                        formatMultiPrice(task.price, task.currency || 'USD')
-                                    ) : (
-                                        <>
-                                            {formatMultiPrice(
-                                                calculateTotalSupporterPays(
-                                                    task.price, 
-                                                    task.currency || 'USD',
-                                                    ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)
-                                                ), 
-                                                task.currency || 'USD'
-                                            )}
-                                            <span className="block text-xs text-gray-500 font-normal mt-1 leading-tight">
-                                                *Includes platform and payment processing fees. You will be charged in {task.currency || 'USD'}.
-                                            </span>
-                                        </>
-                                    )}
-                                </span>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mt-4 mb-4">
-                                <span className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                    task.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                }`}>{task.status}
-                                </span>
-                                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-blue-100 text-blue-800 !border-blue-200">
-                                    {task.type} Delivery
-                                </span>
-                                {task?.sla_hours ? <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
-                                    {task.sla_hours === 168 ? '7d' : `${task.sla_hours}h`}
-                                </span>: ''}
-                                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
-                                    {task.category || 'Paid Task'}
-                                </span>
-                            </div>
-
-                            <div className="items-center gap-4 ">
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>
-                                <div className='flex'>
-                                    <Link href={`/${task.creator.username}/tasks`} className="flex items-center gap-3 group">
-                                        <img 
-                                            src={task.creator.avatar_url || userphoto} 
-                                            alt={task.creator.name} 
-                                            className="w-14 h-14 rounded-full border-2 border-black object-cover"
-                                        />
-                                        <div>
-                                            <h4 className="text-lg font-black font-anton tracking-wide leading-none group-hover:text-pink-500 transition-colors">
-                                                {task.creator.name}
-                                            </h4>
-                                            <p className="text-sm text-gray-600 font-medium">@{task.creator.username}</p>
-                                            <p className="text-xs text-gray-400 mt-1 font-bold uppercase tracking-wider">
-                                                On {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                                            </p>
-                                        </div>
-                                    </Link>
-                                </div>
-                            </div>
-                            
-                            <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
-                                {isCreator ? (
-                                    <div className="text-center  rounded-[30px]  py-6">
-                                        <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
-                                        <a href={route('task.dashboard')} className="button b">
-                                            Manage Orders
-                                        </a>
+                                    
+                                    <div className="border-t-2 border-dashed border-gray-200 pt-6">
+                                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-4">Created By</p>
+                                        <Link href={`/${task.creator.username}/tasks`} className="flex items-center gap-4 group">
+                                            <img 
+                                                src={task.creator.avatar_url || userphoto} 
+                                                alt={task.creator.name} 
+                                                className="w-16 h-16 rounded-full border-2 border-black object-cover"
+                                            />
+                                            <div>
+                                                <h4 className="text-xl font-black font-anton tracking-wide leading-none group-hover:text-pink-500 transition-colors">
+                                                    {task.creator.name}
+                                                </h4>
+                                                <p className="text-base text-gray-600 font-medium">@{task.creator.username}</p>
+                                                <p className="text-xs text-gray-400 mt-1 font-bold uppercase tracking-wider">
+                                                    On {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                </p>
+                                            </div>
+                                        </Link>
                                     </div>
-                                ) : (
-                                    <div>
-                                        {/* Instant Delivery Section - Only if access granted */}
-                                        {task.type === 'instant' && deliverableUrl && (
-                                            <div className="mb-8">
-                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[30px]  border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
-                                                    ✓ Purchased Successfully
-                                                </div>
-                                                <div className="space-y-4">
-                                                    {task.deliverable_note && (
-                                                        <div className="bg-white border-2 border-black rounded-[30px]  p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                                            <h4 className="font-black text-gray-900 mb-3 uppercase tracking-wide">Note from Creator:</h4>
-                                                            <p className="whitespace-pre-wrap text-gray-700 font-medium">{task.deliverable_note}</p>
+                                </div>
+                                
+                                {/* Purchase History */}
+                                {purchaseHistory && purchaseHistory.length > 0 && (
+                                    <div className="bg-white border-2 border-black rounded-[20px] p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                        <h3 className="text-xl font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
+                                        <div className="space-y-4">
+                                            {purchaseHistory.map((historyItem) => (
+                                                <div key={historyItem.uuid} className="bg-gray-50 border-2 border-gray-200 rounded-[16px] p-4 flex flex-col gap-3">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <p className="font-bold text-xs uppercase text-gray-500 mb-1">
+                                                                {new Date(historyItem.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                            <span className={`uppercase inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
+                                                                historyItem.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                                                            }`}>
+                                                                {historyItem.status}
+                                                            </span>
+                                                        </div>
+                                                        <a href={route('task.order', historyItem.uuid)} className="text-sm font-black text-pink-600 hover:text-pink-700 uppercase tracking-wide border-b-2 border-pink-200 hover:border-pink-600 transition-colors">
+                                                            View Order &rarr;
+                                                        </a>
+                                                    </div>
+                                                    {historyItem.gifter_message && (
+                                                        <div className="bg-white p-3 rounded-[12px] text-sm italic text-gray-600 border border-gray-200">
+                                                            "{historyItem.gifter_message}"
                                                         </div>
                                                     )}
-                                                    <a 
-                                                        href={deliverableUrl} 
-                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[30px]  hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                    >
-                                                        Download Content 📥
-                                                    </a>
                                                 </div>
-                                            </div>
-                                        )}
-
-                                        {/* Purchase History List */}
-                                        {purchaseHistory && purchaseHistory.length > 0 && (
-                                            <div className="mb-8">
-                                                 <h3 className="text-lg font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
-                                                 <div className="space-y-3">
-                                                     {purchaseHistory.map((historyItem) => (
-                                                         <div key={historyItem.uuid} className="bg-white border-2 border-gray-200 rounded-[20px]  p-4 flex flex-col gap-3">
-                                                             <div className="flex justify-between items-start">
-                                                                 <div>
-                                                                     <p className="font-bold text-xs uppercase text-gray-500 mb-1">
-                                                                         {new Date(historyItem.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                                     </p>
-                                                                     <span className={`uppercase inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
-                                                                         historyItem.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
-                                                                     }`}>
-                                                                         {historyItem.status}
-                                                                     </span>
-                                                                 </div>
-                                                                 <a href={route('task.order', historyItem.uuid)} className="text-xs font-black text-pink-600 hover:text-pink-700 uppercase tracking-wide border-b-2 border-pink-200 hover:border-pink-600 transition-colors">
-                                                                     View Order &rarr;
-                                                                 </a>
-                                                             </div>
-                                                             {historyItem.gifter_message && (
-                                                                 <div className="bg-gray-50 p-3 rounded-[30px]   text-sm italic text-gray-600 border border-gray-100">
-                                                                     "{historyItem.gifter_message}"
-                                                                 </div>
-                                                             )}
-                                                         </div>
-                                                     ))}
-                                                 </div>
-                                            </div>
-                                        )}
-
-                                        {/* Purchase Form */}
-                                        <div className="mt-6">
-                                            {!card_capabilities && (
-                                                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
-                                                    <p className="font-bold">Payments Unavailable</p>
-                                                    <p>This creator cannot accept payments at the moment (Card Payments capability missing).</p>
-                                                </div>
-                                            )}
-                                             <form onSubmit={(e) => e.preventDefault()}>
-                                                 <div className="mb-4">
-                                                     <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                                         Message to Creator (Optional)
-                                                     </label>
-                                                     <textarea
-                                                         id="gifter_message"
-                                                         value={data.gifter_message}
-                                                         onChange={e => setData('gifter_message', e.target.value)}
-                                                         className="w-full border-2 border-gray-200 rounded-[20px]  p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y"
-                                                         placeholder="Add a personal note with your purchase..."
-                                                     />
-                                                 </div>
-
-
-                                                 {turnstileSiteKey ? (
-                                                     <div className="mb-4 flex justify-start">
-                                                         <Turnstile
-                                                             ref={turnstileRef}
-                                                             size="normal"
-                                                             theme="light"
-                                                             onVerify={onVerify}
-                                                         />
-                                                     </div>
-                                                 ) : null}
-                                                 <CheckoutLegalTerms onAgreeChange={(checked) => {
-                                                     setData('agree', checked);
-                                                     setData('digital_waiver', checked);
-                                                 }} />
-
-                                                 <button
-                                                     type="button"
-                                                     onClick={handlePurchase}
-                                                     disabled={
-                                                         processing ||
-                                                         !data.agree || !data.digital_waiver || !verified || !card_capabilities
-                                                     }
-                                                     className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
-                                                         !data.agree || !data.digital_waiver || !verified || !card_capabilities) ?'disabled':'enabled'}`} >
-                                                     {processing ? 'Processing...' : (
-                            purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')
-                        )}
-                                                 </button>
-                                             </form>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        </div>
-                        
-                        {!auth?.user && !purchase && (
-                            <div className="bg-gray-50 p-4 text-center !border-t-2 !border-black">
-                                <p className="text-normal text-gray-600 font-bold">
-                                    Please <a href={route('login')} className="text-pink-600 hover:underline">login</a> to purchase.
-                                </p>
+
+                            {/* Right Column - Actions & Price */}
+                            <div className="lg:col-span-4 space-y-6">
+                                <div className="bg-white border-2 border-black rounded-[20px] p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:sticky lg:top-6">
+                                    <div className="mb-6 pb-6 border-b-2 border-dashed border-gray-200">
+                                        <div className="text-3xl md:text-4xl font-black text-pink-500 font-anton tracking-wider text-center lg:text-left">
+                                            {isCreator ? (
+                                                formatMultiPrice(task.price, task.currency || 'USD')
+                                            ) : (
+                                                <>
+                                                    {formatMultiPrice(
+                                                        calculateTotalSupporterPays(
+                                                            task.price, 
+                                                            task.currency || 'USD',
+                                                            ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)
+                                                        ), 
+                                                        task.currency || 'USD'
+                                                    )}
+                                                    <span className="block text-xs text-gray-500 font-normal mt-2 leading-tight">
+                                                        *Includes platform and payment processing fees. You will be charged in {task.currency || 'USD'}.
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Actions / Purchase Form */}
+                                    <div>
+                                        {isCreator ? (
+                                            <div className="text-center py-4">
+                                                <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
+                                                <a href={route('task.dashboard')} className="button b w-full justify-center">
+                                                    Manage Orders
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                {/* Instant Delivery Section - Only if access granted */}
+                                                {task.type === 'instant' && deliverableUrl && (
+                                                    <div className="mb-6">
+                                                        <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[20px] border-2 border-green-300 mb-4 font-bold text-base text-center">
+                                                            ✓ Purchased Successfully
+                                                        </div>
+                                                        <div className="space-y-4">
+                                                            {task.deliverable_note && (
+                                                                <div className="bg-gray-50 border-2 border-black rounded-[16px] p-4 text-left">
+                                                                    <h4 className="font-black text-gray-900 mb-2 uppercase tracking-wide text-sm">Note from Creator:</h4>
+                                                                    <p className="whitespace-pre-wrap text-gray-700 font-medium text-sm">{task.deliverable_note}</p>
+                                                                </div>
+                                                            )}
+                                                            <a 
+                                                                href={deliverableUrl} 
+                                                                className="flex items-center justify-center gap-2 w-full text-center bg-black text-white px-4 py-3 rounded-[20px] hover:bg-gray-800 cursor-pointer font-black uppercase tracking-widest text-sm transition-all"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                            >
+                                                                Download Content 📥
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Purchase Form */}
+                                                <div className="">
+                                                    {!card_capabilities && (
+                                                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
+                                                            <p className="font-bold">Payments Unavailable</p>
+                                                            <p className="text-sm">This creator cannot accept payments at the moment (Card Payments capability missing).</p>
+                                                        </div>
+                                                    )}
+                                                    <form onSubmit={(e) => e.preventDefault()}>
+                                                        <div className="mb-4">
+                                                            <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                                                Message to Creator (Optional)
+                                                            </label>
+                                                            <textarea
+                                                                id="gifter_message"
+                                                                value={data.gifter_message}
+                                                                onChange={e => setData('gifter_message', e.target.value)}
+                                                                className="w-full border-2 border-gray-200 rounded-[16px] p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y text-sm"
+                                                                placeholder="Add a personal note with your purchase..."
+                                                            />
+                                                        </div>
+
+                                                        {turnstileSiteKey ? (
+                                                            <div className="mb-4 flex justify-start">
+                                                                <Turnstile
+                                                                    ref={turnstileRef}
+                                                                    size="normal"
+                                                                    theme="light"
+                                                                    onVerify={onVerify}
+                                                                />
+                                                            </div>
+                                                        ) : null}
+                                                        <CheckoutLegalTerms onAgreeChange={(checked) => {
+                                                            setData('agree', checked);
+                                                            setData('digital_waiver', checked);
+                                                        }} />
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={handlePurchase}
+                                                            disabled={
+                                                                processing ||
+                                                                !data.agree || !data.digital_waiver || !verified || !card_capabilities
+                                                            }
+                                                            className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
+                                                                !data.agree || !data.digital_waiver || !verified || !card_capabilities) ?'disabled':'enabled'}`} >
+                                                            {processing ? 'Processing...' : (
+                                                                purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')
+                                                            )}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                {!auth?.user && !purchase && (
+                                    <div className="bg-white p-4 text-center rounded-[20px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-6">
+                                        <p className="text-sm text-gray-600 font-bold uppercase tracking-wider">
+                                            Please <a href={route('login')} className="text-pink-600 hover:text-pink-500 hover:underline">login</a> to purchase.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1117,7 +1117,6 @@ class ShopsController extends Controller
                     return redirect()->back()->with('error', 'Invalid payment ID.');
                 }
 
-                // If already paid, just redirect
                 if ($stripeid->payment_status === 'paid') {
                     return redirect()->route('thank-you', [
                         'username' => $stripeid->shop->user->username,
@@ -1126,7 +1125,8 @@ class ShopsController extends Controller
                         'amount' => $stripeid->amount ?? 0,
                         'currency' => $stripeid->currency ?? 'GBP',
                         'item_id' => $stripeid->shop->uuid,
-                        'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name)
+                        'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
+                        'is_instant' => $stripeid->shop->type === 'digital' ? '1' : '0'
                     ])->with('success', 'Payment Successful.');
                 }
 
@@ -1311,7 +1311,8 @@ class ShopsController extends Controller
                     'amount' => $stripeid->amount ?? 0,
                     'currency' => $stripeid->currency ?? 'GBP',
                     'item_id' => $stripeid->shop->uuid,
-                    'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name)
+                    'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
+                    'is_instant' => $stripeid->shop->type === 'digital' ? '1' : '0'
                 ])->with('success', 'Payment Successful.');
             } catch (\Exception $e) {
                 Log::error("Error in successPayment: " . $e->getMessage());
@@ -1649,9 +1650,43 @@ class ShopsController extends Controller
                 if (($deliverable->hidden_from_gifter ?? false) === true) {
                     return null;
                 }
+
+                // Auto-create deliverable for digital items if missing
+                if (!$deliverable && $order->shop && $order->shop->type !== 'physical') {
+                    try {
+                        $deliverable = \App\Models\Deliverable::create([
+                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'product_id' => $order->shop->stripe_product_id ?? 'shop_' . $order->shop->id,
+                            'price_id' => $order->shop->price_id,
+                            'item_id' => $order->shop->id,
+                            'creator_id' => $order->shop->user_id,
+                            'gifter_id' => $order->user_id,
+                            'session_id' => $order->session_id,
+                            'deliverable_type' => 'digital_file',
+                            'product_type' => 'shop_item',
+                            'transaction_amount' => $order->amount,
+                            'deliverable_url' => $order->shop->reward_file_url,
+                            'customer_email' => $order->email,
+                            'customer_name' => $order->name,
+                            'payment_status' => 'paid',
+                            'payment_currency' => strtoupper($order->currency ?? 'GBP'),
+                            'status' => 'delivered',
+                            'delivered_at' => now(),
+                        ]);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('ShopsController: Failed to auto-create deliverable in purchases: ' . $e->getMessage());
+                    }
+                }
+
+                // Determine status - digital is always delivered/completed
+                $status = $deliverable->status ?? 'pending';
+                if ($order->shop && $order->shop->type !== 'physical') {
+                    $status = 'delivered';
+                }
+
                 // Determine delay status
                 $isDelayed = false;
-                if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
+                if ($order->shop->type === 'physical' && $status !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
                     if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
                         $isDelayed = true;
                     }
@@ -1659,14 +1694,14 @@ class ShopsController extends Controller
 
                 return [
                     'id' => $order->id,
-                'uuid' => $order->uuid,
-                'amount' => $order->amount,
-                'gross_amount' => (float) ($order->financialTransaction->gross_amount ?? $order->total_paid ?? ($order->amount + ($order->tax_amount ?? 0) + ($order->vat_tax_amount ?? 0) + ($order->shipping_amount ?? 0))),
-                'net_amount' => (float) ($order->financialTransaction->net_amount ?? $order->amount),
-                'tax_amount' => $order->tax_amount ?? 0,
-                'vat_tax_amount' => $order->vat_tax_amount ?? 0,
-                'shipping_amount' => $order->shipping_amount ?? 0,
-                'currency' => $order->currency,
+                    'uuid' => $order->uuid,
+                    'amount' => $order->amount,
+                    'gross_amount' => (float) ($order->financialTransaction->gross_amount ?? $order->total_paid ?? ($order->amount + ($order->tax_amount ?? 0) + ($order->vat_tax_amount ?? 0) + ($order->shipping_amount ?? 0))),
+                    'net_amount' => (float) ($order->financialTransaction->net_amount ?? $order->amount),
+                    'tax_amount' => $order->tax_amount ?? 0,
+                    'vat_tax_amount' => $order->vat_tax_amount ?? 0,
+                    'shipping_amount' => $order->shipping_amount ?? 0,
+                    'currency' => $order->currency,
                     'created_at' => $order->created_at,
                     'name' => $order->shop->user->name ?? 'Unknown',
                     'username' => $order->shop->user->username ?? '',
@@ -1675,7 +1710,7 @@ class ShopsController extends Controller
                     'shop' => $order->shop,
                     'quantity' => $order->quantity,
                     'shipping_info' => $order->shipping_info,
-                    'status' => $deliverable->status ?? 'pending',
+                    'status' => $status,
                     'payment_status' => $order->payment_status,
                     'is_deactivated' => $deliverable->is_deactivated ?? false,
                     'is_delayed' => $isDelayed,
@@ -1713,54 +1748,86 @@ class ShopsController extends Controller
         $allTime = $orders->sum('amount');
         $thirtyDays = $orders->where('created_at', '>=', Carbon::now()->subDays(30))->sum('amount');
 
-        // Map orders to format expected by frontend
-        $formattedOrders = $orders->map(function ($order) {
-            $buyer = User::find($order->user_id);
-            $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)
-                ->where('product_type', 'shop_item')
-                ->where('item_id', $order->shop_id)
-                ->first();
-            
-            // Determine delay status
-            $isDelayed = false;
-            if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
-                if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
-                    $isDelayed = true;
+            // Map orders to format expected by frontend
+            $formattedOrders = $orders->map(function ($order) {
+                $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)
+                    ->where('product_type', 'shop_item')
+                    ->where('item_id', $order->shop_id)
+                    ->first();
+                
+                // Auto-create deliverable for digital items if missing
+                if (!$deliverable && $order->shop && $order->shop->type !== 'physical') {
+                    try {
+                        $deliverable = \App\Models\Deliverable::create([
+                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'product_id' => $order->shop->stripe_product_id ?? 'shop_' . $order->shop->id,
+                            'price_id' => $order->shop->price_id,
+                            'item_id' => $order->shop->id,
+                            'creator_id' => $order->shop->user_id,
+                            'gifter_id' => $order->user_id,
+                            'session_id' => $order->session_id,
+                            'deliverable_type' => 'digital_file',
+                            'product_type' => 'shop_item',
+                            'transaction_amount' => $order->amount,
+                            'deliverable_url' => $order->shop->reward_file_url,
+                            'customer_email' => $order->email,
+                            'customer_name' => $order->name,
+                            'payment_status' => 'paid',
+                            'payment_currency' => strtoupper($order->currency ?? 'GBP'),
+                            'status' => 'delivered',
+                            'delivered_at' => now(),
+                        ]);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('ShopsController: Failed to auto-create deliverable: ' . $e->getMessage());
+                    }
                 }
-            }
+            
+                // Determine status - digital is always delivered/completed
+                $status = $deliverable->status ?? 'pending';
+                if ($order->shop && $order->shop->type !== 'physical') {
+                    $status = 'delivered';
+                }
 
-            return [
-                'id' => $order->id,
-                'uuid' => $order->uuid,
-                'amount' => $order->amount,
-                'gross_amount' => (float) ($order->financialTransaction->gross_amount ?? $order->total_paid ?? ($order->amount + ($order->tax_amount ?? 0) + ($order->vat_tax_amount ?? 0) + ($order->shipping_amount ?? 0))),
-                'net_amount' => (float) ($order->financialTransaction->net_amount ?? $order->amount),
-                'tax_amount' => $order->tax_amount ?? 0,
-                'vat_tax_amount' => $order->vat_tax_amount ?? 0,
-                'shipping_amount' => $order->shipping_amount ?? 0,
-                'currency' => $order->currency,
-                'created_at' => $order->created_at,
-                'name' => $order->name ?? ($buyer->name ?? 'Anonymous'),
-                'username' => $buyer->username ?? '',
-                'email' => $order->email ?? ($buyer->email ?? ''),
-                'avatar_url' => $buyer->avatar_url ?? null,
-                'shop' => $order->shop,
-                'quantity' => $order->quantity,
-                'shipping_info' => $order->shipping_info,
-                'status' => $deliverable->status ?? 'pending',
-                'payment_status' => $order->payment_status,
-                'is_deactivated' => $deliverable->is_deactivated ?? false,
-                'is_delayed' => $isDelayed,
-                'tracking_id' => $deliverable->tracking_id ?? null,
-                'courier_name' => $deliverable->courier_name ?? null,
-                'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
-                'shipped_at' => $deliverable->shipped_at ?? null,
-                'ask_question' => $order->ask_question,
-                'answer' => $order->answer,
-                'message' => $order->message,
-                'metadata' => $deliverable->metadata ?? null,
-            ];
-        });
+                // Determine delay status
+                $isDelayed = false;
+                if ($order->shop->type === 'physical' && $status !== 'delivered' && ($deliverable->is_deactivated ?? false) !== true && $order->payment_status !== 'refunded') {
+                    if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
+                        $isDelayed = true;
+                    }
+                }
+
+                return [
+                    'id' => $order->id,
+                    'uuid' => $order->uuid,
+                    'amount' => $order->amount,
+                    'gross_amount' => (float) ($order->financialTransaction->gross_amount ?? $order->total_paid ?? ($order->amount + ($order->tax_amount ?? 0) + ($order->vat_tax_amount ?? 0) + ($order->shipping_amount ?? 0))),
+                    'net_amount' => (float) ($order->financialTransaction->net_amount ?? $order->amount),
+                    'tax_amount' => $order->tax_amount ?? 0,
+                    'vat_tax_amount' => $order->vat_tax_amount ?? 0,
+                    'shipping_amount' => $order->shipping_amount ?? 0,
+                    'currency' => $order->currency,
+                    'created_at' => $order->created_at,
+                    'name' => $order->name ?? ($buyer->name ?? 'Anonymous'),
+                    'username' => $buyer->username ?? '',
+                    'email' => $order->email ?? ($buyer->email ?? ''),
+                    'avatar_url' => $buyer->avatar_url ?? null,
+                    'shop' => $order->shop,
+                    'quantity' => $order->quantity,
+                    'shipping_info' => $order->shipping_info,
+                    'status' => $status,
+                    'payment_status' => $order->payment_status,
+                    'is_deactivated' => $deliverable->is_deactivated ?? false,
+                    'is_delayed' => $isDelayed,
+                    'tracking_id' => $deliverable->tracking_id ?? null,
+                    'courier_name' => $deliverable->courier_name ?? null,
+                    'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
+                    'shipped_at' => $deliverable->shipped_at ?? null,
+                    'ask_question' => $order->ask_question,
+                    'answer' => $order->answer,
+                    'message' => $order->message,
+                    'metadata' => $deliverable->metadata ?? null,
+                ];
+            });
 
         return response()->json([
             'status' => true,

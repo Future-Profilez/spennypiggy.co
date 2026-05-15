@@ -1,4 +1,3 @@
-
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import { Link, Head, usePage } from '@inertiajs/react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
@@ -7,13 +6,13 @@ import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'r
 
 export default function Thankyou(props) {
 
-  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug} = props;
+  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant} = props;
   const { global_currency, auth, user } = usePage().props;
 
   const getTitle = () => {
-    if (type === 'monthly_subscription') return <><span className="text-mint">Subscription</span> <span className="text-[#ff4fa0]">Successful!</span></>;
-    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return <><span className="text-mint">Payment</span> <span className="text-[#ff4fa0]">Successful!</span></>;
-    return <><span className="text-mint">Your gift</span> <span className="text-[#ff4fa0]">has been sent.</span></>;
+    if (type === 'monthly_subscription') return <><span>Subscription</span> <span className="text-pink-500">Successful!</span></>;
+    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return <><span>Payment</span> <span className="text-pink-500">Successful!</span></>;
+    return <><span>Your gift</span> <span className="text-pink-500">has been sent.</span></>;
   };
 
   const getSubTitle = () => {
@@ -24,13 +23,13 @@ export default function Thankyou(props) {
 
   const getIcon = () => {
     switch(type) {
-      case 'wish': return <FaGift className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
-      case 'bill': return <FaStar className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
-      case 'membership': return <FaStar className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
-      case 'task': return <FaBolt className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
-      case 'shop': return <FaShoppingBag className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
-      case 'support': return <FaHeart className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
-      default: return <FaGift className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+      case 'wish': return <FaGift className="text-[40px] text-pink-500 mb-3 mx-auto" />;
+      case 'bill': return <FaStar className="text-[40px] text-pink-500 mb-3 mx-auto" />;
+      case 'membership': return <FaStar className="text-[40px] text-pink-500 mb-3 mx-auto" />;
+      case 'task': return <FaBolt className="text-[40px] text-pink-500 mb-3 mx-auto" />;
+      case 'shop': return <FaShoppingBag className="text-[40px] text-pink-500 mb-3 mx-auto" />;
+      case 'support': return <FaHeart className="text-[40px] text-pink-500 mb-3 mx-auto" />;
+      default: return <FaGift className="text-[40px] text-pink-500 mb-3 mx-auto" />;
     }
   }
 
@@ -45,7 +44,10 @@ export default function Thankyou(props) {
         return 'You have unlocked access to member-only posts and creator perks.';
       case 'task':
       case 'shop':
-        return 'The creator will fulfill your request. We will notify you when it is ready. For instant delivery items, please check your email.';
+        if (String(is_instant) === '1' || String(is_instant) === 'true') {
+          return 'Your item has been delivered instantly. Please check your email for access.';
+        }
+        return 'The creator will fulfill your request. We will notify you when it is ready.';
       case 'support':
         return 'You have unlocked access to supporters-only posts.';
       default:
@@ -82,55 +84,51 @@ export default function Thankyou(props) {
   const messageLink = getMessageLink();
 
   const BenefitsContent = () => (
-    <div className={`benefits-box ${messageLink ? 'cursor-pointer hover:bg-pink-900/30 transition-colors' : ''}`}>
+    <div className={`benefits-box ${messageLink ? 'cursor-pointer hover:bg-pink-100 transition-colors' : ''}`}>
       <div className="benefits-title">BENEFITS INCLUDED</div>
       <div className="benefits-text">{benefitsText}</div>
     </div>
   );
 
     return (
-        <Authenticated auth={auth.user} user={user} >
-            <Head title={"Thankyou"} />
+        <Authenticated auth={auth?.user} user={user} >
+            <Head title={"Thank You"} />
             <style>{`
-            .thankyou-wrap { min-height: calc(100vh - 80px); background: #000; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+            .thankyou-wrap { 
+                min-height: calc(100vh - 80px); 
+                background: #A2E4B8; 
+                padding: 20px 10px; 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                justify-content: center; 
+            }
             .giftthank {
-              background: #111;
-              border: 2px solid var(--mint);
-              border-radius: 16px;
-              box-shadow: 0px 0px 20px 0px rgba(31,223,171,0.2);
+              background: #ffffff;
+              border: 3px solid #000;
+              border-radius: 30px;
+              box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
               position: relative;
               overflow: hidden;
               width: 100%;
               max-width: 450px;
               margin: 0 auto;
-              padding: 24px;
-            }
-            .giftthank::before {
-              content: '';
-              position: absolute;
-              top: 0; left: 0; right: 0; height: 100px;
-              background: linear-gradient(180deg, rgba(31,223,171,0.1) 0%, rgba(0,0,0,0) 100%);
-              z-index: 0;
-              pointer-events: none;
-            }
-            .giftthank > * {
-              position: relative;
-              z-index: 1;
             }
             .details-box {
-              background: #1a1a1a;
+              background: #f9f9f9;
               border-radius: 12px;
               padding: 16px;
               margin-top: 16px;
               text-align: left;
-              border: 1px solid #222;
+              border: 2px solid #000;
+              box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
             }
             .details-box h3 {
               margin-bottom: 12px;
-              font-weight: 800;
-              color: #fff;
+              font-weight: 900;
+              color: #000;
               text-transform: uppercase;
-              font-size: 0.85rem;
+              font-size: 0.9rem;
               letter-spacing: 0.5px;
               display: flex;
               align-items: center;
@@ -140,165 +138,185 @@ export default function Thankyou(props) {
               display: flex;
               justify-content: space-between;
               padding: 6px 0;
-              font-size: 0.9rem;
+              font-size: 0.95rem;
+              border-bottom: 1px dashed #ccc;
+            }
+            .details-row:last-child {
+                border-bottom: none;
             }
             .details-label {
-              color: #888;
-              font-weight: 500;
+              color: #555;
+              font-weight: 700;
             }
             .details-value {
-              color: #fff;
-              font-weight: bold;
+              color: #000;
+              font-weight: 900;
               text-align: right;
             }
             .benefits-box {
-              background: rgba(255, 79, 160, 0.08);
-              border: 1px solid rgba(255, 79, 160, 0.2);
+              background: #fff0f6;
+              border: 2px solid #ff4fa0;
               border-radius: 8px;
               padding: 12px;
-              margin-top: 12px;
+              margin-top: 16px;
             }
             .benefits-title {
               color: #ff4fa0;
-              font-weight: 800;
+              font-weight: 900;
               margin-bottom: 4px;
               font-size: 0.75rem;
               text-transform: uppercase;
               letter-spacing: 0.5px;
             }
             .benefits-text {
-              color: #ddd;
-              font-size: 0.85rem;
+              color: #333;
+              font-size: 0.9rem;
+              font-weight: 600;
               line-height: 1.4;
             }
             .avatar-container {
               position: relative;
-              width: 70px;
-              height: 70px;
+              width: 80px;
+              height: 80px;
               margin: 0 auto;
-              margin-top: 12px;
-              margin-bottom: 16px;
+              margin-top: 16px;
+              margin-bottom: 20px;
             }
             .avatar-container::after {
               content: '';
               position: absolute;
               inset: -4px;
               border-radius: 50%;
-              border: 2px dashed var(--mint);
+              border: 2px dashed #ff4fa0;
               animation: spin 10s linear infinite;
             }
             @keyframes spin { 100% { transform: rotate(360deg); } }
-            .thankyou-title {
-              font-weight: 900;
-              font-size: 1.75rem;
-            }
+            
             .action-btn {
               background: #ff4fa0;
               color: white;
-              font-weight: bold;
+              font-weight: 900;
+              border: 3px solid #000;
               border-radius: 999px;
-              padding: 10px 24px;
+              padding: 12px 24px;
               display: inline-block;
-              transition: transform 0.2s, box-shadow 0.2s;
-              font-size: 0.95rem;
-            }
-            .action-btn:hover {
-              transform: translateY(-2px);
-              box-shadow: 0 4px 12px rgba(255, 79, 160, 0.3);
-            }
-            .explore-btn {
-              background: transparent;
-              color: var(--mint);
-              border: 2px solid var(--mint);
-              font-weight: bold;
-              border-radius: 999px;
-              padding: 10px 24px;
-              display: inline-block;
+              box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
               transition: all 0.2s;
               font-size: 0.95rem;
+              text-transform: uppercase;
+            }
+            .action-btn:hover {
+              transform: translateY(2px);
+              box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+            }
+            .explore-btn {
+              background: #FEF08A;
+              color: #000;
+              border: 3px solid #000;
+              font-weight: 900;
+              border-radius: 999px;
+              padding: 12px 24px;
+              display: inline-block;
+              box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+              transition: all 0.2s;
+              font-size: 0.95rem;
+              text-transform: uppercase;
             }
             .explore-btn:hover {
-              background: rgba(31, 223, 171, 0.1);
-              transform: translateY(-2px);
+              background: #fde047;
+              transform: translateY(2px);
+              box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
             }
             `}</style>
 
-             <div className='!pt-8 !pb-12 text-center text-white thankyou-wrap'>
+             <div className='thankyou-wrap'>
               
-                <div className="mb-4">
+                <div className="mb-6 text-center">
                   {getIcon()}
-                  <h2 className='thankyou-title mb-1'>{getTitle()}</h2>
-                  <p className='text-gray-400 text-sm md:text-base'>{getSubTitle()}</p>
+                  <h2 className='text-3xl md:text-4xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]'>
+                    {getTitle()}
+                  </h2>
+                  <p className='text-gray-800 font-bold text-sm md:text-base'>{getSubTitle()}</p>
                 </div>
                 
                 {type !== 'monthly_subscription' && (
                   <div className='giftthank'>
-                    <p className="text-gray-300 font-medium text-sm">Thank you from Spenny Piggy on behalf of <span className="text-mint font-bold">{owner?.name}</span>.</p>
+                    <div className="!border-r-0 !border-l-0 !border-t-0 border-b border-black flex items-center p-4 space-x-2 bg-gray-50">
+                        <div className="w-3 h-3 rounded-full border-[2px] border-black bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full border-[2px] border-black bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full border-[2px] border-black bg-green-500"></div>
+                    </div>
+                    
+                    <div className="p-6 sm:p-8 text-center">
+                        <p className="text-gray-700 font-bold text-sm">
+                            Thank you from Spenny Piggy on behalf of <span className="text-black font-black text-base">{owner?.name}</span>.
+                        </p>
 
-                      <div className="avatar-container" >
-                            <LazyLoadImage
-                            src={owner?.avatar_url || userphoto}
-                            alt="image-avatar" className="img-fluid rounded-full w-full h-full object-cover border-2 border-black relative z-10"  effect="blur"
-                            height={70}
-                            width={70} />
-                      </div>
+                        <div className="avatar-container" >
+                                <LazyLoadImage
+                                src={owner?.avatar_url || userphoto}
+                                alt="image-avatar" className="img-fluid rounded-full w-full h-full object-cover border-[3px] border-black relative z-10"  effect="blur"
+                                height={80}
+                                width={80} />
+                        </div>
 
-                    {(item_name || amount || benefitsText) && (
-                      <div className="details-box">
-                        <h3><FaCheckCircle className="text-mint" /> Purchase Details</h3>
-                        
-                        {item_name && (
-                          <div className="details-row">
-                            <span className="details-label">Item</span>
-                            <span className="details-value truncate max-w-[200px]" title={item_name}>{item_name}</span>
-                          </div>
+                        {(item_name || amount || benefitsText) && (
+                        <div className="details-box">
+                            <h3><FaCheckCircle className="text-green-500" /> Purchase Details</h3>
+                            
+                            {item_name && (
+                            <div className="details-row">
+                                <span className="details-label">Item</span>
+                                <span className="details-value truncate max-w-[200px]" title={item_name}>{item_name}</span>
+                            </div>
+                            )}
+                            
+                            {amount && (
+                            <div className="details-row">
+                                <span className="details-label">Amount Paid</span>
+                                <span className="details-value">{currency ? currency.toUpperCase() : ''} {amount}</span>
+                            </div>
+                            )}
+                            
+                            {benefitsText && (
+                            messageLink ? (
+                                <Link href={messageLink} className="block">
+                                <BenefitsContent />
+                                </Link>
+                            ) : (
+                                <BenefitsContent />
+                            )
+                            )}
+                        </div>
                         )}
-                        
-                        {amount && (
-                          <div className="details-row">
-                            <span className="details-label">Amount Paid</span>
-                            <span className="details-value">{currency ? currency.toUpperCase() : ''} {amount}</span>
-                          </div>
-                        )}
-                        
-                        {benefitsText && (
-                          messageLink ? (
-                            <Link href={messageLink} className="block">
-                              <BenefitsContent />
-                            </Link>
-                          ) : (
-                            <BenefitsContent />
-                          )
-                        )}
-                      </div>
-                    )}
 
-                    <div className='w-full mt-5' >
-                      <Link href={`/${owner?.username}`} className='text-mint hover:text-white transition-colors font-bold uppercase tracking-wide text-xs flex items-center justify-center gap-2' >
-                          <span>VISIT @{owner?.username?.toUpperCase()}'S PROFILE</span>
-                      </Link>
+                        <div className='w-full mt-6' >
+                        <Link href={`/${owner?.username}`} className='text-pink-500 hover:text-pink-600 transition-colors font-black uppercase tracking-wide text-sm flex items-center justify-center gap-2 hover:underline decoration-2 underline-offset-4' >
+                            <span>VISIT @{owner?.username?.toUpperCase()}'S PROFILE</span>
+                        </Link>
+                        </div>
                     </div>
                   </div>
                 )}
 
                 {type !== 'monthly_subscription' && (!auth || !auth.user) && (
-                  <p className='mt-5 mb-2 text-center px-6 text-mint text-sm font-medium'>Please create an account to see the content you have purchased.</p>
+                  <p className='mt-6 mb-2 text-center px-6 text-black text-sm font-black'>Please create an account to see the content you have purchased.</p>
                 )}
                 
-                <div className='w-full max-w-[450px] mt-6 flex flex-col sm:flex-row gap-3 justify-center items-center' >
+                <div className='w-full max-w-[450px] mt-6 flex flex-col sm:flex-row gap-4 justify-center items-center' >
                   {type === 'monthly_subscription' ? (
-                    <Link className='action-btn w-full sm:w-auto text-center' href={route('dashboard')}>
+                    <Link className='action-btn w-full text-center' href={route('dashboard')}>
                       Go to Dashboard
                     </Link>
                   ) : (
                     <>
                       {exploreLink && (
-                        <Link className='explore-btn w-full sm:w-auto text-center' href={exploreLink.url}>
+                        <Link className='explore-btn w-full text-center' href={exploreLink.url}>
                           {exploreLink.text}
                         </Link>
                       )}
                       {(!auth || !auth.user) && (
-                        <Link className='action-btn w-full sm:w-auto text-center' href={route("register")}>
+                        <Link className='action-btn w-full text-center' href={route("register")}>
                           Create Account
                         </Link>
                       )}

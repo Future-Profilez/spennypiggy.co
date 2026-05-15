@@ -675,7 +675,8 @@ class TaskController extends Controller
             'item_name' => $task->title,
             'amount' => $purchase->amount ?? 0,
             'currency' => $purchase->currency ?? $task->currency ?? 'GBP',
-            'item_id' => $task->uuid
+            'item_id' => $task->uuid,
+            'is_instant' => $task->type === 'instant' ? '1' : '0'
         ])->with('success', 'Payment Successful.');
     }
 
@@ -897,32 +898,60 @@ class TaskController extends Controller
             $supporter = $buyerId ? User::find($buyerId) : null;
 
             if ($creator) {
-                Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                // Determine if we should send instant email or standard purchase email
+                if ($task->type === 'instant') {
+                    // Send an email tailored for instant tasks (you can reuse the existing mail class or create a specific one)
+                    Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                    
+                    $msgBody = ($supporter ? $supporter->name : "A Guest") . " purchased your instant task: " . $task->title . ". Delivery was completed automatically.";
+                    Helpers::sendNotification(
+                        "Instant Task Purchased & Delivered! ⚡",
+                        $msgBody,
+                        $creator->email
+                    );
+                } else {
+                    Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
 
-                $msgBody = ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title;
-                if (!empty($purchase->gifter_message)) {
-                    $msgBody .= " | Message: \"" . Str::limit($purchase->gifter_message, 50) . "\"";
+                    $msgBody = ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title;
+                    if (!empty($purchase->gifter_message)) {
+                        $msgBody .= " | Message: \"" . Str::limit($purchase->gifter_message, 50) . "\"";
+                    }
+
+                    Helpers::sendNotification(
+                        "New Task Order! 💰",
+                        $msgBody,
+                        $creator->email
+                    );
                 }
-
-                Helpers::sendNotification(
-                    "New Task Order! 💰",
-                    $msgBody,
-                    $creator->email
-                );
             }
 
             if ($supporter) {
-                Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
+                if ($task->type === 'instant') {
+                    // Send email to supporter
+                    Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
 
-                // Get currency symbol for supporter notification
-                $currencySymbol = \App\Models\Currency::where('ISO', $purchase->currency)->value('symbol') ?? '$';
-                $formattedAmount = $currencySymbol . number_format($purchase->total_paid, 2);
+                    // Get currency symbol for supporter notification
+                    $currencySymbol = \App\Models\Currency::where('ISO', $purchase->currency)->value('symbol') ?? '$';
+                    $formattedAmount = $currencySymbol . number_format($purchase->total_paid, 2);
 
-                \App\Helpers::sendNotification(
-                    "Task Purchased! 🎉",
-                    "You've successfully purchased the task: " . $task->title . " for " . $formattedAmount . ". The creator has been notified.",
-                    $supporter->email
-                );
+                    \App\Helpers::sendNotification(
+                        "Instant Task Delivered! 🎉",
+                        "You've successfully purchased the instant task: " . $task->title . " for " . $formattedAmount . ". Please check your email for access.",
+                        $supporter->email
+                    );
+                } else {
+                    Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
+
+                    // Get currency symbol for supporter notification
+                    $currencySymbol = \App\Models\Currency::where('ISO', $purchase->currency)->value('symbol') ?? '$';
+                    $formattedAmount = $currencySymbol . number_format($purchase->total_paid, 2);
+
+                    \App\Helpers::sendNotification(
+                        "Task Purchased! 🎉",
+                        "You've successfully purchased the task: " . $task->title . " for " . $formattedAmount . ". The creator has been notified.",
+                        $supporter->email
+                    );
+                }
             }
         } catch (\Exception $e) {
             Log::error("Failed to send task purchase email/notification in sync handler", ['error' => $e->getMessage()]);

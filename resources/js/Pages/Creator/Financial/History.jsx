@@ -44,12 +44,11 @@ export default function History({ auth, transactions }) {
                             <Link 
                                 href={route('financial.dashboard')} 
                                 className="p-3 rounded-xl bg-white border-[2px] border-black hover:bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-                                onMouseEnter={() => backIconRef.current?.startAnimation()}
-                            >
+                                onMouseEnter={() => backIconRef.current?.startAnimation()} >
                                 <ArrowLeftIcon ref={backIconRef} size={22} duration={1.5} />
                             </Link>
                             <div>
-                                <h1 className="text-3xl md:text-4xl font-black text-black tracking-tight leading-none uppercase">FULL HISTORY</h1>
+                                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight leading-none uppercase">FULL HISTORY</h1>
                                 <p className="text-sm text-gray-800 mt-1 font-bold flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
                                     All income and expenses ledger
@@ -72,7 +71,7 @@ export default function History({ auth, transactions }) {
                     </div>
 
                     {/* Table Container */}
-                    <div className="bg-white rounded-[32px] !overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="bg-white border-[1px] border-black rounded-[32px] !overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                         <div className="overflow-x-auto  ">
                             <table className=" rounded-[45px] w-full text-left border-collapse">
                                 <thead className="bg-[#FFE951]  border-b-[3px] border-black">
@@ -148,7 +147,7 @@ const TransactionRow = ({ tx, formatCurrency }) => {
             <td className="px-6 py-4 text-xs border-r-[2px] border-black">
                 {tx.supporter ? (
                     <div className="flex flex-col">
-                        <span className="text-black font-black text-base leading-tight">{tx.supporter.name}</span>
+                        <span className="text-black font-black text-base leading-tight capitalize">{tx.supporter.name}</span>
                         <span className="text-[10px] font-bold text-gray-500 uppercase mt-0.5 tracking-wider">@{tx.supporter.username}</span>
                     </div>
                 ) : (

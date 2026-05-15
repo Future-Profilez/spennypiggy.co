@@ -181,7 +181,10 @@ class CreatorFinancialController extends Controller
                 $morphTo->morphWith([
                     \App\Models\TaskPurchase::class => ['task'],
                     \App\Models\ShopPayment::class => ['shop', 'deliverable'],
-                    \App\Models\StripePaymentItems::class => []
+                    \App\Models\StripePaymentItems::class => [],
+                    \App\Models\TipGoalsPayment::class => ['tipGoal'],
+                    \App\Models\MembershipPayment::class => ['membership'],
+                    \App\Models\BillPayment::class => ['bill'],
                 ]);
             }])
             ->orderBy('transaction_date', 'desc')
@@ -215,6 +218,12 @@ class CreatorFinancialController extends Controller
                     $sourceTitle = $tx->source->shop->name;
                 } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
                     $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+                } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
+                    $sourceTitle = $tx->source->membership->level;
+                } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
+                    $sourceTitle = $tx->source->bill->name;
+                } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
+                    $sourceTitle = $tx->source->tipGoal->name;
                 }
 
                 $tx->label = match($base) {
@@ -243,6 +252,13 @@ class CreatorFinancialController extends Controller
                 }
                 
                 $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
+
+                // Add item type (digital/physical/instant/timed)
+                if ($base === 'ShopPayment' && $tx->source->shop) {
+                    $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
+                } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+                    $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
+                }
 
                 // Handling for Task status display in ledger
                 if ($base === 'TaskPurchase' && $tx->source) {
@@ -310,9 +326,10 @@ class CreatorFinancialController extends Controller
             });
 
         $recentTransactions = $income->concat($expenses)
-            ->sortByDesc(function ($tx) {
-                return [$tx->display_date, $tx->id];
-            });
+            ->sortBy([
+                ['display_date', 'desc'],
+                ['id', 'desc'],
+            ]);
             
         if ($tab !== 'payouts') {
             $recentTransactions = $recentTransactions->take(20);
@@ -487,7 +504,10 @@ class CreatorFinancialController extends Controller
                 $morphTo->morphWith([
                     \App\Models\TaskPurchase::class => ['task'],
                     \App\Models\ShopPayment::class => ['shop', 'deliverable'],
-                    \App\Models\StripePaymentItems::class => []
+                    \App\Models\StripePaymentItems::class => [],
+                    \App\Models\TipGoalsPayment::class => ['tipGoal'],
+                    \App\Models\MembershipPayment::class => ['membership'],
+                    \App\Models\BillPayment::class => ['bill'],
                 ]);
             }])
             ->orderBy('transaction_date', 'desc')
@@ -516,6 +536,12 @@ class CreatorFinancialController extends Controller
                     $sourceTitle = $tx->source->shop->name;
                 } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
                     $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+                } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
+                    $sourceTitle = $tx->source->membership->level;
+                } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
+                    $sourceTitle = $tx->source->bill->name;
+                } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
+                    $sourceTitle = $tx->source->tipGoal->name;
                 }
 
                 $tx->label = match($base) {
@@ -544,6 +570,13 @@ class CreatorFinancialController extends Controller
                 }
 
                 $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
+
+                // Add item type (digital/physical/instant/timed)
+                if ($base === 'ShopPayment' && $tx->source->shop) {
+                    $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
+                } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+                    $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
+                }
 
                 // Handling for Task status display in ledger
                 if ($base === 'TaskPurchase' && $tx->source) {

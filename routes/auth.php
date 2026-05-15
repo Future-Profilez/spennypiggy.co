@@ -1079,6 +1079,7 @@ Route::get('payment/thankyou/{username}', function ($username) {
         'benefits' => request('benefits'),
         'item_id' => request('item_id'),
         'item_slug' => request('item_slug'),
+        'is_instant' => request('is_instant'),
     ]);
 })->name("thank-you");
 
