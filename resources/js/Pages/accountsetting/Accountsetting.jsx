@@ -358,7 +358,7 @@ export default function Accountsetting(props) {
                                     }
                                 />
                             )}
-
+{console.log("Site Subscription:", site_subscription)}
                             <Popup  
                                 space="4" size='lg' 
                                 modalclass="pinkmodal" 

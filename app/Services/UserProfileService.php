@@ -39,12 +39,36 @@ class UserProfileService
             }
 
             return User::select([
-                    'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
-                    'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'suspended_account',
-                    'social_image', 'account_id', 'stripe_details_submitted',
-                    'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
-                    'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'vat_amount_percentage'
-                ])
+                'id',
+                'name',
+                'uuid',
+                'username',
+                'email',
+                'role',
+                'bio',
+                'bio_approved',
+                'avatar',
+                'avatar_approved',
+                'avatar_cdn_modifier',
+                'cover',
+                'cover_approved',
+                'cover_cdn_modifier',
+                'suspended_account',
+                'social_image',
+                'account_id',
+                'stripe_details_submitted',
+                'default_currency',
+                'country',
+                'creator_category',
+                'identity_status',
+                'edit_bio_reason',
+                'profile_status_lock',
+                'is_subscribed',
+                'is_founder',
+                'show_piggy_bank',
+                'created_at',
+                'vat_amount_percentage'
+            ])
                 ->with([
                     'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other,status,reason',
                     'user_categories:id,user_id,category,created_at',
@@ -72,7 +96,7 @@ class UserProfileService
 
         // If not owner, we can cache this whole block for a few minutes
         if (!$isOwner) {
-            return Cache::remember($cacheKey, 300, function() use ($userId, $categoryId) {
+            return Cache::remember($cacheKey, 300, function () use ($userId, $categoryId) {
                 return $this->fetchRawProfileData($userId, $categoryId, false);
             });
         }
@@ -109,107 +133,157 @@ class UserProfileService
             ->get()
             ->toArray();
     }
-    
+
     /**
      * Get optimized wish items with minimal data
      */
     private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner): array
     {
         $query = WishItem::select([
-            'id', 'user_id', 'uuid', 'wishname', 'price', 'currency', 'thumbnail', 
-            'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason', 'tax_amount', 'is_suspended', 'suspend_reason'
+            'id',
+            'user_id',
+            'uuid',
+            'wishname',
+            'price',
+            'currency',
+            'thumbnail',
+            'is_approved',
+            'sort',
+            'created_at',
+            'subscription',
+            'fullfill_amount',
+            'edited_reason',
+            'tax_amount',
+            'is_suspended',
+            'suspend_reason'
         ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
-        ->where('user_id', $userId);
-        
+            ->where('user_id', $userId);
+
         if (!$isOwner) {
             $query->where('is_approved', 1)->where('is_suspended', 0);
         }
-        
+
         if ($categoryId && $categoryId !== 'all') {
             $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
         }
-        
+
         return $query->orderBy('sort')
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get()
             ->toArray();
     }
-    
+
     /**
      * Get optimized memberships
      */
     private function getOptimizedMemberships(int $userId, bool $isOwner): array
     {
         $query = Membership::select([
-            'id', 'user_id', 'uuid', 'name', 'level', 'price', 'currency', 
-            'thumbnail', 'approved', 'created_at', 'is_suspended', 'suspend_reason'
+            'id',
+            'user_id',
+            'uuid',
+            'name',
+            'level',
+            'price',
+            'currency',
+            'thumbnail',
+            'approved',
+            'created_at',
+            'is_suspended',
+            'suspend_reason'
         ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
-        ->where('user_id', $userId);
-        
+            ->where('user_id', $userId);
+
         if (!$isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
         }
-        
+
         return $query->latest()->get()->toArray();
     }
-    
+
     /**
      * Get optimized bills
      */
     private function getOptimizedBills(int $userId, bool $isOwner): array
     {
         $query = Bills::select([
-            'id', 'user_id', 'uuid', 'name', 'price', 'currency', 'period',
-            'thumbnail', 'approved', 'created_at', 'is_suspended', 'suspend_reason'
+            'id',
+            'user_id',
+            'uuid',
+            'name',
+            'price',
+            'currency',
+            'period',
+            'thumbnail',
+            'approved',
+            'created_at',
+            'is_suspended',
+            'suspend_reason'
         ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
-        ->where('user_id', $userId);
-        
+            ->where('user_id', $userId);
+
         if (!$isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
         }
-        
+
         return $query->latest()->get()->toArray();
     }
-    
+
     /**
      * Get optimized shop items
      */
     private function getOptimizedShopItems(int $userId, bool $isOwner): array
     {
         $query = Shop::where('user_id', $userId)->where('status', 1);
-        
+
         if ($isOwner) {
             $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
         } else {
             $query->select([
-                'id', 'user_id', 'uuid', 'name', 'price', 'currency',
-                'image', 'approved', 'created_at', 'type', 'description', 'ai_generated', 'is_suspended', 'suspend_reason'
+                'id',
+                'user_id',
+                'uuid',
+                'name',
+                'price',
+                'currency',
+                'image',
+                'approved',
+                'created_at',
+                'type',
+                'description',
+                'ai_generated',
+                'is_suspended',
+                'suspend_reason'
             ])
-            ->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
-            ->where('approved', 1)->where('is_suspended', 0);
+                ->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+                ->where('approved', 1)->where('is_suspended', 0);
         }
-        
+
         return $query->latest()->get()->toArray();
     }
-    
+
     /**
      * Get optimized posts (limited for initial load)
      */
     private function getOptimizedPosts(int $userId, bool $isOwner, int $limit = 5): array
     {
         $query = Post::select([
-            'id', 'uuid', 'content', 'image',
-            'approved', 'created_at'
+            'id',
+            'uuid',
+            'content',
+            'image',
+            'approved',
+            'created_at'
         ])->where('user_id', $userId);
-        
+
         if (!$isOwner) {
             $query->where('approved', 1);
         }
-        
+
         return $query->latest()->limit($limit)->get()->toArray();
     }
-    
+
     /**
      * Get user's wish items with pagination and caching
      */
@@ -217,17 +291,17 @@ class UserProfileService
     {
         $callback = function () use ($userId, $categoryId, $perPage) {
             $isOwner = Auth::check() && Auth::id() === $userId;
-            
+
             $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage')
-            ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
-                $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
-            });
+                ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
+                    $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
+                });
 
             // Apply approval filter for non-owners
             if (!$isOwner) {
                 $query->where('is_approved', 1)->where('is_suspended', 0);
             }
-            
+
             return $query->orderBy('sort')
                 ->orderBy('created_at', 'desc')
                 ->limit($perPage)
@@ -271,65 +345,65 @@ class UserProfileService
         // Check subscription access for each post
         $currentUser = Auth::user();
         $isOwner = $currentUser && $currentUser->id === $userId;
-        
+
         // Get user's active subscriptions for this creator if not the owner
         $hasActiveSubscription = false;
         $hasMembership = false;
         $hasBill = false;
         $hasSupport = false;
-        
+
         if ($currentUser && !$isOwner) {
             // Check active wish item subscriptions
             $hasActiveSubscription = \App\Models\WishItemSubscription::where(function ($q) use ($currentUser) {
                 $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
             })
-            ->whereHas('wish_item', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            })
-            ->where('status', 'paid')
-            ->where('stripe_status', 'active')
-            ->where(function ($q) {
-                $q->where(function ($recurring) {
-                    $recurring->where('recurring_for', 'continue')
-                             ->where('upcoming_payment', '>=', \Carbon\Carbon::now());
-                })->orWhere(function ($onetime) {
-                    $onetime->where('recurring_for', 'onetime')
-                           ->where('created_at', '>=', \Carbon\Carbon::now()->subDays(30));
-                });
-            })
-            ->exists();
-            
+                ->whereHas('wish_item', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->where('status', 'paid')
+                ->where('stripe_status', 'active')
+                ->where(function ($q) {
+                    $q->where(function ($recurring) {
+                        $recurring->where('recurring_for', 'continue')
+                            ->where('upcoming_payment', '>=', \Carbon\Carbon::now());
+                    })->orWhere(function ($onetime) {
+                        $onetime->where('recurring_for', 'onetime')
+                            ->where('created_at', '>=', \Carbon\Carbon::now()->subDays(30));
+                    });
+                })
+                ->exists();
+
             // Check active memberships
             $hasMembership = \App\Models\MembershipPayment::where(function ($q) use ($currentUser) {
                 $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
             })
-            ->whereHas('membership', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            })
-            ->where('status', 'paid')
-            ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
-            ->exists();
-            
+                ->whereHas('membership', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->where('status', 'paid')
+                ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
+                ->exists();
+
             // Check active bills
             $hasBill = \App\Models\BillPayment::where(function ($q) use ($currentUser) {
                 $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
             })
-            ->whereHas('bill', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            })
-            ->where('status', 'paid')
-            ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
-            ->exists();
-            
+                ->whereHas('bill', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->where('status', 'paid')
+                ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
+                ->exists();
+
             // Check support/tip payments
             $hasSupport = \App\Models\TipGoalsPayment::where(function ($q) use ($currentUser) {
                 $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
             })
-            ->where('creator_id', $userId)
-            ->where('status', 'paid')
-            ->exists();
+                ->where('creator_id', $userId)
+                ->where('status', 'paid')
+                ->exists();
         }
-        
+
         // Apply is_lock logic to paginated posts using through() method
         $posts->through(function ($post) use ($isOwner, $hasActiveSubscription, $hasMembership, $hasBill, $hasSupport) {
             if ($isOwner) {
@@ -387,7 +461,7 @@ class UserProfileService
     {
         $callback = function () use ($userId) {
             $isOwner = Auth::check() && Auth::id() === $userId;
-            
+
             $query = Bills::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage');
 
             if (!$isOwner) {
@@ -411,14 +485,14 @@ class UserProfileService
     {
         $callback = function () use ($userId) {
             $isOwner = Auth::check() && Auth::id() === $userId;
-            
+
             $query = Shop::where('user_id', $userId)->where('status', 1);
 
             if ($isOwner) {
                 $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
             } else {
                 $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
-                      ->where('approved', 1)->where('is_suspended', 0);
+                    ->where('approved', 1)->where('is_suspended', 0);
             }
 
             return $query->latest()->get()->toArray();
@@ -483,7 +557,7 @@ class UserProfileService
                     AND guest_email NOT IN (SELECT email FROM users)
                 ) supporters
             ";
-            
+
             $result = DB::select($query, [$userId, $userId, $userId]);
             return (int)($result[0]->count ?? 0);
         });
@@ -495,34 +569,34 @@ class UserProfileService
     public function getUserEarnings(int $userId): array
     {
         $cacheKey = 'user_earnings_v2_' . $userId;
-        
-        return Cache::remember($cacheKey, 600, function() use ($userId) {
+
+        return Cache::remember($cacheKey, 600, function () use ($userId) {
             $goalPayment = TipGoalsPayment::where('creator_id', $userId)
                 ->where('status', 'paid')
                 ->sum('amount');
-                
-            $billPayment = BillPayment::whereHas('bill', fn ($q) => $q->where('user_id', $userId))
-                ->where('status', 'paid')
-                ->sum('amount');
-                
-            $memPayment = MembershipPayment::whereHas('membership', fn ($q) => $q->where('user_id', $userId))
-                ->where('status', 'paid')
-                ->sum('amount');
-                
-            $wishPayment = StripePaymentDetail::where('owner_id', $userId)
-                ->where('payment_status', 'paid')
-                ->sum('amount_subtotal');
-                
-            $subPayment = WishItemSubscription::whereHas('wish_item', fn ($q) => $q->where('user_id', $userId))
+
+            $billPayment = BillPayment::whereHas('bill', fn($q) => $q->where('user_id', $userId))
                 ->where('status', 'paid')
                 ->sum('amount');
 
-            $shopPayment = \App\Models\ShopPayment::whereHas('shop', fn ($q) => $q->where('user_id', $userId))
+            $memPayment = MembershipPayment::whereHas('membership', fn($q) => $q->where('user_id', $userId))
+                ->where('status', 'paid')
+                ->sum('amount');
+
+            $wishPayment = StripePaymentDetail::where('owner_id', $userId)
+                ->where('payment_status', 'paid')
+                ->sum('amount_subtotal');
+
+            $subPayment = WishItemSubscription::whereHas('wish_item', fn($q) => $q->where('user_id', $userId))
+                ->where('status', 'paid')
+                ->sum('amount');
+
+            $shopPayment = \App\Models\ShopPayment::whereHas('shop', fn($q) => $q->where('user_id', $userId))
                 ->where('payment_status', 'paid')
                 ->sum('amount');
 
             $totalEarnings = $goalPayment + $billPayment + $memPayment + $wishPayment + $subPayment + $shopPayment;
-            
+
             $target = match (true) {
                 $totalEarnings < 100 => 100,
                 $totalEarnings < 1000 => 1000,
@@ -567,10 +641,10 @@ class UserProfileService
     {
         // Clear basic profile cache
         Cache::forget('user_profile_basic_' . $username);
-        
+
         // Clear all data cache variations (common ones)
         Cache::forget('profile_all_data_' . $userId . '_all');
-        
+
         // Clear category variations if any exist
         $categories = \App\Models\UserCategory::where('user_id', $userId)->pluck('id');
         foreach ($categories as $catId) {
@@ -583,7 +657,7 @@ class UserProfileService
         Cache::forget('user_memberships_' . $userId);
         Cache::forget('user_bills_' . $userId);
         Cache::forget('user_shop_' . $userId);
-        
+
         Log::info("Caches cleared for user: {$username} ({$userId})");
     }
 
@@ -593,7 +667,7 @@ class UserProfileService
     public function preloadUserProfileData(string $username): array
     {
         $user = $this->getUserWithRelations($username);
-        
+
         if (!$user) {
             return [];
         }
@@ -663,7 +737,7 @@ class UserProfileService
             $stripeStart = Carbon::createFromTimestamp($invoice->lines->data[0]->period->start);
             $stripeEnd   = Carbon::createFromTimestamp($invoice->lines->data[0]->period->end);
         }
-        
+
         // Fetch customer if not already expanded
         $customer = $subscription->customer;
         if (is_string($customer)) {
@@ -746,13 +820,13 @@ class UserProfileService
             // We use whereDate to ensure we match the day regardless of time components.
             $existing = MonthlyCharge::where('stripe_id', $subscriptionId)
                 ->where('user_id', $resolvedUserId ?? $subs->user_id ?? null)
-                ->where(function($q) use ($stripeStart, $stripeEnd) {
-                    $q->where(function($sq) use ($stripeStart, $stripeEnd) {
+                ->where(function ($q) use ($stripeStart, $stripeEnd) {
+                    $q->where(function ($sq) use ($stripeStart, $stripeEnd) {
                         $sq->whereDate('current_start_subscription_date', $stripeStart->toDateString())
-                           ->whereDate('current_end_subscription_date', $stripeEnd->toDateString());
-                    })->orWhere(function($sq) use ($stripeStart, $stripeEnd) {
+                            ->whereDate('current_end_subscription_date', $stripeEnd->toDateString());
+                    })->orWhere(function ($sq) use ($stripeStart, $stripeEnd) {
                         $sq->whereDate('current_start_trial_date', $stripeStart->toDateString())
-                           ->whereDate('current_end_trial_date', $stripeEnd->toDateString());
+                            ->whereDate('current_end_trial_date', $stripeEnd->toDateString());
                     });
                 })
                 ->latest('id')
@@ -765,8 +839,8 @@ class UserProfileService
                     'currency' => $currency,
                     'tax' => $tax,
                     'upcoming_payment' => ($subscription->cancel_at_period_end) ? null : $stripeEnd,
-                    'cancelled_at' => ($subscription->cancel_at_period_end) 
-                        ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : ($existing->cancelled_at ?? now())) 
+                    'cancelled_at' => ($subscription->cancel_at_period_end)
+                        ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : ($existing->cancelled_at ?? now()))
                         : null,
                 ];
 
@@ -843,13 +917,13 @@ class UserProfileService
         if ($eventType === 'customer.subscription.updated' || $eventType === 'manual_sync') {
             $target = MonthlyCharge::where('stripe_id', $subscriptionId)
                 ->when($resolvedUserId, fn($q) => $q->where('user_id', $resolvedUserId))
-                ->where(function($q) use ($stripeStart, $stripeEnd) {
-                    $q->where(function($sq) use ($stripeStart, $stripeEnd) {
+                ->where(function ($q) use ($stripeStart, $stripeEnd) {
+                    $q->where(function ($sq) use ($stripeStart, $stripeEnd) {
                         $sq->whereDate('current_start_subscription_date', $stripeStart->toDateString())
-                           ->whereDate('current_end_subscription_date', $stripeEnd->toDateString());
-                    })->orWhere(function($sq) use ($stripeStart, $stripeEnd) {
+                            ->whereDate('current_end_subscription_date', $stripeEnd->toDateString());
+                    })->orWhere(function ($sq) use ($stripeStart, $stripeEnd) {
                         $sq->whereDate('current_start_trial_date', $stripeStart->toDateString())
-                           ->whereDate('current_end_trial_date', $stripeEnd->toDateString());
+                            ->whereDate('current_end_trial_date', $stripeEnd->toDateString());
                     });
                 })
                 ->latest('id')
@@ -877,7 +951,7 @@ class UserProfileService
 
             if ($target) {
                 $newStatus = $normalizedStatus;
-                
+
                 // Determine if we should update dates or if this is a different period
                 $isSamePeriod = false;
                 if ($subscription->status === 'trialing') {
@@ -889,8 +963,8 @@ class UserProfileService
                 $updateData = [
                     'status' => $newStatus,
                     'upcoming_payment' => ($subscription->cancel_at_period_end || in_array($subscription->status, ['canceled', 'unpaid'])) ? null : $stripeEnd,
-                    'cancelled_at' => ($subscription->cancel_at_period_end || $subscription->status === 'canceled') 
-                        ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : ($target->cancelled_at ?? now())) 
+                    'cancelled_at' => ($subscription->cancel_at_period_end || $subscription->status === 'canceled')
+                        ? ($subscription->canceled_at ? Carbon::createFromTimestamp($subscription->canceled_at) : ($target->cancelled_at ?? now()))
                         : null,
                 ];
 
@@ -915,7 +989,7 @@ class UserProfileService
                     // Instead, we fall through to the creation logic below if we don't find a record for the NEW period.
                     $target = null;
                 }
-                
+
                 if ($target) {
                     $updateIfDirty($target, $updateData);
 
@@ -936,13 +1010,13 @@ class UserProfileService
             // Check one last time by period dates to prevent duplicates
             $existingForPeriod = MonthlyCharge::where('stripe_id', $subscriptionId)
                 ->when($resolvedUserId, fn($q) => $q->where('user_id', $resolvedUserId))
-                ->where(function($q) use ($stripeStart, $stripeEnd) {
-                    $q->where(function($sq) use ($stripeStart, $stripeEnd) {
+                ->where(function ($q) use ($stripeStart, $stripeEnd) {
+                    $q->where(function ($sq) use ($stripeStart, $stripeEnd) {
                         $sq->whereDate('current_start_subscription_date', $stripeStart->toDateString())
-                           ->whereDate('current_end_subscription_date', $stripeEnd->toDateString());
-                    })->orWhere(function($sq) use ($stripeStart, $stripeEnd) {
+                            ->whereDate('current_end_subscription_date', $stripeEnd->toDateString());
+                    })->orWhere(function ($sq) use ($stripeStart, $stripeEnd) {
                         $sq->whereDate('current_start_trial_date', $stripeStart->toDateString())
-                           ->whereDate('current_end_trial_date', $stripeEnd->toDateString());
+                            ->whereDate('current_end_trial_date', $stripeEnd->toDateString());
                     });
                 })
                 ->latest('id')
@@ -961,7 +1035,7 @@ class UserProfileService
             // MISSING LOCAL RECORD: Create it now
             $amount = $invoice ? ($invoice->amount_paid / 100) : ($subscription->plan->amount / 100);
             $currency = strtoupper($invoice ? $invoice->currency : $subscription->currency);
-            
+
             $createData = [
                 'user_id' => $resolvedUserId,
                 'name' => $customer->name ?? 'Creator',
@@ -1003,7 +1077,7 @@ class UserProfileService
     {
         try {
             $stripe = StripeControl::getClient();
-            
+
             // 1. Fetch all invoices for this subscription (including $0 trial invoices)
             $invoices = $stripe->invoices->all([
                 'subscription' => $subscription->id,
@@ -1027,7 +1101,6 @@ class UserProfileService
 
             // 3. Final sync for the current subscription state (handles trial, cancellations, etc.)
             $this->syncMandatorySubscriptionStatus($subscription, 'manual_sync', null, $user);
-
         } catch (\Exception $e) {
             Log::error("UserProfileService: History sync failed: " . $e->getMessage());
         }
@@ -1063,7 +1136,7 @@ class UserProfileService
                         $user->save();
                         Log::info("UserProfileService: Re-linked user {$user->id} to Stripe customer {$customer->id} ({$customer->account_region})");
                     }
-                    
+
                     $this->syncSubscriptionHistory($stripeSubscription, $user);
                     return $stripeSubscription;
                 }
@@ -1079,23 +1152,28 @@ class UserProfileService
         }
 
         // Also update any local MonthlyCharge record that thinks it's active
-        $now = Carbon::now();
-        $activeCharge = MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
-            ->where(function($q) use ($now) {
-                $q->whereDate('current_end_subscription_date', '>=', $now)
-                  ->orWhereDate('current_end_trial_date', '>=', $now);
-            })
-            ->latest()
-            ->first();
+        $now = now()->toDateString();
 
-        if ($activeCharge) {
-            $activeCharge->update([
-                'status' => 'canceled',
-                'cancelled_at' => $now
+        MonthlyCharge::where(function ($q) use ($now) {
+
+            // Expired subscription
+            $q->where(function ($sq) use ($now) {
+                $sq->whereNotNull('current_end_subscription_date')
+                    ->whereDate('current_end_subscription_date', '<', $now);
+            })
+
+                // Expired trial
+                ->orWhere(function ($sq) use ($now) {
+                    $sq->whereNotNull('current_end_trial_date')
+                        ->whereDate('current_end_trial_date', '<', $now);
+                });
+        })
+            ->whereIn('status', ['paid', 'active', 'trialing', 'renew'])
+            ->update([
+                'status' => 'expired',
+                'upcoming_payment' => null,
+                'updated_at' => now(),
             ]);
-            Log::info("UserProfileService: No active subscription found on Stripe for user {$user->id} after deep search. Marked local as canceled.");
-        }
 
         return null;
     }
