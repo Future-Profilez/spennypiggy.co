@@ -1369,7 +1369,14 @@ class CheckoutController extends Controller
             }
 
             Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);
-            return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
+            return redirect(route('thank-you', [
+                'username' => $stripeid->owner->username,
+                'type' => 'wish',
+                'item_name' => $getdata->count() > 1 ? 'Multiple Items' : ($getdata->first()->wish->wishname ?? 'Gift'),
+                'amount' => $stripeid->amount_total ?? 0,
+                'currency' => $stripeid->currency ?? 'GBP',
+                'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null
+            ]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             $errorMessage = $th->getMessage();
             Log::error("Error in successCheckout: " . $errorMessage, [
@@ -1382,7 +1389,14 @@ class CheckoutController extends Controller
             if (strpos($errorMessage, 'token was invalid') !== false) {
                 Log::info("Ignoring Stripe token error and continuing checkout process");
                 // Continue with the checkout process despite the token error
-                return redirect(route('thank-you', [$stripeid->owner->username ?? ($getdata[0]->owner->username ?? 'user')]))->with('success', 'Payment Successful.');
+                return redirect(route('thank-you', [
+                    'username' => $stripeid->owner->username ?? ($getdata[0]->owner->username ?? 'user'),
+                    'type' => 'wish',
+                    'item_name' => $getdata->count() > 1 ? 'Multiple Items' : ($getdata->first()->wish->wishname ?? 'Gift'),
+                    'amount' => $stripeid->amount_total ?? 0,
+                    'currency' => $stripeid->currency ?? 'GBP',
+                    'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null
+                ]))->with('success', 'Payment Successful.');
             }
 
             return redirect(route('user.show', [$stripeid->owner->username ?? ($getdata[0]->owner->username ?? 'user')]))->with('error', 'Something went wrong!');

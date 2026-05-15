@@ -290,6 +290,24 @@ class TaskController extends Controller
 
         $card_capabilities = StripeControl::hasCardPaymentsCapability($task->creator->account_id);
 
+        $ogTitle = $task->title;
+        $ogDescription = Str::limit(strip_tags($task->description), 150);
+        
+        $ogImage = asset('siteicon.png');
+        if (!empty($task->media_url)) {
+            $ogImage = filter_var($task->media_url, FILTER_VALIDATE_URL) ? $task->media_url : asset($task->media_url);
+        } else if (!empty($task->creator->social_image)) {
+            $ogImage = filter_var($task->creator->social_image, FILTER_VALIDATE_URL) ? $task->creator->social_image : "https://ucarecdn.com/" . $task->creator->social_image . "/-/preview/";
+        } else if (!empty($task->creator->avatar)) {
+            $ogImage = filter_var($task->creator->avatar, FILTER_VALIDATE_URL) ? $task->creator->avatar : "https://ucarecdn.com/" . $task->creator->avatar . "/-/format/jpeg/";
+        }
+        
+        $ogUrl = url()->current();
+
+        \App\SeoMeta::setOgData('website', $ogTitle, $ogDescription, $ogImage, $ogUrl);
+        \App\SeoMeta::setTwitterCard('summary_large_image', $ogTitle, $ogDescription, $ogImage);
+        \App\SeoMeta::addTag('title', $ogTitle . ' | Spennypiggy');
+
         return Inertia::render('Tasks/Show', [
             'task' => $task,
             'purchase' => $purchase,
@@ -651,7 +669,14 @@ class TaskController extends Controller
             return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
         }
 
-        return to_route('thank-you', ['username' => $task->creator->username])->with('success', 'Payment Successful.');
+        return to_route('thank-you', [
+            'username' => $task->creator->username,
+            'type' => 'task',
+            'item_name' => $task->title,
+            'amount' => $purchase->amount ?? 0,
+            'currency' => $purchase->currency ?? $task->currency ?? 'GBP',
+            'item_id' => $task->uuid
+        ])->with('success', 'Payment Successful.');
     }
 
     /**

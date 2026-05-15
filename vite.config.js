@@ -28,7 +28,7 @@ export default defineConfig((env) => {
         // })
     ].filter(Boolean),
     build: {
-        sourcemap: false,
+        sourcemap: true,
         rollupOptions: {
             output: ssrBuild ? {
                 entryFileNames: 'ssr.js',
@@ -39,7 +39,7 @@ export default defineConfig((env) => {
                     'vendor-charts': ['recharts'],
                     'vendor-uploadcare': ['@uploadcare/blocks'],
                     'vendor-utils': ['clsx', 'canvas-confetti', 'aos', 'swiper'],
-                    'vendor-sentry': ['@sentry/react', '@sentry/replay']
+                    'vendor-sentry': ['@sentry/react']
                 },
                 chunkFileNames: 'js/[name]-[hash].js',
                 entryFileNames: 'js/[name]-[hash].js',

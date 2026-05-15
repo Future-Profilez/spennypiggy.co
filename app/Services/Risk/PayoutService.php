@@ -44,16 +44,18 @@ class PayoutService
                 $query->whereIn('stripe_payment_detail_id', $detailIds);
             } else {
                 $query->where(function ($q) use ($payment, $sessionColumn, $modelClass) {
+                    // 1. Check by session ID
                     if ($payment->stripe_session_id) {
                         $q->orWhere($sessionColumn, $payment->stripe_session_id);
                     }
+                    
+                    // 2. Check by payment intent ID
                     if ($payment->stripe_payment_intent_id) {
                         if ($modelClass === \App\Models\TaskPurchase::class) {
                             $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
-                        } elseif ($modelClass === \App\Models\StripePaymentItems::class) {
-                            // Handled above
+                        } elseif (in_array($modelClass, [\App\Models\MembershipPayment::class, \App\Models\BillPayment::class])) {
+                            $q->orWhere('stripe_id', $payment->stripe_payment_intent_id);
                         } else {
-                            // Check if the model has a payment_intent_id column, or just fallback to checking session_id against it
                             $q->orWhere($sessionColumn, $payment->stripe_payment_intent_id);
                         }
                     }
@@ -61,6 +63,7 @@ class PayoutService
             }
 
             $items = $query->get(['id']);
+
             if ($items->isEmpty()) continue;
 
             $fts = \App\Models\FinancialTransaction::where('source_type', $modelClass)
@@ -81,8 +84,8 @@ class PayoutService
      */
     public function calculatePayouts($runDate = null)
     {
-        // Use endOfDay() if a date string is passed so we don't accidentally exclude today's payments (00:00:00)
-        $runDate = $runDate ? Carbon::parse($runDate)->endOfDay() : Carbon::now();
+        // Default to end of current day if no date passed, so "Expected Payout" includes today's full day.
+        $runDate = $runDate ? Carbon::parse($runDate)->endOfDay() : Carbon::now()->endOfDay();
         
         $platformState = PlatformRiskState::latest('started_at')->first();
         $state = $platformState ? $platformState->state : 'NORMAL';
@@ -149,6 +152,12 @@ class PayoutService
             }
 
             $payments = $payments
+                ->sortByDesc(function ($p) {
+                    $score = 0;
+                    if ($p->stripe_session_id) $score += 2;
+                    if ($p->stripe_payment_intent_id) $score += 1;
+                    return $score;
+                })
                 ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
                 ->values();
 
@@ -208,27 +217,22 @@ class PayoutService
 
             // Calculate Net Eligible Base
             $netEarningsMinor = 0;
+            $totalReservesHeld = 0;
+            $eligiblePayments = collect();
+
             foreach ($payments as $p) {
                 $fts = $this->getAllFinancialTransactionsForPayment($p);
                 if ($fts->isNotEmpty()) {
                     $netEarningsMinor += (int) round($fts->sum('net_amount') * 100);
+                    $totalReservesHeld += (int) round($fts->sum('reserve_amount') * 100);
+                    $eligiblePayments->push($p);
                 } else {
-                    \Illuminate\Support\Facades\Log::warning("PayoutService: No FinancialTransactions found for payment {$p->stripe_session_id} — skipping from net earnings.");
+                    \Illuminate\Support\Facades\Log::warning("PayoutService: No FinancialTransactions found for payment {$p->id} ({$p->stripe_session_id}) — skipping from payout calculation.");
                 }
             }
             
+            $payments = $eligiblePayments;
             $grossAmount = (int) $payments->sum('amount');
-
-            // Use FinancialTransaction.reserve_amount (net-based) instead of Payment.reserve_amount_minor (may be gross-based)
-            $totalReservesHeld = 0;
-            foreach ($payments as $p) {
-                $fts = $this->getAllFinancialTransactionsForPayment($p);
-                if ($fts->isNotEmpty() && $fts->sum('reserve_amount') > 0) {
-                    $totalReservesHeld += (int) round($fts->sum('reserve_amount') * 100);
-                } else {
-                    $totalReservesHeld += (int) ($p->reserve_amount_minor ?? 0);
-                }
-            }
 
             $adjustments = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
                 ->whereIn('status', ['refunded', 'disputed'])

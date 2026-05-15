@@ -164,9 +164,11 @@
                         <td
                             style="padding:0 0 10px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #666666; text-align: center; ">
                             @if(app()->environment('production'))
-                                Copyright &copy; {{ date('Y') }} Spenny Piggy. All rights reserved.
+                                Copyright &copy; {{ date('Y') }} SpennyPiggy. All rights reserved.
+                            @elseif(app()->environment('local'))
+                                Copyright &copy; {{ date('Y') }} SpennyPiggy LOCAL. All rights reserved.
                             @else
-                                Copyright &copy; {{ date('Y') }} Spenny Piggy Dev. All rights reserved.
+                                Copyright &copy; {{ date('Y') }} SpennyPiggy DEV. All rights reserved.
                             @endif
                         </td>
                     </tr>

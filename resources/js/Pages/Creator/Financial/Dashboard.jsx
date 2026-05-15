@@ -256,18 +256,12 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     href={route('financial.expenses.index')} 
                                     onMouseEnter={() => logExpenseIconRef.current?.startAnimation?.()}
                                     onMouseLeave={() => logExpenseIconRef.current?.stopAnimation?.()}
-                                    className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#F94F96] hover:bg-[#d83a7c] text-white px-4 py-2.5 rounded-[30px] font-medium transition-all shadow-lg shadow-pink-500/20 text-[14px]"
-                                >
+                                    className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#F94F96] hover:bg-[#d83a7c] text-white px-4 py-2.5 rounded-[30px] font-medium transition-all shadow-lg shadow-pink-500/20 text-[14px]" >
                                     <PlusIcon ref={logExpenseIconRef} size={18} />
                                     <span>Log Expense</span>
                                 </Link>
-                                <a 
-                                    href={route('financial.export.csv')} 
-                                    target="_blank"
-                                    onMouseEnter={() => exportCsvIconRef.current?.startAnimation?.()}
-                                    onMouseLeave={() => exportCsvIconRef.current?.stopAnimation?.()}
-                                    className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-[30px] font-medium transition-all border border-gray-700 text-[14px]"
-                                >
+                                <a  href={route('financial.export.csv')} target="_blank" onMouseEnter={() => exportCsvIconRef.current?.startAnimation?.()} onMouseLeave={() => exportCsvIconRef.current?.stopAnimation?.()}
+                                    className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-[30px] font-medium transition-all border border-gray-700 text-[14px]" >
                                     <DownloadIcon ref={exportCsvIconRef} size={18} />
                                     <span>Export CSV</span>
                                 </a>

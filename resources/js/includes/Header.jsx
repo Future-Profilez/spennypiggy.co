@@ -412,6 +412,11 @@ export default function Header({ classMagicword }) {
                                             <span className="text-[10px] font-black bg-pink-500 text-white px-1.5 py-0.5 rounded border border-black uppercase">
                                                 {auth.user.role == 1 ? 'Creator' : 'User'}
                                             </span>
+                                            {auth.user.role == 1 && auth.user.default_currency && (
+                                                <span className="text-[10px] font-black bg-yellow-300 text-black px-1.5 py-0.5 rounded border border-black uppercase">
+                                                    {auth.user.default_currency}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </Link>
@@ -463,6 +468,13 @@ export default function Header({ classMagicword }) {
                                     
                                     {auth && auth.user && auth.user.role ==1 ? (
                                         <>
+                                            <NavLinkWithIcon
+                                                href="/financial/dashboard/payouts"
+                                                onClick={toggleClass}
+                                                icon={DashboardIcon}
+                                                label="Payouts"
+                                                activeColor="hover:bg-[#A2E4B8]"
+                                            />
                                             <NavLinkWithIcon
                                                 href="/earnings"
                                                 onClick={toggleClass}
@@ -553,6 +565,7 @@ export default function Header({ classMagicword }) {
                                     activeColor="hover:bg-[#b892ff]"
                                 />
                                 {auth?.user?.role == 1 && (
+                                    <>
                                     <NavLinkWithIcon
                                         href="/refer-and-earn"
                                         onClick={toggleClass}
@@ -560,6 +573,8 @@ export default function Header({ classMagicword }) {
                                         label="Refer & Earn"
                                         activeColor="hover:bg-[#A2E4B8]"
                                     />
+                                   
+                                    </>
                                 )}
 
                                 <NavLinkWithIcon

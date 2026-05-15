@@ -1,72 +1,310 @@
 
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import { Link, Head, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import { useRef } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/siteicon.png";
+import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'react-icons/fa';
 
 export default function Thankyou(props) {
 
-  const {owner, type} = props;
+  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug} = props;
   const { global_currency, auth, user } = usePage().props;
+
+  const getTitle = () => {
+    if (type === 'monthly_subscription') return <><span className="text-mint">Subscription</span> <span className="text-[#ff4fa0]">Successful!</span></>;
+    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return <><span className="text-mint">Payment</span> <span className="text-[#ff4fa0]">Successful!</span></>;
+    return <><span className="text-mint">Your gift</span> <span className="text-[#ff4fa0]">has been sent.</span></>;
+  };
+
+  const getSubTitle = () => {
+    if (type === 'monthly_subscription') return 'Welcome to the Spenny Piggy platform.';
+    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return 'Thank you for your purchase.';
+    return 'Check your email for a receipt.';
+  };
+
+  const getIcon = () => {
+    switch(type) {
+      case 'wish': return <FaGift className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+      case 'bill': return <FaStar className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+      case 'membership': return <FaStar className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+      case 'task': return <FaBolt className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+      case 'shop': return <FaShoppingBag className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+      case 'support': return <FaHeart className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+      default: return <FaGift className="text-[40px] text-[#ff4fa0] mb-3 mx-auto" />;
+    }
+  }
+
+  const getBenefits = () => {
+    if (benefits) return benefits; // fallback to backend string
+    switch(type) {
+      case 'wish':
+        return 'You will receive an email with your content access shortly.';
+      case 'bill':
+        return 'You have unlocked access to subscribers-only posts.';
+      case 'membership':
+        return 'You have unlocked access to member-only posts and creator perks.';
+      case 'task':
+      case 'shop':
+        return 'The creator will fulfill your request. We will notify you when it is ready. For instant delivery items, please check your email.';
+      case 'support':
+        return 'You have unlocked access to supporters-only posts.';
+      default:
+        return null;
+    }
+  };
+
+  const benefitsText = getBenefits();
+
+  const getExploreLink = () => {
+    if (!owner) return null;
+    switch(type) {
+      case 'wish': return { url: `/${owner.username}/wishes`, text: 'Explore more wishes' };
+      case 'membership': return { url: `/${owner.username}/memberships`, text: 'Explore more memberships' };
+      case 'task': return { url: `/${owner.username}/tasks`, text: 'Explore more tasks' };
+      case 'shop': return { url: `/${owner.username}/shop`, text: 'Explore more checkout' };
+      case 'bill': return { url: `/${owner.username}/bills`, text: 'Explore more bills' };
+      default: return { url: `/${owner.username}`, text: 'Explore more items' };
+    }
+  };
+
+  const exploreLink = getExploreLink();
+
+  const getMessageLink = () => {
+    if (!owner) return null;
+    if (type === 'wish' && item_id) return `/${owner.username}/wish/${item_id}`;
+    if (type === 'wish') return `/${owner.username}/wishes`;
+    if (type === 'membership') return `/${owner.username}/bills`; // membership confirmation message routes to bills page
+    if (type === 'shop' && item_slug && item_id) return `/item/${item_slug}/${item_id}`;
+    if (type === 'task' && item_id) return `/task/${item_id}`;
+    return `/${owner.username}`;
+  };
+
+  const messageLink = getMessageLink();
+
+  const BenefitsContent = () => (
+    <div className={`benefits-box ${messageLink ? 'cursor-pointer hover:bg-pink-900/30 transition-colors' : ''}`}>
+      <div className="benefits-title">BENEFITS INCLUDED</div>
+      <div className="benefits-text">{benefitsText}</div>
+    </div>
+  );
 
     return (
         <Authenticated auth={auth.user} user={user} >
             <Head title={"Thankyou"} />
             <style>{`
-            .thankyou-wrap { min-height:89vh; }
+            .thankyou-wrap { min-height: calc(100vh - 80px); background: #000; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
             .giftthank {
-              border:2px dashed var(--mint);
+              background: #111;
+              border: 2px solid var(--mint);
+              border-radius: 16px;
+              box-shadow: 0px 0px 20px 0px rgba(31,223,171,0.2);
+              position: relative;
+              overflow: hidden;
+              width: 100%;
+              max-width: 450px;
+              margin: 0 auto;
+              padding: 24px;
+            }
+            .giftthank::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; height: 100px;
+              background: linear-gradient(180deg, rgba(31,223,171,0.1) 0%, rgba(0,0,0,0) 100%);
+              z-index: 0;
+              pointer-events: none;
+            }
+            .giftthank > * {
+              position: relative;
+              z-index: 1;
+            }
+            .details-box {
+              background: #1a1a1a;
+              border-radius: 12px;
+              padding: 16px;
+              margin-top: 16px;
+              text-align: left;
+              border: 1px solid #222;
+            }
+            .details-box h3 {
+              margin-bottom: 12px;
+              font-weight: 800;
+              color: #fff;
+              text-transform: uppercase;
+              font-size: 0.85rem;
+              letter-spacing: 0.5px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+            .details-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 6px 0;
+              font-size: 0.9rem;
+            }
+            .details-label {
+              color: #888;
+              font-weight: 500;
+            }
+            .details-value {
+              color: #fff;
+              font-weight: bold;
+              text-align: right;
+            }
+            .benefits-box {
+              background: rgba(255, 79, 160, 0.08);
+              border: 1px solid rgba(255, 79, 160, 0.2);
+              border-radius: 8px;
+              padding: 12px;
+              margin-top: 12px;
+            }
+            .benefits-title {
+              color: #ff4fa0;
+              font-weight: 800;
+              margin-bottom: 4px;
+              font-size: 0.75rem;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .benefits-text {
+              color: #ddd;
+              font-size: 0.85rem;
+              line-height: 1.4;
+            }
+            .avatar-container {
+              position: relative;
+              width: 70px;
+              height: 70px;
+              margin: 0 auto;
+              margin-top: 12px;
+              margin-bottom: 16px;
+            }
+            .avatar-container::after {
+              content: '';
+              position: absolute;
+              inset: -4px;
+              border-radius: 50%;
+              border: 2px dashed var(--mint);
+              animation: spin 10s linear infinite;
+            }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+            .thankyou-title {
+              font-weight: 900;
+              font-size: 1.75rem;
+            }
+            .action-btn {
+              background: #ff4fa0;
+              color: white;
+              font-weight: bold;
+              border-radius: 999px;
+              padding: 10px 24px;
+              display: inline-block;
+              transition: transform 0.2s, box-shadow 0.2s;
+              font-size: 0.95rem;
+            }
+            .action-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(255, 79, 160, 0.3);
+            }
+            .explore-btn {
+              background: transparent;
+              color: var(--mint);
+              border: 2px solid var(--mint);
+              font-weight: bold;
+              border-radius: 999px;
+              padding: 10px 24px;
+              display: inline-block;
+              transition: all 0.2s;
+              font-size: 0.95rem;
+            }
+            .explore-btn:hover {
+              background: rgba(31, 223, 171, 0.1);
+              transform: translateY(-2px);
             }
             `}</style>
 
-             <div className='p-4 text-center text-mint thankyou-wrap flex justify-center items-center'>
-              <div className='max-w-[500px]'>
-                <h2 className='text-[25px] ' >{type === 'monthly_subscription' ? 'Subscription Successful!' : 'Your gift has been sent.'}</h2>
-                <p className='pt-2 pb-4' >{type === 'monthly_subscription' ? 'Welcome to the Spenny Piggy platform.' : 'Check your email for a receipt.'}</p>
+             <div className='!pt-8 !pb-12 text-center text-white thankyou-wrap'>
+              
+                <div className="mb-4">
+                  {getIcon()}
+                  <h2 className='thankyou-title mb-1'>{getTitle()}</h2>
+                  <p className='text-gray-400 text-sm md:text-base'>{getSubTitle()}</p>
+                </div>
                 
                 {type !== 'monthly_subscription' && (
-                  <div className='giftthank p-4' >
-                    <p>Thank you from Spenny Piggy on behalf of {owner && owner.name}.</p>
+                  <div className='giftthank'>
+                    <p className="text-gray-300 font-medium text-sm">Thank you from Spenny Piggy on behalf of <span className="text-mint font-bold">{owner?.name}</span>.</p>
 
-                      <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden mx-auto block mt-4 " >
+                      <div className="avatar-container" >
                             <LazyLoadImage
-                            src={owner.avatar_url || userphoto}
-                            alt="image-avatar" className="img-fluid rounded w-full h-full object-cover"  effect="blur"
-                            height={100}
-                            width={100} />
+                            src={owner?.avatar_url || userphoto}
+                            alt="image-avatar" className="img-fluid rounded-full w-full h-full object-cover border-2 border-black relative z-10"  effect="blur"
+                            height={70}
+                            width={70} />
                       </div>
 
-                    <div className='w-full mt-2' >
-                      <Link href={`/${owner && owner.username}`} className='underline' >
-                          visit @{owner && owner.username}'s wishlist
+                    {(item_name || amount || benefitsText) && (
+                      <div className="details-box">
+                        <h3><FaCheckCircle className="text-mint" /> Purchase Details</h3>
+                        
+                        {item_name && (
+                          <div className="details-row">
+                            <span className="details-label">Item</span>
+                            <span className="details-value truncate max-w-[200px]" title={item_name}>{item_name}</span>
+                          </div>
+                        )}
+                        
+                        {amount && (
+                          <div className="details-row">
+                            <span className="details-label">Amount Paid</span>
+                            <span className="details-value">{currency ? currency.toUpperCase() : ''} {amount}</span>
+                          </div>
+                        )}
+                        
+                        {benefitsText && (
+                          messageLink ? (
+                            <Link href={messageLink} className="block">
+                              <BenefitsContent />
+                            </Link>
+                          ) : (
+                            <BenefitsContent />
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    <div className='w-full mt-5' >
+                      <Link href={`/${owner?.username}`} className='text-mint hover:text-white transition-colors font-bold uppercase tracking-wide text-xs flex items-center justify-center gap-2' >
+                          <span>VISIT @{owner?.username?.toUpperCase()}'S PROFILE</span>
                       </Link>
                     </div>
                   </div>
                 )}
 
-                {type !== 'monthly_subscription' && (
-                  <p className='py-6 text-center px-6'>Please create an account to see the content you have purchased.</p>
+                {type !== 'monthly_subscription' && (!auth || !auth.user) && (
+                  <p className='mt-5 mb-2 text-center px-6 text-mint text-sm font-medium'>Please create an account to see the content you have purchased.</p>
                 )}
                 
-                <div className='w-full mt-4' >
+                <div className='w-full max-w-[450px] mt-6 flex flex-col sm:flex-row gap-3 justify-center items-center' >
                   {type === 'monthly_subscription' ? (
-                    <Link className='button lg mt-4' href={route('dashboard')}>
+                    <Link className='action-btn w-full sm:w-auto text-center' href={route('dashboard')}>
                       Go to Dashboard
                     </Link>
                   ) : (
-                    auth && auth.user ?
-                        <Link className='button lg mt-4' href={`/${owner && owner.username}`}>
-                          Back to profile
+                    <>
+                      {exploreLink && (
+                        <Link className='explore-btn w-full sm:w-auto text-center' href={exploreLink.url}>
+                          {exploreLink.text}
                         </Link>
-                      :
-                      <Link className='button  mt-4' href={route("register")}>
-                        Create a Gifter account
-                      </Link>
+                      )}
+                      {(!auth || !auth.user) && (
+                        <Link className='action-btn w-full sm:w-auto text-center' href={route("register")}>
+                          Create Account
+                        </Link>
+                      )}
+                    </>
                   )}
                 </div>
-              </div>
              </div>
         </Authenticated>
     )

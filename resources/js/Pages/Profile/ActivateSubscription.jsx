@@ -129,7 +129,6 @@ export default function ActivateSubscription(props) {
                 </div>
               </div>
             </div>
-            <Toaster />
         </Authenticated>
     )
 }

@@ -920,7 +920,14 @@ class BillsController extends Controller
                 }
 
 
-                return to_route('thank-you', ['username' => $bill_pay->bill->user->username])->with('success', "Payment for subscription of bill is successful.");
+                return to_route('thank-you', [
+                    'username' => $bill_pay->bill->user->username,
+                    'type' => 'bill',
+                    'item_name' => $bill_pay->bill->name,
+                    'amount' => $bill_pay->amount ?? 0,
+                    'currency' => $bill_pay->currency ?? 'GBP',
+                    'item_id' => $bill_pay->bill->uuid
+                ])->with('success', "Payment for subscription of bill is successful.");
             }
 
             $bill_pay->save();

@@ -79,6 +79,7 @@ const membershipBenifits = [
 
 export default function AddMembership({updateState, item, text, classes}) {
   const { auth, global_currency } = usePage().props;
+  const memberOnlyPostsCount = auth?.member_only_posts_count || 0;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
   const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
@@ -374,16 +375,21 @@ export default function AddMembership({updateState, item, text, classes}) {
 
                               <div className="flex gap-3 mt-8">
                                   <button onClick={() => setStep(2)} className="w-1/3 py-3 rounded-full text-lg font-black uppercase tracking-wider transition-all duration-200 bg-[#FEF08A] text-black border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">Back</button>
-                                  <button onClick={AddMembership} disabled={loading}
+                                  <button onClick={AddMembership} disabled={loading || (!item && memberOnlyPostsCount === 0)}
                                       className="flex w-2/3 items-center justify-center py-3 rounded-full text-lg font-black uppercase tracking-wider transition-all duration-200 bg-[#ff4fa0] text-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"  >
                                     {loading ? (
                                         <span className="flex items-center justify-center gap-2">
                                             <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
                                             Processing...
                                         </span>
-                                    ) : "Create Membership"}
+                                    ) : (item ? "Update Membership" : "Create Membership")}
                                   </button>
                               </div>
+                              {!item && memberOnlyPostsCount === 0 && (
+                                  <p className="mt-4 text-center text-red-500 text-sm">
+                                      You haven't added any member-only posts yet. Please create at least one before adding a membership.
+                                  </p>
+                              )}
                           </div>
                       )}
 

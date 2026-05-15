@@ -1042,7 +1042,14 @@ class MembershipController extends Controller
                     $this->userProfileService->clearUserCaches($mem->user->username, $mem->user->id);
                 }
 
-                return to_route('thank-you', ['username' => $mem->membership->user->username])->with('success', "Payment for subscription of membership is success.");
+                return to_route('thank-you', [
+                    'username' => $mem->membership->user->username,
+                    'type' => 'membership',
+                    'item_name' => $mem->membership->level,
+                    'amount' => $mem->amount ?? 0,
+                    'currency' => $mem->currency ?? 'GBP',
+                    'item_id' => $mem->membership->uuid
+                ])->with('success', "Payment for subscription of membership is success.");
             }
 
             // SubscriptionFailed::dispatch($mem);

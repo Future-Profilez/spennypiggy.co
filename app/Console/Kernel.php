@@ -82,24 +82,6 @@ class Kernel extends ConsoleKernel
 
         $schedule->command("app:auto-suspend-account")->daily()->withoutOverlapping(4);
         
-        // Schedule pending approval notifications based on configuration
-        $allConfigs = collect(config('pending-approval'));
-        $environmentConfig = $allConfigs->first(fn($config) => in_array($appUrl, $config['domains']));
-        
-        if ($environmentConfig) {
-            $scheduleMethod = $environmentConfig['schedule']; // e.g., 'everyThirtyMinutes' or 'daily'
-            
-            if (str_contains($scheduleMethod, ' ') || str_contains($scheduleMethod, '*')) {
-                $schedule->command('app:notifications-pending-approval')
-                     ->cron($scheduleMethod)
-                     ->withoutOverlapping(4);
-            } else {
-                $schedule->command('app:notifications-pending-approval')
-                     ->{$scheduleMethod}()
-                     ->withoutOverlapping(4);
-            }
-        }
-
         // Founder Bonus System Jobs
         // Daily job to calculate first 30-day earnings for new creators
         $schedule->job(new CalculateFirstThirtyDayEarnings)
@@ -131,9 +113,9 @@ class Kernel extends ConsoleKernel
                 ->withoutOverlapping(10);
 
         // Risk Engine: Weekly Payout Run (Fridays at 10 AM)
-        $schedule->command('payout:run-weekly')
-                 ->weeklyOn(5, '10:00')
-                 ->withoutOverlapping();
+        // $schedule->command('payout:run-weekly')
+        //          ->weeklyOn(5, '10:00')
+        //          ->withoutOverlapping();
 
         // Platform Diagnostics — runs daily, emails alert on failure/warning
         $schedule->command('diagnostics:run')

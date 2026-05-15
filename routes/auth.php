@@ -301,7 +301,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     $cacheKey = 'discover_v3_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
     $ttl = Auth::check() ? 600 : 1800; // 10 mins for auth, 30 mins for guests
 
-    $filters = $request->only(['search', 'contentType', 'sortBy', 'type']);
+    $filters = $request->only(['search', 'contentType', 'sortBy', 'type', 'page']);
     
     // Merge route parameter into filters if not present in query string
     if ($type) {
@@ -336,7 +336,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
 
     // Unified data fetching for ALL sections to avoid multiple round-trips
     // We cache the entire block for 30 minutes to make it instant for everyone
-    $cacheKey = 'discover_final_v6_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
+    $cacheKey = 'discover_final_v6_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($filters));
     $ttl = 1800; // 30 minutes
 
     $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, function() use ($discoveryService, $filters, $isSearch, $limit) {
@@ -1071,7 +1071,14 @@ Route::prefix("wish")->name("wish.")->group(function () {
 Route::get('payment/thankyou/{username}', function ($username) {
     $owner = User::where('username', $username)->first();
     return Inertia::render('Profile/Thankyou', [
-        'owner' => $owner
+        'owner' => $owner,
+        'type' => request('type'),
+        'item_name' => request('item_name'),
+        'amount' => request('amount'),
+        'currency' => request('currency'),
+        'benefits' => request('benefits'),
+        'item_id' => request('item_id'),
+        'item_slug' => request('item_slug'),
     ]);
 })->name("thank-you");
 

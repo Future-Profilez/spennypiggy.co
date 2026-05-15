@@ -139,9 +139,19 @@ class HandleInertiaRequests extends Middleware
         
         // Cached Cart Count with revalidation strategy
         $cart_count = 0;
+        $subscriber_only_posts_count = 0;
+        $member_only_posts_count = 0;
         if ($user) {
             $cart_count = Cache::remember("user_cart_count_{$user->id}", 3600, function () use ($user) {
                 return UserCart::where('user_id', $user->id)->where('status', 1)->count();
+            });
+            
+            $subscriber_only_posts_count = Cache::remember("user_sub_posts_count_{$user->id}", 600, function () use ($user) {
+                return \App\Models\Post::where('user_id', $user->id)->where('for_module', 'subscription')->count();
+            });
+            
+            $member_only_posts_count = Cache::remember("user_mem_posts_count_{$user->id}", 600, function () use ($user) {
+                return \App\Models\Post::where('user_id', $user->id)->where('for_module', 'membership')->count();
             });
         }
         
@@ -157,6 +167,8 @@ class HandleInertiaRequests extends Middleware
                     'reviewed_at' => $user->identity_admin_reviewed_at,
                     'notes' => $user->identity_admin_notes,
                 ] : null,
+                'subscriber_only_posts_count' => $subscriber_only_posts_count,
+                'member_only_posts_count' => $member_only_posts_count,
             ],
             'follow_status' => $follow_status,
             'cart_count' =>  $cart_count,

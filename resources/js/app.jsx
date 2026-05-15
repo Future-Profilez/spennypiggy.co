@@ -33,7 +33,7 @@ import Maintaince from "./Components/Maintaince.jsx";
 
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
-        dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
+        dsn: import.meta.env.VITE_SENTRY_DSN_PUBLIC,
         sendDefaultPii: false,
         ignoreErrors: [
             "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
@@ -46,6 +46,8 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
             "TypeError: null is not an object (evaluating 'i.cdnUrl')",
             "Error: Response not ok: 403",
             "Error: Error invoking enableDidUserTypeOnKeyboardLogging: Java object is gone",
+            "TypeError: Importing a module script failed.",
+            "SyntaxError: The string did not match the expected pattern.",
         ],
         beforeSend(event) {
             const value = event?.exception?.values?.[0]?.value || "";
@@ -55,8 +57,8 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
                 type === "MagicBellError" ||
                 type === "AbortError" ||
                 type === "AxiosError" ||
-                (type === "TypeError" && /load failed|cdnUrl/i.test(value)) ||
-                /permission denied|request is not allowed by the user agent|play\(\) failed because the user didn't interact|load failed|network error|response not ok:\s*403|insertBefore.*not a child of this node|abort due to cancellation of share|enableDidUserTypeOnKeyboardLogging|Java object is gone/i.test(value)
+                (type === "TypeError" && /load failed|cdnUrl|Importing a module script failed/i.test(value)) ||
+                /permission denied|request is not allowed by the user agent|play\(\) failed because the user didn't interact|load failed|network error|response not ok:\s*403|insertBefore.*not a child of this node|abort due to cancellation of share|enableDidUserTypeOnKeyboardLogging|Java object is gone|The string did not match the expected pattern/i.test(value)
             ) {
                 return null;
             }
@@ -64,15 +66,20 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
         },
         // Keep feedback, disable replays to reduce bandwidth
         integrations: [
+            Sentry.browserTracingIntegration(),
+            Sentry.replayIntegration(),
             Sentry.feedbackIntegration({
                 colorScheme: "system",
                 autoInject: false,
             }),
         ],
+        // Performance Monitoring
+        tracesSampleRate: 0.1,
         // Disable session replays completely and reduce on-error sampling
         replaysSessionSampleRate: 0,
         replaysOnErrorSampleRate: 0.05,
     });
+    console.warn("Sentry Initialized on spennypiggy.co");
 } 
 function setupGlobalCartFunctions(props) {
     const auth = props?.page?.props?.auth;

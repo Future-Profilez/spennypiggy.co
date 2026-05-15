@@ -1,3 +1,7 @@
+@import "react-lazy-load-image-component/src/effects/blur.css";
+@import "./retro-bottombar.css";
+@import "./retro-enhancements.css";
+
 .font-cera-medium {
     font-family:
         "CeraGRMedium", ui-sans-serif, system-ui, sans-serif,
@@ -9,10 +13,6 @@
         "CeraGRBold", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
         "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
 }
-
-@import "react-lazy-load-image-component/src/effects/blur.css";
-@import "./retro-bottombar.css";
-@import "./retro-enhancements.css";
 @keyframes fading-effect {
     from {
         opacity: 0;
@@ -1203,4 +1203,7 @@ lr-config {
     .currency-wrapper input {
         padding-left: 60px !important;
     }
+}
+.popupmodal {
+    z-index: 999;
 }

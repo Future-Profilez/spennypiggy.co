@@ -107,48 +107,51 @@ export default function Discover(props) {
             (featuredCreators || [])
         );
 
-    const applyFilters = useCallback(
-        debounce((newFilters) => {
-            const params = { ...newFilters };
-            const hasSearch = params.search && params.search.trim().length > 0;
-            const typeParam = params.type || null;
-            const page = params.page || 1;
-            const contentTypeParam = params.contentType || null;
-            
-            let url;
-            if (hasSearch) {
-                url = route('discover', { search: params.search, page, contentType: contentTypeParam });
-            } else if (typeParam) {
-                url = route('discover', { type: typeParam, page, contentType: contentTypeParam });
-            } else if (contentTypeParam && ['creators', 'wishes', 'bills', 'memberships', 'tasks', 'shops'].includes(contentTypeParam.toLowerCase())) {
-                 url = route('discover', { type: contentTypeParam.toLowerCase(), page });
-            } else {
-                url = route('discover', { page, contentType: contentTypeParam });
-            }
-            
-            const onlyProps = [];
-            if (contentTypeParam && !hasSearch && !typeParam) {
-                onlyProps.push('filters','searchResults');
-            }
-            router.get(url, {}, {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-                ...(onlyProps.length > 0 ? { only: onlyProps } : {})
+    const applyFilters = useCallback((newFilters) => {
+        const params = { ...newFilters };
+        const hasSearch = params.search && params.search.trim().length > 0;
+        const typeParam = params.type || null;
+        const page = params.page || 1;
+        const contentTypeParam = params.contentType || null;
+        
+        let url;
+        if (hasSearch) {
+            url = route('discover', { search: params.search, page, contentType: contentTypeParam });
+        } else if (typeParam) {
+            url = route('discover', { type: typeParam, page, contentType: contentTypeParam });
+        } else if (contentTypeParam && ['creators', 'wishes', 'bills', 'memberships', 'tasks', 'shops'].includes(contentTypeParam.toLowerCase())) {
+             url = route('discover', { type: contentTypeParam.toLowerCase(), page });
+        } else {
+            url = route('discover', { page, contentType: contentTypeParam });
+        }
+        
+        const onlyProps = [];
+        if (contentTypeParam && !hasSearch && !typeParam) {
+            onlyProps.push('filters','searchResults');
+        }
+        router.get(url, {}, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            ...(onlyProps.length > 0 ? { only: onlyProps } : {})
+        });
+    }, []);
+
+    const debouncedSearch = useCallback(
+        debounce((query, currentFilters) => {
+            applyFilters({
+                type: null,
+                search: query,
+                page: 1,
+                contentType: currentFilters.contentType || null
             });
         }, 300),
-        []
+        [applyFilters]
     );
-
 
     const handleSearch = (query) => {
         setSearchQuery(query);
-        applyFilters({
-            type: null,
-            search: query,
-            page: 1,
-            contentType: filters.contentType || null
-        });
+        debouncedSearch(query, filters);
     };
     
     const handleViewModeChange = (mode) => {

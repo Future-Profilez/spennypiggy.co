@@ -657,7 +657,9 @@ class UserProfileService
         Cache::forget('user_memberships_' . $userId);
         Cache::forget('user_bills_' . $userId);
         Cache::forget('user_shop_' . $userId);
-
+        Cache::forget("user_sub_posts_count_{$userId}");
+        Cache::forget("user_mem_posts_count_{$userId}");
+        
         Log::info("Caches cleared for user: {$username} ({$userId})");
     }
 

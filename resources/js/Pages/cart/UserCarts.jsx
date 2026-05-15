@@ -152,7 +152,6 @@ export default function UserCarts(props) {
         if (flash?.error && flash.error !== lastFlashRef.current.error) {
             lastFlashRef.current.error = flash.error;
             toast.error(flash.error, { id: "cart-error" });
-            window.alert(flash.error);
         }
         if (flash?.success && flash.success !== lastFlashRef.current.success) {
             lastFlashRef.current.success = flash.success;
@@ -788,7 +787,6 @@ export default function UserCarts(props) {
 
     return (
         <div className={`${cartCleared ? "hidden" : ""} px-2 containerbox`}>
-            <Toaster position="top-center" />
             <div className="containerbox mx-auto">
                 {/* <div className='hidden md:flex p-4 md:p-6 pinkbg !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
                         <span className=' border-black border-2 bg-red-700 mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>

@@ -48,7 +48,15 @@ class MagicBellProxyController extends Controller
             $pending = $pending->withBody($body, $request->header('Content-Type', 'application/json'));
         }
 
-        $upstream = $pending->send($request->method(), $url, ['query' => $request->query()]);
+        try {
+            $upstream = $pending->timeout(10)->send($request->method(), $url, ['query' => $request->query()]);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            \Illuminate\Support\Facades\Log::warning("MagicBell Proxy Connection Timeout: " . $e->getMessage());
+            return response()->json(['error' => 'MagicBell service timeout'], 504);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("MagicBell Proxy Error: " . $e->getMessage());
+            return response()->json(['error' => 'MagicBell service unavailable'], 502);
+        }
 
         $response = response($upstream->body(), $upstream->status());
 
