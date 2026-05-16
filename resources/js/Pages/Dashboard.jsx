@@ -37,23 +37,23 @@ const ProfileProductLists = lazy(() => import("./shop/profile/ProfileProductList
 const ProfileTaskLists = lazy(() => import("./Tasks/Profile/ProfileTaskLists"));
 const AddItem = lazy(() => import("./shop/AddItem"));
 import AddGift from "./feed/AddGift";
-import GiftListing from "./rye/GiftListing";
-import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
-import OldSubscribe from "./webpush/OldSubscribe";
-import AddSocial from "./Auth/Social";
-import CreatorVerification from "./Profile/CreatorVerification";
-import SiteSubscription from "./Profile/SiteSubscription";
-import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
-import ActionRequired from "./stripe/ActionRequired";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
-import ErrorBoundary from "@/Components/ErrorBoundary";
+import { FaRegHeart } from "react-icons/fa";
 import InstantTabSystem from "@/Components/InstantTabSystem";
-import OfferAnnouncement from "@/Components/OfferAnnouncement";
-import FounderBadge from "@/Components/FounderBadge";
-import CreatorRiskBanner from "@/Components/Risk/CreatorRiskBanner";
-import ReferralBanner from "@/Components/ReferralBanner";
 
+const ReferralBanner = lazy(() => import("@/Components/ReferralBanner"));
+const GiftListing = lazy(() => import("./rye/GiftListing"));
+const OldSubscribe = lazy(() => import("./webpush/OldSubscribe"));
+const AddSocial = lazy(() => import("./Auth/Social"));
+const CreatorVerification = lazy(() => import("./Profile/CreatorVerification"));
+const SiteSubscription = lazy(() => import("./Profile/SiteSubscription"));
+const EnableCardCapabilities = lazy(() => import("./stripe/EnableCardCapabilities"));
+const ActionRequired = lazy(() => import("./stripe/ActionRequired"));
+const ErrorBoundary = lazy(() => import("@/Components/ErrorBoundary"));
+const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
+const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+const CreatorRiskBanner = lazy(() => import("@/Components/Risk/CreatorRiskBanner"));
 const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
 
 export default function Dashboard(props) {

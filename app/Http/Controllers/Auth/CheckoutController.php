@@ -9,7 +9,6 @@ use App\Jobs\CheckoutTweet;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
 use App\Models\Currency;
-use App\Models\FinancialTransaction;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -123,12 +122,6 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'No items in cart to checkout for this creator.');
             }
 
-            foreach ($getdata as $item) {
-                if ($item->wish && $item->wish->is_suspended) {
-                    return redirect()->back()->with('error', 'One or more items in your cart are suspended and cannot be purchased.');
-                }
-            }
-
             // Get creator by ID
             $owner = User::find($creator_id);
             if (!$owner) {
@@ -228,9 +221,6 @@ class CheckoutController extends Controller
             $grandTotalSupporterPays = 0;
             $grandTotalCreatorTransfer = 0;
 
-            $totalNetToGrossUp = 0;
-            $lineItems = [];
-
             foreach ($getdata as $dd) {
                 // Skip cart items without valid wish relationship
                 if (!$dd->wish_item_id || !$dd->wish) {
@@ -257,33 +247,34 @@ class CheckoutController extends Controller
                 $vatAmount = $itemAmount * $vatPercent / 100;
                 $itemAmountWithVat = $itemAmount + $vatAmount;
 
-                // Accumulate net amount for batch gross-up (one fixed fee per transaction)
-                $totalNetToGrossUp += $itemAmountWithVat * $dd->quantity;
+                // Calculate breakdown using gross-up logic for this item in creator's currency
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $chargeCurrency);
 
-                // Accumulate base totals
+                $finalTotalAmount = $breakdown['total_supporter_pays'];
+                $applicationFeeAmount = $breakdown['application_fee'];
+                $creatorNet = $breakdown['net_to_creator'];
+                $creatorTransferAmount = round($itemAmountWithVat, $precision, PHP_ROUND_HALF_UP);
+
+                $productName = $dd->wish->wishname ?? 'Wish Item';
+                $lineItems[] = [
+                    'quantity' => $dd->quantity,
+                    'price_data' => [
+                        'currency' => $chargeCurrency,
+                        'product_data' => [
+                            'name' => "Total value of item including all fees",
+                            'description' => $productName . ' from ' . ($dd->owner->name ?? 'Creator'),
+                        ],
+                        'unit_amount' => (int) round($finalTotalAmount * $multiplier),
+                    ]
+                ];
+
+                // Accumulate totals
                 $subtotal += $itemAmount * $dd->quantity;
-                $grandTotalCreatorTransfer += $itemAmountWithVat * $dd->quantity;
+                $totalApplicationFee += $applicationFeeAmount * $dd->quantity;
+                $totalCreatorNet += $creatorNet * $dd->quantity;
+                $grandTotalSupporterPays += $finalTotalAmount * $dd->quantity;
+                $grandTotalCreatorTransfer += $creatorTransferAmount * $dd->quantity;
             }
-
-            // Calculate optimized breakdown for the entire cart group
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($totalNetToGrossUp, $chargeCurrency);
-            $grandTotalSupporterPays = $breakdown['total_supporter_pays'];
-            $totalApplicationFee = $breakdown['application_fee'];
-            $totalCreatorNet = $breakdown['net_to_creator'];
-
-            // Since Stripe Checkout line items must add up to the total, we need to adjust
-            // We'll use one line item for the whole cart to ensure the gross-up total is exact
-            $lineItems = [[
-                'quantity' => 1,
-                'price_data' => [
-                    'currency' => $chargeCurrency,
-                    'product_data' => [
-                        'name' => "Total Basket for " . ($owner->name ?? 'Creator'),
-                        'description' => "Includes platform and processing fees",
-                    ],
-                    'unit_amount' => (int) round($grandTotalSupporterPays * $multiplier),
-                ]
-            ]];
 
             // Check if we have any valid line items after processing
             if (empty($lineItems)) {
@@ -333,8 +324,8 @@ class CheckoutController extends Controller
             ]);
 
             $payload = [
-                'success_url' => route('checkout.success', [$creator_id]) . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel', [$creator_id]) . '?session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => route('checkout.success', [$creator_id]),
+                'cancel_url' => route('checkout.cancel', [$creator_id]),
                 "mode"  =>  "payment",
                 'line_items' => $lineItems, // This determines the total amount automatically
                 'payment_intent_data' => $paymentIntentData,
@@ -434,10 +425,9 @@ class CheckoutController extends Controller
 
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
-                'stripe_payment_intent_id' => $sessionCreate->payment_intent ?? null,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / $multiplier,
-                'tax' => $totalApplicationFee,
+                'tax' => $totalApplicationFee, // Use the total application fee as tax/fee
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
@@ -449,7 +439,7 @@ class CheckoutController extends Controller
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
                 'session_expires_at' => $sessionCreate->expires_at,
-                'metadata' => json_encode($paymentMetadata),
+                'metadata' => json_encode($paymentMetadata), // Store comprehensive metadata
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -607,13 +597,9 @@ class CheckoutController extends Controller
             $contentItems = [];
             $hasContent = false;
 
-            $vatPercent = (float) ($owner->vat_amount_percentage ?? 0);
-
             foreach ($getdata as $item) {
                 $wish = $item->wish;
                 if (!$wish) continue;
-
-                $itemVat = round(((float) $item->amount * $vatPercent) / 100, 2);
 
                 $contentUrl = null;
                 $contentType = 'file';
@@ -637,11 +623,7 @@ class CheckoutController extends Controller
                     'wish_name' => $wish->wishname ?? 'Unknown Wish',
                     'content_url' => $contentUrl,
                     'content_type' => $contentType,
-                    'source' => $source,
-                    'amount' => $item->amount,
-                    'quantity' => $item->quantity,
-                    'tax' => $item->tax,
-                    'vat_amount' => $itemVat
+                    'source' => $source
                 ];
             }
 
@@ -673,10 +655,6 @@ class CheckoutController extends Controller
 
                 $metadata[$prefix . 'wish_id'] = (string) $item['wish_id'];
                 $metadata[$prefix . 'wish_name'] = substr($item['wish_name'], 0, 100); // Stripe limit
-                $metadata[$prefix . 'amount'] = (string) $item['amount'];
-                $metadata[$prefix . 'quantity'] = (string) $item['quantity'];
-                $metadata[$prefix . 'tax'] = (string) ($item['tax'] ?? 0);
-                $metadata[$prefix . 'vat_amount'] = (string) ($item['vat_amount'] ?? 0);
 
                 if (!empty($item['content_url'])) {
                     $metadata[$prefix . 'content_url'] = $item['content_url'];
@@ -721,22 +699,6 @@ class CheckoutController extends Controller
             }
 
             $metadata['wish_items_summary'] = json_encode($wishItemsSummary);
-
-            // Add full wish items list for reconstruction if needed
-            $fullWishItems = [];
-            foreach ($getdata as $item) {
-                if ($item->wish) {
-                    $fullWishItems[] = [
-                        'wish_id' => $item->wish->id,
-                        'wish_name' => $item->wish->wishname ?? 'Item',
-                        'amount' => (float) $item->amount,
-                        'quantity' => (int) $item->quantity,
-                        'tax' => (float) ($item->tax ?? 0),
-                        'vat_amount' => (float) ($item->vat_amount ?? 0),
-                    ];
-                }
-            }
-            $metadata['wish_items'] = json_encode($fullWishItems);
 
             // Ensure all values are strings and within Stripe limits
             foreach ($metadata as $key => $value) {
@@ -960,7 +922,7 @@ class CheckoutController extends Controller
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
 
         // Get the payment record to determine how to query cart items
-        $sessionId = request()->query('session_id') ?? session('session_id');
+        $sessionId = session('session_id');
         $paymentRecord = StripePaymentDetail::where('session_id', $sessionId)->first();
 
         if (Auth::check()) {
@@ -991,7 +953,7 @@ class CheckoutController extends Controller
         }
         try {
             // Check if payment has already been processed to avoid race condition with webhook
-            $sessionId = request()->query('session_id') ?? session('session_id');
+            $sessionId = session('session_id');
             Log::info("successCheckout called", [
                 'session_id' => $sessionId,
                 'creator_id' => $id,
@@ -1007,23 +969,34 @@ class CheckoutController extends Controller
                     'payment_id' => $existingPayment->id
                 ]);
 
-                // Only return early if the payment is marked as paid AND we have already created the payment items
-                // This prevents race conditions where the webhook marks the payment as paid but doesn't create the items
-                $hasItems = StripePaymentItems::where('stripe_payment_detail_id', $existingPayment->id)->exists();
-                
-                if ($existingPayment->payment_status === 'paid' && $hasItems) {
-                    Log::info("Payment and items already processed", ['session_id' => $sessionId]);
+                if ($existingPayment->payment_status === 'paid') {
+                    // Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
                     if ($existingPayment->owner) {
                         $this->userProfileService->clearUserCaches($existingPayment->owner->username, $existingPayment->owner->id);
+                        // Also clear discovery cache to update top earners and trending
                         app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
                     }
-                    return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
+                    
+                    $thankYouParams = ['username' => $existingPayment->owner->username];
+                    $firstItem = $existingPayment->items()->with('wish')->first();
+                    if ($firstItem && $firstItem->wish) {
+                        $wish = $firstItem->wish;
+                        $thankYouParams['type'] = 'wish';
+                        $thankYouParams['item_name'] = $wish->name;
+                        $thankYouParams['amount'] = $existingPayment->amount_total;
+                        $thankYouParams['currency'] = $existingPayment->currency;
+                        $thankYouParams['item_id'] = $wish->id;
+                        if ($wish->content_file) {
+                            $thankYouParams['wish_content'] = [
+                                'type' => $wish->content_file_type,
+                                'name' => $wish->content_file_name,
+                                'url'  => $wish->content_file_url
+                            ];
+                        }
+                    }
+                    
+                    return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
                 }
-                
-                Log::info("Payment found but continuing processing", [
-                    'status' => $existingPayment->payment_status,
-                    'has_items' => $hasItems
-                ]);
             } else {
                 Log::warning("No existing payment found for session", ['session_id' => $sessionId]);
             }
@@ -1036,14 +1009,7 @@ class CheckoutController extends Controller
                 if (isset($dd->user) && $dd->user->email) {
                     $CreatorName = !empty($dd->owner->name) ? ucfirst($dd->owner->name) : 'A Creator';
                     $titles = "✨ Wish Sent Successfully!";
-                    
-                    // Format total paid for notification
-                    $paymentCurrency = $existingPayment->currency ?? $currency;
-                    $totalPaidAmount = $existingPayment->amount_total ?? ($dd->amount * $dd->quantity);
-                    $currencySymbol = \App\Models\Currency::where('iso', strtoupper($paymentCurrency))->value('symbol') ?? '£';
-                    $formattedTotal = $currencySymbol . number_format((float)$totalPaidAmount, 2);
-                    
-                    $contents = "You've sent a wish to $CreatorName. Total paid: {$formattedTotal}. They'll be notified right away!";
+                    $contents = "You've sent a wish to $CreatorName. They'll be notified right away!.";
                     $emails = $dd->user->email ?? null;
                     Helpers::sendNotification($titles, $contents, $emails);
                 }
@@ -1086,12 +1052,16 @@ class CheckoutController extends Controller
                 }
             }
 
-            $sessionId = request()->query('session_id') ?? session('session_id');
+            $sessionId = session('session_id');
+            // Log::info("Updating payment status", ['session_id' => $sessionId]);
 
             StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
+            // Log::info("Payment update result", ['updated_rows' => $updateResult]);
+
+            // Amount must be GBP (you already store subtotal in GBP)
 
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
 
@@ -1110,24 +1080,16 @@ class CheckoutController extends Controller
             foreach ($getdata as $dd) {
                 $vatPercent = $dd->owner->vat_amount_percentage ?? 0;
                 $vatAmount = ((float) ($dd->amount ?? 0) * (float) $vatPercent) / 100;
-                
-                // Recalculate fees to ensure exact tax and total_paid are recorded
-                $currency = strtoupper($stripeid->currency ?? 'GBP');
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($dd->amount + $vatAmount, $currency);
-                $tax = $breakdown['total_fees'];
-                $totalPaid = $breakdown['total_supporter_pays'];
-
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
                     'stripe_payment_detail_id' => $stripeid->id,
                     'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
-                    'total_paid' => $totalPaid,
                     'message_media' => $dd->wish ? ($dd->wish->reward ?? null) : null,
                     'media_type' => ($dd->wish && !empty($dd->wish->reward)) ? 'image' : null,
                     'thank_you_approved' => ($dd->wish && !empty($dd->wish->reward)) ? 1 : 0,
-                    'tax' => $tax,
+                    'tax' => $dd->tax,
                     'vat_amount' => $vatAmount,
                     'quantity' => $dd->quantity,
                     'anonymous' => $dd->anonymous ?? false,
@@ -1188,13 +1150,12 @@ class CheckoutController extends Controller
                     Log::info("VAT percentage calculated", ['vat_percentage' => $vat_percentage]);
 
                     Log::info("About to calculate tax");
-                    // Use the actual fee breakdown for display (17% platform + 2% compliance + £1 admin)
-                    $feeBreakdown = \App\Helpers::calculateStripeDirectChargeFlow((float) $stripeid->amount_subtotal, strtoupper($stripeid->currency ?? 'GBP'));
-                    $tax = $feeBreakdown['application_fee'];
+                    $tax = $stripeid->amount_subtotal * config('app.platform_fee_percentage') / 100;
                     Log::info("Tax calculated", ['tax' => $tax]);
 
                     Log::info("About to calculate VAT amount");
-                    $vat_amount = (float) $stripeid->amount_subtotal * $vat_percentage / 100;
+                    // // Calculate VAT if the user has set a percentage
+                    $vat_amount = ($stripeid->amount_subtotal + $tax) * $vat_percentage / 100;
                     $amountWithVat = $stripeid->amount_subtotal + $vat_amount;
                     Log::info("VAT amount calculated", ['vat_amount' => $vat_amount, 'amountWithVat' => $amountWithVat]);
 
@@ -1244,7 +1205,6 @@ class CheckoutController extends Controller
                     $userPayment->to_user_id = $dd->owner_id;
                     $userPayment->product_type = 'wish item';
                     $userPayment->amount = $total_amount;
-                    $userPayment->total_paid = $total_amount + ($dd->tax * $dd->quantity) + ($vatAmount * $dd->quantity);
                     $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
                     $userPayment->creator_currency = $creatorCurrency;
                     $userPayment->charge_currency = $chargeCurrency;
@@ -1256,6 +1216,12 @@ class CheckoutController extends Controller
                     $userPayment->save();
                     Log::info("UserPayment record created successfully");
                 }
+
+                Log::info("About to update cart item status");
+                $dd->status = 0;
+                $dd->quantity = 0;
+                $dd->save();
+                Log::info("Cart item status updated successfully");
 
                 // NEW: Synchronous Deliverable creation for paid wish items
                 // This ensures content is tracked even if CheckoutMailToUser job fails
@@ -1274,7 +1240,6 @@ class CheckoutController extends Controller
                         'customer_email' => $stripeid->guest_email ?? ($dd->user->email ?? null),
                         'customer_name' => $stripeid->name ?? ($dd->user->name ?? 'A Fan'),
                         'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
-                        'status' => 'delivered', // Mark as delivered since payment is successful
                         'metadata' => json_encode([
                             'wish_item_id' => $dd->wish_item_id,
                             'quantity' => $dd->quantity,
@@ -1292,59 +1257,12 @@ class CheckoutController extends Controller
                                 'wish_processed_at' => now()->toISOString(),
                                 'sync_processed' => 'true'
                             ]);
-                        } catch (\Throwable $e) {
+                        } catch (\Exception $e) {
                             Log::error("Failed to update Stripe metadata in successCheckout", ['error' => $e->getMessage()]);
                         }
                     }
-                } catch (\Throwable $e) {
+                } catch (\Exception $e) {
                     Log::error("Failed to create Deliverable in successCheckout", ['error' => $e->getMessage()]);
-                }
-
-                Log::info("About to update cart item status");
-                $dd->status = 0;
-                $dd->quantity = 0;
-                $dd->save();
-                Log::info("Cart item status updated successfully");
-
-                // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
-                try {
-                    $creator = $dd->owner;
-                    $vatPercent = (float) ($creator->vat_amount_percentage ?? 0);
-                    $amount = (float) $dd->amount;
-                    $vat = round(($amount * $vatPercent) / 100, 2);
-                    
-                    $currency = strtoupper($stripeid->currency ?? 'GBP');
-                    $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
-                    $platformFee = $breakdown['application_fee'];
-                    $stripeFee = $breakdown['stripe_fee'];
-
-                    $gross = $payment_data->total_paid && $payment_data->total_paid > 0 
-                        ? (float) $payment_data->total_paid 
-                        : $breakdown['total_supporter_pays'];
-                    $creatorAmount = $amount;
-
-                    FinancialTransaction::updateOrCreate(
-                        [
-                            'source_type' => StripePaymentItems::class,
-                            'source_id' => $payment_data->id,
-                        ],
-                        [
-                            'user_id' => $creator->id,
-                            'supporter_id' => $stripeid->user_id,
-                            'type' => 'income',
-                            'gross_amount' => $gross,
-                            'platform_fee' => $platformFee,
-                            'stripe_fee' => $stripeFee,
-                            'vat_amount' => $vat,
-                            'net_amount' => $creatorAmount,
-                            'currency' => strtoupper($stripeid->currency ?? 'GBP'),
-                            'status' => 'completed',
-                            'description' => 'Wish Gift: ' . ($dd->wish->wishname ?? 'Item'),
-                            'transaction_date' => $payment_data->created_at,
-                        ]
-                    );
-                } catch (\Throwable $e) {
-                    Log::error('Failed to sync StripePaymentItems to FinancialTransaction in successCheckout: ' . $e->getMessage(), ['payment_item_id' => $payment_data->id]);
                 }
             }
 
@@ -1369,14 +1287,26 @@ class CheckoutController extends Controller
             }
 
             Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);
-            return redirect(route('thank-you', [
-                'username' => $stripeid->owner->username,
-                'type' => 'wish',
-                'item_name' => $getdata->count() > 1 ? 'Multiple Items' : ($getdata->first()->wish->wishname ?? 'Gift'),
-                'amount' => $stripeid->amount_total ?? 0,
-                'currency' => $stripeid->currency ?? 'GBP',
-                'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null
-            ]))->with('success', 'Payment Successfull.');
+            
+            $thankYouParams = ['username' => $stripeid->owner->username];
+            $firstItem = $stripeid->items()->with('wish')->first();
+            if ($firstItem && $firstItem->wish) {
+                $wish = $firstItem->wish;
+                $thankYouParams['type'] = 'wish';
+                $thankYouParams['item_name'] = $wish->name;
+                $thankYouParams['amount'] = $stripeid->amount_total;
+                $thankYouParams['currency'] = $stripeid->currency;
+                $thankYouParams['item_id'] = $wish->id;
+                if ($wish->content_file) {
+                    $thankYouParams['wish_content'] = [
+                        'type' => $wish->content_file_type,
+                        'name' => $wish->content_file_name,
+                        'url'  => $wish->content_file_url
+                    ];
+                }
+            }
+            
+            return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             $errorMessage = $th->getMessage();
             Log::error("Error in successCheckout: " . $errorMessage, [
@@ -1389,17 +1319,29 @@ class CheckoutController extends Controller
             if (strpos($errorMessage, 'token was invalid') !== false) {
                 Log::info("Ignoring Stripe token error and continuing checkout process");
                 // Continue with the checkout process despite the token error
-                return redirect(route('thank-you', [
-                    'username' => $stripeid->owner->username ?? ($getdata[0]->owner->username ?? 'user'),
-                    'type' => 'wish',
-                    'item_name' => $getdata->count() > 1 ? 'Multiple Items' : ($getdata->first()->wish->wishname ?? 'Gift'),
-                    'amount' => $stripeid->amount_total ?? 0,
-                    'currency' => $stripeid->currency ?? 'GBP',
-                    'item_id' => $getdata->count() === 1 ? ($getdata->first()->wish->id ?? null) : null
-                ]))->with('success', 'Payment Successful.');
+                
+                $thankYouParams = ['username' => $stripeid->owner->username];
+                $firstItem = $stripeid->items()->with('wish')->first();
+                if ($firstItem && $firstItem->wish) {
+                    $wish = $firstItem->wish;
+                    $thankYouParams['type'] = 'wish';
+                    $thankYouParams['item_name'] = $wish->name;
+                    $thankYouParams['amount'] = $stripeid->amount_total;
+                    $thankYouParams['currency'] = $stripeid->currency;
+                    $thankYouParams['item_id'] = $wish->id;
+                    if ($wish->content_file) {
+                        $thankYouParams['wish_content'] = [
+                            'type' => $wish->content_file_type,
+                            'name' => $wish->content_file_name,
+                            'url'  => $wish->content_file_url
+                        ];
+                    }
+                }
+                
+                return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
             }
 
-            return redirect(route('user.show', [$stripeid->owner->username ?? ($getdata[0]->owner->username ?? 'user')]))->with('error', 'Something went wrong!');
+            return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Something went wrong!');
         }
     }
 
@@ -1422,7 +1364,7 @@ class CheckoutController extends Controller
             'creator_id' => $id
         ]);
 
-        $sessionId = request()->query('session_id') ?? session('session_id');
+        $sessionId = session('session_id');
         if ($sessionId) {
             StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'unpaid',

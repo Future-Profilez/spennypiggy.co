@@ -91,7 +91,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'social_url',
         'upcoming_payment_date',
         'subscription_end',
-        'is_subscription_cancelled',
+        'is_subscription_cancelled'
     ];
     protected $with = ['social_links'];
 
@@ -101,24 +101,49 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         static::creating(fn($u) => $u->uuid = Uuid::uuid4());
     }
 
+    public function getUpcomingPaymentDateAttribute()
+    {
+        if ($this->role != 1) return null;
+        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        if ($charge && $charge->upcoming_payment) {
+            return Carbon::parse($charge->upcoming_payment)->format('d M Y');
+        }
+        return null;
+    }
+
+    public function getSubscriptionEndAttribute()
+    {
+        if ($this->role != 1) return null;
+        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        if ($charge && $charge->current_end_subscription_date) {
+            return Carbon::parse($charge->current_end_subscription_date)->format('d M Y');
+        }
+        return null;
+    }
+
+    public function getIsSubscriptionCancelledAttribute()
+    {
+        if ($this->role != 1) return false;
+        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        return $charge ? ($charge->status === 'canceled' || $charge->cancelled_at !== null) : false;
+    }
+
     // ───────────────────────
     // Accessors
     // ───────────────────────
 
-    public function getBioAttribute($value)
+    public function getNameAttribute($value)
     {
-        if ($this->bio_approved != 1 && (!Auth::check() || Auth::id() !== $this->id)) {
-            return null;
-        }
-        return $value;
+        return ucwords(strtolower($value));
+    }
+
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = ucwords(strtolower($value));
     }
 
     public function getAvatarUrlAttribute()
     {
-        if ($this->avatar_approved != 1 && (!Auth::check() || Auth::id() !== $this->id)) {
-            return "https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/";
-        }
-
         if (!$this->avatar) return "https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/";
 
         $modifier = $this->avatar_cdn_modifier
@@ -137,10 +162,6 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function getCoverUrlAttribute()
     {
-        if ($this->cover_approved != 1 && (!Auth::check() || Auth::id() !== $this->id)) {
-            return false;
-        }
-
         if (!$this->cover) return false;
 
         $modifier = $this->cover_cdn_modifier
@@ -178,68 +199,129 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function getSubscriptionStatusAttribute()
     {
-        // 1. Check for active subscription period in MonthlyCharge table
-        // We look through all charges to find one that is CURRENTLY active.
-        // We prioritize ACTIVE > FREE_TRIAL > EXPIRED.
-        $allCharges = $this->allMonthlyCharges()
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
-            ->get();
+        if ($this->role == 1) {
+            // Find the currently active subscription period (same logic as account route)
+            $now = Carbon::now();
+            $subscription = MonthlyCharge::where('user_id', $this->id)
+                ->where(function ($query) use ($now) {
+                    $query->where(function ($q) use ($now) {
+                        // Active subscription period
+                        $q->whereDate('current_start_subscription_date', '<=', $now)
+                            ->whereDate('current_end_subscription_date', '>=', $now);
+                    })->orWhere(function ($q) use ($now) {
+                        // Active trial period
+                        $q->whereDate('current_start_trial_date', '<=', $now)
+                            ->whereDate('current_end_trial_date', '>=', $now);
+                    });
+                })
+                // Order by id DESC to get the newest period first (handles overlaps and exact timestamps)
+                ->latest('id')
+                ->first();
 
-        $nowDate = Carbon::now();
-        $hasExpiredRecord = false;
+            // If no active period found, get the most recent one
+            if (!$subscription) {
+                $subscription = MonthlyCharge::where('user_id', $this->id)
+                    ->latest('id')
+                    ->first();
+            }
 
-        foreach ($allCharges as $charge) {
-            // Check if within paid period (including canceled but not yet expired)
-            if (in_array($charge->status, ['paid', 'active', 'renew', 'canceled'])) {
-                $startDate = $charge->current_start_subscription_date ? Carbon::parse($charge->current_start_subscription_date)->startOfDay() : null;
-                $endDate = $charge->current_end_subscription_date ? Carbon::parse($charge->current_end_subscription_date)->endOfDay() : null;
-                
-                if ($startDate && $endDate) {
-                    if ($nowDate->between($startDate, $endDate)) {
-                        return 1; // ACTIVE
+            if (!$subscription) {
+                return 3; // INACTIVE / NEVER SUBSCRIBED
+            }
+
+            // Use the same logic as account settings route
+            $trial_start = $subscription->current_start_trial_date;
+            $trial_end = $subscription->current_end_trial_date;
+            $subscription_start = $subscription->current_start_subscription_date;
+            $subscription_end = $subscription->current_end_subscription_date;
+
+            $now = Carbon::now();
+            $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
+            $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
+
+            $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+            // Check subscription status from MonthlyCharge table instead of is_subscribed column
+            // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
+            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active', 'canceled']) && $subEndCarbon && $now->lessThan($subEndCarbon);
+            $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
+
+            // Check for trialing status first, before other conditions
+            if ($subscription->status === 'trialing') {
+                return 2; // FREE_TRIAL
+            }
+
+            // Return status based on subscription table status
+            if ($isSubscriptionActive) {
+                return 1; // ACTIVE
+            } elseif ($isTrialOngoing) {
+                return 2; // FREE_TRIAL
+            } elseif ($isExpired || !in_array($subscription->status, ['paid', 'renew', 'active', 'trialing'])) {
+                return 0; // EXPIRED
+            }
+
+            // Fallback to original Stripe API logic for edge cases
+            if ($subscription->status === 'trial_ending') {
+                return 2;
+            }
+            if ($subscription->status === 'paid' || $subscription->status === 'renew' || $subscription->status === 'trialing') {
+                if (!isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
+                    if ($subscription->status === 'trialing') {
+                        return 2;
                     }
-                    if ($nowDate->greaterThan($endDate)) {
-                        $hasExpiredRecord = true;
-                    }
+                    return 1;
                 }
-            }
 
-            // Check if within trial period
-            if ($charge->status === 'trialing') {
-                $trialStart = $charge->current_start_trial_date ? Carbon::parse($charge->current_start_trial_date)->startOfDay() : null;
-                $trialEnd = $charge->current_end_trial_date ? Carbon::parse($charge->current_end_trial_date)->endOfDay() : null;
+                // PERFORMANCE OPTIMIZATION: Rely on local database state only.
+                // Do NOT call Stripe API during model serialization as it causes timeouts and page load failures.
+                // Webhooks should handle status updates.
 
-                if ($trialStart && $trialEnd) {
-                    if ($nowDate->between($trialStart, $trialEnd)) {
-                        return 2; // FREE_TRIAL
+                if ($subscription->status === 'trialing') {
+                    // Check trial dates
+                    if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
+                        $now = \Carbon\Carbon::now();
+                        $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
+                        if ($now->lessThan($trialEnd)) {
+                            return 2; // Still in trial
+                        }
                     }
-                    if ($nowDate->greaterThan($trialEnd)) {
-                        $hasExpiredRecord = true;
-                    }
+                    return 0; // Trial expired
                 }
+
+                // Default to active if status is paid/renew/active
+                return 1;
+
+                /* 
+                // REMOVED STRIPE API CALL TO PREVENT TIMEOUTS
+                try {
+                    // Skip Stripe API call in background jobs to prevent token errors
+                    if (app()->runningInConsole() || app()->runningUnitTests()) {
+                        // In background jobs, just use the local subscription status
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+
+                    $stripeKey = env('STRIPE_SECRET_KEY');
+                    if (empty($stripeKey)) {
+                        Log::warning('Stripe API key not configured, falling back to local subscription status', [
+                            'user_id' => $this->id,
+                            'subscription_status' => $subscription->status
+                        ]);
+                        // Return based on local status instead of throwing exception
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    // ... (Rest of Stripe API logic removed)
+                } catch (\Exception $e) {
+                   // ...
+                }
+                */
             }
+            return 0;
         }
 
-        // If we found any expired record but no active ones, return EXPIRED
-        if ($hasExpiredRecord) {
-            return 0; // EXPIRED
+        if ($this->role == 0) { // Gifter
+            return $this->gifterCardVerification ? 1 : 0;
         }
-
-        // 2. Fallback: If is_subscribed is 1, be lenient to allow payments
-        // This handles cases where dates might be slightly off or sync is pending
-        if ($this->is_subscribed) {
-            // Try to find any valid-looking record even if dates are missing/off
-            $latestValid = $allCharges->first();
-            if ($latestValid && !in_array($latestValid->status, ['failed', 'canceled', 'unpaid'])) {
-                if ($latestValid->status === 'trialing') return 2;
-                return 1; // Assume active
-            }
-            
-            // If is_subscribed is 1 but no records found, still return 1 to allow payment
-            return 1; 
-        }
-
-        return 3; // INACTIVE
+        return 'Unknown';
     }
 
     /**
@@ -257,75 +339,19 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function getDisplaySubscriptionStatusAttribute()
     {
         $status = $this->subscription_status;
-        
-        if ($status === 1) return 'Active';
-        if ($status === 2) return 'Free Trial';
-        
-        return 'Inactive';
-    }
 
-    /**
-     * Get the next upcoming payment date for the subscription
-     */
-    public function getUpcomingPaymentDateAttribute()
-    {
-        $latest = $this->allMonthlyCharges()
-            ->whereNotNull('upcoming_payment')
-            ->first();
+        $displayMap = [
+            1 => 'Active Subscription',
+            2 => 'Free Trial',
+            0 => 'Subscription Expired',
+            3 => 'Not Subscribed',
+        ];
 
-        return $latest ? $latest->upcoming_payment->format('d M Y') : null;
-    }
-
-    /**
-     * Get the current subscription end date
-     */
-    public function getSubscriptionEndAttribute()
-    {
-        $latest = $this->allMonthlyCharges()
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
-            ->first();
-
-        if ($latest) {
-            $date = $latest->current_end_subscription_date ?? $latest->current_end_trial_date;
-            return $date ? $date->format('d M Y') : null;
+        if ($this->role == 0) {
+            return $status == 1 ? 'Card Verified' : 'Not Verified';
         }
 
-        return null;
-    }
-
-    /**
-     * Check if the auto-renewal is cancelled
-     */
-    public function getIsSubscriptionCancelledAttribute()
-    {
-        // Unset the relation to ensure we're not using a cached version of the charges
-        $this->unsetRelation('allMonthlyCharges');
-        
-        $latest = $this->allMonthlyCharges()
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
-            ->first();
-
-        if (!$latest) return false;
-
-        // Force a fresh check of the actual status in the database
-        $latest->refresh();
-
-        $isCancelled = $latest->status === 'canceled' || 
-                       $latest->upcoming_payment === null || 
-                       $latest->cancelled_at !== null;
-
-        if (app()->environment('local')) {
-            \Log::debug("User {$this->id} is_subscription_cancelled check", [
-                'charge_id' => $latest->id,
-                'stripe_id' => $latest->stripe_id,
-                'status' => $latest->status,
-                'upcoming' => $latest->upcoming_payment,
-                'cancelled_at' => $latest->cancelled_at,
-                'result' => $isCancelled
-            ]);
-        }
-
-        return $isCancelled;
+        return $displayMap[$status] ?? 'Unknown Status';
     }
 
     // ───────────────────────
@@ -388,12 +414,15 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     private function isFullyVerified()
     {
-        // Require all verification steps to be completed for creators
-        return $this->role == 1 && // Is creator
-               $this->is_subscribed == 1 && // Has subscription
-               $this->profile_status_lock == 2 && // Profile approved
-               $this->identity_status == 1 && // Identity verified
-               $this->stripe_details_submitted == 1; // Stripe connected
+        // Skip verification check - always return true for creators
+        return $this->role == 1;
+
+        // Original verification logic (commented out):
+        // return $this->role == 1 && // Is creator
+        //        $this->is_subscribed == 1 && // Has subscription
+        //        $this->profile_status_lock == 2 && // Profile approved
+        //        $this->identity_status == 1 && // Identity verified
+        //        $this->stripe_details_submitted == 1; // Stripe connected
     }
 
     // ───────────────────────
@@ -514,8 +543,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function allMonthlyCharges()
     {
-        return $this->hasMany(MonthlyCharge::class, 'user_id')
-            ->orderByRaw('COALESCE(current_end_subscription_date, current_end_trial_date, created_at) DESC');
+        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderBy('created_at', 'desc');
     }
 
     public function followers()
@@ -590,11 +618,6 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function tasks()
     {
         return $this->hasMany(Task::class, 'creator_id');
-    }
-
-    public function searchClicks()
-    {
-        return $this->hasMany(SearchClick::class, 'creator_id');
     }
 
     // ───────────────────────

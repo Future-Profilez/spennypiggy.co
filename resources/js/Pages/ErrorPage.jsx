@@ -43,7 +43,7 @@ export default function ErrorPage(props) {
 
     return (
     <div className="bg-[#A2E4B8]">
-        <Guest>
+        <Guest auth={auth}>
             <Head title={'Sorry, we are doing some maintenance'}/>
             {status == 404 ? <Nocontent   /> : <>
                 <div className="h-screen py-[20px] flex items-center justify-center">

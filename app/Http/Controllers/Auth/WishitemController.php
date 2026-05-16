@@ -1677,6 +1677,7 @@ class WishitemController extends Controller
 
             // Build payment_intent_data for Direct Charges
             $paymentIntentData = [
+                'description' => "Rye Product Payment for {$orderDetails->creator->username} (Total value including all fees)",
                 'application_fee_amount' => round($applicationFeeAmount * $multiplier),
                 'metadata' => Helpers::buildStripeMetadata('product_purchase', $ryeProductPayment, [
                     'order_id' => $orderDetails->id,

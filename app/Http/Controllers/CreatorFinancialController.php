@@ -68,15 +68,11 @@ class CreatorFinancialController extends Controller
                 return optional($tx->transaction_date)->format('Y-m');
             })
             ->map(function ($items, $month) use ($displayCurrency, $analyticsShopShipping) {
-                $total = $items->sum(function ($tx) use ($displayCurrency, $analyticsShopShipping) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $shipping = 0;
-                    if ($tx->source_type === 'App\Models\ShopPayment') {
-                        $shipping = (float)($analyticsShopShipping[$tx->source_id] ?? 0);
-                    }
-                    $gross = $net + $vat + $shipping;
+                    $gross = $net + $vat;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
@@ -87,16 +83,12 @@ class CreatorFinancialController extends Controller
 
         $tributeTypes = $incomeForAnalytics
             ->groupBy('source_type')
-            ->map(function ($items, $sourceType) use ($displayCurrency, $analyticsShopShipping) {
-                $total = $items->sum(function ($tx) use ($displayCurrency, $analyticsShopShipping) {
+            ->map(function ($items, $sourceType) use ($displayCurrency) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $shipping = 0;
-                    if ($tx->source_type === 'App\Models\ShopPayment') {
-                        $shipping = (float)($analyticsShopShipping[$tx->source_id] ?? 0);
-                    }
-                    $gross = $net + $vat + $shipping;
+                    $gross = $net + $vat;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
@@ -161,11 +153,7 @@ class CreatorFinancialController extends Controller
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $shipping = 0;
-                    if ($tx->source_type === 'App\Models\ShopPayment') {
-                        $shipping = (float)($allShopShipping[$tx->source_id] ?? 0);
-                    }
-                    $gross = $net + $vat + $shipping;
+                    $gross = $net + $vat;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
@@ -181,7 +169,10 @@ class CreatorFinancialController extends Controller
                 $morphTo->morphWith([
                     \App\Models\TaskPurchase::class => ['task'],
                     \App\Models\ShopPayment::class => ['shop', 'deliverable'],
-                    \App\Models\StripePaymentItems::class => []
+                    \App\Models\StripePaymentItems::class => [],
+                    \App\Models\TipGoalsPayment::class => ['tipGoal'],
+                    \App\Models\MembershipPayment::class => ['membership'],
+                    \App\Models\BillPayment::class => ['bill'],
                 ]);
             }])
             ->orderBy('transaction_date', 'desc')
@@ -215,6 +206,12 @@ class CreatorFinancialController extends Controller
                     $sourceTitle = $tx->source->shop->name;
                 } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
                     $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+                } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
+                    $sourceTitle = $tx->source->membership->level;
+                } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
+                    $sourceTitle = $tx->source->bill->name;
+                } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
+                    $sourceTitle = $tx->source->tipGoal->name;
                 }
 
                 $tx->label = match($base) {
@@ -244,15 +241,22 @@ class CreatorFinancialController extends Controller
                 
                 $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
 
+                // Add item type (digital/physical/instant/timed)
+                if ($base === 'ShopPayment' && $tx->source->shop) {
+                    $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
+                } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+                    $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
+                }
+
                 // Handling for Task status display in ledger
                 if ($base === 'TaskPurchase' && $tx->source) {
                     $tx->item_status = match($tx->source->status) {
-                        'completed', 'completed_accepted', 'paid_out' => 'task_complete',
-                        'delivered' => 'task_delivered',
-                        'pending_review' => 'task_review_pending',
-                        'paid', 'assigned' => 'task_pending',
-                        'escalated' => 'task_escalated',
-                        default => 'task_' . $tx->source->status
+                        'completed', 'completed_accepted', 'paid_out' => 'complete',
+                        'delivered' => 'delivered',
+                        'pending_review' => 'review_pending',
+                        'paid', 'assigned' => 'pending',
+                        'escalated' => 'escalated',
+                        default => $tx->source->status
                     };
 
                     // Gray out tasks that are not yet finalized (including escalated)
@@ -265,10 +269,10 @@ class CreatorFinancialController extends Controller
                 if ($base === 'ShopPayment' && $tx->source) {
                     $itemStat = $tx->source->deliverable->status ?? 'processing';
                     $tx->item_status = match($itemStat) {
-                        'delivered' => 'item_complete',
-                        'shipped' => 'item_shipped',
-                        'processing' => 'item_processing',
-                        default => 'item_' . $itemStat
+                        'delivered' => 'complete',
+                        'shipped' => 'shipped',
+                        'processing' => 'processing',
+                        default => $itemStat
                     };
 
                     // Gray out physical shop items that are not yet delivered
@@ -310,9 +314,10 @@ class CreatorFinancialController extends Controller
             });
 
         $recentTransactions = $income->concat($expenses)
-            ->sortByDesc(function ($tx) {
-                return [$tx->display_date, $tx->id];
-            });
+            ->sortBy([
+                ['display_date', 'desc'],
+                ['id', 'desc'],
+            ]);
             
         if ($tab !== 'payouts') {
             $recentTransactions = $recentTransactions->take(20);
@@ -338,32 +343,24 @@ class CreatorFinancialController extends Controller
 
         $topSupporters = $supporterTx
             ->groupBy('supporter_id')
-            ->map(function ($items) use ($displayCurrency, $supporterShopShipping) {
-                $total = $items->sum(function ($tx) use ($displayCurrency, $supporterShopShipping) {
+            ->map(function ($items) use ($displayCurrency) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
-                    $shipping = 0;
-                    if ($tx->source_type === 'App\Models\ShopPayment') {
-                        $shipping = (float)($supporterShopShipping[$tx->source_id] ?? 0);
-                    }
-                    $gross = $net + $vat + $shipping;
+                    $gross = $net + $vat;
 
                     return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
 
                 $breakdown = $items
                     ->groupBy('source_type')
-                    ->mapWithKeys(function ($group, $sourceType) use ($displayCurrency, $supporterShopShipping) {
-                        $amount = $group->sum(function ($tx) use ($displayCurrency, $supporterShopShipping) {
+                    ->mapWithKeys(function ($group, $sourceType) use ($displayCurrency) {
+                        $amount = $group->sum(function ($tx) use ($displayCurrency) {
                             $from = strtoupper($tx->currency ?? 'GBP');
                             $net = (float) ($tx->net_amount ?? 0);
                             $vat = (float) ($tx->vat_amount ?? 0);
-                            $shipping = 0;
-                            if ($tx->source_type === 'App\Models\ShopPayment') {
-                                $shipping = (float)($supporterShopShipping[$tx->source_id] ?? 0);
-                            }
-                            $gross = $net + $vat + $shipping;
+                            $gross = $net + $vat;
 
                             return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
                         });
@@ -487,7 +484,10 @@ class CreatorFinancialController extends Controller
                 $morphTo->morphWith([
                     \App\Models\TaskPurchase::class => ['task'],
                     \App\Models\ShopPayment::class => ['shop', 'deliverable'],
-                    \App\Models\StripePaymentItems::class => []
+                    \App\Models\StripePaymentItems::class => [],
+                    \App\Models\TipGoalsPayment::class => ['tipGoal'],
+                    \App\Models\MembershipPayment::class => ['membership'],
+                    \App\Models\BillPayment::class => ['bill'],
                 ]);
             }])
             ->orderBy('transaction_date', 'desc')
@@ -516,6 +516,12 @@ class CreatorFinancialController extends Controller
                     $sourceTitle = $tx->source->shop->name;
                 } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
                     $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+                } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
+                    $sourceTitle = $tx->source->membership->level;
+                } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
+                    $sourceTitle = $tx->source->bill->name;
+                } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
+                    $sourceTitle = $tx->source->tipGoal->name;
                 }
 
                 $tx->label = match($base) {
@@ -545,15 +551,22 @@ class CreatorFinancialController extends Controller
 
                 $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
 
+                // Add item type (digital/physical/instant/timed)
+                if ($base === 'ShopPayment' && $tx->source->shop) {
+                    $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
+                } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+                    $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
+                }
+
                 // Handling for Task status display in ledger
                 if ($base === 'TaskPurchase' && $tx->source) {
                     $tx->item_status = match($tx->source->status) {
-                        'completed', 'completed_accepted', 'paid_out' => 'task_complete',
-                        'delivered' => 'task_delivered',
-                        'pending_review' => 'task_review_pending',
-                        'paid', 'assigned' => 'task_pending',
-                        'escalated' => 'task_escalated',
-                        default => 'task_' . $tx->source->status
+                        'completed', 'completed_accepted', 'paid_out' => 'complete',
+                        'delivered' => 'delivered',
+                        'pending_review' => 'review_pending',
+                        'paid', 'assigned' => 'pending',
+                        'escalated' => 'escalated',
+                        default => $tx->source->status
                     };
 
                     // Gray out tasks that are not yet finalized (including escalated)
@@ -566,10 +579,10 @@ class CreatorFinancialController extends Controller
                 if ($base === 'ShopPayment' && $tx->source) {
                     $itemStat = $tx->source->deliverable->status ?? 'processing';
                     $tx->item_status = match($itemStat) {
-                        'delivered' => 'item_complete',
-                        'shipped' => 'item_shipped',
-                        'processing' => 'item_processing',
-                        default => 'item_' . $itemStat
+                        'delivered' => 'complete',
+                        'shipped' => 'shipped',
+                        'processing' => 'processing',
+                        default => $itemStat
                     };
 
                     // Gray out physical shop items that are not yet delivered

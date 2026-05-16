@@ -305,12 +305,15 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
 
                {isPhysical && !isCreator && (
                    <div className='border-t pt-4 mt-4'>
-                       <h3 className='font-bold mb-2'>Tracking Information</h3>
-                       <div className='bg-gray-50 p-3 rounded-[15px]'>
-                           <p><strong>Status:</strong> <span className='capitalize'>{item.status || 'Pending'}</span></p>
-                           {item.courier_name && <p><strong>Courier:</strong> {item.courier_name}</p>}
-                           {item.tracking_id && <p><strong>Tracking ID:</strong> {item.tracking_id}</p>}
-                           
+                       <h3 className='font-bold mb-2 text-[#F94F97]'>Tracking Information</h3>
+                       <div className='bg-gray-50 p-4 rounded-[20px] border border-gray-100'>
+                           <p className="mb-2"><strong>Status:</strong> <span className='capitalize font-medium text-gray-700'>{item.status || 'Pending'}</span></p>
+                           {item.courier_name && <p className="mb-2"><strong>Courier:</strong> <span className="font-medium text-gray-700">{item.courier_name}</span></p>}
+                           {item.tracking_id && <p className="mb-2"><strong>Tracking ID:</strong> <span className="font-medium text-[#F94F97]">{item.tracking_id}</span></p>}
+                           {item.expected_delivery_date && <p className="mb-0"><strong>Expected Delivery:</strong> <span className="font-medium text-gray-700">{item.expected_delivery_date}</span></p>}
+                           {!item.tracking_id && item.status !== 'delivered' && (
+                               <p className="text-xs text-gray-500 mt-2 italic">Tracking details will appear here once the creator ships your order.</p>
+                           )}
                        </div>
                    </div>
                )}

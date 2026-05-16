@@ -1491,6 +1491,7 @@ class StripeController extends Controller
                 'payment_intent_data' => [
                     'application_fee_amount' => (int)($totalApplicationFee * 100),
                     'receipt_email' => $user->email,
+                    'description' => "Wish/Cart Payment for {$getdata[0]->owner->username} (Total value including all fees)",
                 ],
                 'customer_email' => $user->email,
                 'metadata' => Helpers::buildStripeMetadata('wishlist', $getdata[0], [
@@ -2600,14 +2601,25 @@ class StripeController extends Controller
                     $message = 'Subscription Payment Successfully Paid.';
                 }
                 $this->userProfileService->clearUserCaches($sub->wish_item->user->username, $sub->wish_item->user->id);
-                return to_route('thank-you', [
+                
+                $thankYouParams = [
                     'username' => $sub->wish_item->user->username,
                     'type' => 'wish',
                     'item_name' => $sub->wish_item->name,
                     'amount' => $sub->amount ?? 0,
                     'currency' => $sub->currency ?? 'GBP',
                     'item_id' => $sub->wish_item->id
-                ])->with('success', $message);
+                ];
+                
+                if ($sub->wish_item->content_file) {
+                    $thankYouParams['wish_content'] = [
+                        'type' => $sub->wish_item->content_file_type,
+                        'name' => $sub->wish_item->content_file_name,
+                        'url'  => $sub->wish_item->content_file_url
+                    ];
+                }
+                
+                return to_route('thank-you', $thankYouParams)->with('success', $message);
             }
 
             SubscriptionFailed::dispatch($sub);
@@ -3166,6 +3178,7 @@ class StripeController extends Controller
         if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
+                'card_verification_required' => true,
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
             ]);
         }

@@ -751,6 +751,9 @@ Route::get('/seo/clear-cache', [\App\Http\Controllers\SitemapController::class, 
 Route::get('/404', [\App\Http\Controllers\ErrorController::class, 'show404'])->name('error.404');
 
 // Health Check Endpoints for CI/CD Pipeline
+Route::get('/ping', function () {
+    return response('pong', 200)->header('Content-Type', 'text/plain');
+})->name('ping');
 Route::get('/health', [HealthController::class, 'index'])->name('health.check');
 Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('health.detailed');
 

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import GuestLayout from "@/Layouts/GuestLayout";
 import { Search, Home, Compass, HelpCircle, Star, ArrowRight } from 'lucide-react';
 
-export default function Error404({ popularCreators = [], helpLinks = [], searchSuggestions = [], currentUrl = '' }) {
+export default function Error404({ auth, popularCreators = [], helpLinks = [], searchSuggestions = [], currentUrl = '' }) {
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleSearch = (e) => {
@@ -28,7 +28,7 @@ export default function Error404({ popularCreators = [], helpLinks = [], searchS
     };
 
     return (
-        <GuestLayout className="bg-[#A2E4B8]">
+        <GuestLayout auth={auth} className="bg-[#A2E4B8]">
             <Head>
                 <title>Page Not Found - SpennyPiggy</title>
                 <meta name="description" content="Sorry, this page could not be found. Discover amazing creators, browse wishlists, or explore our help resources on SpennyPiggy." />

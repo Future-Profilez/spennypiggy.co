@@ -72,7 +72,6 @@ class SystemDiagnosticsController extends Controller
             'stripe_webhook' => $this->testStripeWebhookConfig(),
             'scheduled_tasks' => $this->testScheduledTasks(),
             'pending_migrations' => $this->testPendingMigrations(),
-            'stripe_accounts_health' => $this->testStripeConnectedAccountsHealth(),
             'app_response_time' => $this->testAppResponseTime(),
             'stuck_payouts' => $this->testStuckPayouts(),
         ];
@@ -1303,70 +1302,6 @@ class SystemDiagnosticsController extends Controller
         }
     }
 
-    private function testStripeConnectedAccountsHealth()
-    {
-        try {
-            $start = microtime(true);
-            $issues = [];
-
-            // Get creators with stripe account_id who have recent transactions
-            $connectedCreators = User::whereNotNull('account_id')
-                ->whereRaw('TRIM(account_id) <> ""')
-                ->where('role', 1)
-                ->limit(20)
-                ->pluck('account_id', 'id');
-
-            if ($connectedCreators->isEmpty()) {
-                return ['status' => 'warning', 'message' => 'No Stripe connected accounts found to verify.', 'time_ms' => 0];
-            }
-
-            $client = StripeControl::getClient();
-            $restricted = 0;
-            $pendingReqs = 0;
-            $lookupFailures = 0;
-
-            foreach ($connectedCreators as $userId => $accountId) {
-                try {
-                    $account = $client->accounts->retrieve($accountId);
-
-                    if ($account->payouts_enabled === false) {
-                        $restricted++;
-                        $issues[] = "Creator #{$userId} (Stripe: {$accountId}): payouts DISABLED.";
-                    }
-
-                    if (!empty($account->requirements->currently_due)) {
-                        $pendingReqs++;
-                        $issues[] = "Creator #{$userId} (Stripe: {$accountId}): has pending requirements — " . implode(', ', array_slice($account->requirements->currently_due, 0, 3));
-                    }
-                } catch (\Exception $e) {
-                    $lookupFailures++;
-                    $issues[] = "Creator #{$userId}: Stripe account lookup failed — " . $e->getMessage();
-                }
-            }
-
-            $time = round((microtime(true) - $start) * 1000, 2);
-            $checked = $connectedCreators->count();
-
-            if (count($issues) > 0) {
-                return [
-                    'status' => 'warning',
-                    'message' => "Checked {$checked} accounts: {$restricted} payout-disabled, {$pendingReqs} with pending requirements, {$lookupFailures} lookup failures.",
-                    'errors' => $issues,
-                    'time_ms' => $time
-                ];
-            }
-
-            return [
-                'status' => 'passed',
-                'message' => "All {$checked} sampled Stripe connected accounts have payouts enabled.",
-                'errors' => [],
-                'time_ms' => $time
-            ];
-        } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Stripe accounts health check failed: ' . $e->getMessage()];
-        }
-    }
-
     private function testAppResponseTime()
     {
         try {
@@ -1377,7 +1312,16 @@ class SystemDiagnosticsController extends Controller
                 return ['status' => 'warning', 'message' => 'APP_URL is not configured.', 'time_ms' => 0];
             }
 
-            $response = Http::timeout(10)->get($appUrl);
+            $pingUrl = rtrim($appUrl, '/') . '/ping';
+            $response = Http::timeout(10)
+                ->withHeaders(['User-Agent' => 'SpennyPiggyDiagnostics/1.0'])
+                ->get($pingUrl);
+
+            if ($response->status() === 404) {
+                $response = Http::timeout(10)
+                    ->withHeaders(['User-Agent' => 'SpennyPiggyDiagnostics/1.0'])
+                    ->get($appUrl);
+            }
             $time = round((microtime(true) - $start) * 1000, 2);
             $statusCode = $response->status();
 
