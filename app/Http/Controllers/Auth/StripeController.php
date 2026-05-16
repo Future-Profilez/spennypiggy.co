@@ -73,7 +73,7 @@ class StripeController extends Controller
     public function cancelMandatorySubscription(Request $request)
     {
         $user = Auth::user();
-        
+
         // Find the latest active subscription for this user
         $charge = MonthlyCharge::where('user_id', $user->id)
             ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
@@ -87,7 +87,7 @@ class StripeController extends Controller
         try {
             // Cancel at period end via Stripe
             $subscription = StripeControl::cancelSubscription($charge->stripe_id, true);
-            
+
             // Sync the change locally
             app(\App\Services\UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
 
@@ -102,7 +102,7 @@ class StripeController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        
+
         if (!$user) {
             return back()->with('error', 'User not found.');
         }
@@ -126,7 +126,7 @@ class StripeController extends Controller
                 'cancel_at_period_end' => $subscription->cancel_at_period_end,
                 'current_period_end' => $subscription->current_period_end
             ]);
-            
+
             // Sync the change locally
             app(\App\Services\UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
 
@@ -154,7 +154,7 @@ class StripeController extends Controller
         // We now enforce 'full' service agreement for all countries to support Direct Charges
         // and card_payments capability.
         return 'full';
-        
+
         /* 
         // Legacy recipient logic - disabled to support Direct Charges
         // Countries that require 'recipient' service agreement for cross-border payments
@@ -1114,7 +1114,7 @@ class StripeController extends Controller
                 'card_payments' => ['requested' => true],
                 'transfers' => ['requested' => true]
             ];
-            
+
             // if ($currentServiceAgreement === 'recipient') {
             //     // Recipient accounts can only request transfers capability
             //     $capabilities['transfers'] = ['requested' => true];
@@ -1149,9 +1149,9 @@ class StripeController extends Controller
                 // Existing Express accounts cannot be upgraded from recipient to full via API.
                 if ($currentServiceAgreement === 'recipient' && $expectedServiceAgreementType === 'full') {
                     Log::info('Migrating user from Recipient to Full account automatically', ['user_id' => $user->id]);
-                    
+
                     try {
-                         $newAccount = StripeControl::createAccount([
+                        $newAccount = StripeControl::createAccount([
                             'country'       => $user->country,
                             'type'          => 'express',
                             'email'         => $user->email,
@@ -1181,8 +1181,8 @@ class StripeController extends Controller
                         // Use the new account ID for the rest of the flow
                         $user->refresh();
                     } catch (ApiErrorException $e) {
-                         Log::error('Failed to create new account for migration', ['error' => $e->getMessage()]);
-                         throw $e;
+                        Log::error('Failed to create new account for migration', ['error' => $e->getMessage()]);
+                        throw $e;
                     }
                 }
             }
@@ -1194,7 +1194,7 @@ class StripeController extends Controller
 
             // NOTE: We cannot explicitly update 'tos_acceptance' via API for existing Express accounts
             // as it triggers a permission error. We rely on the Account Link to handle this.
-            
+
             $updatedAccount = StripeControl::getClient()->accounts->update(
                 $user->account_id,
                 $updateParams
@@ -1211,11 +1211,12 @@ class StripeController extends Controller
 
             // 2. Create an onboarding link ↴
             $accountLinkType = 'account_onboarding';
-            
+
             // If card_payments is inactive but no requirements are due, try account_update
             // This happens when Stripe doesn't trigger onboarding for capability changes automatically
-            if (($updatedAccount->capabilities->card_payments ?? '') === 'inactive' 
-                && empty($updatedAccount->requirements->currently_due)) {
+            if (($updatedAccount->capabilities->card_payments ?? '') === 'inactive'
+                && empty($updatedAccount->requirements->currently_due)
+            ) {
                 $accountLinkType = 'account_update';
                 Log::info('Switching to account_update flow due to inactive capability without requirements');
             }
@@ -1448,20 +1449,20 @@ class StripeController extends Controller
             $lineItems = [];
             $totalApplicationFee = 0;
             $totalCreatorNet = 0;
-                
-                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner_id);
-                $reserveRate = $metrics->reserve_percent ?? 0;
-                
-                foreach ($getdata as $dd) {
-                    $basePrice = (float) $dd->amount;
-                    $vatPercent = (float) ($dd->owner->vat_amount_percentage ?? 0);
-                    $vatAmount = ($basePrice * $vatPercent) / 100;
-                    $listedPriceWithVat = $basePrice + $vatAmount;
-                    
-                    // Use new gross-up flow
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $dd->wish->currency ?? 'USD', $reserveRate);
-                    
-                    $totalPrice = $breakdown['total_supporter_pays'];
+
+            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner_id);
+            $reserveRate = $metrics->reserve_percent ?? 0;
+
+            foreach ($getdata as $dd) {
+                $basePrice = (float) $dd->amount;
+                $vatPercent = (float) ($dd->owner->vat_amount_percentage ?? 0);
+                $vatAmount = ($basePrice * $vatPercent) / 100;
+                $listedPriceWithVat = $basePrice + $vatAmount;
+
+                // Use new gross-up flow
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $dd->wish->currency ?? 'USD', $reserveRate);
+
+                $totalPrice = $breakdown['total_supporter_pays'];
                 $applicationFee = $breakdown['application_fee'];
                 $creatorNet = $breakdown['net_to_creator'];
 
@@ -1705,7 +1706,7 @@ class StripeController extends Controller
                 $totalApplicationFee = 0;
                 $totalCreatorNet = 0;
                 $currency = $cart[0]->wish->currency ?? 'USD';
-                
+
                 $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $cart[0]->owner_id);
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
@@ -1714,10 +1715,10 @@ class StripeController extends Controller
                     $vatPercent = (float) ($value->owner->vat_amount_percentage ?? 0);
                     $vatAmount = ($basePrice * $vatPercent) / 100;
                     $listedPriceWithVat = $basePrice + $vatAmount;
-                    
+
                     // Use new gross-up flow
                     $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $currency, $reserveRate);
-                    
+
                     $totalPrice = $breakdown['total_supporter_pays'];
                     $applicationFee = $breakdown['application_fee'];
                     $creatorNet = $breakdown['net_to_creator'];
@@ -1795,7 +1796,7 @@ class StripeController extends Controller
                 ]);
 
                 Helpers::applyDigitalWaiver($stripeid, (bool) request()->digital_waiver);
-                 $stripeid->save();
+                $stripeid->save();
                 $stripeid->refresh();
 
                 return Inertia::location($sessioncreate->url);
@@ -1930,7 +1931,7 @@ class StripeController extends Controller
             ]);
         }
 
-        
+
 
 
         $subtotals = 0;
@@ -2047,8 +2048,8 @@ class StripeController extends Controller
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
-             Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
-             $sub->save();
+            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+            $sub->save();
 
             $connectedAccountId = $wish->user->account_id;
 
@@ -2068,7 +2069,7 @@ class StripeController extends Controller
             }
 
             $basePrice = $price;
-        
+
             $applicationFeeAmount = $breakdown['application_fee'];
             $creatorNet = $breakdown['net_to_creator'];
             $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
@@ -2178,7 +2179,7 @@ class StripeController extends Controller
 
             if (!$hasCardPayments) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
-            return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+                return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
 
             $payload = [
@@ -2516,10 +2517,10 @@ class StripeController extends Controller
                     $paymentIntentId = $session->payment_intent ?? ($stripeSubscription->latest_invoice->payment_intent ?? null);
                     if ($paymentIntentId) {
                         $existingPayment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
-                        
+
                         $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($sub->currency ?? 'GBP');
                         $multiplier = $isZeroDecimal ? 1 : 100;
-                        
+
                         // Use actual creator net from session metadata if available, otherwise calculate
                         $creatorNetMinor = round($sub->amount * $multiplier); // Default fallback
                         if ($session && isset($session->metadata->creator_net_amount)) {
@@ -2560,14 +2561,14 @@ class StripeController extends Controller
                                 $existingPayment->update(['reserve_amount_minor' => $reserveMinor]);
                             }
                         }
-                        
+
                         // Sync to FinancialTransaction to reflect on dashboard
                         $stripeFeeMinor = 0;
                         if (!empty($paymentIntentId)) {
                             $stripeFeeMinor = StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $sub->wish_item->user->account_id);
                         }
                         $stripeFee = $isZeroDecimal ? (float) $stripeFeeMinor : ((float) $stripeFeeMinor / 100);
-                        
+
                         $gross = $sub->total_paid && $sub->total_paid > 0 ? (float) $sub->total_paid : $creatorAmount;
                         $platformFee = $gross - $stripeFee - (float) $sub->amount - (float) $sub->vat_tax_amount;
                         if ($platformFee < 0) $platformFee = 0;
@@ -2601,7 +2602,7 @@ class StripeController extends Controller
                     $message = 'Subscription Payment Successfully Paid.';
                 }
                 $this->userProfileService->clearUserCaches($sub->wish_item->user->username, $sub->wish_item->user->id);
-                
+
                 $thankYouParams = [
                     'username' => $sub->wish_item->user->username,
                     'type' => 'wish',
@@ -2610,7 +2611,7 @@ class StripeController extends Controller
                     'currency' => $sub->currency ?? 'GBP',
                     'item_id' => $sub->wish_item->id
                 ];
-                
+
                 if ($sub->wish_item->content_file) {
                     $thankYouParams['wish_content'] = [
                         'type' => $sub->wish_item->content_file_type,
@@ -2618,7 +2619,7 @@ class StripeController extends Controller
                         'url'  => $sub->wish_item->content_file_url
                     ];
                 }
-                
+
                 return to_route('thank-you', $thankYouParams)->with('success', $message);
             }
 
@@ -3189,7 +3190,7 @@ class StripeController extends Controller
                 'msg' => "Creator not found."
             ]);
         }
-        
+
 
         // Check if creator has card_payments capability
         if (!StripeControl::hasCardPaymentsCapability($creator->account_id)) {
@@ -3506,8 +3507,8 @@ class StripeController extends Controller
 
                 $creatorNet = (float) $tip_pay->amount;
 
-                    // Create deliverable record for tracking and certificate generation
-                    $deliverable = Deliverable::create([
+                // Create deliverable record for tracking and certificate generation
+                $deliverable = Deliverable::create([
                     'uuid' => (string) Str::uuid(),
                     'product_id' => 'support_payment_' . $tip_pay->id,
                     'item_id' => $tip_pay->id,
@@ -3572,7 +3573,7 @@ class StripeController extends Controller
                     }
                     $isZeroDecimal = Helpers::isZeroDecimalCurrency((string) strtoupper($tip_pay->currency ?? 'GBP'));
                     $stripeFee = $isZeroDecimal ? (float) $stripeFeeMinor : ((float) $stripeFeeMinor / 100);
-                    
+
                     // Platform fee is what remains after we give the creator their base amount + vat, and stripe takes its fee from the gross.
                     // Or we can just use the difference.
                     $platformFee = $gross - $stripeFee - (float) $tip_pay->amount - $vatAmt;
@@ -3619,12 +3620,12 @@ class StripeController extends Controller
                 /**************************TIP**JAR**PWA**START****************************************************/
                 // below is TIP JAR pwa for fans
                 $CreatorName = ucfirst($tip_pay->creator->name) ?? 'A Creator';
-                
+
                 $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                 $totalPaidAmount = $tip_pay->total_paid && $tip_pay->total_paid > 0 ? $tip_pay->total_paid : (float) ($session->amount_total / $multiplier);
                 $symbolStr = \App\Models\Currency::where('iso', strtoupper($tip_pay->currency))->value('symbol') ?? '£';
                 $amountWithcurrency = $symbolStr . number_format($totalPaidAmount, 2);
-                
+
                 $title = "🏅 You've unlocked a new badge!";
                 $content = "You just tipped {$amountWithcurrency} to $CreatorName. Thanks for supporting them!.";
                 $email = $tip_pay->guest_email ?? $tip_pay->user->email;
@@ -3744,7 +3745,7 @@ class StripeController extends Controller
         if ($user->stripe_id) {
             // Fetch active subscription from Stripe
             $stripeSub = StripeControl::getActiveSubscriptionByCustomer($user->stripe_id);
-            
+
             if ($stripeSub) {
                 // Fetch the latest invoice for this subscription to ensure accurate sync
                 $invoice = null;
@@ -3763,7 +3764,7 @@ class StripeController extends Controller
                 // Subscription exists on Stripe - sync it using the unified service method
                 // This mimics "sending the webhook again" as requested by the user
                 $this->userProfileService->syncMandatorySubscriptionStatus($stripeSub, 'manual_sync', $invoice, $user);
-                
+
                 // Refresh user model and its relationships to ensure subscription_status is accurate
                 $user->load('creatorMonthlySubscription');
                 $user->refresh();
@@ -3773,12 +3774,20 @@ class StripeController extends Controller
                 if ($user->subscription_status >= 1) {
                     // Subscription is now active locally (either fully active or trialing)
                     $msg = $user->subscription_status == 2 ? 'Your trial was synchronized.' : 'Your subscription was synchronized.';
-                    return back()->with('success', $msg);
+                    return redirect(
+                        route('user.show', [
+                            'username' => $user->username
+                        ]) . '#profile'
+                    )->with('success', $msg);
                 }
-                
+
                 // Fallback check if subscription_status didn't catch it but stripeSub is active/trialing
                 if (in_array($stripeSub->status, ['active', 'trialing'])) {
-                     return back()->with('success', 'Your subscription is active on Stripe and has been synchronized.');
+                    return redirect(
+                        route('user.show', [
+                            'username' => $user->username
+                        ]) . '#profile'
+                    )->with('success', 'Your subscription is active on Stripe and has been synchronized.');
                 }
 
                 if ($stripeSub->cancel_at_period_end) {
@@ -3788,11 +3797,15 @@ class StripeController extends Controller
                         $resumedSub = $stripe->subscriptions->update($stripeSub->id, [
                             'cancel_at_period_end' => false,
                         ]);
-                        
+
                         // Sync the change locally
                         $this->userProfileService->syncMandatorySubscriptionStatus($resumedSub, 'manual_sync', $invoice, $user);
 
-                        return back()->with('success', 'Your auto-renewal has been re-enabled successfully!');
+                        return redirect(
+                            route('user.show', [
+                                'username' => $user->username
+                            ]) . '#profile'
+                        )->with('success', 'Your auto-renewal has been re-enabled successfully!');
                     } catch (\Exception $e) {
                         Log::warning("StripeController: Auto-resume failed in checkout flow: " . $e->getMessage());
                         $endDate = \Carbon\Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
@@ -3802,7 +3815,11 @@ class StripeController extends Controller
 
                 if ($user->subscription_status >= 1) {
                     // Fully active subscription — no action needed
-                    return back()->with('success', 'You already have an active subscription.');
+                    return redirect(
+                        route('user.show', [
+                            'username' => $user->username
+                        ]) . '#profile'
+                    )->with('success', 'You already have an active subscription.');
                 }
 
                 // If we found a subscription on Stripe but local status is not active, 
@@ -3810,7 +3827,11 @@ class StripeController extends Controller
                 // Since syncUserSubscription was just called and it's robust, 
                 // we should check again if it fixed the user status.
                 if ($user->is_subscribed) {
-                    return back()->with('success', 'Your subscription was found and has been synchronized.');
+                    return redirect(
+                        route('user.show', [
+                            'username' => $user->username
+                        ]) . '#profile'
+                    )->with('success', 'Your subscription was found and has been synchronized.');
                 }
 
                 // If it's still not active (e.g. past_due or unpaid), we should not allow a new checkout.
@@ -3820,25 +3841,34 @@ class StripeController extends Controller
                 // No active subscription on Stripe — check if local record is still in its paid/trial window
                 $canceledButActive = \App\Models\MonthlyCharge::where('user_id', $user->id)
                     ->where('status', 'canceled')
-                    ->where(function($q) use ($now) {
-                        $q->where(function($q2) use ($now) {
+                    ->where(function ($q) use ($now) {
+                        $q->where(function ($q2) use ($now) {
                             $q2->whereNotNull('current_end_subscription_date')
-                               ->whereDate('current_end_subscription_date', '>=', $now);
-                        })->orWhere(function($q2) use ($now) {
+                                ->whereDate('current_end_subscription_date', '>=', $now);
+                        })->orWhere(function ($q2) use ($now) {
                             $q2->whereNotNull('current_end_trial_date')
-                               ->whereDate('current_end_trial_date', '>=', $now);
+                                ->whereDate('current_end_trial_date', '>=', $now);
                         });
                     })
                     ->latest()
                     ->first();
 
                 if ($canceledButActive) {
-                    $date = $canceledButActive->current_end_subscription_date 
+                    $date = $canceledButActive->current_end_subscription_date
                         ? \Carbon\Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
                         : \Carbon\Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
-                        
-                    return to_route('user.show', ['username' => $user->username])
-                        ->with('info', "Your subscription is active until {$date}. You can renew after that date.");
+
+                    $date = $canceledButActive->current_end_subscription_date
+                        ? \Carbon\Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
+                        : \Carbon\Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
+
+                    $infoMessage = "Your subscription is active until {$date}. You can renew after that date.";
+
+                    return redirect(
+                        route('user.show', [
+                            'username' => $user->username
+                        ]) . '#profile'
+                    )->with('info', $infoMessage);
                 }
 
                 // Also handle existing paid/active DB record that DB didn't sync (webhook missed)
@@ -3861,9 +3891,9 @@ class StripeController extends Controller
 
         $currency = strtolower($request->cookie("currency", "GBP"));
         $price = 8.99;
-        
+
         // Calculate VAT (20%) on top of the base price, same as the previous 4+VAT logic
-        $vatRate = 20; 
+        $vatRate = 20;
         $tax = round($price * $vatRate / 100, 2);
         $finalTotalAmount = $price + $tax;
 
@@ -4047,7 +4077,7 @@ class StripeController extends Controller
                 }
 
                 $currency = strtolower($request->cookie("currency", "GBP"));
-                
+
                 // Force correct display for GBP emails (Total = Price + Tax)
                 if (strtoupper($currency) === 'GBP') {
                     $totalAmount = $sub->amount + $sub->tax;
@@ -4055,7 +4085,7 @@ class StripeController extends Controller
                 } else {
                     $convertedAmount = strtoupper(Helpers::priceFormat('gbp', $sub->amount + $sub->tax, $currency));
                 }
-                
+
                 SendPaymentSuccessEmail::dispatch($sub->user, $convertedAmount, $currency, $sub->upcoming_payment);
 
                 $this->userProfileService->clearUserCaches($sub->user->username, $sub->user->id);
@@ -4338,7 +4368,7 @@ class StripeController extends Controller
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY')); // move your secret to .env
 
             $deleted = $stripe->accounts->delete($accountId, []);
-            
+
             // Clear local user account ID if it matches
             if ($user->account_id === $accountId) {
                 $user->account_id = null;
