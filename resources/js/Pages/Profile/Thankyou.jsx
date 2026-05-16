@@ -3,11 +3,15 @@ import { Link, Head, usePage } from '@inertiajs/react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/siteicon.png";
 import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'react-icons/fa';
+import { useState, useRef } from 'react';
+import axios from 'axios';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function Thankyou(props) {
 
-  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant, wish_content} = props;
+  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant, wish_content, success_page_type, ask_question, payment_id} = props;
   const { global_currency, auth, user } = usePage().props;
+  const { errorAlert, successAlert } = useAlerts();
 
   const getTitle = () => {
     if (type === 'monthly_subscription') return <><span>Subscription</span> <span className="text-pink-500">Successful!</span></>;
@@ -37,17 +41,21 @@ export default function Thankyou(props) {
     if (benefits) return benefits; // fallback to backend string
     switch(type) {
       case 'wish':
-        return 'You will receive an email with your content access shortly.';
+        return 'You have unlocked access to exclusive content.';
       case 'bill':
         return 'You have unlocked access to subscribers-only posts.';
       case 'membership':
         return 'You have unlocked access to member-only posts and creator perks.';
       case 'task':
+        if (String(is_instant) === '1' || String(is_instant) === 'true') {
+          return 'Your task item has been delivered instantly. You can check the details from the task page.';
+        }
+        return 'We will inform you when the creator fulfills the task.';
       case 'shop':
         if (String(is_instant) === '1' || String(is_instant) === 'true') {
-          return 'Your item has been delivered instantly. Please check your email for access.';
+          return 'Your digital item has been delivered instantly.';
         }
-        return 'The creator will fulfill your request. We will notify you when it is ready.';
+        return 'We will inform you when the creator updates the shop order.';
       case 'support':
         return 'You have unlocked access to supporters-only posts.';
       default:
@@ -105,24 +113,67 @@ export default function Thankyou(props) {
       rewardLink = `/${owner?.username}`;
       rewardText = "See Creator's Supporters-Only Posts";
     } else if (type === 'shop') {
-      if (String(is_instant) === '1' || String(is_instant) === 'true') {
-        rewardLink = `/shop?type=purchases`;
-        rewardText = "Go to Order Details";
-      }
+      rewardLink = `/shop?type=purchases`;
+      rewardText = "Go to Order Details";
     } else if (type === 'task') {
-      if (item_id) {
+      if (String(is_instant) === '1' || String(is_instant) === 'true') {
+        if (item_id) {
+          rewardLink = `/task/${item_id}`;
+          rewardText = "Go to Task Detail Page";
+        } else {
+          rewardLink = `/task/dashboard?tab=purchases`;
+          rewardText = "Go to Order Details";
+        }
+      } else {
         rewardLink = `/task/dashboard?tab=purchases`;
         rewardText = "Go to Order Details";
       }
     }
 
-    return (
-      <div className="benefits-box">
-        <div className="benefits-title">BENEFITS INCLUDED</div>
-        <div className="benefits-text">{benefitsText}</div>
+    const [reply, setReply] = useState('');
+    const [posting, setPosting] = useState(false);
+    const [replySent, setReplySent] = useState(false);
+    const inputRef = useRef();
 
-        {wish_content && type === 'wish' && (
-          <div className="mt-4 p-4 bg-white border-2 border-pink-200 rounded-xl shadow-sm">
+    const sendReply = async () => {
+        if (!reply.trim()) return;
+        setPosting(true);
+        axios
+            .post(`/shop/answer-to-payment/${payment_id}`, {
+                answer: reply,
+            })
+            .then((res) => {
+                if (res.data.status) {
+                    if (inputRef.current) inputRef.current.value = "";
+                    setReply('');
+                    successAlert(res.data.msg || res.data.message);
+                    setReplySent(true);
+                } else {
+                    errorAlert(res.data.msg || res.data.message);
+                }
+                setPosting(false);
+            })
+            .catch((err) => {
+                setPosting(false);
+                errorAlert(err.response?.data?.message || "Something went wrong!");
+            });
+    };
+
+    return (
+      <div className="benefits-box !p-0 !border-0 !bg-transparent">
+        <div className="benefits-title">BENEFITS INCLUDED</div>
+        <div className="benefits-text">
+          {success_page_type === 'url' ? (
+            <a href={benefitsText} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+              {benefitsText}
+            </a>
+          ) : (
+            benefitsText
+          )}
+        </div>
+
+        {wish_content && (type === 'wish' || type === 'task' || type === 'shop') && (
+          <div className="mt-4  shadow-sm">
             <h4 className="text-pink-600 font-black text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
                <FaCheckCircle /> Exclusive Content Unlocked
             </h4>
@@ -147,6 +198,38 @@ export default function Thankyou(props) {
                 <div className="mt-2 text-center text-xs text-gray-500 font-bold truncate px-2">
                     {wish_content.name}
                 </div>
+            )}
+          </div>
+        )}
+
+        {ask_question && type === 'shop' && (
+          <div className="mt-4 p-4 bg-white border-2 border-pink-200 rounded-xl shadow-sm">
+            <h4 className="text-pink-600 font-black text-[11px] uppercase tracking-wider mb-2">
+               Question from Creator
+            </h4>
+            <p className="text-sm font-semibold mb-3">{ask_question}</p>
+            {!replySent ? (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  ref={inputRef}
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  placeholder="Type your answer here..."
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-pink-500 focus:border-pink-500"
+                  rows="3"
+                ></textarea>
+                <button
+                  onClick={sendReply}
+                  disabled={posting || !reply.trim()}
+                  className="bg-pink-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-600 disabled:opacity-50 text-sm w-fit"
+                >
+                  {posting ? "Submitting..." : "Submit Answer"}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm font-semibold flex items-center gap-2">
+                <FaCheckCircle /> Your answer has been submitted.
+              </div>
             )}
           </div>
         )}
@@ -183,7 +266,7 @@ export default function Thankyou(props) {
               position: relative;
               overflow: hidden;
               width: 100%;
-              max-width: 450px;
+              max-width: 550px;
               margin: 0 auto;
             }
             .details-box {
@@ -300,16 +383,14 @@ export default function Thankyou(props) {
               box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
             }
             `}</style>
-
-             <div className='thankyou-wrap'>
-              
+             <div className='!py-12 thankyou-wrap'>
                 <div className="mb-6 text-center">
                   {getIcon()}
                   <h2 className='text-3xl md:text-4xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]'>
                     {getTitle()}
                   </h2>
                   <p className='text-gray-800 font-bold text-sm md:text-base'>{getSubTitle()}</p>
-                </div>
+                </div> 
                 
                 {type !== 'monthly_subscription' && (
                   <div className='giftthank'>
@@ -320,20 +401,20 @@ export default function Thankyou(props) {
                     </div>
                     
                     <div className="p-6 sm:p-8 text-center">
-                        <p className="text-gray-700 font-bold text-sm">
-                            Thank you from Spenny Piggy on behalf of <span className="text-black font-black text-base">{owner?.name}</span>.
-                        </p>
-
-                        <div className="avatar-container" >
+                        <div className="!p-0 !mt-0 avatar-container" >
                                 <LazyLoadImage
                                 src={owner?.avatar_url || userphoto}
                                 alt="image-avatar" className="img-fluid rounded-full w-full h-full object-cover border-[3px] border-black relative z-10"  effect="blur"
                                 height={80}
                                 width={80} />
                         </div>
+                        <p className="text-green-600 text-gray-700 font-bold text-xl">
+                            Thank you from Spenny Piggy on behalf of <span className="text-green-700 font-black">{owner?.name}</span>.
+                        </p>
+
 
                         {(item_name || amount || benefitsText) && (
-                        <div className="details-box">
+                        <div className="details-box !rounded-[30px]">
                             <h3><FaCheckCircle className="text-green-500" /> Purchase Details</h3>
                             
                             {item_name && (

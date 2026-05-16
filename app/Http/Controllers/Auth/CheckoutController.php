@@ -976,7 +976,26 @@ class CheckoutController extends Controller
                         // Also clear discovery cache to update top earners and trending
                         app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
                     }
-                    return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
+                    
+                    $thankYouParams = ['username' => $existingPayment->owner->username];
+                    $firstItem = $existingPayment->items()->with('wish')->first();
+                    if ($firstItem && $firstItem->wish) {
+                        $wish = $firstItem->wish;
+                        $thankYouParams['type'] = 'wish';
+                        $thankYouParams['item_name'] = $wish->name;
+                        $thankYouParams['amount'] = $existingPayment->amount_total;
+                        $thankYouParams['currency'] = $existingPayment->currency;
+                        $thankYouParams['item_id'] = $wish->id;
+                        if ($wish->content_file) {
+                            $thankYouParams['wish_content'] = [
+                                'type' => $wish->content_file_type,
+                                'name' => $wish->content_file_name,
+                                'url'  => $wish->content_file_url
+                            ];
+                        }
+                    }
+                    
+                    return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
                 }
             } else {
                 Log::warning("No existing payment found for session", ['session_id' => $sessionId]);
@@ -1268,7 +1287,26 @@ class CheckoutController extends Controller
             }
 
             Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);
-            return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
+            
+            $thankYouParams = ['username' => $stripeid->owner->username];
+            $firstItem = $stripeid->items()->with('wish')->first();
+            if ($firstItem && $firstItem->wish) {
+                $wish = $firstItem->wish;
+                $thankYouParams['type'] = 'wish';
+                $thankYouParams['item_name'] = $wish->name;
+                $thankYouParams['amount'] = $stripeid->amount_total;
+                $thankYouParams['currency'] = $stripeid->currency;
+                $thankYouParams['item_id'] = $wish->id;
+                if ($wish->content_file) {
+                    $thankYouParams['wish_content'] = [
+                        'type' => $wish->content_file_type,
+                        'name' => $wish->content_file_name,
+                        'url'  => $wish->content_file_url
+                    ];
+                }
+            }
+            
+            return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             $errorMessage = $th->getMessage();
             Log::error("Error in successCheckout: " . $errorMessage, [
@@ -1281,7 +1319,26 @@ class CheckoutController extends Controller
             if (strpos($errorMessage, 'token was invalid') !== false) {
                 Log::info("Ignoring Stripe token error and continuing checkout process");
                 // Continue with the checkout process despite the token error
-                return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successful.');
+                
+                $thankYouParams = ['username' => $stripeid->owner->username];
+                $firstItem = $stripeid->items()->with('wish')->first();
+                if ($firstItem && $firstItem->wish) {
+                    $wish = $firstItem->wish;
+                    $thankYouParams['type'] = 'wish';
+                    $thankYouParams['item_name'] = $wish->name;
+                    $thankYouParams['amount'] = $stripeid->amount_total;
+                    $thankYouParams['currency'] = $stripeid->currency;
+                    $thankYouParams['item_id'] = $wish->id;
+                    if ($wish->content_file) {
+                        $thankYouParams['wish_content'] = [
+                            'type' => $wish->content_file_type,
+                            'name' => $wish->content_file_name,
+                            'url'  => $wish->content_file_url
+                        ];
+                    }
+                }
+                
+                return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
             }
 
             return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Something went wrong!');

@@ -785,7 +785,7 @@ Route::get('send-automatically-follow-request-to-all', [PwaNotification::class, 
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
     Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
@@ -966,10 +966,22 @@ Route::prefix("wish")->name("wish.")->group(function () {
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 
-Route::get('payment/thankyou/{username}', function ($username) {
+Route::get('payment/thankyou/{username}', function (Illuminate\Http\Request $request, $username) {
     $owner = User::where('username', $username)->first();
     return Inertia::render('Profile/Thankyou', [
-        'owner' => $owner
+        'owner' => $owner,
+        'type' => $request->query('type'),
+        'item_name' => $request->query('item_name'),
+        'amount' => $request->query('amount'),
+        'currency' => $request->query('currency'),
+        'benefits' => $request->query('benefits'),
+        'item_id' => $request->query('item_id'),
+        'item_slug' => $request->query('item_slug'),
+        'is_instant' => $request->query('is_instant'),
+        'wish_content' => $request->query('wish_content'),
+        'success_page_type' => $request->query('success_page_type'),
+        'ask_question' => $request->query('ask_question'),
+        'payment_id' => $request->query('payment_id'),
     ]);
 })->name("thank-you");
 

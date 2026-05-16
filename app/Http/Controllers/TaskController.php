@@ -647,7 +647,25 @@ class TaskController extends Controller
             return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
         }
 
-        return to_route('thank-you', ['username' => $task->creator->username])->with('success', 'Payment Successful.');
+        $thankYouParams = [
+            'username' => $task->creator->username,
+            'type' => 'task',
+            'item_name' => $task->title,
+            'amount' => $purchase ? $purchase->amount : ($session->amount_total / 100),
+            'currency' => $session->currency ?? 'GBP',
+            'item_id' => $task->uuid,
+            'is_instant' => $task->type === 'instant' ? '1' : '0'
+        ];
+
+        if ($task->type === 'instant' && $task->deliverable_content) {
+            $thankYouParams['wish_content'] = [
+                'type' => $task->deliverable_content_type ?? 'image',
+                'name' => 'Task Content',
+                'url' => 'https://ucarecdn.com/' . $task->deliverable_content . '/'
+            ];
+        }
+
+        return to_route('thank-you', $thankYouParams)->with('success', 'Payment Successful.');
     }
 
     /**

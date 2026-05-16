@@ -15,7 +15,6 @@ use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
-use App\Models\ShopVarients;
 use App\Models\ShippingProfile;
 use App\Models\ShippingProfileZone;
 use App\Models\User;
@@ -62,7 +61,7 @@ class ShopsController extends Controller
             $query->where('approved', 1)->where('status', 1);
         }
 
-        $shops = $query->orderBy('id', 'desc')->with(['shop_varients', 'shop_shipping_info'])->get();
+        $shops = $query->orderBy('id', 'desc')->with(['shop_shipping_info'])->get();
 
         return response()->json([
             'status' => true,
@@ -206,17 +205,6 @@ class ShopsController extends Controller
                 }
             }
 
-            if (!empty($request->varients)) {
-                $varients = json_decode($request->varients);
-                foreach ($varients as $value) {
-                    $var = new ShopVarients();
-                    $var->uuid = Uuid::uuid4();
-                    $var->shop_id = $shop->id;
-                    $var->name = $value->name;
-                    $var->price = (!empty($value->value) && $value->value !== "") ? $value->value : null;
-                    $var->save();
-                }
-            }
         }
 
         $shop->refresh();
@@ -236,15 +224,11 @@ class ShopsController extends Controller
         $currency = $user->default_currency ?? 'gbp';
 
         // Use new gross-up flow for consistent fee calculation
-        // Calculate the base amount the creator should receive (Price + Tax + VAT)
+        // Calculate the base amount the creator should receive (Price + VAT)
         $vatPercent = $user->vat_amount_percentage ?? 0;
         $vatAmount = $request->price * $vatPercent / 100;
 
-        // Add Shop Tax (Standard 20% if not overridden)
-        $taxRate = config('app.shop_tax', 20) / 100;
-        $taxAmount = $request->price * $taxRate;
-
-        $listedPriceToGrossUp = $request->price + $taxAmount + $vatAmount;
+        $listedPriceToGrossUp = $request->price + $vatAmount;
 
         $metrics = app(RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
@@ -380,18 +364,6 @@ class ShopsController extends Controller
                     }
                 }
 
-                if (!empty($request->varients)) {
-                    $varients = json_decode($request->varients);
-                    ShopVarients::where('shop_id', $shop->id)->delete();
-                    foreach ($varients as $value) {
-                        $var = new ShopVarients();
-                        $var->uuid = Uuid::uuid4();
-                        $var->shop_id = $shop->id;
-                        $var->name = $value->name;
-                        $var->price = (!empty($value->value) && $value->value !== "") ? $value->value : null;
-                        $var->save();
-                    }
-                }
             }
 
             $shop->refresh();
@@ -413,15 +385,11 @@ class ShopsController extends Controller
             $currency = $user->default_currency ?? 'gbp';
 
             // Use new gross-up flow for consistent fee calculation
-            // Calculate the base amount the creator should receive (Price + Tax + VAT)
+            // Calculate the base amount the creator should receive (Price + VAT)
             $vatPercent = $user->vat_amount_percentage ?? 0;
             $vatAmount = $request->price * $vatPercent / 100;
 
-            // Add Shop Tax (Standard 20% if not overridden)
-            $taxRate = config('app.shop_tax', 20) / 100;
-            $taxAmount = $request->price * $taxRate;
-
-            $listedPriceToGrossUp = $request->price + $taxAmount + $vatAmount;
+            $listedPriceToGrossUp = $request->price + $vatAmount;
 
             // Fetch creator risk metrics for reserve calculation
             $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
@@ -522,8 +490,6 @@ class ShopsController extends Controller
 
         ShopShippingInfo::where('shop_id', $shop->id)->delete();
 
-        ShopVarients::where('shop_id', $shop->id)->delete();
-
         ShopPayment::where('shop_id', $shop->id)->delete();
 
         $shop->delete();
@@ -540,7 +506,7 @@ class ShopsController extends Controller
 
     public function singleShopList($_slug, $uuid, $session_id = null)
     {
-        $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_varients', 'shop_shipping_info'])->first();
+        $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_shipping_info'])->first();
 
         if (!$shop) {
             abort(404);
@@ -578,11 +544,11 @@ class ShopsController extends Controller
             $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
         }
 
-        $tax = round(($amount * config('app.shop_tax', 20) / 100), 2, PHP_ROUND_HALF_UP);
+        $tax = 0;
 
         $vat_percentage_amount = 0;
         if (!empty($shop->user->vat_amount_percentage)) {
-            $vat_percentage_amount = ($amount + $tax) * $shop->user->vat_amount_percentage / 100;
+            $vat_percentage_amount = $amount * $shop->user->vat_amount_percentage / 100;
         }
 
         $card_capabilities = StripeControl::hasCardPaymentsCapability($shop->user->account_id);
@@ -591,7 +557,8 @@ class ShopsController extends Controller
         if (Auth::check()) {
             $my_purchases = ShopPayment::where('shop_id', $shop->id)
                 ->where('user_id', Auth::id())
-                ->whereIn('status', ['paid', 'succeeded', 'processing', 'shipped', 'delivered'])
+                ->where('payment_status', 'paid')
+                ->with('deliverable')
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -689,7 +656,7 @@ class ShopsController extends Controller
         ]);
     }
 
-    public function buyShopItem(Request $request, $shop_id, $varient_id)
+    public function buyShopItem(Request $request, $shop_id)
     {
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
@@ -827,17 +794,6 @@ class ShopsController extends Controller
                     $amount = round($shop->special_member_price, 2, PHP_ROUND_HALF_UP);
                 }
             }
-
-            if ($varient_id != "no_varient") {
-                $var = ShopVarients::where('id', $varient_id)->where('shop_id', $shop->id)->first();
-                if (!$var) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Selected variant not found.'
-                    ]);
-                }
-                $amount = $var->price !== null ? round($var->price, 2, PHP_ROUND_HALF_UP) : $amount;
-            }
             
             $amount = $amount * $requestedQuantity;
 
@@ -871,17 +827,13 @@ class ShopsController extends Controller
                 }
             }
 
-            // Add Shop Tax (Standard 20% if not overridden)
-            $taxRate = config('app.shop_tax', 20) / 100;
-            $taxAmount = $amount * $taxRate;
-
             // Add VAT if applicable
             $vatAmount = 0;
             if (!empty($shop->user->vat_amount_percentage)) {
-                $vatAmount = ($amount + $taxAmount) * $shop->user->vat_amount_percentage / 100;
+                $vatAmount = $amount * $shop->user->vat_amount_percentage / 100;
             }
 
-            $listedPriceToGrossUp = $amount + $taxAmount + $vatAmount + $shipping_price;
+            $listedPriceToGrossUp = $amount + $vatAmount + $shipping_price;
 
             // Unified Risk Enforcement
             $riskData = $this->enforceRiskChecks(
@@ -936,13 +888,12 @@ class ShopsController extends Controller
 
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
-                'tax_amount' => $taxAmount,
+                'tax_amount' => 0,
                 'vat_tax_amount' => $vatAmount,
                 'shipping_amount' => $shipping_price,
                 'currency' => $chargeCurrency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
-                'varient_id' => $varient_id != "no_varient" ? $varient_id : null,
                 'name' => request()->query('from') ?? null,
                 'email' => request()->query('email'),
                 'message' => $message ?? null,
@@ -973,7 +924,6 @@ class ShopsController extends Controller
             'shop_item_id' => $shop->id,
             'quantity' => $shopPaymentDetail->quantity,
             'anonymous' => $shopPaymentDetail->anonymous,
-            'varient_id' => $shopPaymentDetail->varient_id,
             'creator_net_amount' => (string) $creatorTransferAmountMinor,
             'total_charge_amount' => (string)$unitAmount,
         ]);
@@ -1065,18 +1015,55 @@ class ShopsController extends Controller
 
                 $existingUserPayment = \App\Models\UserPayment::where('payment_details', json_encode($stripeid->session_id, true))->exists();
 
+                $totalPaid = $stripeid->total_paid;
+                if (!$totalPaid || $totalPaid <= 0) {
+                    try {
+                        $session = \App\StripeControl::getCheckoutSession($stripeid->session_id, $stripeid->shop->user->account_id);
+                        if ($session) {
+                            $currencyModel = \App\Models\Currency::where('ISO', strtoupper($stripeid->currency ?? 'GBP'))->first();
+                            $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                            $totalPaid = (float) ($session->amount_total / $multiplier);
+                            $stripeid->total_paid = $totalPaid;
+                            $stripeid->save();
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to fetch Stripe session for shop payment", ['error' => $e->getMessage()]);
+                    }
+                }
+                $displayAmount = $totalPaid && $totalPaid > 0 ? $totalPaid : ($stripeid->amount ?? 0);
+
                 // Idempotency check: if UserPayment already exists, the business logic has already run.
                 if ($existingUserPayment) {
-                    return redirect()->route('thank-you', [
+                    $thankYouParams = [
                         'username' => $stripeid->shop->user->username,
                         'type' => 'shop',
                         'item_name' => $stripeid->shop->name,
-                        'amount' => $stripeid->amount ?? 0,
+                        'amount' => $displayAmount,
                         'currency' => $stripeid->currency ?? 'GBP',
                         'item_id' => $stripeid->shop->uuid,
                         'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
                         'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
-                    ])->with('success', 'Payment Successful.');
+                    ];
+
+                    if (!empty($stripeid->shop->ask_question) && empty($stripeid->answer)) {
+                        $thankYouParams['ask_question'] = $stripeid->shop->ask_question;
+                        $thankYouParams['payment_id'] = $stripeid->id;
+                    }
+
+                    if ($stripeid->shop->type !== 'physical') {
+                        $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
+                        $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
+                        
+                        if ($stripeid->shop->reward_file) {
+                            $thankYouParams['wish_content'] = [
+                                'type' => $stripeid->shop->reward_file_type,
+                                'name' => 'Digital Content',
+                                'url'  => "https://ucarecdn.com/" . $stripeid->shop->reward_file . "/"
+                            ];
+                        }
+                    }
+
+                    return redirect()->route('thank-you', $thankYouParams)->with('success', 'Payment Successful.');
                 }
 
                 // 1. Decrement stock if applicable
@@ -1111,7 +1098,7 @@ class ShopsController extends Controller
 
                 $message = $stripeid->message;
                 // Calculate creator net amount using the SAME logic as buyShopItem
-                $listedPriceToGrossUp = $stripeid->amount + $stripeid->tax_amount + $stripeid->vat_tax_amount + ($stripeid->shipping_amount ?? 0);
+                $listedPriceToGrossUp = $stripeid->amount + $stripeid->vat_tax_amount + ($stripeid->shipping_amount ?? 0);
 
                 $currencyModel = Currency::where('ISO', strtoupper($stripeid->currency))->first();
                 $digits = $currencyModel && $currencyModel->ISOdigits == 0 ? 0 : 2;
@@ -1207,16 +1194,36 @@ class ShopsController extends Controller
                 // Clear user caches
                 app(UserProfileService::class)->clearUserCaches($stripeid->shop->user->username, $stripeid->shop->user->id);
 
-                return redirect()->route('thank-you', [
+                $thankYouParams = [
                     'username' => $stripeid->shop->user->username,
                     'type' => 'shop',
                     'item_name' => $stripeid->shop->name,
-                    'amount' => $stripeid->amount ?? 0,
+                    'amount' => $displayAmount,
                     'currency' => $stripeid->currency ?? 'GBP',
                     'item_id' => $stripeid->shop->uuid,
                     'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
                     'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
-                ])->with('success', 'Payment Successful.');
+                ];
+
+                if (!empty($stripeid->shop->ask_question) && empty($stripeid->answer)) {
+                    $thankYouParams['ask_question'] = $stripeid->shop->ask_question;
+                    $thankYouParams['payment_id'] = $stripeid->id;
+                }
+                
+                if ($stripeid->shop->type !== 'physical') {
+                    $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
+                    $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
+                    
+                    if ($stripeid->shop->reward_file) {
+                        $thankYouParams['wish_content'] = [
+                            'type' => $stripeid->shop->reward_file_type,
+                            'name' => 'Digital Content',
+                            'url'  => "https://ucarecdn.com/" . $stripeid->shop->reward_file . "/"
+                        ];
+                    }
+                }
+
+                return redirect()->route('thank-you', $thankYouParams)->with('success', 'Payment Successful.');
             } catch (\Exception $e) {
                 Log::error("Error in successPayment: " . $e->getMessage());
                 return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', 'Something went wrong during payment processing.');
@@ -1515,8 +1522,7 @@ class ShopsController extends Controller
 
     public function answerPayment(Request $request, $payment_id)
     {
-        $user = User::find(Auth::id());
-        $payment = ShopPayment::where('id', $payment_id)->where('user_id', $user->id)->first();
+        $payment = ShopPayment::where('id', $payment_id)->first();
 
         if (!$payment) {
             return response()->json([
