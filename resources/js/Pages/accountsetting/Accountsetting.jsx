@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { lazy } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { route } from 'ziggy-js';
+import { route } from "ziggy-js";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
@@ -19,8 +19,8 @@ import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory from "@/Components/SubscriptionHistory";
-import ManagePasskey from '@/Components/ManagePasskey';
-import SecurityZone from '@/Components/SecurityZone';
+import ManagePasskey from "@/Components/ManagePasskey";
+import SecurityZone from "@/Components/SecurityZone";
 import { Switch } from "@headlessui/react";
 import {
     UserIcon,
@@ -43,17 +43,17 @@ import {
     GlobeIcon,
     ShieldCheckIcon,
 } from "@animateicons/react/lucide";
-import { 
-    Shield, 
-    LogOut, 
-    Gift, 
-    LayoutDashboard, 
-    History, 
-    Percent, 
-    PiggyBank, 
-    HelpCircle, 
-    FileText, 
-    Fingerprint 
+import {
+    Shield,
+    LogOut,
+    Gift,
+    LayoutDashboard,
+    History,
+    Percent,
+    PiggyBank,
+    HelpCircle,
+    FileText,
+    Fingerprint,
 } from "lucide-react";
 
 export default function Accountsetting(props) {
@@ -120,7 +120,9 @@ export default function Accountsetting(props) {
             });
     };
 
-    const [vatpercent, setvatpercent] = useState((auth && auth?.user?.vat_amount_percentage) || "",);
+    const [vatpercent, setvatpercent] = useState(
+        (auth && auth?.user?.vat_amount_percentage) || "",
+    );
 
     const closeEmailPopup = () => {
         setEmailPopupAction(false);
@@ -248,7 +250,7 @@ export default function Accountsetting(props) {
         bordercolor,
     }) => {
         const iconRef = useRef(null);
-        
+
         return (
             <div
                 onClick={onClick}
@@ -278,11 +280,16 @@ export default function Accountsetting(props) {
                 </div>
                 <div className="flex items-center gap-3">
                     {value && (
-                        <span className={`mt-4 md:mt-0 text-sm font-semibold px-3 py-1 rounded-lg border ${
-                            value.toLowerCase() === 'active' || value.toLowerCase() === 'connected' || value.toLowerCase() === 'enabled' || value.toLowerCase() === 'linked'
-                                ? 'text-green-600 bg-green-50 border-green-500' 
-                                : 'text-gray-600 bg-gray-50 border-pink-500'
-                        }`}>
+                        <span
+                            className={`mt-4 md:mt-0 text-sm font-semibold px-3 py-1 rounded-lg border ${
+                                value.toLowerCase() === "active" ||
+                                value.toLowerCase() === "connected" ||
+                                value.toLowerCase() === "enabled" ||
+                                value.toLowerCase() === "linked"
+                                    ? "text-green-600 bg-green-50 border-green-500"
+                                    : "text-gray-600 bg-gray-50 border-pink-500"
+                            }`}
+                        >
                             {value}
                         </span>
                     )}
@@ -343,8 +350,8 @@ export default function Accountsetting(props) {
                                 }
                                 classes="w-full"
                                 global_currency={global_currency}
-                            /> 
-                           
+                            />
+
                             {stripeSubmitted && (
                                 <PaymentDashboard
                                     classes="w-full"
@@ -358,17 +365,21 @@ export default function Accountsetting(props) {
                                     }
                                 />
                             )}
-{console.log("Site Subscription:", site_subscription)}
-                            <Popup  
-                                space="4" size='lg' 
-                                modalclass="pinkmodal" 
-                                classes="w-full" 
+
+                            <Popup
+                                space="4"
+                                size="lg"
+                                modalclass="pinkmodal"
+                                classes="w-full"
                                 text={
                                     <SettingItem
                                         icon={Gift}
                                         title="Platform Subscription"
                                         subtitle={
-                                            site_subscription?.subscription_status_code === 1 || site_subscription?.subscription_status_code === 2
+                                            site_subscription?.subscription_status_code ===
+                                                1 ||
+                                            site_subscription?.subscription_status_code ===
+                                                2
                                                 ? "Active Subscription"
                                                 : "Manage Subscription"
                                         }
@@ -393,7 +404,8 @@ export default function Accountsetting(props) {
                             {subscription_history &&
                                 subscription_history.length > 0 && (
                                     <Popup
-                                        space="4" size='md'
+                                        space="4"
+                                        size="md"
                                         classes="w-full"
                                         modalclass="pinkmodal"
                                         text={
@@ -574,15 +586,11 @@ export default function Accountsetting(props) {
 
                         <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                             <div className="flex items-center gap-4 text-left">
-                              
                                 <div
-                                            className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-pink-600`}
-                                        >
-                                            <BellIcon
-                                                size={20}
-                                                strokeWidth={2.5}
-                                            />
-                                        </div>
+                                    className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-pink-600`}
+                                >
+                                    <BellIcon size={20} strokeWidth={2.5} />
+                                </div>
                                 <div>
                                     <h3 className="font-bold text-base text-gray-800">
                                         Email Notifications
@@ -614,7 +622,9 @@ export default function Accountsetting(props) {
                             icon={Gift}
                             title="Support History"
                             subtitle="View your complete support history"
-                            onClick={() => router.get(route("support.history.page"))}
+                            onClick={() =>
+                                router.get(route("support.history.page"))
+                            }
                         />
                     </div>
 
@@ -625,7 +635,10 @@ export default function Accountsetting(props) {
                     >
                         <SectionTitle title="Security" />
 
-                        <ManagePasskey className="w-full border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all" email={auth.user.email} />
+                        <ManagePasskey
+                            className="w-full border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all"
+                            email={auth.user.email}
+                        />
 
                         {isCreator && (
                             <Popup
@@ -699,7 +712,6 @@ export default function Accountsetting(props) {
                                 }
                             />
                         </Link>
-
                     </div>
 
                     {/* SUPPORT SECTION */}
@@ -724,11 +736,11 @@ export default function Accountsetting(props) {
                             href={route("how-it-works")}
                             className="block w-full"
                         >
-                        <SettingItem
-                             icon={HelpCircle}
-                             title="How it Works"
-                             subtitle="Learn about Spenny Piggy"
-                         />
+                            <SettingItem
+                                icon={HelpCircle}
+                                title="How it Works"
+                                subtitle="Learn about Spenny Piggy"
+                            />
                         </Link>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

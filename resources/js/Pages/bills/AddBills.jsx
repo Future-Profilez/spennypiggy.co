@@ -389,36 +389,39 @@ export default function AddBills(props) {
                                 support for further clarification.
                             </p>
 
-                            <div className="publish text-start">
-                                {isEdit ? (
-                                    <LoaderButton
-                                        disabled={loading}
-                                        type="submit"
-                                        className="p w-full"
-                                        spinnerclass="fill-red-600"
-                                    >
-                                        {loading ? "Updating.." : "Update Bill"}
-                                    </LoaderButton>
-                                ) : (
-                                    <>
-                                        <LoaderButton
-                                            disabled={loading || subscriberOnlyPostsCount === 0}
-                                            type="submit"
-                                            className="p w-full"
-                                            spinnerclass="fill-red-600"
-                                        >
-                                            {loading
-                                                ? "Processing"
-                                                : "Add Bills"}
-                                        </LoaderButton>
-                                        {subscriberOnlyPostsCount === 0 && (
-                                            <p className="mt-2 text-center text-red-500 text-sm">
-                                                You haven't added any subscriber-only posts yet. Please create at least one before adding a bill.
-                                            </p>
-                                        )}
-                                    </>
-                                )}
-                            </div>
+                            <div className="publish text-start mt-6 mb-4">
+    {isEdit ? (
+        <LoaderButton
+            disabled={loading}
+            type="submit"
+            className="p w-full min-h-[54px]"
+            spinnerclass="fill-red-600"
+        >
+            {loading ? "Updating.." : "Update Bill"}
+        </LoaderButton>
+    ) : (
+        <>
+            <LoaderButton
+                disabled={loading || subscriberOnlyPostsCount === 0}
+                type="submit"
+                className="p w-full min-h-[54px]"
+                spinnerclass="fill-red-600"
+            >
+                {loading ? "Processing" : "Add Bills"}
+            </LoaderButton>
+
+            {subscriberOnlyPostsCount === 0 && (
+                <div className="pt-3 px-2">
+                    <p className="text-center text-red-500 text-sm leading-6">
+                        You haven't added any subscriber-only posts yet.
+                        <br />
+                        Please create at least one before adding a bill.
+                    </p>
+                </div>
+            )}
+        </>
+    )}
+</div>
                         </form>
                     </div>
                 </div>
