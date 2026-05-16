@@ -324,7 +324,6 @@ class ProfileController extends Controller
             $user = User::where('id', Auth::id())->first();
             if ($user->role == 1) {
                 $user->profile_status_lock = 1;
-                $user->profile_status_lock = 1;
                 $user->save();
             }
 

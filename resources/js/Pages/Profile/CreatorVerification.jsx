@@ -29,8 +29,13 @@ const CustomProgressBar = ({ now, max }) => {
 };
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
-    const { auth: initialAuth, user: initialUser, global_currency, slinks: initialSlinks } = usePage().props;
-    
+    const {
+        auth: initialAuth,
+        user: initialUser,
+        global_currency,
+        slinks: initialSlinks,
+    } = usePage().props;
+
     // Use local state so background polling doesn't trigger a full page re-render
     const [auth, setAuth] = useState(initialAuth);
     const [user, setUser] = useState(initialUser);
@@ -51,7 +56,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         slinks &&
         Object.values(slinks).some((value) => value !== null && value !== "");
     const hasSubscription =
-        creatorUser?.subscription_status === 1 || creatorUser?.subscription_status === 2;
+        creatorUser?.subscription_status === 1 ||
+        creatorUser?.subscription_status === 2;
     const socialStatus = slinks?.status;
     const isSocialApproved = socialStatus == 1;
     const isSocialPending = hasAnySocialMedia && socialStatus == 0;
@@ -64,10 +70,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const hasBasicDetails =
         hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio;
     const isSubmittedForReview = profileStatusLock == 1 && hasBasicDetails;
-    const canSubmitForReview =
-        profileStatusLock != 1 &&
-        profileStatusLock != 2 &&
-        hasBasicDetails;
+    const isProfileFullyApproved = isSocialApproved && avatarStatus == 1 && bioStatus == 1 && hasSubscription;
+
+    const canSubmitForReview = profileStatusLock != 1 && profileStatusLock != 2 && isProfileFullyApproved;
     const updateProfileSteps = () => {
         if (typeof window !== "undefined") {
             window.location.reload(false);
@@ -80,16 +85,17 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         try {
             const response = await axios.get(window.location.href, {
                 headers: {
-                    'X-Inertia': 'true',
-                    'X-Inertia-Partial-Data': 'auth,user,slinks',
-                    'X-Inertia-Partial-Component': 'Dashboard'
-                }
+                    "X-Inertia": "true",
+                    "X-Inertia-Partial-Data": "auth,user,slinks",
+                    "X-Inertia-Partial-Component": "Dashboard",
+                },
             });
-            
+
             if (response.data && response.data.props) {
                 if (response.data.props.auth) setAuth(response.data.props.auth);
                 if (response.data.props.user) setUser(response.data.props.user);
-                if (response.data.props.slinks) setSlinks(response.data.props.slinks);
+                if (response.data.props.slinks)
+                    setSlinks(response.data.props.slinks);
             }
         } catch (error) {
             console.error("Failed to fetch verification status", error);
@@ -112,7 +118,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 // To save server load, don't poll if the tab is not visible/active
                 if (document.hidden) return;
 
-                // Limit maximum automatic polling to 20 times to avoid infinite polling 
+                // Limit maximum automatic polling to 20 times to avoid infinite polling
                 if (pollCount.current >= 20) {
                     clearInterval(interval);
                     return;
@@ -120,7 +126,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                 pollCount.current += 1;
                 fetchLatestVerificationData();
-                
             }, 5000);
         }
         return () => {
@@ -230,7 +235,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         if (!hasSubscription) {
             return {
                 title: "Start your 3-day free trial",
-                description: "You can do this anytime. It doesn't block other steps.",
+                description:
+                    "You can do this anytime. It doesn't block other steps.",
                 action: (
                     <Link
                         className="text-pink font-bold"
@@ -337,8 +343,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <h2 className="text-[20px] uppercase font-bold">
                         Profile Verification
                     </h2>
-                    <button 
-                        onClick={refreshSteps} 
+                    <button
+                        onClick={refreshSteps}
                         disabled={isRefreshing}
                         className="bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-1 rounded-full text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 disabled:opacity-50"
                     >
@@ -354,7 +360,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <p className="text-gray-900 font-bold">
-                                Recommended next step (any order): {nextStep.title}
+                                Recommended next step (any order):{" "}
+                                {nextStep.title}
                             </p>
                             <p className="text-gray-600 text-sm mt-1">
                                 {nextStep.description}
@@ -376,7 +383,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         <p className="text-sm capitalize mb-2">
                             {profileRejectReason}
                         </p>
-                        <Link className="text-xs px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full "
+                        <Link
+                            className="text-xs px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full "
                             href={route("update.profile.lock.status")}
                             method="get"
                         >
@@ -387,54 +395,54 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ""
                 )}
 
-                {creatorUser?.bio && creatorUser?.avatar && profileStatusLock == 1 ? (
-                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-4 rounded-[30px] mt-3" > 
-                            <>
-                                <strong className="text-yellow-800">
-                                    Profile Under Review
-                                </strong> 
-                                <p className="text-sm">
-                                    Your submitted profile avatar, bio, and social media handles are under administrative review. 
-                                    Should any issues arise, we will notify you via email or you may check the status here.
-                                </p> 
-                                <p className="text-sm mt-2 ">
-                                    🎉 You're almost done. Your profile is currently
-                                    under review. Please wait for the review to
-                                    complete. 
-                                </p>
-                            </>
+                {creatorUser?.bio &&
+                creatorUser?.avatar &&
+                profileStatusLock == 1 ? (
+                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-4 rounded-[30px] mt-3">
+                        <>
+                            <strong className="text-yellow-800">
+                                Profile Under Review
+                            </strong>
+                            <p className="text-sm">
+                                Your submitted profile avatar, bio, and social
+                                media handles are under administrative review.
+                                Should any issues arise, we will notify you via
+                                email or you may check the status here.
+                            </p>
+                            <p className="text-sm mt-2 ">
+                                🎉 You're almost done. Your profile is currently
+                                under review. Please wait for the review to
+                                complete.
+                            </p>
+                        </>
 
-                        {slinks?.status == 2 ? ( 
-                            <div className="mt-3">  
-                                <span className="text-red-500 text-sm font-bold">Social Media Handle Update Request</span>
+                        {slinks?.status == 2 ? (
+                            <div className="mt-3">
+                                <span className="text-red-500 text-sm font-bold">
+                                    Social Media Handle Update Request
+                                </span>
                                 <p className="text-red-500 text-sm">
-                                    Rejected due to {slinks?.reason ? slinks?.reason : ""}
-                                </p> 
+                                    Rejected due to{" "}
+                                    {slinks?.reason ? slinks?.reason : ""}
+                                </p>
                                 <p className="text-red-500 text-sm">
-                                    Please update your social media handles and resubmit.
-                                </p> 
+                                    Please update your social media handles and
+                                    resubmit.
+                                </p>
                             </div>
                         ) : null}
 
                         {IsloggedIn &&
                         user?.edit_bio_reason &&
-                        user?.bio_approved ==
-                            2 ? (
+                        user?.bio_approved == 2 ? (
                             <div className="mt-3 ">
-                                <p className="text-red-500 text-sm font-bold"> Bio Edit Request </p>
+                                <p className="text-red-500 text-sm font-bold">
+                                    {" "}
+                                    Bio Edit Request{" "}
+                                </p>
                                 <p className="text-red-500 text-sm">
-                                    Reason
-                                    :{" "}
-                                    {
-                                        user?.edit_bio_reason
-                                    }{" "}
-                                    Please
-                                    update
-                                    your
-                                    bio
-                                    as
-                                    per
-                                    requested.
+                                    Reason : {user?.edit_bio_reason} Please
+                                    update your bio as per requested.
                                 </p>
                             </div>
                         ) : (
@@ -486,7 +494,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     Approved
                                 </span>
                             ) : isSocialPending ? (
-                                ''
+                                ""
                             ) : isSocialRejected ? (
                                 <span className="text-xs text-white inline-block px-2 rounded-[30px] p-1 bg-red-600">
                                     Rejected
@@ -498,7 +506,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             )}
 
                             {slinks?.status !== 1 && (
-                                <Social buttontext='Add'
+                                <Social
+                                    buttontext="Add"
                                     classes="bg-gray-200 my-2 rounded-xl px-2 py-2 w-full text-sm"
                                     links={slinks}
                                 />
@@ -510,7 +519,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     {hasAnySocialMedia && slinks?.status == 0 && (
                         <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl">
                             <p className="text-yellow-600 text-sm">
-                                <strong>Verification Pending:</strong> Your social media handle is under review.
+                                <strong>Verification Pending:</strong> Your
+                                social media handle is under review.
                             </p>
                         </div>
                     )}
@@ -613,9 +623,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div
                                 className={`check-icon mr-2 pt-1 ${
-                                    avatarStatus == 1
-                                        ? "checked"
-                                        : ""
+                                    avatarStatus == 1 ? "checked" : ""
                                 }`}
                             >
                                 <div
@@ -748,32 +756,41 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
                 )}
 
-                {auth?.user?.subscription_status == 0 && auth?.user?.bio && auth?.user?.avatar && auth?.user?.profile_status_lock == 1 ? (
-                    <div className="text-green-600 bg-green-50 border !border-green-500 p-4 rounded-[25px] mt-4" > 
-                            <>
-                                <strong className="text-green-800">
-                                    Final Setup : Payment Subscription 
-                                </strong> 
-                                <p className="text-sm text-green-600 mt-2">
-                                    Start 3 days free trial to submit your profile for final verification.
-                                </p>  
-                            </>
-                           
+                {auth?.user?.subscription_status == 0 &&
+                auth?.user?.bio &&
+                auth?.user?.avatar &&
+                auth?.user?.profile_status_lock == 1 ? (
+                    <div className="text-green-600 bg-green-50 border !border-green-500 p-4 rounded-[25px] mt-4">
+                        <>
+                            <strong className="text-green-800">
+                                Final Setup : Payment Subscription
+                            </strong>
+                            <p className="text-sm text-green-600 mt-2">
+                                Start 3 days free trial to submit your profile
+                                for final verification.
+                            </p>
+                        </>
                     </div>
                 ) : (
                     ""
                 )}
 
-                 <div className="mt-6 relative mt-4">
+                <div className="mt-6 relative mt-4">
                     <h2 className="flex font-bold">
-                        <MdOutlinePayment className="mr-2 relative top-[2px]" />Subscription Payment Setup
+                        <MdOutlinePayment className="mr-2 relative top-[2px]" />
+                        Subscription Payment Setup
                     </h2>
                     <p className="text-gray-500 text-[14px]">
-                        Set up your subscription payment method to continue using Spennypiggy.
+                        Set up your subscription payment method to continue
+                        using Spennypiggy.
                     </p>
                 </div>
                 {/* Step 4: Subscription */}
-                <div className={"profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between"}>
+                <div
+                    className={
+                        "profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between"
+                    }
+                >
                     <div className="step-title flex max-w-[390px] pr-3">
                         <div
                             className={`check-icon mr-2 pt-1 ${
@@ -795,8 +812,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 <strong className="text-black">
                                     Free Trial
                                 </strong>{" "}
-                                subscription of £8.99 + VAT / month. No charges until the
-                                trial period ends.
+                                subscription of £8.99 + VAT / month. No charges
+                                until the trial period ends.
                             </p>
                         </div>
                     </div>
@@ -852,7 +869,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </span>
                     ) : canSubmitForReview ? (
                         <Link
-                            className={"text-pink font-semibold"}
+                            className="text-pink font-semibold"
                             href={route("update.profile.lock.status")}
                             method="get"
                         >
@@ -862,17 +879,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         <span className="text-gray-400">Locked</span>
                     )}
                 </div>
-
-
-                
-
-
-
-               
-
-                
-
-                
 
                 {auth?.user?.profile_status_lock == 2 ? (
                     <div className="text-green-700 bg-green-50 border !border-green-700 p-3 rounded-[20px]   mt-3">
@@ -946,7 +952,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             Verify
                                         </Link>
                                     ) : (
-                                        <span className="text-gray-400 flex items-center gap-1 cursor-not-allowed" title="Active subscription required">
+                                        <span
+                                            className="text-gray-400 flex items-center gap-1 cursor-not-allowed"
+                                            title="Active subscription required"
+                                        >
                                             Verify <MdInfoOutline size={14} />
                                         </span>
                                     )

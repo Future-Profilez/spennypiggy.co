@@ -134,17 +134,21 @@ export default function ReferAndEarn({
                                         readOnly
                                         value={hasReferral ? referralLink : ""}
                                         placeholder="Click Generate to create your referral link"
-                                        className={`w-full px-4 py-3 md:py-4 pr-[220px] rounded-[30px]  border-2 border-black text-sm
-                                        ${
-                                            hasReferral
-                                                ? "bg-white text-black"
-                                                : "bg-gray-100 text-gray-500"
-                                        }
-                                    `}
+                                        className={`w-full px-4 py-3 md:py-4 
+                                        md:pr-[220px] pr-4
+                                        rounded-[30px] border-2 border-black text-sm
+                                        overflow-hidden text-ellipsis
+                                        ${hasReferral ? "bg-white text-black" : "bg-gray-100 text-gray-500"}`}
                                     />
 
                                     {/* CTA AREA */}
-                                    <div className="md:absolute top-1/2 right-2 md:-translate-y-1/2 !mt-2 md:!mt-0 flex items-center gap-2">
+                                    <div
+                                        className="
+                                            flex flex-wrap items-center gap-2
+                                            mt-3
+                                            md:absolute md:top-1/2 md:right-2 md:-translate-y-1/2 md:mt-0
+                                        "
+                                    >
                                         {/* GENERATE */}
                                         {!hasReferral && (
                                             <button
@@ -204,9 +208,9 @@ export default function ReferAndEarn({
                                 </div>
 
                                 <p className="text-xs text-gray-500 mt-3">
-                    Share this link with creators. You’ll earn
-                    £50 once they reach £1,000 lifetime GMV.
-                </p>
+                                    Share this link with creators. You’ll earn
+                                    £50 once they reach £1,000 lifetime GMV.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -254,8 +258,8 @@ export default function ReferAndEarn({
                                 Redeem Referral Earnings
                             </h3>
                             <p className="text-sm text-gray-500">
-                            Redemption requests are reviewed before payout.
-                        </p>
+                                Redemption requests are reviewed before payout.
+                            </p>
                         </div>
 
                         <div className="flex flex-col items-end gap-2">
@@ -285,7 +289,7 @@ export default function ReferAndEarn({
                                         {},
                                         {
                                             onFinish: () => setLoading(false),
-                                        }
+                                        },
                                     );
                                 }}
                             >
@@ -360,7 +364,10 @@ export default function ReferAndEarn({
                                                 </td>
 
                                                 <td className="text-center">
-                                                    £{formatMoney(r.lifetime_gmv)}
+                                                    £
+                                                    {formatMoney(
+                                                        r.lifetime_gmv,
+                                                    )}
                                                 </td>
 
                                                 <td className="text-center">
