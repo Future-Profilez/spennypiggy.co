@@ -3049,8 +3049,10 @@ class StripeWebhookController extends Controller
                     return;
                 }
 
-                // Idempotency check: if already paid, skip
-                if ($shopPayment->payment_status === 'paid') {
+                // Idempotency check: if UserPayment already exists, it means the business logic (emails, GMV, etc.) has already run.
+                // We don't rely purely on payment_status === 'paid' because syncFinancialTransactionsByPaymentIntent might have updated it eagerly.
+                $existingUserPayment = \App\Models\UserPayment::where('payment_details', json_encode($session->id, true))->exists();
+                if ($existingUserPayment) {
                     Log::info("StripeWebhookController: Shop payment already processed", ['payment_id' => $paymentId]);
                     return;
                 }
@@ -3144,15 +3146,21 @@ class StripeWebhookController extends Controller
                     Log::error('StripeWebhookController: Failed to create deliverable record for shop', ['error' => $e->getMessage()]);
                 }
 
-                ShopBuyedUser::dispatch($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
+                ShopBuyedUser::dispatchSync($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
 
                 // 9. Send PWA notifications
                 try {
-                    $creatorName = ucfirst($shopPayment->shop->user->name) ?? 'A Creator';
-                    Helpers::sendNotification("🛍️ Purchase Confirmed!", "You bought something from $creatorName ’s shop. They’ll process it soon.", $shopPayment->email ?? $shopPayment->user->email);
+                    $creatorName = ucfirst($shopPayment->shop->user->name ?? 'A Creator');
+                    $content = $shopPayment->shop->type !== 'physical' 
+                        ? "Your digital purchase from $creatorName is complete and ready to access."
+                        : "You bought something from $creatorName ’s shop. They’ll process it soon.";
+                    Helpers::sendNotification("🛍️ Purchase Confirmed!", $content, $shopPayment->email ?? $shopPayment->user->email);
 
-                    $fanName = ucfirst($shopPayment->user->name ?? $shopPayment->name) ?? 'A Fan';
-                    Helpers::sendNotification("📦 New Shop Order!", "$fanName placed an order in your shop. Time to fulfill it!.", $shopPayment->shop->user->email);
+                    $fanName = ucfirst($shopPayment->user->name ?? $shopPayment->name ?? 'A Fan');
+                    $content = $shopPayment->shop->type !== 'physical'
+                        ? "$fanName purchased a digital item from your shop. Delivery was completed automatically."
+                        : "$fanName placed an order in your shop. Time to fulfill it!.";
+                    Helpers::sendNotification("📦 New Shop Order!", $content, $shopPayment->shop->user->email);
                 } catch (\Exception $e) {
                     Log::error('StripeWebhookController: Failed to send PWA notifications for shop', ['error' => $e->getMessage()]);
                 }
@@ -3166,6 +3174,7 @@ class StripeWebhookController extends Controller
                             'to_user_id' => $shopPayment->shop->user_id,
                             'product_type' => 'shop',
                             'amount' => $shopPayment->amount,
+                            'total_paid' => $shopPayment->total_paid,
                             'currency' => $shopPayment->currency,
                             'payment_method' => 'stripe',
                             'payment_details' => json_encode($session->id, true),

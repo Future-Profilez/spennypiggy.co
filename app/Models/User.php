@@ -132,6 +132,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     // Accessors
     // ───────────────────────
 
+    public function getNameAttribute($value)
+    {
+        return ucwords(strtolower($value));
+    }
+
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = ucwords(strtolower($value));
+    }
+
     public function getAvatarUrlAttribute()
     {
         if (!$this->avatar) return "https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/";

@@ -969,6 +969,15 @@ class ShopsController extends Controller
 
         $creatorTransferAmountMinor = (int) round(round($listedPriceToGrossUp, $precision, PHP_ROUND_HALF_UP) * $multiplier);
 
+        $metadata = Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
+            'shop_item_id' => $shop->id,
+            'quantity' => $shopPaymentDetail->quantity,
+            'anonymous' => $shopPaymentDetail->anonymous,
+            'varient_id' => $shopPaymentDetail->varient_id,
+            'creator_net_amount' => (string) $creatorTransferAmountMinor,
+            'total_charge_amount' => (string)$unitAmount,
+        ]);
+
         // Build session payload (platform checkout + destination transfer)
             $payload = [
                 'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
@@ -987,18 +996,12 @@ class ShopsController extends Controller
                 'mode' => 'payment',
                 'payment_method_types' => ['card'],
             'customer_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
+                'metadata' => $metadata,
                 'payment_intent_data' => [
                     'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                     'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
                     'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
-                    'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
-                        'shop_item_id' => $shop->id,
-                        'quantity' => $shopPaymentDetail->quantity,
-                        'anonymous' => $shopPaymentDetail->anonymous,
-                        'varient_id' => $shopPaymentDetail->varient_id,
-                        'creator_net_amount' => (string) $creatorTransferAmountMinor,
-                        'total_charge_amount' => (string)$unitAmount,
-                    ]),
+                    'metadata' => $metadata,
                 ],
             ];
 
@@ -1060,12 +1063,19 @@ class ShopsController extends Controller
                     return redirect()->back()->with('error', 'Invalid payment ID.');
                 }
 
-                // If already paid, just redirect
-                if ($stripeid->payment_status === 'paid') {
-                    return redirect()->route('single-shop-list', [
-                        'slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                        'uuid' => $stripeid->shop->uuid,
-                        'session_id' => $stripeid->session_id
+                $existingUserPayment = \App\Models\UserPayment::where('payment_details', json_encode($stripeid->session_id, true))->exists();
+
+                // Idempotency check: if UserPayment already exists, the business logic has already run.
+                if ($existingUserPayment) {
+                    return redirect()->route('thank-you', [
+                        'username' => $stripeid->shop->user->username,
+                        'type' => 'shop',
+                        'item_name' => $stripeid->shop->name,
+                        'amount' => $stripeid->amount ?? 0,
+                        'currency' => $stripeid->currency ?? 'GBP',
+                        'item_id' => $stripeid->shop->uuid,
+                        'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
+                        'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
                     ])->with('success', 'Payment Successful.');
                 }
 
@@ -1151,22 +1161,26 @@ class ShopsController extends Controller
                     Log::error('ShopsController: Failed to create deliverable record', ['error' => $e->getMessage()]);
                 }
 
-                ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
+                ShopBuyedUser::dispatchSync($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
 
                 /**************************SHOP**PWA**START****************************************************/
                 // below is SHOP pwa for fans
 
-                $CreatorName = ucfirst($stripeid->shop->user->name) ?? 'A Creator';
+                $CreatorName = ucfirst($stripeid->shop->user->name ?? 'A Creator');
                 $title = "🛍️ Purchase Confirmed!";
-                $content = "You bought something from $CreatorName ’s shop. They’ll process it soon.";
+                $content = $stripeid->shop->type !== 'physical' 
+                    ? "Your digital purchase from $CreatorName is complete and ready to access."
+                    : "You bought something from $CreatorName ’s shop. They’ll process it soon.";
                 $email = $stripeid->email ?? $stripeid->user->email;
 
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is wish pwa for creator
-                $FanName = ucfirst($stripeid->user->name ?? 'A Fan');
+                $FanName = ucfirst($stripeid->user->name ?? $stripeid->name ?? 'A Fan');
                 $title = "📦 New Shop Order!";
-                $content = "$FanName placed an order in your shop. Time to fulfill it!.";
+                $content = $stripeid->shop->type !== 'physical'
+                    ? "$FanName purchased a digital item from your shop. Delivery was completed automatically."
+                    : "$FanName placed an order in your shop. Time to fulfill it!.";
                 $email = $stripeid->shop->user->email;
 
                 Helpers::sendNotification($title, $content, $email);
@@ -1193,10 +1207,15 @@ class ShopsController extends Controller
                 // Clear user caches
                 app(UserProfileService::class)->clearUserCaches($stripeid->shop->user->username, $stripeid->shop->user->id);
 
-                return redirect()->route('single-shop-list', [
-                    'slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                    'uuid' => $stripeid->shop->uuid,
-                    'session_id' => $stripeid->session_id
+                return redirect()->route('thank-you', [
+                    'username' => $stripeid->shop->user->username,
+                    'type' => 'shop',
+                    'item_name' => $stripeid->shop->name,
+                    'amount' => $stripeid->amount ?? 0,
+                    'currency' => $stripeid->currency ?? 'GBP',
+                    'item_id' => $stripeid->shop->uuid,
+                    'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
+                    'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
                 ])->with('success', 'Payment Successful.');
             } catch (\Exception $e) {
                 Log::error("Error in successPayment: " . $e->getMessage());
