@@ -3167,6 +3167,7 @@ class StripeController extends Controller
         if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
+                'card_verification_required' => true,
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
             ]);
         }

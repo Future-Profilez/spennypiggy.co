@@ -10,26 +10,28 @@ export default function ActivateCard() {
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
 
-    const checkTerms = () => {
+    const checkTerms = async () => {
         if (loading) return;
         setLoading(true);
-        axios
-            .get(route('gifter.card.verification'))
-            .then((resp) => {
-                if (resp?.data?.status == true) {
-                    window.location.href = resp?.data?.checkout_url;
-                    setLoading(false);
-                }
-                errorAlert(resp?.data?.message);
-                setTimeout(() => {
-                    window.location.reload(false);
-                }, 2000);
-                setLoading(false);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-                setLoading(false);
-            });
+        try {
+            const { data: response } = await axios.get(
+                route("gifter.card.verification")
+            );
+            if (response.checkout_url) {
+                window.location.href = response.checkout_url;
+            } else {
+                errorAlert(
+                    "Unexpected response from the server. Please try again later."
+                );
+            }
+        } catch (err) {
+            const errorMessage =
+                err.response?.data?.error ||
+                "Unable to connect to the server. Please check your network and try again.";
+            errorAlert(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const user = auth?.user;

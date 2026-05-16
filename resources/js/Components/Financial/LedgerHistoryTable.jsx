@@ -48,7 +48,10 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                             <span className="text-[13px] text-gray-400 group-hover/supp:text-[#F94F96]/70 transition-colors">@{tx.supporter.username}</span>
                                         </Link>
                                     ) : (
-                                        <span className="text-gray-400 italic text-[14px] capitalize">Guest / System</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-gray-900 font-bold capitalize">{tx.guest_name || 'Guest / System'}</span>
+                                            {!tx.guest_name && <span className="text-gray-400 italic text-[13px]">Guest User</span>}
+                                        </div>
                                     )}
                                     <div className="flex flex-col">
                                         <span className=" text-gray-700">

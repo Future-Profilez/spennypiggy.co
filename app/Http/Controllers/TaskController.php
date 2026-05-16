@@ -121,9 +121,8 @@ class TaskController extends Controller
             'sla_hours' => 'required_if:type,timed|integer|min:1|max:168',
         ]);
 
-        $blockedWord = Helpers::checkBlockData($request);
-        if ($blockedWord !== false) {
-            return back()->withErrors(['title' => "The word or emoji '{$blockedWord}' is not allowed as per our policies. Please check the title, description and deliverable content."]);
+        if (Helpers::checkBlockData($request)) {
+            return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
         }
 
         $task = new Task();
@@ -219,9 +218,8 @@ class TaskController extends Controller
             'sla_hours' => 'required_if:type,timed|integer|min:1|max:168',
         ]);
 
-        $blockedWord = Helpers::checkBlockData($request);
-        if ($blockedWord !== false) {
-            return back()->withErrors(['title' => "The word or emoji '{$blockedWord}' is not allowed as per our policies. Please check the title, description and deliverable content."]);
+        if (Helpers::checkBlockData($request)) {
+            return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
         }
 
         $task->title = $request->title;
@@ -261,7 +259,7 @@ class TaskController extends Controller
         $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
 
         // Visibility Check: Only Creator can see unapproved tasks
-        if ((!$task->is_approved || $task->is_suspended) && Auth::id() !== $task->creator_id) {
+        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 
@@ -289,24 +287,6 @@ class TaskController extends Controller
         $currencySymbol = Currency::where('ISO', $task->currency)->value('symbol') ?? '$';
 
         $card_capabilities = StripeControl::hasCardPaymentsCapability($task->creator->account_id);
-
-        $ogTitle = $task->title;
-        $ogDescription = Str::limit(strip_tags($task->description), 150);
-        
-        $ogImage = asset('siteicon.png');
-        if (!empty($task->media_url)) {
-            $ogImage = filter_var($task->media_url, FILTER_VALIDATE_URL) ? $task->media_url : asset($task->media_url);
-        } else if (!empty($task->creator->social_image)) {
-            $ogImage = filter_var($task->creator->social_image, FILTER_VALIDATE_URL) ? $task->creator->social_image : "https://ucarecdn.com/" . $task->creator->social_image . "/-/preview/";
-        } else if (!empty($task->creator->avatar)) {
-            $ogImage = filter_var($task->creator->avatar, FILTER_VALIDATE_URL) ? $task->creator->avatar : "https://ucarecdn.com/" . $task->creator->avatar . "/-/format/jpeg/";
-        }
-        
-        $ogUrl = url()->current();
-
-        \App\SeoMeta::setOgData('website', $ogTitle, $ogDescription, $ogImage, $ogUrl);
-        \App\SeoMeta::setTwitterCard('summary_large_image', $ogTitle, $ogDescription, $ogImage);
-        \App\SeoMeta::addTag('title', $ogTitle . ' | Spennypiggy');
 
         return Inertia::render('Tasks/Show', [
             'task' => $task,
@@ -380,8 +360,8 @@ class TaskController extends Controller
         }
         $task = Task::where('uuid', $uuid)->firstOrFail();
 
-        // Prevent purchasing unapproved or suspended tasks
-        if ((!$task->is_approved || $task->is_suspended) && Auth::id() !== $task->creator_id) {
+        // Prevent purchasing unapproved tasks
+        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 
@@ -465,7 +445,6 @@ class TaskController extends Controller
 
         $request->validate([
             'digital_waiver' => ['required', 'accepted'],
-            'gifter_message' => ['nullable', 'string', 'max:500'],
         ]);
 
         $price = $task->price;
@@ -533,7 +512,7 @@ class TaskController extends Controller
         $appUrl = rtrim(config('app.url'), '/');
 
         $paymentType = $task->type === 'instant' ? 'STANDARD - Destination Charge' : 'PAID_TASK - Destination Charge';
-
+        
         $complianceMetadata = Helpers::buildStripeMetadata('task_purchase', $task, [
             'buyer_id' => $user->id,
             'task_type' => $task->type,
@@ -550,7 +529,6 @@ class TaskController extends Controller
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
             'transfer_amount' => (string) round($creatorTransferAmount * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
-            'gifter_message' => $request->get('gifter_message') ?? '',
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
         ]);
@@ -561,7 +539,6 @@ class TaskController extends Controller
             'mode' => 'payment',
             'payment_intent_data' => [
                 'receipt_email' => $user->email,
-                'description' => "Task Payment for {$creator->username} (Total value including all fees)",
                 'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                 'metadata' => $complianceMetadata,
             ],
@@ -670,15 +647,7 @@ class TaskController extends Controller
             return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
         }
 
-        return to_route('thank-you', [
-            'username' => $task->creator->username,
-            'type' => 'task',
-            'item_name' => $task->title,
-            'amount' => $purchase->amount ?? 0,
-            'currency' => $purchase->currency ?? $task->currency ?? 'GBP',
-            'item_id' => $task->uuid,
-            'is_instant' => $task->type === 'instant' ? '1' : '0'
-        ])->with('success', 'Payment Successful.');
+        return to_route('thank-you', ['username' => $task->creator->username])->with('success', 'Payment Successful.');
     }
 
     /**
@@ -749,7 +718,6 @@ class TaskController extends Controller
             'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
             'charge_id' => $chargeId,
             'amount' => $amount,
-            'total_paid' => (float) ($session->amount_total ?? 0) / $multiplier,
             'currency' => $currency,
             'status' => 'paid', // Always paid in sync handler (and especially for local dev)
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
@@ -799,69 +767,6 @@ class TaskController extends Controller
             ])),
         ]);
 
-        // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
-        try {
-            $taskCreator = $purchase->creator;
-            $amount = $purchase->amount;
-            
-            // Replicate logic from SyncFinancialTransactions command
-            $vat = isset($metadata->vat_amount) ? ((float) $metadata->vat_amount / $multiplier) : 0;
-            $vatPercent = (float) ($metadata->vat_percent ?? 0);
-            if ((!$vat || $vat <= 0) && $vatPercent > 0) {
-                $vat = round(((float) $amount * $vatPercent) / 100, 2, PHP_ROUND_HALF_UP);
-            } else if ((!$vat || $vat <= 0) && $taskCreator && $taskCreator->vat_amount_percentage > 0) {
-                $vat = round(((float) $amount * (float) $taskCreator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
-            }
-
-            $adminFee = (float) \App\Helpers::administrationFeeInCurrency($currency);
-            $platformFee = (float) ($purchase->platform_fee ?? 0) + $adminFee;
-            $stripeFee = 0;
-            $gross = $purchase->total_paid && $purchase->total_paid > 0 
-                ? (float) $purchase->total_paid 
-                : ($amount + $vat + $platformFee + $stripeFee);
-            $creatorAmount = $amount;
-
-            // Risk/Reserve logic
-            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $taskCreator->uuid);
-            $reserveRate = (float) ($metrics->reserve_percent ?? 0);
-            
-            $reserveAmount = 0;
-            $reserveStatus = 'none';
-
-            if ($reserveRate > 0) {
-                $reserveAmount = round($creatorAmount * $reserveRate / 100, 2);
-                $reserveStatus = 'held';
-            } else if ($taskCreator->created_at && $taskCreator->created_at->diffInDays(now()) <= 30) {
-                $reserveAmount = round($creatorAmount * 0.10, 2);
-                $reserveStatus = 'held';
-            }
-
-            \App\Models\FinancialTransaction::updateOrCreate(
-                [
-                    'source_type' => \App\Models\TaskPurchase::class,
-                    'source_id' => $purchase->id,
-                ],
-                [
-                    'user_id' => $purchase->creator_id,
-                    'supporter_id' => $purchase->supporter_id,
-                    'type' => 'income',
-                    'gross_amount' => $gross,
-                    'platform_fee' => $platformFee,
-                    'stripe_fee' => $stripeFee,
-                    'vat_amount' => $vat,
-                    'net_amount' => $creatorAmount,
-                    'reserve_amount' => $reserveAmount,
-                    'reserve_status' => $reserveStatus,
-                    'currency' => $currency,
-                    'status' => 'completed',
-                    'description' => 'Task Purchase: ' . ($task->title ?? 'Task'),
-                    'transaction_date' => $purchase->created_at,
-                ]
-            );
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to sync TaskPurchase to FinancialTransaction in createTaskPurchaseSync: ' . $e->getMessage(), ['purchase_id' => $purchase->id]);
-        }
-
         // Dispatch job to process the deliverable (certificate generation)
         ProcessWishItemDeliverable::dispatchSync($deliverable);
 
@@ -899,60 +804,17 @@ class TaskController extends Controller
             $supporter = $buyerId ? User::find($buyerId) : null;
 
             if ($creator) {
-                // Determine if we should send instant email or standard purchase email
-                if ($task->type === 'instant') {
-                    // Send an email tailored for instant tasks (you can reuse the existing mail class or create a specific one)
-                    Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
-                    
-                    $msgBody = ($supporter ? $supporter->name : "A Guest") . " purchased your instant task: " . $task->title . ". Delivery was completed automatically.";
-                    Helpers::sendNotification(
-                        "Instant Task Purchased & Delivered! ⚡",
-                        $msgBody,
-                        $creator->email
-                    );
-                } else {
-                    Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
 
-                    $msgBody = ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title;
-                    if (!empty($purchase->gifter_message)) {
-                        $msgBody .= " | Message: \"" . Str::limit($purchase->gifter_message, 50) . "\"";
-                    }
-
-                    Helpers::sendNotification(
-                        "New Task Order! 💰",
-                        $msgBody,
-                        $creator->email
-                    );
-                }
+                Helpers::sendNotification(
+                    "New Task Order! 💰",
+                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title,
+                    $creator->email
+                );
             }
 
             if ($supporter) {
-                if ($task->type === 'instant') {
-                    // Send email to supporter
-                    Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
-
-                    // Get currency symbol for supporter notification
-                    $currencySymbol = \App\Models\Currency::where('ISO', $purchase->currency)->value('symbol') ?? '$';
-                    $formattedAmount = $currencySymbol . number_format($purchase->total_paid, 2);
-
-                    \App\Helpers::sendNotification(
-                        "Instant Task Delivered! 🎉",
-                        "You've successfully purchased the instant task: " . $task->title . " for " . $formattedAmount . ". Please check your email for access.",
-                        $supporter->email
-                    );
-                } else {
-                    Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
-
-                    // Get currency symbol for supporter notification
-                    $currencySymbol = \App\Models\Currency::where('ISO', $purchase->currency)->value('symbol') ?? '$';
-                    $formattedAmount = $currencySymbol . number_format($purchase->total_paid, 2);
-
-                    \App\Helpers::sendNotification(
-                        "Task Purchased! 🎉",
-                        "You've successfully purchased the task: " . $task->title . " for " . $formattedAmount . ". The creator has been notified.",
-                        $supporter->email
-                    );
-                }
+                Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
             }
         } catch (\Exception $e) {
             Log::error("Failed to send task purchase email/notification in sync handler", ['error' => $e->getMessage()]);
@@ -1021,14 +883,6 @@ class TaskController extends Controller
                     $supporter->email
                 );
             }
-
-            // Confirm to creator that proof was submitted
-            Mail::to($creator->email)->send(new \App\Mail\TaskProofSubmittedCreatorMail($purchase, $task));
-            Helpers::sendNotification(
-                "Proof Submitted ✅",
-                "Your proof for '{$task->title}' has been submitted and is awaiting review.",
-                $creator->email
-            );
         } catch (\Exception $e) {
         }
 
@@ -1094,7 +948,7 @@ class TaskController extends Controller
                     $deliverable->delivered_at = now();
                     // If task has content URL, ensure it's set in deliverable_url?
                     // Usually deliverable_url for tasks might be the proof file or task content.
-                    // If task type is instant, it's already set.
+                    // If task type is instant, it's already set. 
                     // For timed task, maybe we set it to proof file URL?
                     if (isset($purchase->proof_content['file'])) {
                         $deliverable->deliverable_url = $purchase->proof_content['file'];
@@ -1114,14 +968,6 @@ class TaskController extends Controller
                         $creator->email
                     );
                 }
-
-                // Notify supporter that they accepted the proof
-                Mail::to($supporter->email)->send(new \App\Mail\TaskProofAcceptedSupporterMail($purchase, $task, $creator));
-                Helpers::sendNotification(
-                    "Task Complete! ✅",
-                    "You accepted the proof for '{$task->title}'. The order is now complete.",
-                    $supporter->email
-                );
             } catch (\Exception $e) {
             }
 
@@ -1224,17 +1070,9 @@ class TaskController extends Controller
                 // Notify Creator about rejection
                 try {
                     Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
-                    Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review and resubmit.", $creator->email);
+                    Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review.", $creator->email);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to notify creator about rejection: " . $e->getMessage());
-                }
-
-                // Confirm to supporter that rejection was submitted
-                try {
-                    Mail::to($supporter->email)->send(new \App\Mail\TaskProofRejectedSupporterMail($purchase, $task));
-                    Helpers::sendNotification("Revision Requested 🔄", "You've requested changes for '{$task->title}'. The creator will resubmit shortly.", $supporter->email);
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to notify supporter about rejection: " . $e->getMessage());
                 }
             }
         }

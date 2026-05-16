@@ -369,6 +369,10 @@ class RegisteredUserController extends Controller
      */
     public function gifterCardVerification(Request $request)
     {
+        if ($request->header('X-Inertia') || !$request->ajax()) {
+            return Inertia::render('gifter/GifterCardVerification');
+        }
+
         $currency = strtoupper($request->cookie("currency", "GBP"));
         $user = Auth::user();
         if (!($user instanceof User)) {
@@ -420,7 +424,7 @@ class RegisteredUserController extends Controller
         // Create Stripe Checkout session
         $session = $stripe->checkout->sessions->create([
             'success_url' => route('card.verification.success', [$user->uuid]),
-            'cancel_url' => route('card.verification.failed', [$user->uuid]),
+            'cancel_url' => route('card.verification.failed', [$user->uuid]), // Use explicit failed route
             'mode' => 'payment',
             'customer' => $user->stripe_id,
             'billing_address_collection' => 'required',
