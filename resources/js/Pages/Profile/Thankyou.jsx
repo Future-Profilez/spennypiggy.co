@@ -249,139 +249,24 @@ export default function Thankyou(props) {
         <Authenticated auth={auth?.user} user={user} >
             <Head title={"Thank You"} />
             <style>{`
-            .thankyou-wrap { 
-                min-height: calc(100vh - 80px); 
-                background: #A2E4B8; 
-                padding: 20px 10px; 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                justify-content: center; 
-            }
-            .giftthank {
-              background: #ffffff;
-              border: 3px solid #000;
-              border-radius: 30px;
-              box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-              position: relative;
-              overflow: hidden;
-              width: 100%;
-              max-width: 550px;
-              margin: 0 auto;
-            }
-            .details-box {
-              background: #f9f9f9;
-              border-radius: 12px;
-              padding: 16px;
-              margin-top: 16px;
-              text-align: left;
-              border: 2px solid #000;
-              box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
-            }
-            .details-box h3 {
-              margin-bottom: 12px;
-              font-weight: 900;
-              color: #000;
-              text-transform: uppercase;
-              font-size: 0.9rem;
-              letter-spacing: 0.5px;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-            }
-            .details-row {
-              display: flex;
-              justify-content: space-between;
-              padding: 6px 0;
-              font-size: 0.95rem;
-              border-bottom: 1px dashed #ccc;
-            }
-            .details-row:last-child {
-                border-bottom: none;
-            }
-            .details-label {
-              color: #555;
-              font-weight: 700;
-            }
-            .details-value {
-              color: #000;
-              font-weight: 900;
-              text-align: right;
-            }
-            .benefits-box {
-              background: #fff0f6;
-              border: 2px solid #ff4fa0;
-              border-radius: 8px;
-              padding: 12px;
-              margin-top: 16px;
-            }
-            .benefits-title {
-              color: #ff4fa0;
-              font-weight: 900;
-              margin-bottom: 4px;
-              font-size: 0.75rem;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            .benefits-text {
-              color: #333;
-              font-size: 0.9rem;
-              font-weight: 600;
-              line-height: 1.4;
-            }
-            .avatar-container {
-              position: relative;
-              width: 80px;
-              height: 80px;
-              margin: 0 auto;
-              margin-top: 16px;
-              margin-bottom: 20px;
-            }
-            .avatar-container::after {
-              content: '';
-              position: absolute;
-              inset: -4px;
-              border-radius: 50%;
-              border: 2px dashed #ff4fa0;
-              animation: spin 10s linear infinite;
-            }
-            @keyframes spin { 100% { transform: rotate(360deg); } }
-            
-            .action-btn {
-              background: #ff4fa0;
-              color: white;
-              font-weight: 900;
-              border: 3px solid #000;
-              border-radius: 999px;
-              padding: 12px 24px;
-              display: inline-block;
-              box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-              transition: all 0.2s;
-              font-size: 0.95rem;
-              text-transform: uppercase;
-            }
-            .action-btn:hover {
-              transform: translateY(2px);
-              box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
-            }
-            .explore-btn {
-              background: #FEF08A;
-              color: #000;
-              border: 3px solid #000;
-              font-weight: 900;
-              border-radius: 999px;
-              padding: 12px 24px;
-              display: inline-block;
-              box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-              transition: all 0.2s;
-              font-size: 0.95rem;
-              text-transform: uppercase;
-            }
-            .explore-btn:hover {
-              background: #fde047;
-              transform: translateY(2px);
-              box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
-            }
+            .thankyou-wrap{min-height:calc(100vh - 80px);background:#A2E4B8;padding:20px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+            .giftthank{background:#ffffff;border:3px solid #000;border-radius:30px;box-shadow:4px 4px 0px 0px rgba(0,0,0,1);position:relative;overflow:hidden;width:100%;max-width:550px;margin:0 auto;}
+            .details-box{background:#f9f9f9;border-radius:12px;padding:16px;margin-top:16px;text-align:left;border:2px solid #000;box-shadow:2px 2px 0px 0px rgba(0,0,0,1);}
+            .details-box h3{margin-bottom:12px;font-weight:900;color:#000;text-transform:uppercase;font-size:0.9rem;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;}
+            .details-row{display:flex;justify-content:space-between;padding:6px 0;font-size:0.95rem;border-bottom:1px dashed #ccc;}
+            .details-row:last-child{border-bottom:none;}
+            .details-label{color:#555;font-weight:700;}
+            .details-value{color:#000;font-weight:900;text-align:right;}
+            .benefits-box{background:#fff0f6;border:2px solid #ff4fa0;border-radius:8px;padding:12px;margin-top:16px;}
+            .benefits-title{color:#ff4fa0;font-weight:900;margin-bottom:4px;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;}
+            .benefits-text{color:#333;font-size:0.9rem;font-weight:600;line-height:1.4;}
+            .avatar-container{position:relative;width:80px;height:80px;margin:0 auto;margin-top:16px;margin-bottom:20px;}
+            .avatar-container::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px dashed #ff4fa0;animation:spin 10s linear infinite;}
+            @keyframes spin{100%{transform:rotate(360deg);}}
+            .action-btn{background:#ff4fa0;color:white;font-weight:900;border:3px solid #000;border-radius:999px;padding:12px 24px;display:inline-block;box-shadow:4px 4px 0px 0px rgba(0,0,0,1);transition:all 0.2s;font-size:0.95rem;text-transform:uppercase;}
+            .action-btn:hover{transform:translateY(2px);box-shadow:2px 2px 0px 0px rgba(0,0,0,1);}
+            .explore-btn{background:#FEF08A;color:#000;border:3px solid #000;font-weight:900;border-radius:999px;padding:12px 24px;display:inline-block;box-shadow:4px 4px 0px 0px rgba(0,0,0,1);transition:all 0.2s;font-size:0.95rem;text-transform:uppercase;}
+            .explore-btn:hover{background:#fde047;transform:translateY(2px);box-shadow:2px 2px 0px 0px rgba(0,0,0,1);}
             `}</style>
              <div className='!py-12 thankyou-wrap'>
                 <div className="mb-6 text-center">

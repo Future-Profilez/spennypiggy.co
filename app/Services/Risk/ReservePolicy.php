@@ -23,7 +23,7 @@ class ReservePolicy
             return 0;
         }
 
-        $daysSinceJoined = (int) $creator->created_at->diffInDays($at);
+        $daysSinceJoined = (int) $creator->created_at->startOfDay()->diffInDays($at->copy()->startOfDay());
         return $daysSinceJoined < $ageDays ? 10 : 0;
     }
 

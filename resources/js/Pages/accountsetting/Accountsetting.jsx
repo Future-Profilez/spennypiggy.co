@@ -782,6 +782,11 @@ export default function Accountsetting(props) {
                     </div>
 
                     <div className="text-center text-xs text-gray-400 mt-10 pb-10">
+                        {auth?.user?.created_at && (
+                            <div className="mb-2">
+                                Joined on {new Date(auth.user.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                        )}
                         Version 2.0.0 • Spenny Piggy ©{" "}
                         {new Date().getFullYear()}
                     </div>

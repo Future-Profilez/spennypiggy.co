@@ -110,6 +110,15 @@ class PayoutService
         $dueReleases = $this->getDueReserveReleases($runDate);
         $processedCreators = [];
 
+        $rates = \App\Models\Currency::rates();
+        $convert = function ($amount, $from, $to = 'GBP') use ($rates) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) return $amount;
+            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            return ($amount / $rates[$from]) * $rates[$to];
+        };
+
         foreach ($creators as $creatorId) {
             $creator = User::where('uuid', $creatorId)->orWhere('id', $creatorId)->first();
             if (!$creator) continue;
@@ -301,8 +310,14 @@ class PayoutService
                 continue;
             }
 
+            $creatorCurrency = strtolower((string) ($creator->default_currency ?? 'gbp'));
+            if ($payments->isNotEmpty()) {
+                $creatorCurrency = strtolower((string) ($payments->first()->currency ?? $creatorCurrency));
+            }
+
             $payouts[$creator->uuid] = [
                 'creator_name' => $creator->name,
+                'currency' => strtoupper($creatorCurrency),
                 'gross_amount' => $grossAmount,
                 'net_earnings' => $netEarningsMinor,
                 'pending_amount' => $pendingDeliverablesMinor,
@@ -325,7 +340,7 @@ class PayoutService
                 'cutoff_date' => $cutoff->toDateTimeString(),
             ];
             
-            $platformTotal += $netPayout;
+            $platformTotal += $convert($netPayout / 100, $creatorCurrency, 'GBP') * 100;
         }
 
         return [
