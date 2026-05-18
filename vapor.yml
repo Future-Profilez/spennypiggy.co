@@ -30,11 +30,6 @@ environments:
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
-      - "php artisan config:clear"
-      - "php artisan config:cache"
-      - "php artisan route:cache"
-      - "php artisan view:cache"
-      - "php artisan event:cache"
 
   production:
     memory: 1024
@@ -73,11 +68,6 @@ environments:
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
-      - "php artisan config:clear"
-      - "php artisan config:cache"
-      - "php artisan route:cache"
-      - "php artisan view:cache"
-      - "php artisan event:cache"
 
 # - "php artisan app:notifications-pending-approval"
 # - "php artisan subscription:sync --all"
