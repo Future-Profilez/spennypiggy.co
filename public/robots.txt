@@ -5,7 +5,8 @@ Disallow: /admin/
 Disallow: /api/ 
 Disallow: /dashboard/ 
 Disallow: /account/ 
-Disallow: /login 
-Disallow: /signup-confirm 
+Disallow: /debug*
+Disallow: /test*
+Disallow: /seed*
 
 Sitemap: https://spennypiggy.co/sitemap.xml

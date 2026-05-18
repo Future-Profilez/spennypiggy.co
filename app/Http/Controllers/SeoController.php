@@ -48,8 +48,9 @@ class SeoController extends Controller
         $content .= "Disallow: /api/\n";
         $content .= "Disallow: /dashboard/\n";
         $content .= "Disallow: /account/\n";
-        $content .= "Disallow: /login\n";
-        $content .= "Disallow: /signup-confirm\n\n";
+        $content .= "Disallow: /debug*\n";
+        $content .= "Disallow: /test*\n";
+        $content .= "Disallow: /seed*\n\n";
         $content .= "Sitemap: {$siteUrl}/sitemap.xml\n";
         
         // Create response with aggressive cache prevention
