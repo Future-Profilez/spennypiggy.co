@@ -16,7 +16,6 @@ environments:
     cache: spenny-piggy-redis-caches
     assets:
       - "public/build/**"
-      - "public/robots.txt"
     build:
       - "composer install"
       - "php artisan event:cache"
@@ -51,7 +50,6 @@ environments:
     health-checks: false 
     assets:
       - "public/build/**"
-      - "public/robots.txt"
     build:
       - "composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader"
       - "php artisan event:cache"
