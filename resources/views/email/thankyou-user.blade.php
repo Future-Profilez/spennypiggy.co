@@ -11,8 +11,8 @@
                     src="https://ucarecdn.com/9833ac18-d610-44de-8c9a-8ca9371f15a0/thankyouimage.png" alt="img"></td>
                 </tr>
                 <tr>
-                    <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 22px; line-height: 30px; color:#F94F97; text-align: center;">
-                        <strong style="color:#F94F97; text-transform: capitalize;">
+                    <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 22px; line-height: 30px; color:#FF007F; text-align: center;">
+                        <strong style="color:#FF007F; text-transform: capitalize;">
                         {{ (isset($payment->payment) && isset($payment->payment->owner) && isset($payment->payment->owner->name)) ? ucwords($payment->payment->owner->name) : 'A creator' }}
                         </strong> sent you<br><br>a Thank You message! ✨
                     </td>
@@ -63,7 +63,7 @@
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href="{{ env('APP_URL') . '/history' }}"
-                            style="padding:13px 30px; border-radius:30px; text-decoration:none; border:none; background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer; display: inline-block;">See Message</a>
+                            style="padding:13px 30px; border-radius:30px; text-decoration:none; border:none; background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer; display: inline-block;">See Message</a>
                     </td>
                 </tr>
 

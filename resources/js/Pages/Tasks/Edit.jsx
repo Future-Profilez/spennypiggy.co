@@ -334,7 +334,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     {data.type === "instant" && (
                                         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                             <div className="border-2 border-black rounded-[30px] p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-                                                <label className="block font-black text-lg mb-4 text-pink-900 uppercase flex items-center gap-2"><FileUp className="text-pink-500" /> Deliverable Content</label>
+                                                <label className="block font-black text-lg mb-4 text-pink-900 uppercase flex items-center gap-2"><FileUp className="text-[#FF007F]" /> Deliverable Content</label>
                                                 
                                                 {task.deliverable_content && !data.deliverable_file && (
                                                     <div className="mb-4 text-sm text-blue-800 font-bold bg-blue-100 p-4 rounded-[20px] border-2 border-blue-500 flex flex-col gap-3">
@@ -355,7 +355,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 
                                                 <div className="relative mb-4">
                                                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-pink-200"></div></div>
-                                                    <div className="relative flex justify-center text-xs uppercase font-black"><span className="bg-pink-50 px-2 text-pink-400">OR REPLACE FILE</span></div>
+                                                    <div className="relative flex justify-center text-xs uppercase font-black"><span className="bg-pink-50 px-2 text-[#FF007F]">OR REPLACE FILE</span></div>
                                                 </div>
 
                                                 <GlobalUploader ctxName="task-deliverable" type="minimal" sendFile={handleDeliverableUpload} accept="image/*,video/*,audio/*,application/pdf,text/plain,application/zip" imgonly={false} />
@@ -372,7 +372,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     {/* Terms */}
                                     <div className="p-6 bg-red-50 border-2 border-black rounded-[25px] !mt-12 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <div className="flex items-start">
-                                            <input id="terms-checkbox" type="checkbox" required className="h-6 w-6 text-pink-600 border-2 border-black rounded focus:ring-0 cursor-pointer" />
+                                            <input id="terms-checkbox" type="checkbox" required className="h-6 w-6 text-[#FF007F] border-2 border-black rounded focus:ring-0 cursor-pointer" />
                                             <div className="ml-4">
                                                 <label htmlFor="terms-checkbox" className="cursor-pointer text-sm text-black font-black leading-tight flex flex-col gap-1">
                                                     <span>PG-13 only. No sexual content. No custom requests outside these parameters.</span>

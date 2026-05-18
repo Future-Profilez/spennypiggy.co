@@ -46,7 +46,7 @@ export default function Features() {
               {/* Why All-In-One Matters */}
               <div className="mt-12 mb-12">
                  <h2 className="text-2xl md:text-3xl xl:text-4xl font-gulfs uppercase mb-6 flex items-center gap-3 text-black">
-                    <Layers className="text-pink-600" size={32} /> Why All-In-One Matters
+                    <Layers className="text-[#FF007F]" size={32} /> Why All-In-One Matters
                  </h2>
                  <div className="space-y-4 text-xl font-medium text-gray-700">
                     <p className="flex gap-3">

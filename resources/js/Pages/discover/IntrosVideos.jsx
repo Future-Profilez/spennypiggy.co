@@ -23,19 +23,26 @@ export default function IntroVideos(props) {
     const [order, setorder] = useState('new');
     const [gender, setgender] = useState('all');
     const [loading, setloading] = useState(!initialIntros);
+    const [errorMsg, setErrorMsg] = useState(null);
     const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
 
     const fetch_videos = () => {
-        if (initialIntros && order === 'new' && gender === 'all') {
+        if (initialIntros && initialIntros.length > 0 && order === 'new' && gender === 'all') {
             setloading(false);
             return;
         }
         setloading(true);
+        setErrorMsg(null);
         axios.get(`/discover/creators/${order}/${gender}`).then((resp) => {
-            setIntros(resp.data && resp.data?.intro?.data);
+            if (resp.data && resp.data.intro && resp.data.intro.data) {
+                setIntros(resp.data.intro.data);
+            } else {
+                setErrorMsg("Invalid data structure: " + JSON.stringify(resp.data).substring(0, 100));
+            }
             setloading(false);
         }).catch((_err) => {
             console.error("error", _err);
+            setErrorMsg("Fetch failed: " + _err.message);
             setloading(false);
         });
     }
@@ -47,7 +54,7 @@ export default function IntroVideos(props) {
     }, []);
 
     useEffect(()=>{
-      !loading && fetch_videos();
+      fetch_videos();
     },[order, gender]);
 
     const Switch = () => {
@@ -122,7 +129,7 @@ export default function IntroVideos(props) {
               <div className="absolute inset-0 flex items-center justify-center z-30">
                 <div className="transform transition-transform duration-300 group-hover:scale-105">
                   <svg className="h-10 w-10" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="32" cy="32" r="32" fill="#F94F97"/>
+                    <circle cx="32" cy="32" r="32" fill="#FF007F"/>
                     <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
                   </svg>
                 </div>
@@ -163,8 +170,9 @@ export default function IntroVideos(props) {
         </div>
 
         <div className='' >
+          {errorMsg && <div className="text-red-500 bg-red-100 p-4 rounded mb-4">{errorMsg}</div>}
           {loading ?
-          <div className='w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
+          <div className='w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
               {Array(10).fill(0).map((_, i) => (
                   <div key={`intro-skeleton-${i}`} className="h-[250px] md:h-[270px] bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
               ))}
@@ -172,7 +180,7 @@ export default function IntroVideos(props) {
           :
           <>
             {intros && intros.length ?
-            <div className=' w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
+            <div className=' w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
                 {intros.map((w, i)=> (
                     <Intro w={w} />
                 ))}

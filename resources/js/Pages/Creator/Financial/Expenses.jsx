@@ -63,7 +63,7 @@ export default function Expenses({ auth, expenses, filters }) {
     const categories = [
         { id: 'Equipment', label: 'Equipment', color: 'bg-blue-500/10 text-blue-400' },
         { id: 'Software', label: 'Software & Subscriptions', color: 'bg-purple-500/10 text-purple-400' },
-        { id: 'Marketing', label: 'Marketing', color: 'bg-pink-500/10 text-pink-400' },
+        { id: 'Marketing', label: 'Marketing', color: 'bg-pink-500/10 text-[#FF007F]' },
         { id: 'Travel', label: 'Travel', color: 'bg-orange-500/10 text-orange-400' },
         { id: 'Office', label: 'Home Office', color: 'bg-green-500/10 text-green-400' },
         { id: 'Professional Services', label: 'Legal/Accounting', color: 'bg-gray-500/10 text-gray-400' },
@@ -90,7 +90,7 @@ export default function Expenses({ auth, expenses, filters }) {
                         </div>
                         <button 
                             onClick={() => setIsAdding(!isAdding)}
-                            className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${isAdding ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-[#F94F96] text-white hover:bg-[#d83a7c] shadow-lg shadow-pink-500/20'}`}
+                            className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${isAdding ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-[#FF007F] text-white hover:bg-[#d83a7c] shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/20'}`}
                         >
                             {isAdding ? <X size={20} /> : <Plus size={20} />}
                             {isAdding ? 'Close Form' : 'Log New Expense'}
@@ -101,7 +101,7 @@ export default function Expenses({ auth, expenses, filters }) {
                     {isAdding && (
                         <div className="bg-gray-50 p-8 rounded-[30px] border border-gray-200 animate-fading shadow-sm">
                             <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <div className="bg-[#F94F96]/10 p-2 rounded-lg text-[#F94F96]">
+                                <div className="bg-[#FF007F]/10 p-2 rounded-lg text-[#FF007F]">
                                     <FileText size={20} />
                                 </div>
                                 New Expense Details
@@ -118,7 +118,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                                 type="date" 
                                                 value={data.expense_date}
                                                 onChange={e => setData('expense_date', e.target.value)}
-                                                className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3"
+                                                className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 pl-10 focus:ring-[#FF007F] focus:border-[#FF007F] p-3"
                                                 required
                                             />
                                         </div>
@@ -132,7 +132,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                             <select 
                                                 value={data.category}
                                                 onChange={e => setData('category', e.target.value)}
-                                                className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3 appearance-none"
+                                                className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 pl-10 focus:ring-[#FF007F] focus:border-[#FF007F] p-3 appearance-none"
                                                 required
                                             >
                                                 <option value="">Select Category</option>
@@ -154,7 +154,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                                 step="0.01"
                                                 value={data.amount}
                                                 onChange={e => setData('amount', e.target.value)}
-                                                className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3 font-mono text-lg"
+                                                className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 pl-10 focus:ring-[#FF007F] focus:border-[#FF007F] p-3 font-mono text-lg"
                                                 placeholder="0.00"
                                                 required
                                             />
@@ -167,7 +167,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                             type="text" 
                                             value={data.description}
                                             onChange={e => setData('description', e.target.value)}
-                                            className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 focus:ring-[#F94F96] focus:border-[#F94F96] p-3"
+                                            className="w-full bg-white border-gray-200 rounded-[20px] text-gray-900 focus:ring-[#FF007F] focus:border-[#FF007F] p-3"
                                             placeholder="E.g. Camera lens, Adobe subscription, Train tickets..."
                                             required
                                         />
@@ -186,7 +186,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                     <button 
                                         type="submit" 
                                         disabled={processing}
-                                        className="px-6 py-2.5 bg-[#F94F96] text-white rounded-xl hover:bg-[#d83a7c] font-bold shadow-lg shadow-pink-500/20 transition-all flex items-center gap-2"
+                                        className="px-6 py-2.5 bg-[#FF007F] text-white rounded-xl hover:bg-[#d83a7c] font-bold shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/20 transition-all flex items-center gap-2"
                                     >
                                         <Save size={18} />
                                         Save Expense
@@ -205,7 +205,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                     type="text" 
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
-                                    className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-[#F94F96] focus:border-[#F94F96] transition-all"
+                                    className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-[#FF007F] focus:border-[#FF007F] transition-all"
                                     placeholder="Search by description or amount..."
                                 />
                             </form>
@@ -273,7 +273,7 @@ export default function Expenses({ auth, expenses, filters }) {
                             <div className="p-4 border-t border-gray-200 flex justify-center bg-gray-50">
                                 <Link 
                                     href={expenses.next_page_url} 
-                                    className="text-sm font-bold text-[#F94F96] hover:text-[#d83a7c] transition-colors px-4 py-2 rounded-lg hover:bg-[#F94F96]/5"
+                                    className="text-sm font-bold text-[#FF007F] hover:text-[#d83a7c] transition-colors px-4 py-2 rounded-lg hover:bg-[#FF007F]/5"
                                 >
                                     Load More Transactions
                                 </Link>

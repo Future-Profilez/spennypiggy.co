@@ -256,12 +256,12 @@ export default function Accountsetting(props) {
                 onClick={onClick}
                 onMouseEnter={() => iconRef.current?.startAnimation?.()}
                 onMouseLeave={() => iconRef.current?.stopAnimation?.()}
-                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-pink-500"}  !rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
+                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-[#FF007F]"}  !rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
             >
                 <div className="flex !items-center gap-4 text-left">
                     <div
                         className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
-                        ${isDestructive ? "bg-red-200 text-red-600" : "bg-pink-200 text-pink-600"}`}
+                        ${isDestructive ? "bg-red-200 text-red-600" : "bg-pink-200 text-[#FF007F]"}`}
                     >
                         <Icon ref={iconRef} size={28} strokeWidth={2} />
                     </div>
@@ -272,7 +272,7 @@ export default function Accountsetting(props) {
                             {title}
                         </h3>
                         {subtitle && (
-                            <p className="text-xs text-gray-500 font-medium mt-0.5">
+                            <p className="text-sm text-gray-500 font-medium mt-0.5">
                                 {subtitle}
                             </p>
                         )}
@@ -287,21 +287,11 @@ export default function Accountsetting(props) {
                                 value.toLowerCase() === "enabled" ||
                                 value.toLowerCase() === "linked"
                                     ? "text-green-600 bg-green-50 border-green-500"
-                                    : "text-gray-600 bg-gray-50 border-pink-500"
-                            }`}
-                        >
-                            {value}
-                        </span>
-                    )}
-                    {action ? (
-                        action
-                    ) : (
-                        <ChevronRightIcon
-                            size={18}
-                            className="
-                     text-gray-300 group-hover:text-pink-400 absolute md:static !text-xl
-                     top-[30px] right-4 "
-                        />
+                                    : "text-gray-600 bg-gray-50 border-[#FF007F]"
+                            }`} > {value} </span>
+                    )} 
+                    {action ? ( action ) : (
+                        <ChevronRightIcon size={18} className="text-gray-300 group-hover:text-[#FF007F] absolute md:static !text-xl top-[30px] right-4" />
                     )}
                 </div>
             </div>
@@ -309,7 +299,7 @@ export default function Accountsetting(props) {
     };
 
     const SectionTitle = ({ title }) => (
-        <h2 className="text-normal text-gray-600 mb-4 px-2 uppercase tracking-widest font-gulfs">
+        <h2 className="text-normal text-gray-800 mb-4 px-2 uppercase tracking-widest font-gulfs">
             {title}
         </h2>
     );
@@ -326,7 +316,7 @@ export default function Accountsetting(props) {
                     <div className="md:text-center mb-10">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-gray-900 uppercase tracking-wide mb-2">
                             Account{" "}
-                            <span className="text-pink-600">Settings</span>
+                            <span className="text-[#FF007F]">Settings</span>
                         </h1>
                         <p className="text-gray-500 font-medium text-normal">
                             Manage your profile, preferences and security
@@ -546,16 +536,16 @@ export default function Accountsetting(props) {
                                     />
                                 </Popup>
 
-                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-[20px] md:rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[20px] md:rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                                     <div className="flex items-center gap-4 text-left">
-                                        {/* <div className="p-2.5 rounded-[10px] md:rounded-[20px]  bg-pink-50 text-pink-600">
+                                        {/* <div className="p-2.5 rounded-[10px] md:rounded-[20px]  bg-pink-50 text-[#FF007F]">
                                             <PiggyBank
                                                 size={20}
                                                 strokeWidth={2.5}
                                             />
                                         </div> */}
                                         <div
-                                            className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-pink-600`}
+                                            className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
                                         >
                                             <PiggyBank
                                                 size={20}
@@ -566,7 +556,7 @@ export default function Accountsetting(props) {
                                             <h3 className="font-bold text-base text-gray-800">
                                                 Piggy Bank Earnings
                                             </h3>
-                                            <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                            <p className="text-sm text-gray-500 font-medium mt-0.5">
                                                 Show earnings goal on profile
                                             </p>
                                         </div>
@@ -584,10 +574,10 @@ export default function Accountsetting(props) {
                             </>
                         )}
 
-                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                             <div className="flex items-center gap-4 text-left">
                                 <div
-                                    className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-pink-600`}
+                                    className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
                                 >
                                     <BellIcon size={20} strokeWidth={2.5} />
                                 </div>
@@ -595,7 +585,7 @@ export default function Accountsetting(props) {
                                     <h3 className="font-bold text-base text-gray-800">
                                         Email Notifications
                                     </h3>
-                                    <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                    <p className="text-sm text-gray-500 font-medium mt-0.5">
                                         Receive updates via email
                                     </p>
                                 </div>
@@ -636,7 +626,7 @@ export default function Accountsetting(props) {
                         <SectionTitle title="Security" />
 
                         <ManagePasskey
-                            className="w-full border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all"
+                            className="w-full border-2 border-[#FF007F] rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all"
                             email={auth.user.email}
                         />
 

@@ -199,12 +199,16 @@ class FinancialService
         $payoutInfo = $payoutData['payouts'][$user->uuid] ?? null;
         $netPayoutMinor = $payoutInfo['net_payout'] ?? 0;
         $netPayoutMajor = $netPayoutMinor / 100;
-        $payoutCurrency = $payoutInfo['currency'] ?? 'GBP';
-        $payoutableDisplay = $convert($payoutCurrency, $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor;
+        
+        // Use user's default currency directly for payoutable calculation
+        $payoutCurrency = strtoupper($payoutInfo['currency'] ?? $user->default_currency ?? 'GBP');
+        
+        // Payoutable display should just format the major amount based on the payout currency (since the payout engine computes in the creator's currency)
+        $payoutableDisplay = $payoutCurrency === $displayCurrency ? $netPayoutMajor : ($convert($payoutCurrency, $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor);
 
         $pendingAmountMinor = $payoutInfo['pending_amount'] ?? 0;
         $pendingAmountMajor = $pendingAmountMinor / 100;
-        $pendingDisplay = $convert($payoutCurrency, $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor;
+        $pendingDisplay = $payoutCurrency === $displayCurrency ? $pendingAmountMajor : ($convert($payoutCurrency, $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor);
 
         $payoutPreview = null;
         if ($payoutInfo) {
@@ -223,14 +227,14 @@ class FinancialService
                 'payment_count' => (int) ($payoutInfo['payment_count'] ?? 0),
                 'is_below_threshold' => (bool) ($payoutInfo['is_below_threshold'] ?? false),
 
-                'net_earnings' => $convert($payoutCurrency, $netEarningsMajor, $displayCurrency) ?? $netEarningsMajor,
-                'reserve_held' => $convert($payoutCurrency, $reserveHeldMajor, $displayCurrency) ?? $reserveHeldMajor,
-                'reserve_released' => $convert($payoutCurrency, $reserveReleaseMajor, $displayCurrency) ?? $reserveReleaseMajor,
-                'refund_disputes' => $convert($payoutCurrency, $refundDisputeMajor, $displayCurrency) ?? $refundDisputeMajor,
-                'review_holds' => $convert($payoutCurrency, $reviewHoldMajor, $displayCurrency) ?? $reviewHoldMajor,
+                'net_earnings' => $payoutCurrency === $displayCurrency ? $netEarningsMajor : ($convert($payoutCurrency, $netEarningsMajor, $displayCurrency) ?? $netEarningsMajor),
+                'reserve_held' => $payoutCurrency === $displayCurrency ? $reserveHeldMajor : ($convert($payoutCurrency, $reserveHeldMajor, $displayCurrency) ?? $reserveHeldMajor),
+                'reserve_released' => $payoutCurrency === $displayCurrency ? $reserveReleaseMajor : ($convert($payoutCurrency, $reserveReleaseMajor, $displayCurrency) ?? $reserveReleaseMajor),
+                'refund_disputes' => $payoutCurrency === $displayCurrency ? $refundDisputeMajor : ($convert($payoutCurrency, $refundDisputeMajor, $displayCurrency) ?? $refundDisputeMajor),
+                'review_holds' => $payoutCurrency === $displayCurrency ? $reviewHoldMajor : ($convert($payoutCurrency, $reviewHoldMajor, $displayCurrency) ?? $reviewHoldMajor),
                 'pending' => $pendingDisplay,
-                'negative_balance_before' => $convert($payoutCurrency, $negativeBeforeMajor, $displayCurrency) ?? $negativeBeforeMajor,
-                'negative_balance_after' => $convert($payoutCurrency, $negativeAfterMajor, $displayCurrency) ?? $negativeAfterMajor,
+                'negative_balance_before' => $payoutCurrency === $displayCurrency ? $negativeBeforeMajor : ($convert($payoutCurrency, $negativeBeforeMajor, $displayCurrency) ?? $negativeBeforeMajor),
+                'negative_balance_after' => $payoutCurrency === $displayCurrency ? $negativeAfterMajor : ($convert($payoutCurrency, $negativeAfterMajor, $displayCurrency) ?? $negativeAfterMajor),
 
                 'net_payout' => $payoutableDisplay,
             ];

@@ -42,7 +42,7 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
                     <Link 
                         onClick={() => setLoading(!loading)}
                         href="/stripe/upgrade-express-account"
-                        className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
+                        className="block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
                     >
                         {loading ? "Loading..." : "Upgrade Account"}
                     </Link>

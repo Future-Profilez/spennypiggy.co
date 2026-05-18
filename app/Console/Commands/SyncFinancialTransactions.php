@@ -101,7 +101,7 @@ class SyncFinancialTransactions extends Command
                 // So for Rye, amount IS the gross amount. 
                 // Let's refine this if needed, but for now follow the pattern.
 
-                $riskData = $this->getPaymentRiskData($payment->stripe_session_id, 'completed', $payment->stripe_payment_intent_id);
+                $riskData = $this->getPaymentRiskData($payment->stripe_session_id, 'pending', $payment->stripe_payment_intent_id);
                 $status = $riskData['status'];
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
 
@@ -245,7 +245,7 @@ class SyncFinancialTransactions extends Command
         $this->info("Synced {$count} orphan wish items.");
     }
 
-    private function getPaymentRiskData($sessionId, $defaultStatus = 'completed', $paymentIntentId = null)
+    private function getPaymentRiskData($sessionId, $defaultStatus = 'pending', $paymentIntentId = null)
     {
         $data = [
             'status' => $defaultStatus,
@@ -516,7 +516,7 @@ class SyncFinancialTransactions extends Command
                     : ($amount + $vat + $platformFee + $stripeFee);
                 $creatorAmount = $amount;
 
-                $riskData = $this->getPaymentRiskData($purchase->stripe_session_id, 'completed', $purchase->payment_intent_id);
+                $riskData = $this->getPaymentRiskData($purchase->stripe_session_id, 'pending', $purchase->payment_intent_id);
                 $status = $riskData['status'];
                 if ($status === 'pending' && in_array($purchase->status, ['paid', 'completed'])) {
                     $status = 'completed';

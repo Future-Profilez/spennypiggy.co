@@ -25,7 +25,7 @@
   height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    #F94F97 25%, 
+    #FF007F 25%, 
     #8C52FF 50%, 
     #05EFB8 75%, 
     transparent 100%
@@ -128,7 +128,7 @@
 
 /* Retro Counter Badge */
 .retro-counter {
-  background: linear-gradient(135deg, #F94F97 0%, #8C52FF 50%, #05EFB8 100%);
+  background: linear-gradient(135deg, #FF007F 0%, #8C52FF 50%, #05EFB8 100%);
   color: #E6EA7B;
   font-family: 'gulfs', monospace;
   font-size: 11px;

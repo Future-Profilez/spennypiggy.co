@@ -54,7 +54,7 @@ const StepCard = ({ step, title, description, img, icon: Icon, color, shadowColo
             <p className="text-gray-400 text-lg mb-8 leading-snug flex-grow" dangerouslySetInnerHTML={{ __html: description }} />
 
             {/* Image Container */}
-            <div className="relative mt-auto rounded-[20px] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-inner group-hover:shadow-2xl transition-shadow duration-300">
+            <div className="relative mt-auto rounded-[20px] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-inner group-hover:shadow-[4px_4px_0px_0px_#FF007F]xl transition-shadow duration-300">
                 <LazyLoadImage 
                     src={img} 
                     alt={title} 
@@ -157,7 +157,7 @@ export default function Works(props) {
                         </span>
                     </div>
 
-                    <h1 className="uppercase text-4xl md:text-6xl lg:text-7xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-2xl" data-aos="fade-down">
+                    <h1 className="uppercase text-4xl md:text-6xl lg:text-7xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-[4px_4px_0px_0px_#FF007F]xl" data-aos="fade-down">
                         How it <span className="text-gradient-wishlist">works</span>
                     </h1>
                     
@@ -170,7 +170,7 @@ export default function Works(props) {
                 {/* Tab Section */}
                 <div className="relative z-10 px-4 max-w-7xl mx-auto">
                     <Tab.Group>
-                        <Tab.List className="flex p-2 space-x-4 bg-gray-500/10 backdrop-blur-xl rounded-[25px] max-w-md mx-auto mb-20 border-2 border-white/10 shadow-2xl" data-aos="zoom-in" data-aos-delay="400">
+                        <Tab.List className="flex p-2 space-x-4 bg-gray-500/10 backdrop-blur-xl rounded-[25px] max-w-md mx-auto mb-20 border-2 border-white/10 shadow-[4px_4px_0px_0px_#FF007F]xl" data-aos="zoom-in" data-aos-delay="400">
                             <Tab as={Fragment}>
                                 {({ selected }) => (
                                     <button

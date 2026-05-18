@@ -119,7 +119,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          </>
          :
          <div className=" ">
-            <h2 className="uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
+            <h2 className="uppercase font-GillSans pb-4 text-2xl"> Display Currency </h2>
             <div className="form-field mb-4">
                   <Select  classNamePrefix="react-select" className="max-h-[100px] react-select mb-4 mt-2 "
                      options={currencies} styles={customStyles}

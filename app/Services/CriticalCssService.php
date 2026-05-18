@@ -75,7 +75,7 @@ class CriticalCssService
             '.btn-pink',
             '.btn-mint',
             '.shadow-mint',
-            '.shadow-black'
+            '.shadow-[4px_4px_0px_0px_#FF007F]lack'
         ];
 
         // Template-specific critical selectors

@@ -81,7 +81,7 @@
         <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #FBF0F5; border-radius: 10px;">
             <tr>
                 <td style="padding: 16px 20px;">
-                    <p style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; color: #F94F97; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px 0;">
+                    <p style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; color: #FF007F; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px 0;">
                         Note from our team
                     </p>
                     <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; line-height: 1.6; margin: 0;">{{ $suggestion->admin_notes }}</p>

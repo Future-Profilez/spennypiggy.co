@@ -212,6 +212,10 @@ Route::get('/', function (DiscoveryService $discoveryService) {
     ]);
 })->name("home");
 
+Route::get('/pride', function () {
+    return Inertia::render('Pride/Index');
+})->name('pride.landing');
+
 Route::get('/membership-dashboard', function () {
     return Inertia::render('membership/Membership_dashboard');
 })->name('membershipDashboard');

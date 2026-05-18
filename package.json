@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "vite",
         "livebuild": "php vendor/bin/vapor deploy production",
+        "both": "php vendor/bin/vapor deploy development && php vendor/bin/vapor deploy production",
         "devbuild": "php vendor/bin/vapor deploy development",
         "build": "vite build",
         "ssr:dev": "vite build --ssr resources/js/ssr-marketing.jsx --outDir bootstrap/ssr --watch & node bootstrap/ssr/ssr.js",

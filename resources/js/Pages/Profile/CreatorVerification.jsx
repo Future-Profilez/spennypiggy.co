@@ -346,7 +346,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <button
                         onClick={refreshSteps}
                         disabled={isRefreshing}
-                        className="bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-1 rounded-full text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 disabled:opacity-50"
+                        className="bg-pink-100 hover:bg-pink-200 text-[#FF007F] px-3 py-1 rounded-full text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 disabled:opacity-50"
                     >
                         {isRefreshing ? "Refreshing..." : "Refresh"}
                     </button>

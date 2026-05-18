@@ -62,7 +62,25 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         </Head>
 
         <Guest auth={auth.user} user={auth.user}>
-            <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
+            <LiveBar reps={15} classes={'blackbg barouter'} 
+            livebartest={[
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!"
+                ]
+            }
+             />
             <Hero auth={auth} />
             
             <Suspense fallback={<div className="h-20" />}>
@@ -88,8 +106,8 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 <FunPart 
                     classes={`border-top-0`}
                     img={fun2} reverse={false}
-                    mainbg={`bg-[#F94F96]`} eclasses={``}
-                    textbg={`bg-[#F94F96]`}
+                    mainbg={`bg-[#FF007F]`} eclasses={``}
+                    textbg={`bg-[#FF007F]`}
                     heading={`Let your fans spoil you with gifts from any online store!`}
                 />
                 <FunPart 
@@ -115,7 +133,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                     color={`bg-[#E6EA7B]`}
                     text={
                         <>
-                          ❤️ Keep <span className="text-[#F94F96]">100%</span> of what you Earn!
+                          ❤️ Keep <span className="text-[#FF007F]">100%</span> of what you Earn!
                         </>
                     }
                 />

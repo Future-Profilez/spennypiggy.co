@@ -75,7 +75,7 @@ export default function FounderBonus() {
                         <Clock size={150} />
                      </div>
                      <div className="relative z-10 text-left">
-                        <div className="bg-white w-12 h-12 md:w-16 md:h-16 rounded-2xl border-[3px] border-black flex items-center justify-center mb-6 text-pink-500">
+                        <div className="bg-white w-12 h-12 md:w-16 md:h-16 rounded-2xl border-[3px] border-black flex items-center justify-center mb-6 text-[#FF007F]">
                            <AlertCircle size={32} />
                         </div>
                         <h2 className="text-xl md:text-2xl lg:text-3xl font-gulfs uppercase mb-2 md:mb-6">Key Rules</h2>

@@ -48,7 +48,7 @@ export default function Index() {
               <div className="py-10 md:py-16 relative z-1">
                 <div className="">
                   <h2 className="text-3xl sm:text-4xl lg:text-5xl md:leading-snug font-gulfs uppercase mb-6   items-center gap-3 text-black">
-                    Why Creators <br/> <span className="text-pink-600">Choose This</span>
+                    Why Creators <br/> <span className="text-[#FF007F]">Choose This</span>
                   </h2>
                   
                   <div className="grid lg:grid-cols-2 gap-8">
@@ -110,7 +110,7 @@ export default function Index() {
                         "Works alongside your existing platforms"
                       ].map((item, i) => (
                         <li key={i} className="flex items-start gap-4 text-md md:text-lg font-medium text-gray-700">
-                            <div className="bg-gray-100 p-2 rounded-full text-pink-600 shrink-0"><DollarSign size={20} /></div>
+                            <div className="bg-gray-100 p-2 rounded-full text-[#FF007F] shrink-0"><DollarSign size={20} /></div>
                             {item}
                         </li>
                       ))}
@@ -118,7 +118,7 @@ export default function Index() {
                   </div>
 
                   {/* Toolkit */}
-                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px] shadow-xl md:border border-gray-100">
+                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px] shadow-[4px_4px_0px_0px_#FF007F]l md:border border-gray-100">
                     <h2 className="text-2xl md:text-3xl font-gulfs uppercase mb-8 text-black">
                       Your Full <br/> Monetisation Toolkit
                     </h2>
@@ -133,7 +133,7 @@ export default function Index() {
                         const [title, desc] = item.split("—");
                         return (
                             <li key={i} className="group">
-                              <h3 className="font-bold text-md md:text-xl flex items-center gap-2 group-hover:text-pink-600 transition-colors text-gray-900">
+                              <h3 className="font-bold text-md md:text-xl flex items-center gap-2 group-hover:text-[#FF007F] transition-colors text-gray-900">
                                   <Zap size={18} className="text-yellow-500 fill-yellow-500" /> {title}
                               </h3>
                               <p className="text-gray-500 pl-7">{desc}</p>
@@ -178,7 +178,7 @@ export default function Index() {
                       <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
                           <div>
                             <h2 className="text-2xl md:text-4xl font-gulfs uppercase mb-6">
-                                Disputes Are <br/> <span className="text-pink-500">Our Problem</span> — Not Yours
+                                Disputes Are <br/> <span className="text-[#FF007F]">Our Problem</span> — Not Yours
                             </h2>
                             <ul className="space-y-4 mb-8">
                                 {[
@@ -192,7 +192,7 @@ export default function Index() {
                                   </li>
                                 ))}
                             </ul>
-                            <p className="text-[17px] md:text-xl font-bold text-white border-l-4 border-pink-500 pl-4">
+                            <p className="text-[17px] md:text-xl font-bold text-white border-l-4 border-[#FF007F] pl-4">
                                 If the platform ever loses a dispute, Spenny Piggy absorbs the loss — not the creator.
                             </p>
                           </div>

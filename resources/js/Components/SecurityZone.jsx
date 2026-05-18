@@ -127,7 +127,7 @@ export default function SecurityZone() {
         <div className="space-y-8 p-2 smax-h-[70vh] overflow-y-auto custom-scrollbar">
             <div>
                 <h2 className="text-xl font-gulfs mb-4 flex items-center gap-2 text-black">
-                    <Shield className="text-pink-600" /> ACTIVE SESSIONS
+                    <Shield className="text-[#FF007F]" /> ACTIVE SESSIONS
                 </h2>
                 <div className="space-y-3">
                     {sessions.map((session) => (
@@ -136,7 +136,7 @@ export default function SecurityZone() {
                             className="flex items-center justify-between p-4 bg-white border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                         >
                             <div className="flex items-center gap-4">
-                                <div className="p-2.5 bg-pink-100 rounded-xl border border-black text-pink-600">
+                                <div className="p-2.5 bg-pink-100 rounded-xl border border-black text-[#FF007F]">
                                     {session.device.is_mobile ? (
                                         <Smartphone
                                             size={24}

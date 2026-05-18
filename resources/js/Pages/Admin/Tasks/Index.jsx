@@ -172,16 +172,16 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                             placeholder="Search task, creator, supporter..."
                             value={data.search}
                             onChange={e => setData('search', e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500"
+                            className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF007F]"
                         />
                     </div>
                     <select value={data.status} onChange={e => setData('status', e.target.value)}
-                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-pink-500">
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-[#FF007F]">
                         <option value="">All Statuses</option>
                         {allStatuses.map(s => <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>)}
                     </select>
                     <select value={data.type} onChange={e => setData('type', e.target.value)}
-                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-pink-500">
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-[#FF007F]">
                         <option value="">All Types</option>
                         <option value="instant">Instant</option>
                         <option value="timed">Timed</option>

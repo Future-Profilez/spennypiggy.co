@@ -26,7 +26,7 @@ export default function Disputes() {
                <div className=" w-full mx-auto pt-12 md:pt-24 relative z-1">
                   <div className="text-center max-w-3xl mx-auto mb-8">
                      <div className="inline-flex items-center gap-2 bg-black text-white px-6 py-2 rounded-full font-bold uppercase text-sm mb-6">
-                        <Gavel size={16} className="text-pink-500" /> Creator Protection Program
+                        <Gavel size={16} className="text-[#FF007F]" /> Creator Protection Program
                      </div>
                      <div className="bg-transparent border-0 shadow-none rounded-none ">
                        <h1 className="text-4xl sm:text-5xl font-gulfs uppercase leading-[0.9] tracking-wide mb-4 text-black">
@@ -77,7 +77,7 @@ export default function Disputes() {
 
                         <div className="p-4 md:!p-8 lg:!p-12 xl:!p-16 bg-white border-t border-black lg:border-t-0">
                            <h2 className="text-xl md:text-2xl lg:text-3xl font-gulfs uppercase mb-8 flex items-center gap-3 text-black">
-                              <ShieldCheck size={32} className="text-pink-600" /> What This Means
+                              <ShieldCheck size={32} className="text-[#FF007F]" /> What This Means
                            </h2>
                            <ul className="space-y-4 lg:space-y-8">
                               <li className="flex gap-4 items-center">
@@ -104,7 +104,7 @@ export default function Disputes() {
                      <div className="bg-black text-white p-10 md:p-12 text-center border-t border-black">
                         <h3 className="text-gray-400 font-bold uppercase text-sm mb-4 tracking-widest">Important Statement</h3>
                         <p className="text-xl md:text-2xl font-gulfs uppercase leading-tight tracking-wide max-w-3xl mx-auto">
-                           "If the platform ever loses a dispute, <span className="text-pink-500">Spenny Piggy absorbs the loss</span> — not the creator."
+                           "If the platform ever loses a dispute, <span className="text-[#FF007F]">Spenny Piggy absorbs the loss</span> — not the creator."
                         </p>
                      </div>
 

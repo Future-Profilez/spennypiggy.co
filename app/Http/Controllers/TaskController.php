@@ -571,7 +571,7 @@ class TaskController extends Controller
                     'reserve_amount_minor' => (function () use ($creator, $creatorNet, $currency, $multiplier) {
                         $creatorNetMinor = (int) round($creatorNet * $multiplier);
                         $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
-                        $reserveRate = (int) ($metrics->reserve_percent ?? 0);
+                        $reserveRate = app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now());
                         if ($reserveRate <= 0) return 0;
                         $reserveMinor = (int) round(($creatorNetMinor * $reserveRate) / 100);
                         return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, strtoupper($currency));

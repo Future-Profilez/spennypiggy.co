@@ -5,41 +5,9 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import axios from 'axios';
 import LedgerHistoryTable from '@/Components/Financial/LedgerHistoryTable';
-import { 
-    WalletIcon, 
-    TrendingUpIcon, 
-    TrendingDownIcon, 
-    DownloadIcon, 
-    PlusIcon, 
-    TriangleAlertIcon, 
-    CircleCheckIcon,
-    ChartBarIcon,
-    UsersIcon,
-    ChevronRightIcon,
-    ChartPieIcon,
-    ShieldCheckIcon,
-} from "@animateicons/react/lucide";
-import { 
-    Calculator, 
-    FileText, 
-    Building2, 
-    ScrollText, 
-    HelpCircle,
-    Pencil,
-    RefreshCw,
-    ScrollText as ScrollTextIcon,
-    Calculator as CalculatorIcon,
-    FileText as FileTextIcon
-} from "lucide-react";
-import { 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
-    ResponsiveContainer,
-    AreaChart,
-    Area
-} from 'recharts';
+import { WalletIcon,TrendingUpIcon,TrendingDownIcon,DownloadIcon,PlusIcon,TriangleAlertIcon,CircleCheckIcon,ChartBarIcon,UsersIcon,ChevronRightIcon,ChartPieIcon,ShieldCheckIcon, } from "@animateicons/react/lucide";
+import { Calculator,FileText,Building2,ScrollText,HelpCircle,Pencil,RefreshCw,ScrollText as ScrollTextIcon,Calculator as CalculatorIcon,FileText as FileTextIcon } from "lucide-react";
+import { XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,AreaChart,Area } from 'recharts';
 
 export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], active_tab = 'overview' }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -235,7 +203,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     <p className="text-normal  text-gray-500 mb-2 font-bold">You keep 100% of what you earn. Supporters cover all fees.</p>
                                     <p className="text-normal  text-gray-500 mb-2 font-bold">Payouts are sent every Friday.</p>
                                     <div className="mt-2 flex items-center gap-2">
-                                        <span className="bg-[#F94F96]/10 text-[#F94F96] text-[11px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-[#F94F96]/20">
+                                        <span className="bg-[#FF007F]/10 text-[#FF007F] text-[11px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-[#FF007F]/20">
                                             Tax Year {tax_year}
                                         </span>
                                         <span className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">
@@ -257,7 +225,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         href={route('financial.expenses.index')} 
                                         onMouseEnter={() => logExpenseIconRef.current?.startAnimation?.()}
                                         onMouseLeave={() => logExpenseIconRef.current?.stopAnimation?.()}
-                                        className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#F94F96] hover:bg-[#d83a7c] text-white px-4 py-2.5 rounded-[30px] font-medium transition-all shadow-lg shadow-pink-500/20 text-[14px]" >
+                                        className="mb-3 flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#FF007F] hover:bg-[#d83a7c] text-white px-4 py-2.5 rounded-[30px] font-medium transition-all shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/20 text-[14px]" >
                                         <PlusIcon ref={logExpenseIconRef} size={18} />
                                         <span>Log Expense</span>
                                     </Link>
@@ -276,17 +244,21 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 { label: `Gross Earnings (${tax_year})`, value: summary.gross_income, icon: <WalletIcon size={80} />, trend: <TrendingUpIcon size={14} className="text-green-600" />, sub: 'Total sent to you by supporters.' },
                                 { label: 'Net Earnings', value: summary.profit, icon: <CircleCheckIcon size={80} className="text-green-500" />, color: 'text-green-600', sub: 'What you keep after expenses.' },
                                 { label: 'Expenses', value: summary.expenses, icon: <TrendingDownIcon size={80} className="text-red-500" />, color: 'text-red-600', sub: 'Optional costs you track.' },
-                                { label: 'Est. Tax', value: tax_estimate, icon: <Calculator size={80} className="text-yellow-600" />, color: 'text-yellow-600', sub: `Set aside ${formatCurrency(tax_estimate/12, displayCurrency)}/mo` },
+                                { label: 'Est. Tax', value: tax_estimate, icon: <Calculator size={80} className="text-yellow-600" />, color: 'text-yellow-600', sub: `Set aside ${formatCurrency(tax_estimate/12, displayCurrency)}/mo.` },
                             ].map((stat, idx) => (
-                                <div key={idx} className="bg-white p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-200 relative overflow-hidden group hover:border-gray-300 transition-colors shadow-sm">
-                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">{stat.icon}</div>
-                                    <div className="relative z-10">
-                                        <div className="text-gray-500 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                                            {stat.trend || <div className="w-2 h-2 rounded-full bg-current"></div>}
-                                            {stat.label}
+                                <div key={idx} className="bg-white p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-200 relative overflow-hidden group hover:border-gray-300 transition-colors shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">{stat.icon}</div>
+                                        <div className="relative z-10">
+                                            <div className="text-gray-500 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                                                {stat.trend || <div className="w-2 h-2 rounded-full bg-current"></div>}
+                                                {stat.label}
+                                            </div>
+                                            <div className={`text-2xl md:text-3xl font-bold mt-2 ${stat.color || 'text-gray-900'}`}>{formatCurrency(stat.value, displayCurrency)}</div>
                                         </div>
-                                        <div className={`text-2xl md:text-3xl font-bold mt-2 ${stat.color || 'text-gray-900'}`}>{formatCurrency(stat.value, displayCurrency)}</div>
-                                        <div className="text-[12px] text-gray-400 font-bold mt-2">{stat.sub}</div>
+                                    </div>
+                                    <div className="relative z-10 mt-3 pt-3 border-t border-gray-100 text-[11px] text-gray-500 font-medium leading-tight">
+                                        {stat.sub}
                                     </div>
                                 </div>
                             ))}
@@ -298,7 +270,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     href={route('financial.dashboard', { tab: 'overview' })}
                                     className={`px-5 py-3 font-bold text-[14px] uppercase tracking-wider transition-colors border-b-2 ${
                                         active_tab === 'overview' 
-                                            ? 'border-[#F94F96] text-[#F94F96]' 
+                                            ? 'border-[#FF007F] text-[#FF007F]' 
                                             : 'border-transparent text-gray-500 hover:text-gray-900'
                                     }`}
                                 >
@@ -308,7 +280,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     href={route('financial.dashboard', { tab: 'payouts' })}
                                     className={`px-5 py-3 font-bold text-[14px] uppercase tracking-wider transition-colors border-b-2 ${
                                         active_tab === 'payouts' 
-                                            ? 'border-[#F94F96] text-[#F94F96]' 
+                                            ? 'border-[#FF007F] text-[#FF007F]' 
                                             : 'border-transparent text-gray-500 hover:text-gray-900'
                                     }`}
                                 >
@@ -431,14 +403,14 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         ].map(({ key, label, bg, border, text, inPayout, note }) => {
                                             const s = status_breakdown.find(sb => sb.status === key);
                                             return (
-                                                <div key={key} className={`bg-gray-50 border-2 ${border} rounded-[25px] overflow-hidden`}>
+                                                <div key={key} className={`bg-gray-50 border-2 ${border} rounded-[25px] overflow-hidden flex flex-col justify-between`}>
                                                     <div className={`p-4 ${bg} flex flex-col gap-1`}>
                                                         <div className={`text-[16px] font-bold uppercase tracking-widest ${text}`}>{label}</div>
                                                         <div className="text-2xl font-bold text-gray-900">{formatCurrency(s?.total ?? 0, displayCurrency)}</div>
                                                         <div className="text-[15px] text-gray-500">{s?.count ?? 0} payment{(s?.count ?? 0) !== 1 ? 's' : ''}</div>
-                                                        <div className={`text-[10px] font-semibold mt-1 ${inPayout ? 'text-green-600' : 'text-gray-500'}`}>
-                                                            {inPayout ? '✓ In payout' : `✗ ${note}`}
-                                                        </div>
+                                                    </div>
+                                                    <div className={`p-3 text-[11px] font-semibold leading-tight ${inPayout ? 'text-green-600' : 'text-gray-500'}`}>
+                                                        {inPayout ? '✓ In payout' : `✗ ${note}`}
                                                     </div>
                                                 </div>
                                             );
@@ -507,7 +479,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     {/* Progress & Tips */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
                                         <div className="bg-white p-6 rounded-[20px] md:rounded-[30px] border border-gray-200 shadow-sm">
-                                            <h3 className="text-gray-900 font-bold text-normal mb-4 flex items-center gap-2"><TrendingUpIcon size={16} className="text-[#F94F96]" /> Tax Year Progress ({tax_year})</h3>
+                                            <h3 className="text-gray-900 font-bold text-normal mb-4 flex items-center gap-2"><TrendingUpIcon size={16} className="text-[#FF007F]" /> Tax Year Progress ({tax_year})</h3>
                                             <div className="space-y-2">
                                                 <div className="flex justify-between text-normal text-gray-500 mb-1"><span>April 6</span><span>April 5</span></div>
                                                 <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
@@ -517,7 +489,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                         const start = new Date(year, 3, 6);
                                                         const end = new Date(year + 1, 3, 5);
                                                         const progress = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
-                                                        return <div className="bg-gradient-to-r from-[#F94F96] to-[#ff7eb3] h-full rounded-full" style={{ width: `${progress}%` }}></div>;
+                                                        return <div className="bg-gradient-to-r from-[#FF007F] to-[#ff7eb3] h-full rounded-full" style={{ width: `${progress}%` }}></div>;
                                                     })()}
                                                 </div>
                                                 <p className="text-[14px] text-gray-400 mt-2 italic text-center">Tip: High income months? Increase your tax set-aside.</p>
@@ -529,7 +501,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 <div className="bg-yellow-500/10 p-3 rounded-2xl"><CalculatorIcon size={24} className="text-yellow-600" /></div>
                                                 <div>
                                                     <p className="text-gray-700 text-normal leading-relaxed">{summary.expenses > (summary.gross_income * 0.3) ? "Your expenses are quite high." : "Your profit margins look healthy."}</p>
-                                                    <Link href={route('financial.expenses.index')} className="text-[#F94F96] text-[10px] font-bold uppercase mt-2 inline-block hover:underline">Review Expenses</Link>
+                                                    <Link href={route('financial.expenses.index')} className="text-[#FF007F] text-[10px] font-bold uppercase mt-2 inline-block hover:underline">Review Expenses</Link>
                                                 </div>
                                             </div>
                                         </div>
@@ -540,18 +512,18 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             {/* Chart */}
                                             <div className="bg-white rounded-[20px] md:rounded-[30px] border border-gray-200 p-6 shadow-sm">
                                                 <div className="flex justify-between items-center mb-6">
-                                                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><ChartBarIcon className="text-[#F94F96]" size={20} /> Earnings Trend</h2>
+                                                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><ChartBarIcon className="text-[#FF007F]" size={20} /> Earnings Trend</h2>
                                                     <span className="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-full">{tax_year}</span>
                                                 </div>
                                                 <div className="h-[250px] w-full">
                                                     <ResponsiveContainer width="100%" height="100%">
                                                         <AreaChart data={chartData}>
-                                                            <defs><linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#F94F96" stopOpacity={0.3}/><stop offset="95%" stopColor="#F94F96" stopOpacity={0}/></linearGradient></defs>
+                                                            <defs><linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#FF007F" stopOpacity={0.3}/><stop offset="95%" stopColor="#FF007F" stopOpacity={0}/></linearGradient></defs>
                                                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                                                             <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
                                                             <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v}`} />
                                                             <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} itemStyle={{ color: '#111827' }} />
-                                                            <Area type="monotone" dataKey="total" stroke="#F94F96" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
+                                                            <Area type="monotone" dataKey="total" stroke="#FF007F" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
                                                         </AreaChart>
                                                     </ResponsiveContainer>
                                                 </div>
@@ -590,7 +562,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 {isEditingProfile ? (
                                                     <form onSubmit={submitProfile} className="space-y-4">
                                                         <input type="text" value={data.business_name} onChange={e => setData('business_name', e.target.value)} className="w-full bg-gray-50 border-gray-200 rounded-lg text-gray-900 text-sm p-2.5" placeholder="Business Name" />
-                                                        <div className="flex gap-2 justify-end"><button type="button" onClick={() => setIsEditingProfile(false)} className="text-xs font-bold text-gray-400">Cancel</button><button type="submit" className="bg-[#F94F96] text-white text-xs font-bold px-4 py-1.5 rounded-lg">Save</button></div>
+                                                        <div className="flex gap-2 justify-end"><button type="button" onClick={() => setIsEditingProfile(false)} className="text-xs font-bold text-gray-400">Cancel</button><button type="submit" className="bg-[#FF007F] text-white text-xs font-bold px-4 py-1.5 rounded-lg">Save</button></div>
                                                     </form>
                                                 ) : (
                                                     <div className="space-y-4"><div><span className="block text-[13px] text-gray-500 uppercase font-bold">Entity Name</span><span className="text-gray-900 font-bold">{profile?.business_name || auth.user.name}</span></div><Link href={route('financial.statement')} className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 rounded-[30px] font-bold">Download Tax Statement</Link></div>
@@ -599,10 +571,10 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
 
                                             {/* Income Types */}
                                             <div className="bg-white rounded-[20px] md:rounded-[30px] border border-gray-200 p-6 shadow-sm">
-                                                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><ChartPieIcon className="text-[#F94F96]" size={20} /> Income by Type</h2>
+                                                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><ChartPieIcon className="text-[#FF007F]" size={20} /> Income by Type</h2>
                                                 <div className="space-y-3">
                                                     {[
-                                                        { key: 'Support/Tip', emoji: '💝', color: '#F94F96' },
+                                                        { key: 'Support/Tip', emoji: '💝', color: '#FF007F' },
                                                         { key: 'Wish Gift', emoji: '🛒', color: '#05EFB8' },
                                                         { key: 'Bill', emoji: '📄', color: '#3b82f6' },
                                                         { key: 'Membership', emoji: '⭐', color: '#8b5cf6' },
@@ -624,19 +596,19 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
 
                                             {/* Records */}
                                             <div className="bg-white rounded-[20px] md:rounded-[30px] border border-gray-200 p-6 shadow-sm relative overflow-hidden">
-                                                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><ScrollTextIcon size={100} className="text-[#F94F96]" /></div>
+                                                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><ScrollTextIcon size={100} className="text-[#FF007F]" /></div>
                                                 <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2 relative z-10"><ShieldCheckIcon className="text-green-600" size={20} /> Tax & Financial Records</h2>
                                                 <p className="text-normal text-gray-500 mb-6 leading-relaxed relative z-10">Download statements and payout history.</p>
                                                 <div className="space-y-4 relative z-10">
                                                     {[
-                                                        { label: 'Income Statement', sub: 'For Your Accountant', href: route('financial.statement'), icon: <FileText size={12} className="text-[#F94F96]" /> },
+                                                        { label: 'Income Statement', sub: 'For Your Accountant', href: route('financial.statement'), icon: <FileText size={12} className="text-[#FF007F]" /> },
                                                         { label: 'Verified Certificate', sub: 'Proof of Income', href: route('financial.certificate'), icon: <CircleCheckIcon size={12} className="text-green-600" /> },
                                                         { label: 'Transaction History', sub: 'Payout Status', href: route('financial.history'), icon: <TrendingUpIcon size={12} className="text-yellow-600" /> },
                                                     ].map((item, idx) => (
                                                         <div key={idx} className="group bg-gray-50 hover:bg-gray-100 rounded-[20px] md:rounded-[30px] p-4 border border-gray-200 transition-all">
                                                             <div className="flex items-center gap-1.5 mb-1">{item.icon}<span className="text-[14px] text-gray-400 uppercase font-bold">{item.sub}</span></div>
                                                             <h4 className="text-normal font-bold text-gray-900 mb-3">{item.label}</h4>
-                                                            <Link href={item.href} className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-[#F94F96] text-white py-2 rounded-lg text-xs font-bold transition-all">View / Download</Link>
+                                                            <Link href={item.href} className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-[#FF007F] text-white py-2 rounded-lg text-xs font-bold transition-all">View / Download</Link>
                                                         </div>
                                                     ))}
                                                 </div>

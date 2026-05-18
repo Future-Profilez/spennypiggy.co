@@ -72,7 +72,7 @@ export default function HappyCreators() {
                                     <SwiperSlide key={`swiper-item-${i}`}>
                                         <div
                                            
-                                          className="fading min-h-[245px] rounded-[30px]  bg-gray-900 border border-gray-800 p-[25px] shadow-[6px_6px_0_0_#F94F96] hover:translate-y-[-5px] transition-transform duration-300"
+                                          className="fading min-h-[245px] rounded-[30px]  bg-gray-900 border border-gray-800 p-[25px] shadow-[6px_6px_0_0_#FF007F] hover:translate-y-[-5px] transition-transform duration-300"
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">

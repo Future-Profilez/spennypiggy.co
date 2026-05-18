@@ -25,7 +25,7 @@
                             Hi <span style="color:#8C52FF; font-weight:800;">{{ ucwords($name ?? 'there') }}</span> — you’re all set to discover creators and make someone’s day with the perfect gift.
                         </div>
                         <div style="padding:18px 0 0 0; text-align:center;">
-                            <a href="{{ url('/discover') }}" style="border-radius:30px; padding:13px 30px 13px 30px; text-decoration:none; border:none; background-color:#F94F97; font-weight:800; font-size:15px; text-align:center; color:#ffffff; display:inline-block;">
+                            <a href="{{ url('/discover') }}" style="border-radius:30px; padding:13px 30px 13px 30px; text-decoration:none; border:none; background-color:#FF007F; font-weight:800; font-size:15px; text-align:center; color:#ffffff; display:inline-block;">
                                 Discover Creators
                             </a>
                         </div>
@@ -43,9 +43,9 @@
                             Your first 3 minutes on Spenny Piggy
                         </div>
                         <div style="font-weight:500; font-size:14px; line-height:22px; color:#4D4D4D;">
-                            <span style="color:#F94F97; font-weight:900;">1.</span> Follow a creator you love<br>
-                            <span style="color:#F94F97; font-weight:900;">2.</span> Pick a wish that fits your budget<br>
-                            <span style="color:#F94F97; font-weight:900;">3.</span> Send a gift with a message (or keep it private)
+                            <span style="color:#FF007F; font-weight:900;">1.</span> Follow a creator you love<br>
+                            <span style="color:#FF007F; font-weight:900;">2.</span> Pick a wish that fits your budget<br>
+                            <span style="color:#FF007F; font-weight:900;">3.</span> Send a gift with a message (or keep it private)
                         </div>
                     </td>
                 </tr>

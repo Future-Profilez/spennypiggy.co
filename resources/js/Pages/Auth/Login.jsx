@@ -502,7 +502,7 @@ export default function Login({ status, canResetPassword }) {
                             Don't have an account?{" "}
                             <Link
                                 href={route("register")}
-                                className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                                className="text-[#FF007F] hover:text-[#FF007F] font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
                             >
                                 Signup
                             </Link>

@@ -304,7 +304,7 @@ export default function Transactions(props) {
                 </div>
                 <p className="text-gray-800 font-bold text-sm leading-relaxed">
                   Easily share your received gifts and support on your X (Twitter) profile! Use the bird icon on any transaction to post a pre-formatted announcement. 
-                  <span className="block mt-2 text-gray-600">Note: Requires <Link href="/account" className="text-pink-600 hover:text-pink-800 underline transition-colors">Auto Tweet</Link> to be enabled in your settings.</span>
+                  <span className="block mt-2 text-gray-600">Note: Requires <Link href="/account" className="text-[#FF007F] hover:text-pink-800 underline transition-colors">Auto Tweet</Link> to be enabled in your settings.</span>
                 </p>
               </div>
             )}
@@ -414,7 +414,7 @@ export default function Transactions(props) {
                       <div className="flex items-center gap-4 w-full md:w-auto">
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-pink-400 text-black' : 'bg-white text-black'}`}>
+                            <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-[#FF007F] text-black' : 'bg-white text-black'}`}>
                               {e.category === 'sent' ? 'Support Payment' : 'Support Received'}
                             </span>
                             <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-gray-200 text-black">
@@ -440,8 +440,8 @@ export default function Transactions(props) {
                               <img src={avatar || defaultAvatar} alt="" className="h-8 w-8 rounded-full border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" />
                               <p className="text-black font-black text-xs uppercase tracking-widest truncate max-w-[150px] sm:max-w-none">
                                 {e.category === 'sent'
-                                  ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-pink-600 hover:text-pink-800 underline transition-colors">@{e.creator.username}</Link> : cp)
-                                  : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="text-pink-600 hover:text-pink-800 underline transition-colors">@{e.gifter.username}</Link> : cp)
+                                  ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-[#FF007F] hover:text-pink-800 underline transition-colors">@{e.creator.username}</Link> : cp)
+                                  : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="text-[#FF007F] hover:text-pink-800 underline transition-colors">@{e.gifter.username}</Link> : cp)
                                 }
                               </p>
                             </div>
@@ -458,25 +458,25 @@ export default function Transactions(props) {
                               </span>
                             ) : null}
                             {e?.wish?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.wish.name}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.wish.name}”</Link>
                             ) : null}
                             {e?.membership?.level && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">Level “{e.membership.level}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">Level “{e.membership.level}”</Link>
                             ) : null}
                             {e?.bill?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.bill.name}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.bill.name}”</Link>
                             ) : null}
                             {e?.shop?.name && e.open_link ? (
                               <div className="text-sm truncate block max-w-full italic">
                                 {e.open_link.startsWith('http') ? (
-                                  <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-800 font-bold underline">“{e.shop.name}”</a>
+                                  <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.shop.name}”</a>
                                 ) : (
-                                  <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline">“{e.shop.name}”</Link>
+                                  <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.shop.name}”</Link>
                                 )}
                               </div>
                             ) : null}
                             {e?.task?.title && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.task.title}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.task.title}”</Link>
                             ) : null}
                           </div>
 
@@ -543,7 +543,7 @@ export default function Transactions(props) {
                                 href={route('financial.evidence-pack', { uuid: e.uuid })} 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-pink-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1"
+                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-[#FF007F] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1"
                             >
                                 <FileText size={12} />
                                 Evidence Pack
@@ -557,7 +557,7 @@ export default function Transactions(props) {
                             )
                           ) : null}
                           {storyUrlFor(e) ? (
-                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
+                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
                           ) : null}
                         </div>
                   </div>

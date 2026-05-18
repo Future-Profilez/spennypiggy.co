@@ -40,7 +40,7 @@ function StatusModal({ suggestion, onClose }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-[4px_4px_0px_0px_#FF007F]xl w-full max-w-md mx-4 overflow-hidden">
                 <div className="h-1 bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500" />
                 <div className="p-6">
                     <h3 className="text-lg font-bold mb-1">Update Status</h3>

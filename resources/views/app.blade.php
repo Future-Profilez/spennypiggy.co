@@ -489,7 +489,7 @@
                 height: 4px;
                 margin: 0 auto; width: 100%;
                 padding: 20px;
-                background: linear-gradient(90deg, #F94F96, #5D25FD);
+                background: linear-gradient(90deg, #FF007F, #5D25FD);
                 border-radius: 2px;
                 margin-bottom: 20px;
                 animation: loadingBar 1.5s ease-in-out infinite;

@@ -40,7 +40,7 @@
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href="{{ route('task.show', $task->uuid) }}"
-                            style="display: inline-block; border-radius:4px; padding:12px 24px; text-decoration:none; border:none; background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                            style="display: inline-block; border-radius:4px; padding:12px 24px; text-decoration:none; border:none; background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
                             View Task
                         </a>
                     </td>

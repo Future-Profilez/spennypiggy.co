@@ -161,7 +161,7 @@ export default function ActionRequired({ requirements = [] }) {
                                     <a
                                         onClick={() => setLoading(!loading)}
                                         href={requirement.action_url}
-                                        className={`block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]`}
+                                        className={`block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]`}
                                     >
                                         {loading ? "Processing..." : "Resolve Issue Now"}
                                     </a>

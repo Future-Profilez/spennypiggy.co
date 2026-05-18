@@ -40,7 +40,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         </h2>
 
                         <p className="fading m-auto pt-6 text-xl md:text-2xl text-gray-400 mb-20 max-w-2xl leading-relaxed font-poppins font-light">
-                            Earn <span className="text-yellow-400 font-semibold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days and automatically qualify for a <span className="text-pink-500 font-semibold">{config.bonusPercentage}% monthly bonus</span>.
+                            Earn <span className="text-yellow-400 font-semibold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days and automatically qualify for a <span className="text-[#FF007F] font-semibold">{config.bonusPercentage}% monthly bonus</span>.
                             <br/>
                             <span className="text-sm md:text-lg opacity-80 mt-6 block text-gray-500 uppercase tracking-widest">
                                 Join our exclusive founder community. Limited to the first <span className="text-green-400 font-semibold">{config.maxFounderSeats}</span> creators!

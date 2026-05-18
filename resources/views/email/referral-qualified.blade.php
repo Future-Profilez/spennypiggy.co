@@ -61,7 +61,7 @@
                     <a href="{{ $redeemUrl }}"
                         style="display:inline-block;
                               padding:14px 30px;
-                              background:#F94F97;
+                              background:#FF007F;
                               color:#fff;
                               font-weight:bold;
                               border-radius:30px;

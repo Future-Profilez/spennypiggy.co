@@ -67,7 +67,7 @@ export default function VipSupporters() {
                 <div className="flex justify-between gap-3 text-center">
                     {/* <div className="stat-item">
                         <div className="flex items-center justify-center mb-1">
-                            <RiGiftLine size={16} className="text-pink-500 mr-1" />
+                            <RiGiftLine size={16} className="text-[#FF007F] mr-1" />
                             <span className="text-xs text-gray-500">Gifts</span>
                         </div>
                         <p className="font-bold text-gray-900 text-sm">{supporter.total_gifts}</p>

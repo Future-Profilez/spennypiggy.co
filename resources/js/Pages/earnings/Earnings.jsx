@@ -13,7 +13,7 @@ import PaidTask from './PaidTask';
 import ReserveWidget from '@/Components/Creator/ReserveWidget';
 
 export default function Earnings(props) {
-  const colors = [ '#F94F96', '#10b981', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444' ];
+  const colors = [ '#FF007F', '#10b981', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444' ];
   const { formatMultiPrice } = PriceFormat();
   const { auth, global_currency } = usePage().props;
 
@@ -153,7 +153,7 @@ export default function Earnings(props) {
                     {/* Decorative Background Glow */}
                     <div className="absolute -inset-1 bg-gradient-to-r from-brandPink/20 to-brandYellow/20 rounded-[32px] blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
                     
-                    <div className="relative bg-[#0F0F0F] border border-white/10 rounded-[28px] p-6 md:p-8 shadow-2xl overflow-hidden">
+                    <div className="relative bg-[#0F0F0F] border border-white/10 rounded-[28px] p-6 md:p-8 shadow-[4px_4px_0px_0px_#FF007F]xl overflow-hidden">
                         {/* Abstract Background Pattern */}
                         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-brandYellow/5 rounded-full blur-3xl"></div>
                         <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-brandPink/5 rounded-full blur-3xl"></div>

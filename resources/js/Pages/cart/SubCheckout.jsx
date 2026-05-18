@@ -414,7 +414,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label>Add Message </label>
                                         <textarea
-                                            className="w-full border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="w-full border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                             onKeyUp={(e) =>
                                                 setData('message',e.target.value)
                                             }
@@ -430,7 +430,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                                     onChange={(e) =>
                                                         setData('name',e.target.value)
                                                     } value={data.name}
@@ -442,7 +442,7 @@ export default function SubCheckout(props) {
                                             <div className="w-full mb-4">
                                                 <label className="block !text-start w-full">Email </label>
                                                 <p className="text-sm text-gray-500 mb-1">Your e-mail remains private.</p>
-                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
+                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={auth && auth.user && auth.user.email ? true : false}
                                                     onChange={(e) => setData('email',e.target.value)}
@@ -501,7 +501,7 @@ export default function SubCheckout(props) {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -512,7 +512,7 @@ export default function SubCheckout(props) {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}

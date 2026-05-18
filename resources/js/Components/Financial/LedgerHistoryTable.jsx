@@ -18,7 +18,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                     <FileTextIcon className="text-gray-500" size={20} />
                     Ledger History {active_tab === 'overview' ? `(${tax_year})` : '(All Time)'}
                 </h2>
-                <Link href={route('financial.history', { year: tax_year?.split('-')[0] })} className="text-xs text-[#F94F96] hover:text-[#d83a7c] font-bold uppercase tracking-wider flex items-center gap-1 group">
+                <Link href={route('financial.history', { year: tax_year?.split('-')[0] })} className="text-xs text-[#FF007F] hover:text-[#d83a7c] font-bold uppercase tracking-wider flex items-center gap-1 group">
                     Full History <ChevronRightIcon size={14} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
             </div>
@@ -44,8 +44,8 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                 <td className=" border border-gray-200 px-6 py-4 text-sm">
                                     {tx.supporter ? (
                                         <Link href={route('user.show', { username: tx.supporter.username })} className="flex flex-col group/supp">
-                                            <span className="text-gray-900 font-bold capitalize group-hover/supp:text-[#F94F96] transition-colors">{tx.supporter.name}</span>
-                                            <span className="text-[13px] text-gray-400 group-hover/supp:text-[#F94F96]/70 transition-colors">@{tx.supporter.username}</span>
+                                            <span className="text-gray-900 font-bold capitalize group-hover/supp:text-[#FF007F] transition-colors">{tx.supporter.name}</span>
+                                            <span className="text-[13px] text-gray-400 group-hover/supp:text-[#FF007F]/70 transition-colors">@{tx.supporter.username}</span>
                                         </Link>
                                     ) : (
                                         <div className="flex flex-col">
@@ -134,7 +134,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                                 href={route('financial.evidence-pack', { uuid: tx.uuid })} 
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-[9px] font-bold uppercase tracking-wider text-[#F94F96]/70 hover:text-[#F94F96] transition-colors mt-0.5"
+                                                className="text-[9px] font-bold uppercase tracking-wider text-[#FF007F]/70 hover:text-[#FF007F] transition-colors mt-0.5"
                                             >
                                                 Evidence Pack
                                             </a>

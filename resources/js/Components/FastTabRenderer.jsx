@@ -297,7 +297,7 @@ const FastTabRenderer = forwardRef(({
                         {isLoading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-30">
                                 <div className="flex items-center space-x-3">
-                                    <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <div className="w-4 h-4 border-2 border-[#FF007F] border-t-transparent rounded-full animate-spin"></div>
                                     <span className="text-sm text-gray-600 font-medium">
                                         Loading {name}...
                                     </span>

@@ -303,7 +303,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                 </div>
               )}
 
-              <div className='absolute bottom-4 right-4 z-10 bg-[#F94F97] p-2 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:scale-110 transition-transform'>
+              <div className='absolute bottom-4 right-4 z-10 bg-[#FF007F] p-2 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:scale-110 transition-transform'>
                 <Maximize size={20} strokeWidth={3} />
               </div>
 
@@ -361,7 +361,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
         :
         <>
         { IsloggedIn ?
-              <Popup modalclass="pinkmodal sendSurprize-modal shadow-pink" space="6" size="md" action={close} classes={`${classes} w-full`}
+              <Popup modalclass="pinkmodal sendSurprize-modal shadow-[4px_4px_0px_0px_#FF007F]ink" space="6" size="md" action={close} classes={`${classes} w-full`}
                 text={text ? text :
                   <div className='cursor-pointer bg-white border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] p-3 py-4 flex items-center justify-content-center' >
                     <div className='py-6'>

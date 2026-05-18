@@ -4,29 +4,10 @@ import spennypiggy from "../../assets/img/logo.png";
 import { useState, useEffect, useCallback, useRef } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
-import { SiBuymeacoffee } from "react-icons/si";
-import { BiTask, BiShield } from "react-icons/bi";
-import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
-import { IoSettingsOutline } from "react-icons/io5";
-import { FaHeart, FaRegStar, FaUserAlt, FaLightbulb } from "react-icons/fa";
-import { SlCalculator, SlCalender } from "react-icons/sl";
-import { FaBasketShopping, FaHouseChimneyUser } from "react-icons/fa6";
-import { GiInjustice, GiTwoCoins } from "react-icons/gi";
-import { IoIosUnlock } from "react-icons/io";
-import { MdOutlinePrivacyTip, MdOutlineSupportAgent } from "react-icons/md";
-import { TbSettingsCog } from "react-icons/tb";
-import { ImBlog } from "react-icons/im";
-import { BsCookie } from "react-icons/bs";
-import { CiDiscount1 } from "react-icons/ci";
-import { LuBookMinus } from "react-icons/lu";
-import { MdClose } from "react-icons/md";
-import { AiOutlineLogout } from "react-icons/ai";
-import { FiGift } from "react-icons/fi";
-import { LiaShoppingCartSolid } from "react-icons/lia";
+
 import { 
     SettingsIcon, 
     HeartIcon, 
@@ -42,25 +23,11 @@ import {
     DashboardIcon,
     UserIcon,
     LockIcon,
-    EyeIcon,
     HouseIcon,
     InfoIcon,
-    TriangleAlertIcon,
 } from "@animateicons/react/lucide";
 import { 
-    ClipboardList, 
-    Coins, 
-    Shield, 
-    Calculator, 
-    Home, 
-    Gift, 
-    LayoutDashboard, 
-    FileText, 
-    HelpCircle, 
-    Lightbulb, 
     Calendar, 
-    Cookie,
-    LogOut,
     Shield as ShieldIcon,
     FileText as FileTextIcon
 } from "lucide-react";
@@ -216,8 +183,6 @@ export default function Header({ classMagicword }) {
 
     return (
         <>
-            {/* <ReactDebugTest /> */}
-            
             <div className="blackbg headermain fixed top-0 left-0 w-full z-[100] py-4 ">
                 <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center  justify-between ">
@@ -228,7 +193,7 @@ export default function Header({ classMagicword }) {
                             >
                                 <MenuIcon
                                     size={48}
-                                    color="#F94F96"
+                                    color="#FF007F"
                                 />
                             </div>
                             <Link
@@ -283,7 +248,7 @@ export default function Header({ classMagicword }) {
                                 href={route("discover")}
                                 className="ms-2 md:ms-3 discover-icon  "
                             >
-                                <div className="bg-[#F94F96] rounded-full !p-3 md:!p-2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                <div className="bg-[#FF007F] rounded-full !p-3 md:!p-2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <SearchIcon
                                         // size={28}
                                         color="#ffffff"
@@ -301,7 +266,7 @@ export default function Header({ classMagicword }) {
                                         : ""
                                 }`}
                             >
-                                <div className="bg-[#F94F96] p-3 md:p-2 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                <div className="bg-[#FF007F] p-3 md:p-2 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <ShoppingCartIcon
                                         color="#ffffff"
                                     />
@@ -327,7 +292,7 @@ export default function Header({ classMagicword }) {
                                     </Link>
                                     <Link
                                         href={route("register")}
-                                        className=" btn-shadow  hidden xl:block bg-[#F94F96] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
+                                        className=" btn-shadow  hidden xl:block bg-[#FF007F] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
                                     >
                                         Sign Up{" "}
                                     </Link>
@@ -362,11 +327,11 @@ export default function Header({ classMagicword }) {
                 ""
             )}
             <div
-                className={`fixed top-0 left-0 z-[1000002] h-full w-full md:w-[500px]  rounded-r-xl
+                className={`fixed top-0 left-0 z-[1000002] h-full w-full md:w-[350px]  rounded-r-xl
                     transform transition-transform duration-500 ease-in-out 
                     ${isActive ? "translate-x-0" : "-translate-x-full  "}
                     flex flex-col p-8 select-none ${isActive ? "Open" : null}`} >
-                <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7] max-h-screen overflow-auto w-full sm:max-w-[320px] h-full">
+                <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7] max-h-screen overflow-auto w-full sm:max-w-[350px] h-full">
                     <button 
                         onClick={toggleClass}
                         className="absolute h-[45px] top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-lg p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
@@ -389,10 +354,9 @@ export default function Header({ classMagicword }) {
                                         }
                                         toggleClass();
                                     }}
-                                    className="flex items-center gap-4 p-4 mb-6 bg-white sborder-[3px] sborder-black srounded-[20px] sshadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:sshadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
-                                >
+                                    className="flex items-center gap-4 p-4 mb-6 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:sshadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group" >
                                     <div className="relative">
-                                        <div className="w-14 h-14 rounded-xl border-[3px] border-black overflow-hidden bg-pink-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-3 transition-transform">
+                                        <div className="w-17 h-17 rounded-[15px] border-[3px] border-black overflow-hidden bg-pink-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-3 transition-transform">
                                             <img 
                                                 src={auth.user.avatar_url} 
                                                 alt={auth.user.name} 
@@ -437,7 +401,7 @@ export default function Header({ classMagicword }) {
                                                 onClick={toggleClass}
                                                 icon={HeartIcon}
                                                 label={auth?.user?.role == 1 ? "My Wishlist" : "My Profile"}
-                                                activeColor="hover:bg-pink-400"
+                                                activeColor="hover:bg-[#FF007F]"
                                             />
                                             <NavLinkWithIcon
                                                 href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
@@ -503,7 +467,7 @@ export default function Header({ classMagicword }) {
                                                 onClick={toggleClass}
                                                 icon={HouseIcon}
                                                 label="Membership Dashboard"
-                                                activeColor="hover:bg-pink-400"
+                                                activeColor="hover:bg-[#FF007F]"
                                             />
                                             <NavLinkWithIcon
                                                 href="/admin/feature-suggestions"
@@ -590,7 +554,7 @@ export default function Header({ classMagicword }) {
                                     onClick={toggleClass}
                                     icon={InfoIcon}
                                     label="Need help ?"
-                                    activeColor="hover:bg-pink-400"
+                                    activeColor="hover:bg-[#FF007F]"
                                 />
                                 <li className="bg-black h-[3px] w-full max-w-[85%] m-auto mt-3"></li>
                             </ul>
@@ -615,7 +579,7 @@ export default function Header({ classMagicword }) {
                                     onClick={toggleClass}
                                     icon={InfoIcon}
                                     label="Cookies Policy"
-                                    activeColor="hover:bg-pink-400"
+                                    activeColor="hover:bg-[#FF007F]"
                                 />
                                 <NavLinkWithIcon
                                     href={route("terms-and-conditions")}
@@ -636,7 +600,7 @@ export default function Header({ classMagicword }) {
                                     onClick={toggleClass}
                                     icon={HeartIcon}
                                     label="Promotion Terms"
-                                    activeColor="hover:bg-pink-400"
+                                    activeColor="hover:bg-[#FF007F]"
                                     isExternal={true}
                                 />
 

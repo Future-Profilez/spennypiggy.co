@@ -57,7 +57,7 @@ export default function Board(props) {
             particleCount: 150,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#F94F97', '#8b5cf6', '#3b82f6', '#eab308']
+            colors: ['#FF007F', '#8b5cf6', '#3b82f6', '#eab308']
         });
 
         const periodText = period === 'all' ? 'All-Time' : period;
@@ -89,7 +89,7 @@ export default function Board(props) {
                     particleCount: 100,
                     spread: 80,
                     origin: { y: 0.3 },
-                    colors: ['#F94F97', '#8b5cf6', '#eab308']
+                    colors: ['#FF007F', '#8b5cf6', '#eab308']
                 });
             }, 500);
         }
@@ -137,7 +137,7 @@ export default function Board(props) {
                                 <div className="flex items-center flex-wrap gap-1">
                                     <span>{(r && r.name) || "Anonymous"}</span>
                                     {r && r.rank <= 10 && (
-                                        <span className="text-[10px] sm:text-xs font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full whitespace-nowrap ml-1 flex items-center">
+                                        <span className="text-[10px] sm:text-xs font-bold text-[#FF007F] bg-pink-50 px-1.5 py-0.5 rounded-full whitespace-nowrap ml-1 flex items-center">
                                             🌟 Rising Star
                                         </span>
                                     )}
@@ -188,7 +188,7 @@ export default function Board(props) {
                         onClick={() => trackSearchClick(p?.id, p?.username)}
                         onMouseEnter={() => iconRef.current?.startAnimation?.()}
                         className={` position-${position} position text-center rounded-[30px]  md:rounded-[30px]   
-                              border-[#F94F97] !shadow-none shadow-pink bg-white m-0`}
+                              border-[#FF007F] !shadow-none shadow-[4px_4px_0px_0px_#FF007F]ink bg-white m-0`}
                     > {p.id}
                         <div className="profile p-2 sm:p-3 pb-0">
                             <div className="relative">
@@ -257,7 +257,7 @@ export default function Board(props) {
                     </Link>
                 ) : (
                     <div
-                        className={`position-${position} position text-center rounded-[30px]   shadow-pink bg-white`}
+                        className={`position-${position} position text-center rounded-[30px]   shadow-[4px_4px_0px_0px_#FF007F]ink bg-white`}
                     >
                         <div className="profile p-3 pb-0">
                             <div className=" relative">
@@ -313,7 +313,7 @@ export default function Board(props) {
                                     </div>
                                     <button 
                                         onClick={handleShare}
-                                        className="flex items-center space-x-2 bg-white text-pink-600 px-4 py-2 rounded-full font-bold text-sm hover:bg-gray-100 transition-colors"
+                                        className="flex items-center space-x-2 bg-white text-[#FF007F] px-4 py-2 rounded-full font-bold text-sm hover:bg-gray-100 transition-colors"
                                     >
                                         <Share2Icon size={16} />
                                         <span>Share Status</span>
@@ -402,7 +402,7 @@ export default function Board(props) {
                                                     placeholder="Find a creator..."
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="pl-10 pr-4 py-2 border-2 border-gray-200 rounded-full w-full sm:w-64 focus:outline-none focus:border-pink-500 focus:ring-0 transition-colors"
+                                                    className="pl-10 pr-4 py-2 border-2 border-gray-200 rounded-full w-full sm:w-64 focus:outline-none focus:border-[#FF007F] focus:ring-0 transition-colors"
                                                 />
                                             </div>
                                         </div>

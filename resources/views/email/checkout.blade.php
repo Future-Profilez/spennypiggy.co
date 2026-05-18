@@ -23,7 +23,7 @@
                 @if ($data->wish_item_id == null)
                 <td
                     style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                    <span style="color:#F94F97; font-weight: bold;">Lucky you!</span><br><br>
+                    <span style="color:#FF007F; font-weight: bold;">Lucky you!</span><br><br>
                     @if ($data->payment->anonymous == 0)
                     <strong>
                         {{
@@ -37,7 +37,7 @@
                 @else
                 <td
                     style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                    <span style="color:#F94F97; font-weight: bold;">Lucky you!</span><br><br>
+                    <span style="color:#FF007F; font-weight: bold;">Lucky you!</span><br><br>
                     @if ($data->payment->anonymous == 0)
                     <strong>{{ $anon == false ? ucwords($data->cart->user->name) : ucwords($anonname) }}</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
                     @else
@@ -64,7 +64,7 @@
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">
                     <a href={{ env('APP_URL') . '/history' }}
-                        style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
+                        style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
                         your granted wish</a>
                 </td>
             </tr>

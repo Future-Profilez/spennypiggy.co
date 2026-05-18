@@ -45,7 +45,7 @@ const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
         return <span className="text-red-600">Overdue</span>;
     }
     return (
-        <span className="text-pink-600">
+        <span className="text-[#FF007F]">
             {timeLeft.days > 0 && `${timeLeft.days}d `}
             {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
         </span>
@@ -163,7 +163,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                         Task:{" "}
                         <Link
                             href={route("task.show", task.uuid)}
-                            className="text-pink-600 hover:underline font-bold"
+                            className="text-[#FF007F] hover:underline font-bold"
                         >
                             {task.title}
                         </Link>
@@ -171,7 +171,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                     <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-700">
                         <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             TYPE:{" "}
-                            <span className="uppercase text-pink-600">
+                            <span className="uppercase text-[#FF007F]">
                                 {task.type}
                             </span>
                         </span>
@@ -276,7 +276,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                     className="w-14 h-14 rounded-full border-2 border-black object-cover"
                                 />
                                 <div>
-                                    <h4 className="text-lg font-black font-anton tracking-wide leading-none group-hover:text-pink-500 transition-colors">
+                                    <h4 className="text-lg font-black font-anton tracking-wide leading-none group-hover:text-[#FF007F] transition-colors">
                                         {purchase.creator.name}
                                     </h4>
                                     <p className="text-sm text-gray-600 font-medium">
@@ -416,7 +416,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className="w-full border-2 border-black rounded-[30px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] focus:border-pink-500 transition-all"
+                                                        className="w-full border-2 border-black rounded-[30px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] focus:border-[#FF007F] transition-all"
                                                         rows="3"
                                                     ></textarea>
                                                 </div>
@@ -449,7 +449,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                                 : `/storage/${purchase.proof_content.file}`
                                                         }
                                                         target="_blank"
-                                                        className="text-pink-600 underline font-bold text-lg hover:text-pink-800"
+                                                        className="text-[#FF007F] underline font-bold text-lg hover:text-pink-800"
                                                     >
                                                         View Proof File{" "}
                                                         {purchase.proof_content
@@ -535,7 +535,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                         : `/storage/${purchase.proof_content.file}`
                                                 }
                                                 target="_blank"
-                                                className="text-pink-600 underline font-bold text-lg hover:text-pink-800"
+                                                className="text-[#FF007F] underline font-bold text-lg hover:text-pink-800"
                                             >
                                                 View Proof File{" "}
                                                 {purchase.proof_content.name

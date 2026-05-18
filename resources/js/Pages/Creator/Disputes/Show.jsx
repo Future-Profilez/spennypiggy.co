@@ -62,7 +62,7 @@ export default function DisputeShow({ auth, dispute }) {
                     <div className={`mb-8 p-6 rounded-[30px] border ${
                         isClosed ? (dispute.status === 'won' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-gray-500/10 border-gray-500/20 !text-gray-100') :
                         isSubmitted ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                        'bg-red-500/10 border-red-500/20 text-[#F94F96]'
+                        'bg-red-500/10 border-red-500/20 text-[#FF007F]'
                     }`}>
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-full bg-current/10">
@@ -90,7 +90,7 @@ export default function DisputeShow({ auth, dispute }) {
                             {/* Supporter Info */}
                             <div className="bg-[#1a1a1a] p-6 rounded-[30px] border border-gray-800">
                                 <h4 className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-6 flex items-center gap-2">
-                                    <BiUser className="text-[#F94F96]" /> Supporter Info
+                                    <BiUser className="text-[#FF007F]" /> Supporter Info
                                 </h4>
                                 {dispute.payment?.supporter ? (
                                     <div className="flex items-center gap-4 mb-6">
@@ -105,7 +105,7 @@ export default function DisputeShow({ auth, dispute }) {
                                         </div>
                                         <div>
                                             <div className="text-white font-bold">{dispute.payment.supporter.name}</div>
-                                            <div className="text-[#F94F96] text-xs">@{dispute.payment.supporter.username}</div>
+                                            <div className="text-[#FF007F] text-xs">@{dispute.payment.supporter.username}</div>
                                             <div className="text-gray-500 text-[10px] mt-1">{dispute.payment.supporter.email}</div>
                                         </div>
                                     </div>
@@ -115,7 +115,7 @@ export default function DisputeShow({ auth, dispute }) {
                                 
                                 <div className="pt-6 border-t border-gray-800">
                                     <h4 className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-4 flex items-center gap-2">
-                                        <BiCartAlt className="text-[#F94F96]" /> Transaction Info
+                                        <BiCartAlt className="text-[#FF007F]" /> Transaction Info
                                     </h4>
                                     <dl className="space-y-4">
                                         <div>
@@ -141,8 +141,8 @@ export default function DisputeShow({ auth, dispute }) {
                             </div>
 
                             {/* Important Notice */}
-                            <div className="bg-[#F94F96]/5 p-6 rounded-[30px] border border-[#F94F96]/20">
-                                <h4 className="text-[10px] uppercase tracking-widest text-[#F94F96] font-bold mb-3">Important</h4>
+                            <div className="bg-[#FF007F]/5 p-6 rounded-[30px] border border-[#FF007F]/20">
+                                <h4 className="text-[10px] uppercase tracking-widest text-[#FF007F] font-bold mb-3">Important</h4>
                                 <p className="text-xs !text-gray-100 leading-relaxed">
                                     Providing evidence doesn't guarantee a win, but it significantly increases your chances. Banks look for proof that the service was delivered as described.
                                 </p>
@@ -162,7 +162,7 @@ export default function DisputeShow({ auth, dispute }) {
                                                 <InputLabel htmlFor="explanation" value="Explanation / Message to Bank" className="!text-gray-100 text-xs uppercase tracking-widest" />
                                                 <textarea
                                                     id="explanation"
-                                                    className="w-full bg-black border border-gray-800 rounded-[30px] text-white p-4 focus:border-[#F94F96] focus:ring-0 transition-all min-h-[150px] text-sm"
+                                                    className="w-full bg-black border border-gray-800 rounded-[30px] text-white p-4 focus:border-[#FF007F] focus:ring-0 transition-all min-h-[150px] text-sm"
                                                     placeholder="Describe what the supporter purchased and any interaction you had with them..."
                                                     value={data.explanation}
                                                     onChange={(e) => setData('explanation', e.target.value)}
@@ -196,7 +196,7 @@ export default function DisputeShow({ auth, dispute }) {
                                                                         {file.isImage ? (
                                                                             <img src={file.url} className="w-6 h-6 object-cover rounded" alt="" />
                                                                         ) : (
-                                                                            <BiFile className="text-[#F94F96] w-6 h-6" />
+                                                                            <BiFile className="text-[#FF007F] w-6 h-6" />
                                                                         )}
                                                                     </div>
                                                                     <div className="overflow-hidden">
@@ -221,7 +221,7 @@ export default function DisputeShow({ auth, dispute }) {
 
                                         <div className="pt-6 border-t border-gray-800 flex justify-end">
                                             <PrimaryButton 
-                                                className="bg-[#F94F96] hover:bg-[#d83a7c] px-8 py-4 rounded-2xl text-sm font-bold uppercase tracking-widest"
+                                                className="bg-[#FF007F] hover:bg-[#d83a7c] px-8 py-4 rounded-2xl text-sm font-bold uppercase tracking-widest"
                                                 disabled={processing}
                                             >
                                                 {processing ? 'Submitting...' : 'Submit to Stripe'}

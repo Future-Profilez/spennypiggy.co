@@ -173,7 +173,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                     {/* Header - Same as before */}
                     <div className="mb-8">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2.5 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl shadow-lg shadow-pink-200">
+                            <div className="p-2.5 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-200">
                                 <History className="text-white" size={28} />
                             </div>
                             <div>
@@ -207,7 +207,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                     <select
                                         name="action_type"
                                         defaultValue={filters.action_type || ""}
-                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
+                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-200 transition-all"
                                     >
                                         <option value="">All Actions</option>
                                         {actionTypes?.map((type) => (
@@ -226,7 +226,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                         type="date"
                                         name="date_from"
                                         defaultValue={filters.date_from || ""}
-                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
+                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-200 transition-all"
                                     />
                                 </div>
 
@@ -238,7 +238,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                         type="date"
                                         name="date_to"
                                         defaultValue={filters.date_to || ""}
-                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
+                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-200 transition-all"
                                     />
                                 </div>
                             </div>
@@ -379,7 +379,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                     onClick={() =>
                                                         toggleDetails(log.id)
                                                     }
-                                                    className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-pink-600 transition-colors mt-3"
+                                                    className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#FF007F] transition-colors mt-3"
                                                 >
                                                     {expandedDetails[log.id] ? (
                                                         <>

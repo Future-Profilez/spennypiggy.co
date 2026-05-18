@@ -296,7 +296,7 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer p-2 bg-pink-400 border-4 border-black !rounded-[20px] 
+                            className="addoption-action cursor-pointer p-2 bg-[#FF007F] border-4 border-black !rounded-[20px] 
                             shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] 
                             hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-50 "
                             // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
@@ -387,7 +387,7 @@ export default function Dashboard(props) {
                                                                     <div className=" flex items-center">
                                                                         <div className="p-1 !rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                             <FaRegHeart
-                                                                                color="#F94F97"
+                                                                                color="#FF007F"
                                                                                 size="1.6rem"
                                                                             />
                                                                         </div>
@@ -410,7 +410,7 @@ export default function Dashboard(props) {
                                                                         <div className=" flex items-center">
                                                                             <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                                 <BiTask
-                                                                                    color="#F94F97"
+                                                                                    color="#FF007F"
                                                                                     size="1.6rem"
                                                                                 />
                                                                             </div>
@@ -824,7 +824,7 @@ export default function Dashboard(props) {
                                                                   
                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
                                                                         <div className="mb-6 !mt-6 relative group">
-                                                                            {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#F94F97] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
+                                                                            {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
                                                                             <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
                                                                                 <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
                                                                                     <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
@@ -966,7 +966,7 @@ export default function Dashboard(props) {
                                                                                         className={` ${
                                                                                             selectedCategory ==
                                                                                             ""
-                                                                                                ? "bg-pink-400 text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+                                                                                                ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
                                                                                                 : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
                                                                                         } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
                                                                                     >
@@ -992,7 +992,7 @@ export default function Dashboard(props) {
                                                                                                     )}
                                                                                                     className={`${
                                                                                                         selectedCategory == c.id 
-                                                                                                            ? "bg-pink-400 text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]" 
+                                                                                                            ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]" 
                                                                                                             : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
                                                                                                     } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                     key={`cats-${i}`}

@@ -57,7 +57,7 @@
         <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #FBF0F5; border-radius: 10px;">
             <tr>
                 <td style="padding: 16px 20px;">
-                    <p style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; color: #F94F97; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px 0;">
+                    <p style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; color: #FF007F; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px 0;">
                         Submitted By
                     </p>
                     <p style="font-family: Arial, sans-serif; font-size: 14px; color: #333; margin: 0 0 4px 0;">
@@ -81,7 +81,7 @@
 <tr>
     <td style="padding: 0 24px 30px 24px; background-color: #ffffff; text-align: center;">
         <a href="{{ env('ADMIN_URL', 'http://localhost:8001') }}/feature-suggestions"
-           style="display: inline-block; background-color: #F94F97; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 30px; font-family: Arial, sans-serif; font-size: 15px; font-weight: 600;">
+           style="display: inline-block; background-color: #FF007F; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 30px; font-family: Arial, sans-serif; font-size: 15px; font-weight: 600;">
             View in Admin Dashboard
         </a>
     </td>

@@ -417,7 +417,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label className=" mb-2 text-sm font-medium text-gray-900">Add Message </label>
                                         <textarea
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                             onKeyUp={(e) => setData("message",e.target.value)}
                                             placeholder="Write message in under 800 Words..."
                                             defaultValue={data.message}
@@ -434,7 +434,7 @@ export default function SubCheckout(props) {
                                                 </label>
                                                 
                                                 <input
-                                                    className={`${auth && auth?.user && auth?.user?.email ? "disabled":""} mt-2 border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
+                                                    className={`${auth && auth?.user && auth?.user?.email ? "disabled":""} mt-2 border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -465,7 +465,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="mt-2 border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 "
+                                                    className="mt-2 border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -535,7 +535,7 @@ export default function SubCheckout(props) {
                                             !card_capabilities
                                                 ? "disabled"
                                                 : ""
-                                        } button-pink btn-shadow shadow-black text-white md !px-8 mt-3 text-center`}
+                                        } button-pink btn-shadow shadow-[4px_4px_0px_0px_#FF007F]lack text-white md !px-8 mt-3 text-center`}
                                         disabled={
                                             !data.agree ||
                                             !data.digital_waiver ||
@@ -586,7 +586,7 @@ export default function SubCheckout(props) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="e.g. 123456"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
@@ -597,7 +597,7 @@ export default function SubCheckout(props) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="CONFIRM"
                                     value={typedConfirmation}
                                     onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -632,7 +632,7 @@ export default function SubCheckout(props) {
                             >
                                 {passkeyLoading ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>

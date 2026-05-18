@@ -115,7 +115,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                        />
 
                                        {s.ai_generated == 1 && (
-                                             <div className="absolute bottom-2 left-2 z-1 bg-pink-400 border-2 border-black font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg px-2 py-1 text-[10px] text-black">
+                                             <div className="absolute bottom-2 left-2 z-1 bg-[#FF007F] border-2 border-black font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg px-2 py-1 text-[10px] text-black">
                                                 MADE WITH AI
                                              </div>
                                        )}

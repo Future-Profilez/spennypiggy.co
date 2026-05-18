@@ -81,7 +81,7 @@ export default function DisputesIndex({ auth, disputes }) {
                         </div>
                     </div>
 
-                    <div className="bg-[#1a1a1a] rounded-[30px] p-6 md:p-8 shadow-xl border border-gray-800">
+                    <div className="bg-[#1a1a1a] rounded-[30px] p-6 md:p-8 shadow-[4px_4px_0px_0px_#FF007F]l border border-gray-800">
                         {disputes.data.length === 0 ? (
                             <div className="text-center py-16 flex flex-col items-center justify-center">
                                 <div className="bg-gray-800/50 p-6 rounded-full mb-4">
@@ -140,7 +140,7 @@ export default function DisputesIndex({ auth, disputes }) {
                                                 </td>
                                                 <td className="px-6 py-5 text-sm text-gray-300">
                                                     {dispute.evidence_due_by ? (
-                                                        <span className={new Date(dispute.evidence_due_by) < new Date() ? 'text-[#F94F96] font-bold' : ''}>
+                                                        <span className={new Date(dispute.evidence_due_by) < new Date() ? 'text-[#FF007F] font-bold' : ''}>
                                                             {new Date(dispute.evidence_due_by).toLocaleDateString()}
                                                         </span>
                                                     ) : '-'}
@@ -148,7 +148,7 @@ export default function DisputesIndex({ auth, disputes }) {
                                                 <td className="px-6 py-5 text-right">
                                                     <Link 
                                                         href={route('creator.disputes.show', dispute.id)}
-                                                        className="inline-flex items-center gap-1.5 bg-gray-800 hover:bg-[#F94F96] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
+                                                        className="inline-flex items-center gap-1.5 bg-gray-800 hover:bg-[#FF007F] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
                                                     >
                                                         Review & Evidence
                                                     </Link>

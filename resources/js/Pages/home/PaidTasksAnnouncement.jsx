@@ -22,7 +22,7 @@ export default function PaidTasksAnnouncement() {
                             </span>
                         </div>
                         
-                        <h2 className="uppercase fading text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-2xl">
+                        <h2 className="uppercase fading text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-[4px_4px_0px_0px_#FF007F]xl">
                             Get Paid for Requests <br/>
                             <span className="uppercase text-gradient-wishlist tracking-[2px] animate-pulse">
                                 On Your Terms 
@@ -39,7 +39,7 @@ export default function PaidTasksAnnouncement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
                         
                         {/* Card 1: Instant */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-pink-500 rounded-[30px]  p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#EC4899] md:shadow-[8px_8px_0px_0px_#EC4899]">
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px]  p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#EC4899] md:shadow-[8px_8px_0px_0px_#EC4899]">
                             <div className="absolute -top-6 -right-6 bg-pink-500 text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
@@ -91,7 +91,7 @@ If a task isn’t delivered on time, refunds are handled according to your terms
 
                             </p>
                             <div className="fading bg-gray-800 rounded-[30px]  p-3 flex items-center gap-3">
-                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-pink-400 animate-pulse"></div>
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#FF007F] animate-pulse"></div>
                                 <span className="text-sm font-bold text-gray-300 uppercase">PLATFORM-ENFORCED RULES
                                 </span>
                             </div>

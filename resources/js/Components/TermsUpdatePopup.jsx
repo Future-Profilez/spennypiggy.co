@@ -56,7 +56,7 @@ export default function TermsUpdatePopup() {
     return (
         <Modal show={show} onClose={() => {}} closeable={false}>
             <div className="p-8">
-                <h2 className="text-2xl font-black text-pink-600 mb-4 uppercase">Terms Updated</h2>
+                <h2 className="text-2xl font-black text-[#FF007F] mb-4 uppercase">Terms Updated</h2>
                 <p className="text-gray-700 mb-6">
                     We have updated some of our legal policies to better protect our community. 
                     Please review the updated documents below before continuing to use Spenny Piggy.
@@ -68,7 +68,7 @@ export default function TermsUpdatePopup() {
                             key={doc.key}
                             href={doc.href} 
                             target="_blank" 
-                            className="block text-pink-600 hover:text-pink-700 font-semibold"
+                            className="block text-[#FF007F] hover:text-pink-700 font-semibold"
                         >
                             Read {doc.name} →
                         </a>

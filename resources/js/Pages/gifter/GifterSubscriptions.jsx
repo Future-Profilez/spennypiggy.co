@@ -41,7 +41,7 @@ export default function GifterSubscriptions({IsloggedIn}) {
   const MessageMedia = ({w}) => {
     return <>
       <Popup
-        modalclass="pinkmodal shadow-pink" space="0" size="md" action={false} classes={`mt-2 text-pink ps-1`}
+        modalclass="pinkmodal shadow-[4px_4px_0px_0px_#FF007F]ink" space="0" size="md" action={false} classes={`mt-2 text-pink ps-1`}
         text={<> Adventure awaits 🌟🔍 tap here !! </>} > 
           <div className='video-payer-pop' >
             <img src={w && w?.media_url || ''} />

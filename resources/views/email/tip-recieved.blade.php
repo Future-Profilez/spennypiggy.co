@@ -28,7 +28,7 @@
                  <tr>
                      <td
                          style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                         Visit <a href="https://spennypiggy.co" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> where you can see your granted tip, send a message to your gifter, and share your gift on social media.
+                         Visit <a href="https://spennypiggy.co" style="color:#FF007F; text-decoration:none;">Spenny Piggy</a> where you can see your granted tip, send a message to your gifter, and share your gift on social media.
                  </tr>
                  @if (!empty($tip->message))
                      <tr>
@@ -42,7 +42,7 @@
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
                          <a href={{ env('APP_URL') . '/purchases' }}
-                             style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
+                             style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
                              your granted wish</a>
                      </td>
                  </tr>

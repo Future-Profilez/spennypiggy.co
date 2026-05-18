@@ -182,7 +182,7 @@ export default function AddBills(props) {
                                         type="text"
                                         placeholder="Eg. Netflix subscription"
                                         value={data.name}
-                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("name", e.target.value)
@@ -207,7 +207,7 @@ export default function AddBills(props) {
                                                 (item && item.price) ||
                                                 data.price
                                             }
-                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)

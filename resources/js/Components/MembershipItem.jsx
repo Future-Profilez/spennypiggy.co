@@ -227,7 +227,7 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                             {rewards && rewards.length > 0 ? (
                                 visibleRewards.map((r, i) => (
                                     <li key={`reward-${i}`} className="flex items-start gap-3">
-                                        <div className="mt-0.5 shrink-0 text-pink-500">
+                                        <div className="mt-0.5 shrink-0 text-[#FF007F]">
                                             <svg
                                                 width="18"
                                                 height="18"
@@ -258,7 +258,7 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                                 <button
                                     type="button"
                                     onClick={() => setIsExpanded(true)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-700 hover:text-pink-600 transition-colors"
+                                    className="text-xs font-black uppercase tracking-wider text-gray-700 hover:text-[#FF007F] transition-colors"
                                 >
                                     + {remainingBenefits} more benefits (View all)
                                 </button>
@@ -300,7 +300,7 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                             <div className="mt-4 text-center">
                                 <Link
                                     href={route("user.show", { username: item.user.username })}
-                                    className="text-[10px] font-bold uppercase text-gray-400 hover:text-pink-600 transition-colors tracking-widest"
+                                    className="text-[10px] font-bold uppercase text-gray-400 hover:text-[#FF007F] transition-colors tracking-widest"
                                 >
                                     @{item.user.username}
                                 </Link>

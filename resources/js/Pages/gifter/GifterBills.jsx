@@ -62,7 +62,7 @@ export default function GifterBills({ username }) {
               {formatMultiPrice(totalAmount, b.currency || auth.user?.default_currency || global_currency)}
             </p>
             {b.owner?.username && (
-              <Link href={`/${b.owner.username}`} className="text-pink-600 text-sm hover:underline">
+              <Link href={`/${b.owner.username}`} className="text-[#FF007F] text-sm hover:underline">
                 @{b.owner.username}
               </Link>
             )}

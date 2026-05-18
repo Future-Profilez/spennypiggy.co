@@ -503,7 +503,7 @@ export default function BillCheckout(props) {
                                                 Add Message{" "}
                                             </label>
                                             <textarea
-                                                className="mt-2 border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                                className="mt-2 border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                                 onKeyUp={(e) =>
                                                     setData(
                                                         "message",
@@ -524,7 +524,7 @@ export default function BillCheckout(props) {
                                                         From
                                                     </label>
                                                     <input
-                                                        className="mt-1 border-gray-300 border !rounded-[12px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 "
+                                                        className="mt-1 border-gray-300 border !rounded-[12px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
                                                         onChange={(e) =>
                                                             setData(
                                                                 "name",
@@ -554,7 +554,7 @@ export default function BillCheckout(props) {
                                                             auth.user.email
                                                                 ? "disabled"
                                                                 : ""
-                                                        } mt-1 border-gray-300 border !rounded-[12px] !h-[55px] !px-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 `}
+                                                        } mt-1 border-gray-300 border !rounded-[12px] !h-[55px] !px-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 `}
                                                         value={data.email}
                                                         disabled={
                                                             auth &&
@@ -691,7 +691,7 @@ export default function BillCheckout(props) {
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="e.g. 123456"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
@@ -704,7 +704,7 @@ export default function BillCheckout(props) {
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="CONFIRM"
                                     value={typedConfirmation}
                                     onChange={(e) =>
@@ -754,7 +754,7 @@ export default function BillCheckout(props) {
                                     {passkeyLoading ? (
                                         <>
                                             <svg
-                                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500"
+                                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]"
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 fill="none"
                                                 viewBox="0 0 24 24"

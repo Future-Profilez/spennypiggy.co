@@ -26,7 +26,7 @@ export default function CreatorCard({auth, item}) {
                 </div>
             </div>
            <div className='w-full p-3 sm:p-4 flex-grow'>
-               <h3 className="text-lg font-black text-black uppercase tracking-wider truncate w-full group-hover:text-pink-600 transition-colors">{item.name}</h3>
+               <h3 className="text-lg font-black text-black uppercase tracking-wider truncate w-full group-hover:text-[#FF007F] transition-colors">{item.name}</h3>
                <p className="text-sm font-bold text-gray-700 truncate w-full">@{item.username}</p>
                {/* <p className="text-xs mt-1 text-gray-500 truncate w-full px-1">{item.bio}</p> */}
            </div>

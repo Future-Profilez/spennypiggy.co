@@ -19,7 +19,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
 
     // Drawer styles (Fixed, Overlay, etc.)
     const drawerClasses = `
-        fixed inset-y-0 right-0 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto
+        fixed inset-y-0 right-0 w-80 bg-white shadow-[4px_4px_0px_0px_#FF007F]xl transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         md:hidden
     `;
@@ -58,11 +58,11 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                                 <label key={type} className="flex items-center gap-3 cursor-pointer group">
                                     <input 
                                         type="checkbox" 
-                                        className="w-5 h-5 rounded border-gray-300 text-pink-500 focus:ring-pink-500 transition-colors"
+                                        className="w-5 h-5 rounded border-gray-300 text-[#FF007F] focus:ring-pink-500 transition-colors"
                                         checked={filters.contentType?.includes(type)}
                                         onChange={() => handleCheckboxChange('contentType', type)}
                                     />
-                                    <span className="text-gray-700 group-hover:text-pink-600 transition-colors">{type}</span>
+                                    <span className="text-gray-700 group-hover:text-[#FF007F] transition-colors">{type}</span>
                                 </label>
                             ))}
                         </div>
@@ -114,7 +114,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                                 <input 
                                     type="number" 
                                     placeholder="Min" 
-                                    className="w-full pl-6 pr-2 py-2 rounded-[30px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-pink-500"
+                                    className="w-full pl-6 pr-2 py-2 rounded-[30px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-[#FF007F]"
                                     value={filters.minPrice || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
                                 />
@@ -125,7 +125,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                                 <input 
                                     type="number" 
                                     placeholder="Max" 
-                                    className="w-full pl-6 pr-2 py-2 rounded-[30px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-pink-500"
+                                    className="w-full pl-6 pr-2 py-2 rounded-[30px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-[#FF007F]"
                                     value={filters.maxPrice || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
                                 />
@@ -137,7 +137,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                     <div className="mb-8 border-t border-gray-100 pt-6">
                         <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wider">Sort By</h3>
                         <select 
-                            className="w-full rounded-[30px]   border-gray-200 text-gray-700 focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full rounded-[30px]   border-gray-200 text-gray-700 focus:ring-pink-500 focus:border-[#FF007F]"
                             value={filters.sortBy || 'Trending'}
                             onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
                         >

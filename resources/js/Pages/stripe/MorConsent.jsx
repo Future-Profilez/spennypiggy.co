@@ -94,7 +94,7 @@ export default function MorConsent(props) {
 
                                 {/* Agreement Points */}
                                 <div className="space-y-6 px-2">
-                                    <h3 className="text-sm font-bold text-pink-600 uppercase tracking-widest text-center">
+                                    <h3 className="text-sm font-bold text-[#FF007F] uppercase tracking-widest text-center">
                                         I Acknowledge and Agree That:
                                     </h3>
                                     
@@ -112,7 +112,7 @@ export default function MorConsent(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-900 rounded-[30px] p-6 shadow-xl">
+                                <div className="bg-gray-900 rounded-[30px] p-6 shadow-[4px_4px_0px_0px_#FF007F]l">
                                     <p className="text-white text-center font-bold text-sm leading-relaxed italic">
                                         "By continuing, I confirm that I have
                                         read, understood, and agree to this
@@ -158,7 +158,7 @@ export default function MorConsent(props) {
                                 <button
                                     type="button"
                                     onClick={handleSubmit}
-                                    className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={!data.mor_agreed || processing}
                                 >
                                     {processing ? (

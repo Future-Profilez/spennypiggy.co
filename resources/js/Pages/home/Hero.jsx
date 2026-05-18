@@ -74,7 +74,7 @@ export default function Hero({auth}) {
               <li>
                 <a 
                     href="#home" 
-                    className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-pink-500' : 'text-white'}`} 
+                    className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`} 
                     onClick={(e) => handleNavItemClick(e, 'home')}
                     onMouseEnter={() => houseIconRef.current?.startAnimation()}
                 >
@@ -82,17 +82,17 @@ export default function Hero({auth}) {
                 </a>
               </li>
               <li>
-                <a href="#features" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'features' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'features')}>
+                <a href="#features" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'features' ? 'active text-[#FF007F]' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'features')}>
                   Features
                 </a>
               </li>
               <li>
-                <a href="#reviews" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'reviews' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
+                <a href="#reviews" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'reviews' ? 'active text-[#FF007F]' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
                 reviews
                 </a>
               </li>
               <li>
-                <a href="#faq" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'faq' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
+                <a href="#faq" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'faq' ? 'active text-[#FF007F]' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
                   FAQ's
                 </a>
               </li>

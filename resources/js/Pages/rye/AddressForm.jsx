@@ -219,7 +219,7 @@ export default function AddressForm({
                             value={formData.first_name}
                             name="first_name"
                             placeholder="First Name"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.first_name ? "border-red-500" : ""
                             }`}
                             required
@@ -242,7 +242,7 @@ export default function AddressForm({
                             value={formData.last_name}
                             name="last_name"
                             placeholder="Last Name"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.last_name ? "border-red-500" : ""
                             }`}
                             required
@@ -270,7 +270,7 @@ export default function AddressForm({
                             name="phone"
                             type="tel"
                             placeholder="Phone"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.phone ? "border-red-500" : ""
                             }`}
                             required
@@ -292,7 +292,7 @@ export default function AddressForm({
                             value={formData.address_1}
                             name="address_1"
                             placeholder="Address 1"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.address_1 ? "border-red-500" : ""
                             }`}
                             required
@@ -315,7 +315,7 @@ export default function AddressForm({
                             value={formData.address_2}
                             name="address_2"
                             placeholder="Address 2"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.address_2 ? "border-red-500" : ""
                             }`}
                         />
@@ -337,7 +337,7 @@ export default function AddressForm({
                             value={formData.city}
                             name="city"
                             placeholder="City"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.city ? "border-red-500" : ""
                             }`}
                             required
@@ -374,7 +374,7 @@ export default function AddressForm({
                             placeholder="Province Code (3 digits)"
                             type="tel"
                             maxLength="3"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.province_code
                                     ? "border-red-500"
                                     : ""
@@ -398,7 +398,7 @@ export default function AddressForm({
                             onChange={handleChange}
                             name="country_code"
                             value={formData.country_code}
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.country_code ? "border-red-500" : ""
                             }`}
                             required
@@ -435,7 +435,7 @@ export default function AddressForm({
                             value={formData.postal_code}
                             name="postal_code"
                             placeholder="Postal Code"
-                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 ${
+                            className={`text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 text-gray-900 ${
                                 fieldErrors.postal_code ? "border-red-500" : ""
                             }`}
                             required

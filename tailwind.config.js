@@ -23,7 +23,7 @@ export default {
         'to-purple-300',
         // Common palette utilities to ensure availability
         'bg-pink-500',
-        'text-pink-500',
+        'text-[#FF007F]',
         'bg-yellow-400',
         'bg-purple-600',
         'text-yellow-400',
@@ -40,14 +40,14 @@ export default {
                 yellow: colors.yellow,
                 violet: colors.violet,
                 // Brand aliases (single values)
-                brandPink: '#F94F97',
+                brandPink: '#FF007F',
                 brandYellow: '#E6EA7B',
                 mint: '#05EFB8',
                 voilet: '#8C52FF',
             },
             boxShadow: {
                 black: '5px 5px 0 0 rgba(0,0,0,1)',
-                pink: '5px 5px 0 0 #F94F97',
+                pink: '5px 5px 0 0 #FF007F',
                 pinks: '0 10px 15px -3px rgba(236, 72, 153, 0.1), 0 4px 6px -2px rgba(236, 72, 153, 0.05)',
                 mint: '5px 5px 0 0 #05EFB8',
                 voilet: '5px 5px 0 0 #8C52FF',

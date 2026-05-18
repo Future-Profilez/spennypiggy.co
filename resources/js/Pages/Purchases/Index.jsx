@@ -144,7 +144,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                             {type === 'sent' ? (
                                 <FiArrowUp size={'30px'} className="mr-2 text-blue-500" />
                             ) : (
-                                <FiArrowDown size={'30px'} className="mr-2 text-pink-500" />
+                                <FiArrowDown size={'30px'} className="mr-2 text-[#FF007F]" />
                             )}
                         </span>
                         {itemImage ? (
@@ -154,7 +154,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                             />
                         ) : (
                             <div className="h-12 w-12 flex items-center justify-center  rounded-[30px] ">
-                                <FiPackage className="h-12 w-12 text-pink-500" />
+                                <FiPackage className="h-12 w-12 text-[#FF007F]" />
                             </div>
                         )}
                     </div>
@@ -525,7 +525,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         <AuthenticatedLayout
             auth={auth}
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-pink-600 leading-tight">Purchases</h2>}
+            header={<h2 className="font-semibold text-xl text-[#FF007F] leading-tight">Purchases</h2>}
         >
             <Head title="Purchases" />
             

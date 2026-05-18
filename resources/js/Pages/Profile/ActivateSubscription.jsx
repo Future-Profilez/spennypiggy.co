@@ -22,7 +22,7 @@ export default function ActivateSubscription(props) {
               <div className="containerbox mx-auto">
                 <div className="text-center mb-10">
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs text-black uppercase tracking-wider mb-2">
-                        Activate <span className="text-pink-600">Subscription</span>
+                        Activate <span className="text-[#FF007F]">Subscription</span>
                     </h2>
                     <p className="text-gray-800 text-lg font-medium">
                         Unlock creator tools and start receiving support.
@@ -48,7 +48,7 @@ export default function ActivateSubscription(props) {
                                         The Creator Plan
                                     </h3>
                                     <p className="text-gray-700 text-lg leading-relaxed font-medium">
-                                        Start your journey with a <span className="text-pink-600 font-bold">3-day free trial</span>. 
+                                        Start your journey with a <span className="text-[#FF007F] font-bold">3-day free trial</span>. 
                                         After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.
                                     </p>
                                 </div>
@@ -101,7 +101,7 @@ export default function ActivateSubscription(props) {
                                     <div className="space-y-4 ">
                                         <div className="flex justify-between font-bold text-gray-700">
                                             <span>Due Today</span>
-                                            <span className="text-pink-600">£0.00</span>
+                                            <span className="text-[#FF007F]">£0.00</span>
                                         </div>
                                         <div className="flex justify-between font-bold text-gray-700">
                                             <span>Monthly Total</span>

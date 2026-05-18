@@ -125,7 +125,7 @@ class PdfCertificateService
                     left: -50%;
                     width: 200%;
                     height: 200%;
-                    background: linear-gradient(45deg, #8C52FF 0%, #F94F97 100%);
+                    background: linear-gradient(45deg, #8C52FF 0%, #FF007F 100%);
                     opacity: 0.1;
                     transform: rotate(45deg);
                     z-index: -1;
@@ -149,7 +149,7 @@ class PdfCertificateService
                     margin-bottom: 20px;
                 }
                 .highlight {
-                    color: #F94F97;
+                    color: #FF007F;
                     font-weight: bold;
                 }
                 .details {

@@ -281,11 +281,11 @@ export default function SupportStory({ creator, gifter }) {
               {ev.media_url ? (
                 <div className="mt-3">
                   <Popup
-                    modalclass="pinkmodal shadow-pink"
+                    modalclass="pinkmodal shadow-[4px_4px_0px_0px_#FF007F]ink"
                     space="0"
                     size="md"
                     action={false}
-                    classes="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                    classes="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                     text={<>View</>}
                   >
                     <div className="video-payer-pop">
@@ -312,7 +312,7 @@ export default function SupportStory({ creator, gifter }) {
 
           {ev.type === 'gift_wish' && ev.wish?.reward_file ? (
             <div className="mt-4">
-              <a href={ev.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
+              <a href={ev.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
             </div>
           ) : null}
 
@@ -421,7 +421,7 @@ export default function SupportStory({ creator, gifter }) {
             <div className="pt-6">
               <Link
                 href={`/${data?.creator?.username || creator}`}
-                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-pink-400 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-[#FF007F] border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
               > View Creator Profile </Link>
             </div>
           </div>

@@ -296,13 +296,23 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
 
     const updateProfile = async (e) => {
         e.preventDefault();
-        // Only generate social image if user requested it or if logic requires it. 
-        // Previously it was automatic, but that might slow down simple updates.
-        // Keeping it as requested in previous logic, but maybe optional? 
-        // The original code had: await generateSocialImage();
-        // I will keep it but only if on appearance tab or if avatar changed? 
-        // Actually, let's keep it simple and not force regeneration unless needed.
-        // But the previous code forced it. I'll comment it out to make updates faster unless user clicks generate.
+
+        // Local regex validation for username to avoid unnecessary server calls
+        if (data.username) {
+            if (!/^[a-zA-Z0-9_\.]+$/.test(data.username)) {
+                errorAlert("Username can only contain letters, numbers, periods (.), and underscores (_).");
+                return;
+            }
+            if (data.username.length < 5) {
+                errorAlert("The username must be at least 5 characters.");
+                return;
+            }
+            if (data.username.length > 20) {
+                errorAlert("The username must not be greater than 20 characters.");
+                return;
+            }
+        }
+
         setLoading(true);
         // Automatic social image generation removed to prevent potential Cloudflare blocks 
         // due to large binary payloads. Users can generate it manually in Appearance tab.
@@ -433,7 +443,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                             <h3 className="font-gulfs uppercase text-lg mb-4 text-center">Or Choose a Pre-approved Cover</h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
                                 {preApprovedCovers.map((uuid) => (
-                                    <div key={uuid} onClick={() => selectPreApprovedCover(uuid)} className="cursor-pointer border-4 border-transparent hover:border-pink-500 rounded-[15px] overflow-hidden transition-all hover:scale-105 shadow-sm">
+                                    <div key={uuid} onClick={() => selectPreApprovedCover(uuid)} className="cursor-pointer border-4 border-transparent hover:border-[#FF007F] rounded-[15px] overflow-hidden transition-all hover:scale-105 shadow-sm">
                                         <img src={`https://ucarecdn.com/${uuid}/-/preview/-/scale_crop/400x200/`} alt="Cover option" className="w-full h-auto object-cover aspect-[2/1]" />
                                     </div>
                                 ))}
@@ -458,7 +468,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                             name="name" 
                                             defaultValue={user?.name || ''}
                                             onChange={(e) => setData('name', e.target.value)}
-                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
+                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
                                             placeholder="Your Name"
                                         />
                                     </li>
@@ -470,7 +480,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                             onChange={(e) => setData("username", e.target.value)}
                                             type="text" 
                                             name="username" 
-                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
+                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
                                             placeholder='spennypiggy.co/username' 
                                             onKeyUp={(e) => {setUsername(e.target.value)}}
                                         />
@@ -483,7 +493,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                             name="email" 
                                             defaultValue={user?.email || ''}
                                             onChange={(e) => setData('email', e.target.value)}
-                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
+                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
                                             placeholder="your@email.com"
                                         />
                                     </li>
@@ -491,7 +501,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                                         <div className="custom-select-wrapper">
                                             <select 
-                                                className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white"
+                                                className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white"
                                                 onChange={(e) => setData('gender', e.target.value)}
                                                 defaultValue={user?.gender || ''}
                                             >
@@ -525,14 +535,14 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                             defaultValue={user?.bio || ''}
                                             onChange={(e) => setData("bio", e.target.value)}
                                             name="bio" 
-                                            className="w-full border-gray-300 border p-4 rounded-[20px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 min-h-[120px]"
+                                            className="w-full border-gray-300 border p-4 rounded-[20px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 min-h-[120px]"
                                             placeholder='Tell us about yourself...' 
                                         />
                                     </li>
                                     <li className="mb-4">
                                         <div className="p-3 bg-gray-50 rounded-[20px] border border-gray-200">
                                             <strong className='block text-sm text-gray-600 mb-1'>Profile URL</strong>
-                                            <div className="text-pink-600 font-medium break-all">
+                                            <div className="text-[#FF007F] font-medium break-all">
                                                 {typeof window !== 'undefined' ? `https://spennypiggy.co/${username}` : ''}
                                             </div>
                                         </div>
@@ -639,7 +649,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                                                     htmlFor={`types-${index}`}
                                                                     className={`block px-4 py-2 text-normal rounded-full font-medium cursor-pointer  min-w-[50px] !text-center transition-all duration-300 border 
                                                                         ${isSelected 
-                                                                            ? "bg-pink-600 border-pink-500 !text-white shadow-md transform scale-105" 
+                                                                            ? "bg-pink-600 border-[#FF007F] !text-white shadow-md transform scale-105" 
                                                                             : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-50"
                                                                         }`}
                                                                 >
@@ -662,7 +672,7 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                                         name="min_surprise_amount" 
                                                         defaultValue={user?.min_surprise_amount || ''}
                                                         onChange={(e) => setData('min_surprise_amount', e.target.value)}
-                                                        className="w-full border-gray-300 border pl-10 pr-4 py-[10px] rounded-[10px] md:rounded-[15px] focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
+                                                        className="w-full border-gray-300 border pl-10 pr-4 py-[10px] rounded-[10px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
                                                         placeholder="0.00"
                                                     />
                                                 </div>

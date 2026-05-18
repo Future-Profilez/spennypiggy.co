@@ -381,7 +381,7 @@ class CheckoutController extends Controller
                 $creatorNetMinor = (int) round($totalCreatorNet * $multiplier);
                 
                 $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner->uuid);
-                $reserveRate = (int) ($metrics->reserve_percent ?? 0);
+                $reserveRate = app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($owner, $metrics, now());
                 
                 // Calculate reserve based on the creator's share (Net Amount)
                 $reserveMinor = $reserveRate > 0 ? (int) round(($creatorNetMinor * $reserveRate) / 100) : 0;

@@ -178,7 +178,7 @@ export default function EditMembership({ item }) {
 
     return (
         <Popup
-            modalclass="pinkmodal sendSurprize-modal shadow-pink membership-modal"
+            modalclass="pinkmodal sendSurprize-modal shadow-[4px_4px_0px_0px_#FF007F]ink membership-modal"
             space="4"
             size="xl"
             action={close}
@@ -287,7 +287,7 @@ export default function EditMembership({ item }) {
                         <div className="relative currency-wrapper">
                             <span className="currency-tag absolute">GBP</span>
                             <input
-                                className="border border-gray-300 rounded-2xl px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-300 bg-white text-black"
+                                className="border border-gray-300 rounded-2xl px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-300 bg-white text-black"
                                 onChange={handleInput}
                                 value={data.month_price || ""}
                                 type="number"
