@@ -199,11 +199,12 @@ class FinancialService
         $payoutInfo = $payoutData['payouts'][$user->uuid] ?? null;
         $netPayoutMinor = $payoutInfo['net_payout'] ?? 0;
         $netPayoutMajor = $netPayoutMinor / 100;
-        $payoutableDisplay = $convert('GBP', $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor;
+        $payoutCurrency = $payoutInfo['currency'] ?? 'GBP';
+        $payoutableDisplay = $convert($payoutCurrency, $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor;
 
         $pendingAmountMinor = $payoutInfo['pending_amount'] ?? 0;
         $pendingAmountMajor = $pendingAmountMinor / 100;
-        $pendingDisplay = $convert('GBP', $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor;
+        $pendingDisplay = $convert($payoutCurrency, $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor;
 
         $payoutPreview = null;
         if ($payoutInfo) {
@@ -222,14 +223,14 @@ class FinancialService
                 'payment_count' => (int) ($payoutInfo['payment_count'] ?? 0),
                 'is_below_threshold' => (bool) ($payoutInfo['is_below_threshold'] ?? false),
 
-                'net_earnings' => $convert('GBP', $netEarningsMajor, $displayCurrency) ?? $netEarningsMajor,
-                'reserve_held' => $convert('GBP', $reserveHeldMajor, $displayCurrency) ?? $reserveHeldMajor,
-                'reserve_released' => $convert('GBP', $reserveReleaseMajor, $displayCurrency) ?? $reserveReleaseMajor,
-                'refund_disputes' => $convert('GBP', $refundDisputeMajor, $displayCurrency) ?? $refundDisputeMajor,
-                'review_holds' => $convert('GBP', $reviewHoldMajor, $displayCurrency) ?? $reviewHoldMajor,
+                'net_earnings' => $convert($payoutCurrency, $netEarningsMajor, $displayCurrency) ?? $netEarningsMajor,
+                'reserve_held' => $convert($payoutCurrency, $reserveHeldMajor, $displayCurrency) ?? $reserveHeldMajor,
+                'reserve_released' => $convert($payoutCurrency, $reserveReleaseMajor, $displayCurrency) ?? $reserveReleaseMajor,
+                'refund_disputes' => $convert($payoutCurrency, $refundDisputeMajor, $displayCurrency) ?? $refundDisputeMajor,
+                'review_holds' => $convert($payoutCurrency, $reviewHoldMajor, $displayCurrency) ?? $reviewHoldMajor,
                 'pending' => $pendingDisplay,
-                'negative_balance_before' => $convert('GBP', $negativeBeforeMajor, $displayCurrency) ?? $negativeBeforeMajor,
-                'negative_balance_after' => $convert('GBP', $negativeAfterMajor, $displayCurrency) ?? $negativeAfterMajor,
+                'negative_balance_before' => $convert($payoutCurrency, $negativeBeforeMajor, $displayCurrency) ?? $negativeBeforeMajor,
+                'negative_balance_after' => $convert($payoutCurrency, $negativeAfterMajor, $displayCurrency) ?? $negativeAfterMajor,
 
                 'net_payout' => $payoutableDisplay,
             ];
