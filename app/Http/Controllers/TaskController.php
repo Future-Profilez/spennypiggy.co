@@ -512,7 +512,7 @@ class TaskController extends Controller
         $appUrl = rtrim(config('app.url'), '/');
 
         $paymentType = $task->type === 'instant' ? 'STANDARD - Destination Charge' : 'PAID_TASK - Destination Charge';
-        
+
         $complianceMetadata = Helpers::buildStripeMetadata('task_purchase', $task, [
             'buyer_id' => $user->id,
             'task_type' => $task->type,
@@ -647,11 +647,31 @@ class TaskController extends Controller
             return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
         }
 
+        $displayAmount = $session->amount_total / 100;
+
+        if ($purchase && auth()->check()) {
+
+            // CREATOR VIEW
+            if (auth()->user()->role == 1) {
+
+                $displayAmount = (float) $purchase->transfer_amount;
+            } else {
+
+                // GIFTER VIEW
+                $displayAmount = $purchase->total_paid > 0
+                    ? (float) $purchase->total_paid
+                    : (
+                        (float) $purchase->amount +
+                        (float) $purchase->platform_fee
+                    );
+            }
+        }
+
         $thankYouParams = [
             'username' => $task->creator->username,
             'type' => 'task',
             'item_name' => $task->title,
-            'amount' => $purchase ? $purchase->amount : ($session->amount_total / 100),
+            'amount' => $displayAmount,
             'currency' => $session->currency ?? 'GBP',
             'item_id' => $task->uuid,
             'is_instant' => $task->type === 'instant' ? '1' : '0'
@@ -664,9 +684,14 @@ class TaskController extends Controller
                 'url' => 'https://ucarecdn.com/' . $task->deliverable_content . '/'
             ];
         }
+        Log::info('Redirecting to thank you page after task purchase', [
+            'thank_you_params' => $thankYouParams
+        ]);
 
         return to_route('thank-you', $thankYouParams)->with('success', 'Payment Successful.');
     }
+
+
 
     /**
      * Synchronously create task purchase if webhook is delayed
