@@ -28,12 +28,44 @@ return new class extends Migration
                    AND u.id = (p.creator_id)::bigint"
             );
         } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
-            DB::statement(
-                "UPDATE payments p
-                 JOIN users u ON p.creator_id = CAST(u.id AS CHAR)
-                 SET p.creator_id = u.uuid
-                 WHERE p.creator_id REGEXP '^[0-9]+$'"
-            );
+            $batchSize = 1000;
+
+            while (true) {
+                $rows = DB::select(
+                    "SELECT p.id, u.uuid
+                     FROM payments p
+                     JOIN users u ON p.creator_id = CAST(u.id AS CHAR)
+                     WHERE p.creator_id REGEXP '^[0-9]+$'
+                     ORDER BY p.id
+                     LIMIT {$batchSize}"
+                );
+
+                if (count($rows) === 0) {
+                    break;
+                }
+
+                DB::transaction(function () use ($rows) {
+                    $whenThen = [];
+                    $bindings = [];
+                    $ids = [];
+
+                    foreach ($rows as $row) {
+                        $whenThen[] = 'WHEN ? THEN ?';
+                        $bindings[] = $row->id;
+                        $bindings[] = $row->uuid;
+                        $ids[] = $row->id;
+                    }
+
+                    $inPlaceholders = implode(',', array_fill(0, count($ids), '?'));
+                    $bindings = array_merge($bindings, $ids);
+
+                    $sql = "UPDATE payments
+                            SET creator_id = CASE id " . implode(' ', $whenThen) . " ELSE creator_id END
+                            WHERE id IN ({$inPlaceholders})";
+
+                    DB::statement($sql, $bindings);
+                }, 5);
+            }
         }
 
         try {
@@ -75,4 +107,3 @@ return new class extends Migration
         }
     }
 };
-

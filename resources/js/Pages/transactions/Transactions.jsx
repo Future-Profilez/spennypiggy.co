@@ -19,6 +19,9 @@ export default function Transactions(props) {
   const [direction, setDirection] = useState('all'); // all | received | sent
   const [query, setQuery] = useState('');
   const [twitterModal, setTwitterModal] = useState({ show: false, event: null });
+  const [shopAnswerDrafts, setShopAnswerDrafts] = useState({});
+  const [submittingShopAnswers, setSubmittingShopAnswers] = useState(new Set());
+  const [submittedShopAnswers, setSubmittedShopAnswers] = useState(new Set());
 
   const displayCurrency = (display_currency || auth?.user?.default_currency || 'GBP').toUpperCase();
   const displayDigits = currencies?.[displayCurrency]?.ISOdigits ?? 2;
@@ -130,42 +133,58 @@ export default function Transactions(props) {
   const shareOnTwitter = (e) => {
     if (!e) return;
     const cp = e.category === 'sent' 
-      ? (e?.creator?.username || e?.creator?.name) 
-      : (e?.gifter?.username || e?.gifter?.name);
-    const handle = cp ? (cp.startsWith('@') ? cp : `@${cp}`) : 'someone';
-    
-    let text = '';
-    const origin = window.location.origin;
-    let url = origin;
+      ? (e?.creator?.username ? `@${e.creator.username}` : (e?.creator?.name || 'a creator'))
+      : (e?.gifter?.username ? `@${e.gifter.username}` : (e?.gifter?.name || 'a supporter'));
 
-    if (e.category === 'received') {
-      url = `${origin}/${auth?.user?.username || ''}`;
-      switch (e.type) {
-        case 'gift_wish': text = `Just received a gift for my "${e.wish?.name || 'wish'}"! Thank you ${handle}! 🎁`; break;
-        case 'gift_tip': text = `Thank you ${handle} for the support! 💖`; break;
-        case 'gift_membership': text = `New member alert! Welcome ${handle} to the family! 🎟️`; break;
-        case 'gift_bill': text = `Bill renewed! Thanks for staying with me ${handle}! 🧾`; break;
-        case 'gift_shop': text = `New shop order from ${handle}! 🛍️`; break;
-        case 'gift_task': text = `Task funded! Getting to work on "${e.task?.title || 'task'}" for ${handle}! 🧩`; break;
-        default: text = `Just received support from ${handle}! ✨`;
-      }
-    } else {
-      const creatorHandle = e?.creator?.username ? `@${e.creator.username}` : (e?.creator?.name || 'a creator');
-      url = e?.creator?.username ? `${origin}/${e.creator.username}` : origin;
-      switch (e.type) {
-        case 'gift_wish': text = `Just funded ${creatorHandle}'s wish: "${e.wish?.name || 'wish'}"! 🎁`; break;
-        case 'gift_tip': text = `Just sent some support to ${creatorHandle}! 💖`; break;
-        case 'gift_membership': text = `Just joined ${creatorHandle}'s membership! 🎟️`; break;
-        case 'gift_bill': text = `Just renewed a bill for ${creatorHandle}! 🧾`; break;
-        case 'gift_shop': text = `Just bought something from ${creatorHandle}'s shop! 🛍️`; break;
-        case 'gift_task': text = `Just funded a task for ${creatorHandle}: "${e.task?.title || 'task'}"! 🧩`; break;
-        default: text = `Just supported ${creatorHandle}! ✨`;
-      }
+    const title = titleFor(e);
+    let tweetText = e.category === 'sent' 
+      ? `I just supported ${cp} with a ${title} on SpennyPiggy! 🎉`
+      : `Thank you ${cp} for the ${title} on SpennyPiggy! 🎉`;
+    
+    if (e.open_link) {
+      tweetText += `\nCheck it out here: ${e.open_link}`;
     }
 
-    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank');
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    window.open(twitterUrl, '_blank', 'noopener,noreferrer');
     setTwitterModal({ show: false, event: null });
+  };
+
+  const submitShopAnswer = async (paymentId) => {
+    const answer = shopAnswerDrafts[paymentId];
+    if (!answer?.trim()) return;
+
+    setSubmittingShopAnswers(prev => new Set([...prev, paymentId]));
+    
+    try {
+        const res = await axios.post(`/shop/answer-to-payment/${paymentId}`, { answer });
+        if (res.data.status) {
+            setSubmittedShopAnswers(prev => new Set([...prev, paymentId]));
+            setShopAnswerDrafts(prev => {
+                const newDrafts = { ...prev };
+                delete newDrafts[paymentId];
+                return newDrafts;
+            });
+            // Update local event data
+            setData(prev => ({
+              ...prev,
+              events: prev.events.map(ev => 
+                ev.payment_id === paymentId ? { ...ev, answer: answer } : ev
+              )
+            }));
+            alert(res.data.msg || res.data.message || 'Answer submitted successfully.');
+        } else {
+            alert(res.data.msg || res.data.message || 'Failed to submit answer.');
+        }
+    } catch (err) {
+        alert(err.response?.data?.message || 'Something went wrong!');
+    } finally {
+        setSubmittingShopAnswers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(paymentId);
+            return newSet;
+        });
+    }
   };
 
   const rewardChip = (e) => {
@@ -480,8 +499,75 @@ export default function Transactions(props) {
                             ) : null}
                           </div>
 
-                          {(e?.task?.reward_file || e?.wish?.reward_file || e.certificate_url || e?.task?.reward_note) && (
+                          {(e.benefits || e.wish_content || e.ask_question || e.certificate_url || e?.task?.reward_file || e?.wish?.reward_file || e?.task?.reward_note) && (
                             <div className="mt-4 flex flex-col gap-3">
+                              {e.benefits && (
+                                <div className="p-3 bg-pink-50 rounded-[20px] border border-pink-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                  <p className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">Benefits Included</p>
+                                  <div className="text-sm font-semibold text-gray-700 break-words">
+                                    {String(e.benefits).startsWith('http') ? (
+                                      <a href={e.benefits} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">{e.benefits}</a>
+                                    ) : e.benefits}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {e.wish_content && (
+                                <div className="mt-2">
+                                  {String(e.wish_content.type).includes('video') ? (
+                                    <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border-2 border-black bg-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                      <source src={e.wish_content.url} type={e.wish_content.type} />
+                                    </video>
+                                  ) : String(e.wish_content.type).includes('audio') ? (
+                                    <audio controls controlsList="nodownload" className="w-full">
+                                      <source src={e.wish_content.url} type={e.wish_content.type} />
+                                    </audio>
+                                  ) : String(e.wish_content.type).includes('pdf') || String(e.wish_content.type).includes('zip') ? (
+                                    <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="text-[#FF007F] font-bold hover:underline text-[13px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                      Open Content
+                                    </a>
+                                  ) : (
+                                    <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-[20px] border-2 border-black bg-gray-50 hover:opacity-90 transition-opacity shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                      <img src={e.wish_content.url} alt={e.wish_content.name || 'Exclusive Content'} className="w-full max-h-[250px] object-contain" />
+                                    </a>
+                                  )}
+                                  {e.wish_content.name && (
+                                    <div className="mt-2 text-center text-xs text-gray-500 font-bold truncate px-2">
+                                      {e.wish_content.name}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {e.ask_question && e.payment_id && (
+                                <div className="p-4 bg-white border-2 border-pink-200 rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                  <p className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">Question From Creator</p>
+                                  <p className="text-sm font-semibold mb-3 text-black">{e.ask_question}</p>
+                                  {e.answer || submittedShopAnswers.has(e.payment_id) ? (
+                                    <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm font-semibold border-2 border-green-200">
+                                      Your answer has been submitted.
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-2">
+                                      <textarea
+                                        value={shopAnswerDrafts[e.payment_id] || ''}
+                                        onChange={(ev) => setShopAnswerDrafts(prev => ({ ...prev, [e.payment_id]: ev.target.value }))}
+                                        placeholder="Type your answer here..."
+                                        className="w-full border-2 border-black rounded-[15px] p-3 text-sm focus:ring-pink-500 focus:border-[#FF007F] font-bold"
+                                        rows="3"
+                                      ></textarea>
+                                      <button
+                                        onClick={() => submitShopAnswer(e.payment_id)}
+                                        disabled={submittingShopAnswers.has(e.payment_id) || !(shopAnswerDrafts[e.payment_id]?.trim())}
+                                        className="bg-[#FF007F] text-black border-2 border-black font-black py-2 px-4 rounded-full hover:translate-x-[-1px] hover:translate-y-[-1px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 text-[10px] uppercase tracking-widest w-fit transition-all"
+                                      >
+                                        {submittingShopAnswers.has(e.payment_id) ? "Submitting..." : "Submit Answer"}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                               <div className="flex flex-wrap gap-2">
                                 {e?.task?.reward_file ? (
                                   <a href={e.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
@@ -494,7 +580,7 @@ export default function Transactions(props) {
                                 ) : null}
                               </div>
                               {e?.task?.reward_note ? (
-                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black">Note: {e.task.reward_note}</p>
+                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">Note: {e.task.reward_note}</p>
                               ) : null}
                             </div>
                           )}

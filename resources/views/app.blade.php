@@ -217,7 +217,6 @@
     
     <meta name="msapplication-TileColor" content="#05EFB8" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
-    <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="keywords" content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
     
     {{-- Minimal critical CSS --}}
@@ -231,12 +230,6 @@
     {{-- Optimized Google Fonts loading --}}
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" rel="stylesheet"></noscript>
-    <meta property="og:title" content="Exclusive Content, Memberships & More!" />
-    <meta property="og:type" content="video.movie" />
-    <meta property="og:url" content="spennypiggy.co" />
-    <meta property="og:image" content="{{ URL::asset('/siteicon.png') }}" />
-    <meta property="og:site_name" content="spennypiggy.co" />
-    <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
 
     <link rel="manifest" href="{{ url('/manifest.json')}}" />
 
@@ -350,22 +343,40 @@
         }
     </script>
 
-    <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Spenny Piggy",
-      "alternateName": "Exclusive Content, Memberships & More!",
-      "url": "https://spennypiggy.co/",
-      "logo": "https://d36ape3u423eoo.cloudfront.net/329a3236-4b42-40ed-abf7-61da55dbcb22/build/assets/logo-164abf9b.png",
-      "sameAs": [
-        "https://www.facebook.com/spennypiggy",
-        "https://twitter.com/spennypiggy",
-        "https://www.instagram.com/spennypiggy/",
-        "https://blog.spennypiggy.co/"
-      ]
-    }
+    @if(request()->is('/'))
+    <script type="application/ld+json"> 
+    { 
+      "@context": "https://schema.org", 
+      "@type": "Organization", 
+      "name": "Spenny Piggy", 
+      "alternateName": "Spenny Piggy by Social Vortex", 
+      "url": "https://spennypiggy.co", 
+      "logo": "https://spennypiggy.co/logo.png", 
+      "description": "A creator monetisation platform combining memberships, wishlists, paid tasks, and tips in one place. Built for creators globally.", 
+      "sameAs": [ 
+        "https://x.com/spennypiggy", 
+        "https://instagram.com/spennypiggy", 
+        "https://tiktok.com/@spennypiggy", 
+        "https://www.snapchat.com/add/spennypiggy", 
+        "https://www.youtube.com/@spennypiggy" 
+      ], 
+      "contactPoint": { 
+        "@type": "ContactPoint", 
+        "email": "support@spennypiggy.co", 
+        "telephone": "+44 20 335 52057", 
+        "contactType": "customer support", 
+        "availableLanguage": ["English"] 
+      }, 
+      "address": { 
+        "@type": "PostalAddress", 
+        "streetAddress": "55 Colmore Row", 
+        "addressLocality": "Birmingham", 
+        "postalCode": "B3 2AA", 
+        "addressCountry": "GB" 
+      } 
+    } 
     </script>
+    @endif
     <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
         {
         "@context":"http://schema.org",

@@ -256,4 +256,186 @@ class SubscriptionsController extends Controller
             'isOwner' => $subscription->wish_item && $subscription->wish_item->user_id === $user->id,
         ]);
     }
+
+    /**
+     * Cancel a subscription by ID (alternative route for frontend compatibility)
+     */
+    public function cancelSubscriptionById(Request $request, $id)
+    {
+        $user = $request->user();
+        
+        try {
+            // Try to find the subscription in wish_item_subscriptions first
+            $subscription = WishItemSubscription::where('id', $id)
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+                })
+                ->first();
+            
+            if ($subscription) {
+                return $this->cancelWishItemSubscription($request, $subscription);
+            }
+            
+            // Try membership subscriptions
+            $subscription = MembershipPayment::where('id', $id)
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+                })
+                ->first();
+            
+            if ($subscription) {
+                return $this->cancelMembershipSubscription($request, $subscription);
+            }
+            
+            // Try bill subscriptions
+            $subscription = BillPayment::where('id', $id)
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+                })
+                ->first();
+            
+            if ($subscription) {
+                return $this->cancelBillSubscription($request, $subscription);
+            }
+            
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Subscription not found'], 404);
+            }
+            return back()->with('error', 'Subscription not found.');
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to cancel subscription by ID', [
+                'subscription_id' => $id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Failed to cancel subscription. Please try again.'], 500);
+            }
+            return back()->with('error', 'Failed to cancel subscription. Please try again.');
+        }
+    }
+    
+    private function cancelWishItemSubscription(Request $request, $subscription)
+    {
+        // Handle case where subscription ID is passed instead of object
+        if (is_numeric($subscription)) {
+            $subscription = WishItemSubscription::find($subscription);
+            if (!$subscription) {
+                if ($request->expectsJson()) {
+                    return response()->json(['error' => 'Subscription not found'], 404);
+                }
+                return back()->with('error', 'Subscription not found.');
+            }
+        }
+        
+        if (!$subscription->stripe_id) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'No Stripe subscription ID found'], 400);
+            }
+            return back()->with('error', 'No Stripe subscription ID found.');
+        }
+        
+        if (!$subscription->canBeCanceled()) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'This subscription cannot be canceled'], 400);
+            }
+            return back()->with('error', 'This subscription cannot be canceled.');
+        }
+        
+        try {
+            // Cancel the subscription in Stripe using cancel_at_period_end
+            if (!str_starts_with($subscription->stripe_id, 'sub_test_')) {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                \Stripe\Subscription::update($subscription->stripe_id, [
+                    'cancel_at_period_end' => true
+                ]);
+            }
+            
+            // Update local status
+            $subscription->update([
+                'cancel_at_period_end' => true,
+                'canceled_at' => now()
+            ]);
+            
+            // Log the cancellation event
+            $subscription->logEvent('canceled', [
+                'notes' => 'Subscription canceled by user'
+            ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Subscription will be canceled at the end of the current billing period.'
+                ]);
+            }
+            
+            return back()->with('success', 'Subscription will be canceled at the end of the current billing period.');
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to cancel Stripe subscription', [
+                'subscription_id' => $subscription->id,
+                'stripe_id' => $subscription->stripe_id,
+                'error' => $e->getMessage()
+            ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to cancel subscription. Please try again or contact support.'
+                ], 500);
+            }
+            
+            return back()->with('error', 'Failed to cancel subscription. Please try again or contact support.');
+        }
+    }
+    
+    private function cancelMembershipSubscription(Request $request, $subscription)
+    {
+        // Similar logic for membership subscriptions
+        if (!$subscription->stripe_id) {
+            return back()->with('error', 'No Stripe subscription ID found.');
+        }
+        
+        try {
+            \App\StripeControl::cancelSubscription($subscription->stripe_id);
+            $subscription->status = 'cancelled';
+            $subscription->save();
+            
+            return back()->with('success', 'Membership subscription cancelled successfully.');
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to cancel membership subscription', [
+                'subscription_id' => $subscription->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Failed to cancel subscription. Please try again.');
+        }
+    }
+    
+    private function cancelBillSubscription(Request $request, $subscription)
+    {
+        // Similar logic for bill subscriptions
+        if (!$subscription->stripe_id) {
+            return back()->with('error', 'No Stripe subscription ID found.');
+        }
+        
+        try {
+            \App\StripeControl::cancelSubscription($subscription->stripe_id);
+            $subscription->status = 'cancelled';
+            $subscription->save();
+            
+            return back()->with('success', 'Bill subscription cancelled successfully.');
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to cancel bill subscription', [
+                'subscription_id' => $subscription->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Failed to cancel subscription. Please try again.');
+        }
+    }
 }

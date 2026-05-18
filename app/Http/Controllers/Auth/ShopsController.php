@@ -1207,7 +1207,7 @@ class ShopsController extends Controller
 
                 if (!empty($stripeid->shop->ask_question) && empty($stripeid->answer)) {
                     $thankYouParams['ask_question'] = $stripeid->shop->ask_question;
-                    $thankYouParams['payment_id'] = $stripeid->id;
+                    $thankYouParams['payment_id'] = $stripeid->uuid;
                 }
                 
                 if ($stripeid->shop->type !== 'physical') {
@@ -1522,13 +1522,33 @@ class ShopsController extends Controller
 
     public function answerPayment(Request $request, $payment_id)
     {
-        $payment = ShopPayment::where('id', $payment_id)->first();
+        $payment = ShopPayment::where('uuid', $payment_id)->first();
+
+        if (!$payment && is_numeric($payment_id)) {
+            $payment = ShopPayment::where('id', $payment_id)->first();
+        }
 
         if (!$payment) {
             return response()->json([
                 'status' => false,
                 'message' => 'Payment not found or unauthorized.'
             ]);
+        }
+
+        if (Auth::check()) {
+            if (($payment->user_id ?? null) !== Auth::id() && ($payment->email ?? null) !== Auth::user()->email) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment not found or unauthorized.'
+                ]);
+            }
+        } else {
+            if (is_numeric($payment_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment not found or unauthorized.'
+                ]);
+            }
         }
 
         if (!empty($payment->answer)) {

@@ -12,6 +12,48 @@
     color: #ffffff;
 }
 
+.pride-page .y2k-grid {
+    background-size: 40px 40px;
+    background-image: linear-gradient(
+            to right,
+            rgba(255, 0, 127, 0.05) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            to bottom,
+            rgba(255, 0, 127, 0.05) 1px,
+            transparent 1px
+        );
+    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+}
+.pride-page .glass-card {
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.pride-page .neon-text-pink {
+    text-shadow: 0 0 10px rgba(255, 0, 127, 0.8), 0 0 20px rgba(255, 0, 127, 0.4);
+}
+.pride-page .neon-text-blue {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.4);
+}
+@media (max-width: 768px) {
+    .pride-page .glass-card {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    .pride-page .y2k-grid {
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+    .pride-page .fading {
+        animation: none !important;
+        animation-timeline: auto !important;
+    }
+}
+
 .font-cera-medium {
     font-family:
         "CeraGRMedium", ui-sans-serif, system-ui, sans-serif,

@@ -13,7 +13,9 @@ class Setting extends Model
 
     public static function getValue($key, $default = null)
     {
-        $setting = self::where('key', $key)->first();
-        return $setting ? $setting->value : $default;
+        return \Illuminate\Support\Facades\Cache::remember("setting_{$key}", 300, function () use ($key, $default) {
+            $setting = self::where('key', $key)->first();
+            return $setting ? $setting->value : $default;
+        });
     }
 }

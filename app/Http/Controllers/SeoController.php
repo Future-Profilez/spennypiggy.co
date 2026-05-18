@@ -43,22 +43,14 @@ class SeoController extends Controller
     {
         $siteUrl = config('app.url');
         $content = "User-agent: *\n";
+        $content .= "Allow: /\n\n";
         $content .= "Disallow: /admin/\n";
-        $content .= "Disallow: /api/webhooks/\n";
-        $content .= "Disallow: /*.json\n";
-        $content .= "Disallow: /staging/\n";
-        $content .= "Disallow: /test/\n";
-        $content .= "Disallow: /debug*/\n";
-        $content .= "Disallow: /seed*/\n";
-        $content .= "Disallow: /*-test\n";
-        $content .= "Disallow: /pwa-debug\n";
-        $content .= "\n# Allow main content\n";
-        $content .= "Allow: /\n";
-        $content .= "Allow: /discover\n";
-        $content .= "Allow: /leaderboard\n";
-        $content .= "Allow: /how-it-works\n";
-        $content .= "\n# Sitemap location\n";
-        $content .= "Sitemap: {$siteUrl}/dynamic-sitemap\n";
+        $content .= "Disallow: /api/\n";
+        $content .= "Disallow: /dashboard/\n";
+        $content .= "Disallow: /account/\n";
+        $content .= "Disallow: /login\n";
+        $content .= "Disallow: /signup-confirm\n\n";
+        $content .= "Sitemap: {$siteUrl}/sitemap.xml\n";
         
         // Create response with aggressive cache prevention
         $response = new Response($content, 200, [

@@ -1,13 +1,12 @@
 import { Head, Link } from "@inertiajs/react";
 import { route } from 'ziggy-js';
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
-import { TwitterIcon, InstagramIcon } from "@animateicons/react/lucide";
-import { Youtube } from "lucide-react";
-import { FaTiktok } from "react-icons/fa";
+import { FaInstagram, FaTiktok, FaTwitter, FaYoutube } from "react-icons/fa";
 import spennypiggy from "../../assets/img/logo.png";
 import risk from "../../assets/risk_intolerant_vanguard_sharing_mint.png";
-import FeatureSuggestionModal from "../Components/FeatureSuggestionModal";
+
+const FeatureSuggestionModal = lazy(() => import("../Components/FeatureSuggestionModal"));
 
 export default function Footer(props) {
     const { auth } = props;
@@ -43,8 +42,8 @@ export default function Footer(props) {
                 {/* Google Analytics now loaded dynamically via lazy loading */}
             </Head>
             <footer className={`bg-[#0A0A0A] text-white pt-8 md:pt-20 pb-30 md:pb-12 relative overflow-hidden ${IsPWA ? "hidden" : ""}`}>
-                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#924DFF]/10 blur-[150px] rounded-full -translate-y-1/2"></div>
-                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#FF007F]/10 blur-[150px] rounded-full translate-y-1/2"></div>
+                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#924DFF]/10 blur-[150px] rounded-full -translate-y-1/2 hidden md:block"></div>
+                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#FF007F]/10 blur-[150px] rounded-full translate-y-1/2 hidden md:block"></div>
 
                 <div className="containerbox mx-auto relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start mb-8">
@@ -67,10 +66,10 @@ export default function Footer(props) {
                             
                             <div className="flex flex-wrap gap-4 pt-4">
                                 {[
-                                    { icon: TwitterIcon, href: "https://x.com/spennypiggy", color: "hover:bg-[#1DA1F2]" },
-                                    { icon: InstagramIcon, href: "https://www.instagram.com/spennypiggy", color: "hover:bg-[#E4405F]" },
+                                    { icon: FaTwitter, href: "https://x.com/spennypiggy", color: "hover:bg-[#1DA1F2]" },
+                                    { icon: FaInstagram, href: "https://www.instagram.com/spennypiggy", color: "hover:bg-[#E4405F]" },
                                     { icon: FaTiktok, href: "https://www.tiktok.com/@spennypiggy", color: "hover:bg-[#000000] hover:border-white/20" },
-                                    { icon: Youtube, href: "https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ", color: "hover:bg-[#FF0000]" }
+                                    { icon: FaYoutube, href: "https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ", color: "hover:bg-[#FF0000]" }
                                 ].map((social, index) => (
                                     <a
                                         key={index}
@@ -198,11 +197,15 @@ export default function Footer(props) {
                 </div>
             </footer>
 
-            <FeatureSuggestionModal 
-                show={showSuggestionModal} 
-                onClose={() => setShowSuggestionModal(false)} 
-                auth={auth}
-            />
+            {showSuggestionModal ? (
+                <Suspense fallback={null}>
+                    <FeatureSuggestionModal 
+                        show={showSuggestionModal} 
+                        onClose={() => setShowSuggestionModal(false)} 
+                        auth={auth}
+                    />
+                </Suspense>
+            ) : null}
         </>
     );
 }

@@ -153,6 +153,11 @@ class Deliverable extends Model
     {
         return $this->belongsTo(TaskPurchase::class, 'order_id');
     }
+
+    public function shopPayment(): BelongsTo
+    {
+        return $this->belongsTo(ShopPayment::class, 'session_id', 'session_id');
+    }
     
     /**
      * Get the item based on product_type

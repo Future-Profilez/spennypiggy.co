@@ -1,18 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import Footer from '../../includes/Footer';
 import LiveBar from '../../includes/LiveBar';
 import spennypiggy from '../../../assets/img/logo.png';
-import { Heart, Sparkles, CheckCircle2, Gift, DollarSign, Package, Users, Briefcase, Zap, Flame } from 'lucide-react';
+import { FaBolt, FaBriefcase, FaBox, FaCheckCircle, FaDollarSign, FaFire, FaGift, FaHeart, FaStar, FaUsers } from 'react-icons/fa';
+
+const PRIDE_LIVEBAR_ITEMS = [
+    "🏳️‍🌈 GET PAID TO BE YOU  ",
+    "STOP POSTING FOR FREE  ",
+    "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
+    "💸 MONETISE THE ATTENTION  ",
+];
 
 export default function PrideLanding() {
     const [scrolled, setScrolled] = useState(false);
+    const scrolledRef = useRef(false);
 
     useEffect(() => {
         const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
+            const next = window.scrollY > 50;
+            if (next === scrolledRef.current) return;
+            scrolledRef.current = next;
+            setScrolled(next);
         };
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -20,42 +31,26 @@ export default function PrideLanding() {
         return `${route(baseRoute)}?utm_source=pride_qr&utm_medium=tshirt&utm_campaign=pride_creator_signup`;
     };
 
-    
+    const features = useMemo(() => {
+        return [
+            { icon: FaGift, color: "from-[#FF007F] to-[#ff4da6]", title: "Wishlists", desc: "Let fans buy you exactly what you want. No shipping address needed." },
+            { icon: FaDollarSign, color: "from-[#00F0FF] to-[#0099ff]", title: "Tips & Payments", desc: "Direct financial support from your community. Fast payouts." },
+            { icon: FaBox, color: "from-[#7000FF] to-[#b366ff]", title: "Digital Goods", desc: "Sell exclusive content, photos, guides, and downloadable files." },
+            { icon: FaUsers, color: "from-[#FFB800] to-[#ffda66]", title: "Memberships", desc: "Recurring monthly revenue from your most loyal VIP fans." },
+            { icon: FaBriefcase, color: "from-[#FF0055] to-[#ff6699]", title: "Paid Tasks", desc: "Accept custom requests, shoutouts, and paid commissions safely." },
+        ];
+    }, []);
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-poppins selection:bg-[#FF007F] selection:text-white  relative">
+        <div className="pride-page min-h-screen bg-[#050505] text-white font-poppins selection:bg-[#FF007F] selection:text-white relative">
             <Head title="Pride - Spenny Piggy | Get Paid For It" />
-            
-            {/* Custom Animations & Styles */}
-            <style dangerouslySetInlineInnerHTML={{__html: `
-                .y2k-grid {
-                    background-size: 40px 40px;
-                    background-image: 
-                        linear-gradient(to right, rgba(255, 0, 127, 0.05) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(255, 0, 127, 0.05) 1px, transparent 1px);
-                    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-                    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-                }
-                .glass-card {
-                    background: rgba(20, 20, 20, 0.6);
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                }
-                .neon-text-pink {
-                    text-shadow: 0 0 10px rgba(255,0,127,0.8), 0 0 20px rgba(255,0,127,0.4);
-                }
-                .neon-text-blue {
-                    text-shadow: 0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.4);
-                }
-            `}} />
 
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0 y2k-grid"></div>
-                <div className="absolute top-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-[#FF007F]/20 blur-[100px]"></div>
-                <div className="absolute top-[30%] right-[-20%] w-[400px] h-[400px] rounded-full bg-[#7000FF]/20 blur-[120px]"></div>
-                <div className="absolute bottom-[-10%] left-[10%] w-[300px] h-[300px] rounded-full bg-[#00F0FF]/15 blur-[100px]"></div>
+                <div className="absolute top-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-[#FF007F]/20 blur-[100px] hidden md:block"></div>
+                <div className="absolute top-[30%] right-[-20%] w-[400px] h-[400px] rounded-full bg-[#7000FF]/20 blur-[120px] hidden md:block"></div>
+                <div className="absolute bottom-[-10%] left-[10%] w-[300px] h-[300px] rounded-full bg-[#00F0FF]/15 blur-[100px] hidden md:block"></div>
             </div>
 
             {/* Header */}
@@ -66,7 +61,7 @@ export default function PrideLanding() {
                         <img src={spennypiggy} alt="Spenny Piggy" className="h-10 md:h-14 relative z-10" />
                     </Link>
                     <a href={getUTMLink('register')} className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-2.5 text-[12px] md:text-xs font-black uppercase tracking-widest text-white bg-transparent border-2 border-[#FF007F] rounded-[30px] hover:bg-[#FF007F] hover:text-black transition-all duration-300 shadow-[0_0_10px_rgba(255,0,127,0.3)] hover:shadow-[0_0_20px_rgba(255,0,127,0.6)]">
-                        Start Earning <Flame className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                        Start Earning <FaFire className="w-4 h-4 md:w-3.5 md:h-3.5" />
                     </a>
                 </div>
             </header>
@@ -74,36 +69,7 @@ export default function PrideLanding() {
             {/* Scrolling Marquee Top using LiveBar */}
             <div className="relative z-20 mt-[70px] md:mt-[80px] w-full   transform -rotate-1 shadow-lg">
                 <LiveBar 
-                    livebartest={[
-                        "🏳️‍🌈 GET PAID TO BE YOU  ",
-                        "STOP POSTING FOR FREE  ",
-                        "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-                        "💸 MONETISE THE ATTENTION  ",
-                        "🏳️‍🌈 GET PAID TO BE YOU  ",
-                        "STOP POSTING FOR FREE  ",
-                        "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-                        "💸 MONETISE THE ATTENTION  ",
-                        "🏳️‍🌈 GET PAID TO BE YOU  ",
-                        "STOP POSTING FOR FREE  ",
-                        "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-                        "💸 MONETISE THE ATTENTION  ",
-                        "🏳️‍🌈 GET PAID TO BE YOU  ",
-                        "STOP POSTING FOR FREE  ",
-                        "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-                        "💸 MONETISE THE ATTENTION  ",
-                        "🏳️‍🌈 GET PAID TO BE YOU  ",
-                        "STOP POSTING FOR FREE  ",
-                        "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-                        "💸 MONETISE THE ATTENTION  ",
-                        "🏳️‍🌈 GET PAID TO BE YOU  ",
-                        "STOP POSTING FOR FREE  ",
-                        "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-                        "💸 MONETISE THE ATTENTION  ",
-                        "🏳️‍🌈 GET PAID TO BE YOU  ",
-                        "STOP POSTING FOR FREE  ",
-                        "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-                        "💸 MONETISE THE ATTENTION  ",
-                    ]}
+                    livebartest={PRIDE_LIVEBAR_ITEMS}
                     classes="w-full" 
                     color="bg-gradient-to-r from-[#FF007F] via-[#7000FF] to-[#00F0FF]"
                     textClass="mx-4 text-black font-black uppercase tracking-widest text-[14px] md:text-sm whitespace-nowrap mb-0"
@@ -114,9 +80,9 @@ export default function PrideLanding() {
             <section className="containerbox mx-auto">
             <div className="relative z-10 pt-12 md:pt-16 pb-14  px-3  text-center ">
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-60">
-                    <Sparkles className="text-[#FF007F] w-6 h-6 absolute top-0 left-[15%] animate-pulse" />
-                    <Sparkles className="text-[#00F0FF] w-8 h-8 absolute top-16 right-[15%] animate-pulse delay-150" />
-                    <Heart className="text-[#7000FF] w-5 h-5 absolute bottom-10 left-[25%] animate-bounce" />
+                    <FaStar className="text-[#FF007F] w-6 h-6 absolute top-0 left-[15%] animate-pulse motion-reduce:animate-none" />
+                    <FaStar className="text-[#00F0FF] w-8 h-8 absolute top-16 right-[15%] animate-pulse delay-150 motion-reduce:animate-none" />
+                    <FaHeart className="text-[#7000FF] w-5 h-5 absolute bottom-10 left-[25%] animate-bounce motion-reduce:animate-none" />
                 </div>
                 <div className="inline-block mb-5 px-6 py-2 rounded-[30px] border border-white/20 bg-white/5 backdrop-blur-md">
                     <span className="text-[14px] md:text-sm font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FF007F] to-[#00F0FF]">
@@ -138,7 +104,7 @@ export default function PrideLanding() {
                     <a href={getUTMLink('register')} className="group relative w-full sm:w-auto">
                         <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-[#7000FF] rounded-[30px] blur opacity-70 group-hover:opacity-100 transition duration-200"></div>
                         <div className="relative px-8 py-4 text-lg md:text-base font-black uppercase tracking-widest text-white bg-black rounded-[30px] border border-white/10 group-hover:bg-[#FF007F] group-hover:border-[#FF007F] group-hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
-                            Start Earning <Zap className="w-6 h-6 md:w-5 md:h-5 group-hover:animate-bounce" />
+                            Start Earning <FaBolt className="w-6 h-6 md:w-5 md:h-5 group-hover:animate-bounce motion-reduce:animate-none" />
                         </div>
                     </a>
                 </div>
@@ -153,7 +119,7 @@ export default function PrideLanding() {
                             {/* Decorative tape */}
                             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-white/20 backdrop-blur-md transform -rotate-2 shadow-sm rounded-[30px]"></div>
                             
-                            <Heart className="w-14 h-14 md:w-12 md:h-12 text-[#FF007F] mx-auto mb-5 animate-pulse drop-shadow-[0_0_10px_rgba(255,0,127,0.6)]" />
+                            <FaHeart className="w-14 h-14 md:w-12 md:h-12 text-[#FF007F] mx-auto mb-5 animate-pulse motion-reduce:animate-none drop-shadow-[0_0_10px_rgba(255,0,127,0.6)]" />
                             <h3 className="fading font-gulfs text-4xl md:text-4xl tracking-wider mb-4 leading-tight">SCANNED THIS <br/> FROM PRIDE?</h3>
                             <div className="fading bg-black/50 inline-block px-6 py-3 md:px-5 md:py-2.5 rounded-[30px] mb-8 border border-white/10">
                                 <p className="text-xl md:text-xl text-[#00F0FF] font-black italic">"Good. That means the shirt worked."</p>
@@ -190,13 +156,7 @@ export default function PrideLanding() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[
-                            { icon: Gift, color: "from-[#FF007F] to-[#ff4da6]", title: "Wishlists", desc: "Let fans buy you exactly what you want. No shipping address needed." },
-                            { icon: DollarSign, color: "from-[#00F0FF] to-[#0099ff]", title: "Tips & Payments", desc: "Direct financial support from your community. Fast payouts." },
-                            { icon: Package, color: "from-[#7000FF] to-[#b366ff]", title: "Digital Goods", desc: "Sell exclusive content, photos, guides, and downloadable files." },
-                            { icon: Users, color: "from-[#FFB800] to-[#ffda66]", title: "Memberships", desc: "Recurring monthly revenue from your most loyal VIP fans." },
-                            { icon: Briefcase, color: "from-[#FF0055] to-[#ff6699]", title: "Paid Tasks", desc: "Accept custom requests, shoutouts, and paid commissions safely." },
-                        ].map((feature, idx) => (
+                        {features.map((feature, idx) => (
                             <div key={idx} className="fading glass-card rounded-[30px] p-8 md:p-6 hover:-translate-y-1.5 transition-all duration-300 group relative  ">
                                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
                                 
@@ -217,7 +177,7 @@ export default function PrideLanding() {
             <section className="relative z-10 py-16 px-6">
                 <div className="max-w-4xl mx-auto text-center">
                     <div className="fading inline-block mb-6 p-4 rounded-[30px] bg-[#FF007F]/10 border border-[#FF007F]/30">
-                        <Sparkles className="w-8 h-8 text-[#FF007F]" />
+                        <FaStar className="w-8 h-8 text-[#FF007F]" />
                     </div>
                     <h2 className="fading uppercase text-4xl md:text-5xl font-black mb-6 leading-tight">
                         Your identity is not the product.<br/>
@@ -248,15 +208,15 @@ export default function PrideLanding() {
                                 </p>
                                 <ul className="space-y-4 mb-8 text-left max-w-sm mx-auto md:mx-0">
                                     <li className="fading flex items-center gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
-                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><CheckCircle2 className="text-[#FFB800] w-6 h-6" /></div>
+                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Special bonus on your first 30 days</span>
                                     </li>
                                     <li className="fading flex items-center gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
-                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><CheckCircle2 className="text-[#FFB800] w-6 h-6" /></div>
+                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Priority VIP creator support</span>
                                     </li>
                                     <li className="fading flex items-center gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
-                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><CheckCircle2 className="text-[#FFB800] w-6 h-6" /></div>
+                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Exclusive Founder badge on profile</span>
                                     </li>
                                 </ul>
