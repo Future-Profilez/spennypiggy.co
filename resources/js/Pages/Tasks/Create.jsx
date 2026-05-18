@@ -391,7 +391,7 @@ export default function Create({ auth, currencySymbol }) {
                                         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                             <div className="border-2 border-black rounded-[30px] p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                                                 <label className="block font-black text-lg mb-4 text-pink-900 uppercase flex items-center gap-2">
-                                                    <FileUp className="text-pink-500" /> Upload Deliverable Content
+                                                    <FileUp className="text-[#FF007F]" /> Upload Deliverable Content
                                                 </label>
                                                 <p className="text-sm font-bold text-pink-800 mb-4">
                                                     Upload the final content or a private link visible only to the buyer.
@@ -414,7 +414,7 @@ export default function Create({ auth, currencySymbol }) {
                                                         <div className="w-full border-t border-pink-200"></div>
                                                     </div>
                                                     <div className="relative flex justify-center text-xs uppercase font-black">
-                                                        <span className="bg-pink-50 px-2 text-pink-400">OR UPLOAD FILE</span>
+                                                        <span className="bg-pink-50 px-2 text-[#FF007F]">OR UPLOAD FILE</span>
                                                     </div>
                                                 </div>
 
@@ -451,7 +451,7 @@ export default function Create({ auth, currencySymbol }) {
                                                     id="terms-checkbox"
                                                     type="checkbox"
                                                     required
-                                                    className="h-6 w-6 text-pink-600 border-2 border-black rounded focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                                                    className="h-6 w-6 text-[#FF007F] border-2 border-black rounded focus:ring-0 focus:ring-offset-0 cursor-pointer"
                                                 />
                                             </div>
                                             <div className="ml-4">

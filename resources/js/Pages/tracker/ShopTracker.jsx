@@ -48,7 +48,7 @@ export default function ShopTracker() {
         };
         return (
             <>
-                <div className="trackItem cursor-pointer shadow-pink box mb-4">
+                <div className="trackItem cursor-pointer shadow-[4px_4px_0px_0px_#FF007F]ink box mb-4">
                     <div
                         onClick={openState}
                         aria-controls="example-collapse-text"

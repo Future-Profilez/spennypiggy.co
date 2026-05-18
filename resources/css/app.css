@@ -2,6 +2,16 @@
 @import "./retro-bottombar.css";
 @import "./retro-enhancements.css";
 
+/* Global Text Selection */
+::selection {
+    background-color: #FF007F; /* Spenny Pink */
+    color: #ffffff;
+}
+::-moz-selection {
+    background-color: #FF007F;
+    color: #ffffff;
+}
+
 .font-cera-medium {
     font-family:
         "CeraGRMedium", ui-sans-serif, system-ui, sans-serif,
@@ -23,6 +33,11 @@
 @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
         .animate-fading {
+            animation: fading-effect both;
+            animation-timeline: view();
+            animation-range: contain 0% contain 30%;
+        }
+        .fading {
             animation: fading-effect both;
             animation-timeline: view();
             animation-range: contain 0% contain 30%;
@@ -98,7 +113,7 @@ body {
     -moz-text-stroke: 1px #e6ea82;
     -o-text-stroke: 1px #e6ea82;
 }
-.text-shadow-black {
+.text-shadow-[4px 4px 0px 0px rgb(255 0 127)]lack {
     text-shadow: 5px 4px 0px var(--black);
     -webkit-text-stroke: 1px var(--black);
     -moz-text-stroke: 1px var(--black);
@@ -430,8 +445,13 @@ body {
 }
 .scrolling-container {
     white-space: nowrap;
-    animation: slide-animation 18s linear infinite;
+    animation: slide-animation 12s linear infinite;
     display: flex;
+}
+@media (max-width: 768px) {
+    .scrolling-container {
+        animation: slide-animation 5s linear infinite;
+    }
 }
 .livebar-wrapper {
     position: relative;
@@ -446,7 +466,7 @@ body {
     .shadow-mint {
         box-shadow: 7px 7px 0 0 var(--mint);
     }
-    .shadow-black {
+    .shadow-[4px 4px 0px 0px rgb(255 0 127)]lack {
         box-shadow: 7px 7px 0 0 rgba(0, 0, 0, 1);
     }
     .shadow-voilet {
@@ -455,7 +475,7 @@ body {
     .shadow-mint {
         box-shadow: 7px 7px 0 0 var(--mint);
     }
-    .shadow-purple {
+    .shadow-[4px 4px 0px 0px rgb(255 0 127)]urple {
         box-shadow: 7px 7px 0 0 var(--purple);
     }
     .modal-content {
@@ -627,7 +647,7 @@ body {
 }
 .react-select__control {
     padding: 6px;
-    border-radius: 11px;
+    border-radius: 15px !important;
 }
 /* switch toggle */
 .toggle-switch {
@@ -829,7 +849,7 @@ body {
 }
 /* Magic bell css */
 a.css-1j56y57 {
-    background: #f94f96;
+    background: #FF007F;
     width: 40px !important;
     height: 40px !important;
     padding: 4px;

@@ -128,7 +128,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
 
                {item.metadata?.creator_note && (
                    <div className="mt-3 p-3 bg-pink-50 border border-pink-100 rounded-[20px]">
-                        <p className="text-xs font-black uppercase text-pink-600 mb-1">Note from Creator</p>
+                        <p className="text-xs font-black uppercase text-[#FF007F] mb-1">Note from Creator</p>
                         <p className="text-sm text-gray-700">{item.metadata.creator_note}</p>
                     </div>
                 )}
@@ -164,7 +164,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                               href={item.shop.success_page_value} 
                               target="_blank" 
                               rel="noreferrer"
-                              className="text-pink-600 hover:underline break-all"
+                              className="text-[#FF007F] hover:underline break-all"
                            >
                               {item.shop.success_page_value}
                            </a>
@@ -198,7 +198,7 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
                            href={item.shop.reward_file_url} 
                            target="_blank" 
                            rel="noreferrer"
-                           className="text-pink-600 hover:underline"
+                           className="text-[#FF007F] hover:underline"
                         >
                            Download / View
                         </a>
@@ -305,11 +305,11 @@ export default function OrderDetail({classes, text, item, date, onSuccess}) {
 
                {isPhysical && !isCreator && (
                    <div className='border-t pt-4 mt-4'>
-                       <h3 className='font-bold mb-2 text-[#F94F97]'>Tracking Information</h3>
+                       <h3 className='font-bold mb-2 text-[#FF007F]'>Tracking Information</h3>
                        <div className='bg-gray-50 p-4 rounded-[20px] border border-gray-100'>
                            <p className="mb-2"><strong>Status:</strong> <span className='capitalize font-medium text-gray-700'>{item.status || 'Pending'}</span></p>
                            {item.courier_name && <p className="mb-2"><strong>Courier:</strong> <span className="font-medium text-gray-700">{item.courier_name}</span></p>}
-                           {item.tracking_id && <p className="mb-2"><strong>Tracking ID:</strong> <span className="font-medium text-[#F94F97]">{item.tracking_id}</span></p>}
+                           {item.tracking_id && <p className="mb-2"><strong>Tracking ID:</strong> <span className="font-medium text-[#FF007F]">{item.tracking_id}</span></p>}
                            {item.expected_delivery_date && <p className="mb-0"><strong>Expected Delivery:</strong> <span className="font-medium text-gray-700">{item.expected_delivery_date}</span></p>}
                            {!item.tracking_id && item.status !== 'delivered' && (
                                <p className="text-xs text-gray-500 mt-2 italic">Tracking details will appear here once the creator ships your order.</p>

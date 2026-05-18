@@ -84,7 +84,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, activ
              return (
                  <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-[30px]   border border-dashed border-gray-200">
                      <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mb-6">
-                        <RiSearchLine className="text-4xl text-pink-500" />
+                        <RiSearchLine className="text-4xl text-[#FF007F]" />
                      </div>
                      <h3 className="text-xl font-bold text-gray-900 mb-2">No matches found</h3>
                      <p className="text-gray-500 max-w-md mb-8">

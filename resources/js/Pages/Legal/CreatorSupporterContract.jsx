@@ -9,7 +9,7 @@ export default function CreatorSupporterContract(props) {
             <Head title="Creator Supporter Contract" />
             <LegalLayout activePage="CreatorSupporterContract">
                 <div className="mx-auto p-8 md:p-12">
-                    <h1 className="text-3xl md:text-4xl font-black text-pink-600 mb-8 uppercase tracking-tighter">
+                    <h1 className="text-3xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter">
                         Creator Supporter Contract
                     </h1>
                     <div className="prose prose-pink max-w-none">

@@ -291,7 +291,7 @@ export const MemoizedModal = memo(({
                 
                 <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
                 
-                <div className={`inline-block align-bottom bg-white rounded-[30px]   text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}>
+                <div className={`inline-block align-bottom bg-white rounded-[30px]   text-left overflow-hidden shadow-[4px_4px_0px_0px_#FF007F]l transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}>
                     <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         {title && (
                             <div className="sm:flex sm:items-start">

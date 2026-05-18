@@ -2541,7 +2541,7 @@ class StripeController extends Controller
                         // Calculate initial reserve if needed
                         $reserveMinor = 0;
                         $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $sub->wish_item->user->uuid]);
-                        $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                        $reservePercent = app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($sub->wish_item->user, $metrics, now());
                         if ($reservePercent > 0) {
                             $reserveMinor = (int) round(($creatorNetMinor * $reservePercent) / 100);
                         }

@@ -374,7 +374,7 @@ export default function Discover(props) {
                                 </div>
                             ) : searchResults ? (
                                 <div className="space-y-12">
-                                    {filters.contentType === 'Creators' && intros && intros.length > 0 && (
+                                    {(!filters.contentType || filters.contentType === 'All' || filters.contentType === 'Creators') && (
                                         <div className="mb-4">
                                             <IntroVideos intros={intros} />
                                         </div>

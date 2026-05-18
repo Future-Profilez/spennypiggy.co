@@ -5,7 +5,7 @@
             'high' => '#e3342f',
             'medium' => '#f6993f',
             'low' => '#38c172',
-            default => '#F94F97',
+            default => '#FF007F',
         };
     @endphp
 

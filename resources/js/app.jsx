@@ -283,3 +283,21 @@ router.on('before', (event) => {
         };
     }
 });
+
+// Global UTM Tracking - Save UTM parameters to localStorage
+if (typeof window !== 'undefined') {
+    const searchParams = new URLSearchParams(window.location.search);
+    let utmUpdated = false;
+    
+    ['utm_source', 'utm_medium', 'utm_campaign'].forEach(param => {
+        if (searchParams.has(param)) {
+            localStorage.setItem(param, searchParams.get(param));
+            utmUpdated = true;
+        }
+    });
+
+    if (utmUpdated) {
+        console.log("UTM parameters saved to local storage for tracking.");
+    }
+}
+

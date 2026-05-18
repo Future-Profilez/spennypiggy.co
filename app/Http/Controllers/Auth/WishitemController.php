@@ -811,54 +811,85 @@ class WishitemController extends Controller
 
     public function discover_all_creators($order, $gender)
     {
-        $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
-            ->whereNull('deleted_at')
-            ->where('approved', 1)
-            ->groupBy('user_id');
+        $page = request()->get('page', 1);
+        $cacheKey = "discover_creators_intros_{$order}_{$gender}_{$page}";
 
-        $query = UserIntro::joinSub($subQuery, 'latest_intros', function ($join) {
-            $join->on('user_intros.id', '=', 'latest_intros.latest_id');
-        })
-            ->with(['user' => function ($q) use ($gender) {
-                $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account'])
+        $intros = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, function () use ($order, $gender) {
+            $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
+                ->whereNull('deleted_at')
+                ->where('approved', 1)
+                ->groupBy('user_id');
+
+            $query = UserIntro::joinSub($subQuery, 'latest_intros', function ($join) {
+                $join->on('user_intros.id', '=', 'latest_intros.latest_id');
+            })
+                ->with(['user' => function ($q) use ($gender) {
+                    $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account'])
+                        ->where('suspended_account', 0)
+                        ->whereNotNull('username')
+                        ->where('username', '!=', '');
+                    if ($gender != 'all') {
+                        $q->where('gender', $gender);
+                    }
+                }])
+                ->select('user_intros.*'); // make sure we select proper columns
+
+            // Double-check to ensure we only get intros with valid users
+            $query->whereHas('user', function ($q) use ($gender) {
+                $q->whereNull('deleted_at')
                     ->where('suspended_account', 0)
-                    ->whereNotNull('username')
                     ->where('username', '!=', '');
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
                 }
-            }])
-            ->select('user_intros.*'); // make sure we select proper columns
+            });
 
-        // Double-check to ensure we only get intros with valid users
-        $query->whereHas('user', function ($q) use ($gender) {
-            $q->whereNull('deleted_at')
-                ->where('suspended_account', 0)
-                ->where('username', '!=', '');
-            if ($gender != 'all') {
-                $q->where('gender', $gender);
+            if ($order === 'new') {
+                $query->orderBy('user_intros.created_at', 'desc');
             }
+
+            $paginated = $query->paginate(30);
+
+            // Filter out any intro records where user is still null (safety check)
+            $filteredIntros = $paginated->getCollection()->filter(function ($intro) {
+                return $intro->user !== null && !empty($intro->user->username);
+            })->map(function ($intro) {
+                // Map the data to a simple array to prevent heavy User model serialization (appends)
+                return [
+                    'id' => $intro->id,
+                    'uuid' => $intro->uuid,
+                    'poster_url' => $intro->poster_url,
+                    'perma_link' => $intro->perma_link,
+                    'user' => [
+                        'id' => $intro->user->id,
+                        'name' => $intro->user->name,
+                        'username' => $intro->user->username,
+                        'role' => $intro->user->role,
+                        'profile_status_lock' => $intro->user->profile_status_lock,
+                        'avatar_url' => $intro->user->avatar_url,
+                    ]
+                ];
+            })->values();
+            
+            // To ensure we don't serialize the heavy models, we replace the paginator's collection with the mapped array.
+            $paginated->setCollection($filteredIntros);
+
+            return [
+                'current_page' => $paginated->currentPage(),
+                'data' => $filteredIntros->toArray(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+            ];
         });
-
-        if ($order === 'new') {
-            $query->orderBy('user_intros.created_at', 'desc');
-        }
-
-        $intros = $query->paginate(30);
-
-        // Filter out any intro records where user is still null (safety check)
-        $filteredIntros = $intros->getCollection()->filter(function ($intro) {
-            return $intro->user !== null && !empty($intro->user->username);
-        });
-        $intros->setCollection($filteredIntros);
 
         return response()->json([
             'success'       => true,
             'intro'         => $intros,
-            "last_page"     => $intros->lastPage(),
-            "current_page"  => $intros->currentPage(),
-            "total"         => $intros->total(),
-            "per_page"      => $intros->perPage(),
+            "last_page"     => $intros['last_page'],
+            "current_page"  => $intros['current_page'],
+            "total"         => $intros['total'],
+            "per_page"      => $intros['per_page'],
         ]);
     }
 

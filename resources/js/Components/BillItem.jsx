@@ -225,7 +225,7 @@ function BillItem(props) {
                     <div className="flex justify-center mt-5 mb-2">
                         {IsloggedIn ? (
                             <AddBills
-                                classes="bg-pink-400 border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                classes="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                                 text="Update Bill"
                                 item={itm}
                                 isEdit={true}
@@ -235,7 +235,7 @@ function BillItem(props) {
                                 method="get"
                                 as="button"
                                 href={route("bill.checkout", { uuid: itm.uuid })}
-                                className="bg-pink-400 border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                className="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                             >
                                 Pay Bill
                             </Link>
@@ -250,7 +250,7 @@ function BillItem(props) {
                                 as="button"
                                 method="get"
                                 href={route("user.show", { username: itm.user.username })}
-                                className="ml-1 text-xs font-black uppercase text-pink-600 underline hover:opacity-90"
+                                className="ml-1 text-xs font-black uppercase text-[#FF007F] underline hover:opacity-90"
                             >
                                 @{itm.user.username}
                             </Link>

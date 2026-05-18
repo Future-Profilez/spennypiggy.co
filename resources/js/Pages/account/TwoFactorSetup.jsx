@@ -90,7 +90,7 @@ export default function TwoFactorSetup({ auth }) {
             <div className="bg-white">
                 <div className=" py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
                     <div className="mb-6">
-                        <Link href={route('account')} className="flex items-center text-gray-600 hover:text-pink-600 transition-colors">
+                        <Link href={route('account')} className="flex items-center text-gray-600 hover:text-[#FF007F] transition-colors">
                             <IoArrowBack className="mr-2" /> Back to Account
                         </Link>
                     </div>
@@ -197,7 +197,7 @@ export default function TwoFactorSetup({ auth }) {
                                                             <input
                                                                 key={index}
                                                                 type="text"
-                                                                className="w-14 h-14 text-center text-2xl font-bold border-gray-200 bg-gray-100 rounded-[15px] focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
+                                                                className="w-14 h-14 text-center text-2xl font-bold border-gray-200 bg-gray-100 rounded-[15px] focus:ring-2 focus:ring-pink-500 focus:border-[#FF007F] transition-all"
                                                                 maxLength="1"
                                                                 value={data}
                                                                 onChange={(e) => handleChange(e.target, index)}

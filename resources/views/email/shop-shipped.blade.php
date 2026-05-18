@@ -12,7 +12,7 @@
         <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
-                    Your <span style="color: #F94F97">Order</span> has been <br> Shipped! 🚚
+                    Your <span style="color: #FF007F">Order</span> has been <br> Shipped! 🚚
                 </td>
             </tr>
             <tr>
@@ -28,7 +28,7 @@
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
                     Great news! <br>
                     {{ ucwords($creator->name) }} has shipped your shop item: <br>
-                    <span style="color: #F94F97">{{ $deliverable->metadata_json->shop_item_name ?? 'Shop Item' }}</span>
+                    <span style="color: #FF007F">{{ $deliverable->metadata_json->shop_item_name ?? 'Shop Item' }}</span>
                 </td>
             </tr>
 
@@ -45,7 +45,7 @@
                             <td style="font-family: Arial; font-size: 12px; color: #888888; text-transform: uppercase; padding-bottom: 5px;">Tracking ID</td>
                         </tr>
                         <tr>
-                            <td style="font-family: Arial; font-size: 16px; font-weight: bold; color: #F94F97;">{{ $deliverable->tracking_id }}</td>
+                            <td style="font-family: Arial; font-size: 16px; font-weight: bold; color: #FF007F;">{{ $deliverable->tracking_id }}</td>
                         </tr>
                     </table>
                 </td>
@@ -61,7 +61,7 @@
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">
                     <a href="{{ env('APP_URL') . '/shop?type=purchases' }}"
-                        style="border-radius:30px; padding:13px 30px; width: 210px; text-decoration:none; border:none; background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer; display: inline-block;">View My Purchases</a>
+                        style="border-radius:30px; padding:13px 30px; width: 210px; text-decoration:none; border:none; background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer; display: inline-block;">View My Purchases</a>
                 </td>
             </tr>
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>

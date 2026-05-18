@@ -480,7 +480,7 @@ export default function AddItem(props) {
                                                         src={item?.perma_link}
                                                     />
                                                 )}
-                                                <div className="uploader overflow-hidden rounded-[24px] border-[3px] border-dashed border-gray-300 hover:border-pink-500 transition-colors bg-gray-50 p-4">
+                                                <div className="uploader overflow-hidden rounded-[24px] border-[3px] border-dashed border-gray-300 hover:border-[#FF007F] transition-colors bg-gray-50 p-4">
                                                     <GlobalUploader
                                                         ctxName="add-shop1-context"
                                                         type="minimal" 
@@ -742,7 +742,7 @@ export default function AddItem(props) {
                                                 id="ask_q"
                                                 checked={haveQuestion}
                                                 onChange={handleHaveQuestion}
-                                                className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-pink-500 focus:ring-0"
+                                                className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-[#FF007F] focus:ring-0"
                                             />
                                             <div className="flex-1">
                                                 <label htmlFor="ask_q" className="font-black uppercase text-xs tracking-wider block mb-1">Ask a question</label>
@@ -766,7 +766,7 @@ export default function AddItem(props) {
                                                     id="limit_s"
                                                     checked={haveSlots}
                                                     onChange={handleHaveSlots}
-                                                    className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-pink-500 focus:ring-0"
+                                                    className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-[#FF007F] focus:ring-0"
                                                 />
                                                 <div className="flex-1">
                                                     <label htmlFor="limit_s" className="font-black uppercase text-xs tracking-wider block mb-1">Limit Quantity</label>
@@ -792,7 +792,7 @@ export default function AddItem(props) {
                                                     id="member_p"
                                                     checked={haveSpPrice}
                                                     onChange={handleSpPrice}
-                                                    className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-pink-500 focus:ring-0"
+                                                    className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-[#FF007F] focus:ring-0"
                                                 />
                                                 <div className="flex-1 ">
                                                     <label htmlFor="member_p" className="font-black uppercase text-xs tracking-wider block mb-1">Membership Discount</label>
@@ -820,12 +820,12 @@ export default function AddItem(props) {
                                                 type="checkbox"
                                                 checked={isChecked}
                                                 onChange={(e) => setIsChecked(e.target.checked)}
-                                                className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-pink-500 focus:ring-0 cursor-pointer"
+                                                className="mt-1 w-6 h-6 rounded-lg border-[3px] border-black text-[#FF007F] focus:ring-0 cursor-pointer"
                                             />
                                             <label htmlFor="agreeterm" className="text-[11px] font-bold text-gray-700 leading-relaxed cursor-pointer">
                                                 I confirm I am 18+ and agree to the 
-                                                <a href={route("terms-and-conditions")} target="_blank" className="text-pink-600 underline ml-1">Terms</a> & 
-                                                <a href={route("terms-and-conditions")} target="_blank" className="text-pink-600 underline ml-1">Privacy Policy</a>.
+                                                <a href={route("terms-and-conditions")} target="_blank" className="text-[#FF007F] underline ml-1">Terms</a> & 
+                                                <a href={route("terms-and-conditions")} target="_blank" className="text-[#FF007F] underline ml-1">Privacy Policy</a>.
                                             </label>
                                         </div>
                                     </div>

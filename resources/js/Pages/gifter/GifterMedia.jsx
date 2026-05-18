@@ -64,7 +64,7 @@ export default function GifterMedia({ username }) {
               <span className="w-full h-full min-h-[150px] rounded bg-pink-100 flex items-center text-[80px] justify-center">📄</span>
               {/* <span className="flex items-center">
                 <span className="w-10 h-10 rounded bg-pink-100 border-2 border-black mr-3 flex items-center justify-center">📄</span>
-                <span className="text-pink-600">Open File</span>
+                <span className="text-[#FF007F]">Open File</span>
               </span>
               <span className="text-xs px-2 py-1 bg-black text-white rounded">Document</span>
              */}

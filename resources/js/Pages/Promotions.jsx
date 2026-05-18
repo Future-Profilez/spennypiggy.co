@@ -13,7 +13,7 @@ export default function Promotions(props) {
             <div className="wishlistPage bg-white pt-8">
                 <div className="containerbox p-3">
                     <div className="max-w-4xl mx-auto md:py-8 text-gray-800">
-                        <h1 className="text-xl md:text-3xl font-bold text-pink-600 mb-6">
+                        <h1 className="text-xl md:text-3xl font-bold text-[#FF007F] mb-6">
                             Founder Bonus — We’ll Pay You to Get Spoiled
                         </h1>
 

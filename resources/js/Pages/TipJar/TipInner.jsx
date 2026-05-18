@@ -369,7 +369,7 @@ export default function TipInner({classes, idd}) {
         <div className={`${classes} p-2 md:p-4 box-inner`}>
             <div className='legleft'  dangerouslySetInnerHTML={{ __html: leftleg }} />
             <div className='legright'  dangerouslySetInnerHTML={{ __html: rightleg }} />
-            <h2 className='p-3 text-pink-500 !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pr-5'>Support Me</h2>
+            <h2 className='p-3 text-[#FF007F] !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pr-5'>Support Me</h2>
             <div className='border-t border-gray-200 p-3 pt-3' >
 
               
@@ -406,7 +406,7 @@ export default function TipInner({classes, idd}) {
                 {selectegTag === 'custom' ? <div className="mb-4 ">
                     <div className="relative currency-wrapper " >
                         <span className="currency-tag">{global_currency || 'GBP'}</span>
-                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] " value={amount}
+                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] " value={amount}
                         onChange={customAmount}
                         type="number" placeholder="Enter amount.. " />
                     </div>
@@ -414,7 +414,7 @@ export default function TipInner({classes, idd}) {
 
               {amount > 0 ? <>
                 <div className="mb-3"> 
-                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Just a small token of appreciation 💖'}
+                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Just a small token of appreciation 💖'}
                   onChange={(e) => setData('message', e.target.value)}
                   placeholder="Write a short note." />
                 </div>
@@ -423,7 +423,7 @@ export default function TipInner({classes, idd}) {
                   <>
                     <div className="mb-4">
                       <input required
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                         defaultValue={auth && auth.user?.name}
                         onChange={(e) => setData('name', e.target.value)}
                         type="text" placeholder="Enter nickname.. "
@@ -432,7 +432,7 @@ export default function TipInner({classes, idd}) {
 
                     <div className="mb-4">
                       <input required  disabled={auth && auth.user?.email ? true : false}
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                         defaultValue={auth && auth.user?.email}
                         onChange={(e) => setData('email', e.target.value)}
                         type="email" placeholder="Enter email.. " />
@@ -443,7 +443,7 @@ export default function TipInner({classes, idd}) {
               <div className='termselect mt-3 mb-3'>
                   <label htmlFor="keepanonymous">
                     <p className='text-[15px] text-gray-900 font-normal'>
-                      <input className='w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer' type="checkbox"
+                      <input className='w-5 h-5 text-[#FF007F] border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer' type="checkbox"
                       id="keepanonymous" name="keepanonymous"
                       value="keepanonymous"
                       onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
@@ -477,7 +477,7 @@ export default function TipInner({classes, idd}) {
                 </div>
               )}
 
-              <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={send} className={`items-center px-4  shadow-black
+              <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={send} className={`items-center px-4  shadow-[4px_4px_0px_0px_#FF007F]lack
                 rounded-[30px]  btn-pink md justify-center btn-shadow !font-normal
                 ease-in-out duration-150 flex button text-center w-full
                   mx-auto  ${(amount > 0 && data.agree && data.digital_waiver && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
@@ -506,7 +506,7 @@ export default function TipInner({classes, idd}) {
               <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                 placeholder="e.g. 123456"
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
@@ -517,7 +517,7 @@ export default function TipInner({classes, idd}) {
               <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                 placeholder="CONFIRM"
                 value={typedConfirmation}
                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -550,7 +550,7 @@ export default function TipInner({classes, idd}) {
                             >
                                 {passkeyLoading ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>

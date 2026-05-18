@@ -52,7 +52,7 @@ class CreatorFinancialController extends Controller
 
         $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id', 'source_id', 'vat_amount']);
 
@@ -118,7 +118,7 @@ class CreatorFinancialController extends Controller
         // Status breakdown — counts and totals per status for the tax year
         $allStatusTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with('source')
             ->get(['status', 'net_amount', 'currency', 'source_type', 'source_id', 'vat_amount']);
@@ -164,7 +164,7 @@ class CreatorFinancialController extends Controller
         // Recent Transactions (Filtered by Tax Year for overview, All for payouts)
         $incomeQuery = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
             ->with(['supporter:id,name,username,email', 'source' => function($morphTo) {
                 $morphTo->morphWith([
                     \App\Models\TaskPurchase::class => ['task'],
@@ -328,7 +328,7 @@ class CreatorFinancialController extends Controller
         // Top Supporters with Category Breakdown
         $supporterTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
             ->with(['supporter:id,name,username,avatar'])
@@ -478,7 +478,7 @@ class CreatorFinancialController extends Controller
         // Income (Filtered by Tax Year)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->with(['supporter:id,name,username,email', 'source' => function($morphTo) {
                 $morphTo->morphWith([
@@ -762,7 +762,7 @@ class CreatorFinancialController extends Controller
 
         $transactions = FinancialTransaction::where('user_id', $user->id)
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
             ->with(['source' => function($morphTo) {
                 $morphTo->morphWith([
                     \App\Models\TaskPurchase::class => ['task'],

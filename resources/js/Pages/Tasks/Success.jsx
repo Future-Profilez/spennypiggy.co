@@ -20,7 +20,7 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                         
                         <h2 className="text-3xl font-black text-gray-900 mb-2 uppercase">Payment Processing...</h2>
                         <p className="text-gray-600 mb-8 font-medium">
-                            We've received your payment for <strong className="text-pink-600">{task.title}</strong> and are creating your order. 
+                            We've received your payment for <strong className="text-[#FF007F]">{task.title}</strong> and are creating your order. 
                             <br/>This usually takes a few seconds.
                         </p>
                         
@@ -58,7 +58,7 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                     
                     <h2 className="text-3xl font-black text-gray-900 mb-2 uppercase">Payment Successful!</h2>
                     <p className="text-gray-600 mb-8 font-medium">
-                        Thank you for your purchase. Your order for <strong className="text-pink-600">{task.title}</strong> has been confirmed.
+                        Thank you for your purchase. Your order for <strong className="text-[#FF007F]">{task.title}</strong> has been confirmed.
                     </p>
 
                     <div className="bg-gray-50 border-2 border-black rounded-[30px]   mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">

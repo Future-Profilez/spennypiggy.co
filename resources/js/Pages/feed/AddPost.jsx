@@ -123,8 +123,8 @@ export default function AddPost({item, text, classes, isEdit, title}) {
 
             <div className="mt-1 ">
                 <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Post Title ..."
-                className="text-normal border-gray-300 border px-3 py-3 text-lg text-gray-900 rounded-[15px] md:rounded-[20px]  mt-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"/>
-                <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border-gray-300 border h-[150px] mt-4 w-full rounded-[15px] md:rounded-[20px]  px-3 py-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" ></textarea>
+                className="text-normal border-gray-300 border px-3 py-3 text-lg text-gray-900 rounded-[15px] md:rounded-[20px]  mt-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"/>
+                <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border-gray-300 border h-[150px] mt-4 w-full rounded-[15px] md:rounded-[20px]  px-3 py-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" ></textarea>
                 <div className="chhoseimage mt-4 pt-2" >
                     <p className="text-grey-400 mb-2" >Choose a image file to attached with your post.</p>
                     {item && item.image_url ?
@@ -158,7 +158,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
 
                 <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
                 <div className="flex items-center justify-center flex-wrap" >
-                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="border-gray-300 border px-4 py-2 text-md w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[15px] md:rounded-[20px]  block ">
+                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="border-gray-300 border px-4 py-2 text-md w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[15px] md:rounded-[20px]  block ">
                         <option value="membership">Memberships</option>
                         <option value="subscription">Subscription</option>
                         <option value="support">Supporters</option>

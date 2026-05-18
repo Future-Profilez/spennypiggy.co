@@ -47,8 +47,8 @@ export default function Show({ evidence }) {
                                 <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight leading-none">
                                     Evidence Pack
                                 </h1>
-                                <p className="text-pink-400 font-black uppercase tracking-[0.15em] text-[10px] mt-2 flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse"></span>
+                                <p className="text-[#FF007F] font-black uppercase tracking-[0.15em] text-[10px] mt-2 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 bg-[#FF007F] rounded-full animate-pulse"></span>
                                     Official Transaction Record
                                 </p>
                             </div>
@@ -104,7 +104,7 @@ export default function Show({ evidence }) {
                         </div>
 
                         {/* Payment Processor Details */}
-                        <div className="border-l-[4px] border-pink-500 pl-6 py-1">
+                        <div className="border-l-[4px] border-[#FF007F] pl-6 py-1">
                             <h2 className="text-xl font-black uppercase tracking-tight mb-5">Processor References</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                                 <div>
@@ -162,26 +162,26 @@ export default function Show({ evidence }) {
                                     <div className="w-10 h-10 bg-pink-50 rounded-lg flex items-center justify-center border-[1.5px] border-black">
                                         <span className="text-xl font-black">B</span>
                                     </div>
-                                    <h2 className="text-lg font-black uppercase tracking-tight text-pink-600">Supporter</h2>
+                                    <h2 className="text-lg font-black uppercase tracking-tight text-[#FF007F]">Supporter</h2>
                                 </div>
                                 {evidence.supporter ? (
                                     <div className="space-y-3 bg-pink-50/20 p-5 rounded-[30px] border border-pink-100">
                                         <div>
-                                            <label className="text-[8px] font-black uppercase text-pink-400 tracking-[0.15em] block mb-0.5">Full Name</label>
+                                            <label className="text-[8px] font-black uppercase text-[#FF007F] tracking-[0.15em] block mb-0.5">Full Name</label>
                                             <p className="font-black text-base text-black">{evidence.supporter.name}</p>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label className="text-[8px] font-black uppercase text-pink-400 tracking-[0.15em] block mb-0.5">Handle</label>
+                                                <label className="text-[8px] font-black uppercase text-[#FF007F] tracking-[0.15em] block mb-0.5">Handle</label>
                                                 <p className="font-bold text-xs text-gray-600">@{evidence.supporter.username}</p>
                                             </div>
                                             <div>
-                                                <label className="text-[8px] font-black uppercase text-pink-400 tracking-[0.15em] block mb-0.5">Network IP</label>
+                                                <label className="text-[8px] font-black uppercase text-[#FF007F] tracking-[0.15em] block mb-0.5">Network IP</label>
                                                 <p className="font-mono text-[10px] font-bold text-gray-800">{evidence.supporter.ip_address}</p>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[8px] font-black uppercase text-pink-400 tracking-[0.15em] block mb-0.5">Email</label>
+                                            <label className="text-[8px] font-black uppercase text-[#FF007F] tracking-[0.15em] block mb-0.5">Email</label>
                                             <p className="font-bold text-xs text-gray-800 truncate">{evidence.supporter.email}</p>
                                         </div>
                                     </div>

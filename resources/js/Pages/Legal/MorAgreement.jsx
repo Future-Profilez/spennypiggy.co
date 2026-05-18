@@ -21,7 +21,7 @@ export default function MorAgreement(props) {
             <Head title="Merchant of Record Agreement" />
             <LegalLayout activePage="MorAgreement">
                 <div className="mx-auto p-8 md:p-12">
-                    <h1 className="text-3xl md:text-4xl font-black text-pink-600 mb-8 uppercase tracking-tighter">
+                    <h1 className="text-3xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter">
                         Merchant of Record Agreement
                     </h1>
                     <div className="prose prose-pink max-w-none">
@@ -31,17 +31,17 @@ export default function MorAgreement(props) {
                         
                         <div className="bg-pink-50/50 rounded-2xl p-6 md:p-8 mb-8 border border-pink-100">
                             <p className="text-lg text-gray-900 mb-6 flex items-center gap-2">
-                                <HiCheckCircle className="text-pink-600 text-xl" />
+                                <HiCheckCircle className="text-[#FF007F] text-xl" />
                                 Merchant of Record Confirmation
                             </p>
                             <p className="mb-6 text-gray-800">I confirm that I understand and agree that I am the Merchant of Record (“MoR”) for all payments made by supporters to me through Spenny Piggy.</p>
                             
-                            <p className="text-sm text-pink-600 uppercase tracking-wider mb-4">I Acknowledge and Agree That:</p>
+                            <p className="text-sm text-[#FF007F] uppercase tracking-wider mb-4">I Acknowledge and Agree That:</p>
                             <ul className="space-y-4 list-none pl-0">
                                 {acknowledgements.map((text, index) => (
                                     <li key={index} className="flex items-start gap-3 text-gray-700 leading-relaxed">
                                         <div className="mt-1 flex-shrink-0">
-                                            <HiCheckCircle className="text-pink-400 text-lg" />
+                                            <HiCheckCircle className="text-[#FF007F] text-lg" />
                                         </div>
                                         <span>{text}</span>
                                     </li>
@@ -53,7 +53,7 @@ export default function MorAgreement(props) {
                             <p className="text-lg text-gray-900 mb-4">Final Acceptance</p>
                             <div className="flex items-start gap-3 text-gray-800">
                                 <div className="mt-1 flex-shrink-0">
-                                    <HiCheckCircle className="text-pink-600 text-lg" />
+                                    <HiCheckCircle className="text-[#FF007F] text-lg" />
                                 </div>
                                 <p>By continuing, I confirm that I have read, understood, and agree to this Merchant of Record arrangement and acknowledge that I am legally responsible for all transactions conducted through my account.</p>
                             </div>

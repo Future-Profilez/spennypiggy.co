@@ -29,7 +29,7 @@ export default function FeatureSuggestionBanner({ onSuggestClick }) {
             <div className="relative group bg-white border-[3px] border-black rounded-[25px] p-5 md:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden transition-all hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ">
                 {/* Decorative background elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#924DFF]/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-[#924DFF]/20 transition-colors duration-500"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#F94F96]/5 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none group-hover:bg-[#F94F96]/10 transition-colors duration-500"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#FF007F]/5 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none group-hover:bg-[#FF007F]/10 transition-colors duration-500"></div>
                 
                 <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 relative ">
                     {/* Icon container */}

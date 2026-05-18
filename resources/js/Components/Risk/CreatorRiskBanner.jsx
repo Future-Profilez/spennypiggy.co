@@ -183,10 +183,10 @@ function getGradientOverlay(type) {
 
 function getButtonStyles(type) {
     switch (type) {
-        case 'critical': return 'bg-red-600 text-white hover:bg-red-700 shadow-red-200/50 shadow-lg';
-        case 'warning': return 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200/50 shadow-lg';
+        case 'critical': return 'bg-red-600 text-white hover:bg-red-700 shadow-[4px_4px_0px_0px_#FF007F]ed-200/50 shadow-lg';
+        case 'warning': return 'bg-amber-500 text-white hover:bg-amber-600 shadow-[4px_4px_0px_0px_#FF007F]mber-200/50 shadow-lg';
         case 'action_required': return 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-200/50 shadow-lg';
-        case 'info': default: return 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50 shadow-lg';
+        case 'info': default: return 'bg-blue-600 text-white hover:bg-blue-700 shadow-[4px_4px_0px_0px_#FF007F]lue-200/50 shadow-lg';
     }
 }
 

@@ -10,7 +10,7 @@
                  <tr>
                      <td
                          style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        <span style="color:#F94F97; font-weight: bold;">
+                        <span style="color:#FF007F; font-weight: bold;">
                             Thank you for granting {{ isset($data->owner) && isset($data->owner->name) ? $data->owner->name : 'their' }}'s wish!
                         </span><br><br>
                         <span style="color:#141414;">
@@ -116,7 +116,7 @@
                  @if($contentDeliverables && count($contentDeliverables) > 0)
                  <tr>
                      <td style="padding: 20px 0; border-top: 1px solid #eee;">
-                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #F94F97; text-align: center; margin-bottom: 15px;">🎁 Your Content is Ready!</h3>
+                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">🎁 Your Content is Ready!</h3>
                          <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">Click the links below to access your exclusive content:</p>
                          
                          <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
@@ -234,7 +234,7 @@
                  
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
-                       <a href="{{ env('APP_URL') . '/' . (isset($data->owner) && isset($data->owner->username) ? $data->owner->username : '') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
+                       <a href="{{ env('APP_URL') . '/' . (isset($data->owner) && isset($data->owner->username) ? $data->owner->username : '') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
                      </td>
                  </tr>
                  <tr style="line-height: 20px; height: 20px;">

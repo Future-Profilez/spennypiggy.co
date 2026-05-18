@@ -588,7 +588,7 @@ export default function BuyShopItem({
                             </div>
                             {/* <p className='mb-1' >Enter a fair price (optional)</p>
                <input required onChange={enterFairPrice} min={s.price}
-               className="w-full border-gray-300 border px-4 py-2 rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
+               className="w-full border-gray-300 border px-4 py-2 rounded-[30px]  focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
 
                             <div className="form-field mb-3">
                                 <p className="mb-1">Name</p>
@@ -597,7 +597,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.name ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded"
+                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded"
                                     defaultValue={auth && auth.user?.name}
                                     onChange={(e) => setName(e.target.value)}
                                     type="text"
@@ -611,7 +611,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.email ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                     defaultValue={auth && auth.user?.email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     type="email"
@@ -630,7 +630,7 @@ export default function BuyShopItem({
                                         required
                                         min="1"
                                         max={s.slot_limitation !== null ? s.slot_limitation : undefined}
-                                        className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                        className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                         value={quantity}
                                         onChange={(e) => {
                                             if (e.target.value === '') {
@@ -663,7 +663,7 @@ export default function BuyShopItem({
                                         </p>
                                         <select
                                             required
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
                                             name="country"
                                             onChange={handleShipInput}
                                         >
@@ -684,7 +684,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
@@ -694,7 +694,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
@@ -705,7 +705,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
@@ -715,7 +715,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
                                                 onChange={handleShipInput}
                                                 name="postal_code"
                                                 type="text"
@@ -781,7 +781,7 @@ export default function BuyShopItem({
                             <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -792,7 +792,7 @@ export default function BuyShopItem({
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -827,7 +827,7 @@ export default function BuyShopItem({
                             >
                                 {passkeyLoading ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>

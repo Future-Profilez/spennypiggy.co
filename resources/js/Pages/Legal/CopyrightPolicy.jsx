@@ -9,7 +9,7 @@ export default function CopyrightPolicy(props) {
             <Head title="Copyright Policy" />
             <LegalLayout activePage="CopyrightPolicy">
                 <div className="mx-auto p-8 md:p-12">
-                    <h1 className="text-3xl md:text-4xl font-black text-pink-600 mb-8 uppercase tracking-tighter">
+                    <h1 className="text-3xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter">
                         Copyright & Intellectual Property Policy
                     </h1>
                     <div className="prose prose-pink max-w-none">
@@ -155,7 +155,7 @@ export default function CopyrightPolicy(props) {
                         </p>
                         <p className="mb-4 text-gray-700 leading-relaxed">
                             Social Vortex Limited <br />
-                            <a href="mailto:jack@socialvortex.io" className="text-pink-600 underline">jack@socialvortex.io</a><br />
+                            <a href="mailto:jack@socialvortex.io" className="text-[#FF007F] underline">jack@socialvortex.io</a><br />
                             55 Colmore Row, Birmingham, B3 2AA, UK 🇬🇧
                         </p>
                     </div>

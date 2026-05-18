@@ -286,7 +286,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                                   <label className="block text-left mb-2 text-lg font-semibold text-gray-800">{(data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price') + ` (${defaultCurrency})`}</label>
                                   <div className="relative  currency-wrapper dollar-simbols" >
                                     <span className="currency-tag">{defaultCurrency}</span>
-                                    <input className="border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] px-4 py-3 w-full focus:outline-none focus:border-pink-500 transition-all font-bold"
+                                    <input className="border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] px-4 py-3 w-full focus:outline-none focus:border-[#FF007F] transition-all font-bold"
                                         onChange={handleInput} defaultValue={item && item.price || ''}
                                         type="number" name="month_price"
                                         placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />

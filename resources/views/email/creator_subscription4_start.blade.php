@@ -21,7 +21,7 @@
                     <td
                         style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
                         <b>Hi {{ ucwords($user->name ?? 'User') }} 👋</b><br><br>
-                        <span style="color:#F94F97;">
+                        <span style="color:#FF007F;">
                             <b>Your subscription has started!</b>
                         </span>
                     </td>
@@ -47,7 +47,7 @@
                 <tr>
                     <td>
                         <a href="{{ env('APP_URL') }}/user/{{ $user->uuid }}"
-                            style="border-radius: 30px; background-color: #F94F97; color: white; border: none; padding: 13px 30px;
+                            style="border-radius: 30px; background-color: #FF007F; color: white; border: none; padding: 13px 30px;
                         text-decoration: none; font-weight: bold; font-size: 15px; text-align: center; display: inline-block;">
                             Manage Your Subscription
                         </a>

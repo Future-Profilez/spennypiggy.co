@@ -52,9 +52,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'is_subscribed',
         'is_founder',
         'show_piggy_bank',
-        'referral_code',
         'default_currency',
         'terms_accepted_at',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
     ];
 
     protected $hidden = [

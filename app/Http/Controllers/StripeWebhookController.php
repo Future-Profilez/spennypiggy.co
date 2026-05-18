@@ -2768,34 +2768,45 @@ class StripeWebhookController extends Controller
             }
         }
 
+        $riskPayment = null;
+        try {
+            $riskPayment = $paymentIntentId ? \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first() : null;
+        } catch (\Exception $e) {
+        }
+        $stripeSessionId = $riskPayment->stripe_session_id ?? null;
+
         // 2. Tips / Support
-        $tip = \App\Models\TipGoalsPayment::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId) // Some flows store session ID here
-            ->first();
+        $tip = $stripeSessionId ? \App\Models\TipGoalsPayment::where('session_id', $stripeSessionId)->first() : null;
+        if (!$tip && $paymentIntentId) {
+            $tip = \App\Models\TipGoalsPayment::where('session_id', $paymentIntentId)->first();
+        }
         if ($tip) {
             $tip->update(['status' => 'refunded']);
         }
 
         // 3. Shop Purchases
-        $shopPayment = \App\Models\ShopPayment::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId)
-            ->first();
+        $shopPayment = $stripeSessionId ? \App\Models\ShopPayment::where('session_id', $stripeSessionId)->first() : null;
+        if (!$shopPayment && $paymentIntentId) {
+            $shopPayment = \App\Models\ShopPayment::where('session_id', $paymentIntentId)->first();
+        }
         if ($shopPayment) {
             $shopPayment->update(['payment_status' => 'refunded']);
         }
 
         // 4. Wishes (StripePaymentDetail)
-        $wishPayment = \App\Models\StripePaymentDetail::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId)
-            ->first();
+        $wishPayment = $stripeSessionId ? \App\Models\StripePaymentDetail::where('session_id', $stripeSessionId)->first() : null;
+        if (!$wishPayment && $paymentIntentId) {
+            $wishPayment = \App\Models\StripePaymentDetail::where('session_id', $paymentIntentId)->first();
+        }
         if ($wishPayment) {
             $wishPayment->update(['payment_status' => 'refunded']);
         }
 
         // 5. Memberships
-        $membershipPayment = \App\Models\MembershipPayment::where('payment_intent_id', $paymentIntentId)
-            ->orWhere('session_id', $paymentIntentId)
-            ->first();
+        $membershipPayment = $stripeSessionId ? \App\Models\MembershipPayment::where('session_id', $stripeSessionId)->first() : null;
+        if (!$membershipPayment && $paymentIntentId) {
+            $membershipPayment = \App\Models\MembershipPayment::where('session_id', $paymentIntentId)->first();
+        }
         if ($membershipPayment) {
             $membershipPayment->update(['payment_status' => 'refunded']);
         }
@@ -2897,8 +2908,16 @@ class StripeWebhookController extends Controller
                 // Calculate reserve based on the creator's share (Net Amount)
                 // This ensures the reserve percentage matches what the creator expects to see.
                 if ((int) ($payment->reserve_amount_minor ?? 0) === 0 || true) { // Force recalculation to ensure net-based
+                    if (!$payment->creator_id) {
+                        throw new \Exception('Missing creator_id for reserve recalculation');
+                    }
+                    $creator = \App\Models\User::where('uuid', $payment->creator_id)->first();
+                    if (!$creator) {
+                        throw new \Exception('Creator not found for reserve recalculation');
+                    }
                     $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $payment->creator_id);
-                    $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                    $reservePercent = app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now());
+                    
                     if ($reservePercent > 0) {
                         // Calculate Net Amount
                         $netMinor = null;

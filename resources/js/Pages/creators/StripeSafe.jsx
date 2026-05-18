@@ -116,15 +116,15 @@ export default function StripeSafe() {
                            <h2 className="text-2xl md:text-3xl lg:text-3xl font-gulfs uppercase mb-4">Disputes</h2>
                            <ul className="space-y-3">
                               <li className="flex items-center gap-3 text-lg text-gray-600">
-                                 <Lock className="text-pink-600" size={20} /> Disputes are handled by the platform.
+                                 <Lock className="text-[#FF007F]" size={20} /> Disputes are handled by the platform.
                               </li>
                               <li className="flex items-center gap-3 text-lg text-gray-600">
-                                 <Lock className="text-pink-600" size={20} /> Creators are never debited.
+                                 <Lock className="text-[#FF007F]" size={20} /> Creators are never debited.
                               </li>
                            </ul>
                         </div>
                         <div className="shrink-0">
-                           <ShieldCheck size={80} className="text-pink-500 opacity-80" />
+                           <ShieldCheck size={80} className="text-[#FF007F] opacity-80" />
                         </div>
                      </div>
                   </div>

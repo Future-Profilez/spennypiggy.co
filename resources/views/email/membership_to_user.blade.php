@@ -21,7 +21,7 @@
 
                  <tr>
                      <td style="padding: 20px 0; border-top: 1px solid #eee;">
-                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #F94F97; text-align: center; margin-bottom: 15px;">💎 Welcome to the Inner Circle!</h3>
+                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">💎 Welcome to the Inner Circle!</h3>
                          <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">Your membership is now active. You have unlocked exclusive access to:</p>
                          
                          <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">

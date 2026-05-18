@@ -68,9 +68,13 @@ class RegisteredUserController extends Controller
 
     public function validateRegistration(Request $request)
     {
+        $messages = [
+            'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
+        ];
+
         $validator = Validator::make($request->all(), [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'username' => ['sometimes', 'required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['sometimes', 'required', 'string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
             'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
@@ -79,7 +83,7 @@ class RegisteredUserController extends Controller
             'city' => ['sometimes', 'required', 'string'],
             'state' => ['sometimes', 'required', 'string'],
             'postal_code' => ['sometimes', 'required', 'integer', 'digits_between:4,8'],
-        ]);
+        ], $messages);
 
         $validator->after(function ($validator) use ($request) {
             $email = (string) $request->input('email', '');
@@ -110,14 +114,18 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================BASIC VALIDATION========================== */
+        $messages = [
+            'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
+        ];
+
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => ['required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['required', 'string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'role'     => ['required'],
             'promo'    => ['nullable', 'string'], // referral code
-        ]);
+        ], $messages);
 
         if (config('app.url') === 'https://spennypiggy.co') {
             $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
@@ -155,15 +163,15 @@ class RegisteredUserController extends Controller
         /* =========================FRAUD PREVENTION CHECK (LIVE ONLY)========================== */
         $ip_address = $request->ip();
         
-        // Solution C: Check device cookie/session first
-        // If they already have a "registered_device" cookie, block them immediately
-        if ($request->cookie('registered_device')) {
-            throw ValidationException::withMessages([
-                'email' => 'Multiple accounts from the same device are not allowed.',
-            ]);
-        }
+        if (app()->environment('production') || config('app.url') === 'https://spennypiggy.co') {
+            // Solution C: Check device cookie/session first
+            // If they already have a "registered_device" cookie, block them immediately
+            if ($request->cookie('registered_device')) {
+                throw ValidationException::withMessages([
+                    'email' => 'Multiple accounts from the same device are not allowed.',
+                ]);
+            }
 
-        if (config('app.url') === 'https://spennypiggy.co') {
             // Solution A: Max accounts per IP limit
             $ipCount = User::where('ip_address', $ip_address)->count();
             
@@ -232,27 +240,34 @@ class RegisteredUserController extends Controller
             : 'dc1021e2-41a4-4dfa-8379-b27fb7e3834e';
 
         $user = User::create([
+            'uuid'                => Uuid::uuid4()->toString(),
             'tfa_key'             => $secret,
             'name'                => $request->name,
             'email'               => $request->email,
-            'username'            => $request->username,
+            'username'            => strtolower($request->username),
             'gender'              => $request->gender ?? null,
             'password'            => Hash::make($request->password),
             'role'                => $request->role,
             'creator_category'    => $request->creator_category ?? null,
             'ip_address'          => $ip_address,
             'country'             => $request->country_code ?? null,
+            'terms_accepted_at'   => now(),
             'bio_approved'        => 0,
             'profile_status_lock' => 0,
             'cover'               => $assignedCover,
             'cover_approved'      => 1,
+            'utm_source'          => $request->input('utm_source'),
+            'utm_medium'          => $request->input('utm_medium'),
+            'utm_campaign'        => $request->input('utm_campaign'),
         ]);
 
         Auth::login($user);
         
-        // Solution C: Set a long-lived cookie to identify this device
-        // This prevents the same device from creating another account, even if IP changes
-        \Illuminate\Support\Facades\Cookie::queue('registered_device', '1', 60 * 24 * 365 * 10); // 10 years
+        if (app()->environment('production') || config('app.url') === 'https://spennypiggy.co') {
+            // Solution C: Set a long-lived cookie to identify this device
+            // This prevents the same device from creating another account, even if IP changes
+            \Illuminate\Support\Facades\Cookie::queue('registered_device', '1', 60 * 24 * 365 * 10); // 10 years
+        }
 
         /* =========================AUTO FOLLOW SPENNY========================== */
         $spenny = User::where('username', 'spenny_piggy')->first();

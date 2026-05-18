@@ -14,9 +14,9 @@ export default function Thankyou(props) {
   const { errorAlert, successAlert } = useAlerts();
 
   const getTitle = () => {
-    if (type === 'monthly_subscription') return <><span>Subscription</span> <span className="text-pink-500">Successful!</span></>;
-    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return <><span>Payment</span> <span className="text-pink-500">Successful!</span></>;
-    return <><span>Your gift</span> <span className="text-pink-500">has been sent.</span></>;
+    if (type === 'monthly_subscription') return <><span>Subscription</span> <span className="text-[#FF007F]">Successful!</span></>;
+    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return <><span>Payment</span> <span className="text-[#FF007F]">Successful!</span></>;
+    return <><span>Your gift</span> <span className="text-[#FF007F]">has been sent.</span></>;
   };
 
   const getSubTitle = () => {
@@ -27,13 +27,13 @@ export default function Thankyou(props) {
 
   const getIcon = () => {
     switch(type) {
-      case 'wish': return <FaGift className="text-[40px] text-pink-500 mb-3 mx-auto" />;
-      case 'bill': return <FaStar className="text-[40px] text-pink-500 mb-3 mx-auto" />;
-      case 'membership': return <FaStar className="text-[40px] text-pink-500 mb-3 mx-auto" />;
-      case 'task': return <FaBolt className="text-[40px] text-pink-500 mb-3 mx-auto" />;
-      case 'shop': return <FaShoppingBag className="text-[40px] text-pink-500 mb-3 mx-auto" />;
-      case 'support': return <FaHeart className="text-[40px] text-pink-500 mb-3 mx-auto" />;
-      default: return <FaGift className="text-[40px] text-pink-500 mb-3 mx-auto" />;
+      case 'wish': return <FaGift className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
+      case 'bill': return <FaStar className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
+      case 'membership': return <FaStar className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
+      case 'task': return <FaBolt className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
+      case 'shop': return <FaShoppingBag className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
+      case 'support': return <FaHeart className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
+      default: return <FaGift className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
     }
   }
 
@@ -174,7 +174,7 @@ export default function Thankyou(props) {
 
         {wish_content && (type === 'wish' || type === 'task' || type === 'shop') && (
           <div className="mt-4  shadow-sm">
-            <h4 className="text-pink-600 font-black text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
+            <h4 className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
                <FaCheckCircle /> Exclusive Content Unlocked
             </h4>
             
@@ -204,7 +204,7 @@ export default function Thankyou(props) {
 
         {ask_question && type === 'shop' && (
           <div className="mt-4 p-4 bg-white border-2 border-pink-200 rounded-xl shadow-sm">
-            <h4 className="text-pink-600 font-black text-[11px] uppercase tracking-wider mb-2">
+            <h4 className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">
                Question from Creator
             </h4>
             <p className="text-sm font-semibold mb-3">{ask_question}</p>
@@ -215,7 +215,7 @@ export default function Thankyou(props) {
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   placeholder="Type your answer here..."
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-pink-500 focus:border-pink-500"
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-pink-500 focus:border-[#FF007F]"
                   rows="3"
                 ></textarea>
                 <button
@@ -236,8 +236,8 @@ export default function Thankyou(props) {
 
         {rewardLink && !wish_content && (
           <div className="mt-3">
-            <Link href={rewardLink} className="text-pink-500 font-bold hover:underline text-[13px] uppercase flex items-center gap-1">
-              {rewardText} <FaCheckCircle className="text-pink-500" />
+            <Link href={rewardLink} className="text-[#FF007F] font-bold hover:underline text-[13px] uppercase flex items-center gap-1">
+              {rewardText} <FaCheckCircle className="text-[#FF007F]" />
             </Link>
           </div>
         )}
@@ -323,7 +323,7 @@ export default function Thankyou(props) {
                         )}
 
                         <div className='w-full mt-6' >
-                        <Link href={`/${owner?.username}`} className='text-pink-500 hover:text-pink-600 transition-colors font-black uppercase tracking-wide text-sm flex items-center justify-center gap-2 hover:underline decoration-2 underline-offset-4' >
+                        <Link href={`/${owner?.username}`} className='text-[#FF007F] hover:text-[#FF007F] transition-colors font-black uppercase tracking-wide text-sm flex items-center justify-center gap-2 hover:underline decoration-2 underline-offset-4' >
                             <span>VISIT @{owner?.username?.toUpperCase()}'S PROFILE</span>
                         </Link>
                         </div>

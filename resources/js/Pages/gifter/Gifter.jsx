@@ -88,7 +88,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                             <div>
                                 <h3 className="text-xs font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
-                                    <div className="w-8 h-[3px] bg-pink-400 border border-black"></div>
+                                    <div className="w-8 h-[3px] bg-[#FF007F] border border-black"></div>
                                     Your Exclusive Benefits
                                 </h3>
                                 <p className="text-black text-2xl font-black tracking-wide">As a SpennyPiggy Supporter, you enjoy:</p>

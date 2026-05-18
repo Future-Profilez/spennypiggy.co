@@ -30,7 +30,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
             return (
                 <button 
                     onClick={() => onFilterChange('all')}
-                    className="mt-4 text-pink-600 hover:text-pink-700 font-medium underline"
+                    className="mt-4 text-[#FF007F] hover:text-pink-700 font-medium underline"
                 >
                     View all posts instead
                 </button>

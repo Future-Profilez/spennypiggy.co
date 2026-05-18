@@ -10,7 +10,7 @@
                  <tr>
                      <td
                          style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 16px; line-height: 23px;  color: 141414; text-align: left; text-align: center;">
-                         <span style="color:#F94F97 ">
+                         <span style="color:#FF007F ">
                          @php
                              $totalPaid = isset($data->total_paid) && $data->total_paid > 0 
                                  ? $data->total_paid 
@@ -104,7 +104,7 @@
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
                         <a href={{ env('APP_URL') . '/' . $data->shop->user->username }}
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
+                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
                      </td>
                  </tr>
              </table>

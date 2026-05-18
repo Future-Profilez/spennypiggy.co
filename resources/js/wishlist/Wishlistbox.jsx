@@ -301,7 +301,7 @@ export default function Wishlistbox(props) {
                                         href={route("user.show", {
                                             username: itm.user.username,
                                         })}
-                                        className="text-xs font-black text-pink-600 underline hover:opacity-90 uppercase"
+                                        className="text-xs font-black text-[#FF007F] underline hover:opacity-90 uppercase"
                                     >
                                         @{itm.user.username}
                                     </Link>
@@ -323,7 +323,7 @@ export default function Wishlistbox(props) {
     );
 }
 
-// <div className="bg-white rounded-[30px]   shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
+// <div className="bg-white rounded-[30px]   shadow-[4px_4px_0px_0px_#FF007F]ink  sshadow-lg relative border-2 border-[#FF007F] w-full max-w-[250px]">
 
 //                                                 <div className="flex justify-center ">
 //                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" className="w-full rounded-[30px] " />

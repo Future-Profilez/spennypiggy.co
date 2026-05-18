@@ -50,14 +50,14 @@ export default function Nocontent({
             {error ? (
                 <Link 
                     href="/" 
-                    className="inline-block bg-[#F94F97] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                    className="inline-block bg-[#FF007F] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                 >
                     Back to Home
                 </Link>
             ) : actionHref && actionText ? (
                 <Link 
                     href={actionHref} 
-                    className="inline-block bg-[#F94F97] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                    className="inline-block bg-[#FF007F] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                 >
                     {actionText}
                 </Link>

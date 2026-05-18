@@ -341,7 +341,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             <Head title={task.title} />
             <div className="bg-white px-4 py-8 min-h-screen">
                 <div className="max-w-3xl mx-auto">
-                    <Link href={route('task.dashboard')} className="inline-block mb-6 text-black font-bold uppercase tracking-wide hover:text-pink-500 transition-colors">
+                    <Link href={route('task.dashboard')} className="inline-block mb-6 text-black font-bold uppercase tracking-wide hover:text-[#FF007F] transition-colors">
                         &larr; Back to Dashboard
                     </Link>
 
@@ -417,7 +417,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                     </div>
                                 </div>
                                 <div className="text-left md:text-right shrink-0">
-                                    <div className="text-3xl md:text-4xl font-black text-pink-500 font-anton tracking-wider">
+                                    <div className="text-3xl md:text-4xl font-black text-[#FF007F] font-anton tracking-wider">
                                         {isCreator ? (
                                             formatMultiPrice(task.price, task.currency || 'USD')
                                         ) : (
@@ -455,7 +455,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                     <div>
                                         <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Created By</p>
                                         <Link href={`/${task.creator.username}/tasks`} className="group">
-                                            <h4 className="text-lg font-black font-anton tracking-wide text-gray-900 group-hover:text-pink-500 transition-colors leading-none">
+                                            <h4 className="text-lg font-black font-anton tracking-wide text-gray-900 group-hover:text-[#FF007F] transition-colors leading-none">
                                                 {task.creator.name}
                                             </h4>
                                             <p className="text-sm text-gray-500 mt-1 font-medium">@{task.creator.username}</p>
@@ -526,7 +526,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                     id="gifter_message"
                                                     value={data.gifter_message}
                                                     onChange={e => setData('gifter_message', e.target.value)}
-                                                    className="w-full border-2 border-gray-200 rounded-[16px] p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y text-sm"
+                                                    className="w-full border-2 border-gray-200 rounded-[16px] p-3 focus:ring-pink-500 focus:border-[#FF007F] min-h-[100px] resize-y text-sm"
                                                     placeholder="Add a personal note with your purchase..."
                                                 />
                                             </div>
@@ -588,7 +588,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                         {historyItem.status}
                                                     </span>
                                                 </div>
-                                                <a href={route('task.order', historyItem.uuid)} className="text-sm font-black text-pink-600 hover:text-pink-700 uppercase tracking-wide border-b-2 border-pink-200 hover:border-pink-600 transition-colors">
+                                                <a href={route('task.order', historyItem.uuid)} className="text-sm font-black text-[#FF007F] hover:text-pink-700 uppercase tracking-wide border-b-2 border-pink-200 hover:border-pink-600 transition-colors">
                                                     View Order &rarr;
                                                 </a>
                                             </div>
@@ -606,7 +606,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                         {!auth?.user && !purchase && (
                             <div className="bg-gray-50 p-4 text-center rounded-[20px] border border-gray-200 mt-6">
                                 <p className="text-sm text-gray-600 font-bold uppercase tracking-wider">
-                                    Please <a href={route('login')} className="text-pink-600 hover:text-pink-500 hover:underline">login</a> to purchase.
+                                    Please <a href={route('login')} className="text-[#FF007F] hover:text-[#FF007F] hover:underline">login</a> to purchase.
                                 </p>
                             </div>
                         )}
@@ -632,7 +632,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -643,7 +643,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -678,7 +678,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             >
                                 {passkeyLoading ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>

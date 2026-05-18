@@ -203,7 +203,7 @@ export default function ManagePasskey({ email, className }) {
                         type="button"
                         onClick={handleRegister}
                         disabled={loading}
-                        className=" whitespace-nowrap px-4 py-2 bg-pink-100 text-pink-600 rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50 flex items-center"
+                        className=" whitespace-nowrap px-4 py-2 bg-pink-100 text-[#FF007F] rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50 flex items-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

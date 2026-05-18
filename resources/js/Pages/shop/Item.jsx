@@ -203,7 +203,7 @@ export default function ShopDetailItem(props) {
                                                         <p className="font-medium text-lg text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
                                                         <p className="text-normal text-gray-500 capitalize">Status: {purchase.status}</p>
                                                     </div>
-                                                    <Link href={`/shop?type=purchases`} className="text-[#F94F97] font-medium hover:underline text-normal">
+                                                    <Link href={`/shop?type=purchases`} className="text-[#FF007F] font-medium hover:underline text-normal">
                                                         View Details
                                                     </Link>
                                                 </div>
@@ -281,7 +281,7 @@ export default function ShopDetailItem(props) {
                                 shop.special_member_price ? (
                                     <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[30px]  p-3 ">
                                         <div className="discount-tag w-[50px] h-[50px] mr-2 flex items-center justify-center">
-                                            <Percent size={32} className="text-pink-600" />
+                                            <Percent size={32} className="text-[#FF007F]" />
                                         </div>
                                         <div className="w-full pr-4 discount-text sm:flex items-center justify-between">
                                             <div className="pr-3">

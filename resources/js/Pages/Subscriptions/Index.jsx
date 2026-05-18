@@ -296,7 +296,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
             green: 'border-green-500 text-green-600 bg-green-100',
             purple: 'border-purple-500 text-purple-600 bg-purple-100',
             orange: 'border-orange-500 text-orange-600 bg-orange-100',
-            pink: 'border-pink-500 text-pink-600 bg-pink-100',
+            pink: 'border-[#FF007F] text-[#FF007F] bg-pink-100',
         };
         const classes = colorClasses[color] || colorClasses.blue;
         const [borderClass, textClass, bgClass] = classes.split(' ');
@@ -321,7 +321,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
         <AuthenticatedLayout
             auth={auth}
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-pink-600 leading-tight">Subscription Management</h2>}
+            header={<h2 className="font-semibold text-xl text-[#FF007F] leading-tight">Subscription Management</h2>}
         >
             <Head title="Subscriptions" />
             

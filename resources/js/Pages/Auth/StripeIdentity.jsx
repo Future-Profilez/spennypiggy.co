@@ -151,7 +151,7 @@ export default function StripeIdentity({ auth }) {
                                 </Link>
                                 <a
                                     href="mailto:support@spennypiggy.co"
-                                    className="text-pink-600 hover:underline font-semibold"
+                                    className="text-[#FF007F] hover:underline font-semibold"
                                 >
                                     support@spennypiggy.co
                                 </a>

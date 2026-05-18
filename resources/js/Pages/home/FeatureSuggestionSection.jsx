@@ -6,7 +6,7 @@ export default function FeatureSuggestionSection({ auth }) {
     const [showModal, setShowModal] = useState(false);
 
     return (
-        <section className="bg-black py-24 md:py-32 relative overflow-hidden border-t border-white/5">
+        <section className="bg-[var(--pink)] py-24 md:py-32 relative overflow-hidden border-t border-white/5">
             {/* Background decorative elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-900/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
@@ -24,17 +24,17 @@ export default function FeatureSuggestionSection({ auth }) {
                     <div className="fading flex justify-center mb-10">
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
-                            <div className="relative w-24 h-24 bg-[#0d0d0d] border border-white/10 rounded-[30px] flex items-center justify-center shadow-2xl transform transition-transform duration-700 group-hover:scale-110">
+                            <div className="relative w-24 h-24 bg-[#0d0d0d] border border-white/10 rounded-[30px] flex items-center justify-center shadow-[4px 4px 0px 0px rgb(255 0 127)]xl transform transition-transform duration-700 group-hover:scale-110">
                                 <FaLightbulb className="text-[#EFEA7B] text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
                             </div>
                         </div>
                     </div>
                     
-                    <h2 className="fading text-4xl md:text-5xl lg:text-6xl font-gulfs text-white mb-6 uppercase tracking-tight leading-[1.1]">
-                        Have a <span className="text-gradient-wishlist">Brilliant</span> Idea?
+                    <h2 className="fading text-4xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase tracking-wide leading-[1.1]">
+                        Have a <span className="text-yellow-400">Brilliant</span> Idea?
                     </h2>
                     
-                    <p className="fading text-gray-400 text-lg md:text-xl font-poppins mb-12 leading-relaxed max-w-2xl mx-auto opacity-90">
+                    <p className="fading text-gray-100 text-lg md:text-xl font-poppins mb-12 leading-relaxed max-w-2xl mx-auto opacity-90">
                         We're constantly building and improving Spenny Piggy for our community. 
                         Is there a feature you'd love to see? Let us know and help shape the future of the platform!
                     </p>

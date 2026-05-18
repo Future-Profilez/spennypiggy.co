@@ -61,7 +61,7 @@ export default function NotForBusiness() {
                                 </div>
                             </div>
 
-                            <h3 className="fading text-xl lg:text-2xl font-gulfs text-white mb-1 md:mb-4 uppercase leading-tight px-4 group-hover:text-pink-500 transition-colors">
+                            <h3 className="fading text-xl lg:text-2xl font-gulfs text-white mb-1 md:mb-4 uppercase leading-tight px-4 group-hover:text-[#FF007F] transition-colors">
                                 {item.title}
                             </h3>
                             <p className="fading text-gray-400 font-poppins text-sm lg:text-base leading-relaxed max-w-xs mx-auto whitespace-pre-line group-hover:text-gray-300 transition-colors">

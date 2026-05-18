@@ -20,7 +20,7 @@
             </tr>
             <tr>
                 <td align="center" style="padding: 0 0 18px 0;">
-                    <div style="display:inline-block; padding: 14px 20px; background:#FBF0F5; border:2px solid #F94F97; border-radius:12px; font-family: Arial; font-weight:bold; font-size: 22px; letter-spacing: 3px; color:#141414;">
+                    <div style="display:inline-block; padding: 14px 20px; background:#FBF0F5; border:2px solid #FF007F; border-radius:12px; font-family: Arial; font-weight:bold; font-size: 22px; letter-spacing: 3px; color:#141414;">
                         {{ $otp }}
                     </div>
                 </td>

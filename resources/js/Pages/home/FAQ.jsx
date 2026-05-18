@@ -40,13 +40,13 @@ export default function FAQ() {
                     return (
                       <Disclosure key={i} defaultOpen={i === 0}>
                         {({ open }) => (
-                          <div className={`fading bg-gray-900 border-2 border-pink-500 rounded-[30px]   shadow-[4px_4px_0px_0px_rgba(236,72,153,1)] overflow-hidden`}>
+                          <div className={`fading bg-gray-900 border-2 border-[#FF007F] rounded-[30px]   shadow-[4px_4px_0px_0px_rgba(236,72,153,1)] overflow-hidden`}>
                             <Disclosure.Button className={`flex w-full justify-between px-6 py-6 text-left text-xl font-gulfs uppercase focus:outline-none tracking-wide ${open ? 'text-yellow-400' : 'text-white'}`}>
                               <span>{f.title}</span>
                               <ChevronUpIcon
                                 className={`${
                                   open ? 'rotate-180 transform' : ''
-                                } h-6 w-6 text-pink-500 transition-transform duration-200`}
+                                } h-6 w-6 text-[#FF007F] transition-transform duration-200`}
                               />
                             </Disclosure.Button>
                             <Transition

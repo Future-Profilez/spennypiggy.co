@@ -44,7 +44,7 @@ export default function Footer(props) {
             </Head>
             <footer className={`bg-[#0A0A0A] text-white pt-8 md:pt-20 pb-30 md:pb-12 relative overflow-hidden ${IsPWA ? "hidden" : ""}`}>
                 <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#924DFF]/10 blur-[150px] rounded-full -translate-y-1/2"></div>
-                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#F94F96]/10 blur-[150px] rounded-full translate-y-1/2"></div>
+                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#FF007F]/10 blur-[150px] rounded-full translate-y-1/2"></div>
 
                 <div className="containerbox mx-auto relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start mb-8">
@@ -77,7 +77,7 @@ export default function Footer(props) {
                                         href={social.href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`w-12 h-12 flex items-center justify-center rounded-[14px] bg-white/5 border-2 border-white/10 transition-all duration-300 ${social.color} hover:scale-110 shadow-2xl hover:border-transparent`}
+                                        className={`w-12 h-12 flex items-center justify-center rounded-[14px] bg-white/5 border-2 border-white/10 transition-all duration-300 ${social.color} hover:scale-110 shadow-[4px_4px_0px_0px_#FF007F]xl hover:border-transparent`}
                                     >
                                         <social.icon size={28} />
                                     </a>
@@ -90,7 +90,7 @@ export default function Footer(props) {
                                     height={100}
                                     src={risk}
                                     width={260}
-                                    className="rounded-[10px] max-w-[160px] md:max-w-[200px] shadow-xl border border-white/5 hover:scale-105 transition-transform duration-300"
+                                    className="rounded-[10px] max-w-[160px] md:max-w-[200px] shadow-[4px_4px_0px_0px_#FF007F]l border border-white/5 hover:scale-105 transition-transform duration-300"
                                 />
                             </div>
                         </div>
@@ -103,6 +103,7 @@ export default function Footer(props) {
                                     <li><a target="_blank" href="https://spennypiggy.co" className="livechat text-gray-400 hover:text-white transition-colors  duration-300 block">Live Chat</a></li>
                                     <li><a target="_blank" href="https://intercom.help/spenny-piggy" className="text-gray-400 hover:text-white transition-colors  duration-300 block">FAQ's</a></li>
                                     <li><Link href={route("promotion-terms")} className="text-gray-400 hover:text-white transition-colors  duration-300 block">Promotion Terms</Link></li>
+                                    <li><Link href={route("pride.landing")} className="text-[#FF007F] hover:text-pink-300 font-bold transition-colors duration-300 block flex items-center gap-2">Pride Campaign 🏳️‍🌈</Link></li>
                                     <li>
                                         <button 
                                             onClick={() => setShowSuggestionModal(true)}
@@ -119,7 +120,7 @@ export default function Footer(props) {
                             </div>
 
                             <div className="">
-                                <h3 className="font-gulfs text-[#F94F96] text-2xl md:text-3xl tracking-wide md:tracking-widest uppercase transform rotate-1 origin-left">Legal</h3>
+                                <h3 className="font-gulfs text-[#FF007F] text-2xl md:text-3xl tracking-wide md:tracking-widest uppercase transform rotate-1 origin-left">Legal</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 pt-4">
                                     {[
                                         { name: "Privacy Policy", href: "https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e", external: true },
@@ -166,8 +167,8 @@ export default function Footer(props) {
                                 <a href="tel:02033552057" className="text-normal sm:text-xl font-poppins font-black hover:text-[#924DFF] transition-all duration-300 hover:scale-105 inline-block">020 3355 2057</a>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[#F94F96] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.15em]">Drop an Email</p>
-                                <a href="mailto:support@spennypiggy.co" className="text-normal sm:text-xl font-poppins font-black hover:text-[#F94F96] transition-all duration-300 hover:scale-105 inline-block">support@spennypiggy.co</a>
+                                <p className="text-[#FF007F] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.15em]">Drop an Email</p>
+                                <a href="mailto:support@spennypiggy.co" className="text-normal sm:text-xl font-poppins font-black hover:text-[#FF007F] transition-all duration-300 hover:scale-105 inline-block">support@spennypiggy.co</a>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-[#EFEA7B] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.15em]">Our Office</p>

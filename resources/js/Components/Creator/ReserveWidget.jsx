@@ -34,7 +34,7 @@ export default function ReserveWidget({ className = '' }) {
                     <div>
                         <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider">Funds on Hold (Reserves)</h3>
                         <p className="text-2xl font-black text-gray-900">
-                            {(data.total_held / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' })}
+                            {(data.total_held).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' })}
                         </p>
                     </div>
                 </div>

@@ -39,7 +39,7 @@ const Countdown = ({ createdAt, hours }) => {
     }
 
     return (
-        <span className="font-mono font-bold text-pink-600 text-sm">
+        <span className="font-mono font-bold text-[#FF007F] text-sm">
             {timeLeft.days > 0 && `${timeLeft.days}d `}
             {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
         </span>
@@ -244,12 +244,12 @@ export default function Index({
         <Guest auth={auth.user} user={auth.user}>
             <Head title="My Tasks" />
             <div className="px-3 py-8 md:py-18 min-h-screen !bg-white">
-                <h2 className="text-3xl md:text-4xl font-fre uppercase mb-8 text-center text-pink-500">
+                <h2 className="text-3xl md:text-4xl font-fre uppercase mb-8 text-center text-[#FF007F]">
                     Task Dashboard
                 </h2>
                 <div className="max-w-4xl mx-auto space-y-8">
                     {orders && orders.length > 0 && (
-                        <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout  !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px] ">
                             <div className="py-4 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-white">
                                     Active Orders (Action Required)
@@ -475,7 +475,7 @@ export default function Index({
                     )}
 
                     {auth.user.role === 1 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px] ">
                             <div className="py-3 px-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     My Task Definitions
@@ -527,7 +527,7 @@ export default function Index({
                                                                             "task.show",
                                                                             task.uuid,
                                                                         )}
-                                                                        className="hover:text-pink-500"
+                                                                        className="hover:text-[#FF007F]"
                                                                     >
                                                                         {
                                                                             task.title
@@ -577,7 +577,7 @@ export default function Index({
                                                             </div>
                                                             <div className="flex items-center gap-3">
                                                                 <div className="text-right min-w-[100px]">
-                                                                    <p className="text-2xl font-black text-pink-500 font-bold">
+                                                                    <p className="text-2xl font-black text-[#FF007F] font-bold">
                                                                         {formatMultiPrice(
                                                                             task.price,
                                                                             task.currency ||
@@ -700,7 +700,7 @@ export default function Index({
 
                     {/* Completed Orders / Sales History */}
                     {completed_orders && completed_orders.length > 0 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px] ">
                             <div className="py-3 px-4 bg-green-100 flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     Sales History

@@ -36,7 +36,7 @@
     }
     
     .cta-button-pink {
-        background-color: #F94F97;
+        background-color: #FF007F;
     }
 </style>
 @endpush
@@ -54,7 +54,7 @@
     <td align="center" style="padding:10px 20px 20px 20px;">
         <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%;" class="payment-blocked-content">
             <tr>
-                <td style="font-weight: 700; font-size: 24px; color:#F94F97; text-align: center; padding: 0 0 16px 0;">
+                <td style="font-weight: 700; font-size: 24px; color:#FF007F; text-align: center; padding: 0 0 16px 0;">
                     🚨 Payment Alert
                 </td>
             </tr>
@@ -67,7 +67,7 @@
             
             <tr>
                 <td style="font-size: 14px; color: #64748b; padding: 0 0 20px 0; line-height: 20px; text-align: center;">
-                    Someone just tried to pay you @if($paymentAmount)<strong style="color: #F94F97;">£{{ number_format($paymentAmount, 2) }}</strong>@endif, but the payment couldn't be completed because your account needs more recent content.
+                    Someone just tried to pay you @if($paymentAmount)<strong style="color: #FF007F;">£{{ number_format($paymentAmount, 2) }}</strong>@endif, but the payment couldn't be completed because your account needs more recent content.
                 </td>
             </tr>
 
@@ -123,7 +123,7 @@
                                 <div style="font-size: 12px; color: #22c55e; font-weight: 600;">2 minutes</div>
                             </td>
                             <td style="text-align: right; vertical-align: middle;">
-                                <a href="{{ env('APP_URL') . '/' . $creator->username }}" style="background: #F94F97; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">Start Now</a>
+                                <a href="{{ env('APP_URL') . '/' . $creator->username }}" style="background: #FF007F; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">Start Now</a>
                             </td>
                         </tr>
                     </table>
@@ -142,7 +142,7 @@
                                 <div style="font-size: 12px; color: #22c55e; font-weight: 600;">10 minutes</div>
                             </td>
                             <td style="text-align: right; vertical-align: middle;">
-                                <a href="{{ env('APP_URL') . '/' . $creator->username }}" style="background: #F94F97; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">Start Now</a>
+                                <a href="{{ env('APP_URL') . '/' . $creator->username }}" style="background: #FF007F; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">Start Now</a>
                             </td>
                         </tr>
                     </table>
@@ -161,7 +161,7 @@
                                 <div style="font-size: 12px; color: #22c55e; font-weight: 600;">7 minutes</div>
                             </td>
                             <td style="text-align: right; vertical-align: middle;">
-                                <a href="{{ env('APP_URL') . '/' . $creator->username }}" style="background: #F94F97; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">Start Now</a>
+                                <a href="{{ env('APP_URL') . '/' . $creator->username }}" style="background: #FF007F; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">Start Now</a>
                             </td>
                         </tr>
                     </table>

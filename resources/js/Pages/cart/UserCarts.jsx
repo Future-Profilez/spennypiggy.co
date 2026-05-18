@@ -962,7 +962,7 @@ export default function UserCarts(props) {
                                                 </p>
                                                 <input
                                                     required
-                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[12px] md:rounded-[12px] `}
+                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[12px] md:rounded-[12px] `}
                                                     value={email}
                                                     disabled={
                                                         !!auth?.user?.email
@@ -979,7 +979,7 @@ export default function UserCarts(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
+                                                    className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
                                                     onChange={(e) =>
                                                         setName(e.target.value)
                                                     }
@@ -1102,7 +1102,7 @@ export default function UserCarts(props) {
                             </label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -1117,7 +1117,7 @@ export default function UserCarts(props) {
                                 className={`text-sm font-medium transition-all ${
                                     resendingOtp || resendCooldown > 0
                                         ? "text-gray-400 cursor-not-allowed"
-                                        : "text-pink-600 hover:text-pink-700"
+                                        : "text-[#FF007F] hover:text-pink-700"
                                 }`}
                             >
                                 {resendingOtp
@@ -1133,7 +1133,7 @@ export default function UserCarts(props) {
                             </label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) =>
@@ -1186,7 +1186,7 @@ export default function UserCarts(props) {
                                 {passkeyLoading ? (
                                     <>
                                         <svg
-                                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500"
+                                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]"
                                             xmlns="http://www.w3.org/2000/svg"
                                             fill="none"
                                             viewBox="0 0 24 24"

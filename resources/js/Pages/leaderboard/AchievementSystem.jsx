@@ -48,7 +48,7 @@ export default function AchievementSystem() {
     };
 
     const badgeColors = {
-        'first_supporter': 'text-pink-600 bg-pink-100',
+        'first_supporter': 'text-[#FF007F] bg-pink-100',
         'top_creator': 'text-yellow-600 bg-yellow-100',
         'milestone_reached': 'text-blue-600 bg-blue-100',
         'growth_champion': 'text-green-600 bg-green-100',

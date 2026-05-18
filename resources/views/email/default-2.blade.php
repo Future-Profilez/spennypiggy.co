@@ -83,7 +83,7 @@
     <table align="center" cellspacing="0" cellpadding="0" border="0"
         style="width: 100%; max-width: 450px; border-collapse: collapse; box-shadow: 0 0 25px 0 rgba(0,0,0,0.1); border-radius: 10px;">
         <tr>
-            <td style="background-color: #F94F97; padding: 10px 15px 10px 15px">
+            <td style="background-color: #FF007F; padding: 10px 15px 10px 15px">
                 <img src="https://ucarecdn.com/1fa9114e-a0ee-4097-add8-0cd7afa2632b/activedots.png" alt="img">
             </td>
         </tr>

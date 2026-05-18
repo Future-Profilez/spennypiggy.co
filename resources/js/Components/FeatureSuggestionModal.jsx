@@ -51,7 +51,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="lg">
-            <div className="relative overflow-hidden bg-[#0d0d0d] border border-white/10   shadow-2xl">
+            <div className="relative overflow-hidden bg-[#0d0d0d] border border-white/10   shadow-[4px_4px_0px_0px_#FF007F]xl">
                 {/* Background Glows */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-600/10 rounded-full filter blur-[80px]"></div>
@@ -59,7 +59,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                 </div>
 
                 {/* Header Decoration */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#EFEA7B] via-[#F94F96] to-[#924DFF] z-10"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#EFEA7B] via-[#FF007F] to-[#924DFF] z-10"></div>
                 
                 <form onSubmit={submit} className="p-8 md:p-10 relative z-10 max-h-[70vh] overflow-auto custom-scrollbar">
                     <div className="flex items-center justify-between mb-10">
@@ -165,7 +165,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                                                 <button 
                                                     type="button"
                                                     onClick={() => setData({ ...data, image_url: '', image_uuid: '' })}
-                                                    className="bg-white text-black w-12 h-12 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all duration-300 shadow-xl"
+                                                    className="bg-white text-black w-12 h-12 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all duration-300 shadow-[4px_4px_0px_0px_#FF007F]l"
                                                 >
                                                     <FaTimes className="text-lg" />
                                                 </button>

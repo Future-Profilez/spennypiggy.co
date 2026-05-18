@@ -55,7 +55,7 @@ export default function Popup(props) {
                 <Dialog.Panel className={`w-full ${fullscreen ? 'w-full h-full max-w-none' : maxWidthClass} transform overflow-hidden rounded-[35px] md:rounded-[40px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-left align-middle transition-all ${modalclass}  mymodal`}>
                   <div className={`p-0 ${bodyclass} `} >
                     {!hidecontrols ?
-                    <div className='px-[30px] py-[20px] bg-pink-400 flex  !border-l-0 !border-r-0 !border-t-0 border-b-[3px] border-black items-center '>
+                    <div className='px-[30px] py-[20px] bg-[#FF007F] flex  !border-l-0 !border-r-0 !border-t-0 border-b-[3px] border-black items-center '>
                         <span className=' border-black border-2 bg-red-500 mr-2 w-4 h-4 rounded-full block'></span>
                         <span className=' border-black border-2 bg-yellow-400 mr-2 w-4 h-4 rounded-full block'></span>
                         <span className=' border-black border-2 bg-green-400 mr-2 w-4 h-4 rounded-full block'></span>

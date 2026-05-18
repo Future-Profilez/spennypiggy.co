@@ -100,7 +100,7 @@
 }
 
 /* Card components */
-.shadow-pinks {
+.shadow-[4px_4px_0px_0px_#FF007F]inks {
     box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.1), 0 4px 6px -2px rgba(236, 72, 153, 0.05);
 }
 
@@ -108,12 +108,12 @@
     border-radius: 23px;
 }
 
-.border-pink-500 {
+.border-[#FF007F] {
     border-color: #EC4899;
 }
 
 /* Typography */
-.text-pink-600 {
+.text-[#FF007F] {
     color: #DB2777;
 }
 

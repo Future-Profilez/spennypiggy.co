@@ -145,7 +145,7 @@ export default function AddGift({
                         name="title"
                         required
                         placeholder="Example - https://www.amazon.com/Gaming-Headphone-Controller-Holder-Organizer-Black/dp/B0BPSP3BQH"
-                        className="text-normal border-gray-300 border px-3 py-3 text-gray-900 rounded-[30px]  w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                        className="text-normal border-gray-300 border px-3 py-3 text-gray-900 rounded-[30px]  w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                     />
                     <LoaderButton
                         type="submit"

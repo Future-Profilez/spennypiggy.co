@@ -149,15 +149,19 @@ class ProfileController extends Controller
         if ($blockedWord !== false) {
             return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
         } else {
+            $messages = [
+                'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
+            ];
+
             $request->validate([
                 'name' => ['string', 'max:255'],
-                'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
+                'username' => ['string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'max:20', Rule::unique('users')->ignore($user->id)],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
                 'bio' => ['nullable', 'string', 'max:255'], // updated
                 'creator_category' => ['nullable', 'array'],
                 'gender' => ['nullable', 'string', 'max:50'],
                 'country' => ['nullable', 'string', 'max:100'],
-            ]);
+            ], $messages);
 
             $avatar = $request->avatar;
             $cover = $request->cover;

@@ -24,7 +24,7 @@ class ReservePolicy
         }
 
         $daysSinceJoined = (int) $creator->created_at->startOfDay()->diffInDays($at->copy()->startOfDay());
-        return $daysSinceJoined < $ageDays ? 10 : 0;
+        return $daysSinceJoined <= $ageDays ? 10 : 0;
     }
 
     public function getEffectiveReservePercent(User $creator, ?CreatorMetric $metric = null, ?Carbon $at = null): int

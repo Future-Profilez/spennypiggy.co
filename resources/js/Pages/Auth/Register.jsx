@@ -113,7 +113,34 @@ export default function Register(props) {
         role: type && type === "creator" ? 1 : 0,
         creator_category: "",
         cf_turnstile_response: "",
+        utm_source: "",
+        utm_medium: "",
+        utm_campaign: "",
     });
+
+    useEffect(() => {
+        // Read UTM params from URL or localStorage
+        let utm_source = "";
+        let utm_medium = "";
+        let utm_campaign = "";
+
+        if (typeof window !== 'undefined') {
+            const searchParams = new URLSearchParams(window.location.search);
+            
+            utm_source = searchParams.get('utm_source') || localStorage.getItem('utm_source') || "";
+            utm_medium = searchParams.get('utm_medium') || localStorage.getItem('utm_medium') || "";
+            utm_campaign = searchParams.get('utm_campaign') || localStorage.getItem('utm_campaign') || "";
+
+            if (utm_source || utm_medium || utm_campaign) {
+                setData(data => ({
+                    ...data,
+                    utm_source,
+                    utm_medium,
+                    utm_campaign
+                }));
+            }
+        }
+    }, []);
 
     const [referralMessage, setReferralMessage] = useState("");
     const [referralType, setReferralType] = useState(""); // success | error
@@ -448,9 +475,9 @@ export default function Register(props) {
                 localError = "The username must be lowercase.";
             } else if (/\s/.test(data.username)) {
                 localError = "The username must not contain spaces.";
-            } else if (/[^a-z0-9]/.test(data.username)) {
+            } else if (/[^a-z0-9_\.]/.test(data.username)) {
                 localError =
-                    "The username must only contain letters and numbers.";
+                    "The username must only contain letters, numbers, periods (.), and underscores (_).";
             }
 
             if (localError) {
@@ -912,7 +939,7 @@ export default function Register(props) {
                             Already registered ?
                             <Link
                                 href={route("login")}
-                                className="ml-1 text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                                className="ml-1 text-[#FF007F] hover:text-[#FF007F] font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
                             >
                                 Log In
                             </Link>
@@ -937,12 +964,12 @@ export default function Register(props) {
                                             }
                                             className={`cursor-pointer rounded-[30px]   p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 1
-                                                    ? "border-pink-500 bg-pink-500/10"
-                                                    : "border-white/10 bg-white/5 hover:border-pink-500/50 hover:bg-white/10"
+                                                    ? "border-[#FF007F] bg-pink-500/10"
+                                                    : "border-white/10 bg-white/5 hover:border-[#FF007F]/50 hover:bg-white/10"
                                             }`}
                                         >
                                             <div className="text-center">
-                                                <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-pink-500 transition-colors uppercase">
+                                                <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-[#FF007F] transition-colors uppercase">
                                                     I'm a Creator
                                                 </h3>
                                                 <p className="text-gray-400 text-sm">
@@ -995,7 +1022,7 @@ export default function Register(props) {
                                     </p>
                                     <button
                                         onClick={handleNext}
-                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px]  shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit"
+                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px]  shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit"
                                     >
                                         Got it – I’ll link my socials
                                     </button>
@@ -1034,7 +1061,7 @@ export default function Register(props) {
                                                             font-medium cursor-pointer transition-all duration-300 border 
                                                             ${
                                                                 isSelected
-                                                                    ? "bg-pink-600 !border-pink-500 text-white shadow-lg shadow-pink-500/30"
+                                                                    ? "bg-pink-600 !border-[#FF007F] text-white shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30"
                                                                     : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20"
                                                             }`}
                                                     >
@@ -1051,7 +1078,7 @@ export default function Register(props) {
                                                 profileTags &&
                                                 profileTags.length < 1
                                             }
-                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px]  shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px]  shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                             Next
                                         </button>
@@ -1151,12 +1178,12 @@ export default function Register(props) {
                                                                 localError =
                                                                     "The username must not contain spaces.";
                                                             } else if (
-                                                                /[^a-z0-9]/.test(
+                                                                /[^a-z0-9_\.]/.test(
                                                                     data.username,
                                                                 )
                                                             ) {
                                                                 localError =
-                                                                    "The username must only contain letters and numbers.";
+                                                                    "The username must only contain letters, numbers, periods (.), and underscores (_).";
                                                             }
 
                                                             if (localError) {
@@ -1343,7 +1370,7 @@ export default function Register(props) {
                                                             (prev) => !prev,
                                                         )
                                                     }
-                                                    className="mt-2 text-sm font-medium text-pink-400 hover:text-pink-300 underline underline-offset-4"
+                                                    className="mt-2 text-sm font-medium text-[#FF007F] hover:text-pink-300 underline underline-offset-4"
                                                 >
                                                     {showPassword
                                                         ? "Hide Passwords"
@@ -1748,7 +1775,7 @@ export default function Register(props) {
                                                     ref={checkRef}
                                                     id="termaccept"
                                                     name="termaccept"
-                                                    className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                    className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
                                                     onChange={(e) =>
                                                         setData(
                                                             "termaccept",
@@ -1765,7 +1792,7 @@ export default function Register(props) {
                                                             "terms-and-conditions",
                                                         )}
                                                         target="_blank"
-                                                        className="text-pink-400 hover:text-pink-300 underline"
+                                                        className="text-[#FF007F] hover:text-pink-300 underline"
                                                     >
                                                         Terms & Conditions
                                                     </a>{" "}
@@ -1775,7 +1802,7 @@ export default function Register(props) {
                                                             "terms-and-conditions",
                                                         )}
                                                         target="_blank"
-                                                        className="text-pink-400 hover:text-pink-300 underline"
+                                                        className="text-[#FF007F] hover:text-pink-300 underline"
                                                     >
                                                         Privacy Policy
                                                     </a>
@@ -1800,7 +1827,7 @@ export default function Register(props) {
                                                                     ?.value,
                                                             )
                                                         }
-                                                        className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                        className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
                                                         required
                                                     />
                                                     <span className="text-normal text-gray-400">
@@ -1831,7 +1858,7 @@ export default function Register(props) {
                                         <div className="">
                                             <Popup
                                                 action={hasPop}
-                                                modalclass="bg-gray-900 border border-white/10 shadow-2xl rounded-[30px]   p-6 max-w-lg w-full"
+                                                modalclass="bg-gray-900 border border-white/10 shadow-[4px_4px_0px_0px_#FF007F]xl rounded-[30px]   p-6 max-w-lg w-full"
                                                 space="4"
                                                 size="md"
                                                 classes={`hidden`}
@@ -1882,7 +1909,7 @@ export default function Register(props) {
                                                                 name="hasNotified"
                                                                 value="hasNotified"
                                                                 required
-                                                                className="mt-1 h-5 w-5 rounded bg-white/90 border-black/30 text-pink-500 focus:ring-pink-500"
+                                                                className="mt-1 h-5 w-5 rounded bg-white/90 border-black/30 text-[#FF007F] focus:ring-pink-500"
                                                             />
                                                             <span className="text-sm text-gray-500">
                                                                 I confirm that

@@ -49,7 +49,7 @@ export default function Keep100() {
                  
                  <div className="bg-[#fdfbf7] p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group">
                     <div className="bg-yellow-300 w-16 h-16 md:w-20 md:h-20 rounded-2xl border-[3px] border-black flex items-center justify-center mb-8">
-                       <DollarSign className="text-pink-600" size={40} />
+                       <DollarSign className="text-[#FF007F]" size={40} />
                     </div>
                     <h2 className="text-xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-3 md:mb-8 text-black">What This Means</h2>
                     <ul className="space-y-4 md:space-y-6">

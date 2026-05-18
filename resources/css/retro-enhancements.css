@@ -46,7 +46,7 @@
     rgba(5, 239, 184, 0.1) 100%
   );
   border: 2px solid transparent;
-  border-image: linear-gradient(45deg, #F94F97, #8C52FF, #05EFB8) 1;
+  border-image: linear-gradient(45deg, #FF007F, #8C52FF, #05EFB8) 1;
   backdrop-filter: blur(10px);
   box-shadow: 
     0 8px 16px rgba(0, 0, 0, 0.1),

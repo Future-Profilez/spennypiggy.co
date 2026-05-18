@@ -108,7 +108,7 @@ body {
   --gray:#cccccc;
   --gray2:#4D4D4D;
   --mint:#05EFB8;
-  --pink:#F94F97;
+  --pink:#FF007F;
   --yellow:#E6EA7B;
   --lightpink:#FFC4E2;
   --voilet: #8C52FF;

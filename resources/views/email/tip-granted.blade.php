@@ -29,7 +29,7 @@
                  <tr>
                      <td
                          style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                         Visit <a href="{{ env('APP_URL') . '/' }}" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> to discover more creators' wishes to fulfill! Check out their profiles, intros, memberships, and more.
+                         Visit <a href="{{ env('APP_URL') . '/' }}" style="color:#FF007F; text-decoration:none;">Spenny Piggy</a> to discover more creators' wishes to fulfill! Check out their profiles, intros, memberships, and more.
                  </tr>
                  @if (!empty($tip->message))
                      <tr>
@@ -43,7 +43,7 @@
                  @if(isset($deliverable) && !empty($deliverable->deliverable_url))
                  <tr>
                      <td style="padding: 20px 0; border-top: 1px solid #eee;">
-                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #F94F97; text-align: center; margin-bottom: 15px;">🎁 Your Supporter Rewards!</h3>
+                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">🎁 Your Supporter Rewards!</h3>
                          <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">As a thank you for your support, you now have access to exclusive content:</p>
                          
                          <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
@@ -73,7 +73,7 @@
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
                          <a href={{ env('APP_URL') . '/history' }}
-                             style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Show More Love</a>
+                             style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Show More Love</a>
                      </td>
                  </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>

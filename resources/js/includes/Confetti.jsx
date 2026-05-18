@@ -22,7 +22,7 @@ export default function Confetti  ({sender, is_read_owner, children, onclick, cl
     //  const defaults = {
     //    disableForReducedMotion: true,
     //  };
-    //  const colors = ['#05EFB8', '#8C52FF', '#E6EA7B', '#F94F97', '#05EFB8', '#8C52FF', '#E6EA7B', '#F94F97'];
+    //  const colors = ['#05EFB8', '#8C52FF', '#E6EA7B', '#FF007F', '#05EFB8', '#8C52FF', '#E6EA7B', '#FF007F'];
     //  function fire(particleRatio, opts) {
     //    confetti(
     //      Object.assign({}, defaults, opts, {

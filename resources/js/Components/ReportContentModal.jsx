@@ -100,7 +100,7 @@ export default function ReportContentModal({ reportedUser }) {
                                 required
                                 value={data.reporter_name}
                                 onChange={(e) => setData('reporter_name', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-pink-500 p-3"
+                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3"
                                 placeholder="Jane Doe"
                             />
                         </div>
@@ -111,7 +111,7 @@ export default function ReportContentModal({ reportedUser }) {
                                 required
                                 value={data.reporter_email}
                                 onChange={(e) => setData('reporter_email', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-pink-500 p-3"
+                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3"
                                 placeholder="jane@example.com"
                             />
                         </div>
@@ -128,7 +128,7 @@ export default function ReportContentModal({ reportedUser }) {
                                 required
                                 value={data.reported_url}
                                 onChange={(e) => setData('reported_url', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-pink-500 p-3 pl-10"
+                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3 pl-10"
                                 placeholder="https://spennypiggy.co/..."
                             />
                         </div>
@@ -146,7 +146,7 @@ export default function ReportContentModal({ reportedUser }) {
                                 minLength={10}
                                 value={data.reason}
                                 onChange={(e) => setData('reason', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-pink-500 p-3 pl-10 min-h-[120px]"
+                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3 pl-10 min-h-[120px]"
                                 placeholder="I am the copyright owner of this artwork. This creator is selling my digital art without permission..."
                             />
                         </div>
@@ -159,7 +159,7 @@ export default function ReportContentModal({ reportedUser }) {
                                 required
                                 checked={data.good_faith_confirmed}
                                 onChange={(e) => setData('good_faith_confirmed', e.target.checked)}
-                                className="mt-1 w-5 h-5 rounded border-2 border-black text-pink-600 focus:ring-pink-500"
+                                className="mt-1 w-5 h-5 rounded border-2 border-black text-[#FF007F] focus:ring-pink-500"
                             />
                             <span className="text-sm font-bold text-gray-700">
                                 I confirm that I believe in good faith that the use of the material is not authorised by the copyright owner, its agent, or the law, and that the information provided is accurate.

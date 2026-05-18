@@ -11,13 +11,13 @@ const customTheme = {
     borderColor: '#ff4fc4',
   },
   header: {
-    backgroundColor: '#F94F96',
+    backgroundColor: '#FF007F',
     borderColor: '#fba8e0',
     textColor: '#ffffff',
     fontFamily: 'poppins',
   },
   footer: {
-    backgroundColor: '#F94F96',
+    backgroundColor: '#FF007F',
     borderColor: '#fba8e0',
     textColor: '#ffffff',
     fontFamily: 'poppins',
@@ -72,7 +72,7 @@ const CustomHeader = ({ unreadCount, onMarkAllAsRead }) => {
   };
 
   return (
-    <div className="flex justify-between items-center px-5 py-4 bg-[#F94F96] text-white rounded-t-[24px]">
+    <div className="flex justify-between items-center px-5 py-4 bg-[#FF007F] text-white rounded-t-[24px]">
       <h3 className="text-[17px] font-bold tracking-wide font-poppins">Notifications</h3>
       <div className="flex items-center gap-3">
         <button 
@@ -110,7 +110,7 @@ const CustomNotificationItem = ({ notification }) => {
       <div className="flex items-start gap-3">
         {/* Unread Indicator */}
         {isUnread && (
-          <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-[#F94F96] rounded-full border-2 border-white shadow-[0_0_8px_rgba(249,79,150,0.6)] z-10" />
+          <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-[#FF007F] rounded-full border-2 border-white shadow-[0_0_8px_rgba(249,79,150,0.6)] z-10" />
         )}
         
         <div className="flex-1 pl-1">
@@ -121,7 +121,7 @@ const CustomNotificationItem = ({ notification }) => {
                  notification.title?.toLowerCase().includes('account') ? '⚠️' : 
                  notification.title?.toLowerCase().includes('approve') ? '✅' : '🔔'}
               </span>
-              <h4 className={`font-bold text-[#3f0a43] text-[15px] leading-tight font-poppins ${isUnread ? 'text-[#F94F96]' : ''}`}>
+              <h4 className={`font-bold text-[#3f0a43] text-[15px] leading-tight font-poppins ${isUnread ? 'text-[#FF007F]' : ''}`}>
                 {notification.title}
               </h4>
             </div>
@@ -135,7 +135,7 @@ const CustomNotificationItem = ({ notification }) => {
           </p>
           
           <div className="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="text-gray-400 hover:text-[#F94F96] transition-colors p-1">
+            <button className="text-gray-400 hover:text-[#FF007F] transition-colors p-1">
               <MdMoreHoriz size={22} />
             </button>
           </div>
@@ -148,14 +148,14 @@ const CustomNotificationItem = ({ notification }) => {
 const BrowserNotificationBanner = ({ onEnable, onHide }) => (
   <div className="mx-4 mb-4 p-4 bg-white border border-pink-100 rounded-2xl flex items-center justify-between gap-3 shadow-[0_4px_12px_rgba(249,79,150,0.08)]">
     <div className="flex-1">
-      <p className="text-[12px] text-pink-600 leading-tight font-bold font-poppins">
+      <p className="text-[12px] text-[#FF007F] leading-tight font-bold font-poppins">
         By enabling browser notifications, you'll stay up to date even better.
       </p>
     </div>
     <div className="flex items-center gap-2">
       <button 
         onClick={onEnable}
-        className="bg-[#F94F96] text-white text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-lg hover:bg-[#e83e85] transition-colors whitespace-nowrap shadow-sm active:scale-95 transform"
+        className="bg-[#FF007F] text-white text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-lg hover:bg-[#e83e85] transition-colors whitespace-nowrap shadow-sm active:scale-95 transform"
       >
         Enable Now
       </button>
@@ -216,6 +216,7 @@ const MagicBellNotification = () => {
   useMagicBellEvent('notifications.new', notificationRecieve);
 
   function playSound(url) {
+    if (typeof navigator !== 'undefined' && navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
     const audio = new Audio(url);
     audio.loop = false;
     try {
