@@ -72,9 +72,9 @@
             @if(!empty($metaArr['creator_note']))
             <tr>
                 <td style="padding: 10px 0;">
-                    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #fff4f8; border-radius: 12px; padding: 15px; border: 1px solid #f94f97; text-align: left;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #fff4f8; border-radius: 12px; padding: 15px; border: 1px solid #FF007F; text-align: left;">
                         <tr>
-                            <td style="font-family: Arial; font-size: 12px; color: #f94f97; text-transform: uppercase; font-weight: bold; padding-bottom: 5px;">Note from {{ ucwords($creator->name) }}</td>
+                            <td style="font-family: Arial; font-size: 12px; color: #FF007F; text-transform: uppercase; font-weight: bold; padding-bottom: 5px;">Note from {{ ucwords($creator->name) }}</td>
                         </tr>
                         <tr>
                             <td style="font-family: Arial; font-size: 14px; font-weight: normal; color: #333333; line-height: 20px;">{{ $metaArr['creator_note'] }}</td>

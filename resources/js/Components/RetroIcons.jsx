@@ -27,7 +27,7 @@ export const RetroCartIcon = ({ size = 26, isActive = false, count = 0 }) => {
       
       {/* Counter */}
       {count > 0 && (
-        <span className="absolute -top-2 -right-2 retro-counter shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black bg-pink-500 text-white font-bold w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
+        <span className="absolute -top-2 -right-2 retro-counter shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black bg-[#FF007F] text-white font-bold w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
           {count}
         </span>
       )}

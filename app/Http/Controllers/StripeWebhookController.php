@@ -2856,6 +2856,16 @@ class StripeWebhookController extends Controller
             }
 
             if ($creatorId) {
+                if (is_numeric($creatorId)) {
+                    $creator = \App\Models\User::find($creatorId);
+                    $creatorId = $creator ? $creator->uuid : null;
+                } else {
+                    $creator = \App\Models\User::where('uuid', $creatorId)->first();
+                    $creatorId = $creator ? $creator->uuid : null;
+                }
+            }
+
+            if ($creatorId) {
                 try {
                     $appFee = $paymentIntent->application_fee_amount ?? 0;
                     $stripeFee = \App\StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $connectedAccountId);

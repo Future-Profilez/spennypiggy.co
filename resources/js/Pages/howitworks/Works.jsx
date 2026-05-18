@@ -85,7 +85,7 @@ export default function Works(props) {
             img: vishitimg,
             icon: SearchIcon,
             color: "pink-500",
-            shadowColor: "#EC4899"
+            shadowColor: "#FF007F"
         },
         {
             step: "Step 2",
@@ -115,7 +115,7 @@ export default function Works(props) {
             img: yourwishlist,
             icon: SparklesIcon,
             color: "pink-500",
-            shadowColor: "#EC4899"
+            shadowColor: "#FF007F"
         },
         {
             step: "Step 2",
@@ -145,7 +145,7 @@ export default function Works(props) {
                 {/* Decorative Background Shapes */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-10 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape"></div>
-                    <div className="absolute top-40 right-10 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute top-40 right-10 w-64 h-64 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
                     <div className="absolute bottom-40 left-1/2 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20 floating-shape" style={{animationDelay: '2s'}}></div>
                 </div>
 
@@ -178,7 +178,7 @@ export default function Works(props) {
                                             w-full py-3 text-lg font-gulfs leading-5 rounded-[18px] uppercase tracking-wider transition-all duration-300
                                             focus:outline-none ring-0 border-0
                                             ${selected 
-                                                ? 'bg-pink-500 text-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] scale-105' 
+                                                ? 'bg-[#FF007F] text-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] scale-105' 
                                                 : 'text-gray-400 hover:text-white hover:bg-white/5'}
                                         `}
                                     >

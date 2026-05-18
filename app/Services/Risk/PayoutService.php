@@ -108,7 +108,6 @@ class PayoutService
         $platformTotal = 0;
 
         $dueReleases = $this->getDueReserveReleases($runDate);
-        $processedCreators = [];
 
         $rates = \App\Models\Currency::rates();
         $convert = function ($amount, $from, $to = 'GBP') use ($rates) {
@@ -120,12 +119,8 @@ class PayoutService
         };
 
         foreach ($creators as $creatorId) {
-            $creator = User::where('uuid', $creatorId)->orWhere('id', $creatorId)->first();
+            $creator = User::where('uuid', $creatorId)->first();
             if (!$creator) continue;
-            
-            // Prevent processing the same creator twice if they have mixed creator_id formats (id vs uuid)
-            if (in_array($creator->uuid, $processedCreators)) continue;
-            $processedCreators[] = $creator->uuid;
 
             // Fetch Metrics
             try {
@@ -141,14 +136,14 @@ class PayoutService
             $cutoff = $runDate->copy()->subDays($delayDays);
 
             // Fetch Eligible Payments
-            $payments = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
+            $payments = Payment::where('creator_id', $creator->uuid)
                 ->where('status', 'succeeded')
                 ->whereNull('payout_run_id')
                 ->where('created_at', '<=', $cutoff)
                 ->orderByDesc('created_at')
                 ->get();
             
-            $holdIntentIds = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
+            $holdIntentIds = Payment::where('creator_id', $creator->uuid)
                 ->whereNull('payout_run_id')
                 ->whereIn('status', ['review_hold', 'disputed'])
                 ->whereNotNull('stripe_payment_intent_id')
@@ -243,7 +238,7 @@ class PayoutService
             $payments = $eligiblePayments;
             $grossAmount = (int) $payments->sum('amount');
 
-            $adjustments = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
+            $adjustments = Payment::where('creator_id', $creator->uuid)
                 ->whereIn('status', ['refunded', 'disputed'])
                 ->whereNotNull('payout_run_id')
                 ->whereNull('adjustment_payout_run_id')
@@ -252,7 +247,7 @@ class PayoutService
                 ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
                 ->values();
 
-            $reviewHold = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
+            $reviewHold = Payment::where('creator_id', $creator->uuid)
                 ->where('status', 'review_hold')
                 ->whereNull('payout_run_id')
                 ->where('created_at', '<=', $cutoff)
@@ -277,8 +272,8 @@ class PayoutService
             // plus any OLD reserves being released.
             // Note: net_amount in FinancialTransaction is currently the price before reserve subtraction.
             
-            $reserveReleaseAmount = (int) ($dueReleases[$creatorId]['amount'] ?? 0);
-            $reserveReleaseSources = $dueReleases[$creatorId]['sources'] ?? [];
+            $reserveReleaseAmount = (int) ($dueReleases[$creator->uuid]['amount'] ?? 0);
+            $reserveReleaseSources = $dueReleases[$creator->uuid]['sources'] ?? [];
 
             $netBeforeBalance = $netEarningsMinor - $totalReservesHeld + $reserveReleaseAmount - $refundDisputeAmount;
             $negativeBalance = (int) ($metrics->negative_balance_minor ?? 0);

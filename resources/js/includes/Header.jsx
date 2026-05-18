@@ -373,7 +373,7 @@ export default function Header({ classMagicword }) {
                                             @{auth.user.username}
                                         </span>
                                         <div className="mt-1 inline-flex items-center gap-1">
-                                            <span className="text-[10px] font-black bg-pink-500 text-white px-1.5 py-0.5 rounded border border-black uppercase">
+                                            <span className="text-[10px] font-black bg-[#FF007F] text-white px-1.5 py-0.5 rounded border border-black uppercase">
                                                 {auth.user.role == 1 ? 'Creator' : 'User'}
                                             </span>
                                             {auth.user.role == 1 && auth.user.default_currency && (

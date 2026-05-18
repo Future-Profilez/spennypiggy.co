@@ -61,8 +61,8 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'was updated', 'bod
         Amount charged: <strong>{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}. </strong>.
          <p style="font-size: 16px; color: #333; margin-top: 10px;">Thank you for continuing your journey with Spenny Piggy! 🐷 Your subscription keeps all your premium features active without interruption.</p>
          
-         <div style="margin: 20px 0; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
-             <p style="font-family: Arial; font-size: 13px; color: #f94f97; margin: 0; line-height: 1.4;">
+         <div style="margin: 20px 0; padding: 15px; background-color: #fff4f8; border: 1px solid #FF007F; border-radius: 8px;">
+             <p style="font-family: Arial; font-size: 13px; color: #FF007F; margin: 0; line-height: 1.4;">
                  <strong>Important Notice:</strong> By maintaining your active subscription and accessing digital content, you acknowledge and agree that you are requesting immediate access to digital content. You further acknowledge that this will waive your statutory right to cancel this renewal once the access has started.
              </p>
          </div>

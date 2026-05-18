@@ -221,7 +221,7 @@ export default function Thankyou(props) {
                 <button
                   onClick={sendReply}
                   disabled={posting || !reply.trim()}
-                  className="bg-pink-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-600 disabled:opacity-50 text-sm w-fit"
+                  className="bg-[#FF007F] text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-600 disabled:opacity-50 text-sm w-fit"
                 >
                   {posting ? "Submitting..." : "Submit Answer"}
                 </button>

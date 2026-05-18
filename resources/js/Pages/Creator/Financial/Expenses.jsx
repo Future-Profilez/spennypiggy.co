@@ -63,7 +63,7 @@ export default function Expenses({ auth, expenses, filters }) {
     const categories = [
         { id: 'Equipment', label: 'Equipment', color: 'bg-blue-500/10 text-blue-400' },
         { id: 'Software', label: 'Software & Subscriptions', color: 'bg-purple-500/10 text-purple-400' },
-        { id: 'Marketing', label: 'Marketing', color: 'bg-pink-500/10 text-[#FF007F]' },
+        { id: 'Marketing', label: 'Marketing', color: 'bg-[#FF007F]/10 text-[#FF007F]' },
         { id: 'Travel', label: 'Travel', color: 'bg-orange-500/10 text-orange-400' },
         { id: 'Office', label: 'Home Office', color: 'bg-green-500/10 text-green-400' },
         { id: 'Professional Services', label: 'Legal/Accounting', color: 'bg-gray-500/10 text-gray-400' },

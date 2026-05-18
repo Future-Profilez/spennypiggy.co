@@ -187,7 +187,7 @@ export default function GlobalCheckout({
                                 <div className="flex items-center">
                                     {checked === "plaid" ? (
                                         <FaCheckCircle
-                                            color={`#f94f97`}
+                                            color={`#FF007F`}
                                             className="me-2 h-8 w-8"
                                         />
                                     ) : (
@@ -250,7 +250,7 @@ export default function GlobalCheckout({
                             <div className="flex">
                                 {checked === "paypal" ? (
                                     <FaCheckCircle
-                                        color={`#f94f97`}
+                                        color={`#FF007F`}
                                         className="me-2 h-8 w-8"
                                     />
                                 ) : (
@@ -285,7 +285,7 @@ export default function GlobalCheckout({
                             <div className="flex">
                                 {selectedCurrency === "GBP" ? (
                                     <FaCheckCircle
-                                        color={`#f94f97`}
+                                        color={`#FF007F`}
                                         className="me-[12px] h-7 w-7"
                                     />
                                 ) : (
@@ -312,7 +312,7 @@ export default function GlobalCheckout({
                             <div className="flex">
                                 {selectedCurrency === "EUR" ? (
                                     <FaCheckCircle
-                                        color={`#f94f97`}
+                                        color={`#FF007F`}
                                         className="me-2 h-7 w-7"
                                     />
                                 ) : (

@@ -158,7 +158,7 @@ export default function Create({ auth, currencySymbol }) {
                                     <button 
                                         onClick={submit}
                                         disabled={processing}
-                                        className="flex-[2] bg-pink-500 text-white px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
+                                        className="flex-[2] bg-[#FF007F] text-white px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
                                     >
                                         {processing ? "Publishing..." : "Confirm & Publish Task"}
                                     </button>
@@ -338,7 +338,7 @@ export default function Create({ auth, currencySymbol }) {
                                                 }
                                                 className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${
                                                     data.type === "instant"
-                                                        ? "bg-pink-500 text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
+                                                        ? "bg-[#FF007F] text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
                                                         : "bg-white hover:bg-gray-50"
                                                 }`}
                                             >

@@ -126,7 +126,7 @@ export default function StripeIdentity({ auth }) {
                                     disabled={loading || auth?.user?.identity_status == 1}
                                     onClick={handleVerification}
                                     className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none border-l-4 border-transparent pr-6 bg-black !text-white w-full ${
-                                        loading ? "!animate-pulse !bg-green-400" : "hover:!bg-pink-500"
+                                        loading ? "!animate-pulse !bg-green-400" : "hover:!bg-[#FF007F]"
                                     }`}
                                     spinnerclass="fill-white"
                                 >

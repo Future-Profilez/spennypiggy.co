@@ -187,7 +187,7 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                         <option value="timed">Timed</option>
                     </select>
                     <button type="submit" disabled={processing}
-                        className="px-5 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-sm font-bold disabled:opacity-60">
+                        className="px-5 py-2 bg-[#FF007F] hover:bg-pink-600 text-white rounded-xl text-sm font-bold disabled:opacity-60">
                         Filter
                     </button>
                 </form>
@@ -308,7 +308,7 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                             {purchases.links.map((link, i) => (
                                 <Link key={i} href={link.url || '#'}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                        link.active ? 'bg-pink-500 text-white' :
+                                        link.active ? 'bg-[#FF007F] text-white' :
                                         link.url    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' :
                                         'bg-gray-900 text-gray-600 cursor-not-allowed'
                                     }`}

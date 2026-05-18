@@ -79,8 +79,8 @@
 
 .newnav-tabs a.active,
 .newnav-tabs a:hover {
-    color: #EC4899;
-    border-bottom-color: #EC4899;
+    color: #FF007F;
+    border-bottom-color: #FF007F;
 }
 
 /* Grid layouts for content */
@@ -109,7 +109,7 @@
 }
 
 .border-[#FF007F] {
-    border-color: #EC4899;
+    border-color: #FF007F;
 }
 
 /* Typography */

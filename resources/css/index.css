@@ -241,14 +241,14 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .modal.mymodal:not(.basic) .modal-content {
     border-radius: 39px;
     border: 3px solid #000000;
-    box-shadow: 6px 6px 0 0 #f94f97;
+    box-shadow: 6px 6px 0 0 #FF007F;
 }
 .shadow-layout {
     border-radius: 39px;
     border: 3px solid #000000;
 }
 .pink-shadow-layout {
-    box-shadow: 6px 6px 0 0 #f94f97;
+    box-shadow: 6px 6px 0 0 #FF007F;
 }
 
 

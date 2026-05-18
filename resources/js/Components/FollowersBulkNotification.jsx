@@ -104,7 +104,7 @@ export default function FollowersBulkNotification({ trigger }) {
                     className={`${
                         loading
                             ? "bg-gray-400 text-black"
-                            : "bg-pink-500 hover:bg-pink-600"
+                            : "bg-[#FF007F] hover:bg-pink-600"
                     } uppercase w-full btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white`}
                 >
                     {loading ? "Sending..." : "Send Notification"}

@@ -73,7 +73,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                     <div className="mb-8 border-t border-gray-100 pt-6">
                         <label className="flex items-center justify-between cursor-pointer group">
                             <span className="font-semibold text-gray-900">Verified Only</span>
-                            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${filters.verified ? 'bg-pink-500' : 'bg-gray-200'}`}>
+                            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${filters.verified ? 'bg-[#FF007F]' : 'bg-gray-200'}`}>
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${filters.verified ? 'translate-x-6' : 'translate-x-0'}`} />
                             </div>
                             <input 

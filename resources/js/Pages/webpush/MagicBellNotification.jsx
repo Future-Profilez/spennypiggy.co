@@ -170,6 +170,7 @@ const MagicBellNotification = () => {
   const { auth } = usePage().props;
   const [showBanner, setShowBanner] = useState(false);
   const serverURL = typeof window !== 'undefined' ? `${window.location.origin}/magicbell` : undefined;
+  if (!auth?.user?.email) return null;
 
   useEffect(() => {
     let isMounted = true;

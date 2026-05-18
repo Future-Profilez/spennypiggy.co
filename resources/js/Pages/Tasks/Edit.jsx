@@ -183,7 +183,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     <button 
                                         onClick={submit}
                                         disabled={processing}
-                                        className="flex-[2] bg-pink-500 text-white px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
+                                        className="flex-[2] bg-[#FF007F] text-white px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
                                     >
                                         {processing ? "Updating..." : "Save Changes & Resubmit"}
                                     </button>
@@ -302,7 +302,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             <button
                                                 type="button"
                                                 onClick={() => setData("type", "instant")}
-                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${data.type === "instant" ? "bg-pink-500 text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
+                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${data.type === "instant" ? "bg-[#FF007F] text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2"><Zap size={20} /> Instant Delivery</div>
                                                 <div className={`text-sm font-bold ${data.type === "instant" ? "text-pink-100" : "text-gray-500"}`}>Content is delivered immediately. Best for files or links.</div>

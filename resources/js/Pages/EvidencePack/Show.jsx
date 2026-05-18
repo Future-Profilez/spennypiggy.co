@@ -40,7 +40,7 @@ export default function Show({ evidence }) {
                     {/* Header Banner */}
                     <div className="bg-black text-white p-8 sm:p-10 flex flex-col md:flex-row justify-between items-center gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="w-16 h-16 bg-pink-500 rounded-xl flex items-center justify-center border-[2px] border-white shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)]">
+                            <div className="w-16 h-16 bg-[#FF007F] rounded-xl flex items-center justify-center border-[2px] border-white shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)]">
                                 <ShieldCheck size={36} className="text-white" />
                             </div>
                             <div>

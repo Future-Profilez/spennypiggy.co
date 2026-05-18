@@ -72,7 +72,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none"></div>
                                 
                                 <div className="relative shrink-0 mb-6">
-                                    <div className="absolute inset-0 bg-pink-500/20 blur-xl rounded-full group-hover:bg-pink-500/30 transition-all duration-500"></div>
+                                    <div className="absolute inset-0 bg-[#FF007F]/20 blur-xl rounded-full group-hover:bg-[#FF007F]/30 transition-all duration-500"></div>
                                     <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                                         <FaCrown className="text-white text-2xl md:text-3xl" />
                                     </div>
