@@ -1095,7 +1095,7 @@ export default function Register(props) {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Display Name
+                                                    Display Name*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1128,7 +1128,7 @@ export default function Register(props) {
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Username
+                                                    Username*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1225,7 +1225,7 @@ export default function Register(props) {
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Gender
+                                                    Gender*
                                                 </label>
                                                 <select
                                                     onChange={(e) =>
@@ -1269,7 +1269,7 @@ export default function Register(props) {
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Email
+                                                    Email*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1313,7 +1313,7 @@ export default function Register(props) {
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Password
+                                                    Password*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1380,7 +1380,7 @@ export default function Register(props) {
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Confirm Password
+                                                    Confirm Password*
                                                 </label>
                                                 <div className="relative">
                                                     <input
