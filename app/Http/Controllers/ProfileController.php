@@ -713,6 +713,7 @@ class ProfileController extends Controller
                     'stripe_details_submitted' => $value->payment->owner->stripe_details_submitted
                 ],
                 'amount' => $value->amount,
+                'vat_amount' => $value->vat_amount,
                 'tax' => $value->tax,
                 'currency' => $value->payment->currency,
                 'is_surprise' => !empty($value->wish) ? false : true,
@@ -1300,6 +1301,7 @@ class ProfileController extends Controller
                 'source' => 'stripe_payment_items',
                 'source_id' => $it->id,
                 'amount' => $it->amount,
+                'vat_amount' => $it->vat_amount,
                 'creator_amount' => $it->amount,
                 'tax' => $it->tax,
                 'currency' => $it->payment->currency,

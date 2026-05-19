@@ -68,8 +68,12 @@ export default function GifterItems(props) {
     const Item = ({ w }) => {
         const Template = () => {
             const total_amount = +w.amount + +w.tax;
+            const total_amount_with_vat = +w.vat_amount + total_amount;
             const uname = user && user.username;
-            const amount = formatMultiPrice(total_amount, w && w.currency);
+            const amount = formatMultiPrice(
+                total_amount_with_vat,
+                w && w.currency,
+            );
             const owner = w && w.owner && w.owner.name;
             const ownerUsername = w && w.owner && w.owner.username;
             const wishname = w && w.wish && w.wish.wishname;
@@ -78,9 +82,22 @@ export default function GifterItems(props) {
                 <div className="box rounded-[30px]   px-3 py-3  ">
                     <div className="flex align-items-start ">
                         <div
-                            className={`gift-icon mt-2 me-2 ${s == "0" ? "mint" : s == "1" ? "pink" : s == "2" ? "voilet" : "grey"}`}
-                            dangerouslySetInnerHTML={{ __html: piggy }}
-                        />
+                            className={`gift-icon mt-1 me-3 flex items-center justify-center w-12 h-12 min-w-[48px] rounded-full border-2 border-black shadow-[2px_2px_0px_0px_#000]
+                            ${
+                                s == "0"
+                                    ? "bg-[#B6FFD6]"
+                                    : s == "1"
+                                    ? "bg-pink-300"
+                                    : s == "2"
+                                        ? "bg-violet-300"
+                                        : "bg-gray-300"
+                            }`}
+                        >
+                            <div
+                                className=" text-black [&_svg]:w-6 [&_svg]:h-6 [&_svg]:fill-black"
+                                dangerouslySetInnerHTML={{ __html: piggy }}
+                            />
+                        </div>
 
                         {s == "0" ? (
                             <p className=" ">
