@@ -528,6 +528,10 @@ class MembershipController extends Controller
                 'digital_waiver' => ['required', 'accepted'],
             ]);
 
+            if ($msgErr = Helpers::validateSupporterMessage($request->message ?? null, 100)) {
+                return back()->with('error', $msgErr);
+            }
+
             if ($user) {
                 $now = Carbon::now();
                 // Check if the user has an active membership record that also has active access (not refunded)

@@ -669,12 +669,13 @@ class ShopsController extends Controller
         $this->ensureTurnstileVerified($request);
 
         try {
-            if (!empty(request()->query('message'))) {
-                $wordLimit = 100;
-                $message = request()->query('message');
-
-                if (str_word_count($message) > $wordLimit) {
-                    return redirect()->back()->with("error", "Max limit for message is 100 words");
+            $message = request()->query('message');
+            if ($message !== null && $message !== '') {
+                if ($msgErr = Helpers::validateSupporterMessage($message)) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => $msgErr,
+                    ]);
                 }
             }
 
@@ -1321,9 +1322,15 @@ class ShopsController extends Controller
 
         // Send Email Notification for any status update
         try {
-            \Illuminate\Support\Facades\Mail::to($deliverable->customer_email)
-                ->send(new \App\Mail\ShopOrderStatusMail($deliverable, Auth::user(), $request->status));
-            Log::info('Fulfillment: Status update email sent', ['deliverable_id' => $deliverable->id, 'status' => $request->status]);
+            $gifter = $deliverable->gifter_id
+                ? \App\Models\User::find($deliverable->gifter_id)
+                : \App\Models\User::where('email', $deliverable->customer_email)->first();
+
+            if (\App\Models\User::shouldSendEmail($gifter)) {
+                \Illuminate\Support\Facades\Mail::to($deliverable->customer_email)
+                    ->send(new \App\Mail\ShopOrderStatusMail($deliverable, Auth::user(), $request->status));
+                Log::info('Fulfillment: Status update email sent', ['deliverable_id' => $deliverable->id, 'status' => $request->status]);
+            }
         } catch (\Exception $e) {
             Log::error('Fulfillment: Failed to send status update email', ['error' => $e->getMessage()]);
         }

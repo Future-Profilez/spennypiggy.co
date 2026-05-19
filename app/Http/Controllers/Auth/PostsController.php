@@ -277,10 +277,22 @@ class PostsController extends Controller
         $user = User::where('id', Auth::id())->first();
 
         if (!empty($post)) {
+
+            $blockedMessage = Helpers::validateSupporterMessage(
+                $request->comment
+            );
+
+            if ($blockedMessage) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => $blockedMessage
+                ], 422);
+            }
+
             // Check if the comment is by the post owner
             $isPostOwner = ($post->user_id === $user->id);
 
-            // Auto-approve if post owner is commenting, otherwise set as pending approval
+            // Auto-approve if post owner is commenting
             $isApproved = $isPostOwner ? 1 : 0;
 
             $comment = $post->comments()->create([
@@ -329,10 +341,22 @@ class PostsController extends Controller
         $user = User::where('id', Auth::id())->first();
 
         if (!empty($comment)) {
+
+            $blockedMessage = Helpers::validateSupporterMessage(
+                $request->reply
+            );
+
+            if ($blockedMessage) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => $blockedMessage
+                ], 422);
+            }
+
             // Check if the reply is by the post owner
             $isPostOwner = ($comment->post->user_id === $user->id);
 
-            // Auto-approve if post owner is replying, otherwise set as pending approval
+            // Auto-approve if post owner is replying
             $isApproved = $isPostOwner ? 1 : 0;
 
             $reply = $comment->replies()->create([

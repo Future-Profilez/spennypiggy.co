@@ -530,6 +530,10 @@ class BillsController extends Controller
                 'digital_waiver' => ['required', 'accepted'],
             ]);
 
+            if ($msgErr = Helpers::validateSupporterMessage($request->message ?? null, 100)) {
+                return redirect()->back()->with('error', $msgErr);
+            }
+
             $sub = BillPayment::create([
                 'bills_id'       => $bill->id,
                 'user_id'        => $user->id ?? null,

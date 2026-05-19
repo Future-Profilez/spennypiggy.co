@@ -2978,8 +2978,8 @@ class WishitemController extends Controller
 
 
         $message = $request->message;
-        if (str_word_count($message) > $wordLimit) {
-            return redirect()->back()->with("error", "Max limit for message is 100 words");
+        if ($msgErr = Helpers::validateSupporterMessage($message, $wordLimit)) {
+            return redirect()->back()->with("error", $msgErr);
         }
 
         // Use new gross-up flow for consistent fee calculation
