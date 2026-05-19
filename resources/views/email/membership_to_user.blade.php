@@ -24,8 +24,8 @@
                          <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">💎 Welcome to the Inner Circle!</h3>
                          <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">Your membership is now active. You have unlocked exclusive access to:</p>
                          
-                         <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
-                             <p style="font-family: Arial; font-size: 13px; color: #f94f97; margin: 0; line-height: 1.4;">
+                         <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #FF007F; border-radius: 8px;">
+                             <p style="font-family: Arial; font-size: 13px; color: #FF007F; margin: 0; line-height: 1.4;">
                                  <strong>Important Notice:</strong> By clicking the access links below, you acknowledge and agree that you are requesting immediate access to digital content and membership benefits. You further acknowledge that this will waive your statutory right to cancel this purchase once the access has started.
                              </p>
                          </div>
@@ -53,7 +53,7 @@
                  <tr style="line-height: 20px; height: 20px;" ><td></td></tr>
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center; ">
-                         <a href="{{ env('APP_URL') . '/history' }}" style=" border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;">My Account.</a>
+                         <a href="{{ env('APP_URL') . '/history' }}" style=" border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#FF007F;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;">My Account.</a>
                      </td>
                  </tr>
                  <tr style="line-height: 20px; height: 20px;" ><td></td></tr>

@@ -964,7 +964,7 @@ export default function Register(props) {
                                             }
                                             className={`cursor-pointer rounded-[30px]   p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 1
-                                                    ? "border-[#FF007F] bg-pink-500/10"
+                                                    ? "border-[#FF007F] bg-[#FF007F]/10"
                                                     : "border-white/10 bg-white/5 hover:border-[#FF007F]/50 hover:bg-white/10"
                                             }`}
                                         >
@@ -1748,7 +1748,7 @@ export default function Register(props) {
                                                                     ? checkCreatorReferral
                                                                     : checkPromo
                                                             }
-                                                            className="bg-pink-600 hover:bg-pink-500 text-white px-4 rounded-[30px]  font-medium transition-colors"
+                                                            className="bg-pink-600 hover:bg-[#FF007F] text-white px-4 rounded-[30px]  font-medium transition-colors"
                                                         >
                                                             Apply
                                                         </button>
@@ -1950,7 +1950,7 @@ export default function Register(props) {
 
                                             <LoaderButton
                                                 disabled={processing}
-                                                className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full 
+                                                className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-[#FF007F] hover:!text-white pr-6 !text-black w-full 
                                                     ${!verified ? "opacity-50 cursor-not-allowed disabled" : ""}
                                                     ${!checkRef?.current?.checked ? "opacity-50 cursor-not-allowed disabled" : ""}
                                                     ${role == 0 && !addressCheck?.current?.checked ? "opacity-50 cursor-not-allowed disabled" : ""}

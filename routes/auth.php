@@ -333,8 +333,8 @@ Route::middleware('auth')->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
-            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout');
-            Route::get('handle/{uuid}/{status?}', [BillsController::class, 'handlePayment'])->name('handle');
+            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout.auth');
+            Route::get('handle/{uuid}/{status?}', [BillsController::class, 'handlePayment'])->name('handle.auth');
         });
 
         // Memberships - accessible without subscription
@@ -344,8 +344,8 @@ Route::middleware('auth')->group(function () {
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
             Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
             Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
-            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout');
-            Route::get('handle/{uuid}/{status?}', [MembershipController::class, 'handlePayment'])->name('handle');
+            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout.auth');
+            Route::get('handle/{uuid}/{status?}', [MembershipController::class, 'handlePayment'])->name('handle.auth');
         });
 
         // Shop items - accessible without subscription
@@ -630,7 +630,7 @@ Route::middleware('auth')->group(function () {
 
             Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
-            Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('wish.subscribe.checkout');
+            Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('wish.subscribe.checkout.auth');
 
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
 

@@ -101,7 +101,7 @@ export default function MorConsent(props) {
                                     <div className="grid grid-cols-1 gap-4">
                                         {acknowledgements.map((text, index) => (
                                             <div key={index} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
-                                                <div className="w-6 h-6 bg-pink-500 text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                                                <div className="w-6 h-6 bg-[#FF007F] text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
                                                     <span className="text-[10px] font-bold">✓</span>
                                                 </div>
                                                 <p className="text-gray-700 leading-relaxed font-medium">

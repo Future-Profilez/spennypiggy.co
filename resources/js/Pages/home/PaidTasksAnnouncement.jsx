@@ -10,7 +10,7 @@ export default function PaidTasksAnnouncement() {
             <div className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
-                    <div className="absolute top-10 right-10 w-32 h-32 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
                     <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
                 </div>
 
@@ -39,8 +39,8 @@ export default function PaidTasksAnnouncement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
                         
                         {/* Card 1: Instant */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px]  p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#EC4899] md:shadow-[8px_8px_0px_0px_#EC4899]">
-                            <div className="absolute -top-6 -right-6 bg-pink-500 text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px]  p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F]">
+                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
                             <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Instant <br/>Access</h3>

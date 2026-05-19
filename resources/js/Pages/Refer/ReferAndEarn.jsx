@@ -48,7 +48,7 @@ export default function ReferAndEarn({
                 <div className="w-full h-3 bg-gray-200 rounded-full border border-black overflow-hidden">
                     <div
                         className={`h-full transition-all duration-500 ${
-                            percent >= 100 ? "bg-green-500" : "bg-pink-500"
+                            percent >= 100 ? "bg-green-500" : "bg-[#FF007F]"
                         }`}
                         style={{ width: `${percent}%` }}
                     />

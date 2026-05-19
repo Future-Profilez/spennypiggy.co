@@ -9,7 +9,7 @@ export default function ComingNext() {
        {/* Decorative Background Elements */}
        <div className="absolute top-0 right-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
-            <div className="absolute bottom-10 left-10 w-48 h-48 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+            <div className="absolute bottom-10 left-10 w-48 h-48 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
         </div>
 
       <div className="containerbox relative z-10" >
@@ -28,7 +28,7 @@ export default function ComingNext() {
             </div>
             <div className='w-full lg:w-1/2' >
                <div className="inline-block mb-4">
-                    <span className="bg-pink-500 text-white font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
+                    <span className="bg-[#FF007F] text-white font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
                         Coming Soon
                     </span>
                </div>

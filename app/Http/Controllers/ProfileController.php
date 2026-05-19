@@ -1956,16 +1956,44 @@ class ProfileController extends Controller
             ->limit($limit + 1)
             ->get();
 
-        // Load deliverables for shop payments
-        $shopPaymentIds = $rows->where('source_type', \App\Models\ShopPayment::class)->pluck('source_id');
-        if ($shopPaymentIds->isNotEmpty()) {
-            $deliverables = \App\Models\Deliverable::whereIn('session_id', function($q) use ($shopPaymentIds) {
-                $q->select('session_id')->from('shop_payments')->whereIn('id', $shopPaymentIds);
-            })->get()->keyBy('session_id');
+        $rows->loadMorph('source', [
+            \App\Models\ShopPayment::class => ['shop'],
+            \App\Models\TaskPurchase::class => ['task'],
+            \App\Models\StripePaymentItems::class => ['wish', 'payment'],
+            \App\Models\MembershipPayment::class => ['membership'],
+            \App\Models\BillPayment::class => ['bill'],
+        ]);
+
+        // Load deliverables for all transactions
+        $sessionIds = collect();
+        $rows->each(function($tx) use ($sessionIds) {
+            if (!$tx->source) return;
+            $base = class_basename($tx->source_type);
+            $sessionId = match ($base) {
+                'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment' => $tx->source->session_id ?? null,
+                'TaskPurchase' => $tx->source->stripe_session_id ?? null,
+                'StripePaymentItems' => $tx->source->payment->session_id ?? null,
+                default => null,
+            };
+            if ($sessionId) {
+                $sessionIds->push($sessionId);
+            }
+        });
+
+        if ($sessionIds->isNotEmpty()) {
+            $deliverables = \App\Models\Deliverable::whereIn('session_id', $sessionIds->filter()->unique())->get()->keyBy('session_id');
 
             $rows->each(function($tx) use ($deliverables) {
-                if ($tx->source_type === \App\Models\ShopPayment::class && $tx->source) {
-                    $tx->source->setRelation('deliverable', $deliverables->get($tx->source->session_id));
+                if (!$tx->source) return;
+                $base = class_basename($tx->source_type);
+                $sessionId = match ($base) {
+                    'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment' => $tx->source->session_id ?? null,
+                    'TaskPurchase' => $tx->source->stripe_session_id ?? null,
+                    'StripePaymentItems' => $tx->source->payment->session_id ?? null,
+                    default => null,
+                };
+                if ($sessionId && $deliverables->has($sessionId)) {
+                    $tx->source->setRelation('deliverable', $deliverables->get($sessionId));
                 }
             });
         }
@@ -2083,6 +2111,49 @@ class ProfileController extends Controller
                 }
             }
 
+            // Benefits & Deliverable info for History (Thankyou page like)
+            $deliverable = $tx->source->deliverable ?? null;
+            $benefits = null;
+            $askQuestion = null;
+            $answer = null;
+            $wishContent = null;
+            $certificateUrl = $deliverable->certificate_url ?? null;
+            $isInstant = false;
+            
+            if ($base === 'ShopPayment' && $tx->source) {
+                $askQuestion = $tx->source->shop->ask_question ?? null;
+                $answer = $tx->source->answer ?? null;
+                $isInstant = ($tx->source->shop->type ?? 'digital') !== 'physical';
+                
+                if ($isInstant) {
+                    $benefits = $tx->source->shop->success_page_value ?? null;
+                    if ($tx->source->shop->reward_file ?? null) {
+                        $wishContent = [
+                            'type' => $tx->source->shop->reward_file_type ?? null,
+                            'name' => 'Digital Content',
+                            'url'  => "https://ucarecdn.com/" . $tx->source->shop->reward_file . "/"
+                        ];
+                    }
+                }
+            } elseif ($base === 'TaskPurchase' && $tx->source) {
+                $isInstant = ($tx->source->task->type ?? 'timed') === 'instant';
+                if ($isInstant && ($tx->source->task->deliverable_content ?? null)) {
+                    $wishContent = [
+                        'type' => $tx->source->task->deliverable_content_type ?? 'image',
+                        'name' => 'Task Content',
+                        'url'  => "https://ucarecdn.com/" . $tx->source->task->deliverable_content . "/"
+                    ];
+                }
+            } elseif ($base === 'StripePaymentItems' && $tx->source) {
+                if ($tx->source->wish && $tx->source->wish->content_file) {
+                    $wishContent = [
+                        'type' => $tx->source->wish->content_file_type ?? 'image',
+                        'name' => 'Exclusive Content',
+                        'url'  => "https://ucarecdn.com/" . $tx->source->wish->content_file . "/"
+                    ];
+                }
+            }
+
             $event = [
                 'uuid' => $tx->uuid,
                 'type' => $type,
@@ -2114,6 +2185,13 @@ class ProfileController extends Controller
                     'username' => $tx->user->username,
                     'avatar' => $tx->user->avatar_url,
                 ] : null,
+                'benefits' => $benefits,
+                'ask_question' => $askQuestion,
+                'answer' => $answer,
+                'wish_content' => $wishContent,
+                'certificate_url' => $certificateUrl,
+                'is_instant' => $isInstant,
+                'payment_id' => ($base === 'ShopPayment' && $tx->source) ? $tx->source->uuid : null,
             ];
 
             // Load reactions and replies

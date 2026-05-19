@@ -46,8 +46,8 @@
                          <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">🎁 Your Supporter Rewards!</h3>
                          <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">As a thank you for your support, you now have access to exclusive content:</p>
                          
-                         <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
-                             <p style="font-family: Arial; font-size: 13px; color: #f94f97; margin: 0; line-height: 1.4;">
+                         <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #FF007F; border-radius: 8px;">
+                             <p style="font-family: Arial; font-size: 13px; color: #FF007F; margin: 0; line-height: 1.4;">
                                  <strong>Important Notice:</strong> By clicking the access links below, you acknowledge and agree that you are requesting immediate access to digital content. You further acknowledge that this will waive your statutory right to cancel this purchase once the download or streaming has started.
                              </p>
                          </div>

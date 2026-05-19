@@ -86,7 +86,7 @@ export default function FounderBonus() {
                               "Terms apply."
                            ].map((rule, i) => (
                               <li key={i} className="flex gap-4 items-center">
-                                 <div className="bg-pink-500 p-1.5 rounded-full shrink-0"></div>
+                                 <div className="bg-[#FF007F] p-1.5 rounded-full shrink-0"></div>
                                  <span className="text-normal lg:text-xl font-bold text-gray-200">{rule}</span>
                               </li>
                            ))}

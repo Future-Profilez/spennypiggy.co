@@ -423,7 +423,7 @@ export default function AddItem(props) {
                                     <div 
                                         key={s} 
                                         className={`flex-1 rounded-full transition-all duration-500 ${
-                                            s <= step ? 'bg-pink-500 shadow-[0_0_8px_rgba(249,79,151,0.4)]' : 'bg-gray-200'
+                                            s <= step ? 'bg-[#FF007F] shadow-[0_0_8px_rgba(249,79,151,0.4)]' : 'bg-gray-200'
                                         }`}
                                     />
                                 ))}
@@ -857,7 +857,7 @@ export default function AddItem(props) {
                                 <button 
                                     onClick={isEdit ? updateItem : addShopItem}
                                     disabled={loading || !isChecked}
-                                    className={`flex-[2] py-4 bg-pink-500 text-white border-[3px] border-black rounded-[20px] font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+                                    className={`flex-[2] py-4 bg-[#FF007F] text-white border-[3px] border-black rounded-[20px] font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
                                         (loading || !isChecked) ? 'opacity-50 grayscale cursor-not-allowed shadow-none translate-y-[2px] translate-x-[2px]' : ''
                                     }`}
                                 >

@@ -16,7 +16,7 @@ export default function FeatureSuggestionSection({ auth }) {
                 <div className="absolute top-1/4 left-10 w-1 h-1 bg-white/20 rounded-full animate-ping"></div>
                 <div className="absolute top-3/4 left-1/4 w-1.5 h-1.5 bg-purple-500/20 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
                 <div className="absolute top-1/2 right-20 w-1 h-1 bg-yellow-400/20 rounded-full animate-pulse"></div>
-                <div className="absolute top-10 right-1/3 w-2 h-2 bg-pink-500/10 rounded-full animate-ping" style={{ animationDuration: '4s' }}></div>
+                <div className="absolute top-10 right-1/3 w-2 h-2 bg-[#FF007F]/10 rounded-full animate-ping" style={{ animationDuration: '4s' }}></div>
             </div>
 
             <div className="containerbox relative z-10 px-4 mx-auto text-center">

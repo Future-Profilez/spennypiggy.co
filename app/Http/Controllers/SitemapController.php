@@ -10,6 +10,70 @@ use Illuminate\Support\Facades\DB;
 class SitemapController extends Controller
 {
     /**
+     * Generate custom flat sitemap.xml as requested
+     */
+    public function customSitemap()
+    {
+        $pages = [
+            '/',
+            '/register',
+            '/login',
+            '/pricing',
+            '/features',
+            '/about',
+            '/contact',
+            '/terms-and-conditions',
+            '/privacy-policy',
+            '/cookies-policy',
+            '/creator-agreement',
+            '/supporter-terms',
+            '/return-policy',
+            '/paid-tasks-terms',
+            '/reserves-and-payments-policy',
+            '/mor-agreement',
+            '/us-addendum',
+            '/copyright-policy',
+            '/leaderboard',
+            '/how-it-works',
+            '/discover',
+            '/creator-supporter-contract',
+            '/founder-program',
+            // Landing pages
+            '/creators',
+            '/creators/stripe-safe',
+            '/creators/keep-100',
+            '/creators/features',
+            '/creators/disputes',
+            '/creators/founder-bonus',
+            '/pride',
+            '/giftstore',
+        ];
+
+        $content = '<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+
+        foreach ($pages as $url) {
+            $content .= '
+  <url>
+    <loc>' . url($url) . '</loc>
+    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>' . ($url === '/' ? '1.0' : '0.8') . '</priority>
+  </url>';
+        }
+
+        $content .= '
+</urlset>';
+
+        return response($content, 200, [
+            'Content-Type' => 'application/xml',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
+    }
+
+    /**
      * Generate the main sitemap index
      */
     public function index()

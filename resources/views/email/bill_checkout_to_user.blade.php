@@ -17,8 +17,8 @@
             <td style="padding: 20px 0; border-top: 1px solid #eee;">
                 <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">📜 Bill Fulfillment</h3>
                 
-                <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
-                    <p style="font-family: Arial; font-size: 13px; color: #f94f97; margin: 0; line-height: 1.4; text-align: center;">
+                <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #FF007F; border-radius: 8px;">
+                    <p style="font-family: Arial; font-size: 13px; color: #FF007F; margin: 0; line-height: 1.4; text-align: center;">
                         <strong>Important Notice:</strong> By clicking the access links below, you acknowledge and agree that you are requesting immediate access to digital content and fulfillment records. You further acknowledge that this will waive your statutory right to cancel this purchase once the access has started.
                     </p>
                 </div>

@@ -22,7 +22,7 @@ export default {
         'via-pink-300',
         'to-purple-300',
         // Common palette utilities to ensure availability
-        'bg-pink-500',
+        'bg-[#FF007F]',
         'text-[#FF007F]',
         'bg-yellow-400',
         'bg-purple-600',
@@ -35,7 +35,7 @@ export default {
                 sans: ['CeraGRMedium', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                // Preserve full Tailwind palettes so utilities like bg-pink-500 work
+                // Preserve full Tailwind palettes so utilities like bg-[#FF007F] work
                 pink: colors.pink,
                 yellow: colors.yellow,
                 violet: colors.violet,

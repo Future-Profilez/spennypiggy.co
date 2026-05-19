@@ -71,7 +71,7 @@ export default function GiftListing({
                                         {({ active }) => (
                                             <button
                                                 className={`${
-                                                    active ? 'bg-pink-500 text-white' : 'text-gray-900'
+                                                    active ? 'bg-[#FF007F] text-white' : 'text-gray-900'
                                                 } group flex w-full items-center rounded-[30px]  px-2 py-2 text-sm`}
                                                 onClick={() => {
                                                     DeleteItem(gift?.uuid);

@@ -113,7 +113,7 @@ export default function ActivateSubscription(props) {
                                         <LoaderButton 
                                             onClick={checkTerms} 
                                             disabled={loading} 
-                                            className={`w-full !rounded-[20px] bg-pink-500 hover:bg-pink-600 text-white font-black py-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-lg ${loading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                                            className={`w-full !rounded-[20px] bg-[#FF007F] hover:bg-pink-600 text-white font-black py-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-lg ${loading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                                         >
                                             {loading ? "Redirecting..." : "Activate Now"}
                                         </LoaderButton>

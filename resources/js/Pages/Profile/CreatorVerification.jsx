@@ -820,7 +820,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                     {!hasSubscription ? (
                         <Link
-                            className="bg-pink-500 my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] !text-white"
+                            className="bg-[#FF007F] my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] !text-white"
                             href="/activate-subscription"
                         >
                             Start for Free

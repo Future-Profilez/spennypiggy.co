@@ -42,7 +42,7 @@ if ($bio && $hasBioContent) {
             <tr>
                 <td style="padding:20px 0;">
                     <a href="{{ env('APP_URL') }}/{{ $user->username }}"
-                        style="background-color: #f94f97; color: #ffffff; padding: 13px 25px; border-radius: 30px; text-decoration: none; font-family: Arial; font-weight: bold; font-size: 15px;">
+                        style="background-color: #FF007F; color: #ffffff; padding: 13px 25px; border-radius: 30px; text-decoration: none; font-family: Arial; font-weight: bold; font-size: 15px;">
                         Review Profile
                     </a>
                 </td>

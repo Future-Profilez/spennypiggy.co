@@ -418,7 +418,7 @@ div#msgText p.valid svg path{stroke:#27b227;}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li button{margin-right:15px;background:0 0;color:#fff;border:0 !important;padding:15px 10px !important;font-size:17px;border-bottom:2px solid transparent !important;}
-.wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
+.wishtracker .nav.nav-tabs li button.active{color:#FF007F;border-color:#FF007F !important;}
 .wishtracker .nav.nav-tabs{border:0;border-radius:14px;padding:1px 26px;background:#242424;margin:10px 0 !important;}
 .disabled{opacity:0.6;}
 .mytable td{color:#fff;padding:15px;}

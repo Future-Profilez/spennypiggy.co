@@ -64,8 +64,8 @@
                     </tr>
                     <tr>
                         <td style="padding: 15px 0;">
-                            <div style="padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
-                                <p style="font-family: Arial; font-size: 13px; color: #f94f97; margin: 0; line-height: 1.4; text-align: center;">
+                            <div style="padding: 15px; background-color: #fff4f8; border: 1px solid #FF007F; border-radius: 8px;">
+                                <p style="font-family: Arial; font-size: 13px; color: #FF007F; margin: 0; line-height: 1.4; text-align: center;">
                                     <strong>Important Notice:</strong> By clicking the download link above, you acknowledge and agree that you are requesting immediate access to digital content. You further acknowledge that this will waive your statutory right to cancel this purchase once the download has started.
                                 </p>
                             </div>

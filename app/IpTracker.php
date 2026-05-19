@@ -91,7 +91,7 @@ class IpTracker {
     {
         self::setConfs($ip);
         try {
-            $client = new IPinfo(env("IP_TOKEN"));
+            $client = new IPinfo(env("IP_TOKEN"), ['timeout' => 2]);
             static::$ipInfo = $client->getDetails(self::$ip);
         } catch (IPinfoException $e){
             // Silently handle quota exceeded or other IPinfo errors
@@ -99,14 +99,14 @@ class IpTracker {
             static::$ipInfo = self::createDefaultIpInfo(self::$ip);
             
             // Optionally log the error for debugging (but don't throw)
-            \Log::warning('IPinfo API error: ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::warning('IPinfo API error: ' . $e->getMessage(), [
                 'ip' => self::$ip,
                 'error' => $e->getMessage()
             ]);
         } catch (Exception $e) {
             // Handle any other exceptions
             static::$ipInfo = self::createDefaultIpInfo(self::$ip);
-            \Log::warning('Unexpected error in IP tracking: ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::warning('Unexpected error in IP tracking: ' . $e->getMessage(), [
                 'ip' => self::$ip
             ]);
         }

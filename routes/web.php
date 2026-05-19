@@ -378,13 +378,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Purchases routes
-    Route::get('/purchases', [\App\Http\Controllers\PurchasesController::class, 'index'])->name('purchases');
-    Route::post('/purchases/cancel-subscription/{type}/{uuid}', [\App\Http\Controllers\PurchasesController::class, 'cancelSubscription'])
-        ->name('purchases.cancel-subscription');
-
     // Alternative subscription cancellation route to match frontend expectation
-    Route::post('/subscriptions/{id}/cancel', [\App\Http\Controllers\PurchasesController::class, 'cancelSubscriptionById'])
+    Route::post('/subscriptions/{id}/cancel', [\App\Http\Controllers\SubscriptionsController::class, 'cancelSubscriptionById'])
         ->name('subscriptions.cancel');
 
     // Comprehensive subscription management routes
@@ -732,21 +727,12 @@ Route::withoutMiddleware([])->group(function () {
 // Redirect old URLs to new SEO URLs
 Route::get('/robots.txt', [\App\Http\Controllers\SeoController::class, 'robots'])->name('robots.txt');
 
-Route::get('/sitemap.xml', function () {
-    return redirect('/seo/sitemap.xml', 301);
-})->name('sitemap.redirect');
+// Added to ensure the direct route works without any redirection interference
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'customSitemap'])->name('sitemap.custom');
 
-Route::get('/sitemap/static.xml', function () {
-    return redirect('/seo/sitemap-static.xml', 301);
-})->name('sitemap.static.redirect');
-
-Route::get('/sitemap/creators.xml', function () {
-    return redirect('/seo/sitemap-creators.xml', 301);
-})->name('sitemap.creators.redirect');
-
-Route::get('/sitemap/wishlists.xml', function () {
-    return redirect('/seo/sitemap-wishlists.xml', 301);
-})->name('sitemap.wishlists.redirect');
+Route::get('/seo/sitemap-static.xml', [\App\Http\Controllers\SitemapController::class, 'static'])->name('sitemap.static.redirect');
+Route::get('/seo/sitemap-creators.xml', [\App\Http\Controllers\SitemapController::class, 'creators'])->name('sitemap.creators.redirect');
+Route::get('/seo/sitemap-wishlists.xml', [\App\Http\Controllers\SitemapController::class, 'wishlists'])->name('sitemap.wishlists.redirect');
 
 // SEO Cache management route (for post-deployment cache clearing)
 Route::get('/seo/clear-cache', [\App\Http\Controllers\SitemapController::class, 'clearCache'])->name('seo.clear.cache');

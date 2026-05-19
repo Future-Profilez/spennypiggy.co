@@ -377,15 +377,6 @@ class SyncFinancialTransactions extends Command
             return ['amount' => 0, 'status' => 'none'];
         }
 
-        // 1. If we already have a recorded reserve from the payment log, use it!
-        // This ensures historical transactions don't change when creator's global % changes.
-        if (isset($riskData['reserve_amount']) && $riskData['reserve_amount'] > 0) {
-            return [
-                'amount' => (float) $riskData['reserve_amount'],
-                'status' => $riskData['reserve_status'] !== 'none' ? $riskData['reserve_status'] : 'held',
-            ];
-        }
-
         $reserveStatus = $riskData['reserve_status'] !== 'none' ? $riskData['reserve_status'] : 'held';
         $metric = $creator ? \App\Models\CreatorMetric::where('creator_id', $creator->uuid)->first() : null;
         $effectivePercent = 0;
@@ -398,8 +389,19 @@ class SyncFinancialTransactions extends Command
         }
 
         if ($effectivePercent > 0) {
+            $calculatedAmount = round($netAmount * $effectivePercent / 100, 2);
+            if (isset($riskData['reserve_amount']) && $riskData['reserve_amount'] > 0) {
+                $recordedAmount = (float) $riskData['reserve_amount'];
+                $diff = abs($recordedAmount - $calculatedAmount);
+                if ($diff <= 0.02) {
+                    return [
+                        'amount' => $recordedAmount,
+                        'status' => $reserveStatus,
+                    ];
+                }
+            }
             return [
-                'amount' => round($netAmount * $effectivePercent / 100, 2),
+                'amount' => $calculatedAmount,
                 'status' => $reserveStatus,
             ];
         }

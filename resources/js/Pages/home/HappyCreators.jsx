@@ -52,7 +52,7 @@ export default function HappyCreators() {
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
+                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
             </div>
 
             <div className="containerbox relative ">
