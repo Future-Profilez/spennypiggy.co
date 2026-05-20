@@ -668,7 +668,8 @@ class TaskController extends Controller
                     ? (float) $purchase->total_paid
                     : (
                         (float) $purchase->amount +
-                        (float) $purchase->platform_fee
+                        (float) $purchase->platform_fee + 
+                        (float) $purchase->vat_amount
                     );
             }
         }

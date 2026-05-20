@@ -12,6 +12,7 @@ export default function Thankyou(props) {
   const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant, wish_content, success_page_type, ask_question, payment_id} = props;
   const { global_currency, auth, user } = usePage().props;
   const { errorAlert, successAlert } = useAlerts();
+  console.log("Thank you page props", amount);
 
   const getTitle = () => {
     if (type === 'monthly_subscription') return <><span>Subscription</span> <span className="text-[#FF007F]">Successful!</span></>;

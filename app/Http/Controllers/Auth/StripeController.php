@@ -3700,7 +3700,7 @@ class StripeController extends Controller
                     'username' => $tip_pay->creator->username,
                     'type' => 'support',
                     'item_name' => $tip_pay->tipGoal ? $tip_pay->tipGoal->name : 'Support Payment',
-                    'amount' => $tip_pay->amount ?? 0,
+                    'amount' => $tip_pay->total_paid ?? 0,
                     'currency' => $tip_pay->currency ?? 'GBP'
                 ])->with('success', "Thank you for your support!");
             }

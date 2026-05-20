@@ -54,7 +54,7 @@ export default function GifterTips(props) {
 
     const Item = ({ w }) => {
         const Template = () => {
-            const total_amount = +w.amount + +w.tax;
+            const total_amount = +w.amount + +w.tax + +w.vat_amount;
             const uname = user && user.username;
             const amount = formatMultiPrice(total_amount, w && w.currency);
             const owner = w && w.owner && w.owner.name;

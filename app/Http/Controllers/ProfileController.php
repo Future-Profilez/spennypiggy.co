@@ -819,6 +819,7 @@ class ProfileController extends Controller
                     'stripe_details_submitted' => $value->creator->stripe_details_submitted
                 ],
                 'amount' => $value->amount,
+                'vat_amount' => $value->vat_amount,
                 'tax' => $value->tax,
                 'currency' => $value->currency,
                 'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),

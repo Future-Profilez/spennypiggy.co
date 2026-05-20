@@ -64,6 +64,7 @@ export default function OrdersLists({ type = 'sales' }) {
       setOrderLoading(true);
         axios.get(`/shop/orders-list?type=${type}`)
        .then(res =>{
+        console.log("orders res", res);
          setOrders(res.data.orders);
          setAllEarning(res.data.all_time);
          setmonthEarning(res.data.thirtydays);
@@ -80,6 +81,8 @@ export default function OrdersLists({ type = 'sales' }) {
    useEffect(()=>{
       fetchorders();
    }, [type]);
+
+   console.log("orders", orders);
 
 
   return <>
@@ -169,11 +172,11 @@ export default function OrdersLists({ type = 'sales' }) {
                         <div className="mb-4 flex flex-col gap-1">
                             <div className="flex items-center justify-between">
                                 <h2 className="font-black text-lg sm:text-2xl text-black">
-                                    {item && item?.gross_amount ? (
+                                    {item && item?.amount ? (
                                         type === 'sales' ? (
-                                            formatMultiPrice(item.net_amount || 0, item?.currency || userCurrency)
+                                            formatMultiPrice(item.amount + item.vat_tax_amount || 0, item?.currency || userCurrency)
                                         ) : (
-                                            formatMultiPrice(item.gross_amount || 0, item?.currency || userCurrency)
+                                            formatMultiPrice(item.amount + item.vat_tax_amount || 0, item?.currency || userCurrency)
                                         )
                                     ) : "FREE"}
                                 </h2>
