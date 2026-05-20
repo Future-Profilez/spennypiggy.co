@@ -17,7 +17,7 @@ environments:
     assets:
       - "public/build/**"
     build:
-      # - "composer install"
+      - "composer install"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       # - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
