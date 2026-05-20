@@ -1046,11 +1046,18 @@ class MembershipController extends Controller
                     $this->userProfileService->clearUserCaches($mem->user->username, $mem->user->id);
                 }
 
+                $totalAmount = 0;
+                if($mem->user->role == 0){
+                    $totalAmount = $mem->total_paid;
+                }else{
+                    $totalAmount = $mem->amount;
+                }
+
                 return to_route('thank-you', [
                     'username' => $mem->membership->user->username,
                     'type' => 'membership',
                     'item_name' => $mem->membership->level,
-                    'amount' => $mem->amount ?? 0,
+                    'amount' => $totalAmount,
                     'currency' => $mem->currency ?? 'GBP',
                     'item_id' => $mem->membership->uuid
                 ])->with('success', "Payment for subscription of membership is success.");

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
-use App\Jobs\BillPayMail; 
+use App\Jobs\BillPayMail;
 use App\Jobs\BillPayToUser;
 use App\Jobs\BillContentDeliveryMail;
 use App\Jobs\ProcessWishItemDeliverable;
@@ -256,7 +256,7 @@ class BillsController extends Controller
                 ];
 
                 $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
-                
+
                 $bill->update([
                     'product_id' => $stripeProduct->id,
                     'price_id' => $stripeProduct->default_price,
@@ -810,7 +810,7 @@ class BillsController extends Controller
 
                 $vatAmountPercentage = $bill_pay->vat_tax_amount ?? 0;
                 $amountWithVat = $symbol->symbol . ($bill_pay->amount + $vatAmountPercentage);
-                
+
                 $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                 $totalPaidAmount = $bill_pay->total_paid && $bill_pay->total_paid > 0 ? $bill_pay->total_paid : (float) ($session->amount_total / $multiplier);
                 $amountWithCurr = ($symbol->symbol ?? '£') . number_format($totalPaidAmount, 2);
@@ -894,8 +894,8 @@ class BillsController extends Controller
                     $billBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'));
                     $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
                     $stripeFee = $billBreakdown['stripe_fee'];
-                    $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0 
-                        ? (float) $bill_pay->total_paid 
+                    $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0
+                        ? (float) $bill_pay->total_paid
                         : $billBreakdown['total_supporter_pays'];
                     $creatorAmount = $amount;
 
@@ -922,13 +922,19 @@ class BillsController extends Controller
                 } catch (\Throwable $e) {
                     Log::error('Failed to sync BillPayment to FinancialTransaction in handlePayment: ' . $e->getMessage(), ['bill_payment_id' => $bill_pay->id]);
                 }
+                $totalAmount = 0;
+                if ($bill_pay->user->role == 0) {
+                    $totalAmount = $bill_pay->total_paid;
+                } else {
+                    $totalAmount = $bill_pay->amount;
+                }
 
 
                 return to_route('thank-you', [
                     'username' => $bill_pay->bill->user->username,
                     'type' => 'bill',
                     'item_name' => $bill_pay->bill->name,
-                    'amount' => $bill_pay->amount ?? 0,
+                    'amount' => $totalAmount,
                     'currency' => $bill_pay->currency ?? 'GBP',
                     'item_id' => $bill_pay->bill->uuid
                 ])->with('success', "Payment for subscription of bill is successful.");
