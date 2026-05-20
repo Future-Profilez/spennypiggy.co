@@ -603,7 +603,9 @@ export default function Dashboard(props) {
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[113px]">
                                                                 {IsloggedIn || user?.intro?.approved == 1 ? (
-                                                                    <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn} user={user}/>
+                                                                    <Suspense fallback={<div className="h-40 bg-gray-100 rounded-3xl animate-pulse border-3 border-black"></div>}>
+                                                                        <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn} user={user}/>
+                                                                    </Suspense>
                                                                 ) : (
                                                                     ""
                                                                 )}
@@ -743,11 +745,13 @@ export default function Dashboard(props) {
                                                                                 </div>
                                                                             )}
 
-                                                                            <SocialLinks
-                                                                                links={
-                                                                                    sLinks
-                                                                                }
-                                                                            />
+                                                                            <Suspense fallback={null}>
+                                                                                <SocialLinks
+                                                                                    links={
+                                                                                        sLinks
+                                                                                    }
+                                                                                />
+                                                                            </Suspense>
 
                                                                             {IsloggedIn && slinks?.status === 0 && (
                                                                                 <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
@@ -783,7 +787,7 @@ export default function Dashboard(props) {
                                                                                                         user.username
                                                                                                     }
                                                                                                     classes={" bg-yellow-300 hover:bg-yellow-500 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black"}
-                                                                                                    custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
+                                                                                                    custom={wishitems && wishitems.length > 0 ? `${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}` : `${ziggy?.location}/${user?.username ?? 'creator_test'}`}
                                                                                                 >
                                                                                                     Share
                                                                                                     Profile
@@ -907,30 +911,36 @@ export default function Dashboard(props) {
                                                                 {IsloggedIn &&
                                                                 UserStripeConnected ==
                                                                     1 ? (
-                                                                    <ProfileSteps
-                                                                        sLinks={
-                                                                            sLinks
-                                                                        }
-                                                                        user={
-                                                                            user
-                                                                        }
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
-                                                                    />
+                                                                    <Suspense fallback={<div className="mb-4">Loading steps...</div>}>
+                                                                        <ProfileSteps
+                                                                            sLinks={
+                                                                                sLinks
+                                                                            }
+                                                                            user={
+                                                                                user
+                                                                            }
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                        />
+                                                                    </Suspense>
                                                                 ) : (
                                                                     ""
                                                                 )}
                                                                 {!IsloggedIn && UserStripeConnected == 1 && w > 767 ? (
-                                                                    <TipInner classes={`mb-4`} />
+                                                                    <Suspense fallback={null}>
+                                                                        <TipInner classes={`mb-4`} />
+                                                                    </Suspense>
                                                                 ) : (
                                                                     ""
                                                                 )}
-                                                                <FeedList
-                                                                    user={user}
-                                                                    IsloggedIn={IsloggedIn}
-                                                                    initialFilter="all"
-                                                                />
+                                                                <Suspense fallback={<div className="mb-4">Loading posts...</div>}>
+                                                                    <FeedList
+                                                                        user={user}
+                                                                        IsloggedIn={IsloggedIn}
+                                                                        initialFilter="all"
+                                                                    />
+                                                                </Suspense>
                                                             </div>
                                                         </div>
                                                     </Suspense>

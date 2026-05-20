@@ -18,8 +18,9 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 
 export default function IntroVideos(props) {
 
-    const { intros: initialIntros } = props;
+    const { intros: initialIntros, onSeeMore, showAll } = props;
     const [intros, setIntros] = useState(initialIntros || []);
+    const [displayedIntros, setDisplayedIntros] = useState([]);
     const [order, setorder] = useState('new');
     const [gender, setgender] = useState('all');
     const [loading, setloading] = useState(!initialIntros);
@@ -57,6 +58,19 @@ export default function IntroVideos(props) {
       fetch_videos();
     },[order, gender]);
 
+    useEffect(() => {
+        if (intros && intros.length > 0) {
+            if (showAll) {
+                setDisplayedIntros(intros);
+            } else {
+                const shuffled = [...intros].sort(() => 0.5 - Math.random());
+                setDisplayedIntros(shuffled.slice(0, 9));
+            }
+        } else {
+            setDisplayedIntros([]);
+        }
+    }, [intros, showAll]);
+
     const Switch = () => {
         return <div className='flex mb-3 sm:mb-0 items-center gap-2' >
         <button onClick={()=>setorder('new')} className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${order == 'new' ? 'bg-pink text-white' : 'bg-white text-gray-700 border border-gray-200'}`} >Newest</button>
@@ -89,7 +103,7 @@ export default function IntroVideos(props) {
         }
       };
 
-      return  <div className="relative rounded-[30px]  h-[250px] md:h-[270px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
+      return  <div className="fading relative rounded-[30px]  h-[230px] md:h-[230px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
         <ProfileIntro data={w} poster={poster} text={
           <>
             <div className="h-full relative bg-gray-200">
@@ -173,18 +187,30 @@ export default function IntroVideos(props) {
           {errorMsg && <div className="text-red-500 bg-red-100 p-4 rounded mb-4">{errorMsg}</div>}
           {loading ?
           <div className='w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
-              {Array(10).fill(0).map((_, i) => (
-                  <div key={`intro-skeleton-${i}`} className="h-[250px] md:h-[270px] bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+              {Array(9).fill(0).map((_, i) => (
+                  <div key={`intro-skeleton-${i}`} className="h-[230px] md:h-[270px] bg-gray-200/40 animate-ping border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
               ))}
           </div>
           :
           <>
-            {intros && intros.length ?
-            <div className=' w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
-                {intros.map((w, i)=> (
-                    <Intro w={w} />
-                ))}
-            </div>
+            {displayedIntros && displayedIntros.length ?
+            <>
+                <div className=' w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
+                    {displayedIntros.map((w, i)=> (
+                        <Intro key={i} w={w} />
+                    ))}
+                </div>
+                {!showAll && intros && intros.length > 9 && (
+                    <div className="mt-8 flex justify-center">
+                        <button 
+                            onClick={onSeeMore}
+                            className="bg-white border-2 border-black text-black hover:bg-black hover:text-white px-8 py-3 rounded-full font-bold text-sm md:text-base uppercase tracking-wider transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+                        >
+                            See More
+                        </button>
+                    </div>
+                )}
+            </>
             : <div className='my-5' >
               {/* <Nocontent text={'New Creators are on their way! Start exploring now!'} /> */}
             </div> }

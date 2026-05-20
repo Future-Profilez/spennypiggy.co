@@ -91,7 +91,9 @@ class UserProfileService
      */
     public function getAllProfileData(int $userId, ?int $categoryId = null): array
     {
-        $cacheKey = 'profile_all_data_' . $userId . '_' . ($categoryId ?? 'all') . '_' . $this->getProfileCacheVersion($userId);
+        $page = request()->route() ? (request()->route()->parameter('page') ?? 'about') : 'about';
+        
+        $cacheKey = 'profile_all_data_' . $userId . '_' . ($categoryId ?? 'all') . '_page_' . $page . '_' . $this->getProfileCacheVersion($userId);
         $isOwner = Auth::check() && Auth::id() === $userId;
 
         // If not owner, we can cache this whole block for a few minutes
@@ -106,38 +108,59 @@ class UserProfileService
 
     /**
      * Internal helper to fetch all profile sections
+     * We limit the number of items fetched here to keep initial load fast
      */
     private function fetchRawProfileData(int $userId, ?int $categoryId, bool $isOwner): array
     {
         $data = [];
-        $data['wishes'] = $this->getOptimizedWishItems($userId, $categoryId, $isOwner);
-        $data['memberships'] = $this->getOptimizedMemberships($userId, $isOwner);
-        $data['bills'] = $this->getOptimizedBills($userId, $isOwner);
-        $data['shops'] = $this->getOptimizedShopItems($userId, $isOwner);
+        // Only load the first few items for initial dashboard load
+        // But if we are on 'about' page, we shouldn't even fetch these
+        $page = request()->route() ? (request()->route()->parameter('page') ?? 'about') : 'about';
+        
+        if ($page !== 'about') {
+            $data['wishes'] = $this->getOptimizedWishItems($userId, $categoryId, $isOwner, 8);
+            $data['memberships'] = $this->getOptimizedMemberships($userId, $isOwner, 4);
+            $data['bills'] = $this->getOptimizedBills($userId, $isOwner, 4);
+            $data['shops'] = $this->getOptimizedShopItems($userId, $isOwner, 8);
+            $data['tasks'] = $this->getOptimizedTasks($userId, $isOwner, 6);
+        } else {
+            $data['wishes'] = [];
+            $data['memberships'] = [];
+            $data['bills'] = [];
+            $data['shops'] = [];
+            $data['tasks'] = [];
+        }
+        
         $data['posts'] = $this->getOptimizedPosts($userId, $isOwner, 5);
-        $data['tasks'] = $this->getOptimizedTasks($userId, $isOwner);
         return $data;
     }
 
     /**
      * Get tasks optimized for profile display
      */
-    public function getOptimizedTasks(int $userId, bool $isOwner): array
+    public function getOptimizedTasks(int $userId, bool $isOwner, int $limit = null): array
     {
         $query = \App\Models\Task::where('creator_id', $userId);
         if (!$isOwner) {
             $query->where('status', 'active')->where('is_approved', 1)->where('is_suspended', 0);
         }
-        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason'])
-            ->latest()
-            ->get()
-            ->toArray();
+        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason'])
+            ->latest();
+            
+        $cacheKey = 'user_tasks_optimized_' . $userId . '_' . ($limit ?? 'all') . '_' . ($isOwner ? 'owner' : 'public') . '_' . $this->getProfileCacheVersion($userId);
+        
+        return Cache::remember($cacheKey, 600, function() use ($query, $limit) {
+            if ($limit) {
+                $query->limit($limit);
+            }
+            return $query->get()->toArray();
+        });
     }
 
     /**
      * Get optimized wish items with minimal data
      */
-    private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner): array
+    private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner, int $limit = 20): array
     {
         $query = WishItem::select([
             'id',
@@ -167,17 +190,21 @@ class UserProfileService
             $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
         }
 
-        return $query->orderBy('sort')
-            ->orderBy('created_at', 'desc')
-            ->limit(20)
-            ->get()
-            ->toArray();
+        $cacheKey = 'user_wishes_optimized_' . $userId . '_' . ($categoryId ?? 'all') . '_' . $limit . '_' . ($isOwner ? 'owner' : 'public') . '_' . $this->getProfileCacheVersion($userId);
+        
+        return Cache::remember($cacheKey, 600, function() use ($query, $limit) {
+            return $query->orderBy('sort')
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get()
+                ->toArray();
+        });
     }
 
     /**
      * Get optimized memberships
      */
-    private function getOptimizedMemberships(int $userId, bool $isOwner): array
+    private function getOptimizedMemberships(int $userId, bool $isOwner, int $limit = null): array
     {
         $query = Membership::select([
             'id',
@@ -199,13 +226,19 @@ class UserProfileService
             $query->where('approved', 1)->where('is_suspended', 0);
         }
 
-        return $query->latest()->get()->toArray();
+        $cacheKey = 'user_memberships_optimized_' . $userId . '_' . ($limit ?? 'all') . '_' . ($isOwner ? 'owner' : 'public') . '_' . $this->getProfileCacheVersion($userId);
+        
+        return Cache::remember($cacheKey, 600, function() use ($query, $limit) {
+            $query = $query->latest();
+            if ($limit) $query->limit($limit);
+            return $query->get()->toArray();
+        });
     }
 
     /**
      * Get optimized bills
      */
-    private function getOptimizedBills(int $userId, bool $isOwner): array
+    private function getOptimizedBills(int $userId, bool $isOwner, int $limit = null): array
     {
         $query = Bills::select([
             'id',
@@ -227,13 +260,19 @@ class UserProfileService
             $query->where('approved', 1)->where('is_suspended', 0);
         }
 
-        return $query->latest()->get()->toArray();
+        $cacheKey = 'user_bills_optimized_' . $userId . '_' . ($limit ?? 'all') . '_' . ($isOwner ? 'owner' : 'public') . '_' . $this->getProfileCacheVersion($userId);
+        
+        return Cache::remember($cacheKey, 600, function() use ($query, $limit) {
+            $query = $query->latest();
+            if ($limit) $query->limit($limit);
+            return $query->get()->toArray();
+        });
     }
 
     /**
      * Get optimized shop items
      */
-    private function getOptimizedShopItems(int $userId, bool $isOwner): array
+    private function getOptimizedShopItems(int $userId, bool $isOwner, int $limit = null): array
     {
         $query = Shop::where('user_id', $userId)->where('status', 1);
 
@@ -260,7 +299,13 @@ class UserProfileService
                 ->where('approved', 1)->where('is_suspended', 0);
         }
 
-        return $query->latest()->get()->toArray();
+        $cacheKey = 'user_shop_optimized_' . $userId . '_' . ($limit ?? 'all') . '_' . ($isOwner ? 'owner' : 'public') . '_' . $this->getProfileCacheVersion($userId);
+        
+        return Cache::remember($cacheKey, 600, function() use ($query, $limit) {
+            $query = $query->latest();
+            if ($limit) $query->limit($limit);
+            return $query->get()->toArray();
+        });
     }
 
     /**
@@ -271,6 +316,7 @@ class UserProfileService
         $query = Post::select([
             'id',
             'uuid',
+            'user_id',
             'content',
             'image',
             'approved',
@@ -280,7 +326,23 @@ class UserProfileService
         if (!$isOwner) {
             $query->where('approved', 1);
         }
+        
+        $viewerId = Auth::id() ?: 0;
+        
+        // Eager load counts to avoid N+1 queries during toArray()
+        $query->withCount([
+            'likes' => fn($q) => $q->where('status', 1),
+            'comments' => fn($q) => $q->where('is_approved', 1)->orWhere('user_id', $viewerId)
+        ]);
+        
+        // Check if current user liked
+        if ($viewerId) {
+            $query->withExists([
+                'likes as liked_exists' => fn($q) => $q->where('user_id', $viewerId)->where('status', 1)
+            ]);
+        }
 
+        // We DO NOT cache this because the 'liked_exists' is specific to the viewer
         return $query->latest()->limit($limit)->get()->toArray();
     }
 
@@ -330,6 +392,8 @@ class UserProfileService
         // Don't cache paginated results to ensure fresh data
         $query = Post::where('user_id', $userId);
 
+        $viewerId = Auth::id() ?: 0;
+
         // Apply approval filter for non-owners
         if (!Auth::check() || Auth::id() !== $userId) {
             $query->where('approved', 1);
@@ -339,6 +403,19 @@ class UserProfileService
         $query->when($module !== 'all', function ($q) use ($module) {
             $q->forModule($module);
         });
+        
+        // Eager load counts to avoid N+1 queries during toArray()
+        $query->withCount([
+            'likes' => fn($q) => $q->where('status', 1),
+            'comments' => fn($q) => $q->where('is_approved', 1)->orWhere('user_id', $viewerId)
+        ]);
+        
+        // Check if current user liked
+        if ($viewerId) {
+            $query->withExists([
+                'likes as liked_exists' => fn($q) => $q->where('user_id', $viewerId)->where('status', 1)
+            ]);
+        }
 
         $posts = $query->latest()->paginate($perPage, ['*'], 'page', $page);
 
@@ -643,12 +720,19 @@ class UserProfileService
         Cache::forget('user_profile_basic_' . $username);
 
         // Clear all data cache variations (common ones)
-        Cache::forget('profile_all_data_' . $userId . '_all');
+        Cache::forget('profile_all_data_' . $userId . '_all_page_about');
+        Cache::forget('profile_all_data_' . $userId . '_all_page_feed');
+        Cache::forget('profile_all_data_' . $userId . '_all_page_wishes');
+        Cache::forget('profile_all_data_' . $userId . '_all_page_shop');
+        Cache::forget('profile_all_data_' . $userId . '_all_page_tasks');
+        Cache::forget('profile_all_data_' . $userId . '_all_page_memberships');
+        Cache::forget('profile_all_data_' . $userId . '_all_page_bills');
 
         // Clear category variations if any exist
         $categories = \App\Models\UserCategory::where('user_id', $userId)->pluck('id');
         foreach ($categories as $catId) {
-            Cache::forget('profile_all_data_' . $userId . '_' . $catId);
+            Cache::forget('profile_all_data_' . $userId . '_' . $catId . '_page_about');
+            Cache::forget('profile_all_data_' . $userId . '_' . $catId . '_page_wishes');
         }
 
         // Clear other related caches

@@ -514,21 +514,21 @@ export default function Transactions(props) {
                               
                               {e.wish_content && (
                                 <div className="mt-2">
-                                  {String(e.wish_content.type).includes('video') ? (
+                                  {String(e.wish_content.type || '').includes('video') ? (
                                     <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border-2 border-black bg-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                       <source src={e.wish_content.url} type={e.wish_content.type} />
                                     </video>
-                                  ) : String(e.wish_content.type).includes('audio') ? (
+                                  ) : String(e.wish_content.type || '').includes('audio') ? (
                                     <audio controls controlsList="nodownload" className="w-full">
                                       <source src={e.wish_content.url} type={e.wish_content.type} />
                                     </audio>
-                                  ) : String(e.wish_content.type).includes('pdf') || String(e.wish_content.type).includes('zip') ? (
+                                  ) : String(e.wish_content.type || '').includes('pdf') || String(e.wish_content.type || '').includes('zip') ? (
                                     <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="text-[#FF007F] font-bold hover:underline text-[13px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                       Open Content
                                     </a>
                                   ) : (
                                     <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-[20px] border-2 border-black bg-gray-50 hover:opacity-90 transition-opacity shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                      <img src={e.wish_content.url} alt={e.wish_content.name || 'Exclusive Content'} className="w-full max-h-[250px] object-contain" />
+                                      <img src={e.wish_content.url} alt={e.wish_content.name || 'Exclusive Content'} className="w-full max-h-[250px] object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="p-4 block text-center text-sm font-bold text-gray-500">View Content</span>'; }} />
                                     </a>
                                   )}
                                   {e.wish_content.name && (

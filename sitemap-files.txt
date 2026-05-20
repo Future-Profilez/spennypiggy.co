@@ -1,0 +1,2 @@
+- app/Http/Controllers/SitemapController.php me $pages array ke andar.
+- app/Http/Middleware/StaticPageSeoMiddleware

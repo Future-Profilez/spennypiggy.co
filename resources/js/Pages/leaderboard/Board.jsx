@@ -202,10 +202,10 @@ export default function Board(props) {
                                 ) : (
                                     ""
                                 )}
-                                <div className="profile-image ">
+                                <div className="profile-image !rounded-[30px] ">
                                     <img
                                         src={(p && p.avatar) || userphoto}
-                                        className="max-w-full h-auto"
+                                        className="max-w-full h-auto !rounded-[30px]"
                                         alt="image"
                                     />
                                 </div>
@@ -266,10 +266,10 @@ export default function Board(props) {
                                 ) : (
                                     ""
                                 )}
-                                <div className="profile-image ">
+                                <div className="profile-image !rounded-[30px] ">
                                     <img
                                         src={(p && p.avatar) || userphoto}
-                                        className="max-w-full h-auto"
+                                        className="max-w-full h-auto !rounded-[30px]"
                                         alt="image"
                                     />
                                 </div>

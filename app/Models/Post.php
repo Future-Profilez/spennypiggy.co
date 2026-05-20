@@ -152,6 +152,9 @@ class Post extends Model
 
     public function getLikesCountAttribute()
     {
+        if (array_key_exists('likes_count', $this->attributes)) {
+            return $this->attributes['likes_count'];
+        }
         return $this->likes()->where('status', 1)->count();
     }
 
@@ -162,6 +165,10 @@ class Post extends Model
 
     public function getCommentsCountAttribute()
     {
+        if (array_key_exists('comments_count', $this->attributes)) {
+            return $this->attributes['comments_count'];
+        }
+        
         $userId = Auth::id();
         $isCreator = $this->user_id === $userId;
 
@@ -190,6 +197,10 @@ class Post extends Model
 
     public function getLikedAttribute()
     {
+        if (array_key_exists('liked_exists', $this->attributes)) {
+            return (bool) $this->attributes['liked_exists'];
+        }
+        
         $like = null;
         if (Auth::check()) {
             $like = PostLike::where('post_id', $this->id)->where('user_id', Auth::id())->where('status', 1)->first();

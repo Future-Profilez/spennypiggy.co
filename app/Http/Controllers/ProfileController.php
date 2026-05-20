@@ -2128,28 +2128,40 @@ class ProfileController extends Controller
                 if ($isInstant) {
                     $benefits = $tx->source->shop->success_page_value ?? null;
                     if ($tx->source->shop->reward_file ?? null) {
+                        $contentUrl = $tx->source->shop->reward_file;
+                        if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
+                            $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
+                        }
                         $wishContent = [
                             'type' => $tx->source->shop->reward_file_type ?? null,
                             'name' => 'Digital Content',
-                            'url'  => "https://ucarecdn.com/" . $tx->source->shop->reward_file . "/"
+                            'url'  => $contentUrl
                         ];
                     }
                 }
             } elseif ($base === 'TaskPurchase' && $tx->source) {
                 $isInstant = ($tx->source->task->type ?? 'timed') === 'instant';
                 if ($isInstant && ($tx->source->task->deliverable_content ?? null)) {
+                    $contentUrl = $tx->source->task->deliverable_content;
+                    if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
+                        $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
+                    }
                     $wishContent = [
                         'type' => $tx->source->task->deliverable_content_type ?? 'image',
                         'name' => 'Task Content',
-                        'url'  => "https://ucarecdn.com/" . $tx->source->task->deliverable_content . "/"
+                        'url'  => $contentUrl
                     ];
                 }
             } elseif ($base === 'StripePaymentItems' && $tx->source) {
                 if ($tx->source->wish && $tx->source->wish->content_file) {
+                    $contentUrl = $tx->source->wish->content_file;
+                    if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
+                        $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
+                    }
                     $wishContent = [
                         'type' => $tx->source->wish->content_file_type ?? 'image',
                         'name' => 'Exclusive Content',
-                        'url'  => "https://ucarecdn.com/" . $tx->source->wish->content_file . "/"
+                        'url'  => $contentUrl
                     ];
                 }
             }

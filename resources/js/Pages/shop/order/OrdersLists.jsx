@@ -169,11 +169,21 @@ export default function OrdersLists({ type = 'sales' }) {
                         <div className="mb-4 flex flex-col gap-1">
                             <div className="flex items-center justify-between">
                                 <h2 className="font-black text-lg sm:text-2xl text-black">
-                                    {item && item?.gross_amount ? (
+                                    {item && (item?.total_paid || item?.gross_amount || item?.amount) ? (
                                         type === 'sales' ? (
-                                            formatMultiPrice(item.net_amount || 0, item?.currency || userCurrency)
+                                            formatMultiPrice(item.net_amount || item.amount || 0, item?.currency || userCurrency)
                                         ) : (
-                                            formatMultiPrice(item.gross_amount || 0, item?.currency || userCurrency)
+                                            formatMultiPrice(
+                                                item.total_paid || 
+                                                calculateTotalSupporterPays(
+                                                    ((Number(item.gross_amount || item.amount || 0)) + 
+                                                    (Number(item.tax_amount || 0)) + 
+                                                    (Number(item.vat_tax_amount || 0)) + 
+                                                    (Number(item.shipping_amount || 0))),
+                                                    item?.currency || userCurrency
+                                                ), 
+                                                item?.currency || userCurrency
+                                            )
                                         )
                                     ) : "FREE"}
                                 </h2>

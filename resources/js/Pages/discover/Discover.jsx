@@ -274,12 +274,6 @@ export default function Discover(props) {
                                                 icon={<Gift />}
                                             />
                                         )}
-                                        <div className="">
-                                            <TopSupporters grid={true} />
-                                        </div>
-                                        <div className="mb-8">
-                                            <IntroVideos intros={intros} />
-                                        </div>
                                     </>
                                 )}
                                 
@@ -311,6 +305,17 @@ export default function Discover(props) {
                                             />
                                         )}
                                     </div>
+                                )}
+
+                                {(!filters.contentType || filters.contentType === 'All') && (
+                                    <>
+                                        <div className="">
+                                            <TopSupporters grid={true} />
+                                        </div>
+                                        <div className="mb-8">
+                                             <IntroVideos intros={intros} onSeeMore={() => handleQuickFilter('creators')} showAll={filters.contentType === 'Creators'} />
+                                         </div>
+                                    </>
                                 )}
 
                                 {filters.contentType === 'Wishes' && featuredWishes && featuredWishes.length > 0 && (
@@ -374,13 +379,7 @@ export default function Discover(props) {
                                 </div>
                             ) : searchResults ? (
                                 <div className="space-y-12">
-                                    {(!filters.contentType || filters.contentType === 'All' || filters.contentType === 'Creators') && (
-                                        <div className="mb-4">
-                                            <IntroVideos intros={intros} />
-                                        </div>
-                                    )}
-
-                                    {searchResults.creators && searchResults.creators.length > 0 && (
+                                {searchResults.creators && searchResults.creators.length > 0 && (
                                         <div className="pb-6 mt-5">
                                             <h2 className=" text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
                                             {filters.type === 'trending' && (
@@ -431,6 +430,12 @@ export default function Discover(props) {
                                             />
                                         </div>
                                     )}
+
+                                    {(!filters.contentType || filters.contentType === 'All' || filters.contentType === 'Creators') && (
+                                         <div className="mb-4">
+                                             <IntroVideos intros={intros} onSeeMore={() => handleQuickFilter('creators')} showAll={filters.contentType === 'Creators'} />
+                                         </div>
+                                     )}
 
                                     {searchResults.bills && searchResults.bills.length > 0 && (
                                         <div className="pb-8 ">

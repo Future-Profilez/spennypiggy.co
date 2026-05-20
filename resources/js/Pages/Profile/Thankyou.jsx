@@ -178,19 +178,19 @@ export default function Thankyou(props) {
                <FaCheckCircle /> Exclusive Content Unlocked
             </h4>
             
-            {wish_content.type && wish_content.type.includes('video') ? (
+            {String(wish_content.type || '').includes('video') ? (
                <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border border-gray-200 bg-black">
                    <source src={wish_content.url} type={wish_content.type} />
                    Your browser does not support the video tag.
                </video>
-            ) : wish_content.type && wish_content.type.includes('audio') ? (
+            ) : String(wish_content.type || '').includes('audio') ? (
                <audio controls controlsList="nodownload" className="w-full mt-2">
                    <source src={wish_content.url} type={wish_content.type} />
                    Your browser does not support the audio element.
                </audio>
             ) : (
                <a href={wish_content.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 hover:opacity-90 transition-opacity">
-                   <img src={wish_content.url} alt={wish_content.name || "Exclusive Content"} className="w-full max-h-[250px] object-contain" />
+                   <img src={wish_content.url} alt={wish_content.name || "Exclusive Content"} className="w-full max-h-[250px] object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="p-4 block text-center text-sm font-bold text-gray-500">View Content</span>'; }} />
                </a>
             )}
             
