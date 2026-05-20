@@ -20,12 +20,12 @@ environments:
       - "composer install"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      # - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
+      - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
       - "npm run build"
-      # - "rm -rf node_modules"
-      - "rd /s /q node_modules"
-      - "rd /s /q package-lock.json"
+      - "rm -rf node_modules"
+      # - "rd /s /q node_modules"
+      # - "rd /s /q package-lock.json"
  
     deploy:
       - "php artisan migrations:fix-state"
