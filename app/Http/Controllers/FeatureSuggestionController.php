@@ -63,7 +63,10 @@ class FeatureSuggestionController extends Controller
             && $request->status !== 'pending'
             && $recipientEmail;
 
-        if ($shouldNotify) {
+        $recipientUser = $suggestion->user;
+        $canSendEmail = !$recipientUser || $recipientUser->notification_send == 1;
+
+        if ($shouldNotify && $canSendEmail) {
             try {
                 Mail::to($recipientEmail)->send(new FeatureSuggestionStatusMail($suggestion));
             } catch (\Exception $e) {

@@ -64,6 +64,7 @@ export default function OrdersLists({ type = 'sales' }) {
       setOrderLoading(true);
         axios.get(`/shop/orders-list?type=${type}`)
        .then(res =>{
+        console.log("orders res", res);
          setOrders(res.data.orders);
          setAllEarning(res.data.all_time);
          setmonthEarning(res.data.thirtydays);
@@ -80,6 +81,8 @@ export default function OrdersLists({ type = 'sales' }) {
    useEffect(()=>{
       fetchorders();
    }, [type]);
+
+   console.log("orders", orders);
 
 
   return <>

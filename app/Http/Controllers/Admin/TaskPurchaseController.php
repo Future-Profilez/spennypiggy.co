@@ -194,7 +194,7 @@ class TaskPurchaseController extends Controller
         try {
             if ($purchase->creator) {
                 Helpers::sendNotification($isRefund ? 'Dispute Resolved' : 'Payment Released ✅', $creatorMsg, $purchase->creator->email);
-                if ($isRefund) {
+                if ($isRefund && $purchase->creator->notification_send == 1) {
                     Mail::to($purchase->creator->email)->send(new TaskRefunded([
                         'title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency,
                         'message' => $creatorMsg,
@@ -203,7 +203,7 @@ class TaskPurchaseController extends Controller
             }
             if ($purchase->supporter) {
                 Helpers::sendNotification($isRefund ? 'Refund Issued 💸' : 'Dispute Resolved', $supporterMsg, $purchase->supporter->email);
-                if ($isRefund) {
+                if ($isRefund && $purchase->supporter->notification_send == 1) {
                     Mail::to($purchase->supporter->email)->send(new TaskRefunded([
                         'title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency,
                         'message' => $supporterMsg,

@@ -204,7 +204,6 @@ class ShopsController extends Controller
                     $ship->save();
                 }
             }
-
         }
 
         $shop->refresh();
@@ -363,7 +362,6 @@ class ShopsController extends Controller
                         $ship->save();
                     }
                 }
-
             }
 
             $shop->refresh();
@@ -669,12 +667,13 @@ class ShopsController extends Controller
         $this->ensureTurnstileVerified($request);
 
         try {
-            if (!empty(request()->query('message'))) {
-                $wordLimit = 100;
-                $message = request()->query('message');
-
-                if (str_word_count($message) > $wordLimit) {
-                    return redirect()->back()->with("error", "Max limit for message is 100 words");
+            $message = request()->query('message');
+            if ($message !== null && $message !== '') {
+                if ($msgErr = Helpers::validateSupporterMessage($message)) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => $msgErr,
+                    ]);
                 }
             }
 
@@ -780,7 +779,7 @@ class ShopsController extends Controller
 
             // Calculate the base amount the creator should receive (Price + Tax + VAT)
             $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
-            
+
             // Check membership discount
             if (Auth::check()) {
                 $user = User::find(Auth::id());
@@ -794,7 +793,7 @@ class ShopsController extends Controller
                     $amount = round($shop->special_member_price, 2, PHP_ROUND_HALF_UP);
                 }
             }
-            
+
             $amount = $amount * $requestedQuantity;
 
             // Add Shipping Price if physical item
@@ -874,7 +873,7 @@ class ShopsController extends Controller
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-        $precision = $multiplier === 1 ? 0 : 2;
+            $precision = $multiplier === 1 ? 0 : 2;
 
             $unitAmount = (int) round($breakdown['total_supporter_pays'] * $multiplier);
 
@@ -911,41 +910,41 @@ class ShopsController extends Controller
             $sessionCreate = null;
             $connectedAccountId = $shop->user->account_id;
 
-        if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
-            return response()->json([
-                'status' => false,
-                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
+            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
+                ]);
+            }
+
+            $creatorTransferAmountMinor = (int) round(round($listedPriceToGrossUp, $precision, PHP_ROUND_HALF_UP) * $multiplier);
+
+            $metadata = Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
+                'shop_item_id' => $shop->id,
+                'quantity' => $shopPaymentDetail->quantity,
+                'anonymous' => $shopPaymentDetail->anonymous,
+                'creator_net_amount' => (string) $creatorTransferAmountMinor,
+                'total_charge_amount' => (string)$unitAmount,
             ]);
-        }
 
-        $creatorTransferAmountMinor = (int) round(round($listedPriceToGrossUp, $precision, PHP_ROUND_HALF_UP) * $multiplier);
-
-        $metadata = Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
-            'shop_item_id' => $shop->id,
-            'quantity' => $shopPaymentDetail->quantity,
-            'anonymous' => $shopPaymentDetail->anonymous,
-            'creator_net_amount' => (string) $creatorTransferAmountMinor,
-            'total_charge_amount' => (string)$unitAmount,
-        ]);
-
-        // Build session payload (platform checkout + destination transfer)
+            // Build session payload (platform checkout + destination transfer)
             $payload = [
                 'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
                 'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-            'line_items' => [[
-                'quantity' => 1,
-                'price_data' => [
-                    'currency' => $chargeCurrency,
-                    'product_data' => [
-                        'name' => "Total value of item including all fees",
-                        'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
+                'line_items' => [[
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $chargeCurrency,
+                        'product_data' => [
+                            'name' => "Total value of item including all fees",
+                            'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
+                        ],
+                        'unit_amount' => $unitAmount,
                     ],
-                    'unit_amount' => $unitAmount,
-                ],
-            ]],
+                ]],
                 'mode' => 'payment',
                 'payment_method_types' => ['card'],
-            'customer_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
+                'customer_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                 'metadata' => $metadata,
                 'payment_intent_data' => [
                     'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
@@ -1053,7 +1052,7 @@ class ShopsController extends Controller
                     if ($stripeid->shop->type !== 'physical') {
                         $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
                         $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
-                        
+
                         if ($stripeid->shop->reward_file) {
                             $contentUrl = $stripeid->shop->reward_file;
                             if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
@@ -1159,7 +1158,7 @@ class ShopsController extends Controller
 
                 $CreatorName = ucfirst($stripeid->shop->user->name ?? 'A Creator');
                 $title = "🛍️ Purchase Confirmed!";
-                $content = $stripeid->shop->type !== 'physical' 
+                $content = $stripeid->shop->type !== 'physical'
                     ? "Your digital purchase from $CreatorName is complete and ready to access."
                     : "You bought something from $CreatorName ’s shop. They’ll process it soon.";
                 $email = $stripeid->email ?? $stripeid->user->email;
@@ -1213,11 +1212,11 @@ class ShopsController extends Controller
                     $thankYouParams['ask_question'] = $stripeid->shop->ask_question;
                     $thankYouParams['payment_id'] = $stripeid->uuid;
                 }
-                
+
                 if ($stripeid->shop->type !== 'physical') {
                     $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
                     $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
-                    
+
                     if ($stripeid->shop->reward_file) {
                         $contentUrl = $stripeid->shop->reward_file;
                         if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
@@ -1298,17 +1297,17 @@ class ShopsController extends Controller
         }
 
         $deliverable->update($updateData);
-        $shopPayment->status = $request->status;
-        $shopPayment->tracking_id = $request->tracking_id;
-        $shopPayment->courier_name = $request->courier_name;
-        $shopPayment->expected_delivery_date = $request->expected_delivery_date;
-        $shopPayment->save();
+        // $shopPayment->status = $request->status;
+        // $shopPayment->tracking_id = $request->tracking_id;
+        // $shopPayment->courier_name = $request->courier_name;
+        // $shopPayment->expected_delivery_date = $request->expected_delivery_date;
+        // $shopPayment->save();
 
         // Send PWA notification to supporter about status update
         try {
             $creatorName = ucfirst(Auth::user()->name);
             $title = "🚚 Order Update!";
-            
+
             if ($request->status === 'shipped') {
                 $content = "Great news! $creatorName has shipped your order. Tracking: " . ($request->tracking_id ?? 'Available soon');
             } elseif ($request->status === 'delivered') {
@@ -1329,9 +1328,15 @@ class ShopsController extends Controller
 
         // Send Email Notification for any status update
         try {
-            \Illuminate\Support\Facades\Mail::to($deliverable->customer_email)
-                ->send(new \App\Mail\ShopOrderStatusMail($deliverable, Auth::user(), $request->status));
-            Log::info('Fulfillment: Status update email sent', ['deliverable_id' => $deliverable->id, 'status' => $request->status]);
+            $gifter = $deliverable->gifter_id
+                ? \App\Models\User::find($deliverable->gifter_id)
+                : \App\Models\User::where('email', $deliverable->customer_email)->first();
+
+            if (\App\Models\User::shouldSendEmail($gifter)) {
+                \Illuminate\Support\Facades\Mail::to($deliverable->customer_email)
+                    ->send(new \App\Mail\ShopOrderStatusMail($deliverable, Auth::user(), $request->status));
+                Log::info('Fulfillment: Status update email sent', ['deliverable_id' => $deliverable->id, 'status' => $request->status]);
+            }
         } catch (\Exception $e) {
             Log::error('Fulfillment: Failed to send status update email', ['error' => $e->getMessage()]);
         }
@@ -1421,8 +1426,8 @@ class ShopsController extends Controller
                 ->where('payment_status', 'paid')
                 ->orderBy('id', 'desc')
                 ->get();
-            
-             // Map orders to format expected by frontend
+
+            // Map orders to format expected by frontend
             $formattedOrders = $orders->map(function ($order) {
                 $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)->first();
                 // Determine delay status
@@ -1485,7 +1490,7 @@ class ShopsController extends Controller
         $formattedOrders = $orders->map(function ($order) {
             $buyer = User::find($order->user_id);
             $deliverable = \App\Models\Deliverable::where('session_id', $order->session_id)->first();
-            
+
             // Determine delay status
             $isDelayed = false;
             if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered') {
@@ -1515,6 +1520,7 @@ class ShopsController extends Controller
                 'is_delayed' => $isDelayed,
                 'tracking_id' => $deliverable->tracking_id ?? null,
                 'courier_name' => $deliverable->courier_name ?? null,
+                'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
                 'ask_question' => $order->ask_question,
                 'answer' => $order->answer,
                 'message' => $order->message,

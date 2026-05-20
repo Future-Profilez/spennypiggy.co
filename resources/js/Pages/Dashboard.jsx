@@ -29,7 +29,7 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import useWidthCount from "@/Components/useWidthCount";
 
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy,} from "@dnd-kit/sortable";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, } from "@dnd-kit/sortable";
 import { closestCorners, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects, MeasuringStrategy, defaultDropAnimation } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
@@ -83,9 +83,9 @@ export default function Dashboard(props) {
     const [tab, setTab] = useState(0);
     const [activeId, setActiveId] = useState(null);
 
-    const activeItem = useMemo(() => 
+    const activeItem = useMemo(() =>
         activeId ? wishitems.find(item => (item.id || item.uuid) === activeId) : null
-    , [activeId, wishitems]);
+        , [activeId, wishitems]);
 
     useEffect(() => {
         if (items && Array.isArray(items)) {
@@ -192,7 +192,7 @@ export default function Dashboard(props) {
             .post(`/update/move-wish`, {
                 shuffled_items: array,
             })
-            .then((resp) => {})
+            .then((resp) => { })
             .catch((_err) => {
                 console.error("error", _err);
             });
@@ -214,7 +214,7 @@ export default function Dashboard(props) {
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
-        
+
         if (over && active.id !== over.id) {
             const activeIndex = wishitems.findIndex(
                 (item) => (item.id || item.uuid) === active.id,
@@ -222,7 +222,7 @@ export default function Dashboard(props) {
             const newOverIndex = wishitems.findIndex(
                 (item) => (item.id || item.uuid) === over.id,
             );
-            
+
             const updated = arrayMove(wishitems, activeIndex, newOverIndex);
             setWishitems(updated);
             updateMovement(updated);
@@ -299,7 +299,7 @@ export default function Dashboard(props) {
                             className="addoption-action cursor-pointer p-2 bg-[#FF007F] border-4 border-black !rounded-[20px] 
                             shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] 
                             hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-50 "
-                            // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
+                        // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
                         ><b className="text-2xl md:text-3xl px-4  !leading-[8px] top-[4px] relative">+</b></div>
                         {showAdd ? (
                             <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
@@ -309,12 +309,12 @@ export default function Dashboard(props) {
                                             <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-2 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
-                                           
-                                                {AuthUserStripeConnected !== 1 ?
-                                                     <p className="!mb-2 text-center">
-                                                     Please complete your Stripe account setup to add your wishlist.
-                                                    </p>
-                                                    : ""} 
+
+                                            {AuthUserStripeConnected !== 1 ?
+                                                <p className="!mb-2 text-center">
+                                                    Please complete your Stripe account setup to add your wishlist.
+                                                </p>
+                                                : ""}
                                             <div className="!max-h-[38vh] !min-h-[38vh] p-4 !pt-2 overflow-auto">
                                                 {wishOptions ? (
                                                     <div>
@@ -325,7 +325,7 @@ export default function Dashboard(props) {
                                                             }
                                                             setuped={
                                                                 AuthUserStripeConnected ==
-                                                                1
+                                                                    1
                                                                     ? true
                                                                     : false
                                                             }
@@ -361,18 +361,17 @@ export default function Dashboard(props) {
                                                         </div>
 
                                                         <div className="flex justify-center">
-                                                            <button onClick={()=>setWishOptions(!wishOptions)} className="bg-gray-200 text-back rounded-[30px] px-3 py-2">Back</button>
+                                                            <button onClick={() => setWishOptions(!wishOptions)} className="bg-gray-200 text-back rounded-[30px] px-3 py-2">Back</button>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <>
                                                         <div
-                                                            className={`${
-                                                                AuthUserStripeConnected ==
+                                                            className={`${AuthUserStripeConnected ==
                                                                 1
-                                                                    ? "block"
-                                                                    : "disabled"
-                                                            }`}
+                                                                ? "block"
+                                                                : "disabled"
+                                                                }`}
                                                         >
 
                                                             <div className="w-full">
@@ -489,52 +488,52 @@ export default function Dashboard(props) {
     }, [auth?.user?.stripe_details_submitted]);
 
     return (
-            <>
-                <Guest auth={auth.user} user={user} className='bg-[#A2E4B8]'>
-                    <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
-                    <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
+        <>
+            <Guest auth={auth.user} user={user} className='bg-[#A2E4B8]'>
+                <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
+                <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
-                        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                            {/* Removed glowing orbs to fit brutalism style better, or kept them minimal */}
-                        </div>
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                        {/* Removed glowing orbs to fit brutalism style better, or kept them minimal */}
+                    </div>
 
-                        <div className="containerbox relative z-10">
-                            <VersionUpdate />
-                            {shouldShowFounderBanner ? (
-                                <OfferAnnouncement variant="default" />
-                            ) : (
-                                ""
-                            )}
-                            <div className="wishbanner relative ">
-                                <div className="relative border-b-4 border-black rounded-[30px] overflow-hidden">
-                                    {user?.is_founder ? (
-                                        <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-2xl p-1">
-                                            <FounderBadge size="md" />
-                                        </div>
-                                    ) : (
-                                        ""
-                                    )}
-                                    <img
-                                        alt={`${user?.name} - Cover Image`}
-                                        height={400}
-                                        width={1200}
-                                        className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
-                                        src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_url ? user?.cover_url : wishlistbannerimg}
-                                        loading="eager"
-                                        fetchpriority="high"
-                                    />
-                                    {IsloggedIn && auth?.user?.cover_url && auth?.user?.cover_approved == 0 ? (
-                                        <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
-                                            <button className="flex items-center gap-2">
-                                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" >
-                                                    <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25" />
-                                                </svg> 
-                                                <p> Cover image is waiting for approval. Currently only you can see this. </p>
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        ""
-                                    )}
+                    <div className="containerbox relative z-10">
+                        <VersionUpdate />
+                        {shouldShowFounderBanner ? (
+                            <OfferAnnouncement variant="default" />
+                        ) : (
+                            ""
+                        )}
+                        <div className="wishbanner relative ">
+                            <div className="relative border-b-4 border-black rounded-[30px] overflow-hidden">
+                                {user?.is_founder ? (
+                                    <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-2xl p-1">
+                                        <FounderBadge size="md" />
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
+                                <img
+                                    alt={`${user?.name} - Cover Image`}
+                                    height={400}
+                                    width={1200}
+                                    className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
+                                    src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_url ? user?.cover_url : wishlistbannerimg}
+                                    loading="eager"
+                                    fetchpriority="high"
+                                />
+                                {IsloggedIn && auth?.user?.cover_url && auth?.user?.cover_approved == 0 ? (
+                                    <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
+                                        <button className="flex items-center gap-2">
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" >
+                                                <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25" />
+                                            </svg>
+                                            <p> Cover image is waiting for approval. Currently only you can see this. </p>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
                             </div>
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
@@ -584,7 +583,7 @@ export default function Dashboard(props) {
                                             )} */}
 
                                             <InstantTabSystem
-                                                Toggle={Toggle} 
+                                                Toggle={Toggle}
                                                 activeTab={page || "about"}
                                                 user={user}
                                                 username={user.username}
@@ -598,7 +597,7 @@ export default function Dashboard(props) {
 
                                             <div className="tabs-containers min-height">
                                                 {page === "about" || page === false ? (
-                                                    <Suspense fallback={ <LoadingScreen /> } >
+                                                    <Suspense fallback={<LoadingScreen />} >
                                                         <div className="flex flex-wrap about-sec self-start ">
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[113px]">
@@ -610,68 +609,68 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
 
-                                                                <DashboardStripeMigrationWarning
+                                                                    <DashboardStripeMigrationWarning
                                                                         migrationStatus={migration_status} />
 
-                                                                    {IsloggedIn && auth?.user && auth?.user ?.role == 1 && stripe_requirements && stripe_requirements.has_requirements && stripe_requirements.requirements && stripe_requirements .requirements .length > 0 &&
-                                                                    (AuthUserStripeConnected || has_stripe_account) ? (
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.has_requirements && stripe_requirements.requirements && stripe_requirements.requirements.length > 0 &&
+                                                                        (AuthUserStripeConnected || has_stripe_account) ? (
                                                                         <ActionRequired requirements={stripe_requirements.requirements} />
                                                                     ) : ''}
 
-                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && !hasPendingCardPayments && 
-                                                                    (AuthUserStripeConnected || has_stripe_account) ? (
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && !hasPendingCardPayments &&
+                                                                        (AuthUserStripeConnected || has_stripe_account) ? (
                                                                         <EnableCardCapabilities />
                                                                     ) : (
                                                                         ""
                                                                     )}
                                                                     {IsloggedIn && auth?.user && auth?.user?.role == 1 && (auth?.user?.subscription_status == 3 || auth?.user?.subscription_status == 0) ? (
-                                                                        <SiteSubscription 
+                                                                        <SiteSubscription
                                                                             auth={auth}
                                                                             subscription_status={auth?.user?.subscription_status}
-                                                                            charges={auth?.user?.monthly_charge_enabled }
-                                                                            user={auth?.user }
+                                                                            charges={auth?.user?.monthly_charge_enabled}
+                                                                            user={auth?.user}
                                                                             card_capabilities={card_capabilities}
                                                                         />
                                                                     ) : (
                                                                         ""
                                                                     )}
 
-                                                                    
-                                                                    
+
+
 
                                                                     {(IsloggedIn && (user?.profile_status_lock == 0 || (user?.edit_bio_reason && user?.bio_approved == 2) || slinks?.reason || user?.avatar_approved == 2)) ?
-                                                                    <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px] mb-4 p-4">
-                                                                        <h2 className="text-red-600 font-bold text-xl ">Action Required </h2>
-                                                                        {user?.profile_status_lock == 0 && user?.profile_reject_reason && (
-                                                                            <div className="mt-3">
-                                                                                <p className="text-red-700 font-bold">Profile Edit Request</p>
-                                                                                <p className="text-red-500 text-sm">
-                                                                                    Reason: {user.profile_reject_reason}
-                                                                                </p>
-                                                                            </div>
-                                                                        )}
-                                                                        {user?.edit_bio_reason &&
-                                                                            user?.bio_approved ==
+                                                                        <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px] mb-4 p-4">
+                                                                            <h2 className="text-red-600 font-bold text-xl ">Action Required </h2>
+                                                                            {user?.profile_status_lock == 0 && user?.profile_reject_reason && (
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700 font-bold">Profile Edit Request</p>
+                                                                                    <p className="text-red-500 text-sm">
+                                                                                        Reason: {user.profile_reject_reason}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                            {user?.edit_bio_reason &&
+                                                                                user?.bio_approved ==
                                                                                 2 ? (
                                                                                 <div className="mt-3 ">
                                                                                     <p className="text-red-700 font-bold"> Bio Edit Request </p>
                                                                                     <p className="text-red-500 text-sm">
-                                                                                        Reason : 
-                                                                                        {user?.edit_bio_reason }
+                                                                                        Reason :
+                                                                                        {user?.edit_bio_reason}
                                                                                         Please update your bio as per requested.
                                                                                     </p>
                                                                                 </div>
                                                                             ) : (
                                                                                 ""
                                                                             )}
-                                                                            
+
                                                                             {user?.avatar_approved == 2 && (
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700 font-semibold">
                                                                                         Avatar Edit Request
                                                                                     </p>
                                                                                     <p className="text-red-500 text-sm">
-                                                                                       Profile avatar has been rejected by admin. Please upload a new avatar.
+                                                                                        Profile avatar has been rejected by admin. Please upload a new avatar.
                                                                                     </p>
                                                                                 </div>
                                                                             )}
@@ -681,14 +680,14 @@ export default function Dashboard(props) {
                                                                                         Social Media Edit Request
                                                                                     </p>
                                                                                     <p className="text-red-500 text-sm">
-                                                                                        Reason: 
+                                                                                        Reason:
                                                                                         {slinks.reason}
                                                                                         <br />
                                                                                         Please update your social links as per the requested changes.
                                                                                     </p>
                                                                                 </div>
                                                                             )}
-                                                                    </div> : ''}
+                                                                        </div> : ''}
 
                                                                     <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
                                                                         <div className="p-4 md:p-8">
@@ -697,12 +696,11 @@ export default function Dashboard(props) {
                                                                                 Me
                                                                             </h2>
                                                                             <p
-                                                                                className={`text-gray-700 font-bold text-md md:text-lg text-left mt-4 ${
-                                                                                    user &&
+                                                                                className={`text-gray-700 font-bold text-md md:text-lg text-left mt-4 ${user &&
                                                                                     !user.bio
-                                                                                        ? "hidden"
-                                                                                        : ""
-                                                                                }`}
+                                                                                    ? "hidden"
+                                                                                    : ""
+                                                                                    }`}
                                                                             >
                                                                                 {(user &&
                                                                                     user.bio) ||
@@ -724,15 +722,15 @@ export default function Dashboard(props) {
                                                                                 <div className="mt-6 flex flex-wrap gap-1 md:gap-2">
                                                                                     {(() => {
                                                                                         try {
-                                                                                            const tags = typeof user.creator_category === 'string' 
-                                                                                                ? JSON.parse(user.creator_category) 
+                                                                                            const tags = typeof user.creator_category === 'string'
+                                                                                                ? JSON.parse(user.creator_category)
                                                                                                 : user.creator_category;
-                                                                                            
+
                                                                                             if (!Array.isArray(tags)) return null;
-                                                                                            
+
                                                                                             return tags.map((tag, index) => (
-                                                                                                <span 
-                                                                                                    key={index} 
+                                                                                                <span
+                                                                                                    key={index}
                                                                                                     className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-[12px] md:text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
                                                                                                 >
                                                                                                     {tag}
@@ -764,7 +762,7 @@ export default function Dashboard(props) {
                                                                                 </div>
                                                                             )}
 
-                                                                            
+
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 md:pt-3">
@@ -776,7 +774,7 @@ export default function Dashboard(props) {
 
                                                                                     <div className="addsocial flex">
                                                                                         <ul>
-                                                                                            <li> 
+                                                                                            <li>
                                                                                                 <AddSocial classes={`bg-[#A2E4B8] hover:bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black`} sLinks={sLinks} />
                                                                                             </li>
 
@@ -804,28 +802,28 @@ export default function Dashboard(props) {
 
                                                                             {UserStripeConnected == 1 ? (
                                                                                 <MyGoal IsloggedIn={IsloggedIn} />
-                                                                            ) :  "" }
+                                                                            ) : ""}
 
-                                                                                    {auth?.user?.role == 1 && AuthUserStripeConnected == 1 ? (
-                                                                                        <PaymentDashboard
-                                                                                            classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px] bg-pink-600 hover:bg-pink-700   transition-all duration-200"
-                                                                                            text="Creator Payment Dashboard"
-                                                                                        />
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            {auth?.user?.identity_status == 1 ? 
-                                                                                            <div className="finish mt-4 block">
-                                                                                                <p className="mb-4 text-lg font-bold text-black"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth?.user?.monthly_charge_enabled ? '' : true } href={"/stripe"} className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center" > Finish Setup
-                                                                                                </Link>
-                                                                                            </div> 
-                                                                                            : ''}
-                                                                                        </>
-                                                                                    )}
-                                                                                
+                                                                            {auth?.user?.role == 1 && AuthUserStripeConnected == 1 ? (
+                                                                                <PaymentDashboard
+                                                                                    classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px] bg-pink-600 hover:bg-pink-700   transition-all duration-200"
+                                                                                    text="Creator Payment Dashboard"
+                                                                                />
+                                                                            ) : (
+                                                                                <>
+                                                                                    {auth?.user?.identity_status == 1 ?
+                                                                                        <div className="finish mt-4 block">
+                                                                                            <p className="mb-4 text-lg font-bold text-black"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                            <Link disabled={auth?.user?.monthly_charge_enabled ? '' : true} href={"/stripe"} className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center" > Finish Setup
+                                                                                            </Link>
+                                                                                        </div>
+                                                                                        : ''}
+                                                                                </>
+                                                                            )}
+
                                                                         </div>
                                                                     </div>
-                                                                  
+
                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
                                                                         <div className="mb-6 !mt-6 relative group">
                                                                             {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
@@ -851,7 +849,7 @@ export default function Dashboard(props) {
                                                                                     <div className="flex-1 order-2 text-center md:text-left mt-6">
                                                                                         <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">Support Story</p>
                                                                                         <p className="text-black font-black uppercase   text-xl md:text-xl leading-snug">
-                                                                                            Relive your moments with {user?.name || '@'+user?.username}
+                                                                                            Relive your moments with {user?.name || '@' + user?.username}
                                                                                         </p>
                                                                                         <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
                                                                                             Gifts, thank‑yous and milestones — beautifully in one place.
@@ -861,7 +859,7 @@ export default function Dashboard(props) {
                                                                                         <Link href={`/support/${user?.username}/${auth?.user?.username}`}
                                                                                             className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-xl text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 " >
                                                                                             View Your Story
-                                                                                        </Link> 
+                                                                                        </Link>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -874,9 +872,9 @@ export default function Dashboard(props) {
                                                                     auth?.user &&
                                                                     auth?.user
                                                                         ?.role ==
-                                                                        1 &&
+                                                                    1 &&
                                                                     UserStripeConnected ==
-                                                                        1 && (
+                                                                    1 && (
                                                                         <Suspense
                                                                             fallback={
                                                                                 <div className="mb-4">
@@ -896,9 +894,9 @@ export default function Dashboard(props) {
                                                                     )}
 
 
-                                                                
+
                                                                 {IsloggedIn &&
-                                                                UserStripeConnected !==
+                                                                    UserStripeConnected !==
                                                                     1 ? (
                                                                     <CreatorVerification
                                                                         IsloggedIn={
@@ -909,7 +907,7 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
                                                                 {IsloggedIn &&
-                                                                UserStripeConnected ==
+                                                                    UserStripeConnected ==
                                                                     1 ? (
                                                                     <Suspense fallback={<div className="mb-4">Loading steps...</div>}>
                                                                         <ProfileSteps
@@ -948,8 +946,7 @@ export default function Dashboard(props) {
                                                     ""
                                                 )}
 
-                                                {IsloggedIn ||
-                                                UserStripeConnected == 1 ? (
+                                                {IsloggedIn || UserStripeConnected == 1 ? (
                                                     <>
                                                         {page === "wishes" ? (
                                                             <ErrorBoundary>
@@ -960,7 +957,7 @@ export default function Dashboard(props) {
                                                                 >
                                                                     <div className="wishes-items pb-6 ">
                                                                         {wish_categories &&
-                                                                        wish_categories.length ? (
+                                                                            wish_categories.length ? (
                                                                             <>
                                                                                 <div className="new-wish-cats flex items-center mb-6 gap-2 flex-wrap p-2">
                                                                                     <Link
@@ -968,17 +965,13 @@ export default function Dashboard(props) {
                                                                                         href={route(
                                                                                             "user.show",
                                                                                             {
-                                                                                                username:
-                                                                                                    user.username,
+                                                                                                username: user.username,
                                                                                                 page: "wishes",
                                                                                             },
                                                                                         )}
-                                                                                        className={` ${
-                                                                                            selectedCategory ==
-                                                                                            ""
-                                                                                                ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
-                                                                                                : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
-                                                                                        } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
+                                                                                        className={` ${selectedCategory == "" ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+                                                                                            : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                            } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
                                                                                     >
                                                                                         All
                                                                                     </Link>
@@ -1000,11 +993,10 @@ export default function Dashboard(props) {
                                                                                                                 c.id,
                                                                                                         },
                                                                                                     )}
-                                                                                                    className={`${
-                                                                                                        selectedCategory == c.id 
-                                                                                                            ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]" 
-                                                                                                            : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
-                                                                                                    } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
+                                                                                                    className={`${selectedCategory == c.id
+                                                                                                        ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+                                                                                                        : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                        } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                     key={`cats-${i}`}
                                                                                                 >
                                                                                                     {
@@ -1039,12 +1031,12 @@ export default function Dashboard(props) {
                                                                         ) : wishitems && wishitems.length > 0 ? (
                                                                             <>
                                                                                 <DndContext
-                                                                                     sensors={sensors}
-                                                                                     collisionDetection={closestCorners}
-                                                                                     onDragStart={handleDragStart}
-                                                                                     onDragEnd={handleDragEnd}
-                                                                                     onDragCancel={handleDragCancel}
-                                                                                 >
+                                                                                    sensors={sensors}
+                                                                                    collisionDetection={closestCorners}
+                                                                                    onDragStart={handleDragStart}
+                                                                                    onDragEnd={handleDragEnd}
+                                                                                    onDragCancel={handleDragCancel}
+                                                                                >
                                                                                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                         <SortableContext
                                                                                             strategy={rectSortingStrategy}
@@ -1057,11 +1049,10 @@ export default function Dashboard(props) {
                                                                                                 ) => {
                                                                                                     return (
                                                                                                         <Wishlistbox
-                                                                                                            key={`wish-item-${
-                                                                                                                c.id ||
+                                                                                                            key={`wish-item-${c.id ||
                                                                                                                 c.uuid ||
                                                                                                                 i
-                                                                                                            }`}
+                                                                                                                }`}
                                                                                                             classes=" "
                                                                                                             currency={
                                                                                                                 global_currency
@@ -1077,7 +1068,7 @@ export default function Dashboard(props) {
                                                                                                             }
                                                                                                             setuped={
                                                                                                                 AuthUserStripeConnected ==
-                                                                                                                1
+                                                                                                                    1
                                                                                                                     ? true
                                                                                                                     : false
                                                                                                             }
@@ -1090,8 +1081,8 @@ export default function Dashboard(props) {
                                                                                             )}
                                                                                         </SortableContext>
                                                                                     </div>
-                                                                                     {createPortal(
-                                                                                        <DragOverlay 
+                                                                                    {createPortal(
+                                                                                        <DragOverlay
                                                                                             dropAnimation={{
                                                                                                 duration: 250,
                                                                                                 easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
@@ -1121,7 +1112,7 @@ export default function Dashboard(props) {
                                                                                             ) : null}
                                                                                         </DragOverlay>,
                                                                                         document.body
-                                                                                     )}
+                                                                                    )}
                                                                                 </DndContext>
                                                                             </>
                                                                         ) : (
@@ -1175,7 +1166,7 @@ export default function Dashboard(props) {
                                                         )}
 
                                                         {page ===
-                                                        "memberships" ? (
+                                                            "memberships" ? (
                                                             <Suspense
                                                                 fallback={
                                                                     <LoadingScreen />
@@ -1241,8 +1232,8 @@ export default function Dashboard(props) {
                                                                 {giftsloading ? (
                                                                     <LoadingScreen />
                                                                 ) : gifts &&
-                                                                  gifts.length >
-                                                                      0 ? (
+                                                                    gifts.length >
+                                                                    0 ? (
                                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
                                                                         {gifts.map(
                                                                             (
@@ -1256,31 +1247,31 @@ export default function Dashboard(props) {
                                                                                     <>
                                                                                         {(IsloggedIn ||
                                                                                             gift?.deleted_at ===
-                                                                                                null) && (
-                                                                                            <GiftListing
-                                                                                                key={
-                                                                                                    gift.id
-                                                                                                }
-                                                                                                gift={
-                                                                                                    gift
-                                                                                                }
-                                                                                                details={
-                                                                                                    details
-                                                                                                }
-                                                                                                user={
-                                                                                                    user
-                                                                                                }
-                                                                                                IsloggedIn={
-                                                                                                    IsloggedIn
-                                                                                                }
-                                                                                                fetch_gifts={
-                                                                                                    fetch_gifts
-                                                                                                }
-                                                                                                auth={
-                                                                                                    auth
-                                                                                                }
-                                                                                            />
-                                                                                        )}
+                                                                                            null) && (
+                                                                                                <GiftListing
+                                                                                                    key={
+                                                                                                        gift.id
+                                                                                                    }
+                                                                                                    gift={
+                                                                                                        gift
+                                                                                                    }
+                                                                                                    details={
+                                                                                                        details
+                                                                                                    }
+                                                                                                    user={
+                                                                                                        user
+                                                                                                    }
+                                                                                                    IsloggedIn={
+                                                                                                        IsloggedIn
+                                                                                                    }
+                                                                                                    fetch_gifts={
+                                                                                                        fetch_gifts
+                                                                                                    }
+                                                                                                    auth={
+                                                                                                        auth
+                                                                                                    }
+                                                                                                />
+                                                                                            )}
                                                                                     </>
                                                                                 );
                                                                             },

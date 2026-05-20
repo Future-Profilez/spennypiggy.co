@@ -75,18 +75,6 @@ class CheckoutController extends Controller
 
         $user = Auth::user();
         try {
-            if (!empty(request()->query('message'))) {
-                $wordLimit = 100;
-                $message = request()->query('message');
-
-                if (str_word_count($message) > $wordLimit) {
-                    if (!empty($debugId)) {
-                        Log::info('Cart checkout debug: message word limit', ['debug_id' => $debugId]);
-                    }
-                    return redirect()->back()->with("error", "Max limit for message is 100 words");
-                }
-            }
-
             // Get cart data filtered by specific creator
             if (Auth::check()) {
                 // For authenticated users, filter by user_id AND owner_id (creator_id)
@@ -120,6 +108,19 @@ class CheckoutController extends Controller
                     Log::info('Cart checkout debug: empty cart for creator', ['debug_id' => $debugId]);
                 }
                 return redirect()->back()->with('error', 'No items in cart to checkout for this creator.');
+            }
+
+            $message = request()->query('message');
+            if ($msgErr = Helpers::validateSupporterMessage($message)) {
+                if (!empty($debugId)) {
+                    Log::info('Cart checkout debug: message validation failed', ['debug_id' => $debugId]);
+                }
+                return redirect()->back()->with('error', $msgErr);
+            }
+            foreach ($getdata as $cartRow) {
+                if ($msgErr = Helpers::validateSupporterMessage($cartRow->message ?? null)) {
+                    return redirect()->back()->with('error', $msgErr);
+                }
             }
 
             // Get creator by ID

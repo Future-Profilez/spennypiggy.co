@@ -447,6 +447,11 @@ class TaskController extends Controller
             'digital_waiver' => ['required', 'accepted'],
         ]);
 
+        $gifterMessage = $request->input('gifter_message');
+        if ($msgErr = Helpers::validateSupporterMessage($gifterMessage)) {
+            return back()->with('error', $msgErr);
+        }
+
         $price = $task->price;
 
         // Enforce Paid Task limits in GBP (min £5)
@@ -531,6 +536,7 @@ class TaskController extends Controller
             'has_card_payments' => (string) $hasCardPayments,
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
+            'gifter_message' => Str::limit((string) ($gifterMessage ?? ''), 450),
         ]);
 
         $payload = [
@@ -662,7 +668,8 @@ class TaskController extends Controller
                     ? (float) $purchase->total_paid
                     : (
                         (float) $purchase->amount +
-                        (float) $purchase->platform_fee
+                        (float) $purchase->platform_fee + 
+                        (float) $purchase->vat_amount
                     );
             }
         }
@@ -852,7 +859,9 @@ class TaskController extends Controller
             $supporter = $buyerId ? User::find($buyerId) : null;
 
             if ($creator) {
-                Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                if ($creator->notification_send == 1) {
+                    Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                }
 
                 Helpers::sendNotification(
                     "New Task Order! 💰",
@@ -861,7 +870,7 @@ class TaskController extends Controller
                 );
             }
 
-            if ($supporter) {
+            if ($supporter && $supporter->notification_send == 1) {
                 Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
             }
         } catch (\Exception $e) {
@@ -922,7 +931,7 @@ class TaskController extends Controller
             $task = $purchase->task;
             $creator = Auth::user();
 
-            if ($supporter) {
+            if ($supporter && $supporter->notification_send == 1) {
                 Mail::to($supporter->email)->send(new TaskProofSubmittedMail($purchase, $task, $creator));
 
                 Helpers::sendNotification(
@@ -1008,7 +1017,7 @@ class TaskController extends Controller
             }
 
             try {
-                if ($creator) {
+                if ($creator && $creator->notification_send == 1) {
                     Mail::to($creator->email)->send(new TaskProofAcceptedMail($purchase, $task, $supporter));
                     Helpers::sendNotification(
                         "Proof Accepted! ✅",
@@ -1070,7 +1079,9 @@ class TaskController extends Controller
 
                 // Notify Creator
                 try {
-                    Mail::to($creator->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $creator, 'creator'));
+                    if ($creator->notification_send == 1) {
+                        Mail::to($creator->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $creator, 'creator'));
+                    }
                     Helpers::sendNotification("Dispute Escalated ⚠️", "Task dispute escalated to admin for '{$task->title}'", $creator->email);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to notify creator about escalation: " . $e->getMessage());
@@ -1078,7 +1089,9 @@ class TaskController extends Controller
 
                 // Notify Supporter
                 try {
-                    Mail::to($supporter->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $supporter, 'supporter'));
+                    if ($supporter->notification_send == 1) {
+                        Mail::to($supporter->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $supporter, 'supporter'));
+                    }
                     Helpers::sendNotification("Dispute Escalated ⚠️", "Task dispute escalated to admin for '{$task->title}'", $supporter->email);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to notify supporter about escalation: " . $e->getMessage());
@@ -1117,7 +1130,9 @@ class TaskController extends Controller
 
                 // Notify Creator about rejection
                 try {
-                    Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
+                    if ($creator->notification_send == 1) {
+                        Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
+                    }
                     Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review.", $creator->email);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to notify creator about rejection: " . $e->getMessage());

@@ -816,4 +816,24 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     {
         return $this->hasOne(CreatorMetric::class, 'creator_id', 'uuid');
     }
+
+    /**
+     * Whether this user has email notifications enabled.
+     */
+    public function wantsEmailNotifications(): bool
+    {
+        return (int) ($this->notification_send ?? 0) === 1;
+    }
+
+    /**
+     * Whether to send email to a registered user. Guests (no user record) still receive emails.
+     */
+    public static function shouldSendEmail(?self $user): bool
+    {
+        if ($user === null) {
+            return true;
+        }
+
+        return $user->wantsEmailNotifications();
+    }
 }

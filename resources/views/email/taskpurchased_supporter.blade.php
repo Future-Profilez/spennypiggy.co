@@ -11,15 +11,19 @@ $currencySymbol = \App\Models\Currency::where('ISO', $currencyCode)->value('symb
 $creatorAmount = (float) ($purchase->amount ?? $task->price ?? 0);
 
 // Supporter paid amount
-$supporterPaid = (float) ($purchase->total_paid ?? 0);
-
+$supporterPaid = (float) (
+$purchase->total_paid && $purchase->total_paid > 0
+? $purchase->total_paid
+: (
+($purchase->transfer_amount ?? 0)
++ ($purchase->platform_fee ?? 0)
+)
+);
 // VAT
 $vatAmount = (float) ($purchase->vat_amount ?? 0);
 
 // Final display amount
-$displayAmount = $supporterPaid > 0
-? $supporterPaid
-: $creatorAmount;
+$displayAmount = $supporterPaid > 0 ? $supporterPaid : $creatorAmount;
 
 @endphp
 
@@ -44,9 +48,9 @@ $displayAmount = $supporterPaid > 0
 
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
-                     Thank you, {{ $supporter ? ucwords($supporter->name) : "Guest" }}! <br>
-                     You just purchased the task <strong>{{ $task->title }}</strong> from {{ ucwords($task->creator->name) }} for {{ $currencySymbol }}{{ number_format($displayAmount, 2) }}.
-                 </td>
+                    Thank you, {{ $supporter ? ucwords($supporter->name) : "Guest" }}! <br>
+                    You just purchased the task <strong>{{ $task->title }}</strong> from {{ ucwords($task->creator->name) }} for {{ $currencySymbol }}{{ number_format($displayAmount, 2) }}.
+                </td>
             </tr>
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">

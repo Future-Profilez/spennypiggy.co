@@ -25,55 +25,106 @@ class Helpers
         }
     }
 
-    public static function checkBlockData($request)
+    /**
+     * Scan a single string for blocked words/emojis (same rules as checkBlockData).
+     *
+     * @return false|string The blocked token if found, false otherwise
+     */
+    public static function checkBlockText($value): false|string
     {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
         $blockedWords = [
-            'sex', 'sexual', 'fuck', 'fucking', 'blowjob', 'handjob', 'anal', 'cum', 'orgasm', 'masturbation', 
-            'nude', 'nudity', 'porn', 'fetish', 'dick', 'cock', 'pussy', 'cunt', 'tits', 'boobs', 'nipples', 
-            'asshole', 'must pay', 'forced', 'you owe', 'debt', 'punishment', 'humiliate', 'degrade', 
-            'control you', 'own you', 'submit', 'meet me', 'address', 'phone number', 'bank details', 
-            'doxx', 'threaten', 'escort', 'prostitution', 'sexual service', 'private session', 
-            'paypal me', 'cashapp', 'venmo', 'crypto only', 'off platform', 'drugs', 'cocaine', 
+            'sex', 'sexual', 'fuck', 'fucking', 'blowjob', 'handjob', 'anal', 'cum', 'orgasm', 'masturbation',
+            'nude', 'nudity', 'porn', 'fetish', 'dick', 'cock', 'pussy', 'cunt', 'tits', 'boobs', 'nipples',
+            'asshole', 'must pay', 'forced', 'you owe', 'debt', 'punishment', 'humiliate', 'degrade',
+            'control you', 'own you', 'submit', 'meet me', 'address', 'phone number', 'bank details',
+            'doxx', 'threaten', 'escort', 'prostitution', 'sexual service', 'private session',
+            'paypal me', 'cashapp', 'venmo', 'crypto only', 'off platform', 'drugs', 'cocaine',
             'heroin', 'meth', 'weapons', 'fraud', 'scam', 'fake id',
-            'paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'goddess', 'master', 'mistress'
+            'paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'goddess', 'master', 'mistress',
         ];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
 
+        $value = (string) $value;
+
+        foreach ($blockedWords as $word) {
+            // 1. Direct match with word boundaries
+            if (preg_match("/\b" . preg_quote($word, '/') . "\b/i", $value)) {
+                return $word;
+            }
+
+            // 2. Obfuscation match (e.g. "s e x" or "s.e.x" becomes "sex")
+            $regexChars = [];
+            $chars = mb_str_split($word);
+            foreach ($chars as $char) {
+                $regexChars[] = preg_quote($char, '/');
+            }
+            $obfuscatedPattern = implode('[\W_]*', $regexChars);
+
+            if (preg_match("/(?<!\p{L})" . $obfuscatedPattern . "(?!\p{L})/iu", $value)) {
+                return $word;
+            }
+        }
+
+        foreach ($blockedEmojis as $emoji) {
+            if (mb_strpos($value, $emoji) !== false) {
+                return $emoji;
+            }
+        }
+
+        return false;
+    }
+
+    public static function checkBlockData($request)
+    {
         // Filter out non-stringable values (like arrays or objects)
         $stringValues = array_filter($request->all(), function ($value) {
             return is_scalar($value) || (is_object($value) && method_exists($value, '__toString'));
         });
 
         foreach ($stringValues as $value) {
-            $value = (string) $value;
-            
-            foreach ($blockedWords as $word) {
-                // 1. Direct match with word boundaries
-                if (preg_match("/\b" . preg_quote($word, '/') . "\b/i", $value)) {
-                    return $word;
-                }
-                
-                // 2. Obfuscation match (e.g. "s e x" or "s.e.x" becomes "sex")
-                $regexChars = [];
-                $chars = mb_str_split($word);
-                foreach ($chars as $char) {
-                    $regexChars[] = preg_quote($char, '/');
-                }
-                $obfuscatedPattern = implode('[\W_]*', $regexChars);
-                
-                if (preg_match("/(?<!\p{L})" . $obfuscatedPattern . "(?!\p{L})/iu", $value)) {
-                    return $word;
-                }
-            }
-
-            foreach ($blockedEmojis as $emoji) {
-                if (mb_strpos($value, $emoji) !== false) {
-                    return $emoji;
-                }
+            $blocked = self::checkBlockText((string) $value);
+            if ($blocked !== false) {
+                return $blocked;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Standard user-facing error when purchase/support message content is blocked.
+     */
+    public static function blockedContentMessage(string $blockedToken): string
+    {
+        return "The word or emoji '{$blockedToken}' is not allowed as per our policies.";
+    }
+
+    /**
+     * Validate a supporter-facing free-text message (word limit + blocked words/emojis).
+     *
+     * @param  string|null  $text
+     * @return string|null Error message for the user, or null if OK / empty
+     */
+    public static function validateSupporterMessage(?string $text, int $wordLimit = 100): ?string
+    {
+        if ($text === null || $text === '') {
+            return null;
+        }
+
+        if (str_word_count($text) > $wordLimit) {
+            return "Max limit for message is {$wordLimit} words";
+        }
+
+        $blocked = self::checkBlockText($text);
+        if ($blocked !== false) {
+            return self::blockedContentMessage($blocked);
+        }
+
+        return null;
     }
 
     /**
@@ -115,7 +166,7 @@ class Helpers
             $payments = \App\Models\Payment::where('creator_id', $user->uuid)
                 ->whereIn('status', ['succeeded', 'completed'])
                 ->get();
-            
+
             $totalGmvGbp = 0.0;
             foreach ($payments as $payment) {
                 $amountMajor = $payment->amount / 100;
@@ -125,7 +176,7 @@ class Helpers
                     $totalGmvGbp += self::priceFormat($payment->currency, $amountMajor, 'gbp');
                 }
             }
-            
+
             $referral->lifetime_gmv = $totalGmvGbp;
 
             if ($referral->status === 'IN_PROGRESS' && $referral->lifetime_gmv >= 1000) {
@@ -169,11 +220,11 @@ class Helpers
 
     /**
      * Calculate total price for Stripe Direct Charges Flow
-     * 
+     *
      * Step 1: Gross-up for Stripe processing fees (2.9% + $0.30)
      * Step 2: Add platform fee (15%) and compliance fee (2%)
      * Step 3: Add fixed administration fee ($1.00)
-     * 
+     *
      * @param float $listedPrice The price set by the creator
      * @param string $currency The currency ISO code
      * @return array Breakdown of fees and total
@@ -453,10 +504,10 @@ class Helpers
     {
         try {
             $lockKey = 'shop_emails_sent_' . $shopPayment->uuid;
-            
+
             // Try to acquire a lock for 10 minutes. If already locked, skip.
             $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 600);
-            
+
             if ($lock->get()) {
                 Log::info('Helpers::sendShopPurchaseEmails: START', ['uuid' => $shopPayment->uuid]);
 
@@ -470,10 +521,10 @@ class Helpers
 
                     $amountUserPay = (float)($shopPayment->total_paid ?? $shopPayment->amount);
                     $originalItemPrice = (float)($shopPayment->amount); // The base price creator receives for the item
-                    
+
                     $multiplier = self::isZeroDecimalCurrency($shopPayment->currency) ? 1 : 100;
-                    $totalPaidAmount = $shopPayment->total_paid && $shopPayment->total_paid > 0 
-                        ? $shopPayment->total_paid 
+                    $totalPaidAmount = $shopPayment->total_paid && $shopPayment->total_paid > 0
+                        ? $shopPayment->total_paid
                         : (float) ($shopPayment->amount + ($shopPayment->shipping_amount ?? 0) + ($shopPayment->vat_tax_amount ?? 0));
                     $amountWithcurrency = ($symbol ?? '£') . number_format($totalPaidAmount, 2);
                     $originalPriceWithCurrency = ($symbol ?? '£') . number_format($originalItemPrice, 2);
@@ -481,7 +532,7 @@ class Helpers
                     // --- CREATOR NOTIFICATION BLOCK ---
                     try {
                         $shop = $shopPayment->shop;
-                        
+
                         // Fallback 1: If shop relationship failed, find by shop_id manually
                         if (!$shop && $shopPayment->shop_id) {
                             $shop = \App\Models\Shop::withTrashed()->find($shopPayment->shop_id);
@@ -491,7 +542,7 @@ class Helpers
                         }
 
                         $creator = $shop?->user;
-                        
+
                         // Fallback 2: If user relationship failed, find by user_id manually
                         if (!$creator && $shop?->user_id) {
                             $creator = \App\Models\User::find($shop->user_id);
@@ -509,14 +560,14 @@ class Helpers
                                 'name' => $creator->name,
                                 'showing_price' => $originalItemPrice
                             ]);
-                            
+
                             // Creator Email - Send ONLY the original item price
                             try {
                                 \App\EmailService::shopBuyed($shopPayment, (bool)$shopPayment->anonymous, $originalItemPrice, $symbol);
                             } catch (\Throwable $e) {
                                 Log::error('Helpers::sendShopPurchaseEmails: Creator Email failed', ['error' => $e->getMessage()]);
                             }
-                            
+
                             // Creator Push - Send ONLY the original item price
                             try {
                                 $fanName = ucfirst(ucwords($shopPayment->user?->name ?? ($shopPayment->name ?? 'A Fan')));
@@ -632,11 +683,11 @@ class Helpers
             ])->post('https://api.magicbell.com/notifications', $payload);
 
             Log::info('MagicBell API response status: ' . $response->status());
-            
+
             if ($response->successful()) {
                 return true;
             }
-            
+
             Log::error('Failed to send push notification', [
                 'status' => $response->status(),
                 'reason' => $response->reason(),

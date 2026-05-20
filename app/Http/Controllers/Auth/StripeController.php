@@ -1419,15 +1419,6 @@ class StripeController extends Controller
         ]);
 
         try {
-            if (!empty(request()->query('message'))) {
-                $wordLimit = 100;
-                $message = request()->query('message');
-
-                if (str_word_count($message) > $wordLimit) {
-                    return redirect()->back()->with("error", "Max limit for message is 100 words");
-                }
-            }
-
             $user = User::where('id', Auth::id())
                 ->where('is_uk', 0)
                 ->firstOrFail();
@@ -1439,6 +1430,16 @@ class StripeController extends Controller
                 ->get();
 
             if (!empty($getdata) && $getdata->count() > 0) {
+                $message = request()->query('message');
+                if ($msgErr = Helpers::validateSupporterMessage($message)) {
+                    return redirect()->back()->with('error', $msgErr);
+                }
+                foreach ($getdata as $cartRow) {
+                    if ($msgErr = Helpers::validateSupporterMessage($cartRow->message ?? null)) {
+                        return redirect()->back()->with('error', $msgErr);
+                    }
+                }
+
                 foreach ($getdata as $item) {
                     if ($item->wish && $item->wish->is_suspended) {
                         return redirect()->back()->with('error', 'One or more items in your cart are suspended and cannot be purchased.');
@@ -1654,6 +1655,16 @@ class StripeController extends Controller
                 foreach ($cart as $item) {
                     if ($item->wish && $item->wish->is_suspended) {
                         return redirect()->back()->with('error', 'One or more items in your cart are suspended and cannot be purchased.');
+                    }
+                }
+
+                $message = request()->query('message');
+                if ($msgErr = Helpers::validateSupporterMessage($message)) {
+                    return redirect()->back()->with('error', $msgErr);
+                }
+                foreach ($cart as $cartRow) {
+                    if ($msgErr = Helpers::validateSupporterMessage($cartRow->message ?? null)) {
+                        return redirect()->back()->with('error', $msgErr);
                     }
                 }
 
@@ -1983,6 +1994,10 @@ class StripeController extends Controller
                 'message' => ['sometimes', 'nullable', 'string', 'max:800'],
                 'digital_waiver' => ['required', 'accepted'],
             ]);
+
+            if ($msgErr = Helpers::validateSupporterMessage($request->message ?? null, 100)) {
+                return redirect()->back()->with('error', $msgErr);
+            }
 
             // ✅ FIXED: Prevent duplicate subscriptions by canceling existing ones
             $existingSubscriptions = WishItemSubscription::where('wish_item_id', $wish->id)
@@ -3308,6 +3323,10 @@ class StripeController extends Controller
                 'device_id' => 'sometimes|nullable|string|max:255',
             ]);
 
+            if ($msgErr = Helpers::validateSupporterMessage($request->message ?? null, 100)) {
+                return response()->json(['status' => false, 'msg' => $msgErr]);
+            }
+
             $this->ensureTurnstileVerified($request);
 
             $sourceCurrency = strtoupper($request->currency ?? $creator->default_currency ?? 'GBP');
@@ -3681,7 +3700,7 @@ class StripeController extends Controller
                     'username' => $tip_pay->creator->username,
                     'type' => 'support',
                     'item_name' => $tip_pay->tipGoal ? $tip_pay->tipGoal->name : 'Support Payment',
-                    'amount' => $tip_pay->amount ?? 0,
+                    'amount' => $tip_pay->total_paid ?? 0,
                     'currency' => $tip_pay->currency ?? 'GBP'
                 ])->with('success', "Thank you for your support!");
             }

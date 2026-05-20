@@ -320,7 +320,7 @@ class FounderBonusController extends Controller
                             $qualifiedCount++;
                             
                             // Send congratulations email if enabled
-                            if (config('founder_bonus.features.email_notifications', true)) {
+                            if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
                                 try {
                                     \Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
                                 } catch (\Exception $e) {
@@ -387,7 +387,7 @@ class FounderBonusController extends Controller
                         $qualifiedCount++;
                         
                         // Send congratulations email if enabled
-                        if (config('founder_bonus.features.email_notifications', true)) {
+                        if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
                             try {
                                 Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
                             } catch (\Exception $e) {
