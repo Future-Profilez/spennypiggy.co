@@ -1079,125 +1079,125 @@ class MembershipController extends Controller
     }
 
     // Page method - returns Inertia view
-    public function membershipDashboardPage()
-    {
-        return inertia('membership/Membership_dashboard');
-    }
+public function membershipDashboardPage()
+{
+    return inertia('membership/Membership_dashboard');
+}
 
-    // API method - returns JSON data
-    public function membershipDashboardData()
-    {
-        $user = User::find(Auth::id());
+// API method - returns JSON data
+public function membershipDashboardData()
+{
+    $user = User::find(Auth::id());
 
-        $payments = MembershipPayment::with([
-            'membership:id,user_id,level,price,currency',
-            'user:id,name,username,email,avatar'
+    $payments = MembershipPayment::with([
+        'membership:id,user_id,level,price,currency',
+        'user:id,name,username,email,avatar'
+    ])
+        ->whereHas('membership', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })
+        ->where('status', 'paid')
+        ->latest()
+        ->get();
+
+    $count = $payments->unique('user_id')->count();
+    $per_month = $payments
+        ->whereBetween('created_at', [
+            now()->startOfMonth(),
+            now()->endOfMonth()
         ])
-            ->whereHas('membership', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->where('status', 'paid')
-            ->latest()
-            ->get();
+        ->sum('amount');
+    $all_time = $payments->sum('amount');
 
-        $count = $payments->unique('user_id')->count();
-        $per_month = $payments
-            ->whereBetween('created_at', [
-                now()->startOfMonth(),
-                now()->endOfMonth()
-            ])
-            ->sum('amount');
-        $all_time = $payments->sum('amount');
-
-        $recentPayments = $payments->map(function ($payment) {
-            return [
-                'id' => $payment->id,
-                'amount' => $payment->amount,
-                'currency' => strtoupper($payment->currency ?? $payment->membership->currency ?? 'GBP'),
-                'status' => $payment->status,
-                'created_at' => $payment->created_at->format('d M Y h:i A'),
-                'membership' => [
-                    'title' => ucfirst($payment->membership->level ?? 'Membership'),
-                    'price' => $payment->membership->price ?? 0,
-                    'type' => $payment->recurring_type ?? 'monthly',
-                    'thumbnail' => $payment->membership->perma_link ?? null,
-                ],
-                'user' => [
-                    'name' => $payment->user->name ?? 'Guest',
-                    'username' => $payment->user->username ?? '',
-                    'email' => $payment->user->email ?? '',
-                    'avatar' => $payment->user->avatar ?? null,
-                ]
-            ];
-        });
-
-        return response()->json([
-            'status' => true,
-            'data' => [
-                'members' => $count,
-                'per_month' => round($per_month, 2),
-                'all_time' => round($all_time, 2),
-                'payments' => $recentPayments
+    $recentPayments = $payments->map(function ($payment) {
+        return [
+            'id' => $payment->id,
+            'amount' => $payment->amount,
+            'currency' => strtoupper($payment->currency ?? $payment->membership->currency ?? 'GBP'),
+            'status' => $payment->status,
+            'created_at' => $payment->created_at->format('d M Y h:i A'),
+            'membership' => [
+                'title' => ucfirst($payment->membership->level ?? 'Membership'),
+                'price' => $payment->membership->price ?? 0,
+                'type' => $payment->recurring_type ?? 'monthly',
+                'thumbnail' => $payment->membership->perma_link ?? null,
+            ],
+            'user' => [
+                'name' => $payment->user->name ?? 'Guest',
+                'username' => $payment->user->username ?? '',
+                'email' => $payment->user->email ?? '',
+                'avatar' => $payment->user->avatar ?? null,
             ]
-        ]);
-    }
-
-    // Page method for All Payments
-    public function allPaymentsPage()
-    {
-        return inertia('membership/AllMembershipPayments');
-    }
-
-    // Keep this as API method
-    public function getAllMembershipPayments()
-    {
-        $user = User::find(Auth::id());
-
-        $payments = MembershipPayment::with([
-            'membership:id,user_id,level,price,currency',
-            'user:id,name,username,email,avatar'
-        ])
-            ->whereHas('membership', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->where('status', 'paid')
-            ->latest()
-            ->get();
-
-        $formattedPayments = $payments->map(function ($payment) {
-            return [
-                'id' => $payment->id,
-                'amount' => $payment->amount,
-                'currency' => strtoupper($payment->currency ?? $payment->membership->currency ?? 'GBP'),
-                'status' => $payment->status,
-                'created_at' => $payment->created_at->format('d M Y h:i A'),
-                'membership' => [
-                    'title' => ucfirst($payment->membership->level ?? 'Membership'),
-                    'price' => $payment->membership->price ?? 0,
-                    'type' => $payment->recurring_type ?? 'monthly',
-                    'thumbnail' => $payment->membership->perma_link ?? null,
-                ],
-                'user' => [
-                    'name' => $payment->user->name ?? 'Guest',
-                    'username' => $payment->user->username ?? '',
-                    'email' => $payment->user->email ?? '',
-                    'avatar' => $payment->user->avatar ?? null,
-                ]
-            ];
-        });
-
-        $stats = [
-            'total_members' => $payments->unique('user_id')->count(),
-            'total_earnings' => round($payments->sum('amount'), 2),
-            'average_amount' => round($payments->avg('amount') ?? 0, 2)
         ];
+    });
 
-        return response()->json([
-            'status' => true,
-            'payments' => $formattedPayments,
-            'stats' => $stats
-        ]);
-    }
+    return response()->json([
+        'status' => true,
+        'data' => [
+            'members' => $count,
+            'per_month' => round($per_month, 2),
+            'all_time' => round($all_time, 2),
+            'payments' => $recentPayments
+        ]
+    ]);
+}
+
+// Page method for All Payments
+public function allPaymentsPage()
+{
+    return inertia('membership/AllMembershipPayments');
+}
+
+// Keep this as API method
+public function getAllMembershipPayments()
+{
+    $user = User::find(Auth::id());
+
+    $payments = MembershipPayment::with([
+        'membership:id,user_id,level,price,currency',
+        'user:id,name,username,email,avatar'
+    ])
+        ->whereHas('membership', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })
+        ->where('status', 'paid')
+        ->latest()
+        ->get();
+
+    $formattedPayments = $payments->map(function ($payment) {
+        return [
+            'id' => $payment->id,
+            'amount' => $payment->amount,
+            'currency' => strtoupper($payment->currency ?? $payment->membership->currency ?? 'GBP'),
+            'status' => $payment->status,
+            'created_at' => $payment->created_at->format('d M Y h:i A'),
+            'membership' => [
+                'title' => ucfirst($payment->membership->level ?? 'Membership'),
+                'price' => $payment->membership->price ?? 0,
+                'type' => $payment->recurring_type ?? 'monthly',
+                'thumbnail' => $payment->membership->perma_link ?? null,
+            ],
+            'user' => [
+                'name' => $payment->user->name ?? 'Guest',
+                'username' => $payment->user->username ?? '',
+                'email' => $payment->user->email ?? '',
+                'avatar' => $payment->user->avatar ?? null,
+            ]
+        ];
+    });
+
+    $stats = [
+        'total_members' => $payments->unique('user_id')->count(),
+        'total_earnings' => round($payments->sum('amount'), 2),
+        'average_amount' => round($payments->avg('amount') ?? 0, 2)
+    ];
+
+    return response()->json([
+        'status' => true,
+        'payments' => $formattedPayments,
+        'stats' => $stats
+    ]);
+}
 
     // public function membershipDashboard()
     // {
