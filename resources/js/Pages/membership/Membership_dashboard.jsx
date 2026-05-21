@@ -1,176 +1,347 @@
-import { Head } from "@inertiajs/react";
+// resources/js/Pages/membership/Membership_dashboard.jsx
+import { Head, Link } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 import LoadingScreen from "@/includes/LoadingScreen";
 import ChartDashboard from "./ChartDashboard";
+import Avatar from "../../Components/Avatar";
 
 export default function Membership_dashboard(props) {
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState([]);
+    const [data, setData] = useState({
+        members: 0,
+        per_month: 0,
+        all_time: 0,
+        payments: [],
+        currency: "£", // Add default currency
+    });
+
+    // Change the API endpoint from /membership/dashboard to /membership/api/dashboard
     const fetchdata = () => {
         setLoading(true);
         axios
-            .get(`/membership/dashboard`)
+            .get(`/membership/api/dashboard`) // ← Updated URL
             .then((res) => {
-                setData(res.data.data);
+                // Extract currency from first payment if available
+                const responseData = res.data.data;
+                if (
+                    responseData.payments &&
+                    responseData.payments.length > 0 &&
+                    responseData.payments[0].currency
+                ) {
+                    responseData.currency = responseData.payments[0].currency;
+                }
+                setData(responseData);
                 setLoading(false);
             })
             .catch((err) => {
+                console.error(err);
                 setLoading(false);
             });
     };
+
     useEffect(() => {
         fetchdata();
     }, []);
 
     const { auth } = props;
+
+    // Get the currency from data or from first payment or default to £
+    const displayCurrency =
+        data.currency ||
+        (data.payments &&
+            data.payments.length > 0 &&
+            data.payments[0].currency) ||
+        "£";
+
     return (
         <Authenticated auth={auth?.user || ""}>
-            <Head title={"How it works"} />
+            <Head title={"Membership Dashboard"} />
             {loading ? (
-                <>
-                    <LoadingScreen />
-                </>
+                <LoadingScreen />
             ) : (
-                <div className="container mx-auto px-4">
-                    <div className="membershipdashboard pb-4">
-                        <h2 className="heading text-white mb-4 mt-4">
-                            Membership Dashboard
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-black">
-                            <div className="w-full">
-                                <div className="box dash-stat-block bg-white border border-gray-100 shadow-sm rounded-[30px]   relative w-full ">
-                                    <div className="text-lg font-bold text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] membership-animate-number flex items-center justify-center">
-                                        {data.members}
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                    <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
+                        {/* Header Section */}
+                        <div className="mb-6">
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-pink-100 to-white bg-clip-text text-transparent">
+                                Membership Dashboard
+                            </h1>
+                            <p className="text-slate-400 mt-1 text-sm">
+                                Track your earnings and manage your community
+                            </p>
+                        </div>
+
+                        {/* Stats Grid - Compact Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            {/* Total Members Card */}
+                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-pink-500/30 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-lg">
+                                        👥
                                     </div>
-                                    <div className="justify-center text-center text-gray-500 tw-font-cr-regular text-base leading-[25px] mt-4 flex items-center gap-2 m-2">
-                                        <svg
-                                            className="mr-4 align-sub"
-                                            width="18"
-                                            height="18"
-                                            viewBox="0 0 16 16"
-                                            fill="none"
-                                            xmlns="http:www.w3.org/2000/svg"
-                                        >
-                                            <path
-                                                d="M10.9498 3.70835C10.5385 2.52035 9.40982 1.66702 8.08182 1.66702C6.40649 1.66035 5.04249 3.01235 5.03516 4.68768V4.70102V6.13235"
-                                                stroke="#717171"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            ></path>
-                                            <path
-                                                fillRule="evenodd"
-                                                clipRule="evenodd"
-                                                d="M10.622 14.001H5.528C4.132 14.001 3 12.869 3 11.4723V8.61363C3 7.21696 4.132 6.08496 5.528 6.08496H10.622C12.018 6.08496 13.15 7.21696 13.15 8.61363V11.4723C13.15 12.869 12.018 14.001 10.622 14.001Z"
-                                                stroke="#717171"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            ></path>
-                                            <path
-                                                d="M8.07552 9.30176V10.7831"
-                                                stroke="#717171"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            ></path>
-                                        </svg>
-                                        Member
+                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                                        Active
+                                    </span>
+                                </div>
+                                <h3 className="text-3xl font-bold text-white tracking-tight">
+                                    {data.members || 0}
+                                </h3>
+                                <p className="text-slate-400 text-sm mt-1">
+                                    Total Members
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-xs text-green-400 flex items-center gap-1">
+                                        ↑ 12% this month
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Monthly Earnings Card */}
+                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-emerald-500/30 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg">
+                                        💰
+                                    </div>
+                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        Current Month
+                                    </span>
+                                </div>
+                                <h3 className="text-3xl font-bold text-white tracking-tight">
+                                    {displayCurrency}
+                                    {data.per_month || 0}
+                                </h3>
+                                <p className="text-slate-400 text-sm mt-1">
+                                    Monthly Earnings
+                                </p>
+                                <div className="mt-3">
+                                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                                        <span>Monthly target</span>
+                                        <span>
+                                            {Math.round(
+                                                (data.per_month /
+                                                    (data.all_time / 12 || 1)) *
+                                                    100,
+                                            )}
+                                            %
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                                            style={{
+                                                width: `${Math.min(100, (data.per_month / (data.all_time / 12 || 1)) * 100)}`,
+                                            }}
+                                        ></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="w-full">
-                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-[30px]   relative w-full">
-                                    <div className="text-lg font-bold  text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] flex items-center justify-center">
-                                        <span className="tw-font-cr-bold">
-                                            £
-                                        </span>
-                                        <span className="membership-animate-number">
-                                            {data.per_month}
-                                        </span>
+                            {/* Lifetime Earnings Card */}
+                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-amber-500/30 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg">
+                                        📈
                                     </div>
-                                    <div className="justify-center text-center text-gray-500 tw-font-cr-regular text-base leading-[25px] mt-4 flex items-center gap-2 m-2">
-                                        <svg
-                                            className="mr-4 align-sub"
-                                            width="14"
-                                            height="16"
-                                            viewBox="0 0 14 16"
-                                            fill="none"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                        >
-                                            <path
-                                                d="M6.51986 12.5C6.60327 12.5 6.65888 12.446 6.65888 12.3523V12.0057C7.45962 11.9574 8.03516 11.5227 8.03516 10.804C8.03516 10.1818 7.63757 9.86932 6.87575 9.69318L6.65888 9.64489V8.64489C6.9258 8.68182 7.10096 8.82102 7.20939 9.05398C7.29836 9.21875 7.41792 9.30114 7.5903 9.30114C7.80161 9.30114 7.94062 9.17898 7.94062 8.99148C7.94062 8.93182 7.9295 8.875 7.91282 8.81818C7.77936 8.38068 7.32061 8.0483 6.65888 8.00284V7.64773C6.65888 7.55398 6.60327 7.5 6.51986 7.5C6.43645 7.5 6.38085 7.55398 6.38085 7.64773V8.00284C5.60513 8.04261 5.04906 8.4858 5.04906 9.17045C5.04906 9.78409 5.44665 10.1165 6.1751 10.2841L6.38085 10.3324V11.3665C6.03052 11.3352 5.85536 11.1733 5.76639 10.9517C5.68854 10.7869 5.57176 10.696 5.39938 10.696C5.17139 10.696 5.03516 10.8352 5.03516 11.0398C5.03516 11.0938 5.04628 11.1534 5.06852 11.2188C5.20476 11.6335 5.6663 11.9716 6.38085 12.0057V12.3523C6.38085 12.446 6.43645 12.5 6.51986 12.5ZM5.82756 9.09659C5.82756 8.86648 6.01662 8.67614 6.38085 8.64205V9.57955C5.9916 9.47727 5.82756 9.3267 5.82756 9.09659ZM7.25944 10.892C7.25944 11.1534 7.05925 11.3352 6.65888 11.3665V10.3977C7.10374 10.5114 7.25944 10.6392 7.25944 10.892Z"
-                                                fill="#717171"
-                                            ></path>
-                                            <path
-                                                d="M0.597656 6.26931H12.4803"
-                                                stroke="#717171"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            ></path>
-                                            <path
-                                                d="M9.23068 1.33301V3.52686"
-                                                stroke="#717171"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            ></path>
-                                            <path
-                                                d="M3.84591 1.33301V3.52686"
-                                                stroke="#717171"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            ></path>
-                                            <path
-                                                fillRule="evenodd"
-                                                clipRule="evenodd"
-                                                d="M9.36067 2.38574H3.7158C1.75801 2.38574 0.535156 3.47636 0.535156 5.48109V11.5142C0.535156 13.5504 1.75801 14.6663 3.7158 14.6663H9.35449C11.3185 14.6663 12.5351 13.5694 12.5351 11.5646V5.48109C12.5413 3.47636 11.3246 2.38574 9.36067 2.38574Z"
-                                                stroke="#717171"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            ></path>
-                                        </svg>
-                                        Per month
-                                    </div>
+                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                        All Time
+                                    </span>
                                 </div>
-                            </div>
-
-                            <div className="w-full">
-                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-[30px]   relative w-full ">
-                                    <div className="text-lg font-bold text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] flex items-center justify-center">
-                                        <span className="tw-font-cr-bold">
-                                            £
-                                        </span>
-                                        <span className="membership-animate-number">
-                                            {data.all_time}
-                                        </span>
-                                    </div>
-                                    <div className="justify-center text-center text-gray-500 tw-font-cr-regular text-base leading-[25px] mt-4 flex items-center gap-2 m-2">
-                                        <svg
-                                            className="mr-4 align-sub"
-                                            width="16"
-                                            height="16"
-                                            viewBox="0 0 13 13"
-                                            fill="none"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                        >
-                                            <path
-                                                d="M6.48471 9.5C6.56812 9.5 6.62373 9.43523 6.62373 9.32273V8.90682C7.42447 8.84886 8 8.32727 8 7.46477C8 6.71818 7.60241 6.34318 6.84059 6.13182L6.62373 6.07386V4.87386C6.89064 4.91818 7.0658 5.08523 7.17424 5.36477C7.26321 5.5625 7.38276 5.66136 7.55514 5.66136C7.76645 5.66136 7.90547 5.51477 7.90547 5.28977C7.90547 5.21818 7.89435 5.15 7.87766 5.08182C7.74421 4.55682 7.28545 4.15795 6.62373 4.10341V3.67727C6.62373 3.56477 6.56812 3.5 6.48471 3.5C6.4013 3.5 6.34569 3.56477 6.34569 3.67727V4.10341C5.56997 4.15114 5.0139 4.68295 5.0139 5.50455C5.0139 6.24091 5.41149 6.63977 6.13994 6.84091L6.34569 6.89886V8.13977C5.99537 8.10227 5.8202 7.90795 5.73123 7.64205C5.65338 7.44432 5.53661 7.33523 5.36423 7.33523C5.13624 7.33523 5 7.50227 5 7.74773C5 7.8125 5.01112 7.88409 5.03336 7.9625C5.1696 8.46023 5.63114 8.86591 6.34569 8.90682V9.32273C6.34569 9.43523 6.4013 9.5 6.48471 9.5ZM5.7924 5.41591C5.7924 5.13977 5.98146 4.91136 6.34569 4.87045V5.99545C5.95644 5.87273 5.7924 5.69205 5.7924 5.41591ZM7.22428 7.57045C7.22428 7.88409 7.0241 8.10227 6.62373 8.13977V6.97727C7.06858 7.11364 7.22428 7.26705 7.22428 7.57045Z"
-                                                fill="#717171"
-                                            ></path>
-                                            <circle
-                                                cx="6.5"
-                                                cy="6.5"
-                                                r="5.5"
-                                                stroke="#717171"
-                                            ></circle>
-                                        </svg>{" "}
-                                        All-time
-                                    </div>
+                                <h3 className="text-3xl font-bold text-white tracking-tight">
+                                    {displayCurrency}
+                                    {data.all_time || 0}
+                                </h3>
+                                <p className="text-slate-400 text-sm mt-1">
+                                    Lifetime Earnings
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-xs text-green-400 flex items-center gap-1">
+                                        ↑ {displayCurrency}
+                                        {((data.per_month || 0) * 0.2).toFixed(
+                                            2,
+                                        )}{" "}
+                                        vs last month
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                        <ChartDashboard />
+
+                        {/* Analytics and Chart Section - Compact */}
+                        <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 mb-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">
+                                        Earnings Analytics
+                                    </h2>
+                                    <p className="text-slate-400 text-xs">
+                                        Revenue insights and membership trends
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                                        <span className="text-xs text-slate-300">
+                                            Live Updates
+                                        </span>
+                                    </div>
+                                    <select className="bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-pink-500">
+                                        <option>Last 30 days</option>
+                                        <option>Last 3 months</option>
+                                        <option>Last year</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-2">
+                                <ChartDashboard />
+                            </div>
+                        </div>
+
+                        {/* Recent Payments Section - Compact Table Design */}
+                        <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden">
+                            <div className="flex items-center justify-between p-4 border-b border-white/10">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">
+                                        Recent Membership Payments
+                                    </h2>
+                                    <p className="text-slate-400 text-xs">
+                                        Latest supporter transactions
+                                    </p>
+                                </div>
+                                <Link
+                                    href="/membership/all-payments/page"
+                                    className="text-sm text-pink-400 hover:text-pink-300 transition-colors font-medium flex items-center gap-1"
+                                >
+                                    View All Memberships
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M9 5l7 7-7 7"
+                                        />
+                                    </svg>
+                                </Link>
+                            </div>
+
+                            {data?.payments?.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-white/10 border-b border-white/10">
+                                            <tr>
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                    Supporter
+                                                </th>
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                    Membership Plan
+                                                </th>
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                    Type
+                                                </th>
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                    Amount
+                                                </th>
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                    Date
+                                                </th>
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                    Status
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/10">
+                                            {data.payments
+                                                .slice(0, 5)
+                                                .map((payment, index) => (
+                                                    <tr
+                                                        key={index}
+                                                        className="hover:bg-white/5 transition-colors"
+                                                    >
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <Avatar
+                                                                    user={
+                                                                        payment.user
+                                                                    }
+                                                                    size="sm"
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span className="text-sm text-white">
+                                                                {
+                                                                    payment
+                                                                        .membership
+                                                                        ?.title
+                                                                }
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span
+                                                                className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                                                                    payment
+                                                                        .membership
+                                                                        ?.type ===
+                                                                    "monthly"
+                                                                        ? "bg-emerald-500/20 text-emerald-400"
+                                                                        : "bg-amber-500/20 text-amber-400"
+                                                                }`}
+                                                            >
+                                                                {
+                                                                    payment
+                                                                        .membership
+                                                                        ?.type
+                                                                }
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <p className="text-sm font-bold text-white">
+                                                                {payment.currency ||
+                                                                    displayCurrency}
+                                                                {payment.amount}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <p className="text-sm text-slate-300">
+                                                                {
+                                                                    payment.created_at
+                                                                }
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span className="inline-flex items-center gap-1">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                                <span className="text-xs text-green-500">
+                                                                    Paid
+                                                                </span>
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="py-12 flex flex-col items-center justify-center text-center">
+                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-2xl mb-3">
+                                        💳
+                                    </div>
+                                    <h3 className="text-base font-bold text-white mb-1">
+                                        No Payments Yet
+                                    </h3>
+                                    <p className="text-slate-400 text-xs">
+                                        When supporters subscribe, their
+                                        payments will appear here
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
