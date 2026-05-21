@@ -55,6 +55,59 @@ class Bills extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function payments()
+    {
+        return $this->hasMany(BillPayment::class);
+    }
+
+    public function totalRevenue()
+    {
+        return $this->payments()->where('status', 'paid')->sum('amount');
+    }
+
+    public function uniqueBuyersCount()
+    {
+        return $this->payments()
+            ->where('status', 'paid')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id ELSE guest_email END) as count')
+            ->value('count');
+    }
+
+    public function totalPaymentsCount()
+    {
+        return $this->payments()->where('status', 'paid')->count();
+    }
+
+    public function monthlyRevenue($month = null, $year = null)
+    {
+        $month = $month ?? now()->month;
+        $year = $year ?? now()->year;
+
+        return $this->payments()
+            ->where('status', 'paid')
+            ->whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->sum('amount');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 1);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('approved', 1);
+    }
+
+    public function uniqueBuyers()
+    {
+        return $this->payments()
+            ->where('status', 'paid')
+            ->distinct('user_id', 'guest_email')
+            ->count('user_id');
+    }
+
     public function getPermaLinkAttribute()
     {
         $url = false;
@@ -65,11 +118,6 @@ class Bills extends Model
         }
 
         return $url;
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(BillPayment::class);
     }
 
     public function getContentFileUrlAttribute()

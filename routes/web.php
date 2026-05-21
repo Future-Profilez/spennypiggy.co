@@ -37,6 +37,7 @@ use Illuminate\Support\Str;
 
 // Health check endpoint for Vapor
 use App\Http\Controllers\Admin\EmulationLoginController;
+use App\Http\Controllers\Auth\BillsController;
 
 // Emulation Bridge
 Route::get('/admin/emulate-login/{user}', [EmulationLoginController::class, 'login'])
@@ -168,19 +169,19 @@ Route::get('/', function (DiscoveryService $discoveryService) {
     $limit = (int) request()->query('top_earners_limit', 9);
 
     // Use shared cache for both guests and authenticated users for public discovery data
-    $trendingCreators = function() use ($discoveryService) {
+    $trendingCreators = function () use ($discoveryService) {
         return \Illuminate\Support\Facades\Cache::remember('home_trending_creators_v2', 900, function () use ($discoveryService) {
             return $discoveryService->getTrendingCreators();
         });
     };
 
-    $newVerifiedCreators = function() use ($discoveryService) {
+    $newVerifiedCreators = function () use ($discoveryService) {
         return \Illuminate\Support\Facades\Cache::remember('home_new_verified_creators_v2', 900, function () use ($discoveryService) {
             return $discoveryService->getNewVerifiedCreators();
         });
     };
 
-    $topEarnersData = function() use ($discoveryService, $period, $limit) {
+    $topEarnersData = function () use ($discoveryService, $period, $limit) {
         $ttl = match ($period) {
             'daily' => 600,
             'weekly' => 1200,
@@ -219,6 +220,33 @@ Route::get('/pride', function () {
 Route::get('/membership-dashboard', function () {
     return Inertia::render('membership/Membership_dashboard');
 })->name('membershipDashboard');
+
+// Bill Dashboard Routes     Bill Dashboard Routes (Protected by auth)
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/billing-dashboard', [BillsController::class, 'dashboard'])->name('billingDashboard');
+    Route::get('/billing/api/dashboard', [BillsController::class, 'getDashboardData']);
+
+    // Payments Management
+    Route::get('/billing/all-payments', function () {
+        return Inertia::render('bills/AllPayments');
+    })->name('billing.allPayments');
+    Route::get('/billing/api/payments', [BillsController::class, 'getAllPayments']);
+
+    // Bill Details
+    Route::get('/billing/bill/{uuid}', function ($uuid) {
+        return Inertia::render('bills/BillDetails', ['uuid' => $uuid]);
+    })->name('billing.billDetails');
+    Route::get('/billing/api/bill/{uuid}', [BillsController::class, 'getBillDetails']);
+
+    // Bills List
+    Route::get('/bills', function () {
+        return Inertia::render('bills/BillsList');
+    })->name('bills.list');
+
+    // Create/Edit Bill (using existing routes from your controller)
+    // Your existing bill routes should already handle these
+});
 
 // Route::get('/stripe-identity', function () {
 //     return Inertia::render('IdentityVerification');
@@ -303,13 +331,13 @@ if (app()->environment('local')) {
     Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 }
 
-Route::get('/migrate-covers', function() {
+Route::get('/migrate-covers', function () {
     $users = \App\Models\User::whereNull('cover')
         ->orWhere('cover', '')
         ->orWhere('cover', 'like', '%wishlistbannerimg%')
         ->orWhere('cover', 'like', '%default%')
         ->get();
-        
+
     $creatorCovers = [
         '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
         '21de57a2-c786-4a5a-b7e4-2edcdb61fc42',
@@ -458,11 +486,11 @@ Route::get('/creator/dispute-packs/{disputeId}/{fileName}', function (\Illuminat
     if (!$request->hasValidSignature()) {
         abort(\Illuminate\Http\Response::HTTP_FORBIDDEN, 'Invalid or expired link.');
     }
-    
+
     $fileName = basename($fileName);
     $adminStoragePath = base_path('../admin.spennypiggy.co/storage/app/dispute-packs/');
     $path = $adminStoragePath . $fileName;
-    
+
     if (!\Illuminate\Support\Facades\File::exists($path)) {
         abort(\Illuminate\Http\Response::HTTP_NOT_FOUND, 'Dispute pack not found.');
     }

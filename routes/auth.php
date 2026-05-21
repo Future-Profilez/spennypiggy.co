@@ -183,7 +183,7 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
 
 // Discover route
 Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
-    $getData = function() use ($request, $discoveryService, $type, $category) {
+    $getData = function () use ($request, $discoveryService, $type, $category) {
         $filters = $request->only(['search', 'contentType']);
         // Normalize type and apply shortcut filters
         if ($type) {
@@ -342,7 +342,15 @@ Route::middleware('auth')->group(function () {
             Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
             Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
-            Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
+
+            // Page routes (returns Inertia views)
+            Route::get('dashboard', [MembershipController::class, 'membershipDashboardPage'])->name('dashboard');
+            Route::get('all-payments/page', [MembershipController::class, 'allPaymentsPage'])->name('all-payments.page');
+
+            // API routes (returns JSON)
+            Route::get('api/dashboard', [MembershipController::class, 'membershipDashboardData'])->name('api.dashboard');
+            Route::get('api/all-payments', [MembershipController::class, 'getAllMembershipPayments'])->name('api.all-payments');
+
             Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
             Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout.auth');
             Route::get('handle/{uuid}/{status?}', [MembershipController::class, 'handlePayment'])->name('handle.auth');

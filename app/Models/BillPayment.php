@@ -66,6 +66,27 @@ class BillPayment extends Model
         return $this->belongsTo(Bills::class, 'bills_id');
     }
 
+    public function creator()
+    {
+        return $this->hasOneThrough(User::class, Bills::class, 'id', 'id', 'bills_id', 'user_id');
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->where('status', 'paid');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeThisMonth($query)
+    {
+        return $query->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year);
+    }
+
     public function getSenderAttribute()
     {
         $sender = false;

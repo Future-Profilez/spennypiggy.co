@@ -1,5 +1,7 @@
+// resources/js/includes/Header.jsx
+
 import { Link, usePage, router } from "@inertiajs/react";
-import { route } from 'ziggy-js';
+import { route } from "ziggy-js";
 import spennypiggy from "../../assets/img/logo.png";
 import { useState, useEffect, useCallback, useRef } from "react";
 import DeviceID from "./DeviceID";
@@ -8,15 +10,15 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import ChangeCurrency from "@/Components/ChangeCurrency";
 
-import { 
-    SettingsIcon, 
-    HeartIcon, 
-    ShoppingBagIcon, 
-    ClipboardIcon, 
-    HandCoinsIcon, 
-    ShieldCheckIcon, 
-    SearchIcon, 
-    MenuIcon, 
+import {
+    SettingsIcon,
+    HeartIcon,
+    ShoppingBagIcon,
+    ClipboardIcon,
+    HandCoinsIcon,
+    ShieldCheckIcon,
+    SearchIcon,
+    MenuIcon,
     ShoppingCartIcon,
     XIcon,
     LogoutIcon,
@@ -26,28 +28,33 @@ import {
     HouseIcon,
     InfoIcon,
 } from "@animateicons/react/lucide";
-import { 
-    Calendar, 
+import {
+    Calendar,
     Shield as ShieldIcon,
-    FileText as FileTextIcon
 } from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
+import { FaFileInvoice } from "react-icons/fa";
 
 export default function Header({ classMagicword }) {
     const { global_currency, auth } = usePage().props;
     const { url } = usePage();
 
-
     const getNavLinkClass = (path) => {
         let pathName = path;
-        if (typeof path === 'string' && path.startsWith('http')) {
-            try { pathName = new URL(path).pathname; } catch(e) {}
+        if (typeof path === "string" && path.startsWith("http")) {
+            try {
+                pathName = new URL(path).pathname;
+            } catch (e) {}
         }
-        const isActive = url === pathName || (typeof pathName === 'string' && pathName !== '/' && url.startsWith(pathName));
+        const isActive =
+            url === pathName ||
+            (typeof pathName === "string" &&
+                pathName !== "/" &&
+                url.startsWith(pathName));
         return `relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] pr-6 border-l-4 transition-all duration-200 ${
-            isActive 
-            ? "border-indigo-500 text-white bg-white/10" 
-            : "border-transparent hover:border-indigo-500 text-white/90 hover:text-white"
+            isActive
+                ? "border-indigo-500 text-white bg-white/10"
+                : "border-transparent hover:border-indigo-500 text-white/90 hover:text-white"
         }`;
     };
 
@@ -78,7 +85,6 @@ export default function Header({ classMagicword }) {
         const deltaX = Math.abs(touch.clientX - menuTouchStartRef.current.x);
         const deltaY = Math.abs(touch.clientY - menuTouchStartRef.current.y);
 
-        // Finger movement means user is scrolling the drawer, not tapping a link.
         if (deltaX > 8 || deltaY > 8) {
             suppressMenuClickUntilRef.current = Date.now() + 350;
         }
@@ -97,16 +103,11 @@ export default function Header({ classMagicword }) {
         }
     }, [deviceid, dispatch, auth?.user?.id]);
 
-    // Listen to global cart counter refresh events
     useEffect(() => {
         const handleCartCounterRefresh = (event) => {
-            if (event.detail.counter !== undefined) {
-                // setCount(event.detail.counter);
-                // dispatch(add_to_cart(event.detail.counter));
-            }
+            // handle if needed
         };
 
-        // Add event listener for global cart counter refresh
         window.addEventListener(
             "cartCounterRefreshed",
             handleCartCounterRefresh,
@@ -120,25 +121,31 @@ export default function Header({ classMagicword }) {
         };
     }, [fetchCounter, dispatch]);
 
-    const NavLinkWithIcon = ({ href, icon: Icon, label, onClick, activeColor, isExternal = false, ...props }) => {
+    const NavLinkWithIcon = ({
+        href,
+        icon: Icon,
+        label,
+        onClick,
+        activeColor,
+        isExternal = false,
+        ...props
+    }) => {
         const iconRef = useRef(null);
         const timeoutRef = useRef(null);
-        const Component = isExternal ? 'a' : Link;
+        const Component = isExternal ? "a" : Link;
 
         useEffect(() => {
             const startLoop = () => {
                 if (iconRef.current) {
                     iconRef.current.startAnimation?.();
                 }
-                // Schedule next animation with some randomness (4-7 seconds) for a natural feel
                 const nextDelay = 4000 + Math.random() * 3000;
                 timeoutRef.current = setTimeout(startLoop, nextDelay);
             };
-            
-            // Initial random delay to stagger animations
+
             const initialDelay = Math.random() * 3000;
             const initialTimeout = setTimeout(startLoop, initialDelay);
-            
+
             return () => {
                 clearTimeout(initialTimeout);
                 if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -151,7 +158,6 @@ export default function Header({ classMagicword }) {
                 e.stopPropagation();
                 return;
             }
-
             onClick?.(e);
         };
 
@@ -162,7 +168,9 @@ export default function Header({ classMagicword }) {
                     href={href}
                     onMouseEnter={() => iconRef.current?.startAnimation?.()}
                     className={`${getNavLinkClass(href)} rounded-xl border-[3px] border-transparent hover:border-black ${activeColor} hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                    {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    {...(isExternal
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
                     {...props}
                 >
                     <span className="inline-flex justify-center items-center ml-2">
@@ -185,16 +193,13 @@ export default function Header({ classMagicword }) {
         <>
             <div className="blackbg headermain fixed top-0 left-0 w-full z-[100] py-4 ">
                 <div className="container mx-auto px-4">
-                    <div className="header flex w-full items-center  justify-between ">
+                    <div className="header flex w-full items-center justify-between ">
                         <div className="md:flex hidden leftspaces items-center justify-start">
                             <div
-                                className=" menu-toggle cursor-pointer cartLink relative"
+                                className="menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
-                                <MenuIcon
-                                    size={48}
-                                    color="#FF007F"
-                                />
+                                <MenuIcon size={48} color="#FF007F" />
                             </div>
                             <Link
                                 className="hidden md:block focus:border-0 ml-3 text-[30px]"
@@ -225,14 +230,11 @@ export default function Header({ classMagicword }) {
                         </div>
 
                         <div className="leftspaces cartLogin">
-                            {/* {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) :
-                                router.page && router.page && router.page.component == "Dashboard" ? ( */}
                             <ChangeCurrency
                                 defaultvalue={global_currency}
                                 changer={true}
                             />
 
-                            {/* {auth && auth.user ? <Notifications /> : ""} */}
                             {auth && auth.user ? (
                                 <div className="ms-3">
                                     <MagicBellNotification
@@ -246,13 +248,10 @@ export default function Header({ classMagicword }) {
                             <Link
                                 title="Discover"
                                 href={route("discover")}
-                                className="ms-2 md:ms-3 discover-icon  "
+                                className="ms-2 md:ms-3 discover-icon"
                             >
                                 <div className="bg-[#FF007F] rounded-full !p-3 md:!p-2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                                    <SearchIcon
-                                        // size={28}
-                                        color="#ffffff"
-                                    />
+                                    <SearchIcon color="#ffffff" />
                                 </div>
                             </Link>
 
@@ -267,9 +266,7 @@ export default function Header({ classMagicword }) {
                                 }`}
                             >
                                 <div className="bg-[#FF007F] p-3 md:p-2 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                                    <ShoppingCartIcon
-                                        color="#ffffff"
-                                    />
+                                    <ShoppingCartIcon color="#ffffff" />
                                 </div>
                                 {count > 0 ? (
                                     <span className="site-counter block">
@@ -286,15 +283,15 @@ export default function Header({ classMagicword }) {
                                 <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
-                                        className="bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
+                                        className="bg-white uppercase text-lg font-gulfs rounded-full px-4 py-2"
                                     >
-                                        Login 
+                                        Login
                                     </Link>
                                     <Link
                                         href={route("register")}
-                                        className=" btn-shadow  hidden xl:block bg-[#FF007F] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
+                                        className="btn-shadow hidden xl:block bg-[#FF007F] text-white uppercase text-lg font-gulfs rounded-full px-4 py-2"
                                     >
-                                        Sign Up{" "}
+                                        Sign Up
                                     </Link>
                                 </div>
                             )}
@@ -302,10 +299,7 @@ export default function Header({ classMagicword }) {
                                 className="block ps-2 mt-[10px] me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
-                                <MenuIcon
-                                    size={48}
-                                    color="#05EFB8"
-                                />
+                                <MenuIcon size={48} color="#05EFB8" />
                             </div>
                         </div>
                     </div>
@@ -315,11 +309,9 @@ export default function Header({ classMagicword }) {
 
             {isActive ? (
                 <div
-                    className={`fixed top-0 z-[1000001] h-full w-full  rounded-r-xl
+                    className={`fixed top-0 z-[1000001] h-full w-full rounded-r-xl
                     transform transition-transform duration-600 ease-in-out
-                     {isActive ? 'opacity-100' : '-opacity-100'}
-                    flex flex-col p-8 bg-[#0008]
-                    select-none  opacity-[0]
+                    flex flex-col p-8 bg-[#0008] select-none opacity-0
                     `}
                     onClick={toggleClass}
                 ></div>
@@ -327,39 +319,47 @@ export default function Header({ classMagicword }) {
                 ""
             )}
             <div
-                className={`fixed top-0 left-0 z-[1000002] h-full w-full md:w-[350px]  rounded-r-xl
+                className={`fixed top-0 left-0 z-[1000002] h-full w-full md:w-[350px] rounded-r-xl
                     transform transition-transform duration-500 ease-in-out 
-                    ${isActive ? "translate-x-0" : "-translate-x-full  "}
-                    flex flex-col p-8 select-none ${isActive ? "Open" : null}`} >
+                    ${isActive ? "translate-x-0" : "-translate-x-full"}
+                    flex flex-col p-8 select-none ${isActive ? "Open" : null}`}
+            >
                 <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7] max-h-screen overflow-auto w-full sm:max-w-[350px] h-full">
-                    <button 
+                    <button
                         onClick={toggleClass}
-                        className="absolute h-[45px] top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-lg p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
+                        className="absolute h-[45px] top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-lg p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20"
+                    >
                         <XIcon color="#000" size={32} />
                     </button>
                     <div
-                        className="overflow-y-auto overflow-x-hidden   flex-grow"
+                        className="overflow-y-auto overflow-x-hidden flex-grow"
                         onTouchStart={handleMenuTouchStart}
                         onTouchMove={handleMenuTouchMove}
                     >
                         <div className="pb-[110px] pt-[60px] px-2">
                             {auth?.user && (
-                                <Link 
-                                    href={route('user.show', { username: auth.user.username })}
+                                <Link
+                                    href={route("user.show", {
+                                        username: auth.user.username,
+                                    })}
                                     onClick={(e) => {
-                                        if (Date.now() < suppressMenuClickUntilRef.current) {
+                                        if (
+                                            Date.now() <
+                                            suppressMenuClickUntilRef.current
+                                        ) {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             return;
                                         }
                                         toggleClass();
                                     }}
-                                    className="flex items-center gap-4 p-4 mb-6 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:sshadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group" >
+                                    className="flex items-center gap-4 p-4 mb-6 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                                >
                                     <div className="relative">
                                         <div className="w-17 h-17 rounded-[15px] border-[3px] border-black overflow-hidden bg-pink-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-3 transition-transform">
-                                            <img 
-                                                src={auth.user.avatar_url} 
-                                                alt={auth.user.name} 
+                                            <img
+                                                src={auth.user.avatar_url}
+                                                alt={auth.user.name}
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>
@@ -374,18 +374,24 @@ export default function Header({ classMagicword }) {
                                         </span>
                                         <div className="mt-1 inline-flex items-center gap-1">
                                             <span className="text-[10px] font-black bg-[#FF007F] text-white px-1.5 py-0.5 rounded border border-black uppercase">
-                                                {auth.user.role == 1 ? 'Creator' : 'User'}
+                                                {auth.user.role == 1
+                                                    ? "Creator"
+                                                    : "User"}
                                             </span>
-                                            {auth.user.role == 1 && auth.user.default_currency && (
-                                                <span className="text-[10px] font-black bg-yellow-300 text-black px-1.5 py-0.5 rounded border border-black uppercase">
-                                                    {auth.user.default_currency}
-                                                </span>
-                                            )}
+                                            {auth.user.role == 1 &&
+                                                auth.user.default_currency && (
+                                                    <span className="text-[10px] font-black bg-yellow-300 text-black px-1.5 py-0.5 rounded border border-black uppercase">
+                                                        {
+                                                            auth.user
+                                                                .default_currency
+                                                        }
+                                                    </span>
+                                                )}
                                         </div>
                                     </div>
                                 </Link>
                             )}
-                            <ul className=" flex flex-col pt-[0px] space-y-4 ">
+                            <ul className="flex flex-col pt-[0px] space-y-4">
                                 <>
                                     {auth?.user?.username ? (
                                         <>
@@ -400,7 +406,11 @@ export default function Header({ classMagicword }) {
                                                 href={`/${auth?.user?.username || ""}`}
                                                 onClick={toggleClass}
                                                 icon={HeartIcon}
-                                                label={auth?.user?.role == 1 ? "My Wishlist" : "My Profile"}
+                                                label={
+                                                    auth?.user?.role == 1
+                                                        ? "My Wishlist"
+                                                        : "My Profile"
+                                                }
                                                 activeColor="hover:bg-[#FF007F]"
                                             />
                                             <NavLinkWithIcon
@@ -411,8 +421,10 @@ export default function Header({ classMagicword }) {
                                                 isExternal={true}
                                             />
                                         </>
-                                    ) :""}
-                                    
+                                    ) : (
+                                        ""
+                                    )}
+
                                     {auth?.user?.username && (
                                         <NavLinkWithIcon
                                             href="/shop"
@@ -423,14 +435,21 @@ export default function Header({ classMagicword }) {
                                         />
                                     )}
 
-                                    {auth && auth.user  ?
+                                    {auth && auth.user ? (
                                         <NavLinkWithIcon
-                                            href="/task/dashboard" activeColor="hover:bg-[#A2E4B8]"
-                                            onClick={toggleClass} icon={ClipboardIcon} label="Tasks"
-                                        /> 
-                                    : ''}
-                                    
-                                    {auth && auth.user && auth.user.role ==1 ? (
+                                            href="/task/dashboard"
+                                            activeColor="hover:bg-[#A2E4B8]"
+                                            onClick={toggleClass}
+                                            icon={ClipboardIcon}
+                                            label="Tasks"
+                                        />
+                                    ) : (
+                                        ""
+                                    )}
+
+                                    {auth &&
+                                    auth.user &&
+                                    auth.user.role == 1 ? (
                                         <>
                                             <NavLinkWithIcon
                                                 href="/financial/dashboard/payouts"
@@ -447,7 +466,9 @@ export default function Header({ classMagicword }) {
                                                 activeColor="hover:bg-[#ff6b6b]"
                                             />
                                             <NavLinkWithIcon
-                                                href={route('creator.disputes.index')}
+                                                href={route(
+                                                    "creator.disputes.index",
+                                                )}
                                                 onClick={toggleClass}
                                                 icon={ShieldCheckIcon}
                                                 label="Disputes Center"
@@ -455,7 +476,9 @@ export default function Header({ classMagicword }) {
                                             />
                                             {auth?.user?.role == 1 && (
                                                 <NavLinkWithIcon
-                                                    href={route('financial.dashboard')}
+                                                    href={route(
+                                                        "financial.dashboard",
+                                                    )}
                                                     onClick={toggleClass}
                                                     icon={DashboardIcon}
                                                     label="Finance & Tax"
@@ -468,6 +491,14 @@ export default function Header({ classMagicword }) {
                                                 icon={HouseIcon}
                                                 label="Membership Dashboard"
                                                 activeColor="hover:bg-[#FF007F]"
+                                            />
+                                            {/* Bill Dashboard - Using FaFileInvoice icon */}
+                                            <NavLinkWithIcon
+                                                href="/billing-dashboard"
+                                                onClick={toggleClass}
+                                                icon={FaFileInvoice}
+                                                label="Bill Dashboard"
+                                                activeColor="hover:bg-[#007BFF]"
                                             />
                                             <NavLinkWithIcon
                                                 href="/admin/feature-suggestions"
@@ -530,14 +561,13 @@ export default function Header({ classMagicword }) {
                                 />
                                 {auth?.user?.role == 1 && (
                                     <>
-                                    <NavLinkWithIcon
-                                        href="/refer-and-earn"
-                                        onClick={toggleClass}
-                                        icon={HandCoinsIcon}
-                                        label="Refer & Earn"
-                                        activeColor="hover:bg-[#A2E4B8]"
-                                    />
-                                   
+                                        <NavLinkWithIcon
+                                            href="/refer-and-earn"
+                                            onClick={toggleClass}
+                                            icon={HandCoinsIcon}
+                                            label="Refer & Earn"
+                                            activeColor="hover:bg-[#A2E4B8]"
+                                        />
                                     </>
                                 )}
 
