@@ -493,13 +493,13 @@ export default function Header({ classMagicword }) {
                                                 activeColor="hover:bg-[#FF007F]"
                                             />
                                             {/* Bill Dashboard - Using FaFileInvoice icon */}
-                                            <NavLinkWithIcon
+                                            {/* <NavLinkWithIcon
                                                 href="/billing-dashboard"
                                                 onClick={toggleClass}
                                                 icon={FaFileInvoice}
                                                 label="Bill Dashboard"
                                                 activeColor="hover:bg-[#007BFF]"
-                                            />
+                                            /> */}
                                             <NavLinkWithIcon
                                                 href="/admin/feature-suggestions"
                                                 onClick={toggleClass}
