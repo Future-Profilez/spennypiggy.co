@@ -84,6 +84,7 @@ export default function Dashboard(props) {
     const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
     const [activeId, setActiveId] = useState(null);
+    const [activePiggyPot, setActivePiggyPot] = useState(null);
 
     const activeItem = useMemo(() =>
         activeId ? wishitems.find(item => (item.id || item.uuid) === activeId) : null
@@ -1246,6 +1247,38 @@ export default function Dashboard(props) {
                                                             ""
                                                         )}
 
+                                                        {page === "piggy-pots" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                {props.piggyPots && props.piggyPots.length > 0 ? (
+                                                                    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        {props.piggyPots.map((pot) => (
+                                                                            <div key={pot.id} onClick={() => setActivePiggyPot(pot)} className="cursor-pointer bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all rounded-[30px] p-4 flex flex-col">
+                                                                                {pot.cover_media && (
+                                                                                    <div className="mb-3 rounded-2xl overflow-hidden border-2 border-black h-[160px] flex-shrink-0">
+                                                                                        <img src={pot.cover_media} className="w-full h-full object-cover" alt={pot.title} />
+                                                                                    </div>
+                                                                                )}
+                                                                                <h3 className="font-black text-xl uppercase tracking-wide text-black line-clamp-1">{pot.title}</h3>
+                                                                                <p className="text-gray-600 text-sm font-medium line-clamp-2 mt-1 min-h-[40px] flex-grow">{pot.description}</p>
+                                                                                <div className="mt-3 bg-pink-50 rounded-xl p-3 border-2 border-black flex justify-between items-center flex-shrink-0">
+                                                                                    <span className="text-xs font-black text-gray-600 uppercase tracking-wider">Target</span>
+                                                                                    <span className="font-black text-pink-600">{pot.currency} {pot.target_amount}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <Nocontent text="No active Piggy Pots." />
+                                                                )}
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
                                                         {page === "gifts" ? (
                                                             <Suspense
                                                                 fallback={
@@ -1347,6 +1380,22 @@ export default function Dashboard(props) {
                 ) : (
                     ""
                 )}
+
+                <Popup 
+                    action={!!activePiggyPot} 
+                    space="p-0" 
+                    classes="hidden"
+                    modalclass="!bg-transparent !border-none !shadow-none"
+                    hidecontrols={true}
+                    onHide={() => setActivePiggyPot(null)}
+                >
+                    {activePiggyPot && (
+                        <div className="relative">
+                            <button onClick={() => setActivePiggyPot(null)} className="absolute -top-3 -right-3 z-50 bg-white border-2 border-black rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">X</button>
+                            <PiggyPotWidget piggyPots={[activePiggyPot]} user={user} global_currency={global_currency} />
+                        </div>
+                    )}
+                </Popup>
 
                 <OldSubscribe />
             </Guest>

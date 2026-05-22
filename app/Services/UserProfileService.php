@@ -1264,7 +1264,7 @@ class UserProfileService
         return null;
     }
 
-    public function getOptimizedPiggyPots(int $userId, bool $isOwner): array
+    public function getOptimizedPiggyPots(int $userId, bool $isOwner, bool $onlyPinned = true): array
     {
         $query = \App\Models\PiggyPot::where('user_id', $userId)
             ->where('status', 'active')
@@ -1272,11 +1272,11 @@ class UserProfileService
                 $query->where('status', 'paid');
             }], 'amount');
             
-        if (!$isOwner) {
+        if (!$isOwner && $onlyPinned) {
             $query->where('is_pinned', true);
         }
         
-        $cacheKey = 'user_piggy_pots_' . $userId . '_' . ($isOwner ? 'owner' : 'public');
+        $cacheKey = 'user_piggy_pots_' . $userId . '_' . ($isOwner ? 'owner' : 'public') . '_' . ($onlyPinned ? 'pinned' : 'all');
         
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($query) {
             return $query->get()->toArray();

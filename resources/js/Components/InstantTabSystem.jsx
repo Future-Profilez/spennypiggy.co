@@ -35,6 +35,7 @@ function InstantTabSystem({
         { id: 'wishes', label: 'Wishes' },
         { id: 'shop', label: 'Shop' },
         { id: 'tasks', label: 'Tasks' },
+        { id: 'piggy-pots', label: 'Piggy Pots' },
         { id: 'memberships', label: 'Memberships' },
         { id: 'bills', label: 'Bills' },
     ];

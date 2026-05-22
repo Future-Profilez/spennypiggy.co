@@ -484,9 +484,13 @@ class AuthenticatedSessionController extends Controller
             case 'feed':
                 $data['posts'] = $this->profileService->getUserPosts($userId);
                 break;
+            case 'piggy-pots':
+                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId, false);
+                break;
+
             case 'about':
                 $data['posts'] = $this->profileService->getUserPosts($userId);
-                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId);
+                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId, true);
                 $data['piggyPotTopSupporters'] = $this->profileService->getPiggyPotTopSupporters($userId);
                 $data['piggyPotFeed'] = $this->profileService->getPiggyPotFeed($userId);
                 break;

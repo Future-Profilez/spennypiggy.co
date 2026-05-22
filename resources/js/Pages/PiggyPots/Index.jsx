@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import Popup from '../../Components/Popup';
 
-export default function Index({ auth, piggyPots }) {
+export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const { successAlert, errorAlert } = useAlerts();
 
-    const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
+    const { data, setData, post, put, delete: destroy, processing, errors, reset, clearErrors } = useForm({
         title: '',
         description: '',
         target_amount: '',
@@ -26,11 +26,30 @@ export default function Index({ auth, piggyPots }) {
         cover_media: ''
     });
 
+    const [showPotModal, setShowPotModal] = useState(false);
+    const [showSupportersId, setShowSupportersId] = useState(null);
+
+    const defaultValues = {
+        title: '',
+        description: '',
+        target_amount: '',
+        currency: auth.user.default_currency || 'GBP',
+        deadline: '',
+        is_pinned: false,
+        enable_leaderboard: true,
+        allow_anonymous: true,
+        status: 'active',
+        content_file: '',
+        content_description: '',
+        cover_media: ''
+    };
+
     const openCreateModal = () => {
         setIsEditing(false);
         setEditingId(null);
-        reset();
-        document.getElementById('piggy_pot_modal').showModal();
+        setData(defaultValues);
+        clearErrors();
+        setShowPotModal(true);
     };
 
     const openEditModal = (pot) => {
@@ -42,20 +61,22 @@ export default function Index({ auth, piggyPots }) {
             target_amount: pot.target_amount,
             currency: pot.currency,
             deadline: pot.deadline ? new Date(pot.deadline).toISOString().slice(0, 16) : '',
-            is_pinned: pot.is_pinned,
-            enable_leaderboard: pot.enable_leaderboard,
-            allow_anonymous: pot.allow_anonymous,
+            is_pinned: pot.is_pinned == 1 || pot.is_pinned === true,
+            enable_leaderboard: pot.enable_leaderboard == 1 || pot.enable_leaderboard === true,
+            allow_anonymous: pot.allow_anonymous == 1 || pot.allow_anonymous === true,
             status: pot.status,
             content_file: pot.content_file || '',
             content_description: pot.content_description || '',
             cover_media: pot.cover_media || ''
         });
-        document.getElementById('piggy_pot_modal').showModal();
+        clearErrors();
+        setShowPotModal(true);
     };
 
     const closeAndResetModal = () => {
-        document.getElementById('piggy_pot_modal').close();
-        reset();
+        setShowPotModal(false);
+        setData(defaultValues);
+        clearErrors();
     };
 
     const handleSubmit = (e) => {
@@ -105,13 +126,21 @@ export default function Index({ auth, piggyPots }) {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className='font-GillSans uppercase text-3xl'>Piggy Pots</h2>
                            
+                           <button 
+                               onClick={openCreateModal}
+                               className="text-lg w-full md:w-auto mb-2 
+                               md:mb-0 md:text-lg inline-block p-2 !px-4 
+                               border border-black rounded-[14px] 
+                               md:rounded-[16px] !text-black bg-yellow-300 
+                               shadow-[3px_3px_0px_#000]" 
+                           >
+                               + Create New Pot
+                           </button>
+
                            <Popup  size='xl'
-                           classes="text-lg w-full md:w-auto mb-2 
-                           md:mb-0 md:text-lg inline-block p-2 !px-4 
-                           border border-black rounded-[14px] 
-                           md:rounded-[16px] !text-black bg-yellow-300 
-                           shadow-[3px_3px_0px_#000]" 
-                           text={'+ Create New Pot'}
+                           classes="hidden" 
+                           action={showPotModal}
+                           onHide={closeAndResetModal}
                             >
                                     <div className=" p-6">
                                         <h3 className="font-GillSans uppercase text-3xl mb-6">{isEditing ? 'Edit Piggy Pot' : 'Create Piggy Pot'}</h3>
@@ -149,6 +178,29 @@ export default function Index({ auth, piggyPots }) {
                                             </div>
 
                                             <div className="pt-2">
+                                                <label className="block text-sm font-bold text-gray-900 mb-2">Cover Image (Optional)</label>
+                                                <p className="text-xs text-gray-500 mb-3">Upload a cover image to make your pot stand out.</p>
+                                                
+                                                <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
+                                                    {data.cover_media && (
+                                                        <div className="mb-3 p-3 bg-white border-2 border-black rounded-xl text-sm font-bold flex justify-between items-center">
+                                                            <span className="truncate">Cover Uploaded!</span>
+                                                            <button type="button" onClick={() => setData('cover_media', '')} className="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded-lg">Remove</button>
+                                                        </div>
+                                                    )}
+                                                    <div className="uploader overflow-hidden">
+                                                        <GlobalUploader
+                                                            ctxName="piggy-pot-cover"
+                                                            type="minimal"
+                                                            sendFile={(file) => setData('cover_media', file?.cdnUrl || file?.originalUrl)}
+                                                            options={st.avatar}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {errors.cover_media && <div className="text-red-500 text-xs mt-2 font-bold">{errors.cover_media}</div>}
+                                            </div>
+
+                                            <div className="pt-2 border-t-2 border-gray-200 mt-6">
                                                 <label className="block text-sm font-bold text-gray-900 mb-2">Digital Reward / Exclusive Item (Optional)</label>
                                                 <p className="text-xs text-gray-500 mb-3">Supporters will automatically receive this file after they contribute to your pot.</p>
                                                 
@@ -244,6 +296,10 @@ export default function Index({ auth, piggyPots }) {
                                                 <p className="text-xs text-gray-500 uppercase font-bold">Target</p>
                                                 <p className="font-bold text-lg text-pink-500">{pot.currency} {pot.target_amount}</p>
                                             </div>
+                                            <div className="text-center">
+                                                <p className="text-xs text-gray-500 uppercase font-bold">Raised</p>
+                                                <p className="font-bold text-lg text-pink-500">{pot.currency} {parseFloat((pot.total_raised || 0)/100).toFixed(2)}</p>
+                                            </div>
                                             <div className="text-right">
                                                 <p className="text-xs text-gray-500 uppercase font-bold">Status</p>
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border border-black ${pot.status === 'active' ? 'bg-[#A2E4B8] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 text-gray-800'}`}>
@@ -252,10 +308,51 @@ export default function Index({ auth, piggyPots }) {
                                             </div>
                                         </div>
 
+                                        {/* Progress Bar */}
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                            <div className="bg-pink-500 h-2.5 rounded-full" style={{ width: `${Math.min(100, (((pot.total_raised || 0)/100) / pot.target_amount) * 100)}%` }}></div>
+                                        </div>
+
                                         <div className="flex justify-end space-x-3 pt-2">
                                             <button onClick={() => openEditModal(pot)} className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-white hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">Edit</button>
+                                            <button onClick={() => {
+                                                const popupEl = document.getElementById(`contributors_${pot.id}`);
+                                                if(popupEl && popupEl.querySelector('button')) popupEl.querySelector('button').click();
+                                            }} className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-blue-100 hover:bg-blue-200 text-blue-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">Supporters</button>
                                             <button onClick={() => handleDelete(pot.id)} className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-red-100 hover:bg-red-200 text-red-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">Delete</button>
                                         </div>
+
+                                        {/* Contributors Modal */}
+                                        <Popup  
+                                            size='md'
+                                            classes="hidden" 
+                                            action={false}
+                                            id={`contributors_${pot.id}`}
+                                        >
+                                            <div className="p-8">
+                                                <h3 className="font-GillSans uppercase text-3xl mb-6">Supporters for {pot.title}</h3>
+                                                <div className="max-h-[300px] overflow-y-auto pr-2">
+                                                    {!pot.contributions || pot.contributions.length === 0 ? (
+                                                        <p className="text-gray-500 text-center py-4">No contributions yet.</p>
+                                                    ) : (
+                                                        <ul className="space-y-3">
+                                                            {pot.contributions.map((c, i) => (
+                                                                <li key={i} className="flex justify-between items-center bg-gray-50 p-3 rounded-2xl border-2 border-black">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <div className="font-bold text-gray-800">
+                                                                            {c.is_anonymous ? 'Anonymous' : (c.user?.name || c.guest_name || 'Guest')}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="font-bold text-pink-500">
+                                                                        {c.currency} {parseFloat(c.amount / 100).toFixed(2)}
+                                                                    </div>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Popup>
                                     </div>
                                 ))}
                             </div>

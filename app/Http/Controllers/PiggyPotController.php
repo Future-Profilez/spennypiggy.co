@@ -16,14 +16,33 @@ class PiggyPotController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $piggyPots = PiggyPot::where('user_id', Auth::id())
+        $query = PiggyPot::where('user_id', Auth::id())
+            ->with(['contributions' => function($q) {
+                $q->where('status', 'paid')
+                  ->with('user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved')
+                  ->orderBy('created_at', 'desc');
+            }])
+            ->withSum(['contributions as total_raised' => function ($q) {
+                $q->where('status', 'paid');
+            }], 'amount')
+            ->orderBy('created_at', 'desc');
+            
+        if ($request->has('pot_id') && $request->pot_id) {
+            $query->where('id', $request->pot_id);
+        }
+
+        $piggyPots = $query->get();
+
+        $allPotsList = PiggyPot::where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get(['id', 'title']);
 
         return Inertia::render('PiggyPots/Index', [
             'piggyPots' => $piggyPots,
+            'allPotsList' => $allPotsList,
+            'filter_pot_id' => $request->pot_id,
         ]);
     }
 
