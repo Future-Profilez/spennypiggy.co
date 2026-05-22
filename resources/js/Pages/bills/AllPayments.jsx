@@ -14,6 +14,8 @@ export default function AllPayments(props) {
     const [search, setSearch] = useState("");
     const [filterBill, setFilterBill] = useState("all");
     const [user, setUser] = useState("");
+    const [filterType, setFilterType] = useState("all");
+    const [filteredPayments, setFilteredPayments] = useState([]);
 
     const fetchPayments = (page = 1) => {
         setLoading(true);
@@ -39,7 +41,36 @@ export default function AllPayments(props) {
 
     useEffect(() => {
         fetchPayments();
-    }, [search, filterBill]);
+    }, []);
+
+    useEffect(() => {
+        let filtered = [...payments];
+
+        // SEARCH FILTER
+        if (search) {
+            filtered = filtered.filter(
+                (payment) =>
+                    payment?.user?.name
+                        ?.toLowerCase()
+                        ?.includes(search.toLowerCase()) ||
+                    payment?.user?.username
+                        ?.toLowerCase()
+                        ?.includes(search.toLowerCase()) ||
+                    payment?.bill_name
+                        ?.toLowerCase()
+                        ?.includes(search.toLowerCase()),
+            );
+        }
+
+        // TYPE FILTER
+        if (filterType !== "all") {
+            filtered = filtered.filter(
+                (payment) => payment?.recurring_type === filterType,
+            );
+        }
+
+        setFilteredPayments(filtered);
+    }, [payments, search, filterType]);
 
     const { auth } = props;
 
@@ -110,6 +141,107 @@ export default function AllPayments(props) {
                             </div>
                         </div>
 
+                        {/* SEARCH + FILTER BAR */}
+                        <div
+                            className="
+    mb-6
+    rounded-[28px]
+    bg-white/5
+    backdrop-blur-sm
+    border border-white/10
+    p-5
+"
+                        >
+                            <div
+                                className="
+        flex flex-col xl:flex-row
+        xl:items-center
+        xl:justify-between
+        gap-5
+    "
+                            >
+                                {/* LEFT */}
+                                <div>
+                                    <h2
+                                        className="
+                text-2xl
+                md:text-3xl
+                font-black
+                text-white
+            "
+                                    >
+                                        Payment Management
+                                    </h2>
+
+                                    <p className="text-slate-400 mt-1 text-sm">
+                                        Search supporters, memberships and
+                                        transactions
+                                    </p>
+                                </div>
+
+                                {/* RIGHT */}
+                                <div
+                                    className="
+            flex flex-col sm:flex-row
+            gap-4
+            w-full xl:w-auto
+        "
+                                >
+                                    {/* SEARCH */}
+                                    <div className="relative w-full sm:w-[320px]">
+                                        <input
+                                            type="text"
+                                            placeholder="Search supporter or membership..."
+                                            value={search}
+                                            onChange={(e) =>
+                                                setSearch(e.target.value)
+                                            }
+                                            className="
+                        w-full
+                        h-[54px]
+                        rounded-[18px]
+                        bg-[#0f172a]
+                        border border-white/10
+                        px-5
+                        text-white
+                        placeholder:text-slate-500
+                        focus:outline-none
+                        focus:border-pink-500/40
+                    "
+                                        />
+                                    </div>
+
+                                    {/* FILTER */}
+                                    <select
+                                        value={filterType}
+                                        onChange={(e) =>
+                                            setFilterType(e.target.value)
+                                        }
+                                        className="
+                    h-[54px]
+                    min-w-[180px]
+                    rounded-[18px]
+                    bg-[#0f172a]
+                    border border-white/10
+                    px-5
+                    text-white
+                    focus:outline-none
+                    focus:border-pink-500/40
+                "
+                                    >
+                                        <option value="all">
+                                            All Payments
+                                        </option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="yearly">Yearly</option>
+                                        <option value="one-time">
+                                            One Time
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Payments Table */}
                         <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden">
                             <div className="p-4 border-b border-white/10">
@@ -118,7 +250,7 @@ export default function AllPayments(props) {
                                 </h2>
                             </div>
 
-                            {payments.length > 0 ? (
+                            {filteredPayments.length > 0 ? (
                                 <>
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
@@ -145,7 +277,7 @@ export default function AllPayments(props) {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-white/10">
-                                                {payments.map(
+                                                {filteredPayments.map(
                                                     (payment, index) => (
                                                         <tr
                                                             key={index}
@@ -163,7 +295,11 @@ export default function AllPayments(props) {
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center gap-2">
-                                                                    <Avatar user={payment?.user}/>
+                                                                    <Avatar
+                                                                        user={
+                                                                            payment?.user
+                                                                        }
+                                                                    />
                                                                 </div>
                                                             </td>
                                                             <td className="px-4 py-3">
