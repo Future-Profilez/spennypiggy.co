@@ -55,6 +55,8 @@ const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
 const CreatorRiskBanner = lazy(() => import("@/Components/Risk/CreatorRiskBanner"));
 const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
+const PiggyPotWidget = lazy(() => import("@/Components/PiggyPots/PiggyPotWidget"));
+const PiggyPotSocialProof = lazy(() => import("@/Components/PiggyPots/PiggyPotSocialProof"));
 
 export default function Dashboard(props) {
 
@@ -925,7 +927,28 @@ export default function Dashboard(props) {
                                                                 ) : (
                                                                     ""
                                                                 )}
-                                                                {!IsloggedIn && UserStripeConnected == 1 && w > 767 ? (
+                                                                
+                                                                {props.piggyPots && props.piggyPots.length > 0 && (
+                                                                    <Suspense fallback={<div className="mb-4">Loading Piggy Pot...</div>}>
+                                                                        <PiggyPotWidget 
+                                                                            piggyPots={props.piggyPots} 
+                                                                            user={user} 
+                                                                            global_currency={global_currency}
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
+
+                                                                {props.piggyPotTopSupporters && (props.piggyPotTopSupporters.length > 0 || (props.piggyPotFeed && props.piggyPotFeed.length > 0)) && (
+                                                                    <Suspense fallback={<div className="mb-4">Loading community activity...</div>}>
+                                                                        <PiggyPotSocialProof 
+                                                                            topSupporters={props.piggyPotTopSupporters}
+                                                                            feed={props.piggyPotFeed}
+                                                                            user={user}
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
+
+                                                                {!IsloggedIn && UserStripeConnected == 1 && w > 767 && (!props.piggyPots || props.piggyPots.length === 0) ? (
                                                                     <Suspense fallback={null}>
                                                                         <TipInner classes={`mb-4`} />
                                                                     </Suspense>

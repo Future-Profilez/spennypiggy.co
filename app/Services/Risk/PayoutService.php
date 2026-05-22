@@ -24,8 +24,9 @@ class PayoutService
     {
         $sourceModels = [
             \App\Models\TaskPurchase::class         => 'stripe_session_id',
-            \App\Models\TipGoalsPayment::class      => 'session_id',
             \App\Models\ShopPayment::class          => 'session_id',
+            \App\Models\PiggyPotContribution::class => 'session_id',
+            \App\Models\TipGoalsPayment::class      => 'session_id',
             \App\Models\MembershipPayment::class    => 'session_id',
             \App\Models\BillPayment::class          => 'session_id',
             \App\Models\StripePaymentItems::class   => 'stripe_session_id',
@@ -683,6 +684,7 @@ class PayoutService
                 'ShopPayment' => 'Shop Purchase',
                 'TipGoalsPayment' => 'Support/Tip',
                 'MembershipPayment' => 'Membership',
+                'PiggyPotContribution' => 'Piggy Pot',
                 'TaskPurchase' => 'Task',
                 'BillPayment' => 'Bill',
                 default => $base ? str_replace(['Payment', 'Purchase'], '', $base) : null

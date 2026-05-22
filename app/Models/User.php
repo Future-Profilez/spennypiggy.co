@@ -475,6 +475,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return $this->hasMany(TipGoalsPayment::class, 'creator_id');
     }
 
+    public function piggy_pots()
+    {
+        return $this->hasMany(PiggyPot::class, 'user_id');
+    }
+
+    public function piggy_pot_contributions()
+    {
+        return $this->hasMany(PiggyPotContribution::class, 'creator_id');
+    }
+
     public function subscriptions()
     {
         return $this->hasManyThrough(WishItemSubscription::class, WishItem::class, 'user_id', 'wish_item_id');

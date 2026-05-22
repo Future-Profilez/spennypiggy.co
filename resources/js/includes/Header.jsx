@@ -31,6 +31,7 @@ import {
 import {
     Calendar,
     Shield as ShieldIcon,
+    PiggyBank,
 } from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 import { FaFileInvoice } from "react-icons/fa";
@@ -426,13 +427,22 @@ export default function Header({ classMagicword }) {
                                     )}
 
                                     {auth?.user?.username && (
-                                        <NavLinkWithIcon
-                                            href="/shop"
-                                            onClick={toggleClass}
-                                            icon={ShoppingBagIcon}
-                                            label="Shop"
-                                            activeColor="hover:bg-[#b892ff]"
-                                        />
+                                        <>
+                                            <NavLinkWithIcon
+                                                href="/shop"
+                                                onClick={toggleClass}
+                                                icon={ShoppingBagIcon}
+                                                label="Shop"
+                                                activeColor="hover:bg-[#b892ff]"
+                                            />
+                                            <NavLinkWithIcon
+                                                href="/piggy-pots"
+                                                onClick={toggleClass}
+                                                icon={PiggyBank}
+                                                label="Piggy Pots"
+                                                activeColor="hover:bg-[#A2E4B8]"
+                                            />
+                                        </>
                                     )}
 
                                     {auth && auth.user ? (

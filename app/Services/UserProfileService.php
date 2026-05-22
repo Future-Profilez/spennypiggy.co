@@ -1263,4 +1263,81 @@ class UserProfileService
 
         return null;
     }
+
+    public function getOptimizedPiggyPots(int $userId, bool $isOwner): array
+    {
+        $query = \App\Models\PiggyPot::where('user_id', $userId)
+            ->where('status', 'active')
+            ->withSum(['contributions as total_raised' => function ($query) {
+                $query->where('status', 'paid');
+            }], 'amount');
+            
+        if (!$isOwner) {
+            $query->where('is_pinned', true);
+        }
+        
+        $cacheKey = 'user_piggy_pots_' . $userId . '_' . ($isOwner ? 'owner' : 'public');
+        
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($query) {
+            return $query->get()->toArray();
+        });
+    }
+
+    public function getPiggyPotTopSupporters(int $userId): array
+    {
+        $cacheKey = 'user_piggy_pot_top_supporters_' . $userId;
+        
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($userId) {
+            return \App\Models\PiggyPotContribution::select('guest_name', 'user_id', 'is_anonymous')
+                ->selectRaw('SUM(amount) as total_contribution')
+                ->with('user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved')
+                ->where('creator_id', $userId)
+                ->where('status', 'paid')
+                ->groupBy('guest_name', 'user_id', 'is_anonymous')
+                ->orderByDesc('total_contribution')
+                ->limit(10)
+                ->get()
+                ->map(function ($item) {
+                    if ($item->is_anonymous) {
+                        return [
+                            'name' => 'Anonymous',
+                            'total' => $item->total_contribution,
+                            'avatar' => null
+                        ];
+                    }
+                    return [
+                        'name' => $item->user ? $item->user->name : ($item->guest_name ?? 'Guest'),
+                        'username' => $item->user ? $item->user->username : null,
+                        'total' => $item->total_contribution,
+                        'avatar' => $item->user ? $item->user->avatar_url : null
+                    ];
+                })->toArray();
+        });
+    }
+
+    public function getPiggyPotFeed(int $userId): array
+    {
+        $cacheKey = 'user_piggy_pot_feed_' . $userId;
+        
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($userId) {
+            return \App\Models\PiggyPotContribution::with(['user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved', 'piggyPot:id,title'])
+                ->where('creator_id', $userId)
+                ->where('status', 'paid')
+                ->orderBy('created_at', 'desc')
+                ->limit(20)
+                ->get()
+                ->map(function ($item) {
+                    $name = $item->is_anonymous ? 'Anonymous' : ($item->user ? $item->user->name : ($item->guest_name ?? 'Guest'));
+                    return [
+                        'id' => $item->id,
+                        'name' => $name,
+                        'amount' => $item->amount,
+                        'currency' => $item->currency,
+                        'message' => $item->message,
+                        'created_at' => $item->created_at,
+                        'pot_title' => $item->piggyPot ? $item->piggyPot->title : 'Goal',
+                    ];
+                })->toArray();
+        });
+    }
 }

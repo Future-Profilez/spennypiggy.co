@@ -3448,6 +3448,7 @@ class StripeWebhookController extends Controller
 
             $sourceModels = [
                 [\App\Models\TaskPurchase::class,       'payment_intent_id', 'stripe_session_id'],
+                [\App\Models\PiggyPotContribution::class,'payment_intent_id', 'session_id'],
                 [\App\Models\TipGoalsPayment::class,    'session_id',        'session_id'], // Uses session_id for both
                 [\App\Models\ShopPayment::class,        'payment_intent_id', 'session_id'],
                 [\App\Models\StripePaymentDetail::class,'payment_intent_id', 'session_id'],

@@ -465,7 +465,10 @@ class AuthenticatedSessionController extends Controller
             'memberships' => [],
             'bills' => [],
             'shops' => [],
-            'tasks' => []
+            'tasks' => [],
+            'piggyPots' => [],
+            'piggyPotTopSupporters' => [],
+            'piggyPotFeed' => []
         ];
 
         switch ($page) {
@@ -479,8 +482,13 @@ class AuthenticatedSessionController extends Controller
                 break;
 
             case 'feed':
+                $data['posts'] = $this->profileService->getUserPosts($userId);
+                break;
             case 'about':
                 $data['posts'] = $this->profileService->getUserPosts($userId);
+                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId);
+                $data['piggyPotTopSupporters'] = $this->profileService->getPiggyPotTopSupporters($userId);
+                $data['piggyPotFeed'] = $this->profileService->getPiggyPotFeed($userId);
                 break;
 
             case 'memberships':
