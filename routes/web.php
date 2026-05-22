@@ -38,6 +38,7 @@ use Illuminate\Support\Str;
 // Health check endpoint for Vapor
 use App\Http\Controllers\Admin\EmulationLoginController;
 use App\Http\Controllers\Auth\BillsController;
+use App\Http\Controllers\Auth\MembershipController;
 
 // Emulation Bridge
 Route::get('/admin/emulate-login/{user}', [EmulationLoginController::class, 'login'])
@@ -217,35 +218,73 @@ Route::get('/pride', function () {
     return Inertia::render('Pride/Index');
 })->name('pride.landing');
 
-Route::get('/membership-dashboard', function () {
-    return Inertia::render('membership/Membership_dashboard');
-})->name('membershipDashboard');
 
-// Bill Dashboard Routes     Bill Dashboard Routes (Protected by auth)
+
+// =====================================================
+// Creator Dashboards
+// =====================================================
+
 Route::middleware(['auth'])->group(function () {
-    // Dashboard
-    Route::get('/billing-dashboard', [BillsController::class, 'dashboard'])->name('billingDashboard');
+
+    // ================= BILL DASHBOARD =================
+
+    Route::get('/billing-dashboard', function () {
+        return Inertia::render('bills/Billing_dashboard');
+    })->name('billing.dashboard');
+
     Route::get('/billing/api/dashboard', [BillsController::class, 'getDashboardData']);
 
-    // Payments Management
-    Route::get('/billing/all-payments', function () {
-        return Inertia::render('bills/AllPayments');
-    })->name('billing.allPayments');
-    Route::get('/billing/api/payments', [BillsController::class, 'getAllPayments']);
 
-    // Bill Details
+    // ================= BILL DETAILS =================
+
     Route::get('/billing/bill/{uuid}', function ($uuid) {
-        return Inertia::render('bills/BillDetails', ['uuid' => $uuid]);
-    })->name('billing.billDetails');
+        return Inertia::render('bills/BillDetails', [
+            'uuid' => $uuid
+        ]);
+    })->name('billing.bill.details');
+
     Route::get('/billing/api/bill/{uuid}', [BillsController::class, 'getBillDetails']);
 
-    // Bills List
-    Route::get('/bills', function () {
-        return Inertia::render('bills/BillsList');
-    })->name('bills.list');
+    /*
+    |--------------------------------------------------------------------------
+    | CANCEL MEMBERSHIP SUBSCRIPTION
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/membership/cancel-subscription', [MembershipController::class, 'cancelSubscription'])->name('membership.cancel.subscription');
 
-    // Create/Edit Bill (using existing routes from your controller)
-    // Your existing bill routes should already handle these
+
+    // ================= MEMBERSHIP DASHBOARD =================
+
+    /*
+    |--------------------------------------------------------------------------
+    | CANCEL BILL SUBSCRIPTION
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/billing/cancel-subscription', [BillsController::class, 'cancelSubscription'])->name('billing.cancel.subscription');
+
+    Route::get('/membership-dashboard', function () {
+        return Inertia::render('membership/Membership_dashboard');
+    })->name('membershipDashboard');
+
+    Route::get('/membership/details/{uuid}', [MembershipController::class, 'membershipDetails']);
+
+    Route::get('/membership/api/details/{uuid}', [MembershipController::class, 'getMembershipDetails']);
+
+    // ================= CREATOR SUBSCRIPTIONS =================
+
+    Route::get('/creator/subscriptions', function () {
+        return Inertia::render('creator/MySubscriptions');
+    })->name('creator.subscriptions');
+
+
+    // ================= REVENUE ANALYTICS =================
+
+    Route::get('/creator/revenue', function () {
+        return Inertia::render('creator/RevenueAnalytics');
+    })->name('creator.revenue');
+
+    Route::get('/billing/my-subscriptions', [BillsController::class, 'mySubscriptions']);
+    Route::get('/billing/api/my-subscriptions', [BillsController::class, 'getMySubscriptions']);
 });
 
 // Route::get('/stripe-identity', function () {

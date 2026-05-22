@@ -5,6 +5,16 @@ import axios from "axios";
 import { useEffect, useState, useRef } from "react";
 import LoadingScreen from "@/includes/LoadingScreen";
 import Avatar from "../../Components/Avatar";
+import CreatorDashboardTabs from "@/Components/CreatorDashboardTabs";
+import {
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+} from "recharts";
 
 export default function Billing_dashboard(props) {
     const [loading, setLoading] = useState(true);
@@ -28,15 +38,60 @@ export default function Billing_dashboard(props) {
 
     const [filterStatus, setFilterStatus] = useState("all");
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedBill, setSelectedBill] = useState(null);
-    const [showBillModal, setShowBillModal] = useState(false);
 
     const fetchdata = () => {
         setLoading(true);
+
         axios
             .get(`/billing/api/dashboard`)
             .then((res) => {
-                setData(res.data.data);
+                const bills = res.data?.bills || [];
+
+                // TOP BILLS
+                const topBills = [...bills]
+                    .sort(
+                        (a, b) =>
+                            (b.total_revenue || 0) - (a.total_revenue || 0),
+                    )
+                    .slice(0, 5);
+
+                setData({
+                    total_bills: res.data?.stats?.total_bills || 0,
+
+                    active_bills: bills.filter((bill) => bill.status === 1)
+                        .length,
+
+                    total_revenue: res.data?.stats?.total_revenue || 0,
+
+                    monthly_revenue: res.data?.stats?.monthly_revenue || 0,
+
+                    total_paid_amount: res.data?.stats?.total_revenue || 0,
+
+                    total_payments: bills.reduce(
+                        (total, bill) => total + Number(bill.buyers_count || 0),
+                        0,
+                    ),
+
+                    unique_customers: res.data?.stats?.unique_customers || 0,
+
+                    estimated_next_month:
+                        res.data?.stats?.estimated_next_month || 0,
+
+                    recent_bills: bills.slice(0, 5),
+
+                    recent_payments: [],
+
+                    monthly_data: res.data?.chart || [],
+
+                    top_bills: topBills,
+
+                    all_bills: bills,
+
+                    currency: res.data?.currency || "£",
+
+                    currency_code: res.data?.currency_code || "GBP",
+                });
+
                 setLoading(false);
             })
             .catch((err) => {
@@ -50,15 +105,15 @@ export default function Billing_dashboard(props) {
     }, []);
 
     const { auth } = props;
-    const displayCurrency = data.currency || "£";
+    const displayCurrency = data?.currency || "£";
 
     // Filter bills based on status and search
-    const filteredBills = data.all_bills?.filter((bill) => {
+    const filteredBills = (data?.all_bills || []).filter((bill) => {
         const matchesStatus =
             filterStatus === "all" ||
             (filterStatus === "active" && bill.status === 1) ||
             (filterStatus === "inactive" && bill.status === 0);
-        const matchesSearch = bill.name
+        const matchesSearch = (bill?.name || "")
             .toLowerCase()
             .includes(searchTerm.toLowerCase());
         return matchesStatus && matchesSearch;
@@ -72,7 +127,7 @@ export default function Billing_dashboard(props) {
 
     // Get chart data based on selected period
     const getChartData = () => {
-        let dataToShow = [...data.monthly_data];
+        let dataToShow = [...(data?.monthly_data || [])];
         if (selectedPeriod === "6months") {
             dataToShow = dataToShow.slice(-6);
         } else if (selectedPeriod === "3months") {
@@ -81,507 +136,142 @@ export default function Billing_dashboard(props) {
         return dataToShow;
     };
 
-    // Enhanced Revenue Chart Component
-    const RevenueChart = ({ data: chartData, currency }) => {
-        const canvasRef = useRef(null);
-        const [tooltipData, setTooltipData] = useState(null);
-        const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+    const chartData = getChartData();
 
-        useEffect(() => {
-            if (!canvasRef.current || !chartData.length) return;
+    const currentRevenue =
+        chartData?.length > 0
+            ? Number(chartData[chartData.length - 1]?.amount || 0)
+            : 0;
 
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext("2d");
-            const container = canvas.parentElement;
-            const width = container.clientWidth - 32;
-            const height = 300;
+    const previousRevenue =
+        chartData?.length > 1
+            ? Number(chartData[chartData.length - 2]?.amount || 0)
+            : 0;
 
-            canvas.width = width;
-            canvas.height = height;
+    const growthPercentage =
+        previousRevenue > 0
+            ? (
+                  ((currentRevenue - previousRevenue) / previousRevenue) *
+                  100
+              ).toFixed(1)
+            : 0;
 
-            const values = chartData.map((item) => item.amount);
-            const maxValue = Math.max(...values, 1);
-            const minValue = Math.min(...values, 0);
-            const valueRange = maxValue - minValue;
+    const isGrowthPositive = currentRevenue >= previousRevenue;
 
-            const padding = { top: 20, right: 20, bottom: 30, left: 50 };
-            const chartWidth = width - padding.left - padding.right;
-            const chartHeight = height - padding.top - padding.bottom;
-            const barWidth = (chartWidth / chartData.length) * 0.7;
-            const barSpacing = (chartWidth / chartData.length) * 0.3;
+    const peakMonth =
+        chartData?.reduce(
+            (max, item) => (item.amount > max.amount ? item : max),
+            chartData[0] || {
+                amount: 0,
+                month: "",
+            },
+        ) || {};
 
-            ctx.clearRect(0, 0, width, height);
-
-            // Draw background grid
-            ctx.save();
-            ctx.translate(padding.left, padding.top);
-
-            // Draw horizontal grid lines and Y-axis labels
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-            ctx.fillStyle = "#94a3b8";
-            ctx.font = "11px 'Inter', sans-serif";
-            ctx.textAlign = "right";
-            ctx.textBaseline = "middle";
-
-            for (let i = 0; i <= 5; i++) {
-                const value = minValue + (valueRange * i) / 5;
-                const y = chartHeight - (chartHeight * i) / 5;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(chartWidth, y);
-                ctx.stroke();
-                ctx.fillStyle = "#94a3b8";
-                ctx.fillText(
-                    `${currency}${Math.round(value).toLocaleString()}`,
-                    -8,
-                    y,
-                );
-            }
-
-            // Draw vertical grid lines and X-axis labels
-            ctx.textAlign = "center";
-            ctx.textBaseline = "top";
-            ctx.fillStyle = "#94a3b8";
-
-            chartData.forEach((item, index) => {
-                const x = index * (barWidth + barSpacing) + barWidth / 2;
-                ctx.fillText(item.month, x, chartHeight + 8);
-            });
-
-            // Draw bars with gradient
-            chartData.forEach((item, index) => {
-                const x = index * (barWidth + barSpacing);
-                const barHeight =
-                    ((item.amount - minValue) / valueRange) * chartHeight;
-                const y = chartHeight - barHeight;
-
-                // Create gradient
-                const gradient = ctx.createLinearGradient(
-                    x,
-                    y,
-                    x,
-                    y + barHeight,
-                );
-                gradient.addColorStop(0, "#60a5fa");
-                gradient.addColorStop(1, "#3b82f6");
-
-                ctx.fillStyle = gradient;
-                ctx.fillRect(x, y, barWidth, barHeight);
-
-                // Add hover highlight
-                if (tooltipData && tooltipData.index === index) {
-                    ctx.fillStyle = "rgba(96, 165, 250, 0.3)";
-                    ctx.fillRect(x, 0, barWidth, chartHeight);
-
-                    // Draw tooltip
-                    const mouseX = tooltipPosition.x - padding.left;
-                    const mouseY = tooltipPosition.y - padding.top;
-                    const tooltipX = Math.min(
-                        Math.max(mouseX - 60, 0),
-                        chartWidth - 120,
-                    );
-                    const tooltipY = Math.max(mouseY - 40, 0);
-
-                    ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
-                    ctx.shadowBlur = 8;
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                    ctx.fillRect(tooltipX, tooltipY, 120, 35);
-                    ctx.shadowBlur = 0;
-
-                    ctx.fillStyle = "#fff";
-                    ctx.font = "bold 12px 'Inter', sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText(
-                        `${currency}${item.amount.toLocaleString()}`,
-                        tooltipX + 60,
-                        tooltipY + 15,
-                    );
-                    ctx.font = "10px 'Inter', sans-serif";
-                    ctx.fillStyle = "#94a3b8";
-                    ctx.fillText(item.month, tooltipX + 60, tooltipY + 28);
-                }
-            });
-
-            // Draw value labels on top of bars for tall bars
-            ctx.font = "bold 11px 'Inter', sans-serif";
-            ctx.fillStyle = "#cbd5e1";
-            ctx.textAlign = "center";
-
-            chartData.forEach((item, index) => {
-                const x = index * (barWidth + barSpacing) + barWidth / 2;
-                const barHeight =
-                    ((item.amount - minValue) / valueRange) * chartHeight;
-                const y = chartHeight - barHeight;
-                if (barHeight > 25 && item.amount > 0) {
-                    ctx.fillStyle = "#fff";
-                    ctx.fillText(
-                        `${currency}${item.amount.toLocaleString()}`,
-                        x,
-                        y - 5,
-                    );
-                }
-            });
-
-            ctx.restore();
-
-            // Mouse move handler for tooltips
-            const handleMouseMove = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const mouseX = (e.clientX - rect.left) * scaleX - padding.left;
-
-                if (mouseX >= 0 && mouseX <= chartWidth) {
-                    const index = Math.floor(mouseX / (barWidth + barSpacing));
-                    if (index >= 0 && index < chartData.length) {
-                        setTooltipData({
-                            index,
-                            value: chartData[index].amount,
-                            month: chartData[index].month,
-                        });
-                        setTooltipPosition({
-                            x: e.clientX - rect.left,
-                            y: e.clientY - rect.top,
-                        });
-                    } else {
-                        setTooltipData(null);
-                    }
-                } else {
-                    setTooltipData(null);
-                }
-            };
-
-            const handleMouseLeave = () => {
-                setTooltipData(null);
-            };
-
-            canvas.addEventListener("mousemove", handleMouseMove);
-            canvas.addEventListener("mouseleave", handleMouseLeave);
-
-            return () => {
-                canvas.removeEventListener("mousemove", handleMouseMove);
-                canvas.removeEventListener("mouseleave", handleMouseLeave);
-            };
-        }, [chartData, currency, tooltipData, tooltipPosition]);
-
+    const averageRevenue =
+        chartData?.length > 0
+            ? (
+                  chartData.reduce(
+                      (sum, item) => sum + Number(item.amount || 0),
+                      0,
+                  ) / chartData.length
+              ).toFixed(0)
+            : 0;
+    const RevenueChart = ({ data, currency }) => {
         return (
-            <div className="relative w-full">
-                <canvas
-                    ref={canvasRef}
-                    className="w-full h-[300px]"
-                    style={{ width: "100%", height: "300px" }}
-                />
-            </div>
-        );
-    };
-
-    // Updated BillDetailsModal component - Replace your existing modal with this
-    // Updated BillDetailsModal component - Aligned version
-
-    const BillDetailsModal = ({ bill, onClose }) => {
-        if (!bill) return null;
-
-        const performancePercentage =
-            bill.total_revenue && bill.price
-                ? Math.min(
-                      100,
-                      Math.round(
-                          ((bill.total_revenue || 0) / (bill.price * 10)) * 100,
-                      ),
-                  )
-                : 0;
-
-        return (
-            <div
-                className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-                onClick={onClose}
-            >
-                <div
-                    className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-white/10"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {/* Hero Section */}
-                    <div className="relative h-32 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-t-2xl overflow-hidden">
-                        <div className="absolute inset-0 bg-black/40"></div>
-                        <div className="absolute bottom-4 left-6 flex items-center gap-4">
-                            {bill.thumbnail ? (
-                                <img
-                                    src={bill.thumbnail}
-                                    alt={bill.name}
-                                    className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-xl"
+            <div className="w-full h-[420px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                        data={data}
+                        margin={{
+                            top: 20,
+                            right: 20,
+                            left: 0,
+                            bottom: 0,
+                        }}
+                    >
+                        <defs>
+                            <linearGradient
+                                id="revenueGradient"
+                                x1="0"
+                                y1="0"
+                                x2="0"
+                                y2="1"
+                            >
+                                <stop
+                                    offset="0%"
+                                    stopColor="#06b6d4"
+                                    stopOpacity={0.45}
                                 />
-                            ) : (
-                                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl border-4 border-white shadow-xl">
-                                    📄
-                                </div>
-                            )}
-                            <div>
-                                <h2 className="text-2xl font-bold text-white">
-                                    {bill.name}
-                                </h2>
-                                <p className="text-white/80 text-xs">
-                                    Bill ID: {bill.uuid?.slice(0, 8)}...
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white text-xl flex items-center justify-center transition-all hover:scale-110"
-                        >
-                            &times;
-                        </button>
-                    </div>
 
-                    {/* Content Area */}
-                    <div className="p-6">
-                        {/* Stats Grid - 4 Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/10">
-                                <p className="text-slate-400 text-xs uppercase tracking-wider">
-                                    Price
-                                </p>
-                                <p className="text-xl font-bold text-white mt-1">
-                                    {displayCurrency}
-                                    {Number(bill.price).toLocaleString()}
-                                </p>
-                                <p className="text-xs text-slate-400 capitalize">
-                                    per {bill.period}
-                                </p>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/10">
-                                <p className="text-slate-400 text-xs uppercase tracking-wider">
-                                    Total Revenue
-                                </p>
-                                <p className="text-xl font-bold text-green-400 mt-1">
-                                    {displayCurrency}
-                                    {Number(
-                                        bill.total_revenue || 0,
-                                    ).toLocaleString()}
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                    lifetime earnings
-                                </p>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/10">
-                                <p className="text-slate-400 text-xs uppercase tracking-wider">
-                                    Total Buyers
-                                </p>
-                                <p className="text-xl font-bold text-purple-400 mt-1">
-                                    {bill.total_buyers || 0}
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                    unique customers
-                                </p>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/10">
-                                <p className="text-slate-400 text-xs uppercase tracking-wider">
-                                    Status
-                                </p>
-                                <span
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium mt-1 ${bill.status === 1 ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}
-                                >
-                                    <span
-                                        className={`w-1.5 h-1.5 rounded-full ${bill.status === 1 ? "bg-green-500" : "bg-red-500"}`}
-                                    ></span>
-                                    {bill.status === 1 ? "Active" : "Inactive"}
-                                </span>
-                            </div>
-                        </div>
+                                <stop
+                                    offset="100%"
+                                    stopColor="#06b6d4"
+                                    stopOpacity={0}
+                                />
+                            </linearGradient>
+                        </defs>
 
-                        {/* Two Column Layout */}
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {/* Left Column - Bill Information */}
-                            <div className="bg-white/5 rounded-xl p-6">
-                                <h3 className="text-white font-semibold mb-3 text-sm flex items-center gap-2">
-                                    <span className="w-1 h-5 bg-blue-500 rounded-full"></span>
-                                    Bill Information
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">
-                                            Period
-                                        </span>
-                                        <span className="text-white capitalize font-medium text-sm">
-                                            {bill.period}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">
-                                            Currency
-                                        </span>
-                                        <span className="text-white font-medium text-sm">
-                                            {bill.currency || "GBP"}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">
-                                            Created Date
-                                        </span>
-                                        <span className="text-white font-medium text-sm">
-                                            {new Date(
-                                                bill.created_at,
-                                            ).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">
-                                            Last Payment
-                                        </span>
-                                        <span className="text-white font-medium text-sm">
-                                            {bill.last_payment_date
-                                                ? new Date(
-                                                      bill.last_payment_date,
-                                                  ).toLocaleDateString()
-                                                : "No payments yet"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="rgba(255,255,255,0.08)"
+                            vertical={false}
+                        />
 
-                            {/* Right Column - Performance Insights */}
-                            <div className="bg-white/5 rounded-xl p-6">
-                                <h3 className="text-white font-semibold mb-3 text-sm flex items-center gap-2">
-                                    <span className="w-1 h-5 bg-green-500 rounded-full"></span>
-                                    Performance Insights
-                                </h3>
-                                <div className="space-y-4">
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-1">
-                                            <span className="text-slate-400">
-                                                Revenue Target Progress
-                                            </span>
-                                            <span className="text-white font-bold text-sm">
-                                                {performancePercentage}%
-                                            </span>
-                                        </div>
-                                        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500"
-                                                style={{
-                                                    width: `${performancePercentage}%`,
-                                                }}
-                                            ></div>
-                                        </div>
-                                        <p className="text-xs text-slate-400 mt-1">
-                                            Target: {displayCurrency}
-                                            {(
-                                                bill.price * 10
-                                            ).toLocaleString()}{" "}
-                                            (10 sales)
-                                        </p>
-                                    </div>
-                                    {bill.total_buyers > 0 && (
-                                        <>
-                                            <div className="flex justify-between items-center pt-2">
-                                                <span className="text-slate-400 text-sm">
-                                                    Average per Buyer
-                                                </span>
-                                                <span className="text-white font-semibold text-sm">
-                                                    {displayCurrency}
-                                                    {Math.round(
-                                                        (bill.total_revenue ||
-                                                            0) /
-                                                            bill.total_buyers,
-                                                    ).toLocaleString()}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-slate-400 text-sm">
-                                                    Monthly Average
-                                                </span>
-                                                <span className="text-white font-semibold text-sm">
-                                                    {displayCurrency}
-                                                    {Math.round(
-                                                        (bill.total_revenue ||
-                                                            0) /
-                                                            (bill.months_active ||
-                                                                1),
-                                                    ).toLocaleString()}
-                                                </span>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        <XAxis
+                            dataKey="month"
+                            tick={{
+                                fill: "#94a3b8",
+                                fontSize: 12,
+                            }}
+                            axisLine={false}
+                            tickLine={false}
+                        />
 
-                        {/* Content File Section */}
-                        {bill.content_file && (
-                            <div className="mt-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-3 border border-blue-500/20">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-blue-400 text-sm font-medium">
-                                            Content File Available
-                                        </p>
-                                        <p className="text-slate-400 text-xs">
-                                            Customers get access after payment
-                                        </p>
-                                    </div>
-                                    <a
-                                        href={bill.content_file_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition-colors"
-                                    >
-                                        Download →
-                                    </a>
-                                </div>
-                            </div>
-                        )}
+                        <YAxis
+                            tick={{
+                                fill: "#94a3b8",
+                                fontSize: 12,
+                            }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={(value) => `${currency}${value}`}
+                        />
 
-                        {/* Recent Payments Preview */}
-                        {bill.recent_payments &&
-                            bill.recent_payments.length > 0 && (
-                                <div className="mt-4">
-                                    <h3 className="text-white font-semibold mb-2 text-sm flex items-center gap-2">
-                                        <span className="w-1 h-5 bg-yellow-500 rounded-full"></span>
-                                        Recent Transactions
-                                    </h3>
-                                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                                        {bill.recent_payments
-                                            .slice(0, 3)
-                                            .map((payment, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex justify-between items-center p-2 bg-white/5 rounded-lg"
-                                                >
-                                                    <div>
-                                                        <p className="text-white text-sm font-medium">
-                                                            {payment.customer_name ||
-                                                                "Anonymous"}
-                                                        </p>
-                                                        <p className="text-slate-400 text-xs">
-                                                            {new Date(
-                                                                payment.created_at,
-                                                            ).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-green-400 font-semibold text-sm">
-                                                            {displayCurrency}
-                                                            {Number(
-                                                                payment.amount,
-                                                            ).toLocaleString()}
-                                                        </p>
-                                                        <p className="text-slate-400 text-xs capitalize">
-                                                            {payment.recurring_type ||
-                                                                "one-time"}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            )}
+                        <Tooltip
+                            contentStyle={{
+                                background: "rgba(15,23,42,0.95)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                borderRadius: "16px",
+                                color: "#fff",
+                                backdropFilter: "blur(12px)",
+                            }}
+                            formatter={(value) => [
+                                `${currency}${Number(value).toLocaleString()}`,
+                                "Revenue",
+                            ]}
+                        />
 
-                        {/* Footer */}
-                        <div className="mt-4 pt-3 text-center border-t border-white/10">
-                            <p className="text-slate-500 text-xs">
-                                Manage your bill and track all payments from one
-                                place
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                        <Area
+                            type="monotone"
+                            dataKey="amount"
+                            stroke="#06b6d4"
+                            strokeWidth={4}
+                            fill="url(#revenueGradient)"
+                            dot={{
+                                r: 5,
+                                strokeWidth: 3,
+                                fill: "#0f172a",
+                                stroke: "#06b6d4",
+                            }}
+                            activeDot={{
+                                r: 8,
+                                fill: "#06b6d4",
+                                stroke: "#fff",
+                                strokeWidth: 3,
+                            }}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         );
     };
@@ -595,79 +285,100 @@ export default function Billing_dashboard(props) {
                 <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
                         {/* Header Section */}
-                        <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
-                            <div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-                                    Bill Dashboard
-                                </h1>
-                                <p className="text-slate-400 mt-1 text-sm">
-                                    Track your bills, payments, and revenue
-                                    insights
-                                </p>
-                            </div>
-                            <div className="flex gap-3">
-                                <Link
-                                    href="/membership-dashboard"
-                                    className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm text-white flex items-center gap-2"
-                                >
-                                    <span>📊</span>
-                                    Membership Dashboard
-                                </Link>
+                        <CreatorDashboardTabs />
+                        <div className="mb-8">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                                <div>
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/20">
+                                            💳
+                                        </div>
+
+                                        <div>
+                                            <h1 className="text-4xl font-black text-white tracking-tight">
+                                                Bill Dashboard
+                                            </h1>
+
+                                            <p className="text-slate-400 mt-1 text-sm">
+                                                Track all creator bill revenue,
+                                                payments and supporter analytics
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         {/* Stats Grid - Main Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-blue-500/30 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-lg">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                            {/* TOTAL BILLS */}
+                            <div className="rounded-3xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 border border-white/10 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl">
                                         📄
                                     </div>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-300">
                                         Total
                                     </span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white tracking-tight">
-                                    {data.total_bills || 0}
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">
-                                    Total Bills Created
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-xs text-green-400">
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {data.total_bills || 0}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Total Bills Created
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
+
+                                    <span className="text-xs text-green-300">
                                         {data.active_bills || 0} active bills
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-emerald-500/30 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg">
+                            {/* TOTAL REVENUE */}
+                            <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-700/5 border border-emerald-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl">
                                         💰
                                     </div>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400">
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300">
                                         Lifetime
                                     </span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white tracking-tight">
-                                    {displayCurrency}
-                                    {Number(
-                                        data.total_revenue || 0,
-                                    ).toLocaleString()}
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">
-                                    Total Revenue
-                                </p>
-                                <div className="mt-3">
-                                    <div className="flex justify-between text-xs text-slate-400 mb-1">
-                                        <span>Collection rate</span>
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {displayCurrency}
+                                        {Number(
+                                            data.total_revenue || 0,
+                                        ).toLocaleString()}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Total Revenue
+                                    </p>
+                                </div>
+
+                                <div className="w-full">
+                                    <div className="flex justify-between text-xs text-slate-400 mb-2">
+                                        <span>Collection Rate</span>
+
                                         <span>
                                             {Math.round(collectionRate)}%
                                         </span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+
+                                    <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500"
                                             style={{
                                                 width: `${collectionRate}%`,
                                             }}
@@ -676,50 +387,72 @@ export default function Billing_dashboard(props) {
                                 </div>
                             </div>
 
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-amber-500/30 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg">
+                            {/* MONTHLY REVENUE */}
+                            <div className="rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl">
                                         📈
                                     </div>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-500/10 text-amber-400">
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300">
                                         This Month
                                     </span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white tracking-tight">
-                                    {displayCurrency}
-                                    {Number(
-                                        data.monthly_revenue || 0,
-                                    ).toLocaleString()}
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">
-                                    Monthly Revenue
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-xs text-green-400">
-                                        {data.total_payments || 0} total
-                                        payments
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {displayCurrency}
+                                        {Number(
+                                            data.monthly_revenue || 0,
+                                        ).toLocaleString()}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Monthly Revenue
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-green-300">
+                                        {data.total_payments || 0} payments
+                                    </span>
+
+                                    <span className="text-xs text-amber-300">
+                                        Live tracking
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-purple-500/30 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-lg">
-                                        👥
+                            {/* NEXT MONTH */}
+                            <div className="rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-500/5 border border-cyan-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl">
+                                        🚀
                                     </div>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-500/10 text-purple-400">
-                                        Unique
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300">
+                                        Forecast
                                     </span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white tracking-tight">
-                                    {data.unique_customers || 0}
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">
-                                    Unique Customers
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-xs text-purple-400">
-                                        Across all bills
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {displayCurrency}
+                                        {Number(
+                                            data.estimated_next_month || 0,
+                                        ).toLocaleString()}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Estimated Next Month
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+
+                                    <span className="text-xs text-cyan-300">
+                                        Based on active subscriptions
                                     </span>
                                 </div>
                             </div>
@@ -728,7 +461,7 @@ export default function Billing_dashboard(props) {
                         {/* Top Performing Bills & Chart Section */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                             {/* Top Performing Bills */}
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4">
+                            <div className="rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-sm border border-white/10 p-4">
                                 <div className="mb-4">
                                     <h2 className="text-xl font-bold text-white">
                                         Top Performing Bills
@@ -742,11 +475,10 @@ export default function Billing_dashboard(props) {
                                         data.top_bills.map((bill, index) => (
                                             <div
                                                 key={index}
-                                                className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
-                                                onClick={() => {
-                                                    setSelectedBill(bill);
-                                                    setShowBillModal(true);
-                                                }}
+                                                className="flex items-center justify-between p-3 rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] hover:bg-white/10 transition-all cursor-pointer"
+                                                onClick={() =>
+                                                    (window.location.href = `/billing/bill/${bill.uuid}`)
+                                                }
                                             >
                                                 <div className="flex items-center gap-3 flex-1">
                                                     <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-sm font-bold text-blue-400">
@@ -778,7 +510,7 @@ export default function Billing_dashboard(props) {
                                                             </p>
                                                             <p className="text-xs text-slate-400">
                                                                 👥{" "}
-                                                                {bill.total_buyers ||
+                                                                {bill.buyers_count ||
                                                                     0}{" "}
                                                                 buyers
                                                             </p>
@@ -815,54 +547,192 @@ export default function Billing_dashboard(props) {
                                 </div>
                             </div>
 
-                            {/* Revenue Chart - Enhanced Canvas Chart */}
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-white">
-                                            Revenue Trends
-                                        </h2>
-                                        <p className="text-slate-400 text-xs">
-                                            Monthly bill payment overview
+                            {/* REVENUE ANALYTICS */}
+
+                            <div className="rounded-3xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden">
+                                {/* HEADER */}
+
+                                <div className="p-6 border-b border-white/10">
+                                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+                                        <div>
+                                            <div className="flex items-center gap-4">
+                                                <div>
+                                                    <h2 className="text-3xl font-black text-white">
+                                                        Revenue Performance
+                                                    </h2>
+
+                                                    <p className="text-slate-400 text-sm mt-1">
+                                                        Monthly growth and
+                                                        creator earnings trend
+                                                    </p>
+                                                </div>
+
+                                                <div
+                                                    className={`
+                                                        px-4 py-2 rounded-2xl
+                                                        flex items-center gap-2
+                                                        border
+                                                        ${
+                                                            isGrowthPositive
+                                                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                                                : "bg-red-500/10 border-red-500/20 text-red-400"
+                                                        }
+                                                    `}
+                                                >
+                                                    <span className="text-lg">
+                                                        {isGrowthPositive
+                                                            ? "↗"
+                                                            : "↘"}
+                                                    </span>
+
+                                                    <span className="font-black text-lg">
+                                                        {growthPercentage}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <select
+                                                value={selectedPeriod}
+                                                onChange={(e) =>
+                                                    setSelectedPeriod(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="
+                                                    bg-white/10 border border-white/10
+                                                    rounded-2xl px-5 py-3 text-sm
+                                                    text-white focus:outline-none
+                                                    focus:ring-2 focus:ring-cyan-500
+                                                "
+                                            >
+                                                <option value="3months">
+                                                    Last 3 months
+                                                </option>
+
+                                                <option value="6months">
+                                                    Last 6 months
+                                                </option>
+
+                                                <option value="12months">
+                                                    Last 12 months
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ANALYTICS STATS */}
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b border-white/10">
+                                    {/* GROWTH */}
+
+                                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                                        <p className="text-slate-400 text-xs uppercase tracking-wider">
+                                            Monthly Growth
+                                        </p>
+
+                                        <div className="flex items-center gap-3 mt-3">
+                                            <h3
+                                                className={`text-4xl font-black ${
+                                                    isGrowthPositive
+                                                        ? "text-emerald-400"
+                                                        : "text-red-400"
+                                                }`}
+                                            >
+                                                {isGrowthPositive ? "+" : ""}
+                                                {growthPercentage}%
+                                            </h3>
+
+                                            <div
+                                                className={`text-3xl ${
+                                                    isGrowthPositive
+                                                        ? "text-emerald-400"
+                                                        : "text-red-400"
+                                                }`}
+                                            >
+                                                {isGrowthPositive ? "↗" : "↘"}
+                                            </div>
+                                        </div>
+
+                                        <p className="text-slate-500 text-xs mt-2">
+                                            Compared to previous month
                                         </p>
                                     </div>
-                                    <select
-                                        value={selectedPeriod}
-                                        onChange={(e) =>
-                                            setSelectedPeriod(e.target.value)
-                                        }
-                                        className="bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer hover:bg-white/20 transition-colors"
-                                    >
-                                        <option value="3months">
-                                            Last 3 months
-                                        </option>
-                                        <option value="6months">
-                                            Last 6 months
-                                        </option>
-                                        <option value="12months">
-                                            Last 12 months
-                                        </option>
-                                    </select>
+
+                                    {/* BEST MONTH */}
+
+                                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                                        <p className="text-slate-400 text-xs uppercase tracking-wider">
+                                            Best Performing Month
+                                        </p>
+
+                                        <h3 className="text-4xl font-black text-cyan-400 mt-3">
+                                            {displayCurrency}
+                                            {Number(
+                                                peakMonth?.amount || 0,
+                                            ).toLocaleString()}
+                                        </h3>
+
+                                        <p className="text-slate-300 text-sm mt-2">
+                                            {peakMonth?.month || "-"}
+                                        </p>
+                                    </div>
+
+                                    {/* AVG */}
+
+                                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                                        <p className="text-slate-400 text-xs uppercase tracking-wider">
+                                            Average Revenue
+                                        </p>
+
+                                        <h3 className="text-4xl font-black text-amber-400 mt-3">
+                                            {displayCurrency}
+                                            {Number(
+                                                averageRevenue || 0,
+                                            ).toLocaleString()}
+                                        </h3>
+
+                                        <p className="text-slate-500 text-xs mt-2">
+                                            Per selected month range
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-4">
-                                    {data.monthly_data?.length > 0 ? (
-                                        <RevenueChart
-                                            data={getChartData()}
-                                            currency={displayCurrency}
-                                        />
-                                    ) : (
-                                        <div className="h-[300px] flex items-center justify-center">
-                                            <p className="text-slate-400">
-                                                No revenue data available
-                                            </p>
-                                        </div>
-                                    )}
+
+                                {/* CHART */}
+
+                                <div className="p-6">
+                                    <div className="rounded-3xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 p-5">
+                                        {data.monthly_data?.length > 0 ? (
+                                            <RevenueChart
+                                                data={chartData}
+                                                currency={displayCurrency}
+                                            />
+                                        ) : (
+                                            <div className="h-[350px] flex flex-col items-center justify-center">
+                                                <div className="text-6xl mb-4">
+                                                    📊
+                                                </div>
+
+                                                <h3 className="text-2xl font-bold text-white">
+                                                    No Analytics Yet
+                                                </h3>
+
+                                                <p className="text-slate-400 mt-2">
+                                                    Revenue data will appear
+                                                    once payments start coming
+                                                    in.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* All Bills Section with Filters */}
-                        <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden mb-6">
+                        <div className="rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-sm border border-white/10 overflow-hidden mb-6">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-white/10 gap-4">
                                 <div>
                                     <h2 className="text-xl font-bold text-white">
@@ -987,12 +857,16 @@ export default function Billing_dashboard(props) {
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <p className="text-sm text-white">
-                                                                {bill.total_buyers ||
+                                                                {bill.buyers_count ||
                                                                     0}
                                                             </p>
-                                                            <p className="text-xs text-slate-400">
-                                                                unique customers
-                                                            </p>
+                                                            <div className="inline-flex items-center gap-1 mt-1 px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/10">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+
+                                                                <span className="text-[10px] uppercase tracking-wide text-cyan-300">
+                                                                    supporters
+                                                                </span>
+                                                            </div>
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <p className="text-sm font-bold text-white">
@@ -1019,19 +893,20 @@ export default function Billing_dashboard(props) {
                                                             </span>
                                                         </td>
                                                         <td className="px-4 py-3">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedBill(
-                                                                        bill,
-                                                                    );
-                                                                    setShowBillModal(
-                                                                        true,
-                                                                    );
-                                                                }}
-                                                                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                                                            <Link
+                                                                href={`/billing/bill/${bill.uuid}`}
+                                                                className="
+                                                                inline-flex items-center gap-2
+                                                                px-4 py-2 rounded-xl
+                                                                bg-gradient-to-r from-cyan-500 to-blue-500
+                                                                text-white text-sm font-bold
+                                                                hover:scale-105 transition-all duration-300
+                                                                shadow-lg shadow-cyan-500/20
+                                                            "
                                                             >
-                                                                View Details →
-                                                            </button>
+                                                                View Details
+                                                                <span>→</span>
+                                                            </Link>
                                                         </td>
                                                     </tr>
                                                 ),
@@ -1063,180 +938,8 @@ export default function Billing_dashboard(props) {
                                 </div>
                             )}
                         </div>
-
-                        {/* Recent Payments Section */}
-                        <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden">
-                            <div className="flex items-center justify-between p-4 border-b border-white/10">
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">
-                                        Recent Bill Payments
-                                    </h2>
-                                    <p className="text-slate-400 text-xs">
-                                        Latest transactions from your bills
-                                    </p>
-                                </div>
-                                <Link
-                                    href="/billing/all-payments"
-                                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium flex items-center gap-1"
-                                >
-                                    View All Payments
-                                    <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 5l7 7-7 7"
-                                        />
-                                    </svg>
-                                </Link>
-                            </div>
-
-                            {data?.recent_payments?.length > 0 ? (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-white/10 border-b border-white/10">
-                                            <tr>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Bill
-                                                </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Customer
-                                                </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Amount
-                                                </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Type
-                                                </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Date
-                                                </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/10">
-                                            {data.recent_payments.map(
-                                                (payment, index) => (
-                                                    <tr
-                                                        key={index}
-                                                        className="hover:bg-white/5 transition-colors"
-                                                    >
-                                                        <td className="px-4 py-3">
-                                                            <p className="text-sm text-white font-medium">
-                                                                {
-                                                                    payment.bill_name
-                                                                }
-                                                            </p>
-                                                            <p className="text-xs text-slate-400 capitalize">
-                                                                {
-                                                                    payment.recurring_type
-                                                                }
-                                                            </p>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <Avatar
-                                                                    user={
-                                                                        payment.customer
-                                                                    }
-                                                                    size="sm"
-                                                                />
-                                                                <div>
-                                                                    <p className="text-sm text-white">
-                                                                        {payment.customer_name ||
-                                                                            "Guest"}
-                                                                    </p>
-                                                                    <p className="text-xs text-slate-400">
-                                                                        {
-                                                                            payment.customer_email
-                                                                        }
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <p className="text-sm font-bold text-white">
-                                                                {payment.currency ||
-                                                                    displayCurrency}
-                                                                {Number(
-                                                                    payment.amount,
-                                                                ).toLocaleString()}
-                                                            </p>
-                                                            {payment.total_paid >
-                                                                payment.amount && (
-                                                                <p className="text-xs text-slate-400">
-                                                                    incl. fees:{" "}
-                                                                    {payment.currency ||
-                                                                        displayCurrency}
-                                                                    {Number(
-                                                                        payment.total_paid,
-                                                                    ).toLocaleString()}
-                                                                </p>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">
-                                                                {payment.recurring_for ===
-                                                                "continue"
-                                                                    ? "Recurring"
-                                                                    : "One-time"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <p className="text-sm text-slate-300">
-                                                                {new Date(
-                                                                    payment.created_at,
-                                                                ).toLocaleDateString()}
-                                                            </p>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className="inline-flex items-center gap-1">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                                <span className="text-xs text-green-500 capitalize">
-                                                                    {
-                                                                        payment.status
-                                                                    }
-                                                                </span>
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ),
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className="py-12 flex flex-col items-center justify-center text-center">
-                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-2xl mb-3">
-                                        💳
-                                    </div>
-                                    <h3 className="text-base font-bold text-white mb-1">
-                                        No Payments Yet
-                                    </h3>
-                                    <p className="text-slate-400 text-xs">
-                                        When customers pay your bills,
-                                        transactions will appear here
-                                    </p>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 </div>
-            )}
-
-            {/* Bill Details Modal */}
-            {showBillModal && (
-                <BillDetailsModal
-                    bill={selectedBill}
-                    onClose={() => setShowBillModal(false)}
-                />
             )}
         </Authenticated>
     );

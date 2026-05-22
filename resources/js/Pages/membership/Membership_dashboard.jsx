@@ -1,18 +1,130 @@
-// resources/js/Pages/membership/Membership_dashboard.jsx
 import { Head, Link } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect, useState, useRef } from "react";
 import LoadingScreen from "@/includes/LoadingScreen";
 import Avatar from "../../Components/Avatar";
+import CreatorDashboardTabs from "@/Components/CreatorDashboardTabs";
+import { useMemo } from "react";
+
+import {
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+} from "recharts";
 
 export default function Membership_dashboard(props) {
     const [loading, setLoading] = useState(true);
-    const [selectedPeriod, setSelectedPeriod] = useState("12months");
+    const [selectedPeriod, setSelectedPeriod] = useState("3months");
     const [filterStatus, setFilterStatus] = useState("all");
-    const [searchTerm, setSearchTerm] = useState("");
+    const [membershipSearch, setMembershipSearch] = useState("");
+    const [paymentSearch, setPaymentSearch] = useState("");
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+    const RevenueChart = ({ data, currency }) => {
+        return (
+            <div className="w-full h-[360px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                        data={data}
+                        margin={{
+                            top: 20,
+                            right: 10,
+                            left: -20,
+                            bottom: 0,
+                        }}
+                    >
+                        <defs>
+                            <linearGradient
+                                id="membershipRevenueGradient"
+                                x1="0"
+                                y1="0"
+                                x2="0"
+                                y2="1"
+                            >
+                                <stop
+                                    offset="0%"
+                                    stopColor="#ec4899"
+                                    stopOpacity={0.45}
+                                />
+
+                                <stop
+                                    offset="100%"
+                                    stopColor="#ec4899"
+                                    stopOpacity={0}
+                                />
+                            </linearGradient>
+                        </defs>
+
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="rgba(255,255,255,0.06)"
+                            vertical={false}
+                        />
+
+                        <XAxis
+                            dataKey="month"
+                            tick={{
+                                fill: "#94a3b8",
+                                fontSize: 12,
+                            }}
+                            axisLine={false}
+                            tickLine={false}
+                        />
+
+                        <YAxis
+                            tick={{
+                                fill: "#94a3b8",
+                                fontSize: 12,
+                            }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={(value) => `${currency}${value}`}
+                        />
+
+                        <Tooltip
+                            contentStyle={{
+                                background: "rgba(15,23,42,0.96)",
+                                border: "1px solid rgba(255,255,255,0.08)",
+                                borderRadius: "18px",
+                                color: "#fff",
+                                backdropFilter: "blur(12px)",
+                            }}
+                            formatter={(value) => [
+                                `${currency}${Number(value).toLocaleString()}`,
+                                "Revenue",
+                            ]}
+                        />
+
+                        <Area
+                            type="monotone"
+                            dataKey="amount"
+                            stroke="#ec4899"
+                            strokeWidth={4}
+                            fill="url(#membershipRevenueGradient)"
+                            dot={{
+                                r: 5,
+                                fill: "#0f172a",
+                                stroke: "#ec4899",
+                                strokeWidth: 3,
+                            }}
+                            activeDot={{
+                                r: 8,
+                                fill: "#ec4899",
+                                stroke: "#fff",
+                                strokeWidth: 3,
+                            }}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+        );
+    };
 
     const [data, setData] = useState({
         members: 0,
@@ -54,14 +166,13 @@ export default function Membership_dashboard(props) {
 
     // Filter payments based on search
     const filteredPayments = data.payments?.filter((payment) => {
-        const matchesSearch =
-            payment.membership?.title
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-            payment.user?.name
-                ?.toLowerCase()
-                .includes(searchTerm.toLowerCase());
-        return matchesSearch;
+        const search = paymentSearch.toLowerCase();
+
+        return (
+            payment.membership?.title?.toLowerCase()?.includes(search) ||
+            payment.user?.name?.toLowerCase()?.includes(search) ||
+            payment.user?.username?.toLowerCase()?.includes(search)
+        );
     });
 
     // Get unique memberships from payments
@@ -72,12 +183,17 @@ export default function Membership_dashboard(props) {
                 !acc.find((m) => m.title === payment.membership.title)
             ) {
                 acc.push({
+                    id: payment.membership.id,
+                    uuid: payment.membership.uuid,
+
                     title: payment.membership.title,
                     price: payment.membership.price,
                     type: payment.membership.type,
                     thumbnail: payment.membership.thumbnail,
+
                     total_revenue: 0,
                     total_members: 0,
+
                     status: 1,
                     last_payment_date: null,
                 });
@@ -118,6 +234,12 @@ export default function Membership_dashboard(props) {
 
     // All memberships for table
     const allMemberships = membershipsWithStats;
+
+    const filteredMemberships = allMemberships.filter((membership) =>
+        membership.title
+            ?.toLowerCase()
+            .includes(membershipSearch.toLowerCase()),
+    );
 
     // Monthly data for chart (generate from payments)
     const generateMonthlyData = () => {
@@ -162,7 +284,7 @@ export default function Membership_dashboard(props) {
         return months;
     };
 
-    const monthlyData = generateMonthlyData();
+    const monthlyData = useMemo(() => generateMonthlyData(), [data.payments]);
 
     // Get chart data based on selected period
     const getChartData = () => {
@@ -181,173 +303,49 @@ export default function Membership_dashboard(props) {
             ? (data.per_month / (data.all_time / 12 || 1)) * 100
             : 0;
 
-    // Revenue Chart Component
-    const RevenueChart = ({ data: chartData, currency }) => {
-        const canvasRef = useRef(null);
-        const [tooltipData, setTooltipData] = useState(null);
-        const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+    const chartData = useMemo(
+        () => getChartData(),
+        [monthlyData, selectedPeriod],
+    );
 
-        useEffect(() => {
-            if (!canvasRef.current || !chartData.length) return;
+    const currentRevenue =
+        chartData?.length > 0
+            ? Number(chartData[chartData.length - 1]?.amount || 0)
+            : 0;
 
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext("2d");
-            const container = canvas.parentElement;
-            const width = container.clientWidth - 32;
-            const height = 300;
+    const previousRevenue =
+        chartData?.length > 1
+            ? Number(chartData[chartData.length - 2]?.amount || 0)
+            : 0;
 
-            canvas.width = width;
-            canvas.height = height;
+    const growthPercentage =
+        previousRevenue > 0
+            ? (
+                  ((currentRevenue - previousRevenue) / previousRevenue) *
+                  100
+              ).toFixed(1)
+            : 0;
 
-            const values = chartData.map((item) => item.amount);
-            const maxValue = Math.max(...values, 1);
-            const minValue = Math.min(...values, 0);
-            const valueRange = maxValue - minValue;
+    const isGrowthPositive = currentRevenue >= previousRevenue;
 
-            const padding = { top: 20, right: 20, bottom: 30, left: 50 };
-            const chartWidth = width - padding.left - padding.right;
-            const chartHeight = height - padding.top - padding.bottom;
-            const barWidth = (chartWidth / chartData.length) * 0.7;
-            const barSpacing = (chartWidth / chartData.length) * 0.3;
+    const activeRecurringRevenue =
+        filteredPayments?.reduce((sum, payment) => {
+            const membershipType = payment?.membership?.type || "";
 
-            ctx.clearRect(0, 0, width, height);
-            ctx.save();
-            ctx.translate(padding.left, padding.top);
+            const isRecurring =
+                membershipType === "monthly" || membershipType === "yearly";
 
-            // Draw horizontal grid lines
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-            ctx.fillStyle = "#94a3b8";
-            ctx.font = "11px 'Inter', sans-serif";
-            ctx.textAlign = "right";
-            ctx.textBaseline = "middle";
+            const isActive =
+                payment?.status === "paid" || payment?.status === "active";
 
-            for (let i = 0; i <= 5; i++) {
-                const value = minValue + (valueRange * i) / 5;
-                const y = chartHeight - (chartHeight * i) / 5;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(chartWidth, y);
-                ctx.stroke();
-                ctx.fillStyle = "#94a3b8";
-                ctx.fillText(
-                    `${currency}${Math.round(value).toLocaleString()}`,
-                    -8,
-                    y,
-                );
+            if (isRecurring && isActive) {
+                return sum + Number(payment.amount || 0);
             }
 
-            // Draw X-axis labels
-            ctx.textAlign = "center";
-            ctx.textBaseline = "top";
-            ctx.fillStyle = "#94a3b8";
-            chartData.forEach((item, index) => {
-                const x = index * (barWidth + barSpacing) + barWidth / 2;
-                ctx.fillText(item.month, x, chartHeight + 8);
-            });
+            return sum;
+        }, 0) || 0;
 
-            // Draw bars
-            chartData.forEach((item, index) => {
-                const x = index * (barWidth + barSpacing);
-                const barHeight =
-                    ((item.amount - minValue) / valueRange) * chartHeight;
-                const y = chartHeight - barHeight;
-                const gradient = ctx.createLinearGradient(
-                    x,
-                    y,
-                    x,
-                    y + barHeight,
-                );
-                gradient.addColorStop(0, "#ec4899");
-                gradient.addColorStop(1, "#be185d");
-                ctx.fillStyle = gradient;
-                ctx.fillRect(x, y, barWidth, barHeight);
-
-                if (tooltipData && tooltipData.index === index) {
-                    ctx.fillStyle = "rgba(236, 72, 153, 0.3)";
-                    ctx.fillRect(x, 0, barWidth, chartHeight);
-                    const mouseX = tooltipPosition.x - padding.left;
-                    const mouseY = tooltipPosition.y - padding.top;
-                    const tooltipX = Math.min(
-                        Math.max(mouseX - 60, 0),
-                        chartWidth - 120,
-                    );
-                    const tooltipY = Math.max(mouseY - 40, 0);
-                    ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
-                    ctx.shadowBlur = 8;
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                    ctx.fillRect(tooltipX, tooltipY, 120, 35);
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = "#fff";
-                    ctx.font = "bold 12px 'Inter', sans-serif";
-                    ctx.fillText(
-                        `${currency}${item.amount.toLocaleString()}`,
-                        tooltipX + 60,
-                        tooltipY + 15,
-                    );
-                    ctx.font = "10px 'Inter', sans-serif";
-                    ctx.fillStyle = "#94a3b8";
-                    ctx.fillText(item.month, tooltipX + 60, tooltipY + 28);
-                }
-            });
-
-            // Draw value labels
-            ctx.font = "bold 11px 'Inter', sans-serif";
-            chartData.forEach((item, index) => {
-                const x = index * (barWidth + barSpacing) + barWidth / 2;
-                const barHeight =
-                    ((item.amount - minValue) / valueRange) * chartHeight;
-                const y = chartHeight - barHeight;
-                if (barHeight > 25 && item.amount > 0) {
-                    ctx.fillStyle = "#fff";
-                    ctx.fillText(
-                        `${currency}${item.amount.toLocaleString()}`,
-                        x,
-                        y - 5,
-                    );
-                }
-            });
-            ctx.restore();
-
-            const handleMouseMove = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const mouseX = (e.clientX - rect.left) * scaleX - padding.left;
-                if (mouseX >= 0 && mouseX <= chartWidth) {
-                    const index = Math.floor(mouseX / (barWidth + barSpacing));
-                    if (index >= 0 && index < chartData.length) {
-                        setTooltipData({
-                            index,
-                            value: chartData[index].amount,
-                            month: chartData[index].month,
-                        });
-                        setTooltipPosition({
-                            x: e.clientX - rect.left,
-                            y: e.clientY - rect.top,
-                        });
-                    } else {
-                        setTooltipData(null);
-                    }
-                } else {
-                    setTooltipData(null);
-                }
-            };
-            const handleMouseLeave = () => setTooltipData(null);
-            canvas.addEventListener("mousemove", handleMouseMove);
-            canvas.addEventListener("mouseleave", handleMouseLeave);
-            return () => {
-                canvas.removeEventListener("mousemove", handleMouseMove);
-                canvas.removeEventListener("mouseleave", handleMouseLeave);
-            };
-        }, [chartData, currency, tooltipData, tooltipPosition]);
-
-        return (
-            <canvas
-                ref={canvasRef}
-                className="w-full h-[300px]"
-                style={{ width: "100%", height: "300px" }}
-            />
-        );
-    };
+    const estimatedNextMonth = activeRecurringRevenue;
 
     // Payment Details Modal
     const PaymentDetailsModal = ({ payment, onClose }) => {
@@ -355,132 +353,303 @@ export default function Membership_dashboard(props) {
 
         return (
             <div
-                className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
                 onClick={onClose}
             >
                 <div
-                    className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-white/10"
+                    className="
+                    relative
+                    w-full
+                    max-w-5xl
+                    rounded-[28px]
+                    overflow-hidden
+                    border border-white/10
+                    bg-gradient-to-br
+                    from-[#131c35]
+                    via-[#1b2442]
+                    to-[#101827]
+                    shadow-[0_20px_80px_rgba(0,0,0,0.65)]
+                "
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Hero Section */}
-                    <div className="relative h-32 bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 rounded-t-2xl overflow-hidden">
-                        <div className="absolute inset-0 bg-black/40"></div>
-                        <div className="absolute bottom-4 left-6 flex items-center gap-4">
-                            {payment.membership?.thumbnail ? (
-                                <img
-                                    src={payment.membership.thumbnail}
-                                    alt={payment.membership.title}
-                                    className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-xl"
-                                />
-                            ) : (
-                                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl border-4 border-white shadow-xl">
-                                    👥
-                                </div>
-                            )}
-                            <div>
-                                <h2 className="text-2xl font-bold text-white">
-                                    {payment.membership?.title ||
-                                        "Membership Payment"}
-                                </h2>
-                                <p className="text-white/80 text-xs">
-                                    Payment ID: {payment.id}
-                                </p>
-                            </div>
-                        </div>
+                    {/* HEADER */}
+                    <div className="relative px-8 py-7 border-b border-white/10 bg-gradient-to-r from-pink-600/30 via-purple-600/20 to-indigo-600/30">
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white text-xl flex items-center justify-center transition-all hover:scale-110"
+                            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-xl
+                            transition-all"
                         >
-                            &times;
+                            ×
                         </button>
+
+                        <div className="flex items-center gap-5">
+                            <div className="w-20 h-20 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+                                {payment.membership?.thumbnail ? (
+                                    <img
+                                        src={payment.membership.thumbnail}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-4xl">👑</span>
+                                )}
+                            </div>
+
+                            <div>
+                                <h2 className="text-3xl font-bold text-white">
+                                    {payment.membership?.title || "Membership"}
+                                </h2>
+
+                                <p className="text-slate-300 text-sm mt-1">
+                                    Payment ID: #{payment.id}
+                                </p>
+
+                                <div className="mt-3 flex items-center gap-2">
+                                    <span
+                                        className="
+                                    px-3 py-1
+                                    rounded-full
+                                    bg-green-500/20
+                                    text-green-400
+                                    text-xs
+                                    font-semibold
+                                "
+                                    >
+                                        Payment Successful
+                                    </span>
+
+                                    <span
+                                        className="
+                                    px-3 py-1
+                                    rounded-full
+                                    bg-pink-500/20
+                                    text-pink-400
+                                    text-xs
+                                    font-semibold
+                                    capitalize
+                                "
+                                    >
+                                        {payment.membership?.type || "monthly"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Content Area */}
-                    <div className="p-6">
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/10">
-                                <p className="text-slate-400 text-xs uppercase tracking-wider">
-                                    Amount
+                    {/* BODY */}
+                    <div className="p-8">
+                        {/* TOP CARDS */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                                <p className="text-slate-400 text-xs uppercase">
+                                    Amount Paid
                                 </p>
-                                <p className="text-2xl font-bold text-green-400 mt-1">
+
+                                <h3 className="text-3xl font-bold text-pink-400 mt-3">
                                     {payment.currency || displayCurrency}
                                     {Number(payment.amount).toLocaleString()}
-                                </p>
+                                </h3>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/10">
-                                <p className="text-slate-400 text-xs uppercase tracking-wider">
+
+                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                                <p className="text-slate-400 text-xs uppercase">
+                                    Membership Price
+                                </p>
+
+                                <h3 className="text-2xl font-bold text-white mt-3">
+                                    {payment.currency || displayCurrency}
+                                    {Number(
+                                        payment.membership?.price || 0,
+                                    ).toLocaleString()}
+                                </h3>
+                            </div>
+
+                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                                <p className="text-slate-400 text-xs uppercase">
+                                    Payment Date
+                                </p>
+
+                                <h3 className="text-lg font-bold text-white mt-3">
+                                    {payment.created_at}
+                                </h3>
+                            </div>
+
+                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                                <p className="text-slate-400 text-xs uppercase">
                                     Status
                                 </p>
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium mt-1 bg-green-500/20 text-green-400">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                    {payment.status || "Paid"}
-                                </span>
+
+                                <div className="mt-4">
+                                    <span
+                                        className="
+                                    inline-flex
+                                    items-center
+                                    gap-2
+                                    px-4 py-2
+                                    rounded-full
+                                    bg-green-500/20
+                                    text-green-400
+                                    text-sm
+                                    font-semibold
+                                "
+                                    >
+                                        <span
+                                            className="
+                                        w-2 h-2 rounded-full bg-green-400
+                                    "
+                                        ></span>
+
+                                        {payment.status || "Paid"}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Two Column Layout */}
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {/* Left Column - Member Info */}
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <h3 className="text-white font-semibold mb-3 text-sm flex items-center gap-2">
-                                    <span className="w-1 h-5 bg-pink-500 rounded-full"></span>
+                        {/* DETAILS GRID */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* MEMBER INFO */}
+                            <div
+                                className="
+                                    rounded-3xl
+                                    bg-white/5
+                                    border border-white/10
+                                    p-6
+                                "
+                            >
+                                <h3
+                                    className="
+                                text-xl
+                                font-bold
+                                text-white
+                                mb-5
+                            "
+                                >
                                     Member Information
                                 </h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar user={payment.user} size="md" />
+
+                                <div className="flex items-center gap-4 mb-6">
+                                    <Avatar user={payment.user} size="lg" />
+
+                                    <div>
+                                        <h4 className="text-white text-lg font-bold">
+                                            {payment.user?.name || "Guest"}
+                                        </h4>
+
+                                        <p className="text-slate-400 text-sm">
+                                            @{payment.user?.username}
+                                        </p>
+
+                                        <p className="text-slate-500 text-xs mt-1">
+                                            {payment.user?.email}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-400">
+                                            Customer Type
+                                        </span>
+
+                                        <span className="text-white font-semibold">
+                                            Active Member
+                                        </span>
                                     </div>
 
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-400">
+                                            Membership Plan
+                                        </span>
+
+                                        <span className="text-white font-semibold">
+                                            {payment.membership?.title}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Right Column - Membership Info */}
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <h3 className="text-white font-semibold mb-3 text-sm flex items-center gap-2">
-                                    <span className="w-1 h-5 bg-green-500 rounded-full"></span>
-                                    Membership Details
+                            {/* PAYMENT DETAILS */}
+                            <div
+                                className="
+                                rounded-3xl
+                                bg-white/5
+                                border border-white/10
+                                p-6
+                            "
+                            >
+                                <h3
+                                    className="
+                                    text-xl
+                                    font-bold
+                                    text-white
+                                    mb-5
+                                "
+                                >
+                                    Payment Details
                                 </h3>
-                                <div className="space-y-3">
+
+                                <div className="space-y-5">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">
-                                            Plan Type
+                                        <span className="text-slate-400">
+                                            Payment Method
                                         </span>
-                                        <span className="text-white capitalize font-medium text-sm">
-                                            {payment.membership?.type ||
-                                                "Monthly"}
+
+                                        <span className="text-white font-semibold">
+                                            Stripe
                                         </span>
                                     </div>
+
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">
-                                            Price
+                                        <span className="text-slate-400">
+                                            Billing Type
                                         </span>
-                                        <span className="text-white font-medium text-sm">
+
+                                        <span className="text-white font-semibold capitalize">
+                                            {payment.membership?.type}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-slate-400">
+                                            Currency
+                                        </span>
+
+                                        <span className="text-white font-semibold">
+                                            {payment.currency}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-slate-400">
+                                            Revenue Generated
+                                        </span>
+
+                                        <span className="text-green-400 font-bold text-lg">
                                             {payment.currency ||
                                                 displayCurrency}
                                             {Number(
-                                                payment.membership?.price ||
-                                                    payment.amount,
+                                                payment.amount,
                                             ).toLocaleString()}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">
-                                            Payment Date
-                                        </span>
-                                        <span className="text-white font-medium text-sm">
-                                            {payment.created_at}
-                                        </span>
-                                    </div>
+                                </div>
+
+                                <div
+                                    className="
+                                    mt-8
+                                    rounded-2xl
+                                    bg-gradient-to-r
+                                    from-pink-500/10
+                                    to-purple-500/10
+                                    border border-pink-500/20
+                                    p-5
+                                "
+                                >
+                                    <p className="text-slate-300 text-sm">
+                                        This payment was successfully processed
+                                        and added to your membership earnings.
+                                    </p>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="mt-4 pt-3 text-center border-t border-white/10">
-                            <p className="text-slate-500 text-xs">
-                                Membership payment transaction details
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -497,77 +666,103 @@ export default function Membership_dashboard(props) {
                 <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
                         {/* Header Section */}
-                        <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
-                            <div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-pink-100 to-white bg-clip-text text-transparent">
-                                    Membership Dashboard
-                                </h1>
-                                <p className="text-slate-400 mt-1 text-sm">
-                                    Track your memberships, payments, and
-                                    revenue insights
-                                </p>
+                        <CreatorDashboardTabs />
+
+                        <div className="mb-8">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                                <div>
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg shadow-pink-500/20">
+                                            👑
+                                        </div>
+
+                                        <div>
+                                            <h1 className="text-4xl font-black text-white tracking-tight">
+                                                Membership Dashboard
+                                            </h1>
+
+                                            <p className="text-slate-400 mt-1 text-sm">
+                                                Track recurring revenue,
+                                                supporter retention and creator
+                                                growth analytics
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <Link
-                                href="/billing-dashboard"
-                                className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm text-white flex items-center gap-2"
-                            >
-                                <span>📊</span> Bill Dashboard
-                            </Link>
                         </div>
 
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-pink-500/30 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-lg">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                            {/* MEMBERS */}
+
+                            <div className="rounded-3xl bg-gradient-to-br from-pink-500/10 to-pink-700/5 border border-pink-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-2xl">
                                         👥
                                     </div>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-pink-500/10 text-pink-400">
-                                        Total
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-pink-500/10 text-pink-300">
+                                        Supporters
                                     </span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white tracking-tight">
-                                    {data.members || 0}
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">
-                                    Total Members
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-xs text-green-400">
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {data.members || 0}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Active Members
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
+
+                                    <span className="text-xs text-green-300">
                                         {uniqueMemberships.length || 0} active
                                         memberships
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-emerald-500/30 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg">
+                            {/* MONTHLY */}
+
+                            <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-700/5 border border-emerald-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl">
                                         💰
                                     </div>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400">
-                                        Current Month
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300">
+                                        This Month
                                     </span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white tracking-tight">
-                                    {displayCurrency}
-                                    {Number(
-                                        data.per_month || 0,
-                                    ).toLocaleString()}
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">
-                                    Monthly Earnings
-                                </p>
-                                <div className="mt-3">
-                                    <div className="flex justify-between text-xs text-slate-400 mb-1">
-                                        <span>Monthly target</span>
-                                        <span>
-                                            {Math.round(collectionRate)}%
-                                        </span>
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {displayCurrency}
+                                        {Number(
+                                            data.per_month || 0,
+                                        ).toLocaleString()}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Monthly Revenue
+                                    </p>
+                                </div>
+
+                                <div className="w-full">
+                                    <div className="flex justify-between text-xs text-slate-400 mb-2">
+                                        <span>Growth Rate</span>
+
+                                        <span>{growthPercentage}%</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+
+                                    <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500"
                                             style={{
                                                 width: `${Math.min(100, collectionRate)}%`,
                                             }}
@@ -576,31 +771,72 @@ export default function Membership_dashboard(props) {
                                 </div>
                             </div>
 
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4 hover:border-amber-500/30 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg">
+                            {/* LIFETIME */}
+
+                            <div className="rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl">
                                         📈
                                     </div>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-500/10 text-amber-400">
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300">
                                         Lifetime
                                     </span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white tracking-tight">
-                                    {displayCurrency}
-                                    {Number(
-                                        data.all_time || 0,
-                                    ).toLocaleString()}
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">
-                                    Lifetime Earnings
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-xs text-green-400 flex items-center gap-1">
-                                        ↑ {displayCurrency}
-                                        {((data.per_month || 0) * 0.2).toFixed(
-                                            2,
-                                        )}{" "}
-                                        vs last month
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {displayCurrency}
+                                        {Number(
+                                            data.all_time || 0,
+                                        ).toLocaleString()}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Total Revenue
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+
+                                    <span className="text-xs text-amber-300">
+                                        Recurring earnings
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* FORECAST */}
+
+                            <div className="rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-500/5 border border-cyan-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl">
+                                        🚀
+                                    </div>
+
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300">
+                                        Forecast
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <h2 className="text-5xl font-black text-white">
+                                        {displayCurrency}
+                                        {Number(
+                                            estimatedNextMonth || 0,
+                                        ).toLocaleString()}
+                                    </h2>
+
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        Estimated Next Month
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+
+                                    <span className="text-xs text-cyan-300">
+                                        Based on active recurring supporters
                                     </span>
                                 </div>
                             </div>
@@ -712,12 +948,12 @@ export default function Membership_dashboard(props) {
                                         <option value="6months">
                                             Last 6 months
                                         </option>
-                                        <option value="12months">
+                                        {/* <option value="12months">
                                             Last 12 months
-                                        </option>
+                                        </option> */}
                                     </select>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-4">
+                                <div className="rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/10 p-5">
                                     {monthlyData.length > 0 ? (
                                         <RevenueChart
                                             data={getChartData()}
@@ -734,130 +970,226 @@ export default function Membership_dashboard(props) {
                             </div>
                         </div>
 
-                        {/* All Payments Table */}
+                        {/* All Memberships */}
                         <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden mb-6">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-white/10 gap-4">
                                 <div>
                                     <h2 className="text-xl font-bold text-white">
-                                        All Membership Payments
+                                        All Memberships
                                     </h2>
+
                                     <p className="text-slate-400 text-xs">
-                                        Manage and track all membership payments
+                                        Manage and track all your memberships
                                     </p>
+
+                                    <div
+                                        className={`
+                                            mt-3 inline-flex items-center gap-2
+                                            px-4 py-2 rounded-2xl border
+                                            ${
+                                                isGrowthPositive
+                                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                                    : "bg-red-500/10 border-red-500/20 text-red-400"
+                                            }
+                                        `}
+                                    >
+                                        <span className="text-lg">
+                                            {isGrowthPositive ? "↗" : "↘"}
+                                        </span>
+
+                                        <span className="font-bold">
+                                            {growthPercentage}%
+                                        </span>
+
+                                        <span className="text-xs opacity-80">
+                                            vs previous month
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap gap-3">
+
+                                <div className="flex items-center gap-3">
                                     <input
                                         type="text"
-                                        placeholder="Search by member or plan..."
-                                        value={searchTerm}
+                                        placeholder="Search memberships..."
+                                        value={membershipSearch}
                                         onChange={(e) =>
-                                            setSearchTerm(e.target.value)
+                                            setMembershipSearch(e.target.value)
                                         }
-                                        className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-pink-500"
+                                        className="
+                                        bg-white/10
+                                        border border-white/20
+                                        rounded-lg
+                                        px-4 py-2
+                                        text-sm
+                                        text-white
+                                        placeholder-slate-400
+                                        focus:outline-none
+                                        focus:ring-1
+                                        focus:ring-pink-500
+                                    "
                                     />
                                 </div>
                             </div>
 
-                            {filteredPayments?.length > 0 ? (
+                            {filteredMemberships.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead className="bg-white/10 border-b border-white/10">
                                             <tr>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Member
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                    Membership
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Membership Plan
+
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                    Price
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
                                                     Type
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Amount
+
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                    Members
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                                    Date
+
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                    Revenue
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
                                                     Status
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
                                                     Action
                                                 </th>
                                             </tr>
                                         </thead>
+
                                         <tbody className="divide-y divide-white/10">
-                                            {filteredPayments.map(
-                                                (payment, index) => (
+                                            {filteredMemberships.map(
+                                                (membership, index) => (
                                                     <tr
                                                         key={index}
-                                                        className="hover:bg-white/5 transition-colors"
+                                                        className="hover:bg-white/[0.07] transition-colors"
                                                     >
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <Avatar
-                                                                    user={
-                                                                        payment.user
-                                                                    }
-                                                                    size="sm"
-                                                                />
+                                                        <td className="px-4 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div
+                                                                    className="
+                                                                    w-10 h-10
+                                                                    rounded-lg
+                                                                    bg-pink-500/10
+                                                                    border border-pink-500/20
+                                                                    flex items-center justify-center
+                                                                "
+                                                                >
+                                                                    👑
+                                                                </div>
+
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-white">
+                                                                        {
+                                                                            membership.title
+                                                                        }
+                                                                    </p>
+
+                                                                    <p className="text-xs text-slate-400">
+                                                                        Created
+                                                                        membership
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-4 py-3">
-                                                            <p className="text-sm text-white">
-                                                                {payment
-                                                                    .membership
-                                                                    ?.title ||
-                                                                    "Membership"}
-                                                            </p>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className="text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 capitalize">
-                                                                {payment
-                                                                    .membership
-                                                                    ?.type ||
-                                                                    "monthly"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <p className="text-sm font-bold text-white">
-                                                                {payment.currency ||
-                                                                    displayCurrency}
+
+                                                        <td className="px-4 py-4">
+                                                            <p className="text-white font-semibold">
+                                                                {
+                                                                    displayCurrency
+                                                                }
                                                                 {Number(
-                                                                    payment.amount,
+                                                                    membership.price ||
+                                                                        0,
                                                                 ).toLocaleString()}
                                                             </p>
                                                         </td>
-                                                        <td className="px-4 py-3">
-                                                            <p className="text-sm text-slate-300">
+
+                                                        <td className="px-4 py-4">
+                                                            <span
+                                                                className="
+                                                                text-xs
+                                                                px-2 py-1
+                                                                rounded-full
+                                                                bg-amber-500/20
+                                                                text-amber-400
+                                                                capitalize
+                                                            "
+                                                            >
                                                                 {
-                                                                    payment.created_at
+                                                                    membership.type
                                                                 }
-                                                            </p>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className="inline-flex items-center gap-1">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                                <span className="text-xs text-green-500 capitalize">
-                                                                    {payment.status ||
-                                                                        "Paid"}
-                                                                </span>
                                                             </span>
                                                         </td>
-                                                        <td className="px-4 py-3">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedPayment(
-                                                                        payment,
-                                                                    );
-                                                                    setShowPaymentModal(
-                                                                        true,
-                                                                    );
-                                                                }}
-                                                                className="text-xs text-pink-400 hover:text-pink-300 transition-colors"
+
+                                                        <td className="px-4 py-4">
+                                                            <p className="text-white font-semibold">
+                                                                {membership.total_members ||
+                                                                    0}
+                                                            </p>
+
+                                                            <p className="text-xs text-slate-400">
+                                                                unique members
+                                                            </p>
+                                                        </td>
+
+                                                        <td className="px-4 py-4">
+                                                            <p className="text-white font-bold">
+                                                                {
+                                                                    displayCurrency
+                                                                }
+                                                                {Number(
+                                                                    membership.total_revenue ||
+                                                                        0,
+                                                                ).toLocaleString()}
+                                                            </p>
+                                                        </td>
+
+                                                        <td className="px-4 py-4">
+                                                            <span
+                                                                className="
+                                                                inline-flex
+                                                                items-center
+                                                                gap-1
+                                                                text-xs
+                                                                text-green-400
+                                                            "
                                                             >
-                                                                View Details →
-                                                            </button>
+                                                                <span
+                                                                    className="
+                                                                    w-1.5 h-1.5
+                                                                    rounded-full
+                                                                    bg-green-500
+                                                                "
+                                                                ></span>
+                                                                Active
+                                                            </span>
+                                                        </td>
+
+                                                        <td className="px-4 py-4">
+                                                            <Link
+                                                                href={`/membership/details/${membership.uuid || membership.id}`}
+                                                                className="
+                                                                inline-flex items-center gap-2
+                                                                px-4 py-2 rounded-xl
+                                                                bg-gradient-to-r from-pink-500 to-purple-500
+                                                                text-white text-sm font-bold
+                                                                hover:scale-105 transition-all duration-300
+                                                                shadow-lg shadow-pink-500/20
+                                                            "
+                                                            >
+                                                                View Details
+                                                                <span>→</span>
+                                                            </Link>
                                                         </td>
                                                     </tr>
                                                 ),
@@ -866,18 +1198,55 @@ export default function Membership_dashboard(props) {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="py-12 flex flex-col items-center justify-center text-center">
-                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-2xl mb-3">
-                                        👥
+                                <div className="flex flex-col items-center justify-center py-20 px-6">
+                                    <div
+                                        className="
+                                        w-24 h-24 rounded-3xl
+                                        bg-gradient-to-br
+                                        from-pink-500/10
+                                        to-purple-500/10
+                                        border border-pink-500/20
+                                        flex items-center justify-center
+                                        text-5xl
+                                        mb-6
+                                    "
+                                    >
+                                        👑
                                     </div>
-                                    <h3 className="text-base font-bold text-white mb-1">
-                                        No Payments Found
+
+                                    <h3 className="text-2xl font-black text-white mb-3">
+                                        No Memberships Found
                                     </h3>
-                                    <p className="text-slate-400 text-xs">
-                                        {searchTerm
-                                            ? "Try a different search term"
-                                            : "No membership payments have been made yet"}
+
+                                    <p className="text-slate-400 text-center max-w-md leading-relaxed">
+                                        We couldn't find any memberships
+                                        matching your search. Try using a
+                                        different keyword or create a new
+                                        membership.
                                     </p>
+
+                                    {membershipSearch && (
+                                        <button
+                                            onClick={() =>
+                                                setMembershipSearch("")
+                                            }
+                                            className="
+                                            mt-6
+                                            px-5 py-3
+                                            rounded-2xl
+                                            bg-gradient-to-r
+                                            from-pink-500
+                                            to-purple-500
+                                            text-white
+                                            font-bold
+                                            hover:scale-105
+                                            transition-all duration-300
+                                            shadow-lg shadow-pink-500/20
+                                        "
+                                        >
+                                            Clear Search
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

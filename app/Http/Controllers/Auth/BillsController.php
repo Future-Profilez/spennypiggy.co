@@ -17,6 +17,7 @@ use App\Models\Currency;
 use App\Models\FinancialTransaction;
 use App\Models\Deliverable;
 use App\Models\Logs;
+use App\Models\MembershipPayment;
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\UserPayment;
@@ -38,6 +39,8 @@ use Stripe\StripeClient;
 use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
 use App\Traits\RiskEnforcement;
+use Stripe\Stripe;
+use Stripe\Subscription;
 
 class BillsController extends Controller
 {
@@ -1153,205 +1156,500 @@ class BillsController extends Controller
         // return true;
     }
 
-    public function dashboard()
-    {
-        return Inertia::render('bills/Billing_dashboard');
-    }
-
     public function getDashboardData()
     {
+        $user = Auth::user();
+
+        $bills = Bills::with([
+            'payments.user',
+            'payments',
+        ])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        $totalBills = $bills->count();
+
+        $totalRevenue = 0;
+        $monthlyRevenue = 0;
+        $estimatedNextMonth = 0;
+        $uniqueCustomers = [];
+
+        foreach ($bills as $bill) {
+
+            $paidPayments = $bill->payments
+                ->where('status', 'paid');
+
+            $billRevenue = $paidPayments->sum('amount');
+
+            /*
+            |--------------------------------------------------------------------------
+            | ACTIVE RECURRING SUBSCRIPTIONS
+            |--------------------------------------------------------------------------
+            |
+            | Only count subscriptions which:
+            | - are recurring
+            | - active
+            | - not canceled
+            |
+            */
+
+            $activeRecurringPayments = $bill->payments
+                ->filter(function ($payment) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | ONLY RECURRING PAYMENTS
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        $payment->recurring_type === 'one_time'
+                    ) {
+                        return false;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | ONLY SUCCESSFUL PAYMENTS
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($payment->status !== 'paid') {
+                        return false;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | IF STRIPE SUBSCRIPTION STATUS EXISTS
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (isset($payment->subscription_status) && $payment->subscription_status) {
+                        if (!in_array($payment->subscription_status, ['active', 'trialing'])) {
+                            return false;
+                        }
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CANCELED SUBSCRIPTIONS
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (isset($payment->cancel_at_period_end) && $payment->cancel_at_period_end) {
+                        return false;
+                    }
+
+                    return true;
+                });
+
+            /*
+            |--------------------------------------------------------------------------
+            | NEXT MONTH ESTIMATION
+            |--------------------------------------------------------------------------
+            */
+
+            $nextMonthEstimate =
+                $activeRecurringPayments->sum('amount');
+
+            $bill->total_revenue = round($billRevenue, 2);
+
+            $bill->buyers_count =
+                $paidPayments
+                ->pluck('user_id')
+                ->unique()
+                ->count();
+
+            $bill->next_month_estimate =
+                round($nextMonthEstimate, 2);
+
+            $totalRevenue += $billRevenue;
+
+            $estimatedNextMonth += $nextMonthEstimate;
+
+            foreach ($paidPayments as $payment) {
+
+                if (
+                    $payment->created_at->month == now()->month &&
+                    $payment->created_at->year == now()->year
+                ) {
+                    $monthlyRevenue += $payment->amount;
+                }
+
+                if ($payment->user_id) {
+                    $uniqueCustomers[] = $payment->user_id;
+                }
+            }
+        }
+
+        // CHART
+
+        $chartData = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+
+            $month = now()->subMonths($i);
+
+            $amount = 0;
+
+            foreach ($bills as $bill) {
+
+                foreach ($bill->payments as $payment) {
+
+                    if (
+                        $payment->status == 'paid' &&
+                        $payment->created_at->format('Y-m') == $month->format('Y-m')
+                    ) {
+                        $amount += $payment->amount;
+                    }
+                }
+            }
+
+            $chartData[] = [
+                'month' => $month->format('M Y'),
+                'amount' => round($amount, 2)
+            ];
+        }
+
+
+        // TOP BILL
+
+        $topBill = $bills->sortByDesc('total_revenue')->first();
+
+        return response()->json([
+            'status' => true,
+
+            'stats' => [
+                'total_bills' => $totalBills,
+                'total_revenue' => round($totalRevenue, 2),
+                'monthly_revenue' => round($monthlyRevenue, 2),
+                'estimated_next_month' => round($estimatedNextMonth, 2),
+                'unique_customers' => count(array_unique($uniqueCustomers)),
+            ],
+
+            'top_bill' => $topBill,
+
+            'chart' => $chartData,
+
+            'bills' => $bills,
+        ]);
+    }
+
+    public function mySubscriptions()
+    {
+        return Inertia::render('bills/MySubscriptions');
+    }
+
+    public function getMySubscriptions()
+    {
+        $user = Auth::user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACTIVE CONDITION
+        |--------------------------------------------------------------------------
+        */
+
+        $activeCondition = function ($query) {
+
+            $query
+                ->whereNull('end')
+                ->orWhere('end', 0);
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | BILL SUBSCRIPTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        $billSubscriptions = BillPayment::with([
+            'bill.user'
+        ])
+            ->where('user_id', $user->id)
+
+            ->whereRaw('LOWER(status) = ?', ['paid'])
+
+            ->whereIn('recurring_type', [
+                'monthly',
+                'yearly',
+                'annual'
+            ])
+
+            ->latest()
+
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | MEMBERSHIP SUBSCRIPTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        $membershipSubscriptions = MembershipPayment::with([
+            'membership.user'
+        ])
+            ->where('user_id', $user->id)
+
+            ->whereRaw('LOWER(status) = ?', ['paid'])
+
+            ->whereIn('recurring_type', [
+                'monthly',
+                'yearly',
+                'annual'
+            ])
+
+            ->latest()
+
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACTIVE COUNTS
+        |--------------------------------------------------------------------------
+        */
+
+        $activeBillSubscriptions =
+            $billSubscriptions
+            ->filter(function ($subscription) {
+
+                return
+                    $subscription->end != 1;
+            })
+            ->count();
+
+        $activeMembershipSubscriptions =
+            $membershipSubscriptions
+            ->filter(function ($subscription) {
+
+                return
+                    $subscription->end != 1;
+            })
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | MONTHLY SPEND
+        |--------------------------------------------------------------------------
+        */
+
+        $monthlySpend =
+
+            $billSubscriptions
+
+            ->where('recurring_type', 'monthly')
+
+            ->where('end', '!=', 1)
+
+            ->sum('amount')
+
+            +
+
+            $membershipSubscriptions
+
+            ->where('recurring_type', 'monthly')
+
+            ->where('end', '!=', 1)
+
+            ->sum('amount');
+
+        /*
+        |--------------------------------------------------------------------------
+        | YEARLY SPEND
+        |--------------------------------------------------------------------------
+        */
+
+        $yearlySpend =
+
+            $billSubscriptions
+
+            ->filter(function ($subscription) {
+
+                return
+                    in_array(
+                        $subscription->recurring_type,
+                        ['yearly', 'annual']
+                    )
+                    &&
+
+                    $subscription->end != 1;
+            })
+
+            ->sum('amount')
+
+            +
+
+            $membershipSubscriptions
+
+            ->filter(function ($subscription) {
+
+                return
+                    in_array(
+                        $subscription->recurring_type,
+                        ['yearly', 'annual']
+                    )
+                    &&
+
+                    $subscription->end != 1;
+            })
+
+            ->sum('amount');
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
+        return response()->json([
+
+            'status' => true,
+
+            'stats' => [
+
+                'active_bill_subscriptions' =>
+                $activeBillSubscriptions,
+
+                'active_membership_subscriptions' =>
+                $activeMembershipSubscriptions,
+
+                'total_active_subscriptions' =>
+
+                $activeBillSubscriptions +
+                    $activeMembershipSubscriptions,
+
+                'monthly_spend' =>
+                round($monthlySpend, 2),
+
+                'yearly_spend' =>
+                round($yearlySpend, 2),
+            ],
+
+            'bill_subscriptions' =>
+            $billSubscriptions,
+
+            'membership_subscriptions' =>
+            $membershipSubscriptions,
+        ]);
+    }
+
+    public function cancelSubscription(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATION
+        |--------------------------------------------------------------------------
+        */
+
+        $request->validate([
+            'payment_id' => 'required|exists:bill_payments,id',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        $payment = BillPayment::findOrFail(
+            $request->payment_id
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | SECURITY CHECK
+        |--------------------------------------------------------------------------
+        */
+
+        if ($payment->user_id != Auth::id()) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ALREADY CANCELED
+        |--------------------------------------------------------------------------
+        */
+
+        if ($payment->end == 1) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Subscription already canceled'
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | STRIPE CANCEL AT PERIOD END
+        |--------------------------------------------------------------------------
+        */
+
         try {
-            $user = Auth::user();
 
-            // Get all bills for this creator
-            $bills = Bills::where('user_id', $user->id)->get();
-            $billIds = $bills->pluck('id')->toArray();
+            Stripe::setApiKey(
+                config('services.stripe.secret')
+            );
 
-            // Get all paid payments for these bills
-            $payments = BillPayment::with(['user', 'bill'])
-                ->whereIn('bills_id', $billIds)
-                ->where('status', 'paid')
-                ->get();
+            if (!empty($payment->stripe_id)) {
 
-            // Summary Stats
-            $total_bills = $bills->count();
-            $active_bills = $bills->where('status', 1)->count();
+                $subscription =
+                    Subscription::retrieve(
+                        $payment->stripe_id
+                    );
 
-            // Revenue calculations
-            $total_revenue = round($payments->sum('amount'), 2);
-            $total_paid_amount = round($payments->sum('total_paid') ?: $total_revenue, 2);
+                $subscription->cancel_at_period_end = true;
 
-            // Monthly revenue (current month)
-            $monthly_revenue = round($payments->filter(function ($payment) {
-                return Carbon::parse($payment->created_at)->isCurrentMonth();
-            })->sum('amount'), 2);
-
-            // Unique customers (distinct user_id or guest_email)
-            $unique_customers = $payments->unique(function ($payment) {
-                return $payment->user_id ?? $payment->guest_email;
-            })->count();
-
-            $total_payments = $payments->count();
-
-            // Get recent bills with payment stats including last payment date
-            $recent_bills = Bills::where('user_id', $user->id)
-                ->withCount(['payments as total_buyers' => function ($query) {
-                    $query->where('status', 'paid')
-                        ->select(DB::raw('COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id ELSE guest_email END)'));
-                }])
-                ->withSum(['payments as total_revenue' => function ($query) {
-                    $query->where('status', 'paid');
-                }], 'amount')
-                ->with(['payments' => function ($query) {
-                    $query->where('status', 'paid')->orderBy('created_at', 'desc');
-                }])
-                ->orderBy('created_at', 'desc')
-                ->take(5)
-                ->get()
-                ->map(function ($bill) {
-                    $bill->total_revenue = round($bill->total_revenue ?? 0, 2);
-                    $bill->last_payment_date = $bill->payments->isNotEmpty()
-                        ? $bill->payments->first()->created_at->format('Y-m-d H:i:s')
-                        : null;
-                    return $bill;
-                });
-
-            // Get recent payments
-            $recent_payments = BillPayment::with(['bill', 'user'])
-                ->whereIn('bills_id', $billIds)
-                ->where('status', 'paid')
-                ->orderBy('created_at', 'desc')
-                ->take(10)
-                ->get()
-                ->map(function ($payment) {
-                    return [
-                        'id' => $payment->id,
-                        'uuid' => $payment->uuid,
-                        'bill_name' => $payment->bill->name ?? 'Unknown Bill',
-                        'amount' => round($payment->amount, 2),
-                        'total_paid' => round($payment->total_paid ?? $payment->amount, 2),
-                        'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $payment->status,
-                        'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
-                        'recurring_type' => $payment->recurring_type,
-                        'recurring_for' => $payment->recurring_for,
-                        'customer_name' => $payment->guest_name ?? ($payment->user->name ?? 'Anonymous'),
-                        'customer_email' => $payment->guest_email ?? ($payment->user->email ?? 'N/A'),
-                        'customer' => $payment->user,
-                        'anonymous' => $payment->anonymous,
-                        'message' => $payment->message,
-                    ];
-                });
-
-            // Top performing bills by revenue with last payment date
-            $top_bills = Bills::where('user_id', $user->id)
-                ->withSum(['payments as total_revenue' => function ($query) {
-                    $query->where('status', 'paid');
-                }], 'amount')
-                ->withCount(['payments as total_buyers' => function ($query) {
-                    $query->where('status', 'paid')
-                        ->select(DB::raw('COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id ELSE guest_email END)'));
-                }])
-                ->with(['payments' => function ($query) {
-                    $query->where('status', 'paid')->orderBy('created_at', 'desc');
-                }])
-                ->having('total_revenue', '>', 0)
-                ->orderBy('total_revenue', 'desc')
-                ->take(5)
-                ->get()
-                ->map(function ($bill) {
-                    $bill->total_revenue = round($bill->total_revenue ?? 0, 2);
-                    $bill->last_payment_date = $bill->payments->isNotEmpty()
-                        ? $bill->payments->first()->created_at->format('Y-m-d H:i:s')
-                        : null;
-                    return $bill;
-                });
-
-            // All bills for the bills list page with last payment date
-            $all_bills = Bills::where('user_id', $user->id)
-                ->withSum(['payments as total_revenue' => function ($query) {
-                    $query->where('status', 'paid');
-                }], 'amount')
-                ->withCount(['payments as total_buyers' => function ($query) {
-                    $query->where('status', 'paid')
-                        ->select(DB::raw('COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id ELSE guest_email END)'));
-                }])
-                ->with(['payments' => function ($query) {
-                    $query->where('status', 'paid')->orderBy('created_at', 'desc');
-                }])
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($bill) {
-                    $bill->total_revenue = round($bill->total_revenue ?? 0, 2);
-                    $bill->last_payment_date = $bill->payments->isNotEmpty()
-                        ? $bill->payments->first()->created_at->format('Y-m-d H:i:s')
-                        : null;
-                    return $bill;
-                });
-
-            // Monthly data for chart (last 12 months)
-            $monthly_data = $this->getMonthlyData($billIds);
-
-            // Get currency from user or default
-            $currency = $user->default_currency ?? 'GBP';
-            $currencySymbol = $this->getCurrencySymbol($currency);
-
-            // Get payment status distribution
-            $payment_status_stats = [
-                'paid' => BillPayment::whereIn('bills_id', $billIds)->where('status', 'paid')->count(),
-                'pending' => BillPayment::whereIn('bills_id', $billIds)->where('status', 'pending')->count(),
-                'failed' => BillPayment::whereIn('bills_id', $billIds)->where('status', 'failed')->count(),
-                'cancelled' => BillPayment::whereIn('bills_id', $billIds)->where('status', 'cancelled')->count(),
-            ];
-
-            // Get recurring vs one-time stats
-            $recurring_stats = [
-                'recurring' => BillPayment::whereIn('bills_id', $billIds)
-                    ->where('status', 'paid')
-                    ->where('recurring_for', 'continue')
-                    ->count(),
-                'one_time' => BillPayment::whereIn('bills_id', $billIds)
-                    ->where('status', 'paid')
-                    ->where(function ($q) {
-                        $q->where('recurring_for', '!=', 'continue')
-                            ->orWhereNull('recurring_for');
-                    })
-                    ->count(),
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'total_bills' => $total_bills,
-                    'active_bills' => $active_bills,
-                    'total_revenue' => $total_revenue,
-                    'monthly_revenue' => $monthly_revenue,
-                    'total_paid_amount' => $total_paid_amount,
-                    'total_payments' => $total_payments,
-                    'unique_customers' => $unique_customers,
-                    'recent_bills' => $recent_bills,
-                    'recent_payments' => $recent_payments,
-                    'top_bills' => $top_bills,
-                    'all_bills' => $all_bills,
-                    'monthly_data' => $monthly_data,
-                    'payment_status_stats' => $payment_status_stats,
-                    'recurring_stats' => $recurring_stats,
-                    'currency' => $currencySymbol,
-                    'currency_code' => $currency,
-                ]
-            ]);
+                $subscription->save();
+            }
         } catch (\Exception $e) {
-            \Log::error('Bill Dashboard Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'user_id' => Auth::id()
-            ]);
 
             return response()->json([
-                'success' => false,
+
+                'status' => false,
+
                 'message' => $e->getMessage(),
-                'data' => []
+
             ], 500);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE DATABASE
+        |--------------------------------------------------------------------------
+        */
+
+        $payment->update([
+
+            'end' => 1,
+
+            /*
+            |--------------------------------------------------------------------------
+            | OPTIONAL
+            |--------------------------------------------------------------------------
+            */
+
+            'upcoming_payment' => null,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
+        return response()->json([
+
+            'status' => true,
+
+            'message' =>
+            'Subscription scheduled for cancellation successfully.'
+        ]);
     }
 
     public function getAllPayments(Request $request)
@@ -1402,55 +1700,27 @@ class BillsController extends Controller
 
     public function getBillDetails($uuid)
     {
-        try {
-            $user = Auth::user();
-            $bill = Bills::where('uuid', $uuid)
-                ->where('user_id', $user->id)
-                ->firstOrFail();
+        $user = Auth::user();
 
-            $payments = BillPayment::with(['user'])
-                ->where('bills_id', $bill->id)
-                ->where('status', 'paid')
-                ->orderBy('created_at', 'desc')
-                ->paginate(20)
-                ->through(function ($payment) {
-                    return [
-                        'id' => $payment->id,
-                        'uuid' => $payment->uuid,
-                        'amount' => round($payment->amount, 2),
-                        'total_paid' => round($payment->total_paid ?? $payment->amount, 2),
-                        'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
-                        'recurring_type' => $payment->recurring_type,
-                        'recurring_for' => $payment->recurring_for,
-                        'customer_name' => $payment->guest_name ?? ($payment->user->name ?? 'Anonymous'),
-                        'customer_email' => $payment->guest_email ?? ($payment->user->email ?? 'N/A'),
-                        'anonymous' => $payment->anonymous,
-                        'message' => $payment->message,
-                    ];
-                });
+        $bill = Bills::with([
+            'payments.user'
+        ])
+            ->where('uuid', $uuid)
+            ->where('user_id', $user->id)
+            ->first();
 
-            $stats = [
-                'total_revenue' => round($bill->payments()->where('status', 'paid')->sum('amount'), 2),
-                'total_payments' => $bill->payments()->where('status', 'paid')->count(),
-                'unique_buyers' => $bill->uniqueBuyersCount(),
-                'monthly_average' => round($bill->payments()->where('status', 'paid')->avg('amount') ?? 0, 2),
-            ];
+        if (!$bill) {
 
             return response()->json([
-                'success' => true,
-                'data' => [
-                    'bill' => $bill,
-                    'payments' => $payments,
-                    'stats' => $stats
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+                'status' => false,
+                'message' => 'Bill not found'
+            ], 404);
         }
+
+        return response()->json([
+            'status' => true,
+            'bill' => $bill
+        ]);
     }
 
     private function getMonthlyData($billIds)
