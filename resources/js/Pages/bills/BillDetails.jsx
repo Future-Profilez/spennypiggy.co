@@ -3,11 +3,10 @@ import { Head, Link } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import LoadingScreen from "@/includes/LoadingScreen";
 
 export default function BillDetails(props) {
-    const { uuid } = useParams();
+    const { uuid } = props;
     const [loading, setLoading] = useState(true);
     const [bill, setBill] = useState(null);
     const [payments, setPayments] = useState([]);

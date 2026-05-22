@@ -5,10 +5,8 @@ import { Link, usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
-import userdefaultphoto from '../../../../assets/siteicon.png';
 import { TimeFormat } from '@/includes/TimeFormat';
 import OrderDetail from './OrderDetail';
-
 
 export default function OrdersLists({ type = 'sales' }) {
    const slug = (inputString) => {

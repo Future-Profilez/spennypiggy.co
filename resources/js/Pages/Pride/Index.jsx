@@ -84,6 +84,18 @@ export default function PrideLanding() {
                     <FaStar className="text-[#00F0FF] w-8 h-8 absolute top-16 right-[15%] animate-pulse delay-150 motion-reduce:animate-none" />
                     <FaHeart className="text-[#7000FF] w-5 h-5 absolute bottom-10 left-[25%] animate-bounce motion-reduce:animate-none" />
                 </div>
+                
+                {/* 100% Sticker */}
+                <div className="absolute -top-1 right-2 
+                md:right-[15%] lg:right-[20%] z-20 
+                transform rotate-12 
+                hover:rotate-0 transition-transform 
+                duration-300">
+                    <div className="p-4 bg-[#FFB800] text-black font-black uppercase text-center p-3 rounded-full shadow-[4px_4px_0px_0px_#FF007F] border-4 border-black w-24 h-24 md:w-28 md:h-28 flex items-center justify-center animate-pulse motion-reduce:animate-none">
+                        <span className="leading-tight text-[10px] md:text-[12px]">Keep<br/><span className="text-sm ">100%</span><br/>Earnings!</span>
+                    </div>
+                </div>
+
                 <div className="inline-block mb-5 px-6 py-2 rounded-[30px] border border-white/20 bg-white/5 backdrop-blur-md">
                     <span className="text-[14px] md:text-sm font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FF007F] to-[#00F0FF]">
                         ✨ The Ultimate Creator Infrastructure ✨
@@ -173,25 +185,9 @@ export default function PrideLanding() {
                 </div>
             </section>
 
-            {/* LGBTQ+ Business Positioning */}
-            <section className="relative z-10 py-16 px-6">
-                <div className="max-w-4xl mx-auto text-center">
-                    <div className="fading inline-block mb-6 p-4 rounded-[30px] bg-[#FF007F]/10 border border-[#FF007F]/30">
-                        <FaStar className="w-8 h-8 text-[#FF007F]" />
-                    </div>
-                    <h2 className="fading uppercase text-4xl md:text-5xl font-black mb-6 leading-tight">
-                        Your identity is not the product.<br/>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF007F] to-[#7000FF]">Your creativity is.</span>
-                    </h2>
-                    <p className="fading text-xl md:text-xl text-gray-300 max-w-2xl mx-auto font-medium">
-                        Spenny Piggy is the infrastructure for LGBTQ+ creators. We handle the payments, risk, and platform mechanics so you can focus on being absolutely iconic.
-                    </p>
-                </div>
-            </section>
-
             {/* Founder Bonus Section */}
             <section className="relative z-10 py-12 px-6">
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-5xl mx-auto">
                     <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] border border-[#FFB800]/50 rounded-[30px] p-8 md:p-10 relative   shadow-[0_0_40px_rgba(255,184,0,0.15)]">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFB800]/10 blur-[80px] rounded-[30px] pointer-events-none"></div>
                         
@@ -206,30 +202,50 @@ export default function PrideLanding() {
                                 <p className="fading text-gray-300 text-lg md:text-lg mb-8 leading-relaxed">
                                     Join now and get exclusive onboarding incentives. We heavily reward our early creators who bring their audience to the platform.
                                 </p>
-                                <ul className="space-y-4 mb-8 text-left max-w-sm mx-auto md:mx-0">
-                                    <li className="fading flex items-center gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
+                                <ul className=" text-left  grid grid-cols-1 gap-4 md:grid-cols-2 mx-auto md:mx-0">
+                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
                                         <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Special bonus on your first 30 days</span>
                                     </li>
-                                    <li className="fading flex items-center gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
+                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10 border-l-4 border-l-[#FFB800]">
+                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><FaDollarSign className="text-[#FFB800] w-6 h-6" /></div>
+                                        <span className="font-bold text-base md:text-base text-[#FFB800]">Up to 10% extra a month! For 12 months.</span>
+                                    </li>
+                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
                                         <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Priority VIP creator support</span>
                                     </li>
-                                    <li className="fading flex items-center gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
+                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px] border border-white/10">
                                         <div className="bg-[#FFB800]/20 p-2 rounded-[30px]"><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Exclusive Founder badge on profile</span>
                                     </li>
                                 </ul>
                             </div>
-                            <div className="w-full md:w-1/3 flex justify-center">
+                            {/* <div className="w-full md:w-1/3 flex justify-center">
                                 <div className="w-48 h-48 bg-gradient-to-tr from-[#FFB800] to-[#FF007F] rounded-[30px] p-1.5 animate-pulse shadow-[0_0_40px_rgba(255,184,0,0.3)]">
                                     <div className="w-full h-full bg-[#050505] rounded-[30px] flex items-center justify-center">
                                         <img src={spennypiggy} alt="Piggy" className="w-28 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
+                </div>
+            </section>
+
+            {/* LGBTQ+ Business Positioning */}
+            <section className="relative z-10 py-16 px-6">
+                <div className="max-w-4xl mx-auto text-center">
+                    <div className="fading inline-block mb-6 p-4 rounded-[30px] bg-[#FF007F]/10 border border-[#FF007F]/30">
+                        <FaStar className="w-8 h-8 text-[#FF007F]" />
+                    </div>
+                    <h2 className="fading uppercase text-4xl md:text-5xl font-black mb-6 leading-tight">
+                        Your identity is not the product.<br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF007F] to-[#7000FF]">Your creativity is.</span>
+                    </h2>
+                    <p className="fading text-xl md:text-xl text-gray-300 max-w-2xl mx-auto font-medium">
+                        Spenny Piggy is the infrastructure for LGBTQ+ creators. We handle the payments, risk, and platform mechanics so you can focus on being absolutely iconic.
+                    </p>
                 </div>
             </section>
 
