@@ -1776,20 +1776,19 @@ class MembershipController extends Controller
         */
 
             return response()->json([
+
                 'status' => true,
+
                 'message' =>
                 'Membership scheduled for cancellation successfully.'
             ]);
         } catch (\Exception $e) {
 
-        Log::info('MembershipController: Error cancelling subscription', [
-            'error_message' => $e->getMessage(),
-            'request_data' => $request->all()
-        ]);
-
+        
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
+
             ], 500);
         }
     }
