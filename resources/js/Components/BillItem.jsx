@@ -116,7 +116,7 @@ function BillItem(props) {
             style={IsloggedIn ? style : stylenone}
             className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all `}
         >
-            <div className="mb-3 sm:mb-4 bg-white relative !rounded-[25px] md:!rounded-[30px] !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
+            <div className="bg-white relative !rounded-[25px] md:!rounded-[30px] !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
                 {itm && itm.is_suspended == 1 ? (
                     <div className="absolute top-[100px] left-[0px] bg-red-600 text-white text-xs font-bold px-3 py-2 text-center shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help w-full z-[20]">
                         Suspended
@@ -225,7 +225,7 @@ function BillItem(props) {
                     <div className="flex justify-center mt-5 mb-2">
                         {IsloggedIn ? (
                             <AddBills
-                                classes="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                                 text="Update Bill"
                                 item={itm}
                                 isEdit={true}
@@ -235,7 +235,7 @@ function BillItem(props) {
                                 method="get"
                                 as="button"
                                 href={route("bill.checkout", { uuid: itm.uuid })}
-                                className="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                             >
                                 Pay Bill
                             </Link>

@@ -84,6 +84,15 @@ class Payment extends Model
             }
         }
 
+        // Try PiggyPotContribution
+        if ($this->stripe_session_id) {
+            $piggy = \App\Models\PiggyPotContribution::where('session_id', $this->stripe_session_id)->first();
+            if ($piggy && $piggy->user_id) {
+                $user = \App\Models\User::find($piggy->user_id);
+                if ($user) return $user;
+            }
+        }
+
         // Try TaskPurchase
         $taskPurchaseQuery = \App\Models\TaskPurchase::query();
         if ($this->stripe_session_id) {

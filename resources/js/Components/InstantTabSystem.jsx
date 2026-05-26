@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { Link, router } from '@inertiajs/react';
+import { IoMdRefresh } from "react-icons/io";
 
 /**
  * Ultra-responsive tab system with instant visual feedback
@@ -43,6 +44,45 @@ function InstantTabSystem({
     // Get effective active tab (including pending state)
     const effectiveActiveTab = pendingTab || activeTab;
 
+    const getOnlyPropsForTab = useCallback((tabId) => {
+        const base = ['page', 'user', 'username', 'supporters', 'is_blocked', 'itemid'];
+
+        switch (tabId) {
+            case 'about':
+                return [
+                    ...base,
+                    'posts',
+                    'piggyPots',
+                    'piggyPotTopSupporters',
+                    'piggyPotFeed',
+                    'sociallinks',
+                    'slinks',
+                    'intro',
+                    'migration_status',
+                    'card_capabilities',
+                    'has_stripe_account',
+                    'isNeedToUpgrade',
+                    'stripe_requirements',
+                    'first30DayEarnings',
+                    'all_user_categories',
+                ];
+            case 'wishes':
+                return [...base, 'items', 'wish_categories', 'selectedCategory', 'all_user_categories'];
+            case 'tasks':
+                return [...base, 'tasks', 'all_user_categories'];
+            case 'shop':
+                return [...base, 'shops', 'all_user_categories'];
+            case 'memberships':
+                return [...base, 'memberships', 'all_user_categories'];
+            case 'bills':
+                return [...base, 'bills', 'all_user_categories'];
+            case 'piggy-pots':
+                return [...base, 'piggyPots', 'all_user_categories'];
+            default:
+                return base;
+        }
+    }, []);
+
     // Instant visual feedback on click
     const handleTabClick = useCallback((tabId, e) => {
         const clickTime = performance.now();
@@ -82,7 +122,7 @@ function InstantTabSystem({
             setPendingTab(tabId);
             setClickedTab(tabId);
             setIsTransitioning(true);
-            
+
             console.info(`⚡ Instant feedback: ${Math.round(performanceRef.current.feedbackTime)}ms`);
         });
         
@@ -115,6 +155,7 @@ function InstantTabSystem({
                 username: user.username,
                 page: tabId
             }), {
+                only: getOnlyPropsForTab(tabId),
                 preserveScroll: true,
                 preserveState: true,
                 replace: true,
@@ -142,7 +183,33 @@ function InstantTabSystem({
             });
         }, 50); // 50ms delay for smooth visual feedback
         
-    }, [effectiveActiveTab, user.username, onTabChange]);
+    }, [effectiveActiveTab, getOnlyPropsForTab, user.username, onTabChange]);
+
+    const handleRefresh = useCallback((e) => {
+        e.preventDefault();
+
+        const tabId = effectiveActiveTab || 'about';
+        setPendingTab(tabId);
+        setIsTransitioning(true);
+
+        router.visit(route('user.show', {
+            username: user.username,
+            page: tabId
+        }), {
+            data: { refresh: Date.now() },
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            onSuccess: () => {
+                setPendingTab(null);
+                setIsTransitioning(false);
+            },
+            onError: () => {
+                setPendingTab(null);
+                setIsTransitioning(false);
+            },
+        });
+    }, [effectiveActiveTab, user.username]);
 
     // Hover preloading (for Phase 2)
     const handleTabHover = useCallback((tabId) => {
@@ -214,7 +281,7 @@ function InstantTabSystem({
     return (
         <div className='relative pb-2 mt-4'>
             <div className="w-full flex items-center justify-between py-2 relative">
-                <div className={`flex !pe-[100px] ${IsloggedIn ? 'max-w-[85%]' : 'max-w-[100%]'} overflow-x-auto scrollbar-hide space-x-3 md:space-x-3 pb-2 pt-1 px-0`}>
+                <div className={`flex !pe-[100px] ${IsloggedIn ? 'max-w-[85%]' : 'max-w-[100%]'} overflow-x-auto scrollbar-hide space-x-2 md:space-x-2 pb-2 pt-1 px-0`}>
                     {tabs.map((tab) => (
                         <TabButton
                             key={tab.id}
@@ -230,7 +297,23 @@ function InstantTabSystem({
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-white opacity-70 animate-pulse pointer-events-none"></div>
                 )} */}
                 {IsloggedIn && (
-                    <Toggle />
+                    <div className="pb-2 flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={handleRefresh}
+                            disabled={isTransitioning}
+                            className={`
+                                px-4 py-2 text-xs md:text-sm font-black uppercase tracking-widest
+                                border-[3px] border-black rounded-[17px]
+                                text-black bg-white hover:bg-yellow-100
+                                shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                                disabled:opacity-70 disabled:pointer-events-none
+                            `}
+                        >
+                            <IoMdRefresh size={24} className="inline-block mr-1" />
+                        </button>
+                        <Toggle />
+                    </div>
                 )}
             </div>
         </div>

@@ -23,7 +23,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         status: 'active',
         content_file: '',
         content_description: '',
-        cover_media: ''
+        cover_media: 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/'
     });
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -41,7 +41,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         status: 'active',
         content_file: '',
         content_description: '',
-        cover_media: ''
+        cover_media: 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/'
     };
 
     const openCreateModal = () => {
@@ -183,16 +183,20 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                 
                                                 <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
                                                     {data.cover_media && (
-                                                        <div className="mb-3 p-3 bg-white border-2 border-black rounded-xl text-sm font-bold flex justify-between items-center">
-                                                            <span className="truncate">Cover Uploaded!</span>
-                                                            <button type="button" onClick={() => setData('cover_media', '')} className="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded-lg">Remove</button>
+                                                        <div className="mb-3 bg-white border-2 border-black rounded-xl overflow-hidden relative group">
+                                                            <img src={data.cover_media} className="w-full h-[150px] object-cover" alt="Cover Preview" />
+                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button type="button" onClick={() => setData('cover_media', '')} className="bg-white text-red-600 font-bold px-4 py-2 border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]">Remove Cover</button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                     <div className="uploader overflow-hidden">
                                                         <GlobalUploader
                                                             ctxName="piggy-pot-cover"
                                                             type="minimal"
-                                                            sendFile={(file) => setData('cover_media', file?.cdnUrl || file?.originalUrl)}
+                                                            accept="image/*"
+                                                            imgonly={true}
+                                                            sendFile={(file) => setData('cover_media', file?.url || file?.cdnUrl || file?.originalUrl)}
                                                             options={st.avatar}
                                                         />
                                                     </div>
@@ -221,7 +225,9 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                         <GlobalUploader
                                                             ctxName="piggy-pot-context"
                                                             type="minimal"
-                                                            sendFile={(file) => setData('content_file', file?.cdnUrl || file?.originalUrl)}
+                                                            accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf,application/zip,application/x-zip-compressed"
+                                                            imgonly={false}
+                                                            sendFile={(file) => setData('content_file', file?.uuid || file?.url || file?.cdnUrl || '')}
                                                             options={st.wishlistcontent}
                                                         />
                                                     </div>
@@ -280,81 +286,138 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                 <p className="text-gray-500 text-lg">You haven't created any Piggy Pots yet.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-4">
-                                {piggyPots.map((pot) => (
-                                    <div key={pot.id} className="bg-white border-2 border-black rounded-[30px] p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative transition-transform hover:-translate-y-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mt-4">
+                                {piggyPots.map((pot) => {
+                                    const progressPercent = Math.min(100, ((pot.total_raised || 0) / pot.target_amount) * 100);
+                                    
+                                    return (
+                                    <div key={pot.id} className="bg-[#fdfbf7] border-[3px] border-black rounded-[40px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col group overflow-hidden">
+                                        {/* Pinned Badge */}
                                         {pot.is_pinned && (
-                                            <span className="absolute top-4 right-4 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border border-black">
-                                                Pinned
-                                            </span>
+                                            <div className="absolute top-4 right-4 z-20">
+                                                <span className="bg-pink-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black uppercase tracking-widest flex items-center gap-1">
+                                                    <span>⭐</span> Pinned
+                                                </span>
+                                            </div>
                                         )}
-                                        <h4 className="font-bold text-xl mb-2 pr-16">{pot.title}</h4>
-                                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[40px]">{pot.description || 'No description'}</p>
                                         
-                                        <div className="bg-gray-100 rounded-[20px] p-3 mb-4 flex justify-between items-center border border-gray-200">
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase font-bold">Target</p>
-                                                <p className="font-bold text-lg text-pink-500">{pot.currency} {pot.target_amount}</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-xs text-gray-500 uppercase font-bold">Raised</p>
-                                                <p className="font-bold text-lg text-pink-500">{pot.currency} {parseFloat((pot.total_raised || 0)/100).toFixed(2)}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-gray-500 uppercase font-bold">Status</p>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border border-black ${pot.status === 'active' ? 'bg-[#A2E4B8] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 text-gray-800'}`}>
-                                                    {pot.status.toUpperCase()}
+                                        {/* Image Section with Arch shape */}
+                                        <div className="relative h-[240px] flex-shrink-0 border-b-[3px] border-black overflow-hidden bg-pink-100">
+                                            <img src={pot.cover_media || 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={pot.title} />
+                                            
+                                            {/* Decorative Overlay Gradient */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
+                                            
+                                            {/* Status Badge inside image */}
+                                            <div className="absolute bottom-4 left-4 z-10">
+                                                <span
+                                                    className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                                                        pot.status === 'completed'
+                                                            ? 'bg-[#FFD700] text-black'
+                                                            : pot.status === 'active'
+                                                                ? 'bg-[#A2E4B8] text-black'
+                                                                : pot.status === 'moderation_hold'
+                                                                    ? 'bg-red-200 text-black'
+                                                                    : 'bg-gray-200 text-gray-800'
+                                                    }`}
+                                                >
+                                                    {pot.status === 'completed' ? '✓ completed' : pot.status}
                                                 </span>
                                             </div>
                                         </div>
+                                        
+                                        <div className="p-6 flex flex-col flex-grow relative">
+                                            {/* Decorative Piggy Icon */}
+                                            <div className="absolute -top-10 right-6 w-16 h-16 bg-white border-[3px] border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-3xl z-20">
+                                                🐷
+                                            </div>
 
-                                        {/* Progress Bar */}
-                                        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-                                            <div className="bg-pink-500 h-2.5 rounded-full" style={{ width: `${Math.min(100, (((pot.total_raised || 0)/100) / pot.target_amount) * 100)}%` }}></div>
-                                        </div>
+                                            <h4 className="font-black font-GillSans uppercase text-2xl mb-2 pr-12 text-black tracking-wide leading-tight">{pot.title}</h4>
+                                            <p className="text-gray-600 font-medium text-sm mb-6 line-clamp-2 flex-grow">{pot.description || 'No description'}</p>
+                                            
+                                            {/* Target & Raised Stats Container */}
+                                            <div className="bg-white rounded-[24px] p-4 mb-5 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                                                <div className="flex justify-between items-end mb-3 relative z-10">
+                                                    <div>
+                                                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Target Goal</p>
+                                                        <p className="font-black text-xl text-black">{pot.currency} {pot.target_amount}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Raised So Far</p>
+                                                        <p className="font-black text-xl text-pink-500">{pot.currency} {parseFloat(pot.total_raised || 0).toFixed(2)}</p>
+                                                    </div>
+                                                </div>
 
-                                        <div className="flex justify-end space-x-3 pt-2">
-                                            <button onClick={() => openEditModal(pot)} className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-white hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">Edit</button>
-                                            <button onClick={() => {
-                                                const popupEl = document.getElementById(`contributors_${pot.id}`);
-                                                if(popupEl && popupEl.querySelector('button')) popupEl.querySelector('button').click();
-                                            }} className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-blue-100 hover:bg-blue-200 text-blue-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">Supporters</button>
-                                            <button onClick={() => handleDelete(pot.id)} className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-red-100 hover:bg-red-200 text-red-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">Delete</button>
-                                        </div>
-
-                                        {/* Contributors Modal */}
-                                        <Popup  
-                                            size='md'
-                                            classes="hidden" 
-                                            action={false}
-                                            id={`contributors_${pot.id}`}
-                                        >
-                                            <div className="p-8">
-                                                <h3 className="font-GillSans uppercase text-3xl mb-6">Supporters for {pot.title}</h3>
-                                                <div className="max-h-[300px] overflow-y-auto pr-2">
-                                                    {!pot.contributions || pot.contributions.length === 0 ? (
-                                                        <p className="text-gray-500 text-center py-4">No contributions yet.</p>
-                                                    ) : (
-                                                        <ul className="space-y-3">
-                                                            {pot.contributions.map((c, i) => (
-                                                                <li key={i} className="flex justify-between items-center bg-gray-50 p-3 rounded-2xl border-2 border-black">
-                                                                    <div className="flex items-center space-x-3">
-                                                                        <div className="font-bold text-gray-800">
-                                                                            {c.is_anonymous ? 'Anonymous' : (c.user?.name || c.guest_name || 'Guest')}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="font-bold text-pink-500">
-                                                                        {c.currency} {parseFloat(c.amount / 100).toFixed(2)}
-                                                                    </div>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    )}
+                                                {/* Thick Progress Bar */}
+                                                <div className="w-full bg-gray-100 rounded-full h-4 border-2 border-black overflow-hidden relative z-10">
+                                                    <div className="bg-pink-500 h-full rounded-full relative" style={{ width: `${progressPercent}%` }}>
+                                                        {/* Shine effect on progress bar */}
+                                                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/30 rounded-t-full"></div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </Popup>
+
+                                            {/* Action Buttons */}
+                                            <div className="flex justify-end space-x-3 pt-2 mt-auto">
+                                                <button onClick={() => openEditModal(pot)} className="px-5 py-2.5 border-[3px] border-black rounded-full text-sm font-black uppercase tracking-wider bg-white hover:bg-gray-100 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">Edit</button>
+                                                <button onClick={() => handleDelete(pot.id)} className="px-5 py-2.5 border-[3px] border-black rounded-full text-sm font-black uppercase tracking-wider bg-red-100 hover:bg-red-200 text-red-600 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">Delete</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
+                            </div>
+                        )}
+                        
+                        {/* Global Supporters List below the grid */}
+                        {piggyPots.length > 0 && (
+                            <div className="mt-12 bg-white border-[3px] border-black rounded-[30px] p-6 md:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                <h3 className="font-GillSans uppercase text-2xl mb-6">Recent Contributions</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-100 !border-t-0 !border-l-0 !border-r-0 border-b-2 border-gray-200">
+                                                <th className="p-3 font-bold text-gray-700">Supporter</th>
+                                                <th className="p-3 font-bold text-gray-700">Pot</th>
+                                                <th className="p-3 font-bold text-gray-700">Message</th>
+                                                <th className="p-3 font-bold text-gray-700 text-right">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {piggyPots.flatMap(pot => 
+                                                (pot.contributions || []).map(c => ({...c, pot_title: pot.title}))
+                                            )
+                                            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                            .slice(0, 50) // Show last 50
+                                            .map((c, i) => (
+                                                <tr key={i} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                                    <td className="p-3">
+                                                        <div className="font-bold text-gray-900">
+                                                            {c.is_anonymous ? 'Anonymous' : (c.user?.name || c.guest_name || 'Guest')}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {new Date(c.created_at).toLocaleDateString()}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-3 font-medium text-gray-700">{c.pot_title}</td>
+                                                    <td className="p-3 text-gray-600 text-sm italic">
+                                                        {c.message ? `"${c.message}"` : '-'}
+                                                    </td>
+                                                    <td className="p-3 font-bold text-pink-500 text-right">
+                                                        {c.currency} {parseFloat(c.amount).toFixed(2)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {piggyPots.flatMap(pot => pot.contributions || []).length === 0 && (
+                                                <tr>
+                                                    <td colSpan="4" className="p-8 text-center text-gray-500">
+                                                        No contributions yet.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
                     </div>

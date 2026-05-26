@@ -84,7 +84,7 @@ export default function LegalLayout({ children, activePage }) {
                                         key={item.href}
                                         href={item.href}
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className={`flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-2xl transition-all duration-200 group ${
+                                        className={`flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-[30px] transition-all duration-200 group ${
                                             isActive
                                                 ? 'bg-pink-600 text-white shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-100 translate-x-1'
                                                 : 'text-gray-500 hover:bg-pink-50 hover:text-[#FF007F]'

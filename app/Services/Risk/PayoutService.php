@@ -52,7 +52,7 @@ class PayoutService
                     
                     // 2. Check by payment intent ID
                     if ($payment->stripe_payment_intent_id) {
-                        if ($modelClass === \App\Models\TaskPurchase::class) {
+                        if (in_array($modelClass, [\App\Models\TaskPurchase::class, \App\Models\PiggyPotContribution::class])) {
                             $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
                         } elseif (in_array($modelClass, [\App\Models\MembershipPayment::class, \App\Models\BillPayment::class])) {
                             $q->orWhere('stripe_id', $payment->stripe_payment_intent_id);
@@ -92,6 +92,9 @@ class PayoutService
         $state = $platformState ? $platformState->state : 'NORMAL';
 
         $creators = Payment::query()
+            ->select('payments.creator_id')
+            ->join('users', 'users.uuid', '=', 'payments.creator_id')
+            ->whereNull('users.payout_paused_at')
             ->where(function ($q) {
                 $q->where(function ($q2) {
                     $q2->whereNull('payout_run_id')
@@ -103,7 +106,7 @@ class PayoutService
                 });
             })
             ->distinct()
-            ->pluck('creator_id');
+            ->pluck('payments.creator_id');
 
         $payouts = [];
         $platformTotal = 0;
@@ -225,11 +228,22 @@ class PayoutService
             $totalReservesHeld = 0;
             $eligiblePayments = collect();
 
+            $creatorCurrency = strtolower((string) ($creator->default_currency ?? 'gbp'));
+
             foreach ($payments as $p) {
                 $fts = $this->getAllFinancialTransactionsForPayment($p);
                 if ($fts->isNotEmpty()) {
-                    $netEarningsMinor += (int) round($fts->sum('net_amount') * 100);
-                    $totalReservesHeld += (int) round($fts->sum('reserve_amount') * 100);
+                    foreach ($fts as $ft) {
+                        $ftCurrency = strtolower((string) ($ft->currency ?? 'gbp'));
+                        $netAmt = (float) $ft->net_amount;
+                        $resAmt = (float) $ft->reserve_amount;
+                        
+                        $convertedNet = $convert($netAmt, $ftCurrency, $creatorCurrency);
+                        $convertedRes = $convert($resAmt, $ftCurrency, $creatorCurrency);
+                        
+                        $netEarningsMinor += (int) round($convertedNet * 100);
+                        $totalReservesHeld += (int) round($convertedRes * 100);
+                    }
                     $eligiblePayments->push($p);
                 } else {
                     \Illuminate\Support\Facades\Log::warning("PayoutService: No FinancialTransactions found for payment {$p->id} ({$p->stripe_session_id}) — skipping from payout calculation.");
@@ -260,9 +274,14 @@ class PayoutService
             foreach ($adjustments as $adj) {
                 $fts = $this->getAllFinancialTransactionsForPayment($adj);
                 if ($fts->isNotEmpty()) {
-                    $refundDisputeAmount += (int) round($fts->sum('net_amount') * 100);
+                    foreach ($fts as $ft) {
+                        $ftCurrency = strtolower((string) ($ft->currency ?? 'gbp'));
+                        $netAmt = (float) $ft->net_amount;
+                        $convertedNet = $convert($netAmt, $ftCurrency, $creatorCurrency);
+                        $refundDisputeAmount += (int) round($convertedNet * 100);
+                    }
                 } else {
-                    // Fallback to Payment amount if no FT exists
+                    // Fallback to Payment amount if no FT exists (assumed already in GBP/creator currency)
                     $refundDisputeAmount += (int) $adj->amount;
                 }
             }
@@ -306,9 +325,8 @@ class PayoutService
                 continue;
             }
 
-            $creatorCurrency = strtolower((string) ($creator->default_currency ?? 'gbp'));
             if ($payments->isNotEmpty()) {
-                $creatorCurrency = strtolower((string) ($payments->first()->currency ?? $creatorCurrency));
+                // Keep the creator's default currency as the payout currency
             }
 
             $payouts[$creator->uuid] = [
@@ -405,8 +423,18 @@ class PayoutService
 
                 if ($netPayout > 0) {
                     $creator = User::where('uuid', $creatorId)->first();
-                    if (!$creator || !$creator->account_id) {
-                        $reason = !$creator ? "Creator not found" : "No connected Stripe account";
+                    if (!$creator || $creator->payout_paused_at) {
+                        $reason = !$creator
+                            ? "Creator not found"
+                            : ("Payouts paused" . ($creator->payout_pause_reason ? (": " . $creator->payout_pause_reason) : ""));
+                        Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
+                        $data['failure_reason'] = $reason;
+                        $skippedPayouts[$creatorId] = $data;
+                        continue;
+                    }
+
+                    if (!$creator->account_id) {
+                        $reason = "No connected Stripe account";
                         Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
                         $data['failure_reason'] = $reason;
                         $skippedPayouts[$creatorId] = $data;
@@ -576,11 +604,14 @@ class PayoutService
         if (!$creator) {
             return [
                 'total_held' => 0,
-                'breakdown' => []
+                'breakdown' => [],
+                'currency' => 'GBP'
             ];
         }
 
         $rates = \App\Models\Currency::rates();
+        $creatorCurrency = strtolower((string) ($creator->default_currency ?? 'gbp'));
+
         $convert = function ($amount, $from, $to = 'GBP') use ($rates) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
@@ -594,25 +625,29 @@ class PayoutService
         $runs = PayoutRun::where('status', 'executed')->get();
 
         $held = [];
-        $totalHeldGbp = 0;
+        $totalHeld = 0;
 
         foreach ($runs as $run) {
             $payouts = $run->totals['payouts'] ?? [];
             $data = $payouts[$creator->uuid] ?? $payouts[$creator->id] ?? null;
+            if (!$data || !empty($data['is_below_threshold'])) continue;
 
-            if ($data && isset($data['reserve_amount']) && $data['reserve_amount'] > 0 
-                && empty($data['reserve_released'])) {
+            if (!empty($data['reserve_amount']) && empty($data['reserve_released'])) {
                 
                 $releaseDate = $data['reserve_release_date'] ?? Carbon::parse($run->run_date)->addDays(self::RESERVE_RELEASE_WINDOW_DAYS)->toDateString();
-                $currency = $data['currency'] ?? 'GBP';
-                $amountGbp = $convert(((int) $data['reserve_amount']) / 100, $currency, 'GBP');
+                $currency = strtolower($data['currency'] ?? 'gbp');
+                $amountMinor = (int) $data['reserve_amount'];
+                $amountMajor = $amountMinor / 100;
+                
+                $convertedMajor = $convert($amountMajor, $currency, $creatorCurrency);
+                $totalHeld += $convertedMajor;
 
                 $held[] = [
                     'source_type' => 'payout_run',
                     'payout_run_id' => $run->id,
-                    'amount' => $data['reserve_amount'],
-                    'currency' => $currency,
-                    'amount_gbp' => $amountGbp,
+                    'amount' => $amountMinor,
+                    'currency' => strtoupper($currency),
+                    'amount_converted' => $convertedMajor,
                     'run_date' => $run->run_date,
                     'release_date' => $releaseDate,
                     'days_remaining' => max(0, Carbon::now()->diffInDays(Carbon::parse($releaseDate), false)),
@@ -630,7 +665,6 @@ class PayoutService
                     'reserve_percent' => null,
                     'label' => null,
                 ];
-                $totalHeldGbp += $amountGbp;
             }
         }
 
@@ -641,7 +675,10 @@ class PayoutService
         $pendingFts = \App\Models\FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
-            ->where('reserve_status', '!=', 'released')
+            ->where(function($q) {
+                $q->where('reserve_status', '!=', 'released')
+                  ->orWhereNull('reserve_status');
+            })
             ->where('reserve_amount', '>', 0)
             ->with(['supporter:id,name,username', 'source' => function($morphTo) {
                 $morphTo->morphWith([
@@ -674,7 +711,7 @@ class PayoutService
 
             $reserveMinor = (int) round($reserveMajor * 100);
             $currency = strtoupper((string) ($ft->currency ?: 'GBP'));
-            $amountGbp = $convert($reserveMajor, $currency, 'GBP');
+            $convertedMajor = $convert($reserveMajor, $currency, $creatorCurrency);
             $txDate = $ft->transaction_date ? Carbon::parse($ft->transaction_date) : Carbon::now();
             $releaseAt = $txDate->copy()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS);
 
@@ -698,7 +735,7 @@ class PayoutService
                 'payout_run_id' => 'Pending',
                 'amount' => $reserveMinor,
                 'currency' => $currency,
-                'amount_gbp' => $amountGbp,
+                'amount_converted' => $convertedMajor,
                 'run_date' => 'Pending',
                 'release_date' => $releaseAt->toDateString(),
                 'days_remaining' => max(0, Carbon::now()->diffInDays($releaseAt, false)),
@@ -720,7 +757,7 @@ class PayoutService
                 'reserve_percent' => $reservePercent,
                 'label' => $label,
             ];
-            $totalHeldGbp += $amountGbp;
+            $totalHeld += $convertedMajor;
         }
 
         // Sort by release date (soonest first)
@@ -729,8 +766,9 @@ class PayoutService
         });
 
         return [
-            'total_held' => $totalHeldGbp,
-            'breakdown' => $held
+            'total_held' => $totalHeld,
+            'breakdown' => $held,
+            'currency' => strtoupper($creatorCurrency)
         ];
     }
 

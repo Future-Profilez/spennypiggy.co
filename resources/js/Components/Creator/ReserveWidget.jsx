@@ -34,7 +34,7 @@ export default function ReserveWidget({ className = '' }) {
                     <div>
                         <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider">Funds on Hold (Reserves)</h3>
                         <p className="text-2xl font-black text-gray-900">
-                            {(data.total_held).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' })}
+                            {(data.total_held).toLocaleString('en-GB', { style: 'currency', currency: data.currency || 'GBP' })}
                         </p>
                     </div>
                 </div>
@@ -46,7 +46,7 @@ export default function ReserveWidget({ className = '' }) {
                 </button>
             </div>
 
-            <div className="mt-5 p-4 bg-yellow-50/50 rounded-2xl">
+            <div className="mt-5 p-4 bg-yellow-50/50 rounded-[30px]">
                 <p className="text-sm text-gray-700 mb-2 leading-relaxed">
                     Funds are typically held for up to 30 days to cover potential disputes, after which they are automatically released to your balance.
                 </p> 
@@ -69,7 +69,7 @@ export default function ReserveWidget({ className = '' }) {
                                 </div>
                                 <div className="text-right">
                                     <span className="block font-bold text-gray-900">
-                                        {(item.amount / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' })}
+                                        {((item.amount || item.reserve_amount) / (item.amount ? 100 : 1)).toLocaleString('en-GB', { style: 'currency', currency: item.currency || 'GBP' })}
                                     </span>
                                     <span className="text-xs text-gray-500">
                                         {item.days_remaining > 0 ? `${item.days_remaining} days left` : 'Processing'}

@@ -287,7 +287,7 @@ export default function MyShopProducts({lists, loading, update}) {
                   </div>
                </>
                :
-               <Nocontent text="No products yet" />
+               <Nocontent showdiscover={true} text="No products yet" />
             }
             </>
          }

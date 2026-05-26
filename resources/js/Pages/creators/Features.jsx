@@ -73,7 +73,7 @@ export default function Features() {
                        { icon: Trophy, title: "Leaderboards", desc: "Gamify spending and reward top supporters" }
                     ].map((feature, i) => (
                        <div key={i} className="bg-white p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-transform duration-200 group">
-                          <div className="bg-yellow-300 w-14 h-14 rounded-2xl border-[3px] border-black flex items-center justify-center mb-6">
+                          <div className="bg-yellow-300 w-14 h-14 rounded-[30px] border-[3px] border-black flex items-center justify-center mb-6">
                              <feature.icon size={28} className="text-gray-800 group-hover:text-white" />
                           </div>
                           <h3 className="text-xl lg:text-2xl font-bold uppercase mb-2 text-gray-900">{feature.title}</h3>

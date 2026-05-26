@@ -29,7 +29,7 @@ export default function ReviewHolds({ holds, auth }) {
                         </p>
                     </div>
 
-                    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 overflow-hidden">
+                    <div className="bg-slate-900/50 rounded-[30px] border border-slate-800 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-800/50 text-xs uppercase text-gray-400">

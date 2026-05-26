@@ -94,7 +94,7 @@ export default function DisputeShow({ auth, dispute }) {
                                 </h4>
                                 {dispute.payment?.supporter ? (
                                     <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-14 h-14 rounded-2xl bg-gray-800 border border-gray-700 overflow-hidden">
+                                        <div className="w-14 h-14 rounded-[30px] bg-gray-800 border border-gray-700 overflow-hidden">
                                             {dispute.payment.supporter.avatar ? (
                                                 <img src={dispute.payment.supporter.avatar} className="w-full h-full object-cover" />
                                             ) : (
@@ -221,7 +221,7 @@ export default function DisputeShow({ auth, dispute }) {
 
                                         <div className="pt-6 border-t border-gray-800 flex justify-end">
                                             <PrimaryButton 
-                                                className="bg-[#FF007F] hover:bg-[#d83a7c] px-8 py-4 rounded-2xl text-sm font-bold uppercase tracking-widest"
+                                                className="bg-[#FF007F] hover:bg-[#d83a7c] px-8 py-4 rounded-[30px] text-sm font-bold uppercase tracking-widest"
                                                 disabled={processing}
                                             >
                                                 {processing ? 'Submitting...' : 'Submit to Stripe'}

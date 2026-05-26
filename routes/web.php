@@ -161,6 +161,7 @@ if (app()->environment('local')) {
             'seed completed'
         ]);
     });
+
 }
 
 
@@ -314,6 +315,13 @@ Route::post('/webhook/payment', [StripeWebhookController::class, 'handle'])->nam
 
 // Deliverable Access Tracking
 Route::get('/deliverable/access/{uuid}', [\App\Http\Controllers\DeliveriesController::class, 'access'])->name('deliverable.access');
+
+Route::middleware('signed')->group(function () {
+    Route::get('/support/guest/create/{paymentId}', [\App\Http\Controllers\GuestSupportTicketController::class, 'create'])->name('support.guest.create');
+    Route::post('/support/guest/create/{paymentId}', [\App\Http\Controllers\GuestSupportTicketController::class, 'store'])->name('support.guest.store');
+    Route::get('/support/guest/tickets/{uuid}', [\App\Http\Controllers\GuestSupportTicketController::class, 'show'])->name('support.guest.tickets.show');
+    Route::post('/support/guest/tickets/{uuid}/message', [\App\Http\Controllers\GuestSupportTicketController::class, 'message'])->name('support.guest.tickets.message');
+});
 
 // Legacy route for Stripe Identity Verification
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);

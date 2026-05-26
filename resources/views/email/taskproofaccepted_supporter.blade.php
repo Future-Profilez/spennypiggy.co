@@ -28,6 +28,11 @@
                     The order has been marked as complete. Thank you for using Spenny Piggy!
                 </td>
             </tr>
+            <tr>
+                <td style="padding: 0 0 20px 0;">
+                    @include('email.digital-content-notice')
+                </td>
+            </tr>
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">

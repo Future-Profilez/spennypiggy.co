@@ -57,7 +57,7 @@ export default function Disputes() {
                            </h2>
                            <ul className="space-y-4 lg:space-y-8">
                               <li className="flex gap-4 items-center">
-                                 <div className="bg-white p-2 md:p-3 rounded-2xl border-[3px] border-black h-fit shrink-0">
+                                 <div className="bg-white p-2 md:p-3 rounded-[30px] border-[3px] border-black h-fit shrink-0">
                                     <FileCheck size={24} className="text-gray-700" />
                                  </div>
                                  <div>
@@ -65,7 +65,7 @@ export default function Disputes() {
                                  </div>
                               </li>
                               <li className="flex gap-4 items-center">
-                                 <div className="bg-white p-2 md:p-3 rounded-2xl border-[3px] border-black h-fit shrink-0">
+                                 <div className="bg-white p-2 md:p-3 rounded-[30px] border-[3px] border-black h-fit shrink-0">
                                     <Clock size={24} className="text-gray-700" />
                                  </div>
                                  <div>
@@ -81,7 +81,7 @@ export default function Disputes() {
                            </h2>
                            <ul className="space-y-4 lg:space-y-8">
                               <li className="flex gap-4 items-center">
-                                 <div className="bg-yellow-300 p-2 md:p-3 rounded-2xl h-fit shrink-0 text-black border-[3px] border-black">
+                                 <div className="bg-yellow-300 p-2 md:p-3 rounded-[30px] h-fit shrink-0 text-black border-[3px] border-black">
                                     <Check size={24} strokeWidth={3} />
                                  </div>
                                  <div>
@@ -89,7 +89,7 @@ export default function Disputes() {
                                  </div>
                               </li>
                               <li className="flex gap-4 items-center">
-                                 <div className="bg-yellow-300 p-2 md:p-3 rounded-2xl h-fit shrink-0 text-black border-[3px] border-black">
+                                 <div className="bg-yellow-300 p-2 md:p-3 rounded-[30px] h-fit shrink-0 text-black border-[3px] border-black">
                                     <Check size={24} strokeWidth={3} />
                                  </div>
                                  <div>

@@ -90,6 +90,8 @@ class HandleInertiaRequests extends Middleware
                 'referral_code' => $user->referral_code,
                 'is_500_limit_exceeded' => $user->is_500_limit_exceeded,
                 'suspended_account' => $user->suspended_account,
+                'payout_paused_at' => $user->payout_paused_at,
+                'payout_pause_reason' => $user->payout_pause_reason,
                 'social_image' => $user->social_image,
                 'social_url' => $user->social_url,
                 'auto_tweet' => $user->auto_tweet,

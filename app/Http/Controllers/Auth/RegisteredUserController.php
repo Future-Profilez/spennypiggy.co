@@ -160,6 +160,14 @@ class RegisteredUserController extends Controller
             ]);
         }
 
+        if ($request->role == 1) {
+            $request->validate([
+                'creator_email_receipt_ack' => ['accepted'],
+            ], [
+                'creator_email_receipt_ack.accepted' => 'Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.',
+            ]);
+        }
+
         /* =========================FRAUD PREVENTION CHECK (LIVE ONLY)========================== */
         $ip_address = $request->ip();
         
@@ -252,6 +260,7 @@ class RegisteredUserController extends Controller
             'ip_address'          => $ip_address,
             'country'             => $request->country_code ?? null,
             'terms_accepted_at'   => now(),
+            'creator_email_receipt_acknowledged_at' => $request->role == 1 ? now() : null,
             'bio_approved'        => 0,
             'profile_status_lock' => 0,
             'cover'               => $assignedCover,

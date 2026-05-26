@@ -421,7 +421,7 @@ export default function SupportStory({ creator, gifter }) {
             <div className="pt-6">
               <Link
                 href={`/${data?.creator?.username || creator}`}
-                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-[#FF007F] border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-[#FF007F] border-[3px] border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
               > View Creator Profile </Link>
             </div>
           </div>

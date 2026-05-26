@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use App\SeoMeta;
+use Illuminate\Support\Str;
 
 class StaticPageSeoMiddleware
 {
@@ -16,6 +17,19 @@ class StaticPageSeoMiddleware
         }
         $url = url($request->path());
         $image = url('/og-image.png');
+
+        SeoMeta::setRobots('index,follow');
+        $noIndexExact = [
+            'login',
+            'register',
+            'forgot-password',
+            'verification',
+            'account',
+            'dashboard',
+        ];
+        if (in_array($path, $noIndexExact, true) || Str::startsWith($path, ['reset-password/', 'admin/', 'debug', 'test'])) {
+            SeoMeta::setRobots('noindex,follow');
+        }
         
         $seoData = [
             '/' => [
@@ -94,23 +108,58 @@ class StaticPageSeoMiddleware
                 'title' => 'Copyright & IP Policy — Spenny Piggy',
                 'description' => 'Spenny Piggy copyright and intellectual property policy. DMCA notices, content takedown procedures, and IP protection for creators.',
             ],
+            'creators' => [
+                'title' => 'Monetise Your Content with Spenny Piggy — Built for Creators 🐷',
+                'description' => 'Join Spenny Piggy to start earning from your content. Offer memberships, wishlists, paid tasks, and tips. Set your price, keep your earnings, and let supporters cover the fees.',
+            ],
+            'creators/stripe-safe' => [
+                'title' => 'Stripe Safe Payments for Creators — Spenny Piggy',
+                'description' => 'Spenny Piggy partners with Stripe for secure, fast, and reliable payouts. Enjoy peace of mind with enterprise-grade fraud protection and automatic weekly transfers.',
+            ],
+            'creators/keep-100' => [
+                'title' => 'Keep 100% of Your Set Price — Spenny Piggy Pricing',
+                'description' => 'On Spenny Piggy, you keep 100% of the price you set. We add a small platform fee at checkout so your supporters cover the costs. No hidden fees, just transparent earnings.',
+            ],
+            'creators/features' => [
+                'title' => 'Creator Features — Memberships, Wishlists & Paid Tasks 🐷',
+                'description' => 'Discover all the tools Spenny Piggy offers to grow your income. From monthly memberships and custom wishlists to paid tasks and one-off tips.',
+            ],
+            'creators/disputes' => [
+                'title' => 'Chargeback & Dispute Protection for Creators — Spenny Piggy',
+                'description' => 'Spenny Piggy provides real human support and dedicated dispute management. We fight chargebacks on your behalf to protect your income and keep your business safe.',
+            ],
+            'creators/founder-bonus' => [
+                'title' => 'Spenny Piggy Founder Bonus — Earn Extra Rewards 👑',
+                'description' => 'Join the Spenny Piggy Founder Bonus program. Hit your monthly targets and earn extra cash bonuses as a reward for growing your community on our platform.',
+            ],
+            'pride' => [
+                'title' => 'Pride on Spenny Piggy — Celebrating LGBTQ+ Creators 🏳️‍🌈',
+                'description' => 'Spenny Piggy proudly supports and celebrates our LGBTQ+ creators. Discover amazing talent, support diverse voices, and join an inclusive community.',
+            ],
+            'giftstore' => [
+                'title' => 'Spenny Piggy Gift Store — Buy Gifts for Your Favorite Creators',
+                'description' => 'Browse the Spenny Piggy Gift Store to send physical or digital gifts to your favorite creators. Safe, secure, and completely private delivery directly to them.',
+            ],
+            'how-it-works' => [
+                'title' => 'How Spenny Piggy Works — For Creators & Supporters',
+                'description' => 'Learn how Spenny Piggy connects creators and supporters. See how easy it is to set up a profile, offer memberships, complete paid tasks, and process secure payments.',
+            ],
+            'discover' => [
+                'title' => 'Discover Creators on Spenny Piggy 🐷',
+                'description' => 'Explore and discover amazing creators on Spenny Piggy. Find new communities, support fresh talent, and engage with creators offering exclusive memberships and wishlists.',
+            ],
+            'creator-supporter-contract' => [
+                'title' => 'Creator-Supporter Contract — Trust & Transparency',
+                'description' => 'Read the Spenny Piggy Creator-Supporter Contract. We believe in clear expectations, transparent transactions, and building trust between creators and their communities.',
+            ],
+            'founder-program' => [
+                'title' => 'The Spenny Piggy Founder Program — Grow With Us',
+                'description' => 'Be part of the Spenny Piggy Founder Program. Early adopters get exclusive perks, dedicated support, and bonus incentives for building their presence on our platform.',
+            ],
         ];
 
         // Landing Pages mapping
-        $landingPages = [
-            'creators',
-            'creators/stripe-safe',
-            'creators/keep-100',
-            'creators/features',
-            'creators/disputes',
-            'creators/founder-bonus',
-            'pride',
-            'giftstore',
-            'how-it-works',
-            'discover',
-            'creator-supporter-contract',
-            'founder-program'
-        ];
+        $landingPages = [];
         
         $match = null;
         
@@ -132,6 +181,9 @@ class StaticPageSeoMiddleware
         if ($match) {
             SeoMeta::addTag('title', $match['title']);
             SeoMeta::addTag('meta', ['name' => 'description', 'content' => $match['description']]);
+
+            $keywords = isset($match['keywords']) ? $match['keywords'] : 'Spenny Piggy, Creator Monetisation, Memberships, Wishlists, Paid Tasks, Fans Funding, Support Creators';
+            SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
             
             // Open Graph
             SeoMeta::addTag('meta', ['property' => 'og:title', 'content' => $match['title']]);
@@ -149,7 +201,23 @@ class StaticPageSeoMiddleware
             SeoMeta::addTag('meta', ['name' => 'twitter:site', 'content' => '@spennypiggy']);
             
             // Canonical
-            SeoMeta::addTag('link', ['rel' => 'canonical', 'href' => $url]);
+            SeoMeta::setCanonical($url);
+
+            $segments = array_values(array_filter(explode('/', $path)));
+            $breadcrumbs = [
+                ['name' => 'Home', 'url' => url('/')],
+            ];
+            if (!empty($segments)) {
+                $accum = '';
+                foreach ($segments as $seg) {
+                    $accum .= '/' . $seg;
+                    $breadcrumbs[] = [
+                        'name' => ucwords(str_replace('-', ' ', $seg)),
+                        'url' => url($accum),
+                    ];
+                }
+            }
+            SeoMeta::addBreadcrumbJsonLd($breadcrumbs);
         }
 
         return $next($request);

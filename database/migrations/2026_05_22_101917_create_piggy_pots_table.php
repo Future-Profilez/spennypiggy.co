@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->decimal('target_amount', 10, 2);
             $table->string('currency')->default('GBP');
-            $table->string('cover_media')->nullable(); // Image or video path
+            $table->string('cover_media')->default('https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/')->nullable(); // Image or video path
             $table->string('content_file')->nullable(); // Digital reward access
             $table->timestamp('deadline')->nullable();
             $table->boolean('is_pinned')->default(false);

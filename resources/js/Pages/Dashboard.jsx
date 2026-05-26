@@ -41,6 +41,7 @@ import { CiGift } from "react-icons/ci";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
 import { FaRegHeart } from "react-icons/fa";
 import InstantTabSystem from "@/Components/InstantTabSystem";
+import AddMoreTile from "@/Components/AddMoreTile";
 
 const ReferralBanner = lazy(() => import("@/Components/ReferralBanner"));
 const GiftListing = lazy(() => import("./rye/GiftListing"));
@@ -57,9 +58,9 @@ const CreatorRiskBanner = lazy(() => import("@/Components/Risk/CreatorRiskBanner
 const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
 const PiggyPotWidget = lazy(() => import("@/Components/PiggyPots/PiggyPotWidget"));
 const PiggyPotSocialProof = lazy(() => import("@/Components/PiggyPots/PiggyPotSocialProof"));
+const PiggyPotsGrid = lazy(() => import("@/Components/PiggyPots/PiggyPotsGrid"));
 
 export default function Dashboard(props) {
-
     const { ziggy } = usePage().props;
     const w = useWidthCount();
     const {
@@ -84,7 +85,6 @@ export default function Dashboard(props) {
     const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
     const [activeId, setActiveId] = useState(null);
-    const [activePiggyPot, setActivePiggyPot] = useState(null);
 
     const activeItem = useMemo(() =>
         activeId ? wishitems.find(item => (item.id || item.uuid) === activeId) : null
@@ -299,16 +299,16 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer p-2 bg-[#FF007F] border-4 border-black !rounded-[20px] 
-                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] 
-                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-50 "
+                            className="addoption-action cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-[16px] 
+                            shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] 
+                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-50  "
                         // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
-                        ><b className="text-2xl md:text-3xl px-4  !leading-[8px] top-[4px] relative">+</b></div>
+                        ><b className="text-2xl md:text-3xl px-3 text-white !leading-[8px] top-[4px] relative">+</b></div>
                         {showAdd ? (
                             <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
-                                <div className="w-full max-w-[550px] px-3 !overflow-hidden">
+                                <div className="w-full md:max-w-[600px] lg:max-w-[900px] px-6 !overflow-hidden">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-3xl z-10 max-h-[71vh] ">
+                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px] md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
                                             <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-2 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
@@ -318,7 +318,7 @@ export default function Dashboard(props) {
                                                     Please complete your Stripe account setup to add your wishlist.
                                                 </p>
                                                 : ""}
-                                            <div className="!max-h-[38vh] !min-h-[38vh] p-4 !pt-2 overflow-auto">
+                                            <div className="!max-h-[56vh] !min-h-[56vh] p-2 md:p-4 !pt-2 overflow-auto">
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
@@ -377,7 +377,7 @@ export default function Dashboard(props) {
                                                                 }`}
                                                         >
 
-                                                            <div className="w-full">
+                                                            <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-1">
                                                                 <div
                                                                     onClick={() =>
                                                                         setWishOptions(
@@ -451,15 +451,18 @@ export default function Dashboard(props) {
                                                     </>
                                                 )}
                                             </div>
-                                            {!wishOptions ? <button
+                                            {!wishOptions ? <div className="flex justify-center">
+                                            <button
                                                 onClick={() => {
                                                     setShowAdd(false);
                                                     // setWishOptions(false);
                                                 }}
-                                                className="w-[80%] mx-auto rounded-full bg-gray-200 border-[3px] border-black font-black uppercase tracking-widest block p-3 mt-6 hover:bg-gray-300 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                                                className="w-[80%] mx-w-[200px] pt-3 rounded-[30px]   font-black uppercase tracking-widest block    transition-colors"
                                             >
                                                 Cancel
-                                            </button> : ""}
+                                            </button>
+                                            </div>
+                                             : ""}
                                         </div>
                                     </Suspense>
                                 </div>
@@ -496,10 +499,6 @@ export default function Dashboard(props) {
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        {/* Removed glowing orbs to fit brutalism style better, or kept them minimal */}
-                    </div>
-
                     <div className="containerbox relative z-10">
                         <VersionUpdate />
                         {shouldShowFounderBanner ? (
@@ -510,7 +509,7 @@ export default function Dashboard(props) {
                         <div className="wishbanner relative ">
                             <div className="relative border-b-4 border-black rounded-[30px] overflow-hidden">
                                 {user?.is_founder ? (
-                                    <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-2xl p-1">
+                                    <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-[30px] p-1">
                                         <FounderBadge size="md" />
                                     </div>
                                 ) : (
@@ -578,12 +577,6 @@ export default function Dashboard(props) {
                                         className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
                                     >
                                         <div className="inlinetab ">
-                                            {/* Show rejection message if profile is rejected */}
-                                            {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
-                                                <div className="text-red-600 text-xl">
-                                                    This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
-                                                </div>
-                                            )} */}
 
                                             <InstantTabSystem
                                                 Toggle={Toggle}
@@ -602,7 +595,16 @@ export default function Dashboard(props) {
                                                 {page === "about" || page === false ? (
                                                     <Suspense fallback={<LoadingScreen />} >
                                                         <div className="flex flex-wrap about-sec self-start ">
-                                                            <div className="w-full lg:w-1/2 h-auto ">
+                                                                {props.piggyPotTopSupporters && (props.piggyPotTopSupporters.length > 0 || (props.piggyPotFeed && props.piggyPotFeed.length > 0)) && (
+                                                                        <Suspense fallback={<div className="mb-4">Loading community activity...</div>}>
+                                                                            <PiggyPotSocialProof 
+                                                                                topSupporters={props.piggyPotTopSupporters}
+                                                                                feed={props.piggyPotFeed}
+                                                                                user={user}
+                                                                            />
+                                                                        </Suspense>
+                                                                    )}
+                                                                <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[113px]">
                                                                 {IsloggedIn || user?.intro?.approved == 1 ? (
                                                                     <Suspense fallback={<div className="h-40 bg-gray-100 rounded-3xl animate-pulse border-3 border-black"></div>}>
@@ -930,23 +932,15 @@ export default function Dashboard(props) {
                                                                 )}
                                                                 
                                                                 {props.piggyPots && props.piggyPots.length > 0 && (
-                                                                    <Suspense fallback={<div className="mb-4">Loading Piggy Pot...</div>}>
-                                                                        <PiggyPotWidget 
-                                                                            piggyPots={props.piggyPots} 
-                                                                            user={user} 
-                                                                            global_currency={global_currency}
-                                                                        />
-                                                                    </Suspense>
-                                                                )}
-
-                                                                {props.piggyPotTopSupporters && (props.piggyPotTopSupporters.length > 0 || (props.piggyPotFeed && props.piggyPotFeed.length > 0)) && (
-                                                                    <Suspense fallback={<div className="mb-4">Loading community activity...</div>}>
-                                                                        <PiggyPotSocialProof 
-                                                                            topSupporters={props.piggyPotTopSupporters}
-                                                                            feed={props.piggyPotFeed}
-                                                                            user={user}
-                                                                        />
-                                                                    </Suspense>
+                                                                    <div className="flex flex-col md:flex-row gap-6 md:gap-8 mb-6">
+                                                                            <Suspense fallback={<div className="mb-4">Loading Piggy Pot...</div>}>
+                                                                                <PiggyPotWidget 
+                                                                                    piggyPots={props.piggyPots} 
+                                                                                    user={user} 
+                                                                                    global_currency={global_currency}
+                                                                                />
+                                                                            </Suspense>
+                                                                    </div>
                                                                 )}
 
                                                                 {!IsloggedIn && UserStripeConnected == 1 && w > 767 && (!props.piggyPots || props.piggyPots.length === 0) ? (
@@ -1104,6 +1098,14 @@ export default function Dashboard(props) {
                                                                                                 },
                                                                                             )}
                                                                                         </SortableContext>
+                                                                                        {IsloggedIn && (
+                                                                                            <AddMoreTile
+                                                                                                title="Add Wish"
+                                                                                                subtitle="Create a new wish for your supporters."
+                                                                                                onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))}
+                                                                                                minHeightClass="min-h-[300px]"
+                                                                                            />
+                                                                                        )}
                                                                                     </div>
                                                                                     {createPortal(
                                                                                         <DragOverlay
@@ -1141,7 +1143,20 @@ export default function Dashboard(props) {
                                                                             </>
                                                                         ) : (
                                                                             <div className="w-full">
-                                                                                <Nocontent text="Nothing to see." />
+                                                                                {IsloggedIn ? (
+                                                                                    <>
+                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                        <div className="text-4xl mb-3">🎁</div>
+                                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">No Wishes Yet</h3>
+                                                                                        <p className="text-gray-600 font-bold mb-6">Add items to your wishlist and let your fans buy them for you.</p>
+                                                                                        <button onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))} className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+                                                                                            Add Wish
+                                                                                        </button>
+                                                                                    </div>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <Nocontent showdiscover={true} text="Nothing to see." />
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -1183,7 +1198,20 @@ export default function Dashboard(props) {
                                                                         IsloggedIn
                                                                     }
                                                                     profileUser={user}
+                                                                    suppressEmptyState={IsloggedIn && (!tasks || tasks.length === 0)}
                                                                 />
+                                                                {IsloggedIn && (!tasks || tasks.length === 0) && (
+                                                                    <>
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                        <div className="text-4xl mb-3">📋</div>
+                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">No Active Tasks</h3>
+                                                                        <p className="text-gray-600 font-bold mb-6">Create tasks and let your fans pay you to complete them.</p>
+                                                                        <button onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))} className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+                                                                            Create Task
+                                                                        </button>
+                                                                    </div>
+                                                                    </>
+                                                                )}
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1206,7 +1234,20 @@ export default function Dashboard(props) {
                                                                             ?.user
                                                                             ?.username
                                                                     }
+                                                                    suppressEmptyState={IsloggedIn && (!props.memberships || props.memberships?.length === 0)}
                                                                 />
+                                                                {IsloggedIn && (!props.memberships || props.memberships?.length === 0) && (
+                                                                    <>
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                        <div className="text-4xl mb-3">⭐</div>
+                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">No Memberships Yet</h3>
+                                                                        <p className="text-gray-600 font-bold mb-6">Create membership tiers for your most loyal supporters.</p>
+                                                                        <Link href={route("membershipDashboard")} className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+                                                                            Create Membership
+                                                                        </Link>
+                                                                    </div>
+                                                                    </>
+                                                                )}
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1222,7 +1263,20 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    suppressEmptyState={IsloggedIn && (!props.bills || props.bills?.length === 0)}
                                                                 />
+                                                                {IsloggedIn && (!props.bills || props.bills?.length === 0) && (
+                                                                    <>
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                        <div className="text-4xl mb-3">🧾</div>
+                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">No Active Bills</h3>
+                                                                        <p className="text-gray-600 font-bold mb-6">Split bills with your fans and let them contribute.</p>
+                                                                        <button onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))} className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+                                                                            Create Bill
+                                                                        </button>
+                                                                    </div>
+                                                                    </>
+                                                                )}
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1241,7 +1295,20 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    suppressEmptyState={IsloggedIn && (!props.shops || props.shops.length === 0)}
                                                                 />
+                                                                {IsloggedIn && (!props.shops || props.shops.length === 0) && (
+                                                                    <>
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                        <div className="text-4xl mb-3">🛍️</div>
+                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">No Shop Items Yet</h3>
+                                                                        <p className="text-gray-600 font-bold mb-6">Create physical or digital products for your fans to buy.</p>
+                                                                        <button onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))} className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+                                                                            Add Item
+                                                                        </button>
+                                                                    </div>
+                                                                    </>
+                                                                )}
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1253,27 +1320,16 @@ export default function Dashboard(props) {
                                                                     <LoadingScreen />
                                                                 }
                                                             >
-                                                                {props.piggyPots && props.piggyPots.length > 0 ? (
-                                                                    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                        {props.piggyPots.map((pot) => (
-                                                                            <div key={pot.id} onClick={() => setActivePiggyPot(pot)} className="cursor-pointer bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all rounded-[30px] p-4 flex flex-col">
-                                                                                {pot.cover_media && (
-                                                                                    <div className="mb-3 rounded-2xl overflow-hidden border-2 border-black h-[160px] flex-shrink-0">
-                                                                                        <img src={pot.cover_media} className="w-full h-full object-cover" alt={pot.title} />
-                                                                                    </div>
-                                                                                )}
-                                                                                <h3 className="font-black text-xl uppercase tracking-wide text-black line-clamp-1">{pot.title}</h3>
-                                                                                <p className="text-gray-600 text-sm font-medium line-clamp-2 mt-1 min-h-[40px] flex-grow">{pot.description}</p>
-                                                                                <div className="mt-3 bg-pink-50 rounded-xl p-3 border-2 border-black flex justify-between items-center flex-shrink-0">
-                                                                                    <span className="text-xs font-black text-gray-600 uppercase tracking-wider">Target</span>
-                                                                                    <span className="font-black text-pink-600">{pot.currency} {pot.target_amount}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : (
-                                                                    <Nocontent text="No active Piggy Pots." />
-                                                                )}
+                                                                <PiggyPotsGrid
+                                                                    piggyPots={props.piggyPots}
+                                                                    IsloggedIn={IsloggedIn}
+                                                                    user={user}
+                                                                    global_currency={global_currency}
+                                                                    topSupporters={
+                                                                        props.piggyPotTopSupporters
+                                                                    }
+                                                                    feed={props.piggyPotFeed}
+                                                                />
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1335,7 +1391,18 @@ export default function Dashboard(props) {
                                                                     </div>
                                                                 ) : (
                                                                     <div className="w-full">
-                                                                        <Nocontent text="Nothing to see." />
+                                                                        {IsloggedIn ? (
+                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                <div className="text-4xl mb-3">🎁</div>
+                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">No Active Gifts</h3>
+                                                                                <p className="text-gray-600 font-bold mb-6">Create physical gifts for your fans to buy for you.</p>
+                                                                                <button onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))} className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+                                                                                    Add Gift
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <Nocontent showdiscover={true} text="Nothing to see." />
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </Suspense>
@@ -1380,22 +1447,6 @@ export default function Dashboard(props) {
                 ) : (
                     ""
                 )}
-
-                <Popup 
-                    action={!!activePiggyPot} 
-                    space="p-0" 
-                    classes="hidden"
-                    modalclass="!bg-transparent !border-none !shadow-none"
-                    hidecontrols={true}
-                    onHide={() => setActivePiggyPot(null)}
-                >
-                    {activePiggyPot && (
-                        <div className="relative">
-                            <button onClick={() => setActivePiggyPot(null)} className="absolute -top-3 -right-3 z-50 bg-white border-2 border-black rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">X</button>
-                            <PiggyPotWidget piggyPots={[activePiggyPot]} user={user} global_currency={global_currency} />
-                        </div>
-                    )}
-                </Popup>
 
                 <OldSubscribe />
             </Guest>

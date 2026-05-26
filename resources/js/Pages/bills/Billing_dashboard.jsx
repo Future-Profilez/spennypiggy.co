@@ -213,14 +213,14 @@ export default function Billing_dashboard(props) {
 
                         <CartesianGrid
                             strokeDasharray="3 3"
-                            stroke="rgba(255,255,255,0.08)"
+                            stroke="rgba(0,0,0,0.1)"
                             vertical={false}
                         />
 
                         <XAxis
                             dataKey="month"
                             tick={{
-                                fill: "#94a3b8",
+                                fill: "#4b5563",
                                 fontSize: 12,
                             }}
                             axisLine={false}
@@ -229,7 +229,7 @@ export default function Billing_dashboard(props) {
 
                         <YAxis
                             tick={{
-                                fill: "#94a3b8",
+                                fill: "#4b5563",
                                 fontSize: 12,
                             }}
                             axisLine={false}
@@ -239,10 +239,10 @@ export default function Billing_dashboard(props) {
 
                         <Tooltip
                             contentStyle={{
-                                background: "rgba(15,23,42,0.95)",
-                                border: "1px solid rgba(255,255,255,0.1)",
+                                background: "#fff",
+                                border: "2px solid #000",
                                 borderRadius: "16px",
-                                color: "#fff",
+                                color: "#000",
                                 backdropFilter: "blur(12px)",
                             }}
                             formatter={(value) => [
@@ -282,24 +282,25 @@ export default function Billing_dashboard(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                    <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
+                <div className="min-h-screen bg-gray-200">
+                    <div className="containerbox m-auto">
+                        <div className="py-8 md:py-16 w-full m-auto">
                         {/* Header Section */}
                         <CreatorDashboardTabs />
                         <div className="mb-8">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                                 <div>
                                     <div className="flex items-center gap-4 mb-3">
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/20">
+                                        <div className="w-16 h-16 bg-yellow-300 flex items-center justify-center text-3xl bg-white border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                             💳
                                         </div>
 
                                         <div>
-                                            <h1 className="text-4xl font-black text-white tracking-tight">
+                                            <h1 className="text-3xl md:text-4xl font-GillSans uppercase text-black tracking-tight">
                                                 Bill Dashboard
                                             </h1>
 
-                                            <p className="text-slate-400 mt-1 text-sm">
+                                            <p className="text-gray-600 mt-1 text-sm">
                                                 Track all creator bill revenue,
                                                 payments and supporter analytics
                                             </p>
@@ -310,25 +311,25 @@ export default function Billing_dashboard(props) {
                         </div>
 
                         {/* Stats Grid - Main Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 mb-10">
                             {/* TOTAL BILLS */}
-                            <div className="rounded-3xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 border border-white/10 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-blue-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         📄
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         Total
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-4xl md:text-5xl font-black text-black">
                                         {data.total_bills || 0}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Total Bills Created
                                     </p>
                                 </div>
@@ -343,32 +344,32 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* TOTAL REVENUE */}
-                            <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-700/5 border border-emerald-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-emerald-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         💰
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         Lifetime
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-4xl md:text-5xl font-black text-black">
                                         {displayCurrency}
                                         {Number(
                                             data.total_revenue || 0,
                                         ).toLocaleString()}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Total Revenue
                                     </p>
                                 </div>
 
                                 <div className="w-full">
-                                    <div className="flex justify-between text-xs text-slate-400 mb-2">
+                                    <div className="flex justify-between text-xs text-gray-600 mb-2">
                                         <span>Collection Rate</span>
 
                                         <span>
@@ -376,7 +377,7 @@ export default function Billing_dashboard(props) {
                                         </span>
                                     </div>
 
-                                    <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
+                                    <div className="h-2 rounded-full bg-gray-200 border-2 border-black overflow-hidden">
                                         <div
                                             className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500"
                                             style={{
@@ -388,26 +389,26 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* MONTHLY REVENUE */}
-                            <div className="rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-amber-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         📈
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         This Month
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-4xl md:text-5xl font-black text-black">
                                         {displayCurrency}
                                         {Number(
                                             data.monthly_revenue || 0,
                                         ).toLocaleString()}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Monthly Revenue
                                     </p>
                                 </div>
@@ -424,26 +425,26 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* NEXT MONTH */}
-                            <div className="rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-500/5 border border-cyan-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-cyan-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         🚀
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         Forecast
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-4xl md:text-5xl font-black text-black">
                                         {displayCurrency}
                                         {Number(
                                             data.estimated_next_month || 0,
                                         ).toLocaleString()}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Estimated Next Month
                                     </p>
                                 </div>
@@ -459,14 +460,14 @@ export default function Billing_dashboard(props) {
                         </div>
 
                         {/* Top Performing Bills & Chart Section */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                        <div className="flex flex-col gap-6 md:gap-8 mb-10">
                             {/* Top Performing Bills */}
-                            <div className="rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-sm border border-white/10 p-4">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-4">
                                 <div className="mb-4">
-                                    <h2 className="text-xl font-bold text-white">
+                                    <h2 className="text-xl font-GillSans uppercase font-black text-black">
                                         Top Performing Bills
                                     </h2>
-                                    <p className="text-slate-400 text-xs">
+                                    <p className="text-gray-600 text-xs">
                                         Bills with highest revenue
                                     </p>
                                 </div>
@@ -475,18 +476,18 @@ export default function Billing_dashboard(props) {
                                         data.top_bills.map((bill, index) => (
                                             <div
                                                 key={index}
-                                                className="flex items-center justify-between p-3 rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] hover:bg-white/10 transition-all cursor-pointer"
+                                                className="flex items-center justify-between p-3 rounded-3xl bg-gray-100 border-2 border-black rounded-[20px] mb-2 hover:bg-gray-200 hover:translate-x-[-2px] hover:translate-y-[-2px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer"
                                                 onClick={() =>
                                                     (window.location.href = `/billing/bill/${bill.uuid}`)
                                                 }
                                             >
                                                 <div className="flex items-center gap-3 flex-1">
-                                                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-sm font-bold text-blue-400">
+                                                    <div className="w-8 h-8 rounded-lg bg-blue-200 flex items-center justify-center text-sm font-bold text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                                         #{index + 1}
                                                     </div>
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2">
-                                                            <p className="text-sm font-medium text-white truncate max-w-[150px]">
+                                                            <p className="text-sm font-medium text-black truncate max-w-[150px]">
                                                                 {bill.name}
                                                             </p>
                                                             <span
@@ -499,7 +500,7 @@ export default function Billing_dashboard(props) {
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-3 mt-1">
-                                                            <p className="text-xs text-slate-400">
+                                                            <p className="text-xs text-gray-600">
                                                                 {
                                                                     displayCurrency
                                                                 }
@@ -508,7 +509,7 @@ export default function Billing_dashboard(props) {
                                                                 ).toLocaleString()}{" "}
                                                                 / {bill.period}
                                                             </p>
-                                                            <p className="text-xs text-slate-400">
+                                                            <p className="text-xs text-gray-600">
                                                                 👥{" "}
                                                                 {bill.buyers_count ||
                                                                     0}{" "}
@@ -518,14 +519,14 @@ export default function Billing_dashboard(props) {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-lg font-bold text-white">
+                                                    <p className="text-lg font-bold text-black">
                                                         {displayCurrency}
                                                         {Number(
                                                             bill.total_revenue ||
                                                                 0,
                                                         ).toLocaleString()}
                                                     </p>
-                                                    <p className="text-xs text-slate-400">
+                                                    <p className="text-xs text-gray-600">
                                                         total revenue
                                                     </p>
                                                 </div>
@@ -533,7 +534,7 @@ export default function Billing_dashboard(props) {
                                         ))
                                     ) : (
                                         <div className="text-center py-8">
-                                            <p className="text-slate-400 text-sm">
+                                            <p className="text-gray-600 text-sm">
                                                 No bills created yet
                                             </p>
                                             <Link
@@ -549,19 +550,19 @@ export default function Billing_dashboard(props) {
 
                             {/* REVENUE ANALYTICS */}
 
-                            <div className="rounded-3xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden">
                                 {/* HEADER */}
 
-                                <div className="p-6 border-b border-white/10">
+                                <div className="p-6 border-b-[3px] border-black">
                                     <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
                                         <div>
                                             <div className="flex items-center gap-4">
                                                 <div>
-                                                    <h2 className="text-3xl font-black text-white">
+                                                    <h2 className="text-2xl md:text-3xl font-GillSans uppercase text-black">
                                                         Revenue Performance
                                                     </h2>
 
-                                                    <p className="text-slate-400 text-sm mt-1">
+                                                    <p className="text-gray-600 text-sm mt-1">
                                                         Monthly growth and
                                                         creator earnings trend
                                                     </p>
@@ -569,7 +570,7 @@ export default function Billing_dashboard(props) {
 
                                                 <div
                                                     className={`
-                                                        px-4 py-2 rounded-2xl
+                                                        px-4 py-2 rounded-[30px]
                                                         flex items-center gap-2
                                                         border
                                                         ${
@@ -602,8 +603,8 @@ export default function Billing_dashboard(props) {
                                                 }
                                                 className="
                                                     bg-white/10 border border-white/10
-                                                    rounded-2xl px-5 py-3 text-sm
-                                                    text-white focus:outline-none
+                                                    rounded-[30px] px-5 py-3 text-sm
+                                                    text-black focus:outline-none
                                                     focus:ring-2 focus:ring-cyan-500
                                                 "
                                             >
@@ -625,11 +626,11 @@ export default function Billing_dashboard(props) {
 
                                 {/* ANALYTICS STATS */}
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b border-white/10">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b-[3px] border-black">
                                     {/* GROWTH */}
 
-                                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                                        <p className="text-slate-400 text-xs uppercase tracking-wider">
+                                    <div className="rounded-[30px] bg-white/5 border border-white/10 p-5">
+                                        <p className="text-gray-600 text-xs uppercase tracking-wider">
                                             Monthly Growth
                                         </p>
 
@@ -656,15 +657,15 @@ export default function Billing_dashboard(props) {
                                             </div>
                                         </div>
 
-                                        <p className="text-slate-500 text-xs mt-2">
+                                        <p className="text-gray-500 text-xs mt-2">
                                             Compared to previous month
                                         </p>
                                     </div>
 
                                     {/* BEST MONTH */}
 
-                                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                                        <p className="text-slate-400 text-xs uppercase tracking-wider">
+                                    <div className="rounded-[30px] bg-white/5 border border-white/10 p-5">
+                                        <p className="text-gray-600 text-xs uppercase tracking-wider">
                                             Best Performing Month
                                         </p>
 
@@ -675,15 +676,15 @@ export default function Billing_dashboard(props) {
                                             ).toLocaleString()}
                                         </h3>
 
-                                        <p className="text-slate-300 text-sm mt-2">
+                                        <p className="text-gray-700 text-sm mt-2">
                                             {peakMonth?.month || "-"}
                                         </p>
                                     </div>
 
                                     {/* AVG */}
 
-                                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                                        <p className="text-slate-400 text-xs uppercase tracking-wider">
+                                    <div className="rounded-[30px] bg-white/5 border border-white/10 p-5">
+                                        <p className="text-gray-600 text-xs uppercase tracking-wider">
                                             Average Revenue
                                         </p>
 
@@ -694,7 +695,7 @@ export default function Billing_dashboard(props) {
                                             ).toLocaleString()}
                                         </h3>
 
-                                        <p className="text-slate-500 text-xs mt-2">
+                                        <p className="text-gray-500 text-xs mt-2">
                                             Per selected month range
                                         </p>
                                     </div>
@@ -715,11 +716,11 @@ export default function Billing_dashboard(props) {
                                                     📊
                                                 </div>
 
-                                                <h3 className="text-2xl font-bold text-white">
+                                                <h3 className="text-2xl font-bold text-black">
                                                     No Analytics Yet
                                                 </h3>
 
-                                                <p className="text-slate-400 mt-2">
+                                                <p className="text-gray-600 mt-2">
                                                     Revenue data will appear
                                                     once payments start coming
                                                     in.
@@ -732,13 +733,13 @@ export default function Billing_dashboard(props) {
                         </div>
 
                         {/* All Bills Section with Filters */}
-                        <div className="rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-sm border border-white/10 overflow-hidden mb-6">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-white/10 gap-4">
+                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden mb-6">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b-[3px] border-black gap-4">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white">
+                                    <h2 className="text-xl font-GillSans uppercase font-black text-black">
                                         All Bills
                                     </h2>
-                                    <p className="text-slate-400 text-xs">
+                                    <p className="text-gray-600 text-xs">
                                         Manage and track all your bills
                                     </p>
                                 </div>
@@ -751,7 +752,7 @@ export default function Billing_dashboard(props) {
                                             onChange={(e) =>
                                                 setSearchTerm(e.target.value)
                                             }
-                                            className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm text-black placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div className="flex gap-2">
@@ -759,7 +760,7 @@ export default function Billing_dashboard(props) {
                                             onClick={() =>
                                                 setFilterStatus("all")
                                             }
-                                            className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "all" ? "bg-blue-500 text-white" : "bg-white/10 text-slate-300 hover:bg-white/20"}`}
+                                            className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "all" ? "bg-blue-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
                                         >
                                             All
                                         </button>
@@ -767,7 +768,7 @@ export default function Billing_dashboard(props) {
                                             onClick={() =>
                                                 setFilterStatus("active")
                                             }
-                                            className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "active" ? "bg-green-500 text-white" : "bg-white/10 text-slate-300 hover:bg-white/20"}`}
+                                            className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "active" ? "bg-green-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
                                         >
                                             Active
                                         </button>
@@ -775,7 +776,7 @@ export default function Billing_dashboard(props) {
                                             onClick={() =>
                                                 setFilterStatus("inactive")
                                             }
-                                            className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "inactive" ? "bg-red-500 text-white" : "bg-white/10 text-slate-300 hover:bg-white/20"}`}
+                                            className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "inactive" ? "bg-red-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
                                         >
                                             Inactive
                                         </button>
@@ -786,32 +787,32 @@ export default function Billing_dashboard(props) {
                             {filteredBills?.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-white/10 border-b border-white/10">
+                                        <thead className="bg-gray-100 border-b-[3px] border-black">
                                             <tr>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                                     Bill Name
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                                     Price
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                                     Period
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                                     Buyers
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                                     Revenue
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                                     Status
                                                 </th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                                     Action
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-white/10">
+                                        <tbody className="divide-y-[3px] divide-black">
                                             {filteredBills.map(
                                                 (bill, index) => (
                                                     <tr
@@ -835,13 +836,13 @@ export default function Billing_dashboard(props) {
                                                                         📄
                                                                     </div>
                                                                 )}
-                                                                <span className="text-sm text-white font-medium">
+                                                                <span className="text-sm text-black font-medium">
                                                                     {bill.name}
                                                                 </span>
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-3">
-                                                            <p className="text-sm font-bold text-white">
+                                                            <p className="text-sm font-bold text-black">
                                                                 {
                                                                     displayCurrency
                                                                 }
@@ -856,7 +857,7 @@ export default function Billing_dashboard(props) {
                                                             </span>
                                                         </td>
                                                         <td className="px-4 py-3">
-                                                            <p className="text-sm text-white">
+                                                            <p className="text-sm text-black">
                                                                 {bill.buyers_count ||
                                                                     0}
                                                             </p>
@@ -869,7 +870,7 @@ export default function Billing_dashboard(props) {
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-3">
-                                                            <p className="text-sm font-bold text-white">
+                                                            <p className="text-sm font-bold text-black">
                                                                 {
                                                                     displayCurrency
                                                                 }
@@ -898,10 +899,7 @@ export default function Billing_dashboard(props) {
                                                                 className="
                                                                 inline-flex items-center gap-2
                                                                 px-4 py-2 rounded-xl
-                                                                bg-gradient-to-r from-cyan-500 to-blue-500
-                                                                text-white text-sm font-bold
-                                                                hover:scale-105 transition-all duration-300
-                                                                shadow-lg shadow-cyan-500/20
+                                                                bg-blue-300 text-black text-sm font-black uppercase border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all
                                                             "
                                                             >
                                                                 View Details
@@ -919,10 +917,10 @@ export default function Billing_dashboard(props) {
                                     <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-2xl mb-3">
                                         📄
                                     </div>
-                                    <h3 className="text-base font-bold text-white mb-1">
+                                    <h3 className="text-base font-bold text-black mb-1">
                                         No Bills Found
                                     </h3>
-                                    <p className="text-slate-400 text-xs mb-4">
+                                    <p className="text-gray-600 text-xs mb-4">
                                         {searchTerm
                                             ? "Try a different search term"
                                             : "Create your first bill to start accepting payments"}
@@ -938,6 +936,7 @@ export default function Billing_dashboard(props) {
                                 </div>
                             )}
                         </div>
+                    </div>
                     </div>
                 </div>
             )}

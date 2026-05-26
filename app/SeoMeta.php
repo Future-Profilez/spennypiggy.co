@@ -44,7 +44,30 @@ class SeoMeta
      */
     public static function setCanonical($url): void
     {
+        $existing = static::$tags['link'] ?? [];
+        if (is_array($existing)) {
+            static::$tags['link'] = array_values(array_filter($existing, function ($item) {
+                $props = is_array($item) && isset($item['props']) ? $item['props'] : $item;
+                return !is_array($props) || ($props['rel'] ?? null) !== 'canonical';
+            }));
+        }
+
         static::addTag('link', ['rel' => 'canonical', 'href' => $url]);
+    }
+
+    public static function setRobots($robots, $googlebot = null): void
+    {
+        $existing = static::$tags['meta'] ?? [];
+        if (is_array($existing)) {
+            static::$tags['meta'] = array_values(array_filter($existing, function ($item) {
+                $props = is_array($item) && isset($item['props']) ? $item['props'] : $item;
+                $name = is_array($props) ? ($props['name'] ?? null) : null;
+                return $name !== 'robots' && $name !== 'googlebot';
+            }));
+        }
+
+        static::addTag('meta', ['name' => 'robots', 'content' => $robots]);
+        static::addTag('meta', ['name' => 'googlebot', 'content' => $googlebot ?? $robots]);
     }
 
     /**
@@ -128,6 +151,45 @@ class SeoMeta
     public static function addJsonLd($data): void
     {
         static::addTag('script', ['type' => 'application/ld+json'], json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    public static function setPaginationLinks($prevUrl = null, $nextUrl = null): void
+    {
+        if (!empty($prevUrl)) {
+            static::addTag('link', ['rel' => 'prev', 'href' => $prevUrl]);
+        }
+        if (!empty($nextUrl)) {
+            static::addTag('link', ['rel' => 'next', 'href' => $nextUrl]);
+        }
+    }
+
+    public static function addBreadcrumbJsonLd(array $items): void
+    {
+        $list = [];
+        $pos = 1;
+        foreach ($items as $item) {
+            $name = $item['name'] ?? null;
+            $url = $item['url'] ?? null;
+            if (empty($name) || empty($url)) {
+                continue;
+            }
+            $list[] = [
+                '@type' => 'ListItem',
+                'position' => $pos++,
+                'name' => $name,
+                'item' => $url,
+            ];
+        }
+
+        if (empty($list)) {
+            return;
+        }
+
+        static::addJsonLd([
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => $list,
+        ]);
     }
 
     /**

@@ -2,7 +2,8 @@ import ProfileProduct from "./ProfileProduct";
 import { useEffect, useState } from "react";
 import { router, usePage } from "@inertiajs/react";
 import Nocontent from "@/includes/Nocontent";
-export default function ProfileProductLists({ IsloggedIn }) {
+import AddMoreTile from "@/Components/AddMoreTile";
+export default function ProfileProductLists({ IsloggedIn, suppressEmptyState = false }) {
     const { shops } = usePage().props;
     const [lists, setLists] = useState(shops || []);
 
@@ -29,10 +30,18 @@ export default function ProfileProductLists({ IsloggedIn }) {
                             item={item}
                         />
                     ))}
+                    {IsloggedIn && (
+                        <AddMoreTile
+                            title="Add Item"
+                            subtitle="Create another product for your shop."
+                            onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))}
+                            minHeightClass="min-h-[300px]"
+                        />
+                    )}
                 </div>
-            ) : (
+            ) : suppressEmptyState ? null : (
                 <Nocontent text="Nothing to see" />
-            )}
+            )} 
         </>
     );
 }

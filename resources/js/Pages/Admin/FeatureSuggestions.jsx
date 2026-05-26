@@ -40,7 +40,7 @@ function StatusModal({ suggestion, onClose }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-2xl shadow-[4px_4px_0px_0px_#FF007F]xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="bg-white rounded-[30px] shadow-[4px_4px_0px_0px_#FF007F]xl w-full max-w-md mx-4 overflow-hidden">
                 <div className="h-1 bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500" />
                 <div className="p-6">
                     <h3 className="text-lg font-bold mb-1">Update Status</h3>
@@ -144,7 +144,7 @@ export default function FeatureSuggestions({ auth, suggestions, filters }) {
                     </div>
 
                     {/* Filters */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-col sm:flex-row gap-3">
+                    <div className="bg-white rounded-[30px] border border-gray-100 shadow-sm p-4 mb-6 flex flex-col sm:flex-row gap-3">
                         <input
                             type="text"
                             value={search}
@@ -184,7 +184,7 @@ export default function FeatureSuggestions({ auth, suggestions, filters }) {
                     </div>
 
                     {/* Table */}
-                    <div className="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-100">
+                    <div className="bg-white overflow-hidden shadow-sm rounded-[30px] border border-gray-100">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-100">
                                 <thead className="bg-gray-50">

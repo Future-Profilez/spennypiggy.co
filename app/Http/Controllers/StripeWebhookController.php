@@ -37,6 +37,8 @@ use App\Mail\TaskRefunded;
 use App\Services\UserProfileService;
 use App\Services\StripeMetadataService;
 use App\Services\Risk\RiskService;
+use App\Models\CreatorMetric;
+use App\Services\Risk\ReservePolicy;
 
 class StripeWebhookController extends Controller
 {
@@ -936,6 +938,11 @@ class StripeWebhookController extends Controller
                 $this->processTaskPurchase($session, $metadata);
             }
 
+            // Check if this is a piggy pot contribution
+            if (isset($metadata->type) && $metadata->type === 'piggy_pot') {
+                $this->processPiggyPotPayment($session, $metadata);
+            }
+
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
             Log::error("Error processing checkout session completed", [
@@ -944,6 +951,139 @@ class StripeWebhookController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Process piggy pot payment creation via webhook
+     */
+    private function processPiggyPotPayment($session, $metadata)
+    {
+        Log::info("Processing piggy pot payment via webhook", ['session_id' => $session->id]);
+
+        $pay = \App\Models\PiggyPotContribution::where('session_id', $session->id)->first();
+        if (!$pay) {
+            Log::warning("Piggy pot contribution not found for session", ['session_id' => $session->id]);
+            return;
+        }
+
+        // Avoid duplicate processing if already completed
+        if ($pay->status === 'paid' && $pay->payment_intent_id) {
+            return;
+        }
+
+        $pay->status = $session->payment_status;
+        if ($session->payment_status === 'paid') {
+            $pay->payment_intent_id = $session->payment_intent;
+            $pay->save();
+
+            \App\Models\Payment::where('stripe_session_id', $session->id)->update([
+                'stripe_payment_intent_id' => $session->payment_intent,
+                'status' => 'succeeded'
+            ]);
+
+            // Sync to FinancialTransactions
+            try {
+                $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($pay->currency);
+                
+                $gross = (float) $pay->total_paid; 
+                $platformFee = (float) $pay->tax;
+                $stripeFee = 0;
+                $vatAmt = (float) $pay->vat_amount;
+
+                if ($session->payment_intent) {
+                    try {
+                        $intentObj = \Stripe\PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $pay->creator->account_id]);
+                        if (isset($intentObj->application_fee_amount)) {
+                            $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
+                        }
+                    } catch (\Exception $e) {}
+                }
+
+                $reserveAmountMajor = 0;
+                $reserveStatus = 'none';
+                $creatorMetric = $pay->creator?->uuid
+                    ? CreatorMetric::where('creator_id', $pay->creator->uuid)->first()
+                    : null;
+                $reservePercent = $pay->creator
+                    ? (int) app(ReservePolicy::class)->getEffectiveReservePercent($pay->creator, $creatorMetric, $pay->created_at)
+                    : 0;
+                if ($reservePercent > 0) {
+                    $precision = $isZeroDecimal ? 0 : 2;
+                    $reserveAmountMajor = round(((float) $pay->amount * $reservePercent) / 100, $precision, PHP_ROUND_HALF_UP);
+                    $reserveStatus = 'held';
+                }
+
+                \App\Models\FinancialTransaction::updateOrCreate(
+                    ['source_type' => \App\Models\PiggyPotContribution::class, 'source_id' => $pay->id],
+                    [
+                        'user_id'       => $pay->creator_id,
+                        'supporter_id'  => $pay->user_id,
+                        'type'          => 'income',
+                        'gross_amount'  => $gross,
+                        'platform_fee'  => $platformFee,
+                        'stripe_fee'    => $stripeFee,
+                        'vat_amount'    => $vatAmt,
+                        'net_amount'    => (float) $pay->amount,
+                        'reserve_amount'=> $reserveAmountMajor,
+                        'reserve_status'=> $reserveStatus,
+                        'currency'      => strtoupper($pay->currency ?? 'GBP'),
+                        'status'        => 'completed',
+                        'description'   => 'Piggy Pot Contribution',
+                        'transaction_date' => $pay->created_at,
+                    ]
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to sync PiggyPotContribution to FinancialTransaction via Webhook: ' . $e->getMessage());
+            }
+
+            // Clear the cache for the creator's piggy pots
+            \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_owner_pinned');
+            \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_owner_all');
+            \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_public_pinned');
+            \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_public_all');
+            \Illuminate\Support\Facades\Cache::forget('user_piggy_pot_top_' . $pay->creator_id);
+            \Illuminate\Support\Facades\Cache::forget('user_piggy_pot_top_supporters_' . $pay->creator_id);
+            \Illuminate\Support\Facades\Cache::forget('user_piggy_pot_feed_' . $pay->creator_id);
+
+            if ($pay->creator) {
+                $this->userProfileService->clearUserCaches($pay->creator->username, $pay->creator->id);
+            }
+
+            \App\Helpers::addGmv($pay->creator_id, (float) $pay->amount, $pay->currency);
+
+            $pay->loadMissing(['piggyPot', 'creator', 'user']);
+
+            $symbol = \App\Helpers::getCurrency($pay->currency ?? 'GBP');
+            $supporterName = $pay->is_anonymous ? 'Anonymous' : ($pay->user?->name ?: ($pay->guest_name ?: 'A supporter'));
+            $sendCreator = empty($pay->creator_notified_at);
+            $sendSupporter = empty($pay->supporter_notified_at);
+
+            if ($sendCreator && $pay->creator?->email) {
+                $title = "🐷 New Piggy Pot Contribution!";
+                $content = "{$supporterName} contributed {$symbol}" . number_format((float) $pay->amount, 2) . " to {$pay->piggyPot?->title}.";
+                \App\Helpers::sendNotification($title, $content, $pay->creator->email);
+                $pay->creator_notified_at = now();
+            }
+
+            $supporterEmail = $pay->user?->email ?: $pay->guest_email;
+            if ($sendSupporter && $supporterEmail) {
+                $title = "✅ Payment Successful!";
+                $content = "Your contribution of {$symbol}" . number_format((float) $pay->total_paid, 2) . " was added to {$pay->creator?->name}'s Piggy Pot.";
+                if (!empty($pay->piggyPot?->content_file)) {
+                    $content .= " Exclusive reward unlocked.";
+                }
+                \App\Helpers::sendNotification($title, $content, $supporterEmail);
+                $pay->supporter_notified_at = now();
+            }
+
+            if ($sendCreator || $sendSupporter) {
+                \App\Jobs\PiggyPotContributionMailToUser::dispatch($pay->id, $sendCreator, $sendSupporter);
+            }
+
+            $pay->save();
+        } else {
+            $pay->save();
         }
     }
 
@@ -1295,6 +1435,15 @@ class StripeWebhookController extends Controller
                     }
                 }
 
+                // Check PiggyPotContribution
+                if (!$creatorId) {
+                    $piggyPot = \App\Models\PiggyPotContribution::where('payment_intent_id', $paymentIntentId)->first();
+                    if ($piggyPot) {
+                        $creatorId = $piggyPot->creator_id;
+                        $amount = (int)($piggyPot->amount * 100); // Assuming it's major units now
+                    }
+                }
+
                 // Resolve UUID if we got an integer ID
                 if ($creatorId && is_numeric($creatorId)) {
                     $cUser = \App\Models\User::find($creatorId);
@@ -1408,6 +1557,13 @@ class StripeWebhookController extends Controller
             $purchase->dispute_status = 'open';
             $purchase->save();
             Log::info("Dispute opened for TaskPurchase", ['id' => $purchase->id]);
+        }
+
+        $piggyPot = \App\Models\PiggyPotContribution::where('payment_intent_id', $paymentIntentId)->first();
+        if ($piggyPot) {
+            $piggyPot->status = 'disputed';
+            $piggyPot->save();
+            Log::info("Dispute opened for PiggyPotContribution", ['id' => $piggyPot->id]);
         }
     }
 
@@ -2559,6 +2715,13 @@ class StripeWebhookController extends Controller
                 Log::error("Failed to update metadata on async payment succeeded: " . $e->getMessage());
             }
         }
+
+        $piggyPot = \App\Models\PiggyPotContribution::where('session_id', $session->id)->first();
+        if ($piggyPot && !in_array($piggyPot->status, ['paid', 'succeeded'])) {
+            $piggyPot->status = 'succeeded';
+            $piggyPot->save();
+            Log::info("Updated PiggyPotContribution status to succeeded", ['id' => $piggyPot->id]);
+        }
     }
 
     /**
@@ -2594,6 +2757,13 @@ class StripeWebhookController extends Controller
             } catch (\Exception $e) {
                 Log::error("Failed to update metadata on async payment failed: " . $e->getMessage());
             }
+        }
+
+        $piggyPot = \App\Models\PiggyPotContribution::where('session_id', $session->id)->first();
+        if ($piggyPot) {
+            $piggyPot->status = 'failed';
+            $piggyPot->save();
+            Log::info("Updated PiggyPotContribution status to failed", ['id' => $piggyPot->id]);
         }
     }
 
@@ -2711,6 +2881,18 @@ class StripeWebhookController extends Controller
         }
         // ----------------------------------
 
+        try {
+            if ($paymentIntentId) {
+                \App\Models\SupportTicket::where('stripe_payment_intent_id', $paymentIntentId)
+                    ->whereNull('resolved_at')
+                    ->update([
+                        'status' => 'refunded',
+                        'resolved_at' => now(),
+                    ]);
+            }
+        } catch (\Throwable $e) {
+        }
+
         // --- Module Sync: Mark internal purchase records as refunded ---
 
         // 1. Tasks
@@ -2796,6 +2978,15 @@ class StripeWebhookController extends Controller
         }
         if ($tip) {
             $tip->update(['status' => 'refunded']);
+        }
+
+        // 2b. Piggy Pots
+        $piggy = $stripeSessionId ? \App\Models\PiggyPotContribution::where('session_id', $stripeSessionId)->first() : null;
+        if (!$piggy && $paymentIntentId) {
+            $piggy = \App\Models\PiggyPotContribution::where('payment_intent_id', $paymentIntentId)->first();
+        }
+        if ($piggy) {
+            $piggy->update(['status' => 'refunded']);
         }
 
         // 3. Shop Purchases
@@ -2885,10 +3076,19 @@ class StripeWebhookController extends Controller
                     $stripeFee = \App\StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $connectedAccountId);
                     $netMinor = max(0, $paymentIntent->amount - $appFee - $stripeFee);
 
+                    $gbpMinor = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($netMinor, strtoupper((string) $paymentIntent->currency));
+
                     $existing = \App\Models\Payment::whereNull('stripe_payment_intent_id')
                         ->where('creator_id', $creatorId)
-                        ->where('currency', strtoupper((string) $paymentIntent->currency))
-                        ->where('amount', $netMinor)
+                        ->where(function ($q) use ($netMinor, $gbpMinor, $paymentIntent) {
+                            $q->where(function ($sub) use ($netMinor, $paymentIntent) {
+                                $sub->where('currency', strtoupper((string) $paymentIntent->currency))
+                                    ->where('amount', $netMinor);
+                            })->orWhere(function ($sub) use ($gbpMinor) {
+                                $sub->whereIn('currency', ['gbp', 'GBP'])
+                                    ->where('amount', $gbpMinor);
+                            });
+                        })
                         ->where('created_at', '>=', now()->subMinutes(10))
                         ->orderByDesc('created_at')
                         ->first();
@@ -3450,10 +3650,10 @@ class StripeWebhookController extends Controller
                 [\App\Models\TaskPurchase::class,       'payment_intent_id', 'stripe_session_id'],
                 [\App\Models\PiggyPotContribution::class,'payment_intent_id', 'session_id'],
                 [\App\Models\TipGoalsPayment::class,    'session_id',        'session_id'], // Uses session_id for both
-                [\App\Models\ShopPayment::class,        'payment_intent_id', 'session_id'],
-                [\App\Models\StripePaymentDetail::class,'payment_intent_id', 'session_id'],
-                [\App\Models\MembershipPayment::class,  'payment_intent_id', 'session_id'],
-                [\App\Models\BillPayment::class,        'payment_intent_id', 'session_id'],
+                [\App\Models\ShopPayment::class,        'session_id',        'session_id'],
+                [\App\Models\StripePaymentDetail::class,'stripe_payment_intent_id', 'session_id'],
+                [\App\Models\MembershipPayment::class,  'session_id',        'session_id'],
+                [\App\Models\BillPayment::class,        'session_id',        'session_id'],
             ];
 
             foreach ($sourceModels as [$modelClass, $piCol, $sessionCol]) {

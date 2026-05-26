@@ -2,9 +2,10 @@ import Membership from './Membership';
 import { memo, useMemo } from 'react';
 import Nocontent from '@/includes/Nocontent';
 import { usePage } from '@inertiajs/react';
+import AddMoreTile from '@/Components/AddMoreTile';
 
 function MembershipsLists(props) {
-    const {username, IsloggedIn, isUpdated} = props;
+    const { username, IsloggedIn, isUpdated, suppressEmptyState = false } = props;
     const { memberships } = usePage().props;
     
     // Memoize the memberships list to prevent unnecessary re-renders
@@ -23,13 +24,23 @@ function MembershipsLists(props) {
         [memberships]
     );
 
+    if (hasNoMemberships && suppressEmptyState) return null;
+
     return (
         <div className='min-height'>
-            {hasNoMemberships ? 
-                <Nocontent text="Nothing to see" /> 
-                :
+            {hasNoMemberships ? (
+                suppressEmptyState ? null : <Nocontent text="Nothing to see" />
+            ) : 
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-5'>
                     {memoizedMemberships}
+                    {IsloggedIn && (
+                        <AddMoreTile
+                            title="Add Membership"
+                            subtitle="Create another tier for your supporters."
+                            onClick={() => window.dispatchEvent(new Event("toggleAddOptions"))}
+                            minHeightClass="min-h-[300px]"
+                        />
+                    )}
                 </div>
             }
         </div>
@@ -41,6 +52,7 @@ export default memo(MembershipsLists, (prevProps, nextProps) => {
     return (
         prevProps.username === nextProps.username &&
         prevProps.IsloggedIn === nextProps.IsloggedIn &&
-        prevProps.isUpdated === nextProps.isUpdated
+        prevProps.isUpdated === nextProps.isUpdated &&
+        prevProps.suppressEmptyState === nextProps.suppressEmptyState
     );
 });

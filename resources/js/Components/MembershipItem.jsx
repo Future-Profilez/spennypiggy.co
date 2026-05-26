@@ -151,7 +151,7 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                                 {item?.level}
                             </h3>
                         </div>
-                        <div className="w-14 h-14 rounded-2xl border-[3px] border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 group-hover/card:-rotate-3 transition-transform">
+                        <div className="w-14 h-14 rounded-[30px] border-[3px] border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 group-hover/card:-rotate-3 transition-transform">
                             <img
                                 src={item?.perma_link || dummy}
                                 alt={item?.level}

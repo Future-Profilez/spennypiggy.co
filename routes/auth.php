@@ -186,7 +186,7 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
 // Discover route
 Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
     $getData = function () use ($request, $discoveryService, $type, $category) {
-        $filters = $request->only(['search', 'contentType']);
+        $filters = $request->only(['search', 'contentType', 'page', 'sortBy', 'type', 'minPrice', 'maxPrice', 'categories']);
         // Normalize type and apply shortcut filters
         if ($type) {
             $normalizedType = strtolower($type);
@@ -286,6 +286,33 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         ];
     };
 
+    $page = max(1, (int) $request->query('page', 1));
+    $nonPageQuery = $request->query();
+    unset($nonPageQuery['page']);
+    $hasNonPageQuery = !empty(array_filter($nonPageQuery, function ($v) {
+        if (is_array($v)) {
+            return count(array_filter($v, fn($x) => $x !== null && $x !== '')) > 0;
+        }
+        return $v !== null && $v !== '';
+    }));
+
+    $breadcrumbs = [
+        ['name' => 'Home', 'url' => url('/')],
+        ['name' => 'Discover', 'url' => url('/discover')],
+    ];
+    if (!empty($type) && $type !== 'trending') {
+        $breadcrumbs[] = ['name' => ucwords(str_replace('-', ' ', (string) $type)), 'url' => $request->url()];
+    }
+    \App\SeoMeta::addBreadcrumbJsonLd($breadcrumbs);
+
+    if ($hasNonPageQuery) {
+        \App\SeoMeta::setRobots('noindex,follow');
+    }
+
+    $canonicalBase = $request->url();
+    $canonicalUrl = ($page > 1 && !$hasNonPageQuery) ? ($canonicalBase . '?page=' . $page) : $canonicalBase;
+    \App\SeoMeta::setCanonical($canonicalUrl);
+
     // Use cache for everyone, but shorter TTL for auth users if needed
     // However, discovery data is mostly global, so we can use a shared cache key
     // that depends on the request parameters.
@@ -293,6 +320,25 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     $ttl = Auth::check() ? 300 : 1200; // 5 mins for auth, 20 mins for guests
 
     $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $getData);
+
+    if ($page > 1) {
+        \App\SeoMeta::setPaginationLinks($request->fullUrlWithQuery(['page' => $page - 1]), null);
+    }
+
+    $limit = 24;
+    $hasNext = false;
+    if (!empty($data['searchResults']) && is_array($data['searchResults'])) {
+        foreach ($data['searchResults'] as $group) {
+            if (is_iterable($group) && count($group) >= $limit) {
+                $hasNext = true;
+                break;
+            }
+        }
+    }
+
+    if ($hasNext) {
+        \App\SeoMeta::setPaginationLinks(null, $request->fullUrlWithQuery(['page' => $page + 1]));
+    }
 
     return Inertia::render('discover/Discover', [
         'featuredCreators' => $data['featuredCreators'],
@@ -747,6 +793,12 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
         Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
 
+        Route::post('support/tickets', [\App\Http\Controllers\SupportTicketController::class, 'store'])->name('support.tickets.store');
+        Route::get('support/tickets/{uuid}', [\App\Http\Controllers\SupportTicketController::class, 'show'])->name('support.tickets.show');
+        Route::post('support/tickets/{uuid}/message', [\App\Http\Controllers\SupportTicketController::class, 'message'])->name('support.tickets.message');
+        Route::post('support/tickets/{uuid}/creator/approve-refund', [\App\Http\Controllers\SupportTicketController::class, 'creatorApproveRefund'])->name('support.tickets.creator.approve-refund');
+        Route::post('support/tickets/{uuid}/creator/reject-refund', [\App\Http\Controllers\SupportTicketController::class, 'creatorRejectRefund'])->name('support.tickets.creator.reject-refund');
+
         Route::get('support/{creator}/{gifter}', function ($creator, $gifter) {
             return Inertia::render('gifter/SupportStory', [
                 'creator' => $creator,
@@ -758,6 +810,7 @@ Route::middleware('auth')->group(function () {
         Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->middleware('check.block')->name('support.story.reply');
         Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
         Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
+
 
         // Intro video
         Route::get('/redirecting', function () {

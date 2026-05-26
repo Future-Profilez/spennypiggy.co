@@ -54,6 +54,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'show_piggy_bank',
         'default_currency',
         'terms_accepted_at',
+        'creator_email_receipt_acknowledged_at',
         'utm_source',
         'utm_medium',
         'utm_campaign',
@@ -74,6 +75,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'identity_admin_status' => 'integer',
         'identity_admin_reviewed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
+        'creator_email_receipt_acknowledged_at' => 'datetime',
     ];
 
     protected $appends = [

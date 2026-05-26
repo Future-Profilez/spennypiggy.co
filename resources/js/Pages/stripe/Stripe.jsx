@@ -10,10 +10,12 @@ export default function Stripe(props) {
     const { auth, user, success, mor_consent_given, mor_consent_details } =
         props;
     const checkRef = useRef();
+    const creatorEmailReceiptAckRef = useRef();
     const { errorAlert, successAlert } = useAlerts();
     const { data, setData, post, processing, errors } = useForm({
         termaccept: "",
         mor_agreed: false,
+        creator_email_receipt_ack: false,
     });
 
     const acknowledgements = [
@@ -34,6 +36,8 @@ export default function Stripe(props) {
 
     const adminIdentityApproved = auth?.user?.identity_admin_status === 1;
     const finalStepsUnlocked = auth?.user?.profile_status_lock == 2;
+    const creatorEmailReceiptAcked = !!auth?.user
+        ?.creator_email_receipt_acknowledged_at;
 
     // Show success message if redirected after consent AND scroll to top
     useEffect(() => {
@@ -101,6 +105,19 @@ export default function Stripe(props) {
             return false;
         }
 
+        if (
+            !creatorEmailReceiptAcked &&
+            creatorEmailReceiptAckRef &&
+            creatorEmailReceiptAckRef.current &&
+            !creatorEmailReceiptAckRef.current.checked
+        ) {
+            errorAlert(
+                "Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.",
+            );
+            creatorEmailReceiptAckRef.current.focus();
+            return false;
+        }
+
         // if (!checkRef.current.checked) {
         //     errorAlert("Please check accept terms & conditions checkbox");
         //     checkRef.current.focus();
@@ -109,15 +126,21 @@ export default function Stripe(props) {
 
         setConnecting(true);
 
-        // Generate the URL first
-        const stripeUrl = route("stripe.connect", {
-            // step: "init",
-            country: country,
-            currency: countryCurrency,
-        });
-
-        // Then redirect
-        window.location.href = stripeUrl;
+        post(
+            route("stripe.connect", {
+                country: country,
+                currency: countryCurrency,
+            }),
+            {
+                preserveScroll: true,
+                onError: (errs) => {
+                    setConnecting(false);
+                    Object.keys(errs || {}).forEach((k) => {
+                        if (errs[k]) errorAlert(errs[k]);
+                    });
+                },
+            },
+        );
         return true;
     };
 
@@ -255,7 +278,7 @@ export default function Stripe(props) {
                                         
                                         <div className="grid grid-cols-1 gap-4">
                                             {acknowledgements.map((text, index) => (
-                                                <div key={index} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
+                                                <div key={index} className="flex items-start gap-4 p-4 rounded-[30px] bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
                                                     <div className="w-6 h-6 bg-[#FF007F] text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
                                                         <span className="text-[10px] font-bold">✓</span>
                                                     </div>
@@ -559,6 +582,53 @@ export default function Stripe(props) {
                     </div>
                         
                     <div className="bg-gray-50 rounded-[30px]  p-6 mb-6">
+                        <div className="mb-4 bg-white border border-gray-200 rounded-[20px] p-4">
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                The e-mail address used for your creator
+                                account may appear on supporter receipts,
+                                payment confirmations, and transaction records.
+                                Please ensure you are using an e-mail address
+                                that you are comfortable sharing with
+                                supporters. If you do not wish to share a
+                                personal e-mail address, we recommend creating
+                                a dedicated creator/business e-mail for your
+                                account.
+                            </p>
+                        </div>
+
+                        <label
+                            htmlFor="creator_email_receipt_ack"
+                            className={`flex items-start space-x-3 cursor-pointer ${
+                                creatorEmailReceiptAcked
+                                    ? "opacity-70"
+                                    : ""
+                            }`}
+                        >
+                            <input
+                                type="checkbox"
+                                ref={creatorEmailReceiptAckRef}
+                                id="creator_email_receipt_ack"
+                                name="creator_email_receipt_ack"
+                                checked={
+                                    creatorEmailReceiptAcked ||
+                                    !!data.creator_email_receipt_ack
+                                }
+                                disabled={creatorEmailReceiptAcked}
+                                onChange={(e) =>
+                                    setData(
+                                        "creator_email_receipt_ack",
+                                        e.target.checked,
+                                    )
+                                }
+                                className="mt-1 w-5 h-5 text-pink border-2 border-gray-300 rounded focus:ring-pink focus:ring-2 disabled:cursor-not-allowed"
+                            />
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                I understand my creator e-mail address may
+                                appear on supporter transaction records and
+                                receipts.
+                            </p>
+                        </label>
+
                         <label
                             htmlFor="termaccept"
                             className="flex items-start space-x-3 cursor-pointer"
@@ -607,7 +677,11 @@ export default function Stripe(props) {
                                 !finalStepsUnlocked ||
                                 !mor_consent_given ||
                                 !country ||
-                                (checkRef && checkRef.current && !checkRef.current.checked)
+                                (checkRef && checkRef.current && !checkRef.current.checked) ||
+                                (!creatorEmailReceiptAcked &&
+                                    creatorEmailReceiptAckRef &&
+                                    creatorEmailReceiptAckRef.current &&
+                                    !creatorEmailReceiptAckRef.current.checked)
                             }
                         >
                             {connecting ? (

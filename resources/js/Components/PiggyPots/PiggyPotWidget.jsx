@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { useForm, usePage } from '@inertiajs/react';
+import React, { useEffect, useState } from 'react';
+import { useForm, usePage, Link } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import CheckoutLegalTerms from '@/Components/CheckoutLegalTerms';
 import Popup from '@/Components/Popup';
 import {tipheading} from '@/includes/Icons';
-
 import PriceFormat from '@/includes/PriceFormat';
+import confetti from 'canvas-confetti';
 
-export default function PiggyPotWidget({ piggyPots, user, global_currency }) {
+export default function PiggyPotWidget({ piggyPots, user, global_currency, inPopup, feed }) {
     if (!piggyPots || piggyPots.length === 0) return null;
 
     const { formatMultiPrice } = PriceFormat();
@@ -17,6 +17,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency }) {
     const [amount, setAmount] = useState('');
     const [loading, setLoading] = useState(false);
     const [selectegTag, setselectegTag] = useState(0);
+    const [activeTab, setActiveTab] = useState('top');
     
     const { auth } = usePage().props;
     const { errorAlert } = useAlerts();
@@ -32,7 +33,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency }) {
         agree: false,
     });
 
-    const presetAmounts = [25, 50, 75, 100];
+    const presetAmounts = [25, 50, 75];
 
     const selectPreset = (val) => {
         setAmount(val);
@@ -40,15 +41,51 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency }) {
         setselectegTag(val);
     };
 
+    const [step, setStep] = useState(1); // 1: Amount, 2: Details (Message/User info), 3: Terms & Pay
+
     const handleCustomAmount = (e) => {
         setAmount(e.target.value);
         setData('amount', e.target.value);
         setselectegTag('custom');
     };
 
+    const handleNextStep = () => {
+        if (step === 1) {
+            const n = parseFloat(amount);
+            if (!n || n < 1) {
+                errorAlert("Please select or enter a valid amount first.");
+                return;
+            }
+            if (remainingAmount <= 0) {
+                errorAlert("This goal is already completed.");
+                return;
+            }
+            if (n > remainingAmount) {
+                errorAlert(`Max you can add right now is ${formatMultiPrice(remainingAmount, user?.default_currency || "GBP")}.`);
+                return;
+            }
+            setStep(2);
+        } else if (step === 2) {
+            if (!auth?.user && (!data.name || !data.email)) {
+                errorAlert("Please enter your name and email.");
+                return;
+            }
+            setStep(3);
+        }
+    };
+
     const handleContribute = async () => {
-        if (!data.amount || data.amount < 1) {
+        const n = parseFloat(data.amount);
+        if (!n || n < 1) {
             errorAlert("Please enter a valid amount.");
+            return;
+        }
+        if (remainingAmount <= 0) {
+            errorAlert("This goal is already completed.");
+            return;
+        }
+        if (n > remainingAmount) {
+            errorAlert(`Max you can add right now is ${formatMultiPrice(remainingAmount, user?.default_currency || "GBP")}.`);
             return;
         }
 
@@ -68,7 +105,6 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency }) {
                 errorAlert(res.data.msg);
                 setLoading(false);
             } else if (res.data.step_up) {
-                // handle step up if needed (similar to tip)
                 errorAlert("Verification required. Please contact support.");
                 setLoading(false);
             } else {
@@ -82,149 +118,220 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency }) {
     };
 
     // Calculate progress for animation
-    const progress = 0; // For MVP, wait for progress field if needed
+    const targetAmount = parseFloat(featuredPot.target_amount || 1);
+    const raisedAmount = parseFloat(featuredPot.total_raised || 0);
+    const progressPercent = Math.min(100, (raisedAmount / targetAmount) * 100);
+    const remainingAmount = Math.max(0, parseFloat((targetAmount - raisedAmount).toFixed(2)));
+    const isComplete = remainingAmount <= 0 || progressPercent >= 100;
+    const shouldCelebrate = !!featuredPot?.is_pinned && isComplete && !inPopup;
+    
+    const currencySymbol = user?.default_currency === 'USD' ? '$' : '£';
+    const statusLabel = isComplete ? 'Completed' : (featuredPot?.status || 'active');
+    const statusBadgeClass = isComplete
+        ? 'bg-[#FFD700] text-black'
+        : statusLabel === 'active'
+            ? 'bg-[#A2E4B8] text-black'
+            : statusLabel === 'moderation_hold'
+                ? 'bg-red-200 text-black'
+                : 'bg-gray-200 text-gray-800';
+
+    useEffect(() => {
+        if (!shouldCelebrate) return;
+        try {
+            const key = `pp_celebrated_${featuredPot.uuid}`;
+            if (sessionStorage.getItem(key) === '1') return;
+            sessionStorage.setItem(key, '1');
+            setTimeout(() => {
+                confetti({
+                    particleCount: 120,
+                    spread: 90,
+                    origin: { y: 0.35 },
+                    colors: ['#FF007F', '#FFD700', '#8b5cf6', '#3b82f6']
+                });
+            }, 350);
+        } catch (e) {}
+    }, [shouldCelebrate, featuredPot?.uuid]);
 
     return (
-        <div className="mb-6 relative z-10">
-            <div className="p-2 md:p-4 bg-white rounded-[30px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative z-10">
-                <div className='p-3 pt-4'>
-                    {featuredPot.cover_media && (
-                        <div className="mb-4 rounded-2xl overflow-hidden border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            <img src={featuredPot.cover_media} alt={featuredPot.title} className="w-full max-h-[250px] object-cover" />
+        <div className="w-full flex mb-2 relative z-10">
+            {/* Top Card: Pot Details & Contribute */}
+            <div className={`w-full ${inPopup ? '' : "cursor-pointer bg-white rounded-[30px] border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 md:p-6 lg:p-8"} `}>
+                <div className="">
+                    {/* Left: Image */}
+                    <div className="w-full   relative">
+                        <div className="absolute -top-3 -left-3 bg-[#FFD700] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 flex items-center gap-1 uppercase tracking-wide">
+                            🎯 GOAL
                         </div>
-                    )}
-                    <h2 className='text-[#FF007F] font-normal font-GillSans uppercase text-2xl md:text-3xl mb-1'>{featuredPot.title}</h2>
-                    <p className="text-gray-600 mb-5 text-sm font-medium leading-tight">{featuredPot.description}</p>
-                    <div className='' >
-                        {/* Goal Progress */}
-                    <div className="mb-6 bg-gray-50 p-4 rounded-[30px] border border-gray-200 relative">
-                        {(featuredPot.total_raised || 0) / 100 >= featuredPot.target_amount && (
-                            <div className="absolute -top-3 -right-3 text-2xl animate-bounce">🎉</div>
-                        )}
-                        <div className="flex justify-between items-end mb-2">
-                            <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Target: {featuredPot.currency} {featuredPot.target_amount}</span>
-                            <span className="text-sm font-bold text-pink-500 uppercase tracking-wider">Raised: {featuredPot.currency} {parseFloat((featuredPot.total_raised || 0)/100).toFixed(2)}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-4 border border-gray-300 overflow-hidden relative">
-                            {/* Milestone Markers */}
-                            <div className="absolute left-1/4 top-0 bottom-0 w-px bg-white/50 z-10" title="25%"></div>
-                            <div className="absolute left-2/4 top-0 bottom-0 w-px bg-white/50 z-10" title="50%"></div>
-                            <div className="absolute left-3/4 top-0 bottom-0 w-px bg-white/50 z-10" title="75%"></div>
-                            
-                            <div className="bg-pink-500 h-4 rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(100, (((featuredPot.total_raised || 0)/100) / featuredPot.target_amount) * 100)}%` }}></div>
+                        <div className="w-full h-52 md:h-56  bg-[#0d1b2a] rounded-[20px] border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]">
+                            <img src={featuredPot.cover_media || "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/"} alt={featuredPot.title} className="w-full h-full object-cover opacity-90" />
                         </div>
                     </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 mb-2 mt-2">
-                            {presetAmounts.map((val) => (
-                                <button 
-                                    key={val}
-                                    onClick={() => selectPreset(val)}
-                                    className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == val ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px] p-2 px-3 text-center justify-center flex items-center !text-[16px] !font-bold`}
-                                >
-                                    <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} />
-                                    {formatMultiPrice(val, user?.default_currency || "GBP")}
-                                </button>
-                            ))}
+                    {/* Right: Content & Actions */}
+                    <div className="w-full   flex flex-col justify-center">
+                        <h2 className="font-gulfs text-2xl md:text-3xl lg:text-3xl mt-3 uppercase text-black tracking-wide">{featuredPot.title}</h2>
+                        <p className="text-sm md:text-base text-gray-500 mb-3 line-clamp-1">{featuredPot.description}</p>  
+                        <div className="flex justify-between items-end mb-2">
+                            <div className="font-bold text-gray-500 text-xs md:text-sm uppercase tracking-widest">Target: {currencySymbol}{targetAmount.toFixed(2)}</div>
+                            <div className="font-black text-[#e85d9a] text-sm md:text-lg uppercase tracking-widest">Raised: {currencySymbol}{raisedAmount.toFixed(2)}</div>
                         </div>
-
-                        <p className="!my-4 text-[14px] text-gray-500 font-normal mt-1 leading-tight">
-                            *Includes platform and payment processing fees. <br /> You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
-                        </p>
-
-                        {selectegTag === 'custom' || amount > 0 ? (
-                            <div className="mb-4">
-                                <div className="relative currency-wrapper">
-                                    <span className="currency-tag !font-bold text-gray-700">{global_currency || 'GBP'}</span>
-                                    <input 
-                                        className="border-2 border-black px-4 py-3 pl-14 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg font-bold" 
-                                        value={amount}
-                                        onChange={handleCustomAmount}
-                                        type="number" 
-                                        placeholder="Enter custom amount.." 
-                                    />
-                                </div>
+                        <div className="flex justify-between items-center mb-2 gap-3">
+                            <div className="font-bold text-gray-500 text-xs md:text-sm uppercase tracking-widest">
+                                Remaining: {currencySymbol}{remainingAmount.toFixed(2)}
                             </div>
-                        ) : (
-                            <div className="mb-4 text-center">
-                            <button className="text-gray-500 font-bold border-b-2 border-gray-400 hover:text-black hover:border-black transition-colors" onClick={() => setselectegTag('custom')}>Or enter a custom amount</button>
+                            <div className={`font-black text-xs md:text-sm uppercase tracking-widest px-3 py-1 rounded-full border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${statusBadgeClass}`}>
+                                {isComplete ? '✓ COMPLETED' : statusLabel}
+                            </div>
                         </div>
+                        
+                        <div className="w-full bg-white h-4 md:h-5 rounded-full border-[3px] border-black overflow-hidden mb-6 shadow-[inset_0_2px_0_rgba(0,0,0,0.1)]">
+                            <div
+                                className={`${isComplete ? 'bg-[#FFD700]' : 'bg-[#e85d9a]'} h-full transition-all duration-1000 ease-out`}
+                                style={{ width: `${progressPercent}%` }}
+                            ></div>
+                        </div>
+
+                        {step === 1 && (
+                            <div className="animate-fade-in">
+                                <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
+                                    {presetAmounts.map(val => {
+                                        const disabled = isComplete || remainingAmount <= 0 || val > remainingAmount;
+                                        return (
+                                        <button 
+                                            key={val}
+                                            onClick={() => selectPreset(val)}
+                                            disabled={disabled}
+                                            className={`flex-1 min-w-[60px] py-2 md:py-3 rounded-[20px] border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : (selectegTag === val ? 'bg-[#FFD700] active:translate-y-1 active:translate-x-1 active:shadow-none' : 'bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 active:shadow-none')}`}
+                                        >
+                                            {formatMultiPrice(val, user?.default_currency || "GBP")}
+                                        </button>
+                                    )})}
+                                    <button 
+                                        onClick={() => {
+                                            setselectegTag('custom');
+                                            setAmount('');
+                                            setData('amount', '');
+                                        }}
+                                        disabled={isComplete || remainingAmount <= 0}
+                                        className={`px-3  py-1 md:py-3 rounded-[20px] border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all ${selectegTag === 'custom' ? 'bg-[#FFD700]' : 'bg-white hover:bg-gray-50'}`} >
+                                        CUSTOM
+                                    </button>
+                                </div>
+                                
+                                {selectegTag === 'custom' && (
+                                    <div className="relative flex items-center mb-4 animate-fade-in">
+                                        <span className="absolute left-5 font-black text-gray-700">{global_currency || 'GBP'}</span>
+                                        <input 
+                                            className="w-full border-[3px] border-black px-4 py-3 pl-16 rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black text-lg focus:outline-none focus:ring-0 focus:border-pink-500"
+                                            value={amount}
+                                            onChange={handleCustomAmount}
+                                            type="number" 
+                                            min="1"
+                                            max={remainingAmount > 0 ? remainingAmount : undefined}
+                                            placeholder="Enter amount" 
+                                            disabled={isComplete || remainingAmount <= 0}
+                                        />
+                                    </div>
+                                )}
+
+                                <button 
+                                    onClick={handleNextStep}
+                                    disabled={isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount}
+                                    className={`w-full py-2 md:py-4 rounded-[30px] border-[3px] border-black font-black text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount) ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
+                                >
+                                    {isComplete ? 'GOAL COMPLETED' : 'Add To Pot'}
+                                </button>
+                            </div>
                         )}
 
-                        {amount > 0 && (
-                            <>
-                                <div className="mb-3 animate-fade-in"> 
-                                    <textarea 
-                                        className="border-2 border-black px-4 py-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-2xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" 
-                                        defaultValue={'Just a small token of appreciation 💖'}
-                                        onChange={(e) => setData('message', e.target.value)}
-                                        placeholder="Write a short note." 
-                                    />
+                        {step === 2 && (
+                            <div className="flex flex-col gap-3 animate-fade-in">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-black text-sm uppercase">Your Details</h4>
+                                    <button onClick={() => setStep(1)} className="text-xs font-bold text-gray-500 hover:text-black underline">Back to Amount</button>
                                 </div>
+                                
+                                <textarea 
+                                    className="w-full border-[3px] border-black px-4 py-3 rounded-[16px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold text-sm focus:outline-none focus:ring-0 focus:border-pink-500"
+                                    defaultValue={data.message}
+                                    onChange={(e) => setData('message', e.target.value)}
+                                    placeholder="Write a short note." 
+                                />
 
                                 {!auth?.user && (
                                     <>
-                                        <div className="mb-4">
-                                            <input required
-                                                className="border-2 border-black px-4 py-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                defaultValue={auth?.user?.name}
-                                                onChange={(e) => setData('name', e.target.value)}
-                                                type="text" placeholder="Enter nickname.."
-                                            />
-                                        </div>
-
-                                        <div className="mb-4">
+                                        <input required
+                                            className="w-full border-[3px] border-black px-4 py-3 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold text-sm focus:outline-none focus:ring-0 focus:border-pink-500"
+                                            defaultValue={auth?.user?.name}
+                                            onChange={(e) => setData('name', e.target.value)}
+                                            type="text" placeholder="Enter nickname.."
+                                        />
+                                        <div>
                                             <input required disabled={!!auth?.user?.email}
-                                                className="border-2 border-black px-4 py-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                className="w-full border-[3px] border-black px-4 py-3 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold text-sm focus:outline-none focus:ring-0 focus:border-pink-500 disabled:bg-gray-200"
                                                 defaultValue={auth?.user?.email}
                                                 onChange={(e) => setData('email', e.target.value)}
                                                 type="email" placeholder="Enter email.." 
                                             />
-                                            <p className='text-sm text-gray-600 mt-2 font-medium'>Your email address is kept private and will not be shown to anyone.</p>
+                                            <p className='text-xs text-gray-500 mt-1 font-bold px-2'>Your email address is kept private.</p>
                                         </div>
                                     </>
                                 )}
 
                                 {featuredPot.allow_anonymous && (
-                                    <div className='termselect mt-3 mb-3'>
-                                        <label htmlFor="keepanonymous">
-                                            <div className='flex items-center cursor-pointer'>
-                                                <div className="relative mr-3">
-                                                    <input 
-                                                        type="checkbox"
-                                                        id="keepanonymous" 
-                                                        name="keepanonymous"
-                                                        className="sr-only"
-                                                        onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0)}
-                                                    />
-                                                    <div className={`block w-12 h-7 rounded-full border-2 border-black transition-colors ${data.anonymous ? 'bg-[#FF007F]' : 'bg-gray-300'}`}></div>
-                                                    <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full border-2 border-black transition-transform ${data.anonymous ? 'transform translate-x-5' : ''}`}></div>
-                                                </div>
-                                                <span className='text-[16px] text-gray-900 font-bold'>Keep anonymous</span>
-                                            </div>
-                                        </label>
-                                        <p className="text-gray-700 text-sm mt-2 mb-3 ml-[60px] font-medium">Your personal email and name will be private.</p>
-                                    </div>
+                                    <label className="flex items-center cursor-pointer gap-3 px-1 mt-1">
+                                        <div className="relative">
+                                            <input 
+                                                type="checkbox"
+                                                className="sr-only"
+                                                onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0)}
+                                            />
+                                            <div className={`block w-10 h-6 rounded-full border-[3px] border-black transition-colors ${data.anonymous ? 'bg-pink-500' : 'bg-gray-300'}`}></div>
+                                            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full border-[3px] border-black transition-transform ${data.anonymous ? 'transform translate-x-4' : ''}`}></div>
+                                        </div>
+                                        <span className="font-bold text-sm">Keep anonymous</span>
+                                    </label>
                                 )}
+
+                                <button 
+                                    onClick={handleNextStep}
+                                    disabled={!auth?.user && (!data.name || !data.email)}
+                                    className={`w-full mt-2 py-3 rounded-full border-[3px] border-black font-black text-lg uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(!auth?.user && (!data.name || !data.email)) ? 'bg-pink-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
+                                >
+                                    CONTINUE
+                                </button>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className="flex flex-col animate-fade-in">
+                                <div className="flex justify-between items-center  pb-3">
+                                    <h4 className="font-black text-lg uppercase">Final Step</h4>
+                                    <button onClick={() => setStep(2)} className="text-xs font-bold text-gray-500 hover:text-black underline">Back</button>
+                                </div>
+                                
+                                <div className="flex justify-between items-center font-black text-lg">
+                                    <span>Contribution Amount:</span>
+                                    <span className="text-[#e85d9a]">{global_currency || 'GBP'} {amount}</span>
+                                </div>
 
                                 <CheckoutLegalTerms onAgreeChange={(checked) => {
                                     setData('agree', checked);
                                     setData('digital_waiver', checked);
                                 }} />
-                            </>
+
+                                <button 
+                                    onClick={handleContribute}
+                                    disabled={loading || !data.digital_waiver}
+                                    className={`w-full py-1 md:py-4 rounded-full border-[3px] border-black font-black text-normal uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(!data.digital_waiver || loading) ? 'bg-pink-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
+                                >
+                                    {loading ? 'Processing...' : 'ADD TO POT'}
+                                </button>
+                                <div className="mt-2 text-center text-xs font-bold text-gray-500 mt-1">
+                                    🔒 Secured via Stripe
+                                </div>
+                            </div>
                         )}
-
-                        <button 
-                            onClick={handleContribute}
-                            disabled={loading || !amount || amount < 1 || !data.digital_waiver}
-                            className={`items-center px-4 shadow-[4px_4px_0px_0px_#FF007F] rounded-[30px] btn-pink md justify-center btn-shadow !font-normal ease-in-out duration-150 flex button text-center w-full mx-auto ${(amount > 0 && data.agree && data.digital_waiver && !loading) ? '' : 'disabled'} font-gulfs`}
-                        >
-                            {loading ? 'Processing...' : 'Add to Pot'}
-                        </button>
-
-                        <div className='securestripe text-center mt-3'>
-                            🔒 Secured via <b>Stripe</b>
-                        </div>
                     </div>
                 </div>
             </div>

@@ -63,14 +63,14 @@ export default function Membership_dashboard(props) {
 
                         <CartesianGrid
                             strokeDasharray="3 3"
-                            stroke="rgba(255,255,255,0.06)"
+                            stroke="rgba(0,0,0,0.1)"
                             vertical={false}
                         />
 
                         <XAxis
                             dataKey="month"
                             tick={{
-                                fill: "#94a3b8",
+                                fill: "#4b5563",
                                 fontSize: 12,
                             }}
                             axisLine={false}
@@ -79,7 +79,7 @@ export default function Membership_dashboard(props) {
 
                         <YAxis
                             tick={{
-                                fill: "#94a3b8",
+                                fill: "#4b5563",
                                 fontSize: 12,
                             }}
                             axisLine={false}
@@ -89,10 +89,10 @@ export default function Membership_dashboard(props) {
 
                         <Tooltip
                             contentStyle={{
-                                background: "rgba(15,23,42,0.96)",
-                                border: "1px solid rgba(255,255,255,0.08)",
+                                background: "#fff",
+                                border: "2px solid #000",
                                 borderRadius: "18px",
-                                color: "#fff",
+                                color: "#000",
                                 backdropFilter: "blur(12px)",
                             }}
                             formatter={(value) => [
@@ -363,27 +363,23 @@ export default function Membership_dashboard(props) {
                     max-w-5xl
                     rounded-[28px]
                     overflow-hidden
-                    border border-white/10
-                    bg-gradient-to-br
-                    from-[#131c35]
-                    via-[#1b2442]
-                    to-[#101827]
-                    shadow-[0_20px_80px_rgba(0,0,0,0.65)]
+                    border-[3px] border-black
+                    bg-white border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]
                 "
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* HEADER */}
-                    <div className="relative px-8 py-7 border-b border-white/10 bg-gradient-to-r from-pink-600/30 via-purple-600/20 to-indigo-600/30">
+                    <div className="relative px-8 py-7 border-b-[3px] border-black bg-yellow-300 border-b-[3px] border-black">
                         <button
                             onClick={onClose}
-                            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-xl
+                            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white hover:bg-white text-black text-xl
                             transition-all"
                         >
                             ×
                         </button>
 
                         <div className="flex items-center gap-5">
-                            <div className="w-20 h-20 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+                            <div className="w-20 h-20 rounded-[20px] bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center overflow-hidden">
                                 {payment.membership?.thumbnail ? (
                                     <img
                                         src={payment.membership.thumbnail}
@@ -395,11 +391,11 @@ export default function Membership_dashboard(props) {
                             </div>
 
                             <div>
-                                <h2 className="text-3xl font-bold text-white">
+                                <h2 className="text-3xl font-bold text-black">
                                     {payment.membership?.title || "Membership"}
                                 </h2>
 
-                                <p className="text-slate-300 text-sm mt-1">
+                                <p className="text-gray-700 text-sm mt-1">
                                     Payment ID: #{payment.id}
                                 </p>
 
@@ -408,8 +404,8 @@ export default function Membership_dashboard(props) {
                                         className="
                                     px-3 py-1
                                     rounded-full
-                                    bg-green-500/20
-                                    text-green-400
+                                    bg-green-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                    text-green-800
                                     text-xs
                                     font-semibold
                                 "
@@ -421,8 +417,8 @@ export default function Membership_dashboard(props) {
                                         className="
                                     px-3 py-1
                                     rounded-full
-                                    bg-pink-500/20
-                                    text-pink-400
+                                    bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                    text-pink-600
                                     text-xs
                                     font-semibold
                                     capitalize
@@ -438,24 +434,24 @@ export default function Membership_dashboard(props) {
                     {/* BODY */}
                     <div className="p-8">
                         {/* TOP CARDS */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
-                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                                <p className="text-slate-400 text-xs uppercase">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8 mb-10">
+                            <div className="rounded-[30px] bg-white border-[3px] border-black p-5">
+                                <p className="text-gray-600 text-xs uppercase">
                                     Amount Paid
                                 </p>
 
-                                <h3 className="text-3xl font-bold text-pink-400 mt-3">
+                                <h3 className="text-3xl font-bold text-pink-600 mt-3">
                                     {payment.currency || displayCurrency}
                                     {Number(payment.amount).toLocaleString()}
                                 </h3>
                             </div>
 
-                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                                <p className="text-slate-400 text-xs uppercase">
+                            <div className="rounded-[30px] bg-white border-[3px] border-black p-5">
+                                <p className="text-gray-600 text-xs uppercase">
                                     Membership Price
                                 </p>
 
-                                <h3 className="text-2xl font-bold text-white mt-3">
+                                <h3 className="text-2xl font-black text-black mt-3">
                                     {payment.currency || displayCurrency}
                                     {Number(
                                         payment.membership?.price || 0,
@@ -463,18 +459,18 @@ export default function Membership_dashboard(props) {
                                 </h3>
                             </div>
 
-                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                                <p className="text-slate-400 text-xs uppercase">
+                            <div className="rounded-[30px] bg-white border-[3px] border-black p-5">
+                                <p className="text-gray-600 text-xs uppercase">
                                     Payment Date
                                 </p>
 
-                                <h3 className="text-lg font-bold text-white mt-3">
+                                <h3 className="text-lg font-black text-black mt-3">
                                     {payment.created_at}
                                 </h3>
                             </div>
 
-                            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                                <p className="text-slate-400 text-xs uppercase">
+                            <div className="rounded-[30px] bg-white border-[3px] border-black p-5">
+                                <p className="text-gray-600 text-xs uppercase">
                                     Status
                                 </p>
 
@@ -486,8 +482,8 @@ export default function Membership_dashboard(props) {
                                     gap-2
                                     px-4 py-2
                                     rounded-full
-                                    bg-green-500/20
-                                    text-green-400
+                                    bg-green-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                    text-green-800
                                     text-sm
                                     font-semibold
                                 "
@@ -510,8 +506,8 @@ export default function Membership_dashboard(props) {
                             <div
                                 className="
                                     rounded-3xl
-                                    bg-white/5
-                                    border border-white/10
+                                    bg-white
+                                    border-[3px] border-black
                                     p-6
                                 "
                             >
@@ -519,26 +515,26 @@ export default function Membership_dashboard(props) {
                                     className="
                                 text-xl
                                 font-bold
-                                text-white
+                                text-black
                                 mb-5
                             "
                                 >
                                     Member Information
                                 </h3>
 
-                                <div className="flex items-center gap-4 mb-6">
+                                <div className="flex items-center gap-6 md:gap-8 mb-10">
                                     <Avatar user={payment.user} size="lg" />
 
                                     <div>
-                                        <h4 className="text-white text-lg font-bold">
+                                        <h4 className="text-black text-lg font-bold">
                                             {payment.user?.name || "Guest"}
                                         </h4>
 
-                                        <p className="text-slate-400 text-sm">
+                                        <p className="text-gray-600 text-sm">
                                             @{payment.user?.username}
                                         </p>
 
-                                        <p className="text-slate-500 text-xs mt-1">
+                                        <p className="text-gray-500 text-xs mt-1">
                                             {payment.user?.email}
                                         </p>
                                     </div>
@@ -546,21 +542,21 @@ export default function Membership_dashboard(props) {
 
                                 <div className="space-y-4">
                                     <div className="flex justify-between">
-                                        <span className="text-slate-400">
+                                        <span className="text-gray-600">
                                             Customer Type
                                         </span>
 
-                                        <span className="text-white font-semibold">
+                                        <span className="text-black font-semibold">
                                             Active Member
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between">
-                                        <span className="text-slate-400">
+                                        <span className="text-gray-600">
                                             Membership Plan
                                         </span>
 
-                                        <span className="text-white font-semibold">
+                                        <span className="text-black font-semibold">
                                             {payment.membership?.title}
                                         </span>
                                     </div>
@@ -571,8 +567,8 @@ export default function Membership_dashboard(props) {
                             <div
                                 className="
                                 rounded-3xl
-                                bg-white/5
-                                border border-white/10
+                                bg-white
+                                border-[3px] border-black
                                 p-6
                             "
                             >
@@ -580,7 +576,7 @@ export default function Membership_dashboard(props) {
                                     className="
                                     text-xl
                                     font-bold
-                                    text-white
+                                    text-black
                                     mb-5
                                 "
                                 >
@@ -589,41 +585,41 @@ export default function Membership_dashboard(props) {
 
                                 <div className="space-y-5">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">
+                                        <span className="text-gray-600">
                                             Payment Method
                                         </span>
 
-                                        <span className="text-white font-semibold">
+                                        <span className="text-black font-semibold">
                                             Stripe
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">
+                                        <span className="text-gray-600">
                                             Billing Type
                                         </span>
 
-                                        <span className="text-white font-semibold capitalize">
+                                        <span className="text-black font-semibold capitalize">
                                             {payment.membership?.type}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">
+                                        <span className="text-gray-600">
                                             Currency
                                         </span>
 
-                                        <span className="text-white font-semibold">
+                                        <span className="text-black font-semibold">
                                             {payment.currency}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">
+                                        <span className="text-gray-600">
                                             Revenue Generated
                                         </span>
 
-                                        <span className="text-green-400 font-bold text-lg">
+                                        <span className="text-green-800 font-bold text-lg">
                                             {payment.currency ||
                                                 displayCurrency}
                                             {Number(
@@ -636,7 +632,7 @@ export default function Membership_dashboard(props) {
                                 <div
                                     className="
                                     mt-8
-                                    rounded-2xl
+                                    rounded-[30px]
                                     bg-gradient-to-r
                                     from-pink-500/10
                                     to-purple-500/10
@@ -644,7 +640,7 @@ export default function Membership_dashboard(props) {
                                     p-5
                                 "
                                 >
-                                    <p className="text-slate-300 text-sm">
+                                    <p className="text-gray-700 text-sm">
                                         This payment was successfully processed
                                         and added to your membership earnings.
                                     </p>
@@ -663,56 +659,55 @@ export default function Membership_dashboard(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                    <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
-                        {/* Header Section */}
-                        <CreatorDashboardTabs />
+                <div className="min-h-screen bg-gray-200">
+                    <div className="containerbox m-auto">
+                        <div className="py-8 md:py-16 w-full">
+                            {/* Header Section */}
+                            <CreatorDashboardTabs />
 
-                        <div className="mb-8">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                                <div>
-                                    <div className="flex items-center gap-4 mb-3">
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg shadow-pink-500/20">
-                                            👑
-                                        </div>
+                            <div className="mb-8">
+                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                                    <div>
+                                        <div className="flex items-center gap-4 mb-3 mt-4">
+                                            <div className="w-16 h-16 bg-yellow-300 flex items-center justify-center text-3xl border-[3px] border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                                👑
+                                            </div>
 
-                                        <div>
-                                            <h1 className="text-4xl font-black text-white tracking-tight">
-                                                Membership Dashboard
-                                            </h1>
+                                            <div>
+                                                <h1 className="text-3xl md:text-4xl font-GillSans uppercase text-black tracking-tight">
+                                                    Membership Dashboard
+                                                </h1>
 
-                                            <p className="text-slate-400 mt-1 text-sm">
-                                                Track recurring revenue,
-                                                supporter retention and creator
-                                                growth analytics
-                                            </p>
+                                                <p className="text-gray-600 mt-1 text-sm font-bold">
+                                                    Track recurring revenue, supporter retention and creator growth analytics
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 mb-10">
                             {/* MEMBERS */}
 
-                            <div className="rounded-3xl bg-gradient-to-br from-pink-500/10 to-pink-700/5 border border-pink-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-pink-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         👥
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-pink-500/10 text-pink-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         Supporters
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-5xl font-black text-black">
                                         {data.members || 0}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Active Members
                                     </p>
                                 </div>
@@ -729,38 +724,38 @@ export default function Membership_dashboard(props) {
 
                             {/* MONTHLY */}
 
-                            <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-700/5 border border-emerald-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-emerald-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         💰
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         This Month
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-5xl font-black text-black">
                                         {displayCurrency}
                                         {Number(
                                             data.per_month || 0,
                                         ).toLocaleString()}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Monthly Revenue
                                     </p>
                                 </div>
 
                                 <div className="w-full">
-                                    <div className="flex justify-between text-xs text-slate-400 mb-2">
+                                    <div className="flex justify-between text-xs text-gray-600 mb-2">
                                         <span>Growth Rate</span>
 
                                         <span>{growthPercentage}%</span>
                                     </div>
 
-                                    <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
+                                    <div className="h-2 rounded-full bg-gray-200 border-2 border-black overflow-hidden">
                                         <div
                                             className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500"
                                             style={{
@@ -773,26 +768,26 @@ export default function Membership_dashboard(props) {
 
                             {/* LIFETIME */}
 
-                            <div className="rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-amber-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         📈
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         Lifetime
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-5xl font-black text-black">
                                         {displayCurrency}
                                         {Number(
                                             data.all_time || 0,
                                         ).toLocaleString()}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Total Revenue
                                     </p>
                                 </div>
@@ -808,26 +803,26 @@ export default function Membership_dashboard(props) {
 
                             {/* FORECAST */}
 
-                            <div className="rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-500/5 border border-cyan-500/20 p-6 backdrop-blur-sm min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl">
+                                    <div className="w-14 h-14 bg-cyan-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         🚀
                                     </div>
 
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300">
+                                    <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
                                         Forecast
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-5xl font-black text-white">
+                                    <h2 className="text-5xl font-black text-black">
                                         {displayCurrency}
                                         {Number(
                                             estimatedNextMonth || 0,
                                         ).toLocaleString()}
                                     </h2>
 
-                                    <p className="text-slate-400 text-sm mt-2">
+                                    <p className="text-gray-600 text-sm mt-2">
                                         Estimated Next Month
                                     </p>
                                 </div>
@@ -843,14 +838,14 @@ export default function Membership_dashboard(props) {
                         </div>
 
                         {/* Top Memberships & Chart */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                        <div className="flex flex-col gap-6 md:gap-8 mb-10">
                             {/* Top Performing Memberships */}
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-4">
                                 <div className="mb-4">
-                                    <h2 className="text-xl font-bold text-white">
+                                    <h2 className="text-xl font-GillSans uppercase font-black text-black">
                                         Top Performing Memberships
                                     </h2>
-                                    <p className="text-slate-400 text-xs">
+                                    <p className="text-gray-600 text-xs">
                                         Memberships with highest revenue
                                     </p>
                                 </div>
@@ -860,25 +855,25 @@ export default function Membership_dashboard(props) {
                                             (membership, index) => (
                                                 <div
                                                     key={index}
-                                                    className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                                                    className="flex items-center justify-between p-3 rounded-lg bg-gray-100 border-2 border-black rounded-[20px] mb-2 hover:bg-gray-200 hover:translate-x-[-2px] hover:translate-y-[-2px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                                 >
                                                     <div className="flex items-center gap-3 flex-1">
-                                                        <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center text-sm font-bold text-pink-400">
+                                                        <div className="w-8 h-8 rounded-lg bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-sm font-bold text-pink-600">
                                                             #{index + 1}
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-medium text-white truncate max-w-[150px]">
+                                                                <p className="text-sm font-medium text-black truncate max-w-[150px]">
                                                                     {
                                                                         membership.title
                                                                     }
                                                                 </p>
-                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-green-800">
                                                                     Active
                                                                 </span>
                                                             </div>
                                                             <div className="flex items-center gap-3 mt-1">
-                                                                <p className="text-xs text-slate-400">
+                                                                <p className="text-xs text-gray-600">
                                                                     {
                                                                         displayCurrency
                                                                     }
@@ -890,7 +885,7 @@ export default function Membership_dashboard(props) {
                                                                         membership.type
                                                                     }
                                                                 </p>
-                                                                <p className="text-xs text-slate-400">
+                                                                <p className="text-xs text-gray-600">
                                                                     👥{" "}
                                                                     {membership.total_members ||
                                                                         0}{" "}
@@ -900,14 +895,14 @@ export default function Membership_dashboard(props) {
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-lg font-bold text-white">
+                                                        <p className="text-lg font-bold text-black">
                                                             {displayCurrency}
                                                             {Number(
                                                                 membership.total_revenue ||
                                                                     0,
                                                             ).toLocaleString()}
                                                         </p>
-                                                        <p className="text-xs text-slate-400">
+                                                        <p className="text-xs text-gray-600">
                                                             total revenue
                                                         </p>
                                                     </div>
@@ -916,7 +911,7 @@ export default function Membership_dashboard(props) {
                                         )
                                     ) : (
                                         <div className="text-center py-8">
-                                            <p className="text-slate-400 text-sm">
+                                            <p className="text-gray-600 text-sm">
                                                 No memberships created yet
                                             </p>
                                         </div>
@@ -925,13 +920,13 @@ export default function Membership_dashboard(props) {
                             </div>
 
                             {/* Revenue Chart */}
-                            <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-4">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-4">
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
-                                        <h2 className="text-xl font-bold text-white">
+                                        <h2 className="text-xl font-GillSans uppercase font-black text-black">
                                             Revenue Trends
                                         </h2>
-                                        <p className="text-slate-400 text-xs">
+                                        <p className="text-gray-600 text-xs">
                                             Monthly membership payment overview
                                         </p>
                                     </div>
@@ -940,7 +935,7 @@ export default function Membership_dashboard(props) {
                                         onChange={(e) =>
                                             setSelectedPeriod(e.target.value)
                                         }
-                                        className="bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-pink-500"
+                                        className="bg-white border-2 border-black rounded-[20px] px-3 py-1.5 text-sm text-black focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                     >
                                         <option value="3months">
                                             Last 3 months
@@ -953,7 +948,7 @@ export default function Membership_dashboard(props) {
                                         </option> */}
                                     </select>
                                 </div>
-                                <div className="rounded-3xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/10 p-5">
+                                <div className="bg-white border-[3px] border-black rounded-[30px] p-5">
                                     {monthlyData.length > 0 ? (
                                         <RevenueChart
                                             data={getChartData()}
@@ -961,7 +956,7 @@ export default function Membership_dashboard(props) {
                                         />
                                     ) : (
                                         <div className="h-[300px] flex items-center justify-center">
-                                            <p className="text-slate-400">
+                                            <p className="text-gray-600">
                                                 No revenue data available
                                             </p>
                                         </div>
@@ -971,21 +966,21 @@ export default function Membership_dashboard(props) {
                         </div>
 
                         {/* All Memberships */}
-                        <div className="rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden mb-6">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-white/10 gap-4">
+                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden mb-6">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b-[3px] border-black gap-4">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white">
+                                    <h2 className="text-xl font-GillSans uppercase font-black text-black">
                                         All Memberships
                                     </h2>
 
-                                    <p className="text-slate-400 text-xs">
+                                    <p className="text-gray-600 text-xs">
                                         Manage and track all your memberships
                                     </p>
 
                                     <div
                                         className={`
                                             mt-3 inline-flex items-center gap-2
-                                            px-4 py-2 rounded-2xl border
+                                            px-4 py-2 rounded-[30px] border
                                             ${
                                                 isGrowthPositive
                                                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
@@ -1016,16 +1011,16 @@ export default function Membership_dashboard(props) {
                                             setMembershipSearch(e.target.value)
                                         }
                                         className="
-                                        bg-white/10
-                                        border border-white/20
-                                        rounded-lg
+                                        bg-white
+                                        border-2 border-black
+                                        rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
                                         px-4 py-2
                                         text-sm
-                                        text-white
-                                        placeholder-slate-400
+                                        text-black
+                                        placeholder-gray-500
                                         focus:outline-none
                                         focus:ring-1
-                                        focus:ring-pink-500
+                                        focus:ring-black
                                     "
                                     />
                                 </div>
@@ -1034,53 +1029,50 @@ export default function Membership_dashboard(props) {
                             {filteredMemberships.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-white/10 border-b border-white/10">
+                                        <thead className="bg-gray-100 border-b-[3px] border-black">
                                             <tr>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase">
                                                     Membership
                                                 </th>
 
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase">
                                                     Price
                                                 </th>
 
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase">
                                                     Type
                                                 </th>
 
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase">
                                                     Members
                                                 </th>
 
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase">
                                                     Revenue
                                                 </th>
 
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase">
                                                     Status
                                                 </th>
 
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-300 uppercase">
+                                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-700 uppercase">
                                                     Action
                                                 </th>
                                             </tr>
                                         </thead>
 
-                                        <tbody className="divide-y divide-white/10">
+                                        <tbody className="divide-y-[3px] divide-black">
                                             {filteredMemberships.map(
                                                 (membership, index) => (
                                                     <tr
                                                         key={index}
-                                                        className="hover:bg-white/[0.07] transition-colors"
+                                                        className="hover:bg-gray-50 transition-colors"
                                                     >
                                                         <td className="px-4 py-4">
                                                             <div className="flex items-center gap-3">
                                                                 <div
                                                                     className="
-                                                                    w-10 h-10
-                                                                    rounded-lg
-                                                                    bg-pink-500/10
-                                                                    border border-pink-500/20
+                                                                    w-10 h-10 rounded-[20px] bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
                                                                     flex items-center justify-center
                                                                 "
                                                                 >
@@ -1088,13 +1080,13 @@ export default function Membership_dashboard(props) {
                                                                 </div>
 
                                                                 <div>
-                                                                    <p className="text-sm font-semibold text-white">
+                                                                    <p className="text-sm font-semibold text-black">
                                                                         {
                                                                             membership.title
                                                                         }
                                                                     </p>
 
-                                                                    <p className="text-xs text-slate-400">
+                                                                    <p className="text-xs text-gray-600">
                                                                         Created
                                                                         membership
                                                                     </p>
@@ -1103,7 +1095,7 @@ export default function Membership_dashboard(props) {
                                                         </td>
 
                                                         <td className="px-4 py-4">
-                                                            <p className="text-white font-semibold">
+                                                            <p className="text-black font-semibold">
                                                                 {
                                                                     displayCurrency
                                                                 }
@@ -1132,18 +1124,18 @@ export default function Membership_dashboard(props) {
                                                         </td>
 
                                                         <td className="px-4 py-4">
-                                                            <p className="text-white font-semibold">
+                                                            <p className="text-black font-semibold">
                                                                 {membership.total_members ||
                                                                     0}
                                                             </p>
 
-                                                            <p className="text-xs text-slate-400">
+                                                            <p className="text-xs text-gray-600">
                                                                 unique members
                                                             </p>
                                                         </td>
 
                                                         <td className="px-4 py-4">
-                                                            <p className="text-white font-bold">
+                                                            <p className="text-black font-bold">
                                                                 {
                                                                     displayCurrency
                                                                 }
@@ -1161,7 +1153,7 @@ export default function Membership_dashboard(props) {
                                                                 items-center
                                                                 gap-1
                                                                 text-xs
-                                                                text-green-400
+                                                                text-green-800
                                                             "
                                                             >
                                                                 <span
@@ -1181,10 +1173,7 @@ export default function Membership_dashboard(props) {
                                                                 className="
                                                                 inline-flex items-center gap-2
                                                                 px-4 py-2 rounded-xl
-                                                                bg-gradient-to-r from-pink-500 to-purple-500
-                                                                text-white text-sm font-bold
-                                                                hover:scale-105 transition-all duration-300
-                                                                shadow-lg shadow-pink-500/20
+                                                                bg-blue-300 text-black text-sm font-black uppercase border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all
                                                             "
                                                             >
                                                                 View Details
@@ -1214,11 +1203,11 @@ export default function Membership_dashboard(props) {
                                         👑
                                     </div>
 
-                                    <h3 className="text-2xl font-black text-white mb-3">
+                                    <h3 className="text-2xl font-black text-black mb-3">
                                         No Memberships Found
                                     </h3>
 
-                                    <p className="text-slate-400 text-center max-w-md leading-relaxed">
+                                    <p className="text-gray-600 text-center max-w-md leading-relaxed">
                                         We couldn't find any memberships
                                         matching your search. Try using a
                                         different keyword or create a new
@@ -1233,15 +1222,8 @@ export default function Membership_dashboard(props) {
                                             className="
                                             mt-6
                                             px-5 py-3
-                                            rounded-2xl
-                                            bg-gradient-to-r
-                                            from-pink-500
-                                            to-purple-500
-                                            text-white
-                                            font-bold
-                                            hover:scale-105
-                                            transition-all duration-300
-                                            shadow-lg shadow-pink-500/20
+                                            rounded-[30px]
+                                            bg-blue-300 text-black font-black uppercase border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all
                                         "
                                         >
                                             Clear Search
@@ -1250,6 +1232,7 @@ export default function Membership_dashboard(props) {
                                 </div>
                             )}
                         </div>
+                    </div>
                     </div>
                 </div>
             )}

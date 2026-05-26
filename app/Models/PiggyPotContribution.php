@@ -29,10 +29,17 @@ class PiggyPotContribution extends Model
         'session_id',
         'payment_intent_id',
         'status',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
+        'creator_notified_at',
+        'supporter_notified_at',
     ];
 
     protected $casts = [
         'is_anonymous' => 'boolean',
+        'digital_waiver_confirmed_at' => 'datetime',
+        'creator_notified_at' => 'datetime',
+        'supporter_notified_at' => 'datetime',
     ];
 
     protected $appends = [

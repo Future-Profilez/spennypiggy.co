@@ -33,7 +33,7 @@ export default function FeatureSuggestionBanner({ onSuggestClick }) {
                 
                 <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 relative ">
                     {/* Icon container */}
-                    <div className="w-12 h-12 md:w-14 md:h-14 bg-[#EFEA7B] border-[3px] border-black rounded-2xl flex items-center justify-center rotate-3 group-hover:rotate-0 transition-all duration-500 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
+                    <div className="w-12 h-12 md:w-14 md:h-14 bg-[#EFEA7B] border-[3px] border-black rounded-[30px] flex items-center justify-center rotate-3 group-hover:rotate-0 transition-all duration-500 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
                         <FaLightbulb className="text-black text-xl md:text-2xl animate-pulse" />
                     </div>
                     

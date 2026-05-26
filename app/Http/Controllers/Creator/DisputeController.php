@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Creator;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dispute;
+use App\Models\SupportTicket;
 use App\Services\Stripe\DisputeService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,8 +48,15 @@ class DisputeController extends Controller
             return $dispute;
         });
 
+        $tickets = SupportTicket::where('creator_id', $user->id)
+            ->with(['supporter'])
+            ->orderByRaw("FIELD(status, 'awaiting_creator', 'escalated', 'awaiting_supporter', 'refund_initiated', 'refunded', 'rejected', 'resolved')")
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'tickets_page');
+
         return Inertia::render('Creator/Disputes/Index', [
-            'disputes' => $disputes
+            'disputes' => $disputes,
+            'tickets' => $tickets,
         ]);
     }
 

@@ -21,10 +21,10 @@ return new class extends Migration
             $table->string('guest_name')->nullable();
             $table->string('guest_email')->nullable();
             
-            $table->integer('amount'); // Minor units e.g., 500 = £5.00
+            $table->decimal('amount', 10, 2); // Major units e.g., 5.00 = £5.00
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('vat_amount', 10, 2)->default(0);
-            $table->integer('total_paid')->default(0); // Minor units
+            $table->decimal('total_paid', 10, 2)->default(0); // Major units
             $table->string('currency');
             
             $table->text('message')->nullable();

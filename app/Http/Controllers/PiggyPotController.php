@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use App\Uploadcare;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
+use App\Services\UserProfileService;
 
 class PiggyPotController extends Controller
 {
@@ -85,6 +86,8 @@ class PiggyPotController extends Controller
 
         $piggyPot = PiggyPot::create($data);
 
+        app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
+
         return redirect()->back()->with('success', 'Piggy Pot created successfully');
     }
 
@@ -129,6 +132,8 @@ class PiggyPotController extends Controller
 
         $piggyPot->update($data);
 
+        app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
+
         return redirect()->back()->with('success', 'Piggy Pot updated successfully');
     }
 
@@ -139,6 +144,8 @@ class PiggyPotController extends Controller
     {
         $piggyPot = PiggyPot::where('user_id', Auth::id())->findOrFail($id);
         $piggyPot->delete();
+
+        app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 
         return redirect()->back()->with('success', 'Piggy Pot deleted successfully');
     }

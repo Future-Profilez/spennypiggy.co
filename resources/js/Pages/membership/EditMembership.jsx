@@ -287,7 +287,7 @@ export default function EditMembership({ item }) {
                         <div className="relative currency-wrapper">
                             <span className="currency-tag absolute">GBP</span>
                             <input
-                                className="border border-gray-300 rounded-2xl px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-300 bg-white text-black"
+                                className="border border-gray-300 rounded-[30px] px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-300 bg-white text-black"
                                 onChange={handleInput}
                                 value={data.month_price || ""}
                                 type="number"
@@ -298,7 +298,7 @@ export default function EditMembership({ item }) {
                             />
                         </div>
                         {data.month_price > 0 && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded-2xl border border-gray-200 shadow-sm w-full">
+                            <div className="mt-4 p-4 bg-gray-50 rounded-[30px] border border-gray-200 shadow-sm w-full">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm text-gray-600">
                                         Fans pay:
