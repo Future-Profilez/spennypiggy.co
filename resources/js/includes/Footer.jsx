@@ -89,7 +89,7 @@ export default function Footer(props) {
                                     height={100}
                                     src={risk}
                                     width={260}
-                                    className="rounded-[10px] max-w-[160px] md:max-w-[200px] shadow-[4px_4px_0px_0px_#FF007F]l border border-white/5 hover:scale-105 transition-transform duration-300"
+                                    className="rounded-[10px] max-w-[160px] md:max-w-[200px] shadow-[4px_4px_0px_0px_#FF007F]l border border-white/20 hover:scale-105 transition-transform duration-300"
                                 />
                             </div>
                         </div>

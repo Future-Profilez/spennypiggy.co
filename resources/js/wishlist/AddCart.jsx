@@ -105,7 +105,7 @@ export default function AddCart(props) {
                                 onChange={(e) => setcartamount(e.target.value)}
                                 placeholder={`Eg. 50`}
                                 type="number"
-                                className="block w-full rounded-[30px]  border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
+                                className="block w-full rounded-[30px]   border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
                             />
                         </div>
                         <p className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
@@ -141,7 +141,7 @@ export default function AddCart(props) {
                     <>
                     <div className=" pb-2">
                         {card_capabilities === false ? (
-                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-[30px] ">
+                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-[30px]  ">
                                 <div className="flex">
                                     <div className="flex-shrink-0">
                                         <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">

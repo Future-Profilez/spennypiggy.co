@@ -379,9 +379,9 @@ export default function TipInner({classes, idd}) {
                     <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} />
                   {defaultAmount} &nbsp;Each</p>
                   <div className='incresecounter flex items-center' >
-                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-[30px]  ' onClick={decresevalue} >-</button>
-                        <div className='border px-3 py-2 rounded-[30px]   mx-1' >{tipQuantity}</div>
-                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-[30px]  ' onClick={incresevalue} >+</button>
+                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-[30px]   ' onClick={decresevalue} >-</button>
+                        <div className='border px-3 py-2 rounded-[30px]    mx-1' >{tipQuantity}</div>
+                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-[30px]   ' onClick={incresevalue} >+</button>
                   </div>
               </div> */}
 
@@ -395,7 +395,7 @@ export default function TipInner({classes, idd}) {
                   <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, user?.default_currency || "GBP")}</button>
                   <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, user?.default_currency || "GBP")}</button>
                   <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, user?.default_currency || "GBP")}</button>
-                  {/* <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
+                  {/* <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]   p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
 
               <p className="!my-4 text-[14px]  text-gray-500 font-normal mt-1 leading-tight">
@@ -406,7 +406,7 @@ export default function TipInner({classes, idd}) {
                 {selectegTag === 'custom' ? <div className="mb-4 ">
                     <div className="relative currency-wrapper " >
                         <span className="currency-tag">{global_currency || 'GBP'}</span>
-                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] " value={amount}
+                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  " value={amount}
                         onChange={customAmount}
                         type="number" placeholder="Enter amount.. " />
                     </div>
@@ -423,7 +423,7 @@ export default function TipInner({classes, idd}) {
                   <>
                     <div className="mb-4">
                       <input required
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                         defaultValue={auth && auth.user?.name}
                         onChange={(e) => setData('name', e.target.value)}
                         type="text" placeholder="Enter nickname.. "
@@ -432,7 +432,7 @@ export default function TipInner({classes, idd}) {
 
                     <div className="mb-4">
                       <input required  disabled={auth && auth.user?.email ? true : false}
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                         defaultValue={auth && auth.user?.email}
                         onChange={(e) => setData('email', e.target.value)}
                         type="email" placeholder="Enter email.. " />
@@ -478,7 +478,7 @@ export default function TipInner({classes, idd}) {
               )}
 
               <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={send} className={`items-center px-4  shadow-[4px_4px_0px_0px_#FF007F]lack
-                rounded-[30px]  btn-pink md justify-center btn-shadow !font-normal
+                rounded-[30px]   btn-pink md justify-center btn-shadow !font-normal
                 ease-in-out duration-150 flex button text-center w-full
                   mx-auto  ${(amount > 0 && data.agree && data.digital_waiver && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
                 > {loading ? "Processing..." : 'Support Me'} </button>

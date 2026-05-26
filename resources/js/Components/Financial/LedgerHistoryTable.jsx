@@ -12,7 +12,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
     };
 
     return (
-        <div className="bg-white rounded-[20px] md:rounded-[30px] border border-gray-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-[20px] md:rounded-[30px]  border border-gray-200 overflow-hidden shadow-sm">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                     <FileTextIcon className="text-gray-500" size={20} />

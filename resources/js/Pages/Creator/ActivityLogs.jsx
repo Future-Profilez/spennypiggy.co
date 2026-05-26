@@ -173,7 +173,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                     {/* Header - Same as before */}
                     <div className="mb-8">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2.5 bg-gradient-to-br from-pink-500 to-pink-600 rounded-[30px] shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-200">
+                            <div className="p-2.5 bg-gradient-to-br from-pink-500 to-pink-600 rounded-[30px]  shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-200">
                                 <History className="text-white" size={28} />
                             </div>
                             <div>
@@ -189,7 +189,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                     </div>
 
                     {/* Filters - Same as before */}
-                    <div className="mb-6 bg-white rounded-[30px] shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="mb-6 bg-white rounded-[30px]  shadow-sm border border-gray-100 overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                             <div className="flex items-center gap-2">
                                 <Filter size={18} className="text-gray-500" />
@@ -264,7 +264,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                     </div>
 
                     {/* Activity List */}
-                    <div className="bg-white rounded-[30px] shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="bg-white rounded-[30px]  shadow-sm border border-gray-100 overflow-hidden">
                         {/* Header Stats */}
                         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>

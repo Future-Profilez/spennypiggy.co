@@ -265,7 +265,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
     return (
         <div className={`px-2`}>
-            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-[4px_4px_0px_0px_#FF007F]ink border-pink rounded-[30px]  ">
+            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-[4px_4px_0px_0px_#FF007F]ink border-pink rounded-[30px]   ">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Your Basket for {cartsItems?.creator?.name || ""}
@@ -287,7 +287,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                             datatoMap?.map((c, i) => {
                                 return (
                                     <div
-                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-violet-600 shadow-violet rounded-[30px] 
+                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-violet-600 shadow-violet rounded-[30px]  
                                         mb-3 md:mb-4 md:ml-5 p-3 md:p-4`}
                                     >
                                         <div className="prodcartbox items-center">
@@ -418,7 +418,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                 )}
                                 <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                     ?
-                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px]  top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px]   top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
                                         <strong className="text-white font-normal">
                                             Card Payments:
                                         </strong>{" "}
@@ -477,7 +477,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="mb-3">
                                         <p className='mb-1'>Name</p>
                                         <input required disabled={auth && auth.user?.name ? true : false}
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             defaultValue={auth && auth.user?.name}
                                             // onChange={(e) => setName(e.target.value)}
                                             type="text" placeholder="Enter name.. " />
@@ -485,7 +485,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="form-field mb-3 ">
                                         <p className='mb-1'>Email</p>
                                         <input required  disabled={auth && auth.user?.email ? true : false}
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             defaultValue={auth && auth.user?.email}
                                             // onChange={(e) => setEmail(e.target.value)}
                                             type="email" placeholder="Enter email.. " />
@@ -509,7 +509,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
                                     {/* <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
-                                        <select required className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] " name="country"
+                                        <select required className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  " name="country"
                                         onChange={handleChange}
                                         >
                                             <option value={''} >Choose Country</option>

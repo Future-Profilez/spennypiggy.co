@@ -29,7 +29,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
   const AboutScreen = () => {
     return (
         <div className="about-sec m-auto max-w-4xl">
-            <div className="relative mb-10 rounded-[30px] overflow-hidden bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group">
+            <div className="relative mb-10 rounded-[30px]  overflow-hidden bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group">
                 <div className="p-8 md:p-12 relative">
                     <div className="">
                         <h3 className="text-sm font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
@@ -84,7 +84,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
             {/* Supporter Offerings Card */}
             {IsloggedIn && (
                 <div className="relative group mb-10">
-                    <div className="relative p-8 md:p-12 rounded-[30px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="relative p-8 md:p-12 rounded-[30px]  bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                             <div>
                                 <h3 className="text-xs font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
@@ -104,7 +104,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                 { title: "Private Feed", desc: "A unified feed of all creators you support.", icon: "📱" },
                                 { title: "Custom Flair", desc: "Unique visual styles for your profile and comments.", icon: "✨" },
                             ].map((benefit, i) => (
-                                <div key={i} className="p-6 rounded-[30px] bg-white/5 border-[3px] border-black/20 hover:bg-white/10 hover:border-black/40 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-300">
+                                <div key={i} className="p-6 rounded-[30px]  bg-white/5 border-[3px] border-black/20 hover:bg-white/10 hover:border-black/40 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-300">
                                     <div className="text-3xl mb-4 drop-shadow-md">{benefit.icon}</div>
                                     <h4 className="text-black font-black text-sm uppercase tracking-widest mb-2">{benefit.title}</h4>
                                     <p className="text-black font-bold text-xs leading-relaxed">{benefit.desc}</p>
@@ -135,7 +135,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                         <button
                                             className={`relative focus:border-0 focus:outline-none text-sm md:text-base 
                                                 font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap
-                                                py-2 px-6 border-[3px] border-black rounded-[30px] 
+                                                py-2 px-6 border-[3px] border-black rounded-[30px]  
                                                 ${selected ? 'text-black bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' : 'text-black bg-white hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'} 
                                             `}
                                         >

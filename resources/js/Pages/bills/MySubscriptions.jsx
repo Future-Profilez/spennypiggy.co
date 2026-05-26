@@ -72,7 +72,7 @@ export default function MySubscriptions(props) {
         <button
             onClick={() => setSubscriptionTab("bills")}
             className={`
-            px-5 py-3 rounded-[30px]
+            px-5 py-3 rounded-[30px] 
             text-sm font-bold transition-all duration-300
             ${
                 subscriptionTab === "bills"
@@ -87,7 +87,7 @@ export default function MySubscriptions(props) {
         <button
             onClick={() => setSubscriptionTab("memberships")}
             className={`
-            px-5 py-3 rounded-[30px]
+            px-5 py-3 rounded-[30px] 
             text-sm font-bold transition-all duration-300
             ${
                 subscriptionTab === "memberships"
@@ -158,7 +158,7 @@ export default function MySubscriptions(props) {
                         {/* STATS */}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
                                 <p className="text-gray-600 text-sm">
                                     Active Subscriptions
                                 </p>
@@ -169,7 +169,7 @@ export default function MySubscriptions(props) {
                                 </h2>
                             </div>
 
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
                                 <p className="text-gray-600 font-bold uppercase text-sm">
                                     Monthly Spend
                                 </p>
@@ -182,7 +182,7 @@ export default function MySubscriptions(props) {
                                 </h2>
                             </div>
 
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
                                 <p className="text-gray-600 font-bold uppercase text-sm">
                                     Yearly Spend
                                 </p>
@@ -200,7 +200,7 @@ export default function MySubscriptions(props) {
                             <button
                                 onClick={() => setSubscriptionTab("bills")}
                                 className={`
-                                px-5 py-3 rounded-[30px]
+                                px-5 py-3 rounded-[30px] 
                                 text-sm font-bold transition-all duration-300
                                 ${
                                     subscriptionTab === "bills"
@@ -217,7 +217,7 @@ export default function MySubscriptions(props) {
                                     setSubscriptionTab("memberships")
                                 }
                                 className={`
-                                    px-5 py-3 rounded-[30px]
+                                    px-5 py-3 rounded-[30px] 
                                     text-sm font-bold transition-all duration-300
                                     ${
                                         subscriptionTab === "memberships"
@@ -232,7 +232,7 @@ export default function MySubscriptions(props) {
 
                         {/* TABLE */}
 
-                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden">
+                        <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden">
                             <div className="p-6 border-b-[3px] border-black">
                                 <h2 className="text-xl md:text-2xl font-GillSans uppercase text-black">
                                     {subscriptionTab === "bills"
@@ -516,7 +516,7 @@ export default function MySubscriptions(props) {
                                 <button
                                     onClick={() => setCancelModal(false)}
                                     className="
-                                    flex-1 py-3 rounded-[30px]
+                                    flex-1 py-3 rounded-[30px] 
                                     bg-white/5 border border-white/10
                                     text-black font-bold
                                     "
@@ -527,7 +527,7 @@ export default function MySubscriptions(props) {
                                 <button
                                     onClick={confirmCancelSubscription}
                                     className="
-                                    flex-1 py-3 rounded-[30px]
+                                    flex-1 py-3 rounded-[30px] 
                                     bg-gradient-to-r
                                     from-red-500 to-pink-500
                                     text-black font-bold

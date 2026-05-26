@@ -91,7 +91,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                         <div className="mb-6">
                             <button
                                 onClick={handleBack}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
                             >
                                 <ArrowLeft size={16} />
                                 Back to Task Lists
@@ -111,7 +111,7 @@ export default function Edit({ auth, currencySymbol, task }) {
 
                         {/* Rejection Notice Banner */}
                         {isRejected && (
-                            <div className="mb-8 p-6 bg-red-50 border-2 border-red-500 rounded-[30px] shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
+                            <div className="mb-8 p-6 bg-red-50 border-2 border-red-500 rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
                                 <div className="flex items-start gap-4">
                                     <div className="flex-1">
                                         <h3 className="text-lg font-black text-red-800 mb-1 flex items-center gap-2">
@@ -132,7 +132,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                         )}
 
                         {showSummary ? (
-                            <div className="bg-white border-2 border-black rounded-[30px] p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="bg-white border-2 border-black rounded-[30px]  p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h3 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="text-green-600" /> Confirm Task Changes
                                 </h3>
@@ -333,7 +333,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     {/* Instant Deliverable */}
                                     {data.type === "instant" && (
                                         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div className="border-2 border-black rounded-[30px] p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                            <div className="border-2 border-black rounded-[30px]  p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                                                 <label className="block font-black text-lg mb-4 text-pink-900 uppercase flex items-center gap-2"><FileUp className="text-[#FF007F]" /> Deliverable Content</label>
                                                 
                                                 {task.deliverable_content && !data.deliverable_file && (

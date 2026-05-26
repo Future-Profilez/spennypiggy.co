@@ -209,7 +209,7 @@ export default function Statement({ summary, dates, profile, user }) {
 
                 {/* Net Profit Summary */}
                 <div className="mb-16 break-inside-avoid">
-                    <div className="bg-slate-50 rounded-[30px] p-10 text-center border border-slate-100">
+                    <div className="bg-slate-50 rounded-[30px]  p-10 text-center border border-slate-100">
                         <h3 className="text-lg font-bold text-[#0F172A] mb-1">Net Earnings</h3>
                         <p className="text-slate-400 text-xs mb-6 font-medium">Gross Earnings minus Expenses</p>
                         <p className="text-6xl font-bold text-[#0F172A] tracking-tighter">

@@ -338,7 +338,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 }
             `}</style>
 
-            <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]   mb-4 p-4 lg:!p-8">
+            <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]    mb-4 p-4 lg:!p-8">
                 <div className="flex gap-3 items-center mb-3">
                     <h2 className="text-[20px] uppercase font-bold">
                         Profile Verification
@@ -398,7 +398,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 {creatorUser?.bio &&
                 creatorUser?.avatar &&
                 profileStatusLock == 1 ? (
-                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-4 rounded-[30px] mt-3">
+                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-4 rounded-[30px]  mt-3">
                         <>
                             <strong className="text-yellow-800">
                                 Profile Under Review
@@ -490,17 +490,17 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                         <div className="flex items-center gap-2 w-full md:w-auto md:ms-[30px]">
                             {isSocialApproved ? (
-                                <span className="text-xs text-white inline-block px-2 rounded-[30px] p-1 bg-green-600">
+                                <span className="text-xs text-white inline-block px-2 rounded-[30px]  p-1 bg-green-600">
                                     Approved
                                 </span>
                             ) : isSocialPending ? (
                                 ""
                             ) : isSocialRejected ? (
-                                <span className="text-xs text-white inline-block px-2 rounded-[30px] p-1 bg-red-600">
+                                <span className="text-xs text-white inline-block px-2 rounded-[30px]  p-1 bg-red-600">
                                     Rejected
                                 </span>
                             ) : (
-                                <span className="text-xs text-white inline-block px-2 rounded-[30px] p-1 bg-gray-600">
+                                <span className="text-xs text-white inline-block px-2 rounded-[30px]  p-1 bg-gray-600">
                                     Required
                                 </span>
                             )}
@@ -999,7 +999,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         {/* {auth?.user?.identity_admin_status == 2 && (
                             <div className="mt-2">
                                 {auth?.user?.identity_admin_notes && (
-                                    <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-[30px]   text-sm">
+                                    <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-[30px]    text-sm">
                                         <h2 className="mb-1 text-normal font-bold">Your Identity Is Rejected By Admin</h2>
                                         <p>Reason : {auth?.user?.identity_admin_notes}</p>
                                     </div>

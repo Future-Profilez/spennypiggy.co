@@ -313,7 +313,7 @@ export default function Billing_dashboard(props) {
                         {/* Stats Grid - Main Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 mb-10">
                             {/* TOTAL BILLS */}
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
                                     <div className="w-14 h-14 bg-blue-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         📄
@@ -344,7 +344,7 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* TOTAL REVENUE */}
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
                                     <div className="w-14 h-14 bg-emerald-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         💰
@@ -389,7 +389,7 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* MONTHLY REVENUE */}
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
                                     <div className="w-14 h-14 bg-amber-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         📈
@@ -425,7 +425,7 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* NEXT MONTH */}
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6 min-h-[190px] flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
                                     <div className="w-14 h-14 bg-cyan-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         🚀
@@ -462,7 +462,7 @@ export default function Billing_dashboard(props) {
                         {/* Top Performing Bills & Chart Section */}
                         <div className="flex flex-col gap-6 md:gap-8 mb-10">
                             {/* Top Performing Bills */}
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-4">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-4">
                                 <div className="mb-4">
                                     <h2 className="text-xl font-GillSans uppercase font-black text-black">
                                         Top Performing Bills
@@ -550,7 +550,7 @@ export default function Billing_dashboard(props) {
 
                             {/* REVENUE ANALYTICS */}
 
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden">
+                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden">
                                 {/* HEADER */}
 
                                 <div className="p-6 border-b-[3px] border-black">
@@ -570,7 +570,7 @@ export default function Billing_dashboard(props) {
 
                                                 <div
                                                     className={`
-                                                        px-4 py-2 rounded-[30px]
+                                                        px-4 py-2 rounded-[30px] 
                                                         flex items-center gap-2
                                                         border
                                                         ${
@@ -603,7 +603,7 @@ export default function Billing_dashboard(props) {
                                                 }
                                                 className="
                                                     bg-white/10 border border-white/10
-                                                    rounded-[30px] px-5 py-3 text-sm
+                                                    rounded-[30px]  px-5 py-3 text-sm
                                                     text-black focus:outline-none
                                                     focus:ring-2 focus:ring-cyan-500
                                                 "
@@ -629,7 +629,7 @@ export default function Billing_dashboard(props) {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b-[3px] border-black">
                                     {/* GROWTH */}
 
-                                    <div className="rounded-[30px] bg-white/5 border border-white/10 p-5">
+                                    <div className="rounded-[30px]  bg-white/5 border border-white/10 p-5">
                                         <p className="text-gray-600 text-xs uppercase tracking-wider">
                                             Monthly Growth
                                         </p>
@@ -664,7 +664,7 @@ export default function Billing_dashboard(props) {
 
                                     {/* BEST MONTH */}
 
-                                    <div className="rounded-[30px] bg-white/5 border border-white/10 p-5">
+                                    <div className="rounded-[30px]  bg-white/5 border border-white/10 p-5">
                                         <p className="text-gray-600 text-xs uppercase tracking-wider">
                                             Best Performing Month
                                         </p>
@@ -683,7 +683,7 @@ export default function Billing_dashboard(props) {
 
                                     {/* AVG */}
 
-                                    <div className="rounded-[30px] bg-white/5 border border-white/10 p-5">
+                                    <div className="rounded-[30px]  bg-white/5 border border-white/10 p-5">
                                         <p className="text-gray-600 text-xs uppercase tracking-wider">
                                             Average Revenue
                                         </p>
@@ -733,7 +733,7 @@ export default function Billing_dashboard(props) {
                         </div>
 
                         {/* All Bills Section with Filters */}
-                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden mb-6">
+                        <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden mb-6">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b-[3px] border-black gap-4">
                                 <div>
                                     <h2 className="text-xl font-GillSans uppercase font-black text-black">

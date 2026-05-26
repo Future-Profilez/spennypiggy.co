@@ -55,35 +55,41 @@ class SupportTicketRefundService
         $sessionId = null;
 
         switch ($ticket->source) {
+            case 'stripe_payment_items':
             case 'StripePaymentItems':
                 $item = StripePaymentItems::with(['payment', 'wish.user'])->findOrFail($ticket->source_id);
                 $paymentIntentId = $item->payment?->stripe_payment_intent_id;
                 $sessionId = $item->payment?->session_id;
                 $connectedAccountId = $item->wish?->user?->account_id ?? $connectedAccountId;
                 break;
+            case 'tip_goals_payments':
             case 'TipGoalsPayment':
                 $p = TipGoalsPayment::with('creator')->findOrFail($ticket->source_id);
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->creator?->account_id ?? $connectedAccountId;
                 break;
+            case 'piggy_pot_contributions':
             case 'PiggyPotContribution':
                 $p = PiggyPotContribution::with('creator')->findOrFail($ticket->source_id);
                 $paymentIntentId = $p->payment_intent_id;
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->creator?->account_id ?? $connectedAccountId;
                 break;
+            case 'bill_payments':
             case 'BillPayment':
                 $p = BillPayment::with('bill.user')->findOrFail($ticket->source_id);
                 $paymentIntentId = $p->stripe_id;
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->bill?->user?->account_id ?? $connectedAccountId;
                 break;
+            case 'membership_payments':
             case 'MembershipPayment':
                 $p = MembershipPayment::with('membership.user')->findOrFail($ticket->source_id);
                 $paymentIntentId = $p->stripe_id;
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->membership?->user?->account_id ?? $connectedAccountId;
                 break;
+            case 'shop_payments':
             case 'ShopPayment':
                 $p = ShopPayment::with(['shop.user'])->where('uuid', $ticket->source_id)->firstOrFail();
                 $sessionId = $p->session_id;
@@ -91,6 +97,7 @@ class SupportTicketRefundService
                 $deliverable = \App\Models\Deliverable::where('session_id', $p->session_id)->first();
                 $paymentIntentId = $deliverable?->payment_intent_id;
                 break;
+            case 'task_purchases':
             case 'TaskPurchase':
                 $p = TaskPurchase::with(['creator'])->findOrFail($ticket->source_id);
                 $paymentIntentId = $p->payment_intent_id;

@@ -241,7 +241,7 @@ export const CoverImage = memo(({ src, alt, className = '', ...props }) => (
         alt={alt}
         width={1200}
         height={400}
-        className={`rounded-[30px]  ${className}`}
+        className={`rounded-[30px]   ${className}`}
         priority={true}
         quality={85}
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
@@ -255,7 +255,7 @@ export const ProductImage = memo(({ src, alt, className = '', ...props }) => (
         alt={alt}
         width={300}
         height={300}
-        className={`rounded-[30px]   ${className}`}
+        className={`rounded-[30px]    ${className}`}
         priority={false}
         quality={80}
         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 300px"

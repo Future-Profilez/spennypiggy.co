@@ -11,7 +11,7 @@ const Side = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle sidebar"
-        className="fixed top-5 left-5 z-50 px-4 py-2 bg-black text-white rounded-[30px]   shadow-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition"
+        className="fixed top-5 left-5 z-50 px-4 py-2 bg-black text-white rounded-[30px]    shadow-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition"
       >
         {isOpen ? 'Close' : 'Menu'}
       </button>
@@ -39,7 +39,7 @@ const Side = () => {
         {auth?.user ? (
           <Link 
             href={route('user.show', { username: auth.user.username })}
-            className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-[30px] border border-gray-100 hover:bg-gray-100 transition-colors group"
+            className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-[30px]  border border-gray-100 hover:bg-gray-100 transition-colors group"
           >
             <img 
               src={auth.user.avatar_url} 

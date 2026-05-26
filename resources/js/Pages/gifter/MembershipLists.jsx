@@ -13,7 +13,7 @@ export default function MembershipLists({ username }) {
     const ITEM = ({ itm }) => {
         return (
             <>
-                <div className="relative group overflow-hidden rounded-[30px]  bg-[#1A1B23]/40 border border-white/5 transition-all duration-500 hover:border-white/20 hover:bg-[#1A1B23]/60 hover:-translate-y-1">
+                <div className="relative group overflow-hidden rounded-[30px]   bg-[#1A1B23]/40 border border-white/20 transition-all duration-500 hover:border-white/20 hover:bg-[#1A1B23]/60 hover:-translate-y-1">
                     <div className="aspect-[16/9] overflow-hidden">
                         {handleTab == "memberships" ? (
                             <img
@@ -37,9 +37,9 @@ export default function MembershipLists({ username }) {
                             className="flex items-center gap-3 mb-6 group/author"
                         >
                             <div className="relative">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] rounded-[30px]  blur opacity-0 group-hover/author:opacity-40 transition duration-500"></div>
+                                <div className="absolute -inset-1 bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] rounded-[30px]   blur opacity-0 group-hover/author:opacity-40 transition duration-500"></div>
                                 <img
-                                    className="relative h-12 w-12 rounded-[30px]  object-cover border border-white/10"
+                                    className="relative h-12 w-12 rounded-[30px]   object-cover border border-white/10"
                                     src={`${itm?.owner?.avatar || ""}`}
                                 />
                             </div>
@@ -97,7 +97,7 @@ export default function MembershipLists({ username }) {
                             <div className="pt-3">
                                 <Link
                                     href={`/support/${itm?.owner?.username || ""}/${username || ""}`}
-                                    className="button rounded-[30px] px-3 text-[11px] uppercase"
+                                    className="button rounded-[30px]  px-3 text-[11px] uppercase"
                                 >
                                     View Story
                                 </Link>
@@ -182,13 +182,13 @@ export default function MembershipLists({ username }) {
                 <div className="flex justify-center items-center">
                     <button
                         onClick={() => setHandleTab(`memberships`)}
-                        className={`${handleTab !== "memberships" ? "bg-gray-500 opacity-[0.6]" : "opacity-[1]"} button  rounded-[30px]  mx-1 px-3 text-[11px] uppercase `}
+                        className={`${handleTab !== "memberships" ? "bg-gray-500 opacity-[0.6]" : "opacity-[1]"} button  rounded-[30px]   mx-1 px-3 text-[11px] uppercase `}
                     >
                         Memberships
                     </button>
                     <button
                         onClick={() => setHandleTab("subscriptions")}
-                        className={`${handleTab !== "subscriptions" ? "bg-gray-500 opacity-[0.6]" : "opacity-[1]"} button  rounded-[30px]  mx-1 px-3 text-[11px] uppercase `}
+                        className={`${handleTab !== "subscriptions" ? "bg-gray-500 opacity-[0.6]" : "opacity-[1]"} button  rounded-[30px]   mx-1 px-3 text-[11px] uppercase `}
                     >
                         Subscriptions
                     </button>

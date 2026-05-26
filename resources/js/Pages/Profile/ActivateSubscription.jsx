@@ -29,7 +29,7 @@ export default function ActivateSubscription(props) {
                     </p>
                 </div>
 
-                <div className="relative bg-white rounded-[30px] border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                <div className="relative bg-white rounded-[30px]  border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                     {/* Mac-style Header */}
                     <div className="px-6 py-4 border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black flex items-center justify-between bg-white">
                       <div className="flex items-center gap-2">
@@ -86,7 +86,7 @@ export default function ActivateSubscription(props) {
                             </div>
 
                             <div className="lg:col-span-2">
-                                <div className="p-8 rounded-[30px] bg-[#A2E4B8]/30 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="p-8 rounded-[30px]  bg-[#A2E4B8]/30 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                                     <div className="mb-8">
                                         <p className="text-gray-600 text-xs font-bold uppercase tracking-widest mb-2">Order Summary</p>
                                         <div className="flex items-baseline gap-2">

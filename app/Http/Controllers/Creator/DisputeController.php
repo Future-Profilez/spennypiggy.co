@@ -49,14 +49,36 @@ class DisputeController extends Controller
         });
 
         $tickets = SupportTicket::where('creator_id', $user->id)
+            ->where('type', 'refund')
             ->with(['supporter'])
             ->orderByRaw("FIELD(status, 'awaiting_creator', 'escalated', 'awaiting_supporter', 'refund_initiated', 'refunded', 'rejected', 'resolved')")
             ->orderBy('created_at', 'desc')
             ->paginate(10, ['*'], 'tickets_page');
 
+        $queries = SupportTicket::where('creator_id', $user->id)
+            ->where('type', 'contact')
+            ->with(['supporter'])
+            ->orderByRaw("FIELD(status, 'awaiting_creator', 'escalated', 'awaiting_supporter', 'resolved')")
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'queries_page');
+
+        // Calculate counts of only UNRESOLVED tickets and queries for the tab badges
+        $unresolvedTicketsCount = SupportTicket::where('creator_id', $user->id)
+            ->where('type', 'refund')
+            ->whereNotIn('status', ['resolved', 'refunded', 'rejected', 'refund_initiated'])
+            ->count();
+
+        $unresolvedQueriesCount = SupportTicket::where('creator_id', $user->id)
+            ->where('type', 'contact')
+            ->whereNotIn('status', ['resolved', 'refunded', 'rejected'])
+            ->count();
+
         return Inertia::render('Creator/Disputes/Index', [
             'disputes' => $disputes,
             'tickets' => $tickets,
+            'queries' => $queries,
+            'unresolvedTicketsCount' => $unresolvedTicketsCount,
+            'unresolvedQueriesCount' => $unresolvedQueriesCount,
         ]);
     }
 

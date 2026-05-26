@@ -503,7 +503,7 @@ export default function BillCheckout(props) {
                                                 Add Message{" "}
                                             </label>
                                             <textarea
-                                                className="mt-2 border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                                className="mt-2 border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                                 onKeyUp={(e) =>
                                                     setData(
                                                         "message",

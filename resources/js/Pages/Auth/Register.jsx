@@ -368,7 +368,7 @@ export default function Register(props) {
     const getFieldClassName = useCallback(
         (
             field,
-            baseClassName = "mt-1 block w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3",
+            baseClassName = "mt-1 block w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]   p-3",
         ) => {
             const status = getFieldStatus(field);
             const value = getFieldValue(field);
@@ -428,7 +428,7 @@ export default function Register(props) {
             if (!String(value || "").trim()) return null;
 
             return (
-                <div className="absolute bg-white p-2 right-2 rounded-[30px]  top-1/2 -translate-y-1/2">
+                <div className="absolute bg-white p-2 right-2 rounded-[30px]   top-1/2 -translate-y-1/2">
                     <FieldStatusIcon status={status} />
                 </div>
             );
@@ -961,7 +961,7 @@ export default function Register(props) {
                         </p>
                     </div>
 
-                    <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-[30px]   p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                    <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-[30px]    p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div className="hidden md:flex md:bg-black/20 md:border-b border-white/5 flex items-center !p-5 space-x-2 rounded-t-xl">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -977,7 +977,7 @@ export default function Register(props) {
                                             onClick={() =>
                                                 handleBecomeCreator(1)
                                             }
-                                            className={`cursor-pointer rounded-[30px]   p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
+                                            className={`cursor-pointer rounded-[30px]    p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 1
                                                     ? "border-[#FF007F] bg-[#FF007F]/10"
                                                     : "border-white/10 bg-white/5 hover:border-[#FF007F]/50 hover:bg-white/10"
@@ -998,7 +998,7 @@ export default function Register(props) {
                                             onClick={() =>
                                                 handleBecomeCreator(0)
                                             }
-                                            className={`cursor-pointer rounded-[30px]   p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
+                                            className={`cursor-pointer rounded-[30px]    p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 0
                                                     ? "border-blue-500 bg-blue-500/10"
                                                     : "border-white/10 bg-white/5 hover:border-blue-500/50 hover:bg-white/10"
@@ -1037,7 +1037,7 @@ export default function Register(props) {
                                     </p>
                                     <button
                                         onClick={handleNext}
-                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px]  shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit"
+                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px]   shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit"
                                     >
                                         Got it – I’ll link my socials
                                     </button>
@@ -1093,7 +1093,7 @@ export default function Register(props) {
                                                 profileTags &&
                                                 profileTags.length < 1
                                             }
-                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px]  shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px]   shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                             Next
                                         </button>
@@ -1249,7 +1249,7 @@ export default function Register(props) {
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3"
+                                                    className="mt-1 block w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]   p-3"
                                                     value={data.gender}
                                                 >
                                                     <option value="" disabled>
@@ -1488,7 +1488,7 @@ export default function Register(props) {
                                         <div
                                             className={`${
                                                 mypass ? "block" : "hidden"
-                                            } bg-white/5 rounded-[30px]  p-4 border border-white/10`}
+                                            } bg-white/5 rounded-[30px]   p-4 border border-white/10`}
                                         >
                                             <h3 className="text-white font-medium mb-2">
                                                 Password must contain:
@@ -1606,7 +1606,7 @@ export default function Register(props) {
                                                                 }
                                                                 selectClassName={getFieldClassName(
                                                                     "country",
-                                                                    "w-full bg-[#ffffff0d] border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px] p-3",
+                                                                    "w-full bg-[#ffffff0d] border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3",
                                                                 )}
                                                             />
                                                             {renderFieldStatusIcon(
@@ -1767,7 +1767,7 @@ export default function Register(props) {
                                                     readOnly={
                                                         hasReferralFromUrl
                                                     }
-                                                    className={`flex-1 bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3 ${
+                                                    className={`flex-1 bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]   p-3 ${
                                                         hasReferralFromUrl
                                                             ? "opacity-50 cursor-not-allowed"
                                                             : ""
@@ -1789,7 +1789,7 @@ export default function Register(props) {
                                                         <button
                                                             type="button"
                                                             onClick={removecode}
-                                                            className="bg-red-500 hover:bg-red-600 text-white px-4 rounded-[30px]  font-medium transition-colors"
+                                                            className="bg-red-500 hover:bg-red-600 text-white px-4 rounded-[30px]   font-medium transition-colors"
                                                         >
                                                             Remove
                                                         </button>
@@ -1801,7 +1801,7 @@ export default function Register(props) {
                                                                     ? checkCreatorReferral
                                                                     : checkPromo
                                                             }
-                                                            className="bg-pink-600 hover:bg-[#FF007F] text-white px-4 rounded-[30px]  font-medium transition-colors"
+                                                            className="bg-pink-600 hover:bg-[#FF007F] text-white px-4 rounded-[30px]   font-medium transition-colors"
                                                         >
                                                             Apply
                                                         </button>
@@ -1809,7 +1809,7 @@ export default function Register(props) {
                                             </div>
                                             {referralMessage && (
                                                 <div
-                                                    className={`mt-3 rounded-[30px]  px-4 py-3 text-sm font-medium border ${
+                                                    className={`mt-3 rounded-[30px]   px-4 py-3 text-sm font-medium border ${
                                                         referralType ===
                                                         "success"
                                                             ? "bg-green-500/10 text-green-400 border-green-500/30"
@@ -1911,7 +1911,7 @@ export default function Register(props) {
                                         <div className="">
                                             <Popup
                                                 action={hasPop}
-                                                modalclass="bg-gray-900 border border-white/10 shadow-[4px_4px_0px_0px_#FF007F]xl rounded-[30px]   p-6 max-w-lg w-full"
+                                                modalclass="bg-gray-900 border border-white/10 shadow-[4px_4px_0px_0px_#FF007F]xl rounded-[30px]    p-6 max-w-lg w-full"
                                                 space="4"
                                                 size="md"
                                                 classes={`hidden`}
@@ -1991,7 +1991,7 @@ export default function Register(props) {
                                                         disabled={processing}
                                                         className={`
                                                             ${hasNotifiedRef && !hasNotifiedRef?.current?.checked ? "opacity-50 cursor-not-allowed disabled" : ""}
-                                                            w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]    `}
+                                                            w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]     `}
                                                         spinnerclass="fill-white"
                                                     >
                                                         {processing

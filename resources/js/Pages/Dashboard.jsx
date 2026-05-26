@@ -308,7 +308,7 @@ export default function Dashboard(props) {
                             <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
                                 <div className="w-full md:max-w-[600px] lg:max-w-[900px] px-6 !overflow-hidden">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px] md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
+                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px]  md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
                                             <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-2 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
@@ -333,9 +333,9 @@ export default function Dashboard(props) {
                                                                     : false
                                                             }
                                                         />
-                                                        <div className="w-full font-bold disabled addop bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[30px] p-3 mb-4 text-center">
+                                                        <div className="w-full font-bold disabled addop bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[30px]  p-3 mb-4 text-center">
                                                             <div className=" flex items-center">
-                                                                <div className="p-1 rounded-[30px] border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <div className="p-1 rounded-[30px]  border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                     <CiGift
                                                                         color="#000"
                                                                         size="1.5rem"
@@ -364,7 +364,7 @@ export default function Dashboard(props) {
                                                         </div>
 
                                                         <div className="flex justify-center">
-                                                            <button onClick={() => setWishOptions(!wishOptions)} className="bg-gray-200 text-back rounded-[30px] px-3 py-2">Back</button>
+                                                            <button onClick={() => setWishOptions(!wishOptions)} className="bg-gray-200 text-back rounded-[30px]  px-3 py-2">Back</button>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -384,10 +384,10 @@ export default function Dashboard(props) {
                                                                             true,
                                                                         )
                                                                     }
-                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                 >
                                                                     <div className=" flex items-center">
-                                                                        <div className="p-1 !rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                        <div className="p-1 !rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                             <FaRegHeart
                                                                                 color="#FF007F"
                                                                                 size="1.6rem"
@@ -406,11 +406,11 @@ export default function Dashboard(props) {
 
                                                                 {auth?.user?.role === 1 && (
                                                                     <Link
-                                                                        className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                        className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                         href="/task/create"
                                                                     >
                                                                         <div className=" flex items-center">
-                                                                            <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                            <div className="p-1 rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                                 <BiTask
                                                                                     color="#FF007F"
                                                                                     size="1.6rem"
@@ -429,10 +429,10 @@ export default function Dashboard(props) {
                                                                 )}
 
                                                                 <AddItem
-                                                                    classes="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                    classes="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                     product_type="digital_products"
                                                                 />
-                                                                <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
+                                                                <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] " />
                                                                 {/* <AddGift
                                                                     text="Add Gift "
                                                                     classes="font-bold py-3 px-3 mb-2 text-center"
@@ -444,8 +444,8 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                <AddMembership classes=" font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] !w-full" />
-                                                                <AddBills classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
+                                                                <AddMembership classes=" font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  !w-full" />
+                                                                <AddBills classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] " />
                                                             </div>
                                                         </div>
                                                     </>
@@ -457,7 +457,7 @@ export default function Dashboard(props) {
                                                     setShowAdd(false);
                                                     // setWishOptions(false);
                                                 }}
-                                                className="w-[80%] mx-w-[200px] pt-3 rounded-[30px]   font-black uppercase tracking-widest block    transition-colors"
+                                                className="w-[80%] mx-w-[200px] pt-3 rounded-[30px]    font-black uppercase tracking-widest block    transition-colors"
                                             >
                                                 Cancel
                                             </button>
@@ -507,9 +507,9 @@ export default function Dashboard(props) {
                             ""
                         )}
                         <div className="wishbanner relative ">
-                            <div className="relative border-b-4 border-black rounded-[30px] overflow-hidden">
+                            <div className="relative border-b-4 border-black rounded-[30px]  overflow-hidden">
                                 {user?.is_founder ? (
-                                    <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-[30px] p-1">
+                                    <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-[30px]  p-1">
                                         <FounderBadge size="md" />
                                     </div>
                                 ) : (
@@ -543,7 +543,7 @@ export default function Dashboard(props) {
                         {/* Stripe Account Migration Warning */}
 
                         {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px]  ">
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px]   ">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
                                         Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
@@ -644,7 +644,7 @@ export default function Dashboard(props) {
 
 
                                                                     {(IsloggedIn && (user?.profile_status_lock == 0 || (user?.edit_bio_reason && user?.bio_approved == 2) || slinks?.reason || user?.avatar_approved == 2)) ?
-                                                                        <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px] mb-4 p-4">
+                                                                        <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px]  mb-4 p-4">
                                                                             <h2 className="text-red-600 font-bold text-xl ">Action Required </h2>
                                                                             {user?.profile_status_lock == 0 && user?.profile_reject_reason && (
                                                                                 <div className="mt-3">
@@ -694,7 +694,7 @@ export default function Dashboard(props) {
                                                                             )}
                                                                         </div> : ''}
 
-                                                                    <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
+                                                                    <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
                                                                         <div className="p-4 md:p-8">
                                                                             <h2 className="text-xl sm:text-2xl font-black text-black uppercase tracking-wide">
                                                                                 About
@@ -811,7 +811,7 @@ export default function Dashboard(props) {
 
                                                                             {auth?.user?.role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                 <PaymentDashboard
-                                                                                    classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px] bg-pink-600 hover:bg-pink-700   transition-all duration-200"
+                                                                                    classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px]  bg-pink-600 hover:bg-pink-700   transition-all duration-200"
                                                                                     text="Creator Payment Dashboard"
                                                                                 />
                                                                             ) : (
@@ -832,7 +832,7 @@ export default function Dashboard(props) {
                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
                                                                         <div className="mb-6 !mt-6 relative group">
                                                                             {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
+                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
                                                                                 <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
                                                                                     <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
                                                                                         <div className="relative">
@@ -1145,7 +1145,7 @@ export default function Dashboard(props) {
                                                                             <div className="w-full">
                                                                                 {IsloggedIn ? (
                                                                                     <>
-                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                                                                                         <div className="text-4xl mb-3">🎁</div>
                                                                                         <h3 className="font-gulfs text-2xl uppercase mb-2">No Wishes Yet</h3>
                                                                                         <p className="text-gray-600 font-bold mb-6">Add items to your wishlist and let your fans buy them for you.</p>
@@ -1202,7 +1202,7 @@ export default function Dashboard(props) {
                                                                 />
                                                                 {IsloggedIn && (!tasks || tasks.length === 0) && (
                                                                     <>
-                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                                                                         <div className="text-4xl mb-3">📋</div>
                                                                         <h3 className="font-gulfs text-2xl uppercase mb-2">No Active Tasks</h3>
                                                                         <p className="text-gray-600 font-bold mb-6">Create tasks and let your fans pay you to complete them.</p>
@@ -1238,7 +1238,7 @@ export default function Dashboard(props) {
                                                                 />
                                                                 {IsloggedIn && (!props.memberships || props.memberships?.length === 0) && (
                                                                     <>
-                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                                                                         <div className="text-4xl mb-3">⭐</div>
                                                                         <h3 className="font-gulfs text-2xl uppercase mb-2">No Memberships Yet</h3>
                                                                         <p className="text-gray-600 font-bold mb-6">Create membership tiers for your most loyal supporters.</p>
@@ -1267,7 +1267,7 @@ export default function Dashboard(props) {
                                                                 />
                                                                 {IsloggedIn && (!props.bills || props.bills?.length === 0) && (
                                                                     <>
-                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                                                                         <div className="text-4xl mb-3">🧾</div>
                                                                         <h3 className="font-gulfs text-2xl uppercase mb-2">No Active Bills</h3>
                                                                         <p className="text-gray-600 font-bold mb-6">Split bills with your fans and let them contribute.</p>
@@ -1299,7 +1299,7 @@ export default function Dashboard(props) {
                                                                 />
                                                                 {IsloggedIn && (!props.shops || props.shops.length === 0) && (
                                                                     <>
-                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                                                                         <div className="text-4xl mb-3">🛍️</div>
                                                                         <h3 className="font-gulfs text-2xl uppercase mb-2">No Shop Items Yet</h3>
                                                                         <p className="text-gray-600 font-bold mb-6">Create physical or digital products for your fans to buy.</p>
@@ -1392,7 +1392,7 @@ export default function Dashboard(props) {
                                                                 ) : (
                                                                     <div className="w-full">
                                                                         {IsloggedIn ? (
-                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                                                                                 <div className="text-4xl mb-3">🎁</div>
                                                                                 <h3 className="font-gulfs text-2xl uppercase mb-2">No Active Gifts</h3>
                                                                                 <p className="text-gray-600 font-bold mb-6">Create physical gifts for your fans to buy for you.</p>

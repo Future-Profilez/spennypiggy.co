@@ -93,7 +93,7 @@ export default function ReferAndEarn({
                 <div className="containerbox">
                     {/* ================= HEADER ================= */}
                     {/* ================= HEADER + REFERRAL LINK (MERGED) ================= */}
-                    <div className="mb-6 border-[3px] border-black shadow-[6px_6px_0_0_#000] rounded-[30px]  overflow-hidden">
+                    <div className="mb-6 border-[3px] border-black shadow-[6px_6px_0_0_#000] rounded-[30px]   overflow-hidden">
                         {/* Mac style bar */}
                         <div className="p-4 pinkbg flex items-center border-b-[3px] border-black !border-t-[0px] !border-r-[0px] !border-l-[0px] border-black">
                             <span className="border-black border-2 bg-red-700 mr-2 w-5 h-5 rounded-full block"></span>
@@ -136,7 +136,7 @@ export default function ReferAndEarn({
                                         placeholder="Click Generate to create your referral link"
                                         className={`w-full px-4 py-3 md:py-4 
                                         md:pr-[220px] pr-4
-                                        rounded-[30px] border-2 border-black text-sm
+                                        rounded-[30px]  border-2 border-black text-sm
                                         overflow-hidden text-ellipsis
                                         ${hasReferral ? "bg-white text-black" : "bg-gray-100 text-gray-500"}`}
                                     />
@@ -216,7 +216,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= HOW IT WORKS ================= */}
-                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-6 mb-6">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6 mb-6">
                         <h2 className="text-xl font-GillSans uppercase mb-4">
                             How You Earn £50
                         </h2>
@@ -252,7 +252,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= REDEEM ================= */}
-                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-GillSans uppercase mb-1">
                                 Redeem Referral Earnings
@@ -314,7 +314,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= REFERRAL TABLE ================= */}
-                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-6">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6">
                         <h2 className="text-xl font-GillSans uppercase mb-4">
                             Referred Creators
                         </h2>
@@ -418,7 +418,7 @@ export default function ReferAndEarn({
 /* ================= HELPERS ================= */
 
 const Stat = ({ label, value }) => (
-    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px] p-5 text-center">
+    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-5 text-center">
         <div className="text-3xl font-bold">{value}</div>
         <div className="text-xs uppercase mt-1">{label}</div>
     </div>

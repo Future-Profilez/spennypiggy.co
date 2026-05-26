@@ -484,7 +484,7 @@ export default function Login({ status, canResetPassword }) {
                 </div> */}   
 
                 {status && (
-                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px] border border-green-500/30 backdrop-blur-sm relative z-20">
+                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px]  border border-green-500/30 backdrop-blur-sm relative z-20">
                         {status}
                     </div>
                 )}
@@ -509,7 +509,7 @@ export default function Login({ status, canResetPassword }) {
                         </p>
                     </div>
 
-                    <div className="max-w-md m-auto bg-white rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group">
+                    <div className="max-w-md m-auto bg-white rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group">
                         <div className="!border-r-0 !border-l-0 !border-t-0 border-b border-black flex items-center p-4 space-x-2 rounded-t-xl">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
@@ -519,7 +519,7 @@ export default function Login({ status, canResetPassword }) {
                         <div className="p-6 sm:p-8   rounded-b-xl">
                             <form onSubmit={checkTFA} className="space-y-6">
                                 {redirectmessage && (
-                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px] border border-red-500/20 animate-pulse">
+                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px]  border border-red-500/20 animate-pulse">
                                         {redirectmessage}
                                     </p>
                                 )}

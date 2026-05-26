@@ -36,7 +36,7 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon 
             <div className={`${isTaskLayout ? 'grid grid-cols-1 gap-4 pb-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-4'}`}> 
                 {isLoading ? (
                     skeletonItems.map((_, index) => (
-                        <div key={`skeleton-${index}`} className="h-[200px] bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+                        <div key={`skeleton-${index}`} className="h-[200px] bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
                     ))
                 ) : (
                     <>

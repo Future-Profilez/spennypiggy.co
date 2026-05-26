@@ -33,7 +33,7 @@ export default function ReferEarnAnnouncement() {
                     {/* Cards Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
                         
-                        <div className="fading bg-white border-4 mb-2 md:mb-0 border-black rounded-[30px] p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
+                        <div className="fading bg-white border-4 mb-2 md:mb-0 border-black rounded-[30px]  p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
                             <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl shadow-lg wiggle transform rotate-12">
                                 <FaShareAlt />
                             </div>
@@ -43,7 +43,7 @@ export default function ReferEarnAnnouncement() {
                             </p>
                         </div>
 
-                        <div className="fading bg-white border-4 mb-2 md:mb-0 border-black rounded-[30px] p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
+                        <div className="fading bg-white border-4 mb-2 md:mb-0 border-black rounded-[30px]  p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
                             <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl shadow-lg wiggle transform -rotate-12">
                                 <FaUserPlus />
                             </div>
@@ -53,7 +53,7 @@ export default function ReferEarnAnnouncement() {
                             </p>
                         </div>
 
-                        <div className="fading bg-white border-4 mb-2 md:mb-0 border-black rounded-[30px] p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
+                        <div className="fading bg-white border-4 mb-2 md:mb-0 border-black rounded-[30px]  p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
                             <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl shadow-lg wiggle transform rotate-6">
                                 <FaPoundSign />
                             </div>

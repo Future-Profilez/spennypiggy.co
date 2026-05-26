@@ -59,7 +59,7 @@ export default function DisputeShow({ auth, dispute }) {
                     </div>
                     
                     {/* Status Banner */}
-                    <div className={`mb-8 p-6 rounded-[30px] border ${
+                    <div className={`mb-8 p-6 rounded-[30px]  border ${
                         isClosed ? (dispute.status === 'won' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-gray-500/10 border-gray-500/20 !text-gray-100') :
                         isSubmitted ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
                         'bg-red-500/10 border-red-500/20 text-[#FF007F]'
@@ -88,13 +88,13 @@ export default function DisputeShow({ auth, dispute }) {
                         {/* Sidebar: Supporter & Payment Info */}
                         <div className="space-y-6">
                             {/* Supporter Info */}
-                            <div className="bg-[#1a1a1a] p-6 rounded-[30px] border border-gray-800">
+                            <div className="bg-[#1a1a1a] p-6 rounded-[30px]  border border-gray-800">
                                 <h4 className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-6 flex items-center gap-2">
                                     <BiUser className="text-[#FF007F]" /> Supporter Info
                                 </h4>
                                 {dispute.payment?.supporter ? (
                                     <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-14 h-14 rounded-[30px] bg-gray-800 border border-gray-700 overflow-hidden">
+                                        <div className="w-14 h-14 rounded-[30px]  bg-gray-800 border border-gray-700 overflow-hidden">
                                             {dispute.payment.supporter.avatar ? (
                                                 <img src={dispute.payment.supporter.avatar} className="w-full h-full object-cover" />
                                             ) : (
@@ -141,7 +141,7 @@ export default function DisputeShow({ auth, dispute }) {
                             </div>
 
                             {/* Important Notice */}
-                            <div className="bg-[#FF007F]/5 p-6 rounded-[30px] border border-[#FF007F]/20">
+                            <div className="bg-[#FF007F]/5 p-6 rounded-[30px]  border border-[#FF007F]/20">
                                 <h4 className="text-[10px] uppercase tracking-widest text-[#FF007F] font-bold mb-3">Important</h4>
                                 <p className="text-xs !text-gray-100 leading-relaxed">
                                     Providing evidence doesn't guarantee a win, but it significantly increases your chances. Banks look for proof that the service was delivered as described.
@@ -151,7 +151,7 @@ export default function DisputeShow({ auth, dispute }) {
 
                         {/* Main Content: Evidence Submission */}
                         <div className="lg:col-span-2">
-                            <div className="bg-[#1a1a1a] p-8 rounded-[30px] border border-gray-800 h-full">
+                            <div className="bg-[#1a1a1a] p-8 rounded-[30px]  border border-gray-800 h-full">
                                 {canSubmit ? (
                                     <form onSubmit={handleSubmit} className="space-y-8">
                                         <div>
@@ -162,7 +162,7 @@ export default function DisputeShow({ auth, dispute }) {
                                                 <InputLabel htmlFor="explanation" value="Explanation / Message to Bank" className="!text-gray-100 text-xs uppercase tracking-widest" />
                                                 <textarea
                                                     id="explanation"
-                                                    className="w-full bg-black border border-gray-800 rounded-[30px] text-white p-4 focus:border-[#FF007F] focus:ring-0 transition-all min-h-[150px] text-sm"
+                                                    className="w-full bg-black border border-gray-800 rounded-[30px]  text-white p-4 focus:border-[#FF007F] focus:ring-0 transition-all min-h-[150px] text-sm"
                                                     placeholder="Describe what the supporter purchased and any interaction you had with them..."
                                                     value={data.explanation}
                                                     onChange={(e) => setData('explanation', e.target.value)}
@@ -221,7 +221,7 @@ export default function DisputeShow({ auth, dispute }) {
 
                                         <div className="pt-6 border-t border-gray-800 flex justify-end">
                                             <PrimaryButton 
-                                                className="bg-[#FF007F] hover:bg-[#d83a7c] px-8 py-4 rounded-[30px] text-sm font-bold uppercase tracking-widest"
+                                                className="bg-[#FF007F] hover:bg-[#d83a7c] px-8 py-4 rounded-[30px]  text-sm font-bold uppercase tracking-widest"
                                                 disabled={processing}
                                             >
                                                 {processing ? 'Submitting...' : 'Submit to Stripe'}

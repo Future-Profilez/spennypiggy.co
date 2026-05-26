@@ -274,7 +274,7 @@ export default function Transactions(props) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-green-100 rounded-[25px] md:rounded-[30px] p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-green-100 rounded-[25px] md:rounded-[30px]  p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Received</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.received).length > 0 ? (
@@ -288,7 +288,7 @@ export default function Transactions(props) {
                   )}
                 </div>
               </div>
-              <div className="bg-blue-100 rounded-[25px] md:rounded-[30px] p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-blue-100 rounded-[25px] md:rounded-[30px]  p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Sent</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.sent).length > 0 ? (
@@ -305,20 +305,20 @@ export default function Transactions(props) {
             </div>
 
             {spend_summary && (
-              <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-black text-sm font-black uppercase tracking-widest mb-4">Your Spend (Security Limits)</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
                     <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 1 hour</p>
                     <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_1h)}</p>
                     <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_1h)}</p>
                   </div>
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
                     <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 24 hours</p>
                     <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_24h)}</p>
                     <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_24h)}</p>
                   </div>
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
                     <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 7 days</p>
                     <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_7d)}</p>
                     <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_7d)}</p>
@@ -328,7 +328,7 @@ export default function Transactions(props) {
             )}
             
             {auth?.user?.role === 1 && (
-              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px] bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px]  bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
                   <FaTwitter size={20} className="text-black" />
                   <span className="font-black text-black text-sm uppercase tracking-widest">Creator Feature: Announce on X</span>
@@ -395,7 +395,7 @@ export default function Transactions(props) {
               onClose={() => setSupportModalState({ show: false, event: null, type: 'contact' })}
             />
 
-            <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
                 <input
                   value={query}
@@ -448,7 +448,7 @@ export default function Transactions(props) {
               const avatar = e.category === 'sent' ? (e?.creator?.avatar || '') : (e?.gifter?.avatar || '');
               return (
                 <FadeIn key={`tx-${i}`}>
-                  <div className="rounded-[25px] md:rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 md:px-6 md:py-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+                  <div className="rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 md:px-6 md:py-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-4 w-full md:w-auto">
                         <div className="flex-1 min-w-0">
@@ -605,7 +605,7 @@ export default function Transactions(props) {
                                 ) : null}
                               </div>
                               {e?.task?.reward_note ? (
-                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">Note: {e.task.reward_note}</p>
+                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">Note: {e.task.reward_note}</p>
                               ) : null}
                             </div>
                           )}

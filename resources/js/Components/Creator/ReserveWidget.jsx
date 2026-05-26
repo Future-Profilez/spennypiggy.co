@@ -25,7 +25,7 @@ export default function ReserveWidget({ className = '' }) {
     if (!data || data.total_held <= 0) return null;
 
     return (
-        <div className={`bg-white rounded-[30px] shadow p-6 border-2 border-yellow-100 ${className}`}>
+        <div className={`bg-white rounded-[30px]  shadow p-6 border-2 border-yellow-100 ${className}`}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="bg-yellow-100 p-3 rounded-full text-yellow-600">
@@ -46,7 +46,7 @@ export default function ReserveWidget({ className = '' }) {
                 </button>
             </div>
 
-            <div className="mt-5 p-4 bg-yellow-50/50 rounded-[30px]">
+            <div className="mt-5 p-4 bg-yellow-50/50 rounded-[30px] ">
                 <p className="text-sm text-gray-700 mb-2 leading-relaxed">
                     Funds are typically held for up to 30 days to cover potential disputes, after which they are automatically released to your balance.
                 </p> 

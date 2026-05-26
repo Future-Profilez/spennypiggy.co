@@ -371,7 +371,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                         
                         {/* Global Supporters List below the grid */}
                         {piggyPots.length > 0 && (
-                            <div className="mt-12 bg-white border-[3px] border-black rounded-[30px] p-6 md:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mt-12 bg-white border-[3px] border-black rounded-[30px]  p-6 md:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                                 <h3 className="font-GillSans uppercase text-2xl mb-6">Recent Contributions</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">

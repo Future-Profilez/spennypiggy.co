@@ -249,7 +249,7 @@ export default function Index({
                 </h2>
                 <div className="max-w-4xl mx-auto space-y-8">
                     {orders && orders.length > 0 && (
-                        <div className="shadow-layout  !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout  !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
                             <div className="py-4 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-white">
                                     Active Orders (Action Required)
@@ -364,7 +364,7 @@ export default function Index({
 
                     {/* Purchased Tasks */}
                     {purchased_tasks && purchased_tasks.length > 0 ? (
-                        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[30px]  overflow-hidden">
+                        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[30px]   overflow-hidden">
                             <div className="p-4 bg-blue-100 flex !border-b-2 !border-black items-center justify-between">
                                 <h3 className="font-bold text-xl uppercase tracking-tight">
                                     Tasks I've Purchased
@@ -452,7 +452,7 @@ export default function Index({
                                                         "task.order",
                                                         purchase.uuid,
                                                     )}
-                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-[30px]  font-bold hover:bg-gray-100 uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,8)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-[30px]   font-bold hover:bg-gray-100 uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,8)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                                 >
                                                     View Details
                                                 </Link>
@@ -475,7 +475,7 @@ export default function Index({
                     )}
 
                     {auth.user.role === 1 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
                             <div className="py-3 px-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     My Task Definitions
@@ -700,7 +700,7 @@ export default function Index({
 
                     {/* Completed Orders / Sales History */}
                     {completed_orders && completed_orders.length > 0 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
                             <div className="py-3 px-4 bg-green-100 flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     Sales History

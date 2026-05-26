@@ -150,7 +150,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
             modalclass="pinkmodal"
             classes="hidden"
         >
-            <div className="addCartModalHead rounded-[30px]   relative ">
+            <div className="addCartModalHead rounded-[30px]    relative ">
                 <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-10 px-3 text-center">
                     {" "}
                     Add to Cart{" "}

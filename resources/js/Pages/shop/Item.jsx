@@ -245,12 +245,12 @@ export default function ShopDetailItem(props) {
 
                                 <div className="w-full relative">
                                     <img
-                                        className="w-full max-h-[400px] object-cover rounded-[30px] "
+                                        className="w-full max-h-[400px] object-cover rounded-[30px]  "
                                         alt="image of a girl posing"
                                         src={shop.perma_link}
                                     />
                                     {shop.ai_generated == 1 ? (
-                                        <div className="absolute bottom-2 left-2 z-10 bg-black shadow-sm rounded-[30px]  px-2 py-1 text-[8px] text-white">
+                                        <div className="absolute bottom-2 left-2 z-10 bg-black shadow-sm rounded-[30px]   px-2 py-1 text-[8px] text-white">
                                             MADE WITH AI{" "}
                                         </div>
                                     ) : (
@@ -294,7 +294,7 @@ export default function ShopDetailItem(props) {
                                 {shop &&
                                 shop.is_member == 0 &&
                                 shop.special_member_price ? (
-                                    <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[30px]  p-3 ">
+                                    <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[30px]   p-3 ">
                                         <div className="discount-tag w-[50px] h-[50px] mr-2 flex items-center justify-center">
                                             <Percent size={32} className="text-[#FF007F]" />
                                         </div>
@@ -340,7 +340,7 @@ export default function ShopDetailItem(props) {
                                             <a
                                                 href={`https://twitter.com/intent/tweet?url=${url}`}
                                                 target="_blank"
-                                                className=" break-words text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/twitter"
+                                                className=" break-words text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/twitter"
                                                 aria-label="Twitter"
                                                 onMouseEnter={() => twitterRef.current?.startAnimation()}
                                             >
@@ -355,7 +355,7 @@ export default function ShopDetailItem(props) {
                                         <li>
                                             <div
                                                 onClick={instashare}
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/insta"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/insta"
                                                 aria-label="Instagram"
                                                 onMouseEnter={() => instaRef.current?.startAnimation()}
                                             >
@@ -369,7 +369,7 @@ export default function ShopDetailItem(props) {
 
                                         <li>
                                             <div
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/fb"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/fb"
                                                 aria-label="Facebook"
                                                 onClick={fbShare}
                                                 onMouseEnter={() => fbRef.current?.startAnimation()}
@@ -384,7 +384,7 @@ export default function ShopDetailItem(props) {
 
                                         <li>
                                             <div
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                                 aria-label="RSS"
                                                 onClick={rssShare}
                                             >

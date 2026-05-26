@@ -38,7 +38,7 @@ export default function PiggyPotsGrid({
                                     : 'bg-gray-200 text-gray-800';
 
                         return (
-                            <div key={pot.id} onClick={() => setActivePiggyPot(pot)} className={`cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-[30px]"} transition-all p-4 flex flex-col relative group`}>
+                            <div key={pot.id} onClick={() => setActivePiggyPot(pot)} className={`cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-[30px] "} transition-all p-4 flex flex-col relative group`}>
                                 <div className="mb-3 rounded-[20px] overflow-hidden border-2 border-black h-[170px] flex-shrink-0 relative">
                                     <div className="absolute top-3 left-3 z-10">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${statusBadgeClass}`}>
@@ -98,7 +98,7 @@ export default function PiggyPotsGrid({
 
         if (IsloggedIn) {
             return (
-                <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                     <div className="text-4xl mb-3">🐷</div>
                     <h3 className="font-gulfs text-2xl uppercase mb-2">
                         No Active Piggy Pots

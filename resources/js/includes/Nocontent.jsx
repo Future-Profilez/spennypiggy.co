@@ -26,7 +26,7 @@ export default function Nocontent({
   const cardClasses = ''
 
   return (
-    <div className={`bg-white rounded-[30px] !p-12 overflow-hidden shadow-[6px_6px_0px_rgba(0,0,0,0.9)] border-2 border-black w-full flex justify-center ${mode === "card" ? "p-4" : ""} ${classes}`}>
+    <div className={`bg-white rounded-[30px]  !p-12 overflow-hidden shadow-[6px_6px_0px_rgba(0,0,0,0.9)] border-2 border-black w-full flex justify-center ${mode === "card" ? "p-4" : ""} ${classes}`}>
         <div className={`${cardClasses} flex flex-col items-center text-center max-w-lg w-full`}>
             {!hideImage && (
                 <div className="mb-6">

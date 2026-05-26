@@ -95,7 +95,7 @@ export default function TwoFactorSetup({ auth }) {
                         </Link>
                     </div>
 
-                    <div className="bg-white rounded-[30px] p-4 ">
+                    <div className="bg-white rounded-[30px]  p-4 ">
                         <h1 className="text-3xl font-gulfs mb-6 text-center uppercase">Multi-Step Verification</h1>
                         
                         {isTFA == 1 && backupCodes.length === 0 ? (
@@ -117,7 +117,7 @@ export default function TwoFactorSetup({ auth }) {
                             <div>
                                 {backupCodes.length > 0 ? (
                                     <div className="max-w-xl mx-auto">
-                                        <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-[30px] mb-8">
+                                        <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-[30px]  mb-8">
                                             <h2 className="font-bold text-xl mb-3 text-yellow-800">Setup Complete! Save your Backup Codes</h2>
                                             <p className="text-gray-700 mb-4">
                                                 Please save these backup codes in a secure place. If you lose access to your device, you can use these codes to log in. 
@@ -153,7 +153,7 @@ export default function TwoFactorSetup({ auth }) {
 
                                         {step === 1 && (
                                             <div className="space-y-6">
-                                                <div className="bg-gray-50 p-6 rounded-[30px] border border-gray-100">
+                                                <div className="bg-gray-50 p-6 rounded-[30px]  border border-gray-100">
                                                     <h3 className="font-bold text-lg mb-4">Setup Instructions:</h3>
                                                     <ol className="list-decimal pl-5 space-y-3 text-gray-700">
                                                         <li>Download an Authenticator app (like Google Authenticator or Authy) on your mobile device.</li>

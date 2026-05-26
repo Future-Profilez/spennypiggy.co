@@ -252,7 +252,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
             {IsloggedIn ? <button onClick={removeVideo} className='!z-2 !py-2 !px-4 rounded-xl bg-red-600 remove-story text-sm text-white'>Remove</button> : ''}
 
             <div
-              className='isintro relative border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] cursor-pointer overflow-hidden bg-[#f3f4f6]'
+              className='isintro relative border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px]  cursor-pointer overflow-hidden bg-[#f3f4f6]'
               onClick={() => setClose(true)}
             >
               {!posterLoaded && (
@@ -363,7 +363,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
         { IsloggedIn ?
               <Popup modalclass="pinkmodal sendSurprize-modal shadow-[4px_4px_0px_0px_#FF007F]ink" space="6" size="md" action={close} classes={`${classes} w-full`}
                 text={text ? text :
-                  <div className='cursor-pointer bg-white border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] p-3 py-4 flex items-center justify-content-center' >
+                  <div className='cursor-pointer bg-white border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px]  p-3 py-4 flex items-center justify-content-center' >
                     <div className='py-6'>
                         <div className='svg-icon mx-auto flex justify-center' >
                           <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-black fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" strokeWidth="1.5" ></path> <path d="M8 12H16" strokeWidth="1.5"></path> <path d="M12 16V8" strokeWidth="1.5"></path> </svg>

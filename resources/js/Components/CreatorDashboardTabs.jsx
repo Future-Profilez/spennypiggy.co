@@ -34,7 +34,7 @@ export default function CreatorDashboardTabs() {
                         <Link
                             key={index}
                             href={tab.route}
-                            className={`relative overflow-hidden rounded-[30px] px-5 py-4 border transition-all duration-300 min-w-[210px] group ${active ? `bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"}`}
+                            className={`relative overflow-hidden rounded-[30px]  px-5 py-4 border transition-all duration-300 min-w-[210px] group ${active ? `bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"}`}
                         >
                             <div className="flex items-center gap-3 relative z-10">
                                 <div

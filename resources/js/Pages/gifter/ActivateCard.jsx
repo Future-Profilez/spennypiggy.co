@@ -48,15 +48,15 @@ export default function ActivateCard() {
     return (
         <>
             <div className="">
-                <div className="mb-6 mx-auto !bg-white rounded-[20px] md:rounded-[30px] border-2 border-black shadow-[5px_5px_0px_rgba(0,0,0,0.9)] ">
+                <div className="mb-6 mx-auto !bg-white rounded-[20px] md:rounded-[30px]  border-2 border-black shadow-[5px_5px_0px_rgba(0,0,0,0.9)] ">
                     {needsVerification ? (
-                        <div className=" rounded-[30px]  p-3">
+                        <div className=" rounded-[30px]   p-3">
                             <div className="stripNote p-3 p-md-4">
                                 <h4 className="text-[30px] font-GillSans text-black text-center uppercase mb-3">
                                    {isRejected ? 'Retry Card Verification' : 'Card Verification' }
                                 </h4>
                                 {isRejected ? (
-                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-red-50 border-2 border-red-200 rounded-[30px]">
+                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-red-50 border-2 border-red-200 rounded-[30px] ">
                                         <strong className="text-red-600 text-lg flex items-center justify-center gap-2 mb-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -75,7 +75,7 @@ export default function ActivateCard() {
                                 )}
 
                                 {isFailed && !isRejected ? (
-                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-orange-50 border-2 border-orange-200 rounded-[30px]">
+                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-orange-50 border-2 border-orange-200 rounded-[30px] ">
                                         <strong className="text-orange-600 text-lg flex items-center justify-center gap-2 mb-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -126,7 +126,7 @@ export default function ActivateCard() {
                     )}
 
                     {isPending ? (
-                        <div className=" rounded-[30px]  p-3">
+                        <div className=" rounded-[30px]   p-3">
                             <div className="stripNote p-3 p-md-4">
                                 <h4 className="text-[25px] font-GillSans text-yellow-600 text-center uppercase mb-3">
                                     Verification Pending

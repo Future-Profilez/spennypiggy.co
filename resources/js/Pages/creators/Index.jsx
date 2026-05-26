@@ -62,9 +62,9 @@ export default function Index() {
                       ].map((item, i) => {
                         const [title, desc] = item.split("—");
                         return (
-                          <div key={i} className="bg-white p-4 md:p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
+                          <div key={i} className="bg-white p-4 md:p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
                             <div className="flex gap-2 md:!gap-4">
-                              <div className="bg-yellow-300 text-black p-2 rounded-[30px] h-fit shrink-0 border-[3px] border-black">
+                              <div className="bg-yellow-300 text-black p-2 rounded-[30px]  h-fit shrink-0 border-[3px] border-black">
                                 <Check size={20} strokeWidth={3} />
                               </div>
                               <div>
@@ -78,7 +78,7 @@ export default function Index() {
                     </div>
                     
                     {/* Founder Bonuses Block embedded in grid */}
-                    <div className="bg-[#fdfbf7] text-black p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black relative overflow-hidden flex flex-col justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="bg-[#fdfbf7] text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden flex flex-col justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                       <div className="relative z-1">
                           <h2 className="text-2xl sm:text-4xl lg:text-4xl  font-gulfs uppercase mb-6 leading-none">
                             Founder Bonuses <br className='hidden lg:visible'/> for Early Creators
@@ -118,7 +118,7 @@ export default function Index() {
                   </div>
 
                   {/* Toolkit */}
-                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px] shadow-[4px_4px_0px_0px_#FF007F]l md:border border-gray-100">
+                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_#FF007F]l md:border border-gray-100">
                     <h2 className="text-2xl md:text-3xl font-gulfs uppercase mb-8 text-black">
                       Your Full <br/> Monetisation Toolkit
                     </h2>
@@ -164,7 +164,7 @@ export default function Index() {
                             "Sends monthly reminders to creators",
                             "Keeps transaction records Stripe expects"
                           ].map((item, i) => (
-                            <div key={i} className="bg-[#fdfbf7] p-4 md:p-6 rounded-[25px] md:rounded-[30px] text-center flex flex-col items-center justify-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div key={i} className="bg-[#fdfbf7] p-4 md:p-6 rounded-[25px] md:rounded-[30px]  text-center flex flex-col items-center justify-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <p className="font-bold text-gray-80 text-lg">{item}</p>
                             </div>
                           ))}
@@ -173,7 +173,7 @@ export default function Index() {
                     </div>
 
                     {/* Disputes */}
-                    <div className="bg-black text-white rounded-[25px] md:rounded-[30px] p-6 md:p-10 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                    <div className="bg-black text-white rounded-[25px] md:rounded-[30px]  p-6 md:p-10 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
                       
                       <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
                           <div>
@@ -198,7 +198,7 @@ export default function Index() {
                           </div>
 
                           {/* Why Creators Lose Money on Other Apps */}
-                          <div className="bg-white text-black p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black">
+                          <div className="bg-white text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black">
                             <h3 className="text-[16px] md:text-xl font-bold uppercase mb-6 text-red-400 flex items-center gap-2">
                                 <AlertTriangle  /> Why Creators Lose Money on Other Payment Apps
                             </h3>
@@ -214,7 +214,7 @@ export default function Index() {
                                   </li>
                                 ))}
                             </ul>
-                            <p className="text-black font-bold text-sm md:text-lg text-center bg-white py-3 px-4 rounded-[30px] ">
+                            <p className="text-black font-bold text-sm md:text-lg text-center bg-white py-3 px-4 rounded-[30px]  ">
                                 Spenny Piggy exists to remove that risk.
                             </p>
                           </div>

@@ -38,7 +38,7 @@ export default function ReferralBanner({ onDismiss }) {
     if (!isVisible) return null;
 
     return (
-        <div className="my-4 block w-full relative overflow-hidden bg-gradient-to-r from-pink-500 to-purple-600 rounded-[30px] p-6 text-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+        <div className="my-4 block w-full relative overflow-hidden bg-gradient-to-r from-pink-500 to-purple-600 rounded-[30px]  p-6 text-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
             <button
                 onClick={handleDismiss}
                 className="absolute text-[24px] font-bold z-10 top-2 right-4 py-[3px] px-[10px] rounded-full hover:bg-white/20 transition-all"
