@@ -64,6 +64,7 @@ $displayAmount = $supporterPaid > 0 ? $supporterPaid : $creatorAmount;
             @if($task->type === 'instant' && $deliverableUrl)
             <tr>
                 <td style="padding: 0 0 20px 0; text-align: center;">
+                    @include('email.digital-content-notice')
                     <a href="{{ $deliverableUrl }}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold;">
                         📥 Download Content
                     </a>

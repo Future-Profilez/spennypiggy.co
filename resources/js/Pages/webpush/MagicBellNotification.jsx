@@ -146,7 +146,7 @@ const CustomNotificationItem = ({ notification }) => {
 };
 
 const BrowserNotificationBanner = ({ onEnable, onHide }) => (
-  <div className="mx-4 mb-4 p-4 bg-white border border-pink-100 rounded-2xl flex items-center justify-between gap-3 shadow-[0_4px_12px_rgba(249,79,150,0.08)]">
+  <div className="mx-4 mb-4 p-4 bg-white border border-pink-100 rounded-[30px] flex items-center justify-between gap-3 shadow-[0_4px_12px_rgba(249,79,150,0.08)]">
     <div className="flex-1">
       <p className="text-[12px] text-[#FF007F] leading-tight font-bold font-poppins">
         By enabling browser notifications, you'll stay up to date even better.

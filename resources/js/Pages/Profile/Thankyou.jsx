@@ -3,7 +3,7 @@ import { Link, Head, usePage } from '@inertiajs/react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/siteicon.png";
 import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'react-icons/fa';
-import { useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 
@@ -14,15 +14,29 @@ export default function Thankyou(props) {
   const { errorAlert, successAlert } = useAlerts();
   console.log("Thank you page props", amount);
 
+  const normalizedWishContent = useMemo(() => {
+    if (!wish_content) return null;
+    if (typeof wish_content === 'string') {
+      try {
+        const parsed = JSON.parse(wish_content);
+        return parsed;
+      } catch {
+        return { url: wish_content, name: 'Exclusive Reward', type: null };
+      }
+    }
+    if (Array.isArray(wish_content)) return null;
+    return wish_content;
+  }, [wish_content]);
+
   const getTitle = () => {
     if (type === 'monthly_subscription') return <><span>Subscription</span> <span className="text-[#FF007F]">Successful!</span></>;
-    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return <><span>Payment</span> <span className="text-[#FF007F]">Successful!</span></>;
+    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop' || type === 'piggy_pot') return <><span>Payment</span> <span className="text-[#FF007F]">Successful!</span></>;
     return <><span>Your gift</span> <span className="text-[#FF007F]">has been sent.</span></>;
   };
 
   const getSubTitle = () => {
     if (type === 'monthly_subscription') return 'Welcome to the Spenny Piggy platform.';
-    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop') return 'Thank you for your purchase.';
+    if (type === 'wish' || type === 'support' || type === 'bill' || type === 'membership' || type === 'task' || type === 'shop' || type === 'piggy_pot') return 'Thank you for your purchase.';
     return 'Check your email for a receipt.';
   };
 
@@ -34,6 +48,7 @@ export default function Thankyou(props) {
       case 'task': return <FaBolt className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
       case 'shop': return <FaShoppingBag className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
       case 'support': return <FaHeart className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
+      case 'piggy_pot': return <FaGift className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
       default: return <FaGift className="text-[40px] text-[#FF007F] mb-3 mx-auto" />;
     }
   }
@@ -59,6 +74,9 @@ export default function Thankyou(props) {
         return 'We will inform you when the creator updates the shop order.';
       case 'support':
         return 'You have unlocked access to supporters-only posts.';
+      case 'piggy_pot':
+        if (normalizedWishContent) return 'You have unlocked access to an exclusive reward.';
+        return 'Thank you for supporting this creator.';
       default:
         return null;
     }
@@ -74,6 +92,7 @@ export default function Thankyou(props) {
       case 'task': return { url: `/${owner.username}/tasks`, text: 'Explore more tasks' };
       case 'shop': return { url: `/${owner.username}/shop`, text: 'Explore more checkout' };
       case 'bill': return { url: `/${owner.username}/bills`, text: 'Explore more bills' };
+      case 'piggy_pot': return { url: `/${owner.username}/piggy-pots`, text: 'Explore more piggy pots' };
       default: return { url: `/${owner.username}`, text: 'Explore more items' };
     }
   };
@@ -129,6 +148,9 @@ export default function Thankyou(props) {
         rewardLink = `/task/dashboard?tab=purchases`;
         rewardText = "Go to Order Details";
       }
+    } else if (type === 'piggy_pot') {
+      rewardLink = `/${owner?.username}/piggy-pots`;
+      rewardText = "Explore Piggy Pots";
     }
 
     const [reply, setReply] = useState('');
@@ -173,31 +195,31 @@ export default function Thankyou(props) {
           )}
         </div>
 
-        {wish_content && (type === 'wish' || type === 'task' || type === 'shop') && (
+        {normalizedWishContent && (type === 'wish' || type === 'task' || type === 'shop' || type === 'piggy_pot') && (
           <div className="mt-4  shadow-sm">
             <h4 className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
-               <FaCheckCircle /> Exclusive Content Unlocked
+               <FaCheckCircle /> Exclusive Reward Unlocked
             </h4>
             
-            {String(wish_content.type || '').includes('video') ? (
+            {String(normalizedWishContent.type || '').includes('video') ? (
                <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border border-gray-200 bg-black">
-                   <source src={wish_content.url} type={wish_content.type} />
+                   <source src={normalizedWishContent.url} type={normalizedWishContent.type} />
                    Your browser does not support the video tag.
                </video>
-            ) : String(wish_content.type || '').includes('audio') ? (
+            ) : String(normalizedWishContent.type || '').includes('audio') ? (
                <audio controls controlsList="nodownload" className="w-full mt-2">
-                   <source src={wish_content.url} type={wish_content.type} />
+                   <source src={normalizedWishContent.url} type={normalizedWishContent.type} />
                    Your browser does not support the audio element.
                </audio>
             ) : (
-               <a href={wish_content.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 hover:opacity-90 transition-opacity">
-                   <img src={wish_content.url} alt={wish_content.name || "Exclusive Content"} className="w-full max-h-[250px] object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="p-4 block text-center text-sm font-bold text-gray-500">View Content</span>'; }} />
+               <a href={normalizedWishContent.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 hover:opacity-90 transition-opacity">
+                   <img src={normalizedWishContent.url} alt={normalizedWishContent.name || "Exclusive Content"} className="w-full max-h-[250px] object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="p-4 block text-center text-sm font-bold text-gray-500">View Content</span>'; }} />
                </a>
             )}
             
-            {wish_content.name && (
+            {normalizedWishContent.name && (
                 <div className="mt-2 text-center text-xs text-gray-500 font-bold truncate px-2">
-                    {wish_content.name}
+                    {normalizedWishContent.name}
                 </div>
             )}
           </div>
@@ -235,7 +257,7 @@ export default function Thankyou(props) {
           </div>
         )}
 
-        {rewardLink && !wish_content && (
+        {rewardLink && !normalizedWishContent && (
           <div className="mt-3">
             <Link href={rewardLink} className="text-[#FF007F] font-bold hover:underline text-[13px] uppercase flex items-center gap-1">
               {rewardText} <FaCheckCircle className="text-[#FF007F]" />

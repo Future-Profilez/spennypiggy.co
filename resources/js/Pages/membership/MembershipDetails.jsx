@@ -61,11 +61,11 @@ export default function MembershipDetails(props) {
                                             {data.membership?.title}
                                         </h1>
 
-                                        <span className="px-4 py-2 rounded-2xl bg-pink-500/10 border border-pink-500/20 text-pink-300 text-sm font-bold capitalize">
+                                        <span className="px-4 py-2 rounded-[30px] bg-pink-500/10 border border-pink-500/20 text-pink-300 text-sm font-bold capitalize">
                                             {data.membership?.type || "monthly"}
                                         </span>
 
-                                        <span className="px-4 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm font-bold">
+                                        <span className="px-4 py-2 rounded-[30px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm font-bold">
                                             Active Membership
                                         </span>
                                     </div>
@@ -81,7 +81,7 @@ export default function MembershipDetails(props) {
                                 href="/membership-dashboard"
                                 className="
                                     inline-flex items-center gap-2
-                                    px-5 py-3 rounded-2xl
+                                    px-5 py-3 rounded-[30px]
                                     bg-white/5 border border-white/10
                                     text-white hover:bg-white/10
                                     transition-all duration-300

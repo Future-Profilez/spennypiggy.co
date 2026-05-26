@@ -1865,32 +1865,34 @@ class LeaderBoardController extends Controller
         $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
-        $pay = TipGoalsPayment::whereBetween('created_at', [$start, $end])
+        $pay = \App\Models\PiggyPotContribution::whereBetween('created_at', [$start, $end])
             ->where('creator_id', $user->id)
             ->where('status', 'paid')
-            ->whereNotNull('user_id')->with('user')->groupBy('user_id')
-            ->selectRaw('user_id,sum(amount) as total_amount')
+            ->whereNotNull('piggy_pot_id')->with('piggyPot')->groupBy('piggy_pot_id')
+            ->selectRaw('piggy_pot_id,sum(amount) as total_amount')
             ->orderBy('total_amount', 'DESC')->take(5)->get();
 
         $resp = [];
 
         foreach ($pay as $p) {
-            $itemIds = TipGoalsPayment::where('user_id', $p->user_id)
+            if (!$p->piggyPot) continue;
+            
+            $itemIds = \App\Models\PiggyPotContribution::where('piggy_pot_id', $p->piggy_pot_id)
                 ->whereBetween('created_at', [$start, $end])
                 ->where('creator_id', $user->id)
                 ->where('status', 'paid')
                 ->pluck('id')->toArray();
 
-            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', TipGoalsPayment::class)
+            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', \App\Models\PiggyPotContribution::class)
                 ->whereIn('source_id', $itemIds)
                 ->pluck('status')->toArray();
 
             $resp[] = [
-                'uuid' => $p->user->uuid,
-                'name' => $p->user->name,
-                'username' => $p->user->username,
+                'uuid' => $p->piggyPot->uuid,
+                'name' => $p->piggyPot->title,
+                'username' => '',
                 'amount' => $p->total_amount,
-                'media' => $p->user->avatar_url,
+                'media' => $p->piggyPot->cover_media,
                 'has_hold' => in_array('review_hold', $ftStatuses),
                 'has_dispute' => in_array('disputed', $ftStatuses),
             ];

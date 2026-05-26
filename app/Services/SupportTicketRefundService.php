@@ -1,0 +1,117 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\BillPayment;
+use App\Models\MembershipPayment;
+use App\Models\PiggyPotContribution;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentItems;
+use App\Models\SupportTicket;
+use App\Models\TaskPurchase;
+use App\Models\TipGoalsPayment;
+use App\Models\User;
+use Stripe\StripeClient;
+
+class SupportTicketRefundService
+{
+    public function initiateRefund(SupportTicket $ticket, User $creator, string $refundedBy = 'creator'): void
+    {
+        $connectedAccountId = $creator->account_id ?? null;
+        $paymentIntentId = $ticket->stripe_payment_intent_id;
+        $sessionId = $ticket->stripe_session_id;
+
+        if (!$paymentIntentId || !$sessionId) {
+            [$paymentIntentId, $sessionId, $connectedAccountId] = $this->resolveStripeIdentifiers($ticket, $connectedAccountId);
+        }
+
+        if (!$paymentIntentId) {
+            throw new \RuntimeException('No payment intent found for this ticket.');
+        }
+
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+        $options = [];
+        if ($connectedAccountId) {
+            $options['stripe_account'] = $connectedAccountId;
+        }
+
+        \Stripe\Refund::create([
+            'payment_intent' => $paymentIntentId,
+            'reason' => 'requested_by_customer',
+            'metadata' => [
+                'support_ticket_uuid' => $ticket->uuid,
+                'refunded_by' => $refundedBy,
+            ],
+        ], $options);
+
+        $ticket->stripe_payment_intent_id = $paymentIntentId;
+        $ticket->stripe_session_id = $sessionId ?: $ticket->stripe_session_id;
+        $ticket->save();
+    }
+
+    private function resolveStripeIdentifiers(SupportTicket $ticket, ?string $connectedAccountId): array
+    {
+        $paymentIntentId = null;
+        $sessionId = null;
+
+        switch ($ticket->source) {
+            case 'StripePaymentItems':
+                $item = StripePaymentItems::with(['payment', 'wish.user'])->findOrFail($ticket->source_id);
+                $paymentIntentId = $item->payment?->stripe_payment_intent_id;
+                $sessionId = $item->payment?->session_id;
+                $connectedAccountId = $item->wish?->user?->account_id ?? $connectedAccountId;
+                break;
+            case 'TipGoalsPayment':
+                $p = TipGoalsPayment::with('creator')->findOrFail($ticket->source_id);
+                $sessionId = $p->session_id;
+                $connectedAccountId = $p->creator?->account_id ?? $connectedAccountId;
+                break;
+            case 'PiggyPotContribution':
+                $p = PiggyPotContribution::with('creator')->findOrFail($ticket->source_id);
+                $paymentIntentId = $p->payment_intent_id;
+                $sessionId = $p->session_id;
+                $connectedAccountId = $p->creator?->account_id ?? $connectedAccountId;
+                break;
+            case 'BillPayment':
+                $p = BillPayment::with('bill.user')->findOrFail($ticket->source_id);
+                $paymentIntentId = $p->stripe_id;
+                $sessionId = $p->session_id;
+                $connectedAccountId = $p->bill?->user?->account_id ?? $connectedAccountId;
+                break;
+            case 'MembershipPayment':
+                $p = MembershipPayment::with('membership.user')->findOrFail($ticket->source_id);
+                $paymentIntentId = $p->stripe_id;
+                $sessionId = $p->session_id;
+                $connectedAccountId = $p->membership?->user?->account_id ?? $connectedAccountId;
+                break;
+            case 'ShopPayment':
+                $p = ShopPayment::with(['shop.user'])->where('uuid', $ticket->source_id)->firstOrFail();
+                $sessionId = $p->session_id;
+                $connectedAccountId = $p->shop?->user?->account_id ?? $connectedAccountId;
+                $deliverable = \App\Models\Deliverable::where('session_id', $p->session_id)->first();
+                $paymentIntentId = $deliverable?->payment_intent_id;
+                break;
+            case 'TaskPurchase':
+                $p = TaskPurchase::with(['creator'])->findOrFail($ticket->source_id);
+                $paymentIntentId = $p->payment_intent_id;
+                $sessionId = $p->stripe_session_id;
+                $connectedAccountId = $p->creator?->account_id ?? $connectedAccountId;
+                break;
+            default:
+                throw new \RuntimeException('Unsupported ticket source for refund: ' . (string) $ticket->source);
+        }
+
+        if (!$paymentIntentId && $sessionId) {
+            $client = new StripeClient(config('services.stripe.secret'));
+            $options = [];
+            if ($connectedAccountId) {
+                $options['stripe_account'] = $connectedAccountId;
+            }
+            $session = $client->checkout->sessions->retrieve($sessionId, [], $options);
+            $paymentIntentId = $session?->payment_intent;
+        }
+
+        return [$paymentIntentId, $sessionId, $connectedAccountId];
+    }
+}
+

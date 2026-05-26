@@ -60,6 +60,9 @@ class SyncFinancialTransactions extends Command
         // 8. Sync Orphan Checkouts (Records in StripePaymentDetail that never created items)
         $this->syncOrphanCheckouts($userId);
 
+        // 9. Sync Piggy Pots
+        $this->syncPiggyPots($userId);
+
         $this->info('Sync completed successfully!');
     }
 
@@ -883,6 +886,70 @@ class SyncFinancialTransactions extends Command
                         (float) ($reserve['amount'] ?? 0)
                     );
                 }
+            }
+        });
+    }
+
+    private function syncPiggyPots($userId = null)
+    {
+        $this->info('Syncing Piggy Pots...');
+
+        $query = \App\Models\PiggyPotContribution::query();
+        if ($userId) {
+            $query->where('creator_id', $userId);
+        }
+
+        $query->chunkById(100, function ($payments) {
+            foreach ($payments as $payment) {
+                $currency = strtoupper($payment->currency ?: 'GBP');
+                $creator = User::find($payment->creator_id);
+
+                $amount = (float) ($payment->amount ?? 0);
+                $vat = (float) ($payment->vat_amount ?? 0);
+
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $platformFee = (float) ($breakdown['application_fee'] ?? 0);
+                $stripeFee = (float) ($breakdown['stripe_fee'] ?? 0);
+                $gross = $payment->total_paid && $payment->total_paid > 0
+                    ? (float) $payment->total_paid
+                    : (float) ($breakdown['total_supporter_pays'] ?? 0);
+
+                // Determine status mapping
+                $defaultStatus = match($payment->status) {
+                    'paid', 'succeeded' => 'completed',
+                    'disputed' => 'disputed',
+                    'refunded' => 'refunded',
+                    'review_hold' => 'review_hold',
+                    'failed', 'blocked', 'cancelled' => 'failed',
+                    default => 'pending',
+                };
+
+                $riskData = $this->getPaymentRiskData($payment->session_id, $defaultStatus, $payment->payment_intent_id);
+                $status = (string) ($riskData['status'] ?? $defaultStatus);
+                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at);
+
+                FinancialTransaction::updateOrCreate(
+                    [
+                        'source_type' => \App\Models\PiggyPotContribution::class,
+                        'source_id' => $payment->id,
+                    ],
+                    [
+                        'user_id' => $payment->creator_id,
+                        'supporter_id' => $payment->user_id,
+                        'type' => 'income',
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
+                        'vat_amount' => $vat,
+                        'net_amount' => $amount,
+                        'reserve_amount' => $reserve['amount'],
+                        'reserve_status' => $reserve['status'],
+                        'currency' => $currency,
+                        'status' => $status,
+                        'description' => 'Piggy Pot Contribution',
+                        'transaction_date' => $payment->created_at,
+                    ]
+                );
             }
         });
     }

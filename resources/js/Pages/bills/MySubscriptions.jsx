@@ -72,12 +72,12 @@ export default function MySubscriptions(props) {
         <button
             onClick={() => setSubscriptionTab("bills")}
             className={`
-            px-5 py-3 rounded-2xl
+            px-5 py-3 rounded-[30px]
             text-sm font-bold transition-all duration-300
             ${
                 subscriptionTab === "bills"
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
-                    : "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
+                    ? "bg-blue-300 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black"
+                    : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
             }
         `}
         >
@@ -87,12 +87,12 @@ export default function MySubscriptions(props) {
         <button
             onClick={() => setSubscriptionTab("memberships")}
             className={`
-            px-5 py-3 rounded-2xl
+            px-5 py-3 rounded-[30px]
             text-sm font-bold transition-all duration-300
             ${
                 subscriptionTab === "memberships"
-                    ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20"
-                    : "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
+                    ? "bg-yellow-300 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black"
+                    : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
             }
         `}
         >
@@ -129,24 +129,25 @@ export default function MySubscriptions(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                    <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
+                <div className="min-h-screen bg-gray-200">
+                    <div className="containerbox m-auto">
+                        <div className="py-8 md:py-16 w-full m-auto">
                         <CreatorDashboardTabs />
 
                         {/* HEADER */}
 
                         <div className="mb-8">
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/20">
+                                <div className="w-16 h-16 bg-yellow-300 flex items-center justify-center text-3xl border-[3px] border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     📦
                                 </div>
 
                                 <div>
-                                    <h1 className="text-4xl font-black text-white">
+                                    <h1 className="text-3xl md:text-4xl font-GillSans uppercase text-black">
                                         My Subscriptions
                                     </h1>
 
-                                    <p className="text-slate-400 text-sm mt-1">
+                                    <p className="text-gray-600 text-sm mt-1">
                                         Track memberships and creator
                                         subscriptions
                                     </p>
@@ -157,23 +158,23 @@ export default function MySubscriptions(props) {
                         {/* STATS */}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
-                            <div className="rounded-3xl bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
-                                <p className="text-slate-400 text-sm">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                                <p className="text-gray-600 text-sm">
                                     Active Subscriptions
                                 </p>
 
-                                <h2 className="text-5xl font-black text-white mt-4">
+                                <h2 className="text-4xl md:text-5xl font-black text-black mt-4">
                                     {data?.stats?.total_active_subscriptions ||
                                         0}
                                 </h2>
                             </div>
 
-                            <div className="rounded-3xl bg-emerald-500/10 border border-emerald-500/20 p-6 backdrop-blur-sm">
-                                <p className="text-emerald-300 text-sm">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                                <p className="text-gray-600 font-bold uppercase text-sm">
                                     Monthly Spend
                                 </p>
 
-                                <h2 className="text-5xl font-black text-white mt-4">
+                                <h2 className="text-4xl md:text-5xl font-black text-black mt-4">
                                     £
                                     {Number(
                                         data?.stats?.monthly_spend || 0,
@@ -181,12 +182,12 @@ export default function MySubscriptions(props) {
                                 </h2>
                             </div>
 
-                            <div className="rounded-3xl bg-cyan-500/10 border border-cyan-500/20 p-6 backdrop-blur-sm">
-                                <p className="text-cyan-300 text-sm">
+                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                                <p className="text-gray-600 font-bold uppercase text-sm">
                                     Yearly Spend
                                 </p>
 
-                                <h2 className="text-5xl font-black text-white mt-4">
+                                <h2 className="text-4xl md:text-5xl font-black text-black mt-4">
                                     £
                                     {Number(
                                         data?.stats?.yearly_spend || 0,
@@ -199,12 +200,12 @@ export default function MySubscriptions(props) {
                             <button
                                 onClick={() => setSubscriptionTab("bills")}
                                 className={`
-                                px-5 py-3 rounded-2xl
+                                px-5 py-3 rounded-[30px]
                                 text-sm font-bold transition-all duration-300
                                 ${
                                     subscriptionTab === "bills"
-                                        ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
-                                        : "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
+                                        ? "bg-blue-300 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black"
+                                        : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
                                 }
                             `}
                             >
@@ -216,12 +217,12 @@ export default function MySubscriptions(props) {
                                     setSubscriptionTab("memberships")
                                 }
                                 className={`
-                                    px-5 py-3 rounded-2xl
+                                    px-5 py-3 rounded-[30px]
                                     text-sm font-bold transition-all duration-300
                                     ${
                                         subscriptionTab === "memberships"
-                                            ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20"
-                                            : "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
+                                            ? "bg-yellow-300 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black"
+                                            : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
                                     }
                                 `}
                             >
@@ -231,9 +232,9 @@ export default function MySubscriptions(props) {
 
                         {/* TABLE */}
 
-                        <div className="rounded-3xl bg-white/5 border border-white/10 overflow-hidden backdrop-blur-sm">
-                            <div className="p-6 border-b border-white/10">
-                                <h2 className="text-2xl font-black text-white">
+                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden">
+                            <div className="p-6 border-b-[3px] border-black">
+                                <h2 className="text-xl md:text-2xl font-GillSans uppercase text-black">
                                     {subscriptionTab === "bills"
                                         ? "Bill Subscriptions"
                                         : "Membership Subscriptions"}
@@ -242,34 +243,34 @@ export default function MySubscriptions(props) {
 
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="bg-white/10">
+                                    <thead className="bg-gray-100 border-b-[3px] border-black">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-300">
+                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-gray-700">
                                                 Creator
                                             </th>
 
-                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-300">
+                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-gray-700">
                                                 Plan
                                             </th>
 
-                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-300">
+                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-gray-700">
                                                 Amount
                                             </th>
 
-                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-300">
+                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-gray-700">
                                                 Type
                                             </th>
 
-                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-300">
+                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-gray-700">
                                                 Status
                                             </th>
-                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-300">
+                                            <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-gray-700">
                                                 Action
                                             </th>
                                         </tr>
                                     </thead>
 
-                                    <tbody className="divide-y divide-white/10">
+                                    <tbody className="divide-y-[3px] divide-black">
                                         {(subscriptionTab === "bills"
                                             ? data.bill_subscriptions
                                             : data.membership_subscriptions
@@ -314,7 +315,7 @@ export default function MySubscriptions(props) {
                                                         {/* PLAN */}
 
                                                         <td className="px-6 py-5">
-                                                            <p className="text-white font-semibold">
+                                                            <p className="text-black font-semibold">
                                                                 {plan}
                                                             </p>
                                                         </td>
@@ -432,7 +433,7 @@ export default function MySubscriptions(props) {
                                                                 : "👑"}
                                                         </div>
 
-                                                        <h3 className="text-2xl font-black text-white mb-3">
+                                                        <h3 className="text-xl md:text-2xl font-GillSans uppercase text-black mb-3">
                                                             No{" "}
                                                             {subscriptionTab ===
                                                             "bills"
@@ -441,7 +442,7 @@ export default function MySubscriptions(props) {
                                                             Subscriptions
                                                         </h3>
 
-                                                        <p className="text-slate-400 text-center max-w-md">
+                                                        <p className="text-gray-600 text-center max-w-md">
                                                             You don't have any
                                                             active{" "}
                                                             {subscriptionTab ===
@@ -458,6 +459,7 @@ export default function MySubscriptions(props) {
                                 </table>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
             )}
@@ -495,7 +497,7 @@ export default function MySubscriptions(props) {
 
                             <h2
                                 className="
-                                text-3xl font-black text-white mb-4
+                                text-3xl font-black text-black mb-4
                                 "
                             >
                                 Cancel Subscription?
@@ -503,7 +505,7 @@ export default function MySubscriptions(props) {
 
                             <p
                                 className="
-                                text-slate-400 leading-relaxed
+                                text-gray-600 leading-relaxed
                                 "
                             >
                                 Your subscription will remain active until the
@@ -514,9 +516,9 @@ export default function MySubscriptions(props) {
                                 <button
                                     onClick={() => setCancelModal(false)}
                                     className="
-                                    flex-1 py-3 rounded-2xl
+                                    flex-1 py-3 rounded-[30px]
                                     bg-white/5 border border-white/10
-                                    text-white font-bold
+                                    text-black font-bold
                                     "
                                 >
                                     Keep Subscription
@@ -525,10 +527,10 @@ export default function MySubscriptions(props) {
                                 <button
                                     onClick={confirmCancelSubscription}
                                     className="
-                                    flex-1 py-3 rounded-2xl
+                                    flex-1 py-3 rounded-[30px]
                                     bg-gradient-to-r
                                     from-red-500 to-pink-500
-                                    text-white font-bold
+                                    text-black font-bold
                                     "
                                 >
                                     Confirm Cancel

@@ -5,7 +5,7 @@ import { usePage } from "@inertiajs/react";
 import Nocontent from "@/includes/Nocontent";
 import LoadingScreen from "@/includes/LoadingScreen";
 
-function ProfileProductLists({ profileuser }) {
+function ProfileProductLists({ profileuser, suppressEmptyState = false }) {
     const {
         global_currency,
         auth,
@@ -76,7 +76,7 @@ function ProfileProductLists({ profileuser }) {
                 {memoizedProducts}
             </div>
             {loading && <LoadingScreen />}
-            {hasNoProducts && <Nocontent text="Nothing to see" />}
+            {hasNoProducts && !suppressEmptyState && <Nocontent showdiscover={true}  text="Nothing to see" />}
         </>
     );
 }

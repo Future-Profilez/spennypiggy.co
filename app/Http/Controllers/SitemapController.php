@@ -16,8 +16,6 @@ class SitemapController extends Controller
     {
         $pages = [
             '/',
-            '/register',
-            '/login',
             '/pricing',
             '/features',
             '/about',
@@ -78,19 +76,34 @@ class SitemapController extends Controller
      */
     public function index()
     {
+        $staticLastmod = now();
+        try {
+            $creatorsLastmod = User::where('is_public_profile', 1)
+                ->where('suspended_account', 0)
+                ->max('updated_at') ?? $staticLastmod;
+        } catch (\Exception $e) {
+            $creatorsLastmod = $staticLastmod;
+        }
+
+        try {
+            $wishlistsLastmod = WishItem::where('is_approved', 1)->max('updated_at') ?? $staticLastmod;
+        } catch (\Exception $e) {
+            $wishlistsLastmod = $staticLastmod;
+        }
+
         $content = '<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
     <loc>' . url('/seo/sitemap-static.xml') . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <lastmod>' . $staticLastmod->toW3cString() . '</lastmod>
   </sitemap>
   <sitemap>
     <loc>' . url('/seo/sitemap-creators.xml') . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <lastmod>' . $creatorsLastmod->toW3cString() . '</lastmod>
   </sitemap>
   <sitemap>
     <loc>' . url('/seo/sitemap-wishlists.xml') . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <lastmod>' . $wishlistsLastmod->toW3cString() . '</lastmod>
   </sitemap>
 </sitemapindex>';
 
@@ -113,8 +126,6 @@ class SitemapController extends Controller
             ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
             ['url' => '/how-it-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/terms-and-conditions', 'priority' => '0.5', 'changefreq' => 'monthly'],
-            ['url' => '/register', 'priority' => '0.6', 'changefreq' => 'weekly'],
-            ['url' => '/login', 'priority' => '0.6', 'changefreq' => 'weekly'],
         ];
 
         $content = '<?xml version="1.0" encoding="UTF-8"?>

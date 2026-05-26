@@ -86,6 +86,36 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
         <AuthenticatedLayout auth={auth} user={auth.user}>
             <Head title="Financial Dashboard" />
 
+            {auth?.user?.payout_paused_at ? (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+                    <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4">
+                        <div className="flex items-start gap-3">
+                            <div className="mt-0.5 text-red-600">
+                                <TriangleAlertIcon width={18} height={18} />
+                            </div>
+                            <div className="flex-1">
+                                <div className="text-[11px] font-black uppercase tracking-widest text-red-700">Payouts Paused</div>
+                                <div className="text-sm font-bold text-red-900 mt-1">
+                                    Your payouts are currently on hold.
+                                </div>
+                                {auth?.user?.payout_pause_reason ? (
+                                    <div className="text-xs font-bold text-red-800 mt-1">
+                                        Reason: {auth.user.payout_pause_reason}
+                                    </div>
+                                ) : (
+                                    <div className="text-xs font-bold text-red-800 mt-1">
+                                        Reason: Under review by SpennyPiggy support.
+                                    </div>
+                                )}
+                                <div className="text-xs text-red-700 mt-1">
+                                    Paused at: {new Date(auth.user.payout_paused_at).toLocaleString('en-GB')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             <Modal show={showReserveDetails} onClose={() => setShowReserveDetails(false)} maxWidth="2xl">
                 <div className="bg-white text-gray-900 p-5 md:p-6">
                     <div className="flex items-start justify-between gap-4">
@@ -111,7 +141,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                         ) : (reserves || []).length === 0 ? (
                             <div className="text-gray-500 text-sm font-bold">No held reserves right now.</div>
                         ) : (
-                            <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-gray-50">
+                            <div className="overflow-x-auto rounded-[30px] border border-gray-200 bg-gray-50">
                                 <table className="w-full text-left">
                                     <thead className="sticky top-0 bg-white border-b border-gray-200">
                                         <tr className="text-gray-500 text-[12px] uppercase font-bold tracking-widest">
@@ -498,7 +528,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         <div className="bg-white p-6 rounded-[20px] md:rounded-[30px] border border-gray-200 shadow-sm">
                                             <h3 className="text-gray-900 font-bold text-normal mb-4 flex items-center gap-2"><TriangleAlertIcon size={16} className="text-yellow-600" /> Financial Health Tip</h3>
                                             <div className="flex items-start gap-4">
-                                                <div className="bg-yellow-500/10 p-3 rounded-2xl"><CalculatorIcon size={24} className="text-yellow-600" /></div>
+                                                <div className="bg-yellow-500/10 p-3 rounded-[30px]"><CalculatorIcon size={24} className="text-yellow-600" /></div>
                                                 <div>
                                                     <p className="text-gray-700 text-normal leading-relaxed">{summary.expenses > (summary.gross_income * 0.3) ? "Your expenses are quite high." : "Your profit margins look healthy."}</p>
                                                     <Link href={route('financial.expenses.index')} className="text-[#FF007F] text-[10px] font-bold uppercase mt-2 inline-block hover:underline">Review Expenses</Link>

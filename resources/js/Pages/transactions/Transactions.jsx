@@ -7,6 +7,8 @@ import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
 import { FaTwitter } from 'react-icons/fa';
 import Modal from '@/Components/Modal';
+import Popup from '@/Components/Popup';
+import SupportModal from './SupportModal';
 import { router } from '@inertiajs/react';
 import { ChevronLeft, Calendar, FileText, ExternalLink, Filter } from 'lucide-react';
 
@@ -19,6 +21,7 @@ export default function Transactions(props) {
   const [direction, setDirection] = useState('all'); // all | received | sent
   const [query, setQuery] = useState('');
   const [twitterModal, setTwitterModal] = useState({ show: false, event: null });
+  const [supportModalState, setSupportModalState] = useState({ show: false, event: null, type: 'contact' });
   const [shopAnswerDrafts, setShopAnswerDrafts] = useState({});
   const [submittingShopAnswers, setSubmittingShopAnswers] = useState(new Set());
   const [submittedShopAnswers, setSubmittedShopAnswers] = useState(new Set());
@@ -76,6 +79,7 @@ export default function Transactions(props) {
       case 'gift_membership': return '🎟️';
       case 'gift_bill': return '🧾';
       case 'gift_tip': return '💖';
+      case 'piggy_pot': return '🐷';
       case 'gift_shop': return '🛍️';
       case 'gift_task': return '🧩';
       default: return '✨';
@@ -88,6 +92,7 @@ export default function Transactions(props) {
       case 'gift_membership': return e.category === 'received' ? 'Membership payment' : 'You supported a membership';
       case 'gift_bill': return e.category === 'received' ? 'Bill payment' : 'You supported a bill';
       case 'gift_tip': return e.category === 'received' ? 'Support payment' : 'You sent support';
+      case 'piggy_pot': return e.category === 'received' ? 'Piggy Pot contribution' : 'You contributed to Piggy Pot';
       case 'gift_shop': return e.category === 'received' ? 'Shop order' : 'You purchased from the shop';
       case 'gift_task': return e.category === 'received' ? 'Task purchase' : 'You funded a task';
       default: return 'Transaction';
@@ -108,7 +113,8 @@ export default function Transactions(props) {
       e?.shop?.name || '',
       e?.task?.title || '',
       e?.bill?.name || '',
-      e?.membership?.level || ''
+      e?.membership?.level || '',
+      e?.piggy_pot?.title || ''
     ].join(' ').toLowerCase();
     return hay.includes(q);
   });
@@ -148,6 +154,10 @@ export default function Transactions(props) {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
     window.open(twitterUrl, '_blank', 'noopener,noreferrer');
     setTwitterModal({ show: false, event: null });
+  };
+
+  const openSupportModal = (event, type = 'contact') => {
+    setSupportModalState({ show: true, event, type });
   };
 
   const submitShopAnswer = async (paymentId) => {
@@ -190,6 +200,8 @@ export default function Transactions(props) {
   const rewardChip = (e) => {
     if (e.access) return e.access;
     if (e?.wish?.reward_file) return 'Reward file';
+    if (e?.piggy_pot?.content_file) return 'Exclusive Reward';
+    if (e?.piggy_pot?.content_description) return 'Reward unlocked';
     return null;
   };
 
@@ -376,6 +388,13 @@ export default function Transactions(props) {
               </div>
             </Modal>
 
+            <SupportModal 
+              show={supportModalState.show}
+              event={supportModalState.event}
+              initialType={supportModalState.type}
+              onClose={() => setSupportModalState({ show: false, event: null, type: 'contact' })}
+            />
+
             <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
                 <input
@@ -394,6 +413,7 @@ export default function Transactions(props) {
                   { key: 'gift_membership', label: 'Memberships' },
                   { key: 'gift_bill', label: 'Bills' },
                   { key: 'gift_tip', label: 'Support' },
+                  { key: 'piggy_pot', label: 'Piggy Pots' },
                   { key: 'gift_shop', label: 'Shop' },
                   { key: 'gift_task', label: 'Tasks' },
                 ].map(f => (
@@ -434,7 +454,7 @@ export default function Transactions(props) {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-[#FF007F] text-black' : 'bg-white text-black'}`}>
-                              {e.category === 'sent' ? 'Support Payment' : 'Support Received'}
+                              {titleFor(e)}
                             </span>
                             <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-gray-200 text-black">
                                 {e.category === 'sent' ? 'SENT' : 'RECEIVED'}
@@ -492,6 +512,11 @@ export default function Transactions(props) {
                                 ) : (
                                   <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.shop.name}”</Link>
                                 )}
+                              </div>
+                            ) : null}
+                            {e?.piggy_pot?.title ? (
+                              <div className="text-sm truncate block max-w-full italic">
+                                  <Link href={`/${e.creator?.username}?page=piggy-pots`} className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.piggy_pot.title}”</Link>
                               </div>
                             ) : null}
                             {e?.task?.title && e.open_link ? (
@@ -624,6 +649,45 @@ export default function Transactions(props) {
                               <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
                             </button>
                           )}
+                          {e.category === 'sent' && e?.creator?.username ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => openSupportModal(e, 'contact')}
+                                  className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                >
+                                  Contact Creator
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openSupportModal(e, 'refund')}
+                                  className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                >
+                                  Request Refund
+                                </button>
+                              </div>
+                              {e.support_tickets && e.support_tickets.length > 0 && (
+                                <div className="mt-2 flex flex-col gap-2">
+                                  {e.support_tickets.map(ticket => (
+                                    <Link
+                                      key={ticket.uuid}
+                                      href={route('support.tickets.show', ticket.uuid)}
+                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all w-max"
+                                    >
+                                      <span>View {ticket.type} Ticket</span>
+                                      <span className={`px-2 py-0.5 rounded-full border border-black ${
+                                        ticket.status === 'resolved' || ticket.status === 'refunded' ? 'bg-green-300' :
+                                        ticket.status === 'rejected' ? 'bg-gray-300' : 'bg-yellow-300'
+                                      }`}>
+                                        {ticket.status.replaceAll('_', ' ')}
+                                      </span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
                           {e.category === 'received' && e.uuid && !String(e.uuid).startsWith('exp-') && (
                             <a 
                                 href={route('financial.evidence-pack', { uuid: e.uuid })} 

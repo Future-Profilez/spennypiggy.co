@@ -70,7 +70,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         (vatPercentage / 100);
 
     return (
-        <div className="bg-[#fdfbf7] rounded-[35px] mb-4 p-6 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-[#fdfbf7] rounded-[35px] mb-4 p-6 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
             <div className="md:flex justify-between items-center">
                 <div className="">
                     <Link

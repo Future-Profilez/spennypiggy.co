@@ -34,33 +34,31 @@ export default function CreatorDashboardTabs() {
                         <Link
                             key={index}
                             href={tab.route}
-                            className={`relative overflow-hidden rounded-2xl px-5 py-4 border transition-all duration-300 min-w-[210px] group ${active ? `bg-gradient-to-r ${tab.color} border-white/20 shadow-lg` : "bg-white/5 border-white/10 hover:bg-white/10"}`}
+                            className={`relative overflow-hidden rounded-[30px] px-5 py-4 border transition-all duration-300 min-w-[210px] group ${active ? `bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"}`}
                         >
                             <div className="flex items-center gap-3 relative z-10">
                                 <div
-                                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${active ? "bg-white/20" : "bg-white/10"}`}
+                                    className={`w-12 h-12 rounded-[14px] flex items-center justify-center text-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}
                                 >
                                     {tab.icon}
                                 </div>
 
                                 <div>
                                     <p
-                                        className={`text-sm font-bold ${active ? "text-white" : "text-slate-200"}`}
+                                        className={`text-sm font-bold text-black`}
                                     >
                                         {tab.title}
                                     </p>
 
                                     <p
-                                        className={`text-xs mt-1 ${active ? "text-white/80" : "text-slate-400"}`}
+                                        className={`text-xs mt-1 text-gray-600 font-bold`}
                                     >
                                         Open Dashboard
                                     </p>
                                 </div>
                             </div>
 
-                            {active && (
-                                <div className="absolute inset-0 bg-white/5 backdrop-blur-sm" />
-                            )}
+                            
                         </Link>
                     );
                 })}

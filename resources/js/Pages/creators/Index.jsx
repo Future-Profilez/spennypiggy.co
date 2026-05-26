@@ -64,7 +64,7 @@ export default function Index() {
                         return (
                           <div key={i} className="bg-white p-4 md:p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
                             <div className="flex gap-2 md:!gap-4">
-                              <div className="bg-yellow-300 text-black p-2 rounded-2xl h-fit shrink-0 border-[3px] border-black">
+                              <div className="bg-yellow-300 text-black p-2 rounded-[30px] h-fit shrink-0 border-[3px] border-black">
                                 <Check size={20} strokeWidth={3} />
                               </div>
                               <div>

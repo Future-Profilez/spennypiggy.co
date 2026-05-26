@@ -55,6 +55,7 @@ export default function Register(props) {
     const checkRef = useRef();
     const gifterref = useRef();
     const addressCheck = useRef();
+    const creatorEmailReceiptAckRef = useRef();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const errorAlertRef = useRef(errorAlert);
     const lowerLetter = /[a-z]/;
@@ -113,6 +114,7 @@ export default function Register(props) {
         role: type && type === "creator" ? 1 : 0,
         creator_category: "",
         cf_turnstile_response: "",
+        creator_email_receipt_ack: false,
         utm_source: "",
         utm_medium: "",
         utm_campaign: "",
@@ -168,6 +170,7 @@ export default function Register(props) {
             // await handleIpRedirection(ziggy);
             setStep(1);
         } else {
+            setData("creator_email_receipt_ack", false);
             setStep(3);
         }
     };
@@ -786,6 +789,18 @@ export default function Register(props) {
             return false;
         }
 
+        if (
+            role == 1 &&
+            creatorEmailReceiptAckRef &&
+            creatorEmailReceiptAckRef?.current?.checked == false
+        ) {
+            errorAlert(
+                "Please confirm you understand your creator email address may appear on supporter receipts.",
+            );
+            creatorEmailReceiptAckRef.current.focus();
+            return false;
+        }
+
         if (!checkRef.current.checked) {
             errorAlert("Please check accept terms & conditions checkbox");
             checkRef.current.focus();
@@ -1303,6 +1318,44 @@ export default function Register(props) {
                                                         "email",
                                                     )}
                                                 </div>
+                                                {role === 1 && (
+                                                    <div className="mt-3 bg-white/5 border border-white/10 rounded-[20px] p-4 space-y-3">
+                                                        <p className="text-xs text-gray-300 leading-relaxed">
+                                                            The e-mail address used for your creator account may appear on supporter receipts, payment confirmations, and transaction records. Please ensure you register using an appropriate e-mail address that you are comfortable sharing with supporters. This is required for payment processing, compliance, and Merchant of Record (MOR) obligations. If you do not wish to share a personal e-mail address, we recommend creating a dedicated creator/business e-mail for your account.
+                                                        </p>
+                                                        <label className="flex items-start gap-3 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                ref={
+                                                                    creatorEmailReceiptAckRef
+                                                                }
+                                                                id="creator_email_receipt_ack"
+                                                                name="creator_email_receipt_ack"
+                                                                onChange={(e) =>
+                                                                    setData(
+                                                                        "creator_email_receipt_ack",
+                                                                        e.target
+                                                                            .checked,
+                                                                    )
+                                                                }
+                                                                className="h-5 w-5 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
+                                                                required={
+                                                                    role === 1
+                                                                }
+                                                            />
+                                                            <span className="text-sm text-gray-300">
+                                                                I understand my
+                                                                creator e-mail
+                                                                address may
+                                                                appear on
+                                                                supporter
+                                                                transaction
+                                                                records and
+                                                                receipts.
+                                                            </span>
+                                                        </label>
+                                                    </div>
+                                                )}
                                                 <InputError
                                                     message={getFieldError(
                                                         "email",

@@ -66,7 +66,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                         <div className="flex items-center gap-6">
                             <div className="relative group">
                                 <div className="absolute inset-0 bg-yellow-400/20 blur-xl rounded-full"></div>
-                                <div className="relative w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                <div className="relative w-14 h-14 bg-white/5 border border-white/10 rounded-[30px] flex items-center justify-center backdrop-blur-md">
                                     <FaLightbulb className="text-[#EFEA7B] text-2xl drop-shadow-[0_0_8px_rgba(239,234,123,0.5)]" />
                                 </div>
                             </div>
@@ -97,7 +97,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                                     type="text"
                                     name="name"
                                     value={data.name}
-                                    className="mt-1 block w-full bg-white/5 border-white/5 !rounded-2xl text-white focus:border-purple-500/50 focus:ring-purple-500/20 placeholder:text-gray-600 h-14 px-6 transition-all"
+                                    className="mt-1 block w-full bg-white/5 border-white/5 !rounded-[30px] text-white focus:border-purple-500/50 focus:ring-purple-500/20 placeholder:text-gray-600 h-14 px-6 transition-all"
                                     onChange={(e) => setData('name', e.target.value)}
                                     placeholder="Naveen..."
                                 />
@@ -111,7 +111,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                                     type="email"
                                     name="email"
                                     value={data.email}
-                                    className="mt-1 block w-full bg-white/5 border-white/5 !rounded-2xl text-white focus:border-purple-500/50 focus:ring-purple-500/20 placeholder:text-gray-600 h-14 px-6 transition-all"
+                                    className="mt-1 block w-full bg-white/5 border-white/5 !rounded-[30px] text-white focus:border-purple-500/50 focus:ring-purple-500/20 placeholder:text-gray-600 h-14 px-6 transition-all"
                                     onChange={(e) => setData('email', e.target.value)}
                                     placeholder="your@email.com"
                                 />
@@ -159,7 +159,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="relative w-full aspect-video rounded-2xl overflow-hidden group/img max-h-[200px]">
+                                        <div className="relative w-full aspect-video rounded-[30px] overflow-hidden group/img max-h-[200px]">
                                             <img src={data.image_url} alt="Preview" className="w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-110" />
                                             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
                                                 <button 

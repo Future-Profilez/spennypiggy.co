@@ -109,7 +109,7 @@ export default function BillDetails(props) {
                                                 href="/billing-dashboard"
                                                 className="
                                                 inline-flex items-center gap-2
-                                                px-5 py-3 mt-4 rounded-2xl
+                                                px-5 py-3 mt-4 rounded-[30px]
                                                 bg-white/5 border border-white/10
                                                 text-white font-semibold
                                                 hover:bg-white/10 transition-all
@@ -216,7 +216,7 @@ export default function BillDetails(props) {
                                     <input
                                         type="text"
                                         placeholder="Search supporter..."
-                                        className="h-[56px] rounded-2xl bg-[#0f172a] border border-white/10 px-5 text-white min-w-[320px] focus:outline-none"
+                                        className="h-[56px] rounded-[30px] bg-[#0f172a] border border-white/10 px-5 text-white min-w-[320px] focus:outline-none"
                                     />
                                 </div>
                             </div>

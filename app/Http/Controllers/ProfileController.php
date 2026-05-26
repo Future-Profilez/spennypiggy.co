@@ -1576,11 +1576,12 @@ class ProfileController extends Controller
         }
         $isViewerGifter = Auth::id() === $gifter->id;
         $events = array_map(function ($ev) use ($isViewerGifter) {
-            $modelClass = match ($ev['source'] ?? null) {
-                'stripe_payment_items' => \App\Models\StripePaymentItems::class,
+            $modelClass = match ($ev['source']) {
+                'stripe_payment_items' => \App\Models\StripePaymentDetail::class,
                 'membership_payments' => \App\Models\MembershipPayment::class,
                 'bill_payments' => \App\Models\BillPayment::class,
                 'tip_goals_payments' => \App\Models\TipGoalsPayment::class,
+                'piggy_pot_contributions' => \App\Models\PiggyPotContribution::class,
                 'shop_payments' => \App\Models\ShopPayment::class,
                 'task_purchases' => \App\Models\TaskPurchase::class,
                 default => null,
@@ -1965,6 +1966,8 @@ class ProfileController extends Controller
             \App\Models\StripePaymentItems::class => ['wish', 'payment'],
             \App\Models\MembershipPayment::class => ['membership'],
             \App\Models\BillPayment::class => ['bill'],
+            \App\Models\PiggyPotContribution::class => ['piggyPot'],
+            \App\Models\TipGoalsPayment::class => ['tipGoal'],
         ]);
 
         // Load deliverables for all transactions
@@ -1973,7 +1976,7 @@ class ProfileController extends Controller
             if (!$tx->source) return;
             $base = class_basename($tx->source_type);
             $sessionId = match ($base) {
-                'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment' => $tx->source->session_id ?? null,
+                'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment', 'PiggyPotContribution' => $tx->source->session_id ?? null,
                 'TaskPurchase' => $tx->source->stripe_session_id ?? null,
                 'StripePaymentItems' => $tx->source->payment->session_id ?? null,
                 default => null,
@@ -1990,7 +1993,7 @@ class ProfileController extends Controller
                 if (!$tx->source) return;
                 $base = class_basename($tx->source_type);
                 $sessionId = match ($base) {
-                    'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment' => $tx->source->session_id ?? null,
+                    'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment', 'PiggyPotContribution' => $tx->source->session_id ?? null,
                     'TaskPurchase' => $tx->source->stripe_session_id ?? null,
                     'StripePaymentItems' => $tx->source->payment->session_id ?? null,
                     default => null,
@@ -2003,6 +2006,19 @@ class ProfileController extends Controller
 
         $hasMore = $rows->count() > $limit;
         $rows = $rows->take($limit)->values();
+
+        $supportTickets = \App\Models\SupportTicket::whereIn('source_id', $rows->map(function($tx) {
+            return $tx->source_type === \App\Models\FinancialTransaction::class || empty($tx->source_type) ? $tx->id : $tx->source_id;
+        })->filter())
+            ->where(function($q) use ($user, $tab) {
+                if ($tab === 'sent') {
+                    $q->where('supporter_id', $user->id);
+                } else {
+                    $q->where('creator_id', $user->id);
+                }
+            })
+            ->get()
+            ->groupBy(function($t) { return $t->source . '_' . $t->source_id; });
 
         $currencies = $rows
             ->pluck('currency')
@@ -2041,7 +2057,7 @@ class ProfileController extends Controller
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
-        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert) {
+        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets) {
             $from = strtoupper($tx->currency ?? 'GBP');
             $baseAmount = $tab === 'sent' ? (float) ($tx->gross_amount ?? 0) : (float) ($tx->net_amount ?? 0);
             $displayAmount = $from === $displayCurrency ? $baseAmount : ($convert($from, $baseAmount, $displayCurrency) ?? $baseAmount);
@@ -2052,6 +2068,7 @@ class ProfileController extends Controller
                 'MembershipPayment' => 'gift_membership',
                 'BillPayment' => 'gift_bill',
                 'TipGoalsPayment' => 'gift_tip',
+                'PiggyPotContribution' => 'piggy_pot',
                 'ShopPayment' => 'gift_shop',
                 'TaskPurchase' => 'gift_task',
                 default => 'transaction',
@@ -2062,6 +2079,7 @@ class ProfileController extends Controller
                 'MembershipPayment' => 'membership_payments',
                 'BillPayment' => 'bill_payments',
                 'TipGoalsPayment' => 'tip_goals_payments',
+                'PiggyPotContribution' => 'piggy_pot_contributions',
                 'ShopPayment' => 'shop_payments',
                 'TaskPurchase' => 'task_purchases',
                 default => 'financial_transactions',
@@ -2190,6 +2208,14 @@ class ProfileController extends Controller
                 'gifter_id' => $tx->supporter_id,
                 'id' => $tx->id,
                 'description' => $tx->description,
+                'support_tickets' => optional($supportTickets->get($source . '_' . $sourceId))->map(function($t) {
+                    return [
+                        'uuid' => $t->uuid,
+                        'type' => $t->type,
+                        'status' => $t->status,
+                        'created_at' => $t->created_at->format('Y-m-d H:i:s')
+                    ];
+                }) ?? [],
                 'gifter' => $tx->supporter ? [
                     'name' => $tx->supporter->name,
                     'username' => $tx->supporter->username,

@@ -198,6 +198,7 @@ class OptimizedProfileController extends Controller
             'memberships' => $allProfileData['memberships'] ?? [],
             'bills' => $allProfileData['bills'] ?? [],
             'shops' => $allProfileData['shops'] ?? [],
+            'tasks' => $allProfileData['tasks'] ?? [],
             // Add metadata for frontend optimization
             '_preloaded' => true,
             '_loadTime' => microtime(true)

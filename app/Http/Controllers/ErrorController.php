@@ -25,7 +25,7 @@ class ErrorController extends Controller
             'website',
             'Page Not Found – SpennyPiggy',
             'Oops! This page seems to have disappeared. Explore our amazing creators instead!',
-            url('/siteicon.png'),
+            url('/og-image.png'),
             url('/404')
         );
         

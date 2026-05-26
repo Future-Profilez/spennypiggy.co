@@ -665,7 +665,7 @@ class StripeController extends Controller
     /**
      * Initialize Stripe connection
      */
-    public function initConnect($country = null, $currency = null)
+    public function initConnect(Request $request, $country = null, $currency = null)
     {
         /** @var \App\Models\User $user */
         $user = User::find(Auth::id());
@@ -673,6 +673,16 @@ class StripeController extends Controller
         // Check Merchant of Record consent
         if (!MorConsent::userHasGivenConsent($user->id)) {
             return redirect()->route('stripe.index')->with('error', 'You must agree to the Merchant of Record terms first.');
+        }
+
+        if (empty($user->creator_email_receipt_acknowledged_at)) {
+            if ($request->boolean('creator_email_receipt_ack')) {
+                $user->creator_email_receipt_acknowledged_at = now();
+                $user->save();
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
+            } else {
+                return redirect()->route('stripe.index')->with('error', 'Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.');
+            }
         }
 
         // Require: approved profile, Stripe identity verified

@@ -56,6 +56,11 @@
                     You can track your order status anytime in your purchases dashboard.
                 </td>
             </tr>
+            <tr>
+                <td style="padding: 0 0 20px 0;">
+                    @include('email.digital-content-notice')
+                </td>
+            </tr>
             
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>
             <tr>

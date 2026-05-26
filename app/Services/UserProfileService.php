@@ -584,6 +584,12 @@ class UserProfileService
 
     private function getProfileCacheVersion(int $userId): string
     {
+        $cacheKey = $this->profileCacheTokenKey($userId);
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return (string) $cached;
+        }
+
         $timestamps = [
             User::where('id', $userId)->value('updated_at'),
             WishItem::where('user_id', $userId)->max('updated_at'),
@@ -591,6 +597,7 @@ class UserProfileService
             Bills::where('user_id', $userId)->max('updated_at'),
             Shop::where('user_id', $userId)->max('updated_at'),
             Task::where('creator_id', $userId)->max('updated_at'),
+            \App\Models\PiggyPot::where('user_id', $userId)->max('updated_at'),
         ];
 
         $latestUnix = 0;
@@ -605,7 +612,14 @@ class UserProfileService
             }
         }
 
-        return (string) $latestUnix;
+        $version = (string) $latestUnix;
+        Cache::put($cacheKey, $version, 86400);
+        return $version;
+    }
+
+    private function profileCacheTokenKey(int $userId): string
+    {
+        return 'profile_cache_token_v1_' . $userId;
     }
 
     /**
@@ -714,8 +728,15 @@ class UserProfileService
     /**
      * Clear ALL profile related caches for a user
      */
+    public function getProfileCacheToken(int $userId): string
+    {
+        return $this->getProfileCacheVersion($userId);
+    }
+
     public function clearUserCaches(string $username, int $userId): void
     {
+        Cache::put($this->profileCacheTokenKey($userId), (string) time(), 86400);
+
         // Clear basic profile cache
         Cache::forget('user_profile_basic_' . $username);
 
@@ -743,6 +764,9 @@ class UserProfileService
         Cache::forget('user_shop_' . $userId);
         Cache::forget("user_sub_posts_count_{$userId}");
         Cache::forget("user_mem_posts_count_{$userId}");
+        Cache::forget('user_piggy_pot_top_' . $userId);
+        Cache::forget('user_piggy_pot_top_supporters_' . $userId);
+        Cache::forget('user_piggy_pot_feed_' . $userId);
         
         Log::info("Caches cleared for user: {$username} ({$userId})");
     }
@@ -1266,8 +1290,12 @@ class UserProfileService
 
     public function getOptimizedPiggyPots(int $userId, bool $isOwner, bool $onlyPinned = true): array
     {
+        $statuses = $isOwner
+            ? ['active', 'completed', 'expired', 'moderation_hold']
+            : ['active', 'completed'];
+
         $query = \App\Models\PiggyPot::where('user_id', $userId)
-            ->where('status', 'active')
+            ->whereIn('status', $statuses)
             ->withSum(['contributions as total_raised' => function ($query) {
                 $query->where('status', 'paid');
             }], 'amount');
@@ -1276,7 +1304,8 @@ class UserProfileService
             $query->where('is_pinned', true);
         }
         
-        $cacheKey = 'user_piggy_pots_' . $userId . '_' . ($isOwner ? 'owner' : 'public') . '_' . ($onlyPinned ? 'pinned' : 'all');
+        $token = $this->getProfileCacheToken($userId);
+        $cacheKey = 'user_piggy_pots_' . $userId . '_' . ($isOwner ? 'owner' : 'public') . '_' . ($onlyPinned ? 'pinned' : 'all') . '_v' . $token;
         
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($query) {
             return $query->get()->toArray();
@@ -1285,42 +1314,92 @@ class UserProfileService
 
     public function getPiggyPotTopSupporters(int $userId): array
     {
-        $cacheKey = 'user_piggy_pot_top_supporters_' . $userId;
+        $isOwner = Auth::check() && Auth::id() === $userId;
+        $token = $this->getProfileCacheToken($userId);
+        $cacheKey = 'user_piggy_pot_top_supporters_' . $userId . '_v' . $token;
         
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($userId) {
-            return \App\Models\PiggyPotContribution::select('guest_name', 'user_id', 'is_anonymous')
-                ->selectRaw('SUM(amount) as total_contribution')
-                ->with('user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved')
+        $callback = function() use ($userId) {
+            $userTotals = \App\Models\PiggyPotContribution::query()
                 ->where('creator_id', $userId)
                 ->where('status', 'paid')
-                ->groupBy('guest_name', 'user_id', 'is_anonymous')
-                ->orderByDesc('total_contribution')
+                ->where('is_anonymous', 0)
+                ->whereNotNull('user_id')
+                ->selectRaw('user_id, SUM(amount) as total')
+                ->groupBy('user_id')
+                ->orderByDesc('total')
                 ->limit(10)
-                ->get()
-                ->map(function ($item) {
-                    if ($item->is_anonymous) {
-                        return [
-                            'name' => 'Anonymous',
-                            'total' => $item->total_contribution,
-                            'avatar' => null
-                        ];
-                    }
-                    return [
-                        'name' => $item->user ? $item->user->name : ($item->guest_name ?? 'Guest'),
-                        'username' => $item->user ? $item->user->username : null,
-                        'total' => $item->total_contribution,
-                        'avatar' => $item->user ? $item->user->avatar_url : null
-                    ];
-                })->toArray();
-        });
+                ->get();
+
+            $users = \App\Models\User::whereIn('id', $userTotals->pluck('user_id')->all())
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_cdn_modifier', 'avatar_approved'])
+                ->keyBy('id');
+
+            $top = [];
+            foreach ($userTotals as $row) {
+                $u = $users->get($row->user_id);
+                $top[] = [
+                    'name' => $u ? $u->name : 'User',
+                    'username' => $u ? $u->username : null,
+                    'total' => (float) $row->total,
+                    'avatar' => $u ? $u->avatar_url : null,
+                ];
+            }
+
+            $guestTotals = \App\Models\PiggyPotContribution::query()
+                ->where('creator_id', $userId)
+                ->where('status', 'paid')
+                ->where('is_anonymous', 0)
+                ->whereNull('user_id')
+                ->selectRaw('LOWER(TRIM(COALESCE(guest_email, guest_name))) as guest_key, MAX(guest_name) as guest_name, SUM(amount) as total')
+                ->groupBy('guest_key')
+                ->orderByDesc('total')
+                ->limit(10)
+                ->get();
+
+            foreach ($guestTotals as $row) {
+                $top[] = [
+                    'name' => $row->guest_name ?: 'Guest',
+                    'username' => null,
+                    'total' => (float) $row->total,
+                    'avatar' => null,
+                ];
+            }
+
+            $anonymousTotal = (float) \App\Models\PiggyPotContribution::query()
+                ->where('creator_id', $userId)
+                ->where('status', 'paid')
+                ->where('is_anonymous', 1)
+                ->sum('amount');
+
+            if ($anonymousTotal > 0) {
+                $top[] = [
+                    'name' => 'Anonymous',
+                    'username' => null,
+                    'total' => $anonymousTotal,
+                    'avatar' => null,
+                ];
+            }
+
+            usort($top, function ($a, $b) {
+                return $b['total'] <=> $a['total'];
+            });
+
+            return array_slice($top, 0, 10);
+        };
+
+        $ttl = $isOwner ? 30 : 300;
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $callback);
     }
 
     public function getPiggyPotFeed(int $userId): array
     {
-        $cacheKey = 'user_piggy_pot_feed_' . $userId;
+        $isOwner = Auth::check() && Auth::id() === $userId;
+        $token = $this->getProfileCacheToken($userId);
+        $cacheKey = 'user_piggy_pot_feed_' . $userId . '_v' . $token;
         
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($userId) {
-            return \App\Models\PiggyPotContribution::with(['user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved', 'piggyPot:id,title'])
+        $callback = function() use ($userId) {
+            return \App\Models\PiggyPotContribution::select(['id', 'creator_id', 'user_id', 'guest_name', 'is_anonymous', 'amount', 'currency', 'message', 'created_at', 'piggy_pot_id'])
+                ->with(['user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved', 'piggyPot:id,title'])
                 ->where('creator_id', $userId)
                 ->where('status', 'paid')
                 ->orderBy('created_at', 'desc')
@@ -1331,6 +1410,7 @@ class UserProfileService
                     return [
                         'id' => $item->id,
                         'name' => $name,
+                        'username' => $item->is_anonymous ? null : ($item->user ? $item->user->username : null),
                         'amount' => $item->amount,
                         'currency' => $item->currency,
                         'message' => $item->message,
@@ -1338,6 +1418,9 @@ class UserProfileService
                         'pot_title' => $item->piggyPot ? $item->piggyPot->title : 'Goal',
                     ];
                 })->toArray();
-        });
+        };
+
+        $ttl = $isOwner ? 30 : 300;
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $callback);
     }
 }

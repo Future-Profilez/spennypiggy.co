@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class CheckoutToUser extends Mailable
 {
@@ -105,10 +106,21 @@ class CheckoutToUser extends Mailable
                     'currency' => $this->data->currency ?? 'null'
                 ]
             ]);
+
+            $supportUrl = url('/history');
+            if (!isset($this->data->user_id) && !empty($this->data->guest_email) && isset($this->data->id)) {
+                $supportUrl = URL::signedRoute('support.guest.create', [
+                    'paymentId' => $this->data->id,
+                    'email' => $this->data->guest_email,
+                ]);
+            }
             
             $builtEmail = $this->view('email.checkout-user')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
-                ->subject($subject);
+                ->subject($subject)
+                ->with([
+                    'supportUrl' => $supportUrl,
+                ]);
                 
             Log::info('CheckoutToUser: Email built successfully');
             

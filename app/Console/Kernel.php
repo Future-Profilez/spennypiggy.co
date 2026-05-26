@@ -80,6 +80,10 @@ class Kernel extends ConsoleKernel
                  ->everyFiveMinutes()
                  ->withoutOverlapping();
 
+        $schedule->command('app:process-support-tickets')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping();
+
         $schedule->command("app:auto-suspend-account")->daily()->withoutOverlapping(4);
         
         // Founder Bonus System Jobs

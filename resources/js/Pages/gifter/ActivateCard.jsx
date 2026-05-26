@@ -75,7 +75,7 @@ export default function ActivateCard() {
                                 )}
 
                                 {isFailed && !isRejected ? (
-                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-orange-50 border-2 border-orange-200 rounded-2xl">
+                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-orange-50 border-2 border-orange-200 rounded-[30px]">
                                         <strong className="text-orange-600 text-lg flex items-center justify-center gap-2 mb-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

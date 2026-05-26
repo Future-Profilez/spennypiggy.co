@@ -39,7 +39,7 @@ const Side = () => {
         {auth?.user ? (
           <Link 
             href={route('user.show', { username: auth.user.username })}
-            className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100 transition-colors group"
+            className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-[30px] border border-gray-100 hover:bg-gray-100 transition-colors group"
           >
             <img 
               src={auth.user.avatar_url} 

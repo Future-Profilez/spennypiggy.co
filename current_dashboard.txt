@@ -143,7 +143,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                         ) : (reserves || []).length === 0 ? (
                             <div className="text-gray-500 text-sm font-bold">No held reserves right now.</div>
                         ) : (
-                            <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-gray-50">
+                            <div className="overflow-x-auto rounded-[30px] border border-gray-200 bg-gray-50">
                                 <table className="w-full text-left">
                                     <thead className="sticky top-0 bg-white border-b border-gray-200">
                                         <tr className="text-gray-500 text-[12px] uppercase font-bold tracking-widest">
@@ -526,7 +526,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         <div className="bg-white p-6 rounded-[20px] md:rounded-[30px] border border-gray-200 shadow-sm">
                                             <h3 className="text-gray-900 font-bold text-normal mb-4 flex items-center gap-2"><TriangleAlertIcon size={16} className="text-yellow-600" /> Financial Health Tip</h3>
                                             <div className="flex items-start gap-4">
-                                                <div className="bg-yellow-500/10 p-3 rounded-2xl"><CalculatorIcon size={24} className="text-yellow-600" /></div>
+                                                <div className="bg-yellow-500/10 p-3 rounded-[30px]"><CalculatorIcon size={24} className="text-yellow-600" /></div>
                                                 <div>
                                                     <p className="text-gray-700 text-normal leading-relaxed">{summary.expenses > (summary.gross_income * 0.3) ? "Your expenses are quite high." : "Your profit margins look healthy."}</p>
                                                     <Link href={route('financial.expenses.index')} className="text-[#FF007F] text-[10px] font-bold uppercase mt-2 inline-block hover:underline">Review Expenses</Link>
