@@ -31,6 +31,8 @@ use App\Models\Subscription;
 use App\Models\TipGoal;
 use App\Models\FinancialTransaction;
 use App\Models\TipGoalsPayment;
+use App\Models\PiggyPot;
+use App\Models\PiggyPotContribution;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserPayment;

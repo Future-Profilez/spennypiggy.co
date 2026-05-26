@@ -1054,10 +1054,14 @@ class ShopsController extends Controller
                         $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
 
                         if ($stripeid->shop->reward_file) {
+                            $contentUrl = $stripeid->shop->reward_file;
+                            if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
+                                $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
+                            }
                             $thankYouParams['wish_content'] = [
                                 'type' => $stripeid->shop->reward_file_type,
                                 'name' => 'Digital Content',
-                                'url'  => "https://ucarecdn.com/" . $stripeid->shop->reward_file . "/"
+                                'url'  => $contentUrl
                             ];
                         }
                     }
@@ -1214,10 +1218,14 @@ class ShopsController extends Controller
                     $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
 
                     if ($stripeid->shop->reward_file) {
+                        $contentUrl = $stripeid->shop->reward_file;
+                        if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
+                            $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
+                        }
                         $thankYouParams['wish_content'] = [
                             'type' => $stripeid->shop->reward_file_type,
                             'name' => 'Digital Content',
-                            'url'  => "https://ucarecdn.com/" . $stripeid->shop->reward_file . "/"
+                            'url'  => $contentUrl
                         ];
                     }
                 }
@@ -1434,6 +1442,7 @@ class ShopsController extends Controller
                     'id' => $order->id,
                     'uuid' => $order->uuid,
                     'amount' => $order->amount,
+                    'total_paid' => $order->total_paid,
                     'tax_amount' => $order->tax_amount ?? 0,
                     'vat_tax_amount' => $order->vat_tax_amount ?? 0,
                     'shipping_amount' => $order->shipping_amount ?? 0,
@@ -1494,6 +1503,7 @@ class ShopsController extends Controller
                 'id' => $order->id,
                 'uuid' => $order->uuid,
                 'amount' => $order->amount,
+                'total_paid' => $order->total_paid,
                 'tax_amount' => $order->tax_amount ?? 0,
                 'vat_tax_amount' => $order->vat_tax_amount ?? 0,
                 'shipping_amount' => $order->shipping_amount ?? 0,

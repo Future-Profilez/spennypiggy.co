@@ -203,9 +203,24 @@ export default function ShopDetailItem(props) {
                                                         <p className="font-medium text-lg text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
                                                         <p className="text-normal text-gray-500 capitalize">Status: {purchase.status}</p>
                                                     </div>
-                                                    <Link href={`/shop?type=purchases`} className="text-[#FF007F] font-medium hover:underline text-normal">
-                                                        View Details
-                                                    </Link>
+                                                    <div className="flex flex-col items-end">
+                                                        <div className="font-black text-xl mb-1">
+                                                            {purchase.total_paid || purchase.gross_amount || purchase.amount ? formatMultiPrice(
+                                                                purchase.total_paid ||
+                                                                calculateTotalSupporterPays(
+                                                                    ((Number(purchase.gross_amount || purchase.amount || 0)) + 
+                                                                    (Number(purchase.tax_amount || 0)) + 
+                                                                    (Number(purchase.vat_tax_amount || 0)) + 
+                                                                    (Number(purchase.shipping_amount || 0))), 
+                                                                    purchase.currency || 'GBP'
+                                                                ).total_supporter_pays, 
+                                                                purchase.currency || 'GBP'
+                                                            ) : "FREE"}
+                                                        </div>
+                                                        <Link href={`/shop?type=purchases`} className="text-[#FF007F] font-medium hover:underline text-normal">
+                                                            View Details
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -395,9 +410,9 @@ export default function ShopDetailItem(props) {
                                     ""
                                 )}
                                 
-                                <div className="sm:flex items-center justify-between">
+                                <div className="!py-4 sm:flex items-center justify-between">
                                     <div className=" mb-3">
-                                        <h3 className="text-3xl font-bold flex flex-col">
+                                        <h3 className="text-3xl font-bold flex flex-col ">
                                             <div className="flex">
                                                 <div className="flex">
 

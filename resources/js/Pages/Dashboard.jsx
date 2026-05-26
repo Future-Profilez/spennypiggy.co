@@ -55,6 +55,8 @@ const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
 const CreatorRiskBanner = lazy(() => import("@/Components/Risk/CreatorRiskBanner"));
 const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
+const PiggyPotWidget = lazy(() => import("@/Components/PiggyPots/PiggyPotWidget"));
+const PiggyPotSocialProof = lazy(() => import("@/Components/PiggyPots/PiggyPotSocialProof"));
 
 export default function Dashboard(props) {
 
@@ -82,6 +84,7 @@ export default function Dashboard(props) {
     const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
     const [activeId, setActiveId] = useState(null);
+    const [activePiggyPot, setActivePiggyPot] = useState(null);
 
     const activeItem = useMemo(() =>
         activeId ? wishitems.find(item => (item.id || item.uuid) === activeId) : null
@@ -601,11 +604,13 @@ export default function Dashboard(props) {
                                                         <div className="flex flex-wrap about-sec self-start ">
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[113px]">
-                                                                    {IsloggedIn || user?.intro?.approved == 1 ? (
-                                                                        <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn} user={user} />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
+                                                                {IsloggedIn || user?.intro?.approved == 1 ? (
+                                                                    <Suspense fallback={<div className="h-40 bg-gray-100 rounded-3xl animate-pulse border-3 border-black"></div>}>
+                                                                        <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn} user={user}/>
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
 
                                                                     <DashboardStripeMigrationWarning
                                                                         migrationStatus={migration_status} />
@@ -741,11 +746,13 @@ export default function Dashboard(props) {
                                                                                 </div>
                                                                             )}
 
-                                                                            <SocialLinks
-                                                                                links={
-                                                                                    sLinks
-                                                                                }
-                                                                            />
+                                                                            <Suspense fallback={null}>
+                                                                                <SocialLinks
+                                                                                    links={
+                                                                                        sLinks
+                                                                                    }
+                                                                                />
+                                                                            </Suspense>
 
                                                                             {IsloggedIn && slinks?.status === 0 && (
                                                                                 <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
@@ -781,7 +788,7 @@ export default function Dashboard(props) {
                                                                                                         user.username
                                                                                                     }
                                                                                                     classes={" bg-yellow-300 hover:bg-yellow-500 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black"}
-                                                                                                    custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
+                                                                                                    custom={wishitems && wishitems.length > 0 ? `${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}` : `${ziggy?.location}/${user?.username ?? 'creator_test'}`}
                                                                                                 >
                                                                                                     Share
                                                                                                     Profile
@@ -905,30 +912,57 @@ export default function Dashboard(props) {
                                                                 {IsloggedIn &&
                                                                     UserStripeConnected ==
                                                                     1 ? (
-                                                                    <ProfileSteps
-                                                                        sLinks={
-                                                                            sLinks
-                                                                        }
-                                                                        user={
-                                                                            user
-                                                                        }
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
+                                                                    <Suspense fallback={<div className="mb-4">Loading steps...</div>}>
+                                                                        <ProfileSteps
+                                                                            sLinks={
+                                                                                sLinks
+                                                                            }
+                                                                            user={
+                                                                                user
+                                                                            }
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                        />
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+                                                                
+                                                                {props.piggyPots && props.piggyPots.length > 0 && (
+                                                                    <Suspense fallback={<div className="mb-4">Loading Piggy Pot...</div>}>
+                                                                        <PiggyPotWidget 
+                                                                            piggyPots={props.piggyPots} 
+                                                                            user={user} 
+                                                                            global_currency={global_currency}
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
+
+                                                                {props.piggyPotTopSupporters && (props.piggyPotTopSupporters.length > 0 || (props.piggyPotFeed && props.piggyPotFeed.length > 0)) && (
+                                                                    <Suspense fallback={<div className="mb-4">Loading community activity...</div>}>
+                                                                        <PiggyPotSocialProof 
+                                                                            topSupporters={props.piggyPotTopSupporters}
+                                                                            feed={props.piggyPotFeed}
+                                                                            user={user}
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
+
+                                                                {!IsloggedIn && UserStripeConnected == 1 && w > 767 && (!props.piggyPots || props.piggyPots.length === 0) ? (
+                                                                    <Suspense fallback={null}>
+                                                                        <TipInner classes={`mb-4`} />
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+                                                                <Suspense fallback={<div className="mb-4">Loading posts...</div>}>
+                                                                    <FeedList
+                                                                        user={user}
+                                                                        IsloggedIn={IsloggedIn}
+                                                                        initialFilter="all"
                                                                     />
-                                                                ) : (
-                                                                    ""
-                                                                )}
-                                                                {!IsloggedIn && UserStripeConnected == 1 && w > 767 ? (
-                                                                    <TipInner classes={`mb-4`} />
-                                                                ) : (
-                                                                    ""
-                                                                )}
-                                                                <FeedList
-                                                                    user={user}
-                                                                    IsloggedIn={IsloggedIn}
-                                                                    initialFilter="all"
-                                                                />
+                                                                </Suspense>
                                                             </div>
                                                         </div>
                                                     </Suspense>
@@ -1213,6 +1247,38 @@ export default function Dashboard(props) {
                                                             ""
                                                         )}
 
+                                                        {page === "piggy-pots" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                {props.piggyPots && props.piggyPots.length > 0 ? (
+                                                                    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        {props.piggyPots.map((pot) => (
+                                                                            <div key={pot.id} onClick={() => setActivePiggyPot(pot)} className="cursor-pointer bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all rounded-[30px] p-4 flex flex-col">
+                                                                                {pot.cover_media && (
+                                                                                    <div className="mb-3 rounded-2xl overflow-hidden border-2 border-black h-[160px] flex-shrink-0">
+                                                                                        <img src={pot.cover_media} className="w-full h-full object-cover" alt={pot.title} />
+                                                                                    </div>
+                                                                                )}
+                                                                                <h3 className="font-black text-xl uppercase tracking-wide text-black line-clamp-1">{pot.title}</h3>
+                                                                                <p className="text-gray-600 text-sm font-medium line-clamp-2 mt-1 min-h-[40px] flex-grow">{pot.description}</p>
+                                                                                <div className="mt-3 bg-pink-50 rounded-xl p-3 border-2 border-black flex justify-between items-center flex-shrink-0">
+                                                                                    <span className="text-xs font-black text-gray-600 uppercase tracking-wider">Target</span>
+                                                                                    <span className="font-black text-pink-600">{pot.currency} {pot.target_amount}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <Nocontent text="No active Piggy Pots." />
+                                                                )}
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
                                                         {page === "gifts" ? (
                                                             <Suspense
                                                                 fallback={
@@ -1314,6 +1380,22 @@ export default function Dashboard(props) {
                 ) : (
                     ""
                 )}
+
+                <Popup 
+                    action={!!activePiggyPot} 
+                    space="p-0" 
+                    classes="hidden"
+                    modalclass="!bg-transparent !border-none !shadow-none"
+                    hidecontrols={true}
+                    onHide={() => setActivePiggyPot(null)}
+                >
+                    {activePiggyPot && (
+                        <div className="relative">
+                            <button onClick={() => setActivePiggyPot(null)} className="absolute -top-3 -right-3 z-50 bg-white border-2 border-black rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">X</button>
+                            <PiggyPotWidget piggyPots={[activePiggyPot]} user={user} global_currency={global_currency} />
+                        </div>
+                    )}
+                </Popup>
 
                 <OldSubscribe />
             </Guest>

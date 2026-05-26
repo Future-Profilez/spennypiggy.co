@@ -2462,6 +2462,14 @@ class StripeWebhookController extends Controller
             // Use gross-up flow for net amount calculation
             $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency);
 
+            $deliverableUrl = null;
+            if (!empty($bill->content_file)) {
+                $deliverableUrl = $bill->content_file;
+                if (!\Illuminate\Support\Str::startsWith($deliverableUrl, ['http://', 'https://'])) {
+                    $deliverableUrl = "https://ucarecdn.com/{$deliverableUrl}/";
+                }
+            }
+
             // Create deliverable entry for renewal tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
@@ -2475,7 +2483,7 @@ class StripeWebhookController extends Controller
                 'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
                 'product_type' => 'bill',
                 'transaction_amount' => $billPayment->amount, // Add transaction amount
-                'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
+                'deliverable_url' => $deliverableUrl,
                 'customer_email' => $billPayment->guest_email ?? $billPayment->user->email ?? null,
                 'customer_name' => $billPayment->guest_name ?? $billPayment->user->name ?? null,
                 'payment_status' => $billPayment->status,
@@ -3440,6 +3448,7 @@ class StripeWebhookController extends Controller
 
             $sourceModels = [
                 [\App\Models\TaskPurchase::class,       'payment_intent_id', 'stripe_session_id'],
+                [\App\Models\PiggyPotContribution::class,'payment_intent_id', 'session_id'],
                 [\App\Models\TipGoalsPayment::class,    'session_id',        'session_id'], // Uses session_id for both
                 [\App\Models\ShopPayment::class,        'payment_intent_id', 'session_id'],
                 [\App\Models\StripePaymentDetail::class,'payment_intent_id', 'session_id'],

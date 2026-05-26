@@ -5,10 +5,8 @@ import { Link, usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
-import userdefaultphoto from '../../../../assets/siteicon.png';
 import { TimeFormat } from '@/includes/TimeFormat';
 import OrderDetail from './OrderDetail';
-
 
 export default function OrdersLists({ type = 'sales' }) {
    const slug = (inputString) => {
@@ -172,11 +170,21 @@ export default function OrdersLists({ type = 'sales' }) {
                         <div className="mb-4 flex flex-col gap-1">
                             <div className="flex items-center justify-between">
                                 <h2 className="font-black text-lg sm:text-2xl text-black">
-                                    {item && item?.amount ? (
+                                    {item && (item?.total_paid || item?.gross_amount || item?.amount) ? (
                                         type === 'sales' ? (
-                                            formatMultiPrice(item.amount + item.vat_tax_amount || 0, item?.currency || userCurrency)
+                                            formatMultiPrice(item.net_amount || item.amount || 0, item?.currency || userCurrency)
                                         ) : (
-                                            formatMultiPrice(item.amount + item.vat_tax_amount || 0, item?.currency || userCurrency)
+                                            formatMultiPrice(
+                                                item.total_paid || 
+                                                calculateTotalSupporterPays(
+                                                    ((Number(item.gross_amount || item.amount || 0)) + 
+                                                    (Number(item.tax_amount || 0)) + 
+                                                    (Number(item.vat_tax_amount || 0)) + 
+                                                    (Number(item.shipping_amount || 0))),
+                                                    item?.currency || userCurrency
+                                                ), 
+                                                item?.currency || userCurrency
+                                            )
                                         )
                                     ) : "FREE"}
                                 </h2>

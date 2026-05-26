@@ -99,6 +99,7 @@ class CreatorFinancialController extends Controller
                     'StripePaymentItems' => 'Wish Gift',
                     'ShopPayment' => 'Shop Purchase',
                     'TipGoalsPayment' => 'Support/Tip',
+                    'PiggyPotContribution' => 'Piggy Pot',
                     'MembershipPayment' => 'Membership',
                     'TaskPurchase' => 'Task',
                     'BillPayment' => 'Bill',
@@ -171,6 +172,7 @@ class CreatorFinancialController extends Controller
                     \App\Models\ShopPayment::class => ['shop', 'deliverable'],
                     \App\Models\StripePaymentItems::class => [],
                     \App\Models\TipGoalsPayment::class => ['tipGoal'],
+                    \App\Models\PiggyPotContribution::class => ['piggyPot'],
                     \App\Models\MembershipPayment::class => ['membership'],
                     \App\Models\BillPayment::class => ['bill'],
                 ]);
@@ -210,6 +212,8 @@ class CreatorFinancialController extends Controller
                     $sourceTitle = $tx->source->membership->level;
                 } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
                     $sourceTitle = $tx->source->bill->name;
+                } elseif ($base === 'PiggyPotContribution' && isset($tx->source->piggyPot)) {
+                    $itemName = $tx->source->piggyPot->title ?? 'Piggy Pot';
                 } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
                     $sourceTitle = $tx->source->tipGoal->name;
                 }

@@ -685,10 +685,15 @@ class TaskController extends Controller
         ];
 
         if ($task->type === 'instant' && $task->deliverable_content) {
+            $contentUrl = $task->deliverable_content;
+            if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
+                $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
+            }
+
             $thankYouParams['wish_content'] = [
                 'type' => $task->deliverable_content_type ?? 'image',
                 'name' => 'Task Content',
-                'url' => 'https://ucarecdn.com/' . $task->deliverable_content . '/'
+                'url' => $contentUrl
             ];
         }
         Log::info('Redirecting to thank you page after task purchase', [

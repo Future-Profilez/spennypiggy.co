@@ -272,10 +272,13 @@ class AuthenticatedSessionController extends Controller
             $cardCapabilities = true;
             $stripeRequirements = [];
 
-            if ($user->role == 1 && !empty($user->account_id)) {
+            // Deferred stripe API calls for non-owners using Inertia Lazy
+            // Only do it synchronously if viewing OWN profile
+            if ($user->role == 1 && !empty($user->account_id) && Auth::id() === $user->id) {
                 [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
             }
-            $sociallinks = SocialLinks::where('user_id', $user->id)->first();
+            // Fetch social links using eager loaded relation or cache
+            $sociallinks = $user->social_links;
             if ($sociallinks && $sociallinks->status != 1 && (!Auth::check() || Auth::id() !== $user->id)) {
                 $sociallinks = null;
             }
@@ -307,8 +310,8 @@ class AuthenticatedSessionController extends Controller
                 'slinks' => $sociallinks,
                 'intro' => $userIntro,
                 'supporters' => $profileData['supporters'],
-                'wish_categories' => $this->getCategoriesWithItems($user),
-                'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories()->get() : [],
+                'wish_categories' => $page === 'wishes' ? $this->getCategoriesWithItems($user) : [],
+                'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories : [],
                 'selectedCategory' => request()->query('category') ?? false,
                 'page' => $page,
                 'is_blocked' => $isBlocked,
@@ -462,7 +465,10 @@ class AuthenticatedSessionController extends Controller
             'memberships' => [],
             'bills' => [],
             'shops' => [],
-            'tasks' => []
+            'tasks' => [],
+            'piggyPots' => [],
+            'piggyPotTopSupporters' => [],
+            'piggyPotFeed' => []
         ];
 
         switch ($page) {
@@ -476,8 +482,17 @@ class AuthenticatedSessionController extends Controller
                 break;
 
             case 'feed':
+                $data['posts'] = $this->profileService->getUserPosts($userId);
+                break;
+            case 'piggy-pots':
+                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId, false);
+                break;
+
             case 'about':
                 $data['posts'] = $this->profileService->getUserPosts($userId);
+                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId, true);
+                $data['piggyPotTopSupporters'] = $this->profileService->getPiggyPotTopSupporters($userId);
+                $data['piggyPotFeed'] = $this->profileService->getPiggyPotFeed($userId);
                 break;
 
             case 'memberships':

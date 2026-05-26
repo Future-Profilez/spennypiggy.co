@@ -31,6 +31,7 @@ import {
 import {
     Calendar,
     Shield as ShieldIcon,
+    PiggyBank,
 } from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 import { FaFileInvoice } from "react-icons/fa";
@@ -353,7 +354,7 @@ export default function Header({ classMagicword }) {
                                         }
                                         toggleClass();
                                     }}
-                                    className="flex items-center gap-4 p-4 mb-6 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                                    className="flex items-center gap-4 p-4 mb-6 hover:translate-x-[-2px] hover:translate-y-[-2px]  transition-all group"
                                 >
                                     <div className="relative">
                                         <div className="w-17 h-17 rounded-[15px] border-[3px] border-black overflow-hidden bg-pink-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-3 transition-transform">
@@ -426,13 +427,22 @@ export default function Header({ classMagicword }) {
                                     )}
 
                                     {auth?.user?.username && (
-                                        <NavLinkWithIcon
-                                            href="/shop"
-                                            onClick={toggleClass}
-                                            icon={ShoppingBagIcon}
-                                            label="Shop"
-                                            activeColor="hover:bg-[#b892ff]"
-                                        />
+                                        <>
+                                            <NavLinkWithIcon
+                                                href="/shop"
+                                                onClick={toggleClass}
+                                                icon={ShoppingBagIcon}
+                                                label="Shop"
+                                                activeColor="hover:bg-[#b892ff]"
+                                            />
+                                            <NavLinkWithIcon
+                                                href="/piggy-pots"
+                                                onClick={toggleClass}
+                                                icon={PiggyBank}
+                                                label="Piggy Pots"
+                                                activeColor="hover:bg-[#A2E4B8]"
+                                            />
+                                        </>
                                     )}
 
                                     {auth && auth.user ? (

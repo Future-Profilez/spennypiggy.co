@@ -28,6 +28,8 @@ use App\Http\Controllers\ReferAndEarnController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\PiggyPotController;
+use App\Http\Controllers\PiggyPotPaymentController;
 use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\FounderBonusController;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -355,6 +357,12 @@ Route::middleware('auth')->group(function () {
             Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout.auth');
             Route::get('handle/{uuid}/{status?}', [MembershipController::class, 'handlePayment'])->name('handle.auth');
         });
+
+        // Piggy Pots
+        Route::get('/piggy-pots', [PiggyPotController::class, 'index'])->name('piggy-pots.index');
+        Route::post('/piggy-pots', [PiggyPotController::class, 'store'])->name('piggy-pots.store');
+        Route::post('/piggy-pots/{id}', [PiggyPotController::class, 'update'])->name('piggy-pots.update');
+        Route::delete('/piggy-pots/{id}', [PiggyPotController::class, 'destroy'])->name('piggy-pots.destroy');
 
         // Shop items - accessible without subscription
         Route::prefix('shop')->group(function () {
@@ -831,6 +839,11 @@ Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+});
+
+Route::prefix("piggy-pot")->name("piggy-pot.")->group(function () {
+    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name("pay");
+    Route::get('/handle/{uuid}/{status?}', [PiggyPotPaymentController::class, 'handlePiggyPotPayment'])->name('handle');
 });
 
 Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class, 'usergoal'])->name('user.goal');

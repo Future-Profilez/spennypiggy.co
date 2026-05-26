@@ -1,18 +1,11 @@
-import { Link, Head } from "@inertiajs/react";
-import ModernImage from '../../Components/ModernImage';
-import itsfree from "../../../assets/img/itsfree.png";
-import itsfreemob from "../../../assets/img/itsfree-mob.png";
-import herobanner from '../../../assets/new/HeroBg.png';
-
-// 1x1 transparent placeholder for critical LCP optimization
+import { Link } from "@inertiajs/react";
 const transparentPixel = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB2aWV3Qm94PSIwIDAgMSAxIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+';
-import proud from '../../../assets/img/proud.png';
 import TrustBox from './TrustBox';
 import { useState, useEffect, useRef } from 'react';
-import Popup from '@/Components/Popup';
 import { RocketIcon, HouseIcon } from "@animateicons/react/lucide";
 
 export default function Hero({auth}) {
+  
   const houseIconRef = useRef(null);
   const rocketIconRef1 = useRef(null);
   const rocketIconRef2 = useRef(null);
@@ -51,7 +44,7 @@ export default function Hero({auth}) {
      };
    }, []);
 
-   const handleNavItemClick = (e, section) => {
+  const handleNavItemClick = (e, section) => {
     e.preventDefault();
     const targetElement = document.getElementById(section);
     if (targetElement) {
@@ -72,9 +65,7 @@ export default function Hero({auth}) {
         <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
             <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
               <li>
-                <a 
-                    href="#home" 
-                    className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`} 
+                <a  href="#home"  className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`} 
                     onClick={(e) => handleNavItemClick(e, 'home')}
                     onMouseEnter={() => houseIconRef.current?.startAnimation()}
                 >
@@ -88,7 +79,7 @@ export default function Hero({auth}) {
               </li>
               <li>
                 <a href="#reviews" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'reviews' ? 'active text-[#FF007F]' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
-                reviews
+                  Reviews
                 </a>
               </li>
               <li>
@@ -98,15 +89,15 @@ export default function Hero({auth}) {
               </li>
             </ul>
         </div>
+
         <img 
           src={transparentPixel} 
-          alt="" 
-          width="1" 
-          height="1" 
+          loading="eager" alt=""  width="1"  height="1" 
           style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
-          loading="eager"
         />
+
         <div id="home" className="bg-black relative min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center py-2 md:py-24">
+          
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
               <div className="absolute top-[-40px] left-0 w-64 h-64 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-50 floating-shape animate-float"></div>
               <div className="absolute top-20 right-10 w-72 h-72 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-float-delayed" style={{animationDelay: '1s'}}></div>
@@ -119,7 +110,7 @@ export default function Hero({auth}) {
                     <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-wide text-4xl sm:text-6xl md:text-7xl xl:text-[80px] max-w-6xl mx-auto text-center leading-[0.85] md:leading-[0.8]">
                       The everything 
                       <div className='block mt-2 md:mt-2 text-4xl md:text-7xl xl:text-[80px]'>
-                        <span className="text-gradient-wishlist drop-shadow-[0_0_50px_rgba(249,79,150,0.5)] animate-pulse">
+                        <span className="text-gradient-wishlists text-pink drop-shadow-[0_0_50px_rgba(249,79,150,0.5)] animate-pulse">
                             wishlist
                         </span> 
                       </div>
@@ -172,9 +163,15 @@ export default function Hero({auth}) {
                       <TrustBox />
                   </div>
 
+                      <div className="m-auto max-w-[660px] flex justify-center items-center">
+                        <p className='uppercase px-6 text-center mt-4 text-gray-400 font-poppins text-[16px] xl:text-[18px] tracking-wider'>*3 days Free trial and then requires a monthly £8.99 + VAT payment to cover stripe fees and compliance costs. </p>
+                      </div>
+                  
+
                 </div>
             </div>
           </div>
+          
         </div>
     </>
 }

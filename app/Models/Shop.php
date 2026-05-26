@@ -157,7 +157,11 @@ class Shop extends Model
     public function getRewardFileUrlAttribute(){
         $url = false;
         if(!empty($this->reward_file)){
-            $url = "https://ucarecdn.com/" . $this->reward_file . "/";
+            if (\Illuminate\Support\Str::startsWith($this->reward_file, ['http://', 'https://'])) {
+                $url = $this->reward_file;
+            } else {
+                $url = "https://ucarecdn.com/" . $this->reward_file . "/";
+            }
         }
 
         return $url;
