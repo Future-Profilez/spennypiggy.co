@@ -31,8 +31,25 @@ class PiggyPotPaymentController extends Controller
             'digital_waiver' => ['required', 'accepted'],
             'amount' => ['required', 'numeric', 'min:1'],
         ]);
-        
+
         $user = Auth::user();
+
+        $piggyPot = PiggyPot::where('uuid', $piggy_pot_uuid)->first();
+
+        if (! $piggyPot) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Piggy Pot not found.'
+            ]);
+        }
+
+        if ($user->id === $piggyPot->user_id) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'You cannot contribute to your own Piggy Pot.'
+            ]);
+        }
+
         if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
@@ -40,7 +57,8 @@ class PiggyPotPaymentController extends Controller
                 'msg' => "Please complete your card verification process."
             ]);
         }
-        
+
+
         $piggyPot = PiggyPot::where('uuid', $piggy_pot_uuid)->first();
         if (!$piggyPot) {
             return response()->json([
@@ -58,7 +76,7 @@ class PiggyPotPaymentController extends Controller
                 'msg' => "This goal is already completed."
             ]);
         }
-        
+
         $creator = User::where('id', $piggyPot->user_id)->where('is_uk', 0)->first();
         if (!$creator) {
             return response()->json([
@@ -112,7 +130,7 @@ class PiggyPotPaymentController extends Controller
         // This means the entered amount is the FINAL amount the supporter pays.
         // Let's assume $basePrice is the final amount.
         $finalTotalAmount = $basePrice;
-        
+
         // Calculate breakdown backwards (approximated for now to match UI expectation)
         // Usually Helpers::calculateStripeDirectChargeFlow expects base amount and adds fees.
         // Let's use the provided amount as the base amount and calculate fees if that's how it's designed.
@@ -203,7 +221,7 @@ class PiggyPotPaymentController extends Controller
         ];
 
         $redirectUrl = url()->previous() ?: route('user.show', ['username' => $creator->username]);
-        
+
         $payload = [
             "mode" => 'payment',
             'payment_method_types' => ['card'],
@@ -269,9 +287,9 @@ class PiggyPotPaymentController extends Controller
         }
 
         $pay->load(['creator', 'piggyPot', 'user']);
-        
+
         $redirectUrl = $request->query('redirect');
-        
+
         try {
             $session = StripeControl::getCheckoutSession($pay->session_id, $pay->creator->account_id);
 
@@ -304,8 +322,8 @@ class PiggyPotPaymentController extends Controller
                 // Sync to FinancialTransactions
                 try {
                     $isZeroDecimal = Helpers::isZeroDecimalCurrency($pay->currency);
-                    
-                    $gross = (float) $pay->total_paid; 
+
+                    $gross = (float) $pay->total_paid;
                     $platformFee = (float) $pay->tax;
                     $stripeFee = 0;
                     $vatAmt = (float) $pay->vat_amount;
@@ -316,7 +334,8 @@ class PiggyPotPaymentController extends Controller
                             if (isset($intentObj->application_fee_amount)) {
                                 $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
                             }
-                        } catch (\Exception $e) {}
+                        } catch (\Exception $e) {
+                        }
                     }
 
                     $reserveAmountMajor = 0;
@@ -344,8 +363,8 @@ class PiggyPotPaymentController extends Controller
                             'stripe_fee'    => $stripeFee,
                             'vat_amount'    => $vatAmt,
                             'net_amount'    => (float) $pay->amount,
-                            'reserve_amount'=> $reserveAmountMajor,
-                            'reserve_status'=> $reserveStatus,
+                            'reserve_amount' => $reserveAmountMajor,
+                            'reserve_status' => $reserveStatus,
                             'currency'      => strtoupper($pay->currency ?? 'GBP'),
                             'status'        => 'completed',
                             'description'   => 'Piggy Pot Contribution',
@@ -424,7 +443,7 @@ class PiggyPotPaymentController extends Controller
 
                 return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
             }
-            
+
             if ($redirectUrl) {
                 return redirect($redirectUrl)->with("error", "Payment cancelled or failed.");
             }

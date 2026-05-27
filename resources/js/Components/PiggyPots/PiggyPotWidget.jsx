@@ -123,6 +123,8 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
     const progressPercent = Math.min(100, (raisedAmount / targetAmount) * 100);
     const remainingAmount = Math.max(0, parseFloat((targetAmount - raisedAmount).toFixed(2)));
     const isComplete = remainingAmount <= 0 || progressPercent >= 100;
+    const featuredCreatorId = featuredPot.creator_id || featuredPot.creator?.id || featuredPot.user?.id || featuredPot.user_id;
+    const isCreator = auth?.user?.id && featuredCreatorId && auth.user.id === featuredCreatorId;
     const shouldCelebrate = !!featuredPot?.is_pinned && isComplete && !inPopup;
     
     const currencySymbol = user?.default_currency === 'USD' ? '$' : '£';
@@ -192,56 +194,73 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                         </div>
 
                         {step === 1 && (
-                            <div className="animate-fade-in">
-                                <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
-                                    {presetAmounts.map(val => {
-                                        const disabled = isComplete || remainingAmount <= 0 || val > remainingAmount;
-                                        return (
+                            isCreator ? (
+                                <div className="animate-fade-in space-y-4 rounded-[30px] border-[3px] border-black p-6 bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <p className="text-gray-700 text-base font-bold">
+                                        You are the creator of this Piggy Pot. Creators cannot contribute to their own pot.
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        To update pot details, use the edit page below.
+                                    </p>
+                                    <Link
+                                        href={route('piggy-pots.index')}
+                                        className="inline-flex w-full justify-center py-3 rounded-full border-[3px] border-black bg-[#FFD700] text-black font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#f5c72f]"
+                                    >
+                                        Edit Piggy Pot
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="animate-fade-in">
+                                    <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
+                                        {presetAmounts.map(val => {
+                                            const disabled = isComplete || remainingAmount <= 0 || val > remainingAmount;
+                                            return (
+                                            <button 
+                                                key={val}
+                                                onClick={() => selectPreset(val)}
+                                                disabled={disabled}
+                                                className={`flex-1 min-w-[60px] py-2 md:py-3 rounded-[20px] border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : (selectegTag === val ? 'bg-[#FFD700] active:translate-y-1 active:translate-x-1 active:shadow-none' : 'bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 active:shadow-none')}`}
+                                            >
+                                                {formatMultiPrice(val, user?.default_currency || "GBP")}
+                                            </button>
+                                        )})}
                                         <button 
-                                            key={val}
-                                            onClick={() => selectPreset(val)}
-                                            disabled={disabled}
-                                            className={`flex-1 min-w-[60px] py-2 md:py-3 rounded-[20px] border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : (selectegTag === val ? 'bg-[#FFD700] active:translate-y-1 active:translate-x-1 active:shadow-none' : 'bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 active:shadow-none')}`}
-                                        >
-                                            {formatMultiPrice(val, user?.default_currency || "GBP")}
+                                            onClick={() => {
+                                                setselectegTag('custom');
+                                                setAmount('');
+                                                setData('amount', '');
+                                            }}
+                                            disabled={isComplete || remainingAmount <= 0}
+                                            className={`px-3  py-1 md:py-3 rounded-[20px] border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all ${selectegTag === 'custom' ? 'bg-[#FFD700]' : 'bg-white hover:bg-gray-50'}`} >
+                                            CUSTOM
                                         </button>
-                                    )})}
+                                    </div>
+                                    
+                                    {selectegTag === 'custom' && (
+                                        <div className="relative flex items-center mb-4 animate-fade-in">
+                                            <span className="absolute left-5 font-black text-gray-700">{global_currency || 'GBP'}</span>
+                                            <input 
+                                                className="w-full border-[3px] border-black px-4 py-3 pl-16 rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black text-lg focus:outline-none focus:ring-0 focus:border-pink-500"
+                                                value={amount}
+                                                onChange={handleCustomAmount}
+                                                type="number" 
+                                                min="1"
+                                                max={remainingAmount > 0 ? remainingAmount : undefined}
+                                                placeholder="Enter amount" 
+                                                disabled={isComplete || remainingAmount <= 0}
+                                            />
+                                        </div>
+                                    )}
+
                                     <button 
-                                        onClick={() => {
-                                            setselectegTag('custom');
-                                            setAmount('');
-                                            setData('amount', '');
-                                        }}
-                                        disabled={isComplete || remainingAmount <= 0}
-                                        className={`px-3  py-1 md:py-3 rounded-[20px] border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all ${selectegTag === 'custom' ? 'bg-[#FFD700]' : 'bg-white hover:bg-gray-50'}`} >
-                                        CUSTOM
+                                        onClick={handleNextStep}
+                                        disabled={isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount}
+                                        className={`w-full py-2 md:py-4 rounded-[30px]  border-[3px] border-black font-black text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount) ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
+                                    >
+                                        {isComplete ? 'GOAL COMPLETED' : 'Add To Pot'}
                                     </button>
                                 </div>
-                                
-                                {selectegTag === 'custom' && (
-                                    <div className="relative flex items-center mb-4 animate-fade-in">
-                                        <span className="absolute left-5 font-black text-gray-700">{global_currency || 'GBP'}</span>
-                                        <input 
-                                            className="w-full border-[3px] border-black px-4 py-3 pl-16 rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black text-lg focus:outline-none focus:ring-0 focus:border-pink-500"
-                                            value={amount}
-                                            onChange={handleCustomAmount}
-                                            type="number" 
-                                            min="1"
-                                            max={remainingAmount > 0 ? remainingAmount : undefined}
-                                            placeholder="Enter amount" 
-                                            disabled={isComplete || remainingAmount <= 0}
-                                        />
-                                    </div>
-                                )}
-
-                                <button 
-                                    onClick={handleNextStep}
-                                    disabled={isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount}
-                                    className={`w-full py-2 md:py-4 rounded-[30px]  border-[3px] border-black font-black text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount) ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
-                                >
-                                    {isComplete ? 'GOAL COMPLETED' : 'Add To Pot'}
-                                </button>
-                            </div>
+                            )
                         )}
 
                         {step === 2 && (
@@ -327,7 +346,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                 >
                                     {loading ? 'Processing...' : 'ADD TO POT'}
                                 </button>
-                                <div className="mt-2 text-center text-xs font-bold text-gray-500 mt-1">
+                                <div className="mt-2 text-center text-xs font-bold text-gray-500">
                                     🔒 Secured via Stripe
                                 </div>
                             </div>
