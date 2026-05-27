@@ -108,10 +108,40 @@ class CheckoutToUser extends Mailable
             ]);
 
             $supportUrl = url('/history');
+            $contactUrl = url('/history');
+            $refundUrl = url('/history');
+
+            $creatorUsername = $this->data->owner->username ?? null;
+            if ($creatorUsername && isset($this->data->id)) {
+                $base = url('/history');
+                $common = http_build_query([
+                    'support_open' => '1',
+                    'creator_username' => $creatorUsername,
+                    'event_type' => 'gift_wish',
+                    'source' => 'stripe_payment_items',
+                    'source_id' => (string) $this->data->id,
+                ]);
+
+                $contactUrl = $base . '?' . $common . '&support_type=contact';
+                $refundUrl = $base . '?' . $common . '&support_type=refund';
+            }
+
             if (!isset($this->data->user_id) && !empty($this->data->guest_email) && isset($this->data->id)) {
                 $supportUrl = URL::signedRoute('support.guest.create', [
-                    'paymentId' => $this->data->id,
+                    'paymentId' => $this->data->payment?->id ?? $this->data->stripe_payment_detail_id ?? null,
                     'email' => $this->data->guest_email,
+                ]);
+
+                $contactUrl = URL::signedRoute('support.guest.create', [
+                    'paymentId' => $this->data->payment?->id ?? $this->data->stripe_payment_detail_id ?? null,
+                    'email' => $this->data->guest_email,
+                    'type' => 'contact',
+                ]);
+
+                $refundUrl = URL::signedRoute('support.guest.create', [
+                    'paymentId' => $this->data->payment?->id ?? $this->data->stripe_payment_detail_id ?? null,
+                    'email' => $this->data->guest_email,
+                    'type' => 'refund',
                 ]);
             }
             
@@ -120,6 +150,8 @@ class CheckoutToUser extends Mailable
                 ->subject($subject)
                 ->with([
                     'supportUrl' => $supportUrl,
+                    'contactUrl' => $contactUrl,
+                    'refundUrl' => $refundUrl,
                 ]);
                 
             Log::info('CheckoutToUser: Email built successfully');

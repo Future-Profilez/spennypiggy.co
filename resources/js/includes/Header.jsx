@@ -481,7 +481,7 @@ export default function Header({ classMagicword }) {
                                                 )}
                                                 onClick={toggleClass}
                                                 icon={ShieldCheckIcon}
-                                                label="Disputes Center"
+                                                label="Dispute & Refund Center"
                                                 activeColor="hover:bg-[#A2E4B8]"
                                             />
                                             {auth?.user?.role == 1 && (

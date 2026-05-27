@@ -160,6 +160,31 @@ export default function Transactions(props) {
     setSupportModalState({ show: true, event, type });
   };
 
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('support_open') !== '1') return;
+
+      const creatorUsername = params.get('creator_username');
+      const supportType = params.get('support_type') === 'refund' ? 'refund' : 'contact';
+      if (!creatorUsername) return;
+
+      const event = {
+        creator: { username: creatorUsername },
+        type: params.get('event_type') || null,
+        source: params.get('source') || null,
+        source_id: params.get('source_id') || null,
+      };
+
+      openSupportModal(event, supportType);
+
+      const next = new URL(window.location.href);
+      ['support_open', 'support_type', 'creator_username', 'event_type', 'source', 'source_id'].forEach((k) => next.searchParams.delete(k));
+      window.history.replaceState({}, '', next.toString());
+    } catch {
+    }
+  }, []);
+
   const submitShopAnswer = async (paymentId) => {
     const answer = shopAnswerDrafts[paymentId];
     if (!answer?.trim()) return;

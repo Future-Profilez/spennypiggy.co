@@ -39,7 +39,7 @@ export default function TopSupporters({grid = false}) {
   }, [period]);
 
   const SupporterItem = ({ supporter, index }) => (
-    <div className="fading rank py-3 border-b flex items-center justify-between">
+    <div className="rank py-3 border-b flex items-center justify-between">
       <div className="flex items-center justify-between">
         <div className="wisher wisher-rank">
           <Avatar

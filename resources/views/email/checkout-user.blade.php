@@ -72,7 +72,31 @@
                      </tr>
                  <tr>
                      <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                         Need help with this purchase? <a href="{{ $supportUrl ?? url('/history') }}">Contact the creator or request a refund</a>.
+                         <div style="padding: 14px; background: #f8f8f8; border: 1px solid #eeeeee; border-radius: 12px; text-align: left;">
+                             <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
+                                 Receipt Details
+                             </div>
+                             <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
+                                 <div><b>Seller (Creator):</b> {{ isset($data->owner) && isset($data->owner->name) ? $data->owner->name : 'Creator' }}</div>
+                                 <div><b>Order ID:</b> {{ $data->payment->session_id ?? $data->payment->stripe_session_id ?? 'N/A' }}</div>
+                                 <div><b>Receipt ID:</b> {{ $data->payment->uuid ?? 'N/A' }}</div>
+                             </div>
+                         </div>
+                         <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
+                             Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
+                             <br />
+                             Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
+                         </div>
+                         <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                             <a href="{{ $contactUrl ?? ($supportUrl ?? url('/history')) }}"
+                                 style="display:inline-block; padding: 10px 18px; background-color: #ffffff; color: #141414; text-decoration:none; border: 2px solid #141414; border-radius: 30px; font-family: Arial; font-weight: bold; font-size: 12px;">
+                                 Contact Creator
+                             </a>
+                             <a href="{{ $refundUrl ?? ($supportUrl ?? url('/history')) }}"
+                                 style="display:inline-block; padding: 10px 18px; background-color: #FF007F; color: #141414; text-decoration:none; border: 2px solid #141414; border-radius: 30px; font-family: Arial; font-weight: bold; font-size: 12px;">
+                                 Request Refund
+                             </a>
+                         </div>
                      </td>
                  </tr>
                 @php

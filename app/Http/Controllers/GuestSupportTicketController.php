@@ -41,6 +41,7 @@ class GuestSupportTicketController extends Controller
                 'name' => $payment->owner->name,
                 'avatar' => $payment->owner->avatar_url,
             ] : null,
+            'initial_type' => $request->query('type') === 'refund' ? 'refund' : 'contact',
             'email' => $request->email,
             'post_url' => URL::signedRoute('support.guest.store', ['paymentId' => $payment->id, 'email' => $request->email]),
         ]);
