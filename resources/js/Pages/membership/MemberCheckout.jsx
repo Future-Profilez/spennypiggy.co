@@ -417,7 +417,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label className=" mb-2 text-sm font-medium text-gray-900">Add Message </label>
                                         <textarea
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             onKeyUp={(e) => setData("message",e.target.value)}
                                             placeholder="Write message in under 800 Words..."
                                             defaultValue={data.message}

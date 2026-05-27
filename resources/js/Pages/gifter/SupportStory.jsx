@@ -159,7 +159,7 @@ export default function SupportStory({ creator, gifter }) {
     })();
 
     return (
-      <div className="rounded-[25px] md:rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all p-5">
+      <div className="rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all p-5">
         <div className="md:flex items-start justify-between gap-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -274,7 +274,7 @@ export default function SupportStory({ creator, gifter }) {
           {isThankyou ? (
             <div className="mt-4">
               {ev.message ? (
-                <p className="text-black font-bold text-sm italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black">
+                <p className="text-black font-bold text-sm italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px]  border-2 border-black">
                   {ev.message}
                 </p>
               ) : null}
@@ -305,7 +305,7 @@ export default function SupportStory({ creator, gifter }) {
             <div className="mt-4">
               <a href={ev.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
               {ev.task.reward_note ? (
-                <p className="mt-2 text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black">Note: {ev.task.reward_note}</p>
+                <p className="mt-2 text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px]  border-2 border-black">Note: {ev.task.reward_note}</p>
               ) : null}
             </div>
           ) : null}
@@ -331,7 +331,7 @@ export default function SupportStory({ creator, gifter }) {
     <Authenticated auth={auth?.user || ''} user={auth?.user || ''}>
       <div className="bg-[#A2E4B8] min-h-screen py-8 md:py-12 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 mb-6">
+          <div className="rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 mb-6">
             <h2 className="text-black font-black text-2xl md:text-3xl uppercase tracking-widest mb-2">
               Support Story
             </h2>
@@ -358,7 +358,7 @@ export default function SupportStory({ creator, gifter }) {
               />
             </div>
 
-            <div className="mt-6 p-4 rounded-[25px] md:rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mt-6 p-4 rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <p className="text-black text-[11px] font-black uppercase tracking-widest mb-3">
                 Shared History Summary
               </p>

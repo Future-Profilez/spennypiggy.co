@@ -6,7 +6,7 @@ export default function Gallerybox({images}) {
         {images && images.map((p, i)=>{ 
           return <>
           <div>
-              <img className="h-auto max-w-full rounded-[30px]  " src={p} alt="" />
+              <img className="h-auto max-w-full rounded-[30px]   " src={p} alt="" />
           </div>
           </> 
         })}

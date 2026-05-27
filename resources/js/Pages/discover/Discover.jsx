@@ -373,7 +373,7 @@ export default function Discover(props) {
                                     <div className="h-8 w-64 bg-gray-200/40 animate-pulse border-2 border-black rounded-lg" />
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                                         {Array(4).fill(0).map((_, i) => (
-                                            <div key={i} className="h-64 bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+                                            <div key={i} className="h-64 bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
                                         ))}
                                     </div>
                                 </div>
@@ -524,7 +524,7 @@ export default function Discover(props) {
                                     )}
 
                                     {(!searchResults.creators?.length && !searchResults.wishes?.length && !searchResults.bills?.length && !searchResults.memberships?.length && !displayedTasks?.length && !displayedShops?.length) && (
-                                        <div className="text-center py-20 px-10 bg-white rounded-[30px]   border border-dashed border-gray-200">
+                                        <div className="text-center py-20 px-10 bg-white rounded-[30px]    border border-dashed border-gray-200">
                                             <div className="text-gray-400 text-5xl mb-4">🔍</div>
                                             <h3 className="text-lg font-medium text-gray-900 mb-2">No matches found</h3>
                                             <p className="text-gray-500">Try adjusting your search or filters to find what you're looking for.</p>

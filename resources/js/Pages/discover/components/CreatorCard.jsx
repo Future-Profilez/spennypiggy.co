@@ -7,7 +7,7 @@ import { RiFireLine  } from 'react-icons/ri';
 export default function CreatorCard({auth, item}) {
    return (
        <Link href={route('user.show', item.username)} onClick={() => trackSearchClick(item.id, item.username)} 
-       className="relative bg-white fading rounded-[25px] md:rounded-[30px] overflow-hidden flex flex-col items-center text-left group cursor-pointer block border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]bg-[#fdfbf7]">
+       className="relative bg-white fading rounded-[25px] md:rounded-[30px]  overflow-hidden flex flex-col items-center text-left group cursor-pointer block border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] bg-[#fdfbf7]">
             <div className="h-full w-full max-h-[260px] overflow-hidden transition-colors !border-b-[3px] border-b-black relative">
                 <img src={item.cover_url || wishlistbannerimg} alt={item.name} 
                 className="w-full h-[100px] object-cover bg-white" loading="lazy" />

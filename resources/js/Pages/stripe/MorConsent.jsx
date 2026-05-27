@@ -66,7 +66,7 @@ export default function MorConsent(props) {
                     )}
 
                     {/* Merchant of Record Agreement Card */}
-                    <div className="bg-white rounded-[30px]   shadow-lg border border-gray-200 overflow-hidden mb-8">
+                    <div className="bg-white rounded-[30px]    shadow-lg border border-gray-200 overflow-hidden mb-8">
                         <div className="p-8">
                             {/* Agreement Header */}
                             <div className="text-center mb-8">
@@ -83,7 +83,7 @@ export default function MorConsent(props) {
 
                             {/* Agreement Content */}
                             <div className="space-y-6 mb-8">
-                                <div className="bg-pink-50/50 rounded-[30px] p-8 border border-pink-100">
+                                <div className="bg-pink-50/50 rounded-[30px]  p-8 border border-pink-100">
                                     <p className="text-gray-900 text-lg text-center font-bold leading-relaxed">
                                         I confirm that I understand and agree
                                         that I am the Merchant of Record (MoR)
@@ -100,7 +100,7 @@ export default function MorConsent(props) {
                                     
                                     <div className="grid grid-cols-1 gap-4">
                                         {acknowledgements.map((text, index) => (
-                                            <div key={index} className="flex items-start gap-4 p-4 rounded-[30px] bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
+                                            <div key={index} className="flex items-start gap-4 p-4 rounded-[30px]  bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
                                                 <div className="w-6 h-6 bg-[#FF007F] text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
                                                     <span className="text-[10px] font-bold">✓</span>
                                                 </div>
@@ -112,7 +112,7 @@ export default function MorConsent(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-900 rounded-[30px] p-6 shadow-[4px_4px_0px_0px_#FF007F]l">
+                                <div className="bg-gray-900 rounded-[30px]  p-6 shadow-[4px_4px_0px_0px_#FF007F]l">
                                     <p className="text-white text-center font-bold text-sm leading-relaxed italic">
                                         "By continuing, I confirm that I have
                                         read, understood, and agree to this
@@ -122,7 +122,7 @@ export default function MorConsent(props) {
                             </div>
 
                             {/* Confirmation Checkbox */}
-                            <div className="bg-gray-50 rounded-[30px]  p-6 mb-8">
+                            <div className="bg-gray-50 rounded-[30px]   p-6 mb-8">
                                 <label
                                     htmlFor="mor_agreement"
                                     className="flex items-start space-x-3 cursor-pointer"

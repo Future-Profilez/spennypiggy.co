@@ -796,6 +796,7 @@ Route::middleware('auth')->group(function () {
         Route::post('support/tickets', [\App\Http\Controllers\SupportTicketController::class, 'store'])->name('support.tickets.store');
         Route::get('support/tickets/{uuid}', [\App\Http\Controllers\SupportTicketController::class, 'show'])->name('support.tickets.show');
         Route::post('support/tickets/{uuid}/message', [\App\Http\Controllers\SupportTicketController::class, 'message'])->name('support.tickets.message');
+        Route::post('support/tickets/{uuid}/resolve', [\App\Http\Controllers\SupportTicketController::class, 'resolve'])->name('support.tickets.resolve');
         Route::post('support/tickets/{uuid}/creator/approve-refund', [\App\Http\Controllers\SupportTicketController::class, 'creatorApproveRefund'])->name('support.tickets.creator.approve-refund');
         Route::post('support/tickets/{uuid}/creator/reject-refund', [\App\Http\Controllers\SupportTicketController::class, 'creatorRejectRefund'])->name('support.tickets.creator.reject-refund');
 

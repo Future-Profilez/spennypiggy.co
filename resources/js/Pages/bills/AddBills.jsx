@@ -123,7 +123,7 @@ export default function AddBills(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 !rounded-[30px] bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 !rounded-[30px]  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="pl-3 text-left">
@@ -142,7 +142,7 @@ export default function AddBills(props) {
             modalclass="pinkmodal full"
             size="md"
             action={close}
-            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-[30px]  p-3 mb-2 text-center"}`}
+            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-[30px]   p-3 mb-2 text-center"}`}
             text={text ? text : <AddItem />} >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
@@ -182,7 +182,7 @@ export default function AddBills(props) {
                                         type="text"
                                         placeholder="Eg. Netflix subscription"
                                         value={data.name}
-                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("name", e.target.value)
@@ -207,7 +207,7 @@ export default function AddBills(props) {
                                                 (item && item.price) ||
                                                 data.price
                                             }
-                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -215,7 +215,7 @@ export default function AddBills(props) {
                                         />
                                     </div>
                                     {data.price > 0 && (
-                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px] border border-gray-100">
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px]  border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-sm text-gray-600">Fans pay:</span>
                                                 <span className="font-bold text-gray-900">
@@ -380,7 +380,7 @@ export default function AddBills(props) {
                                 </li>
                             </ul>
 
-                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[30px]   bg-yellow-50" role="alert">
+                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[30px]    bg-yellow-50" role="alert">
                                 When adding items please ensure they are specific
                                 i.e Holiday Clothes or New Gym Equipment. Items that
                                 are non specific will be rejected and removed. Our

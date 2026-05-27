@@ -123,7 +123,7 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
 
     return (
         <div className={`${item?.status == 0 ? "inactive-item" : ""} h-full group/card`}>
-            <div className="relative flex flex-col h-full bg-white rounded-[30px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 overflow-hidden">
+            <div className="relative flex flex-col h-full bg-white rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 overflow-hidden">
                 <div className="p-6 relative bg-[#fdfbf7]">
                     {item?.is_suspended == 1 && (
                         <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-lg z-10 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help">
@@ -151,7 +151,7 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                                 {item?.level}
                             </h3>
                         </div>
-                        <div className="w-14 h-14 rounded-[30px] border-[3px] border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 group-hover/card:-rotate-3 transition-transform">
+                        <div className="w-14 h-14 rounded-[30px]  border-[3px] border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 group-hover/card:-rotate-3 transition-transform">
                             <img
                                 src={item?.perma_link || dummy}
                                 alt={item?.level}

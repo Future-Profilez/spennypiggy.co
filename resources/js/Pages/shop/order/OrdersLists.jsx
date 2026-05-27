@@ -90,15 +90,15 @@ export default function OrdersLists({ type = 'sales' }) {
 
       {type === 'sales' && (
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8' >
-         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
             <h2 className='font-black text-3xl mb-1' >{claims}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Claims</p>
          </div>
-         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
             <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(monthEarning, userCurrency)}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Last 30 Days</p>
          </div>
-         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
             <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(allEarning, userCurrency)}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>All Time</p>
          </div>
@@ -112,7 +112,7 @@ export default function OrdersLists({ type = 'sales' }) {
                {orders.map((item, index) =>
                   <article 
                     key={index} 
-                    className="relative bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
+                    className="relative bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
                   >
                     <div className="p-3 md:p-4">
                         <div className="relative">

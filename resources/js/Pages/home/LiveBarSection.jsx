@@ -29,7 +29,7 @@ export default function LiveBarSection() {
           </h2>
 
            <Lightbox classes="mx-auto block" text={<>
-              <div className="videoBg !h-auto w-full mt-3 rounded-[30px]  border-2 border-[#FF007F] shadow-[0_0_30px_rgba(236,72,153,0.3)] overflow-hidden group cursor-pointer hover:scale-[1.01] transition-transform duration-300" >
+              <div className="videoBg !h-auto w-full mt-3 rounded-[30px]   border-2 border-[#FF007F] shadow-[0_0_30px_rgba(236,72,153,0.3)] overflow-hidden group cursor-pointer hover:scale-[1.01] transition-transform duration-300" >
                 <div className="relative">
                     <img alt={"image"}  className='w-full h-full' src={spennys} />
                     <div className="absolute  inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">

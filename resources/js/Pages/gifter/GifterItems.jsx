@@ -79,7 +79,7 @@ export default function GifterItems(props) {
             const wishname = w && w.wish && w.wish.wishname;
             const s = w && w.wish && w.wish.subscription;
             return (
-                <div className="box rounded-[30px]   px-3 py-3  ">
+                <div className="box rounded-[30px]    px-3 py-3  ">
                     <div className="flex align-items-start ">
                         <div
                             className={`gift-icon mt-1 me-3 flex items-center justify-center w-12 h-12 min-w-[48px] rounded-full border-2 border-black shadow-[2px_2px_0px_0px_#000]
@@ -141,7 +141,7 @@ export default function GifterItems(props) {
                     <div className="mt-3">
                         <Link
                             href={`/support/${ownerUsername || ""}/${uname || ""}`}
-                            className="button rounded-[30px] px-3 text-[11px] uppercase"
+                            className="button rounded-[30px]  px-3 text-[11px] uppercase"
                         >
                             View Story
                         </Link>
@@ -163,7 +163,7 @@ export default function GifterItems(props) {
             ) : (
                 <>
                     {data && data.length > 0 ? (
-                        <div className="box rounded-[30px] p-4">
+                        <div className="box rounded-[30px]  p-4">
                             <h3 className="text-large text-dark title mb-3">
                                 Wish Granted
                             </h3>

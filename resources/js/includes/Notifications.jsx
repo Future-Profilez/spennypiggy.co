@@ -110,7 +110,7 @@ export default function Notifications() {
           </div>
         </div>
 
-        {open ? <div id="toast-notification" className="w-full p-4 text-gray-900 bg-white rounded-[30px]  shadow " role="alert">
+        {open ? <div id="toast-notification" className="w-full p-4 text-gray-900 bg-white rounded-[30px]   shadow " role="alert">
 
             <div className='md:hidden flex justify-between mb-3' >
                 <button onClick={()=>setOpen(false)} className="items-center flex text-gray-400 hover:text-gray-900 mb-2 " >
@@ -153,7 +153,7 @@ export default function Notifications() {
                     </div>
                     <div className="relative inline-block shrink-0">
                       <Link href={n && n.user && n.user.username || '/'} >
-                        <img className="w-12 h-12 rounded-[30px]  object-cover" src={ n && n?.user && n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
+                        <img className="w-12 h-12 rounded-[30px]   object-cover" src={ n && n?.user && n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
                       </Link>
                     </div>
                 </div>

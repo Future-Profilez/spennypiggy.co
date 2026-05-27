@@ -16,7 +16,7 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     if (!subscriptionHistory || subscriptionHistory.length === 0) {
         return (
             <div 
-                className="bg-white rounded-[30px] shadow-sm border border-gray-200 p-6"
+                className="bg-white rounded-[30px]  shadow-sm border border-gray-200 p-6"
                 onMouseEnter={() => emptyIconRef.current?.startAnimation()}
             >
                 <div className="text-center py-8">

@@ -72,7 +72,7 @@ export default function Userprofile({ IsloggedIn }) {
                             height={150}
                             width={150}
                             loading="eager"
-                            className="rounded-[30px] !border-[3px] !border-black bg-white !h-[120px] !w-[120px] min-w-[120px] !min-h-[120px] md:!h-[140px] md:!w-[140px] md:min-w-[140px] md:!min-h-[140px] object-cover shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                            className="rounded-[30px]  !border-[3px] !border-black bg-white !h-[120px] !w-[120px] min-w-[120px] !min-h-[120px] md:!h-[140px] md:!w-[140px] md:min-w-[140px] md:!min-h-[140px] object-cover shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                         />
 
                         {IsloggedIn && auth && auth?.user?.avatar && auth?.user?.avatar_approved === 0 && (

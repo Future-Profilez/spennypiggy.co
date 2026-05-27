@@ -108,7 +108,7 @@ export default function SiteSubscription({ children, auth, subscription_status, 
     }
     return (
         <>
-        <div className="w-full finishs mb-6  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 rounded-[20px] md:rounded-[30px] ">
+        <div className="w-full finishs mb-6  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 rounded-[20px] md:rounded-[30px]  ">
             <h2 className="text-[22px] font-bold uppercase pb-3 goaltitle text-black  ">
                 Subscription Status
             </h2>

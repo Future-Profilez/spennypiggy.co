@@ -256,7 +256,7 @@ export default function Accountsetting(props) {
                 onClick={onClick}
                 onMouseEnter={() => iconRef.current?.startAnimation?.()}
                 onMouseLeave={() => iconRef.current?.stopAnimation?.()}
-                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-[#FF007F]"}  !rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
+                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-[#FF007F]"}  !rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
             >
                 <div className="flex !items-center gap-4 text-left">
                     <div
@@ -536,7 +536,7 @@ export default function Accountsetting(props) {
                                     />
                                 </Popup>
 
-                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[20px] md:rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[20px] md:rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                                     <div className="flex items-center gap-4 text-left">
                                         {/* <div className="p-2.5 rounded-[10px] md:rounded-[20px]  bg-pink-50 text-[#FF007F]">
                                             <PiggyBank
@@ -574,7 +574,7 @@ export default function Accountsetting(props) {
                             </>
                         )}
 
-                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                             <div className="flex items-center gap-4 text-left">
                                 <div
                                     className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
@@ -626,7 +626,7 @@ export default function Accountsetting(props) {
                         <SectionTitle title="Security" />
 
                         <ManagePasskey
-                            className="w-full border-2 border-[#FF007F] rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all"
+                            className="w-full border-2 border-[#FF007F] rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all"
                             email={auth.user.email}
                         />
 

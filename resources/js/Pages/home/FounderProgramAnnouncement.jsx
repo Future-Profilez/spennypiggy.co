@@ -48,7 +48,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto items-stretch">
                             {/* Card 1: Monthly Bonus */}
-                            <div className="fading group relative bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/5 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 h-full overflow-hidden">
+                            <div className="fading group relative bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/20 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 h-full overflow-hidden">
                                 {/* Glass reflection effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none"></div>
                                 
@@ -67,7 +67,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             </div>
 
                             {/* Card 2: Founder Status */}
-                            <div className="fading group relative bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/5 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 h-full overflow-hidden">
+                            <div className="fading group relative bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/20 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 h-full overflow-hidden">
                                 {/* Glass reflection effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none"></div>
                                 
@@ -86,7 +86,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             </div>
 
                             {/* Card 3: Priority Qualification */}
-                            <div className="fading group relative bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/5 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 md:col-span-2 lg:col-span-1 h-full overflow-hidden">
+                            <div className="fading group relative bg-[#0d0d0d] p-6 md:p-8 rounded-[3.5rem] border border-white/20 flex flex-col items-center text-center hover:bg-[#151515] transition-all duration-500 md:col-span-2 lg:col-span-1 h-full overflow-hidden">
                                 {/* Glass reflection effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none"></div>
                                 

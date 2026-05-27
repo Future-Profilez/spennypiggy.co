@@ -99,7 +99,7 @@ export default function Expenses({ auth, expenses, filters }) {
 
                     {/* Add Expense Form */}
                     {isAdding && (
-                        <div className="bg-gray-50 p-8 rounded-[30px] border border-gray-200 animate-fading shadow-sm">
+                        <div className="bg-gray-50 p-8 rounded-[30px]  border border-gray-200 animate-fading shadow-sm">
                             <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                                 <div className="bg-[#FF007F]/10 p-2 rounded-lg text-[#FF007F]">
                                     <FileText size={20} />
@@ -213,7 +213,7 @@ export default function Expenses({ auth, expenses, filters }) {
                     </div>
 
                     {/* Expense List */}
-                    <div className="bg-white rounded-[20px] md:rounded-[30px] border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="bg-white rounded-[20px] md:rounded-[30px]  border border-gray-200 overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-gray-50">

@@ -165,7 +165,7 @@ export default function Earnings(props) {
                             <div className="flex items-center gap-8 w-full md:w-auto">
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-brandPink blur-xl opacity-20 animate-pulse"></div>
-                                    <div className="relative w-20 h-20 rounded-[30px] bg-gradient-to-br from-brandPink/20 to-brandPink/5 flex items-center justify-center border border-brandPink/30 shadow-inner">
+                                    <div className="relative w-20 h-20 rounded-[30px]  bg-gradient-to-br from-brandPink/20 to-brandPink/5 flex items-center justify-center border border-brandPink/30 shadow-inner">
                                         <svg className="w-10 h-10 text-brandPink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -175,7 +175,7 @@ export default function Earnings(props) {
                                     <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em] mb-2">Total Earnings</p>
                                     <div className="flex items-center gap-4">
                                         {loading || isChanging ? (
-                                            <div className="h-14 w-64 bg-white/5 rounded-[30px] animate-pulse"></div>
+                                            <div className="h-14 w-64 bg-white/5 rounded-[30px]  animate-pulse"></div>
                                         ) : (
                                             <h2 className="text-white mt-3 text-3xl md:text-4xl font-black tabular-nums font-poppins tracking-tighter bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent leading-none">
                                                 {formatMultiPrice(grossTotal, (global_currency || 'gbp'))}

@@ -23,7 +23,7 @@ function ProofModal({ proof, onClose }) {
     if (!proof) return null;
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-[30px] p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-[30px]  p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg">Submitted Proof</h3>
                     <button onClick={onClose} className="text-gray-500 hover:text-black text-2xl leading-none">&times;</button>
@@ -68,7 +68,7 @@ function ResolveModal({ purchase, onClose, onDone }) {
 
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-[30px] p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-[30px]  p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
                 <h3 className="font-bold text-lg mb-2">Resolve Escalated Task</h3>
                 <p className="text-sm text-gray-600 mb-1"><strong>Task:</strong> {purchase.task_title}</p>
                 <p className="text-sm text-gray-600 mb-1"><strong>Creator:</strong> @{purchase.creator_username}</p>
@@ -164,7 +164,7 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                 </div>
 
                 {/* Filters */}
-                <form onSubmit={applyFilters} className="flex flex-wrap gap-3 bg-gray-900 p-4 rounded-[30px] border border-gray-800">
+                <form onSubmit={applyFilters} className="flex flex-wrap gap-3 bg-gray-900 p-4 rounded-[30px]  border border-gray-800">
                     <div className="relative flex-1 min-w-[200px]">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
@@ -193,7 +193,7 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                 </form>
 
                 {/* Table */}
-                <div className="bg-gray-900 rounded-[30px] border border-gray-800 overflow-hidden">
+                <div className="bg-gray-900 rounded-[30px]  border border-gray-800 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-gray-800/60 text-gray-400 text-xs uppercase tracking-wider">

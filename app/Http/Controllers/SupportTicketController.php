@@ -73,7 +73,7 @@ class SupportTicketController extends Controller
         if ($creator->email) {
             Mail::to($creator->email)
                 ->bcc(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
-                ->send(new SupportTicketCreatedMail($ticket));
+                ->send(new SupportTicketCreatedMail($ticket, $request->message));
                 
             app(MagicBellService::class)->sendNotification(
                 'New Support Request',
@@ -157,6 +157,7 @@ class SupportTicketController extends Controller
             if ($ft) {
                 $transaction = [
                     'amount' => $ft->gross_amount,
+                    'net_amount' => $ft->net_amount,
                     'currency' => strtoupper($ft->currency ?? 'GBP'),
                     'date' => $ft->transaction_date ? $ft->transaction_date->format('M d, Y') : $ft->created_at->format('M d, Y'),
                     'description' => $ft->description,
@@ -186,6 +187,31 @@ class SupportTicketController extends Controller
                 'role' => $ticket->creator_id === $user->id ? 'creator' : 'supporter',
             ],
         ]);
+    }
+
+    public function resolve(string $uuid)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            abort(403, 'Unauthorized');
+        }
+
+        $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
+        
+        if ($ticket->creator_id !== $user->id && $ticket->supporter_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (in_array($ticket->status, ['resolved', 'refunded', 'rejected', 'refund_initiated'])) {
+            return response()->json(['status' => false, 'message' => 'Ticket is already closed.'], 422);
+        }
+
+        $ticket->status = 'resolved';
+        $ticket->resolved_at = now();
+        $ticket->last_message_at = now();
+        $ticket->save();
+
+        return response()->json(['status' => true, 'message' => 'Ticket marked as resolved.']);
     }
 
     public function message(Request $request, string $uuid)

@@ -85,7 +85,7 @@ export default function GifterTips(props) {
             ) : (
                 <>
                     {data && data.length > 0 ? (
-                        <div className="box rounded-[30px] p-4">
+                        <div className="box rounded-[30px]  p-4">
                             <h3 className="text-large text-dark title mb-2">
                                 Tips
                             </h3>

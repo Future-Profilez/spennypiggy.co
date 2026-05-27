@@ -53,7 +53,7 @@ export default function Create({ payment, creator, email, post_url }) {
           {ticketUuid ? (
             <div className="mt-5">
               <div className="text-sm font-bold text-black">Ticket ID</div>
-              <div className="mt-2 px-4 py-3 rounded-2xl border-2 border-black bg-yellow-300 font-black text-black">
+              <div className="mt-2 px-4 py-3 rounded-[30px] border-2 border-black bg-yellow-300 font-black text-black">
                 {ticketUuid}
               </div>
               <div className="text-xs font-bold text-gray-600 mt-2">
@@ -89,7 +89,7 @@ export default function Create({ payment, creator, email, post_url }) {
                   <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full min-h-[90px] bg-white border-2 border-black rounded-2xl p-3 font-bold text-sm"
+                    className="w-full min-h-[90px] bg-white border-2 border-black rounded-[30px] p-3 font-bold text-sm"
                     placeholder="Write the reason for refund request…"
                   />
                 </div>
@@ -100,7 +100,7 @@ export default function Create({ payment, creator, email, post_url }) {
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full min-h-[110px] bg-white border-2 border-black rounded-2xl p-3 font-bold text-sm"
+                  className="w-full min-h-[110px] bg-white border-2 border-black rounded-[30px] p-3 font-bold text-sm"
                   placeholder="Write your message…"
                 />
               </div>

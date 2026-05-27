@@ -14,7 +14,7 @@ export default function AddMoreTile({
                 onClick={onClick}
                 className={`group relative billbox wish-item-box hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all w-full ${className}`}
             >
-                <div className="mb-3 sm:mb-4 bg-white h-full relative !rounded-[25px] md:!rounded-[30px] !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
+                <div className="mb-3 sm:mb-4 bg-white h-full relative !rounded-[25px] md:!rounded-[30px]  !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
                     <div className="relative !overflow-hidden !bg-white p-3 !pb-0">
                         <div className="relative !rounded-[20px] object-cover border-2 border-black w-full h-[180px] mx-auto bg-gradient-to-br from-white via-pink-50 to-yellow-50 flex items-center justify-center overflow-hidden">
                             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10" />
@@ -71,7 +71,7 @@ export default function AddMoreTile({
             <button
                 type="button"
                 onClick={onClick}
-                className={`group w-full bg-[#fdfbf7] rounded-[30px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all ${className}`}
+                className={`group w-full bg-[#fdfbf7] rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all ${className}`}
             >
                 <div className="p-5 md:p-6 lg:flex items-center space-y-4 lg:gap-6">
                     <div className="relative shrink-0">
@@ -105,7 +105,7 @@ export default function AddMoreTile({
     }
 
     const isCompact = density === "compact";
-    const buttonClasses = `group bg-[#fdfbf7] rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] border-[3px] border-black overflow-hidden w-full ${minHeightClass} hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all ${className}`;
+    const buttonClasses = `group bg-[#fdfbf7] rounded-[30px]  shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] border-[3px] border-black overflow-hidden w-full ${minHeightClass} hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all ${className}`;
 
     return (
         <button type="button" onClick={onClick} className={buttonClasses}>

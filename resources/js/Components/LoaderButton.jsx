@@ -4,7 +4,7 @@ export default function LoaderButton({ className = '', disabled, children, spinn
     return (
         <button
             {...props}
-            className={ `!text-[16px] mt-2 m-auto uppercase font-gulfs rounded-[30px] text-white flex items-center text-center justify-center  h focus:ring-offset-2 transition ease-in-out duration-150 main-button  ${disabled && 'opacity-75'} ${className ? className : 'p'} `}
+            className={ `!text-[16px] mt-2 m-auto uppercase font-gulfs rounded-[30px]  text-white flex items-center text-center justify-center  h focus:ring-offset-2 transition ease-in-out duration-150 main-button  ${disabled && 'opacity-75'} ${className ? className : 'p'} `}
             disabled={disabled}
         >
             {disabled && <>

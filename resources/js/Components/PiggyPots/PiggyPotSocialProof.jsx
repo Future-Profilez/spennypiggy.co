@@ -11,7 +11,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
     const activeList = activeTab === 'top' ? (topSupporters || []) : (feed || []);
 
     return (
-        <div className="mb-6 w-full bg-white rounded-[30px] border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8">
+        <div className="mb-6 w-full bg-white rounded-[30px]  border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-4">
                 <h3 className="font-gulfs text-2xl md:text-2xl text-black uppercase tracking-wide">COMMUNITY ACTIVITY</h3>
                 <div className="flex gap-2">
@@ -105,8 +105,8 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                             );
 
                             const cardClasses = isClickable
-                                ? "bg-pink-50 p-4 md:p-5 rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer block"
-                                : "bg-pink-50 p-4 md:p-5 rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-default block";
+                                ? "bg-pink-50 p-4 md:p-5 rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer block"
+                                : "bg-pink-50 p-4 md:p-5 rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-default block";
 
                             return isClickable ? (
                                 <Link key={idx} href={route('user.show', username)} className={cardClasses}>

@@ -10,7 +10,7 @@ export default function Show({ evidence }) {
     if (!evidence) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center p-8 bg-white border-[3px] border-black rounded-[30px] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <div className="text-center p-8 bg-white border-[3px] border-black rounded-[30px]  shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                     <h1 className="text-2xl font-black uppercase text-red-500 mb-2">Error</h1>
                     <p className="font-bold text-gray-600 uppercase tracking-widest">Evidence pack data is missing or unavailable.</p>
                 </div>
@@ -133,7 +133,7 @@ export default function Show({ evidence }) {
                                     <h2 className="text-lg font-black uppercase tracking-tight text-blue-600">Creator</h2>
                                 </div>
                                 {evidence.creator ? (
-                                    <div className="space-y-3 bg-blue-50/20 p-5 rounded-[30px] border border-blue-100">
+                                    <div className="space-y-3 bg-blue-50/20 p-5 rounded-[30px]  border border-blue-100">
                                         <div>
                                             <label className="text-[8px] font-black uppercase text-blue-400 tracking-[0.15em] block mb-0.5">Full Name</label>
                                             <p className="font-black text-base text-black">{evidence.creator.name}</p>
@@ -150,7 +150,7 @@ export default function Show({ evidence }) {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="h-full flex items-center justify-center p-6 bg-gray-50 rounded-[30px] border border-dashed border-gray-200">
+                                    <div className="h-full flex items-center justify-center p-6 bg-gray-50 rounded-[30px]  border border-dashed border-gray-200">
                                         <p className="text-gray-400 font-bold italic text-xs">Creator data unavailable</p>
                                     </div>
                                 )}
@@ -165,7 +165,7 @@ export default function Show({ evidence }) {
                                     <h2 className="text-lg font-black uppercase tracking-tight text-[#FF007F]">Supporter</h2>
                                 </div>
                                 {evidence.supporter ? (
-                                    <div className="space-y-3 bg-pink-50/20 p-5 rounded-[30px] border border-pink-100">
+                                    <div className="space-y-3 bg-pink-50/20 p-5 rounded-[30px]  border border-pink-100">
                                         <div>
                                             <label className="text-[8px] font-black uppercase text-[#FF007F] tracking-[0.15em] block mb-0.5">Full Name</label>
                                             <p className="font-black text-base text-black">{evidence.supporter.name}</p>
@@ -186,7 +186,7 @@ export default function Show({ evidence }) {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="h-full flex items-center justify-center p-6 bg-gray-50 rounded-[30px] border border-dashed border-gray-200">
+                                    <div className="h-full flex items-center justify-center p-6 bg-gray-50 rounded-[30px]  border border-dashed border-gray-200">
                                         <p className="text-gray-400 font-bold italic text-xs">Guest or System Generated</p>
                                     </div>
                                 )}
@@ -195,7 +195,7 @@ export default function Show({ evidence }) {
 
                         {/* Footer Certification */}
                         <div className="mt-16 pt-10 text-center">
-                            <div className="inline-block px-6 py-3 bg-gray-50 rounded-[30px] border border-gray-100">
+                            <div className="inline-block px-6 py-3 bg-gray-50 rounded-[30px]  border border-gray-100">
                                 <p className="text-xs font-black text-gray-800 mb-1.5 uppercase">
                                     CERTIFIED RECORD BY {evidence.platform_name ? evidence.platform_name.toUpperCase() : 'SPENNYPIGGY'}
                                 </p>

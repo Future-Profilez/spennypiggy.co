@@ -764,7 +764,7 @@ export default function EditProfile({
                                                       coverimage
                                             }
                                             alt="Cover"
-                                            className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90 !rounded-[30px]"
+                                            className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90 !rounded-[30px] "
                                         />
                                         <button
                                             type="button"
@@ -777,7 +777,7 @@ export default function EditProfile({
                                         </button>
                                     </div>
                                     <div className="flex justify-center mt-[-70px]">
-                                        <div className="w-[120px] h-[120px] dp group relative !border-3 !border-green-400 !rounded-[30px] overflow-hidden">
+                                        <div className="w-[120px] h-[120px] dp group relative !border-3 !border-green-400 !rounded-[30px]  overflow-hidden">
                                             <img
                                                 src={
                                                     profileDP
@@ -806,7 +806,7 @@ export default function EditProfile({
                                 </div>
 
                                 {user?.role == 1 && (
-                                    <div className="bg-gray-50 p-6 rounded-[30px] border border-gray-200 mt-16 text-center">
+                                    <div className="bg-gray-50 p-6 rounded-[30px]  border border-gray-200 mt-16 text-center">
                                         <h4 className="text-lg font-gulfs uppercase text-gray-800 mb-2">
                                             Social Media Banner
                                         </h4>

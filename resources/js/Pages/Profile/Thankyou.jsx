@@ -322,7 +322,7 @@ export default function Thankyou(props) {
 
 
                         {(item_name || amount || benefitsText) && (
-                        <div className="details-box !rounded-[30px]">
+                        <div className="details-box !rounded-[30px] ">
                             <h3><FaCheckCircle className="text-green-500" /> Purchase Details</h3>
                             
                             {item_name && (

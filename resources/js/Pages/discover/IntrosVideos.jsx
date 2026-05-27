@@ -103,7 +103,7 @@ export default function IntroVideos(props) {
         }
       };
 
-      return  <div className="fading relative rounded-[30px]  h-[230px] md:h-[230px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
+      return  <div className="fading relative rounded-[30px]   h-[230px] md:h-[230px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
         <ProfileIntro data={w} poster={poster} text={
           <>
             <div className="h-full relative bg-gray-200">
@@ -137,7 +137,7 @@ export default function IntroVideos(props) {
                   <div className="absolute inset-0 bg-gray-300 animate-pulse z-10" />
               )}
               <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70 z-20"></div>
-              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-[30px] z-30">
+              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-[30px]  z-30">
                 Intro Video
               </div>
               <div className="absolute inset-0 flex items-center justify-center z-30">
@@ -188,7 +188,7 @@ export default function IntroVideos(props) {
           {loading ?
           <div className='w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
               {Array(9).fill(0).map((_, i) => (
-                  <div key={`intro-skeleton-${i}`} className="h-[230px] md:h-[270px] bg-gray-200/40 animate-ping border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+                  <div key={`intro-skeleton-${i}`} className="h-[230px] md:h-[270px] bg-gray-200/40 animate-ping border-2 border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
               ))}
           </div>
           :

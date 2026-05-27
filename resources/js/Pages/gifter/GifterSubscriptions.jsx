@@ -78,7 +78,7 @@ export default function GifterSubscriptions({IsloggedIn}) {
   }
 
   return (
-    <div className='box rounded-[30px]   p-4 mt-4 ' >
+    <div className='box rounded-[30px]    p-4 mt-4 ' >
       <h3 className='text-large text-dark title mb-2' >Subscriptions </h3>
         {data && data.map((d, i)=>{ 
           return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>

@@ -47,7 +47,7 @@ export default function CreatorRiskBanner() {
                 {activeBanners.map((banner, index) => (
                     <div 
                         key={index} 
-                        className={`relative overflow-hidden rounded-[30px] border backdrop-blur-md transition-all duration-300 shadow-sm hover:shadow-md ${getBannerStyle(banner.type)}`} >
+                        className={`relative overflow-hidden rounded-[30px]  border backdrop-blur-md transition-all duration-300 shadow-sm hover:shadow-md ${getBannerStyle(banner.type)}`} >
                         <div className="flex flex-col md:flex-row items-start md:items-center p-4 relative z-10 gap-4">
                             <div className={`flex-shrink-0 p-6 !rounded-[25px] ${getIconBg(banner.type)}`}>
                                 {getIcon(banner.type)}
@@ -92,7 +92,7 @@ export default function CreatorRiskBanner() {
                         </div>
                         
                         <div className="space-y-6">
-                            <div className="bg-gray-50 p-5 rounded-[30px] border border-gray-100">
+                            <div className="bg-gray-50 p-5 rounded-[30px]  border border-gray-100">
                                 <h4 className="text-sm uppercase tracking-wide text-gray-500 font-bold mb-2 flex items-center gap-2">
                                     <BiInfoCircle /> What Happened
                                 </h4>
@@ -101,7 +101,7 @@ export default function CreatorRiskBanner() {
                                 </p>
                             </div>
                             
-                            <div className="bg-blue-50/50 p-5 rounded-[30px] border border-blue-100">
+                            <div className="bg-blue-50/50 p-5 rounded-[30px]  border border-blue-100">
                                 <h4 className="text-sm uppercase tracking-wide text-blue-600 font-bold mb-2 flex items-center gap-2">
                                     <BiShieldQuarter /> What To Do
                                 </h4>

@@ -51,7 +51,7 @@ export default function ShopCard({ item, IsloggedIn = false, showCreator = false
     return (
         <article
             onClick={() => router.visit(url)}
-            className="cursor-pointer max-w-sm w-full h-full bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col"
+            className="cursor-pointer max-w-sm w-full h-full bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col"
         >
             <div className="p-3 md:p-4 h-full flex flex-col">
                 <div className="relative ">

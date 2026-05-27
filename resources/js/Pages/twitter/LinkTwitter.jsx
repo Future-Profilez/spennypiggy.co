@@ -60,7 +60,7 @@ export default function LinkTwitter(props) {
   const Name = auth && auth.user && auth.user.name.replace(' ', '%20');
 
   const TwitterCard = () => {
-    return <div className='t-card bg-gray-50 box p-3 rounded-[30px]   shadow-md'>
+    return <div className='t-card bg-gray-50 box p-3 rounded-[30px]    shadow-md'>
             <Avatar 
             role={auth && auth.user && auth.user.role}
               profile_status_lock={auth && auth.user && auth.user.profile_status_lock == 2 ? true : false}
@@ -132,7 +132,7 @@ export default function LinkTwitter(props) {
     <div className='step1' >
       <p className='text-large text-center px-5 mb-4' >Set up Twitter to auto tweet when you receive a gift.</p>
       {/* <div className='twitter-img' >
-        <img src={twitter} alt='twitter' className='w-full rounded-[30px]   mt-3' />
+        <img src={twitter} alt='twitter' className='w-full rounded-[30px]    mt-3' />
       </div> */}
 
       <TwitterCard />

@@ -30,6 +30,7 @@ class SupportTicket extends Model
         'last_supporter_message_at',
         'last_admin_message_at',
         'escalated_at',
+        'escalation_reason',
         'resolved_at',
     ];
 

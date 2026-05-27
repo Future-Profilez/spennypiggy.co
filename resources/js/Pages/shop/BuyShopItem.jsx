@@ -459,7 +459,7 @@ export default function BuyShopItem({
                             <h2 className="text-center font-bold text-xl py-2">
                                 Thank you for your purchase!
                             </h2>
-                            <div className="border border-gray-200 p-3 rounded-[30px]  mt-4">
+                            <div className="border border-gray-200 p-3 rounded-[30px]   mt-4">
 
                                 {shop.type === "physical" ? (
                                     <div className="text-center py-2">
@@ -488,14 +488,14 @@ export default function BuyShopItem({
                                             onChange={(e) =>
                                                 setReply(e.target.value)
                                             }
-                                            className="text-black bg-gray-100 rounded-[30px]   w-full mt-2 px-3 py-2 border border-gray-200"
+                                            className="text-black bg-gray-100 rounded-[30px]    w-full mt-2 px-3 py-2 border border-gray-200"
                                             type="text"
                                             placeholder="Ask your question ??"
                                         />
                                         {reply ? (
                                             <button
                                                 onClick={sendReply}
-                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[30px] "
+                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[30px]  "
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -518,7 +518,7 @@ export default function BuyShopItem({
                                 </p>
                                 <button
                                     onClick={handleCopy}
-                                    className="bg-gray-200 rounded-[30px]  px-4 py-2 mx-auto block mt-3 text-sm"
+                                    className="bg-gray-200 rounded-[30px]   px-4 py-2 mx-auto block mt-3 text-sm"
                                 >
                                     Copy Link
                                 </button>
@@ -557,8 +557,8 @@ export default function BuyShopItem({
                                     </p>
                                 )}
                             </div>
-                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-[30px] ">
-                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[30px]  items-center">
+                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-[30px]  ">
+                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[30px]   items-center">
                                     <Link
                                         href={`/shop/item/${slug(s.name)}/${
                                             s.uuid
@@ -566,7 +566,7 @@ export default function BuyShopItem({
                                         className="shop-img w-12 h-12 min-w-12"
                                     >
                                         <img
-                                            className="w-full h-full object-cover rounded-[30px]  "
+                                            className="w-full h-full object-cover rounded-[30px]   "
                                             src={s.perma_link}
                                             alt=""
                                         />
@@ -588,7 +588,7 @@ export default function BuyShopItem({
                             </div>
                             {/* <p className='mb-1' >Enter a fair price (optional)</p>
                <input required onChange={enterFairPrice} min={s.price}
-               className="w-full border-gray-300 border px-4 py-2 rounded-[30px]  focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
+               className="w-full border-gray-300 border px-4 py-2 rounded-[30px]   focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
 
                             <div className="form-field mb-3">
                                 <p className="mb-1">Name</p>
@@ -597,7 +597,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.name ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded"
+                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded"
                                     defaultValue={auth && auth.user?.name}
                                     onChange={(e) => setName(e.target.value)}
                                     type="text"
@@ -611,7 +611,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.email ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                     defaultValue={auth && auth.user?.email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     type="email"
@@ -630,7 +630,7 @@ export default function BuyShopItem({
                                         required
                                         min="1"
                                         max={s.slot_limitation !== null ? s.slot_limitation : undefined}
-                                        className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                        className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                         value={quantity}
                                         onChange={(e) => {
                                             if (e.target.value === '') {
@@ -663,7 +663,7 @@ export default function BuyShopItem({
                                         </p>
                                         <select
                                             required
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             name="country"
                                             onChange={handleShipInput}
                                         >
@@ -684,7 +684,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
@@ -694,7 +694,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
@@ -705,7 +705,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
@@ -715,7 +715,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px] bg-white"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                                 onChange={handleShipInput}
                                                 name="postal_code"
                                                 type="text"

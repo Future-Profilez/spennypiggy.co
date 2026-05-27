@@ -187,7 +187,7 @@ export default function Board(props) {
                         href={`/${p.username}`}
                         onClick={() => trackSearchClick(p?.id, p?.username)}
                         onMouseEnter={() => iconRef.current?.startAnimation?.()}
-                        className={` position-${position} position text-center rounded-[30px]  md:rounded-[30px]   
+                        className={` position-${position} position text-center rounded-[30px]   md:rounded-[30px]    
                               border-[#FF007F] !shadow-none shadow-[4px_4px_0px_0px_#FF007F]ink bg-white m-0`}
                     > {p.id}
                         <div className="profile p-2 sm:p-3 pb-0">
@@ -202,10 +202,10 @@ export default function Board(props) {
                                 ) : (
                                     ""
                                 )}
-                                <div className="profile-image !rounded-[30px] ">
+                                <div className="profile-image !rounded-[30px]  ">
                                     <img
                                         src={(p && p.avatar) || userphoto}
-                                        className="max-w-full h-auto !rounded-[30px]"
+                                        className="max-w-full h-auto !rounded-[30px] "
                                         alt="image"
                                     />
                                 </div>
@@ -257,7 +257,7 @@ export default function Board(props) {
                     </Link>
                 ) : (
                     <div
-                        className={`position-${position} position text-center rounded-[30px]   shadow-[4px_4px_0px_0px_#FF007F]ink bg-white`}
+                        className={`position-${position} position text-center rounded-[30px]    shadow-[4px_4px_0px_0px_#FF007F]ink bg-white`}
                     >
                         <div className="profile p-3 pb-0">
                             <div className=" relative">
@@ -266,10 +266,10 @@ export default function Board(props) {
                                 ) : (
                                     ""
                                 )}
-                                <div className="profile-image !rounded-[30px] ">
+                                <div className="profile-image !rounded-[30px]  ">
                                     <img
                                         src={(p && p.avatar) || userphoto}
-                                        className="max-w-full h-auto !rounded-[30px]"
+                                        className="max-w-full h-auto !rounded-[30px] "
                                         alt="image"
                                     />
                                 </div>
@@ -303,7 +303,7 @@ export default function Board(props) {
                     <div className="flex flex-wrap items-start -mx-4">
                         <div className="w-full xl:w-2/3 px-4 mb-4">
                             {myRankData && (
-                                <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-[30px] p-4 mb-6 flex items-center justify-between shadow-md text-white">
+                                <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-[30px]  p-4 mb-6 flex items-center justify-between shadow-md text-white">
                                     <div className="flex items-center space-x-3">
                                         <div className="text-3xl">🎉</div>
                                         <div>
@@ -320,7 +320,7 @@ export default function Board(props) {
                                     </button>
                                 </div>
                             )}
-                            <div className="p-2 md:!p-6 pinkbg rounded-[30px] mb-6">
+                            <div className="p-2 md:!p-6 pinkbg rounded-[30px]  mb-6">
                                 <div className="pt-4 md:pt-0 mt-6 mb-4 pb-4">
                                     <h1 className="btn-shadow text-center font-GillSans text-2xl md:text-3xl mb-3 uppercase text-white ">
                                         Top Creators Getting <br></br> the Most Love
@@ -386,7 +386,7 @@ export default function Board(props) {
                                     <div
                                         className={`${
                                             loading ? "opacity-50 pointer-events-none" : ""
-                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px] mb-6 `}
+                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px]  mb-6 `}
                                     >
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
                                             <div>

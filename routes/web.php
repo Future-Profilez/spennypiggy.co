@@ -321,6 +321,7 @@ Route::middleware('signed')->group(function () {
     Route::post('/support/guest/create/{paymentId}', [\App\Http\Controllers\GuestSupportTicketController::class, 'store'])->name('support.guest.store');
     Route::get('/support/guest/tickets/{uuid}', [\App\Http\Controllers\GuestSupportTicketController::class, 'show'])->name('support.guest.tickets.show');
     Route::post('/support/guest/tickets/{uuid}/message', [\App\Http\Controllers\GuestSupportTicketController::class, 'message'])->name('support.guest.tickets.message');
+    Route::post('/support/guest/tickets/{uuid}/resolve', [\App\Http\Controllers\GuestSupportTicketController::class, 'resolve'])->name('support.guest.tickets.resolve');
 });
 
 // Legacy route for Stripe Identity Verification

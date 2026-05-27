@@ -155,7 +155,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
     return (
         <div className="w-full flex mb-2 relative z-10">
             {/* Top Card: Pot Details & Contribute */}
-            <div className={`w-full ${inPopup ? '' : "cursor-pointer bg-white rounded-[30px] border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 md:p-6 lg:p-8"} `}>
+            <div className={`w-full ${inPopup ? '' : "cursor-pointer bg-white rounded-[30px]  border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 md:p-6 lg:p-8"} `}>
                 <div className="">
                     {/* Left: Image */}
                     <div className="w-full   relative">
@@ -237,7 +237,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                 <button 
                                     onClick={handleNextStep}
                                     disabled={isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount}
-                                    className={`w-full py-2 md:py-4 rounded-[30px] border-[3px] border-black font-black text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount) ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
+                                    className={`w-full py-2 md:py-4 rounded-[30px]  border-[3px] border-black font-black text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount) ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
                                 >
                                     {isComplete ? 'GOAL COMPLETED' : 'Add To Pot'}
                                 </button>

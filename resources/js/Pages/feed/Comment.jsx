@@ -86,7 +86,7 @@ export default function Comment({c, update, updateComments, postUserId}) {
             </div>
             <div className="flex items-center justify-center space-x-2 w-full">
               <div className="block w-full">
-                <div className="w-auto rounded-[30px]  px-2 ps-0  pb-2">
+                <div className="w-auto rounded-[30px]   px-2 ps-0  pb-2">
                   <div className="font-medium flex items-center justify-between">
                     <a href="#" className="hover:underline text-sm">
                       <p className='text-base font-bold capitalize' >{item.user?.name || ''}</p>
@@ -155,7 +155,7 @@ export default function Comment({c, update, updateComments, postUserId}) {
 
           <div className="items-center w-full ">
             <div className="block">
-              <div className="w-auto rounded-[30px]  px-2 ps-0  pb-2">
+              <div className="w-auto rounded-[30px]   px-2 ps-0  pb-2">
                 <div className="font-medium flex items-center justify-between">
                   <a href="#" className="hover:underline text-sm">
                     <p className='text-base font-bold capitalize' >{c?.user?.name || ''}</p>

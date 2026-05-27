@@ -48,6 +48,12 @@
                                     <div style="font-family: Arial; font-size: 13px; color:#141414; font-weight:700;">{{ $ticket->reason }}</div>
                                 </div>
                                 @endif
+                                @if(!empty($initialMessage))
+                                <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #ccc;">
+                                    <div style="font-family: Arial; font-weight: 900; font-size: 12px; color:#000; text-transform:uppercase; margin-bottom:6px;">Message</div>
+                                    <div style="font-family: Arial; font-size: 13px; color:#141414; font-weight:700;">{{ $initialMessage }}</div>
+                                </div>
+                                @endif
                             </td>
                         </tr>
                     </table>

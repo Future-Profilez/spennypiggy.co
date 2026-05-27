@@ -108,7 +108,7 @@ class GuestSupportTicketController extends Controller
         if ($creator->email) {
             Mail::to($creator->email)
                 ->bcc(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
-                ->send(new SupportTicketCreatedMail($ticket));
+                ->send(new SupportTicketCreatedMail($ticket, $request->message));
                 
             \App\Helpers::sendNotification(
                 'New Support Request',
@@ -209,6 +209,27 @@ class GuestSupportTicketController extends Controller
             'email' => $request->email,
             'post_url' => URL::signedRoute('support.guest.tickets.message', ['uuid' => $ticket->uuid, 'email' => $request->email]),
         ]);
+    }
+
+    public function resolve(Request $request, string $uuid)
+    {
+        $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
+        
+        $token = $request->query('access_token');
+        if ($ticket->guest_access_token !== $token) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (in_array($ticket->status, ['resolved', 'refunded', 'rejected', 'refund_initiated'])) {
+            return response()->json(['status' => false, 'message' => 'Ticket is already closed.'], 422);
+        }
+
+        $ticket->status = 'resolved';
+        $ticket->resolved_at = now();
+        $ticket->last_message_at = now();
+        $ticket->save();
+
+        return response()->json(['status' => true, 'message' => 'Ticket marked as resolved.']);
     }
 
     public function message(Request $request, string $uuid)

@@ -398,9 +398,9 @@ export default function Wishlist(props) {
 
     const AddItem = () => {
         return (
-            <div className=" flex items-center p-3 rounded-[30px] border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+            <div className=" flex items-center p-3 rounded-[30px]  border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <div className="p-1 !rounded-[30px] bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 !rounded-[30px]  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
@@ -421,7 +421,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             action={close}
             space="4"
             size="lg"
-            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px]  p-3 mb-2 text-center"}`}
+            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px]   p-3 mb-2 text-center"}`}
             text={customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">
@@ -473,7 +473,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         type="text"
                                         placeholder="Eg. Buy me a coffee"
                                         value={data.wishname}
-                                        className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px] shadow-sm px-4 py-3"
+                                        className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm px-4 py-3"
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("wishname", e.target.value)
@@ -497,7 +497,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             placeholder="Eg. 50"
                                             value={data.price}
                                             step="0.01"
-                                            className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px] shadow-sm pl-16 pr-4 py-3"
+                                            className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm pl-16 pr-4 py-3"
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -505,7 +505,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         />
                                     </div>
                                     {data.price > 0 && (
-                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px] border border-gray-100">
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px]  border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-sm text-gray-600">Fans pay:</span>
                                                 <span className="font-bold text-gray-900">
@@ -622,7 +622,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     {thumbnail ? (
                                         <div className="relative mb-4 group">
                                             <img
-                                                className="w-full h-64 object-cover rounded-[30px] border border-gray-200 shadow-sm"
+                                                className="w-full h-64 object-cover rounded-[30px]  border border-gray-200 shadow-sm"
                                                 src={`https://ucarecdn.com/${thumbnail}/`}
                                                 alt="Wish Thumbnail"
                                             />
@@ -636,7 +636,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            <div className="bg-gray-50 p-4 rounded-[30px]">
+                                            <div className="bg-gray-50 p-4 rounded-[30px] ">
                                                 <h4 className="text-sm font-medium text-gray-500 mb-3 text-center">
                                                     Select from Default
                                                 </h4>
@@ -725,7 +725,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     </p>
 
                                     {item && item.content_file ? (
-                                        <div className="border border-green-200 bg-green-50 p-4 rounded-[30px] flex justify-between items-center mb-4">
+                                        <div className="border border-green-200 bg-green-50 p-4 rounded-[30px]  flex justify-between items-center mb-4">
                                             <div className="flex items-center gap-2">
                                                 <div className="bg-green-100 p-2 rounded-full">
                                                     <RiCheckDoubleLine className="text-green-600" />
@@ -798,7 +798,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <button
                                             type="button"
                                             onClick={() => setSubs(0)}
-                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[30px] border font-medium transition-all ${
+                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[30px]  border font-medium transition-all ${
                                                 data.subscription === 0
                                                     ? "border-[#FF007F] bg-pink-50 text-pink-700 shadow-sm"
                                                     : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
@@ -809,7 +809,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <button
                                             type="button"
                                             onClick={() => setSubs(1)}
-                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[30px] border font-medium transition-all ${
+                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[30px]  border font-medium transition-all ${
                                                 data.subscription === 1
                                                     ? "border-[#FF007F] bg-pink-50 text-pink-700 shadow-sm"
                                                     : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
@@ -863,7 +863,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                             onChange={spValue}
                                                             className="peer hidden"
                                                         />
-                                                        <div className="px-4 py-2 rounded-[30px] border border-gray-200 bg-white text-gray-600 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
+                                                        <div className="px-4 py-2 rounded-[30px]  border border-gray-200 bg-white text-gray-600 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
                                                             {period}
                                                         </div>
                                                     </label>
@@ -882,7 +882,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <button
                                         type="button"
                                         onClick={prevStep}
-                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px] hover:bg-gray-200 transition-colors"
+                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-gray-200 transition-colors"
                                     >
                                         Back
                                     </button>
@@ -892,7 +892,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="flex-1 py-3 px-4 bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px] hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
+                                        className="flex-1 py-3 px-4 bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
                                     >
                                         Next
                                     </button>
@@ -900,7 +900,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <LoaderButton
                                         disabled={processing}
                                         type="submit"
-                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px] hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
+                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
                                         spinnerclass="fill-white"
                                     >
                                         {processing

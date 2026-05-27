@@ -94,7 +94,7 @@ export default function Membership() {
          </div>
 
               <div className='membership-image py-2 px-4 mx-auto flex justify-center max-w-4xl mt-3 relative  ' >
-                <div className="rounded-[30px]  overflow-hidden border-2 border-[#FF007F]/30 shadow-[0_0_50px_rgba(236,72,153,0.3)] ">
+                <div className="rounded-[30px]   overflow-hidden border-2 border-[#FF007F]/30 shadow-[0_0_50px_rgba(236,72,153,0.3)] ">
                     <LazyLoadImage
                     alt={"image"}
                     className="w-full h-auto"
@@ -126,7 +126,7 @@ export default function Membership() {
             {supportData.map((item, index) => (
               <div key={index} className="group flex flex-col items-center text-center mb-6">
               <div 
-                  className="relative w-full max-w-[280px] aspect-[4/3] bg-gray-900/60 backdrop-blur-md rounded-[30px] flex items-center justify-center border transition-all duration-500 overflow-hidden shadow-lg group-hover:-translate-y-2"
+                  className="relative w-full max-w-[280px] aspect-[4/3] bg-gray-900/60 backdrop-blur-md rounded-[30px]  flex items-center justify-center border transition-all duration-500 overflow-hidden shadow-lg group-hover:-translate-y-2"
                   style={{
                       borderColor: `${item.color}40`,
                       boxShadow: `0 10px 30px -10px ${item.color}40`

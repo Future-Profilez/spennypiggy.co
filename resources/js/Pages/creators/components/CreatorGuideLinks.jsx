@@ -13,7 +13,7 @@ export default function CreatorGuideLinks() {
 
   return (
     <div className="mt-8">
-      <div className="bg-[#fdfbf7] rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6">
+      <div className="bg-[#fdfbf7] rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6">
         <h3 className="text-lg md:text-xl font-black uppercase tracking-wide mb-4 text-black">
           Related Creator Guides
         </h3>

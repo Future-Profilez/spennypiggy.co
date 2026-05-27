@@ -361,7 +361,7 @@ export default function AddItem(props) {
         const AddItemTrigger = () => {
             return (
                 <div className=" flex items-center">
-                    <div className="p-1 rounded-[30px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                    <div className="p-1 rounded-[30px]    bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                         <ShoppingBagIcon color="var(--pink)" size={24} />
                     </div>
                     <div className="pl-3 text-left">

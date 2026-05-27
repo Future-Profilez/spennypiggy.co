@@ -64,15 +64,33 @@ class ProcessSupportTickets extends Command
 
     private function escalateOverdue(): void
     {
-        $overdue = SupportTicket::where('status', 'awaiting_creator')
+        // 1. Escalate tickets that missed their SLA deadline
+        $overdueSla = SupportTicket::where('status', 'awaiting_creator')
             ->whereNotNull('sla_deadline')
             ->where('sla_deadline', '<', now())
             ->whereNull('escalated_at')
             ->get();
 
-        foreach ($overdue as $ticket) {
+        foreach ($overdueSla as $ticket) {
             $ticket->status = 'escalated';
             $ticket->escalated_at = now();
+            $ticket->escalation_reason = 'SLA Deadline Missed';
+            $ticket->save();
+
+            Mail::to(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
+                ->send(new SupportTicketEscalatedMail($ticket));
+        }
+
+        // 2. Escalate ANY ticket that has been open for > 7 days and is not yet resolved/closed
+        $overdue7Days = SupportTicket::whereIn('status', ['awaiting_creator', 'awaiting_supporter'])
+            ->where('created_at', '<', now()->subDays(7))
+            ->whereNull('escalated_at')
+            ->get();
+
+        foreach ($overdue7Days as $ticket) {
+            $ticket->status = 'escalated';
+            $ticket->escalated_at = now();
+            $ticket->escalation_reason = 'Unresolved for 7 Days';
             $ticket->save();
 
             Mail::to(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])

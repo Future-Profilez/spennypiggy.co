@@ -107,7 +107,7 @@ export default function Create({ auth, currencySymbol }) {
                         </div>
 
                         {showSummary ? (
-                            <div className="bg-white border-2 border-black rounded-[30px] p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="bg-white border-2 border-black rounded-[30px]  p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h3 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="text-green-600" /> Confirm Task Details
                                 </h3>
@@ -389,7 +389,7 @@ export default function Create({ auth, currencySymbol }) {
                                     {/* Deliverable File (Only for Instant) */}
                                     {data.type === "instant" && (
                                         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div className="border-2 border-black rounded-[30px] p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                            <div className="border-2 border-black rounded-[30px]  p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                                                 <label className="block font-black text-lg mb-4 text-pink-900 uppercase flex items-center gap-2">
                                                     <FileUp className="text-[#FF007F]" /> Upload Deliverable Content
                                                 </label>

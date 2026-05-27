@@ -24,7 +24,7 @@ export default function FeatureSuggestionSection({ auth }) {
                     <div className="fading flex justify-center mb-10">
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
-                            <div className="relative w-24 h-24 bg-[#0d0d0d] border border-white/10 rounded-[30px] flex items-center justify-center shadow-[4px 4px 0px 0px rgb(255 0 127)]xl transform transition-transform duration-700 group-hover:scale-110">
+                            <div className="relative w-24 h-24 bg-[#0d0d0d] border border-white/10 rounded-[30px]  flex items-center justify-center shadow-[4px 4px 0px 0px rgb(255 0 127)]xl transform transition-transform duration-700 group-hover:scale-110">
                                 <FaLightbulb className="text-[#EFEA7B] text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
                             </div>
                         </div>

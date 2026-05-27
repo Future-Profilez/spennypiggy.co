@@ -92,7 +92,7 @@ export default function TopSupporters({grid = false}) {
 
   return (
     <>
-    {data && data.length > 0 ? <div className="bg-gray-100 rounded-[30px]  p-4 mb-6">
+    {data && data.length > 0 ? <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
       <h2 className="font-GillSans text-left text-2xl uppercase text-gray-900" title="Ranked by number of support transactions">
         🏆 Top Supporters
       </h2>

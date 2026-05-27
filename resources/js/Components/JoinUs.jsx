@@ -29,7 +29,7 @@ export default function JoinUs() {
                     ))}
                 </div>
 
-                <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-[30px]   pt-6 sm:p-10 text-center shadow-lg">
+                <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-[30px]    pt-6 sm:p-10 text-center shadow-lg">
                     <h2
                         
                         className="headingSm font-gulfs !text-white !text-3xl sm:!text-[50px] shadow-none stroke-none mb-6 text-center"

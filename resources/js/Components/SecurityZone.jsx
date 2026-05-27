@@ -317,7 +317,7 @@ export default function SecurityZone() {
                             </div>
                         ))
                     ) : (
-                        <div className="text-center py-10 bg-gray-50 border-2 border-dashed border-gray-300 rounded-[30px]">
+                        <div className="text-center py-10 bg-gray-50 border-2 border-dashed border-gray-300 rounded-[30px] ">
                             <UserX
                                 className="mx-auto text-gray-300 mb-2"
                                 size={40}

@@ -63,7 +63,7 @@ export default function AchievementSystem() {
         const colorClass = badgeColors[achievement.badge_type] || 'text-blue-600 bg-blue-100';
         
         return (
-            <div className="achievement-card bg-white rounded-[30px]   p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="achievement-card bg-white rounded-[30px]    p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-start space-x-4">
                     <div className={`p-3 rounded-full ${colorClass}`}>
                         <IconComponent size={24} />
@@ -100,7 +100,7 @@ export default function AchievementSystem() {
     };
 
     const MilestoneCard = ({ milestone }) => (
-        <div className="milestone-card bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-[30px]   p-6 shadow-lg">
+        <div className="milestone-card bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-[30px]    p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                     <RiTrophyLine size={28} />
@@ -131,7 +131,7 @@ export default function AchievementSystem() {
     );
 
     const BadgeCategoryCard = ({ category, badges }) => (
-        <div className="badge-category bg-white rounded-[30px]   p-6 shadow-sm">
+        <div className="badge-category bg-white rounded-[30px]    p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">{category}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {badges.map((badge, index) => {
@@ -139,7 +139,7 @@ export default function AchievementSystem() {
                     const colorClass = badgeColors[badge.type] || 'text-blue-600 bg-blue-100';
                     
                     return (
-                        <div key={index} className="badge-item text-center p-4 border rounded-[30px]   hover:shadow-sm transition-shadow">
+                        <div key={index} className="badge-item text-center p-4 border rounded-[30px]    hover:shadow-sm transition-shadow">
                             <div className={`p-3 rounded-full ${colorClass} inline-flex mb-2`}>
                                 <IconComponent size={20} />
                             </div>
@@ -161,7 +161,7 @@ export default function AchievementSystem() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 flex justify-center items-center" style={{minHeight: '400px'}}>
+            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center" style={{minHeight: '400px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -171,7 +171,7 @@ export default function AchievementSystem() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 text-center">
+            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -186,7 +186,7 @@ export default function AchievementSystem() {
     }
 
     return (
-        <div className="bg-gray-100 rounded-[30px]  p-4 mb-6">
+        <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
             <h2 className="font-GillSans text-2xl uppercase text-dark text-left mb-4">🏅 Achievements & Badges</h2>
             <p className="text-gray-500 mb-6">Celebrate accomplishments and milestones</p>
 
@@ -199,7 +199,7 @@ export default function AchievementSystem() {
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
-                                className={`achievement-tab flex items-center space-x-2 px-4 py-2 rounded-[30px]   font-medium transition-all ${
+                                className={`achievement-tab flex items-center space-x-2 px-4 py-2 rounded-[30px]    font-medium transition-all ${
                                     activeTab === tab.key
                                         ? 'bg-white shadow-md text-gray-900'
                                         : 'text-gray-600 hover:bg-white/50'
@@ -260,28 +260,28 @@ export default function AchievementSystem() {
             <div className="mt-8 pt-6 border-t border-gray-200">
                 <h3 className="text-lg font-semibold mb-4">Achievement Statistics</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-white rounded-[30px]  ">
+                    <div className="text-center p-4 bg-white rounded-[30px]   ">
                         <RiAwardLine size={20} className="text-blue-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {data.recent_achievements?.length || 0}
                         </p>
                         <p className="text-sm text-gray-600">Recent Achievements</p>
                     </div>
-                    <div className="text-center p-4 bg-white rounded-[30px]  ">
+                    <div className="text-center p-4 bg-white rounded-[30px]   ">
                         <RiTrophyLine size={20} className="text-yellow-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {data.milestone_holders?.length || 0}
                         </p>
                         <p className="text-sm text-gray-600">Milestone Holders</p>
                     </div>
-                    <div className="text-center p-4 bg-white rounded-[30px]  ">
+                    <div className="text-center p-4 bg-white rounded-[30px]   ">
                         <RiStarLine size={20} className="text-purple-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {Object.values(data.badge_categories || {}).reduce((sum, badges) => sum + badges.length, 0)}
                         </p>
                         <p className="text-sm text-gray-600">Available Badges</p>
                     </div>
-                    <div className="text-center p-4 bg-white rounded-[30px]  ">
+                    <div className="text-center p-4 bg-white rounded-[30px]   ">
                         <RiVipCrownLine size={20} className="text-orange-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {data.leaderboard_badges?.length || 0}

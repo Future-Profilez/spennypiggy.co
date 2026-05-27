@@ -53,7 +53,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
 
   return (
     <Popup action={show} onHide={onClose} size="xl" hidecontrols={true}>
-      <div className="bg-white text-black md:p-2">
+      <div className="bg-white text-black md:p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="text-xs font-black uppercase tracking-widest text-gray-500">Support Request</div>
@@ -70,7 +70,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
           <button
             type="button"
             onClick={() => setType('contact')}
-            className={`px-4 py-2 rounded-full border-2 border-black text-xs font-black uppercase tracking-widest ${
+            className={`px-4 py-2 rounded-[15px] border-2 border-black text-xs font-black uppercase tracking-widest ${
               type === 'contact' ? 'bg-yellow-300' : 'bg-white'
             }`}
           >
@@ -79,7 +79,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
           <button
             type="button"
             onClick={() => setType('refund')}
-            className={`px-4 py-2 rounded-full border-2 border-black text-xs font-black uppercase tracking-widest ${
+            className={`px-4 py-2 rounded-[15px] border-2 border-black text-xs font-black uppercase tracking-widest ${
               type === 'refund' ? 'bg-yellow-300' : 'bg-white'
             }`}
           >
@@ -93,7 +93,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full min-h-[90px] bg-white border-2 border-black rounded-2xl p-3 font-bold text-sm"
+              className="w-full min-h-[90px] bg-white border-2 border-black rounded-[20px] p-3 font-bold text-sm"
               placeholder="Write the reason for refund request…"
             />
           </div>
@@ -104,16 +104,16 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full min-h-[110px] bg-white border-2 border-black rounded-2xl p-3 font-bold text-sm"
+            className="w-full min-h-[110px] bg-white border-2 border-black rounded-[20px] p-3 font-bold text-sm"
             placeholder="Write your message…"
           />
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-3 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="h-11 px-5 rounded-full border-2 border-black font-black uppercase tracking-widest text-xs bg-white"
+            className="h-11 px-5 rounded-[15px] border-2 border-black font-black uppercase tracking-widest text-xs bg-white"
           >
             Cancel
           </button>
@@ -121,7 +121,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
             type="button"
             disabled={submitting}
             onClick={submitSupportTicket}
-            className="h-11 px-6 rounded-full border-2 border-black font-black uppercase tracking-widest text-xs bg-[#FF007F] text-black disabled:opacity-70"
+            className="h-11 px-6 rounded-[15px] border-2 border-black font-black uppercase tracking-widest text-xs bg-[#FF007F] text-black disabled:opacity-70"
           >
             {submitting ? 'Sending…' : 'Send'}
           </button>
