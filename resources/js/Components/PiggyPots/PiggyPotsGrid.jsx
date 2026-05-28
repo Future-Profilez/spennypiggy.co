@@ -136,7 +136,6 @@ export default function PiggyPotsGrid({
                 >
                     {activePiggyPot && (
                         <div className="relative">
-                            <button onClick={() => setActivePiggyPot(null)} className="absolute -top-3 -right-3 z-50 bg-white border-2 border-black rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" > X </button> 
                             <Suspense fallback={null}>
                                 <PiggyPotWidget inPopup={true}
                                     piggyPots={[activePiggyPot]}

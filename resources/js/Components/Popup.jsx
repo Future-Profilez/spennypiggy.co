@@ -4,18 +4,16 @@ import { Dialog, Transition } from '@headlessui/react';
 export default function Popup(props) {
   const { children, text, classes, action, hidecontrols, size, space, modalclass, bodyclass, fullscreen } = props;
   const [open, setOpen] = useState(false)
-  useEffect(()=>{
-    if(action === false || undefined){
+  useEffect(() => {
+    if (action === true) {
+      setOpen(true)
+    } else if (action === false) {
       setOpen(false)
     }
-    if(action === true){
-      setOpen(true);
-    }
-  }, [action]);
+  }, [action])
 
-
-  const closeModal = () => { 
-    props.onHide && props.onHide();
+  const closeModal = () => {
+    props.onHide && props.onHide()
     setOpen(false)
   }
 
@@ -27,9 +25,13 @@ export default function Popup(props) {
   }[size] || 'max-w-md';
 
   return <>
-      <button onClick={()=>setOpen(true)} className={`font-cera-medium ${classes}`}>{text}</button>
+      {typeof text !== 'undefined' && (
+        <button onClick={() => setOpen(true)} className={`font-cera-medium ${classes}`}>
+          {text}
+        </button>
+      )}
       <Transition appear show={open} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={closeModal}>
+        <Dialog as="div" className="relative z-50" onClose={() => {}}>
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -52,7 +54,10 @@ export default function Popup(props) {
                 leave="ease-in duration-200"
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95" >
-                <Dialog.Panel className={`w-full ${fullscreen ? 'w-full h-full max-w-none' : maxWidthClass} transform overflow-hidden rounded-[35px] md:rounded-[40px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-left align-middle transition-all ${modalclass}  mymodal`}>
+                <Dialog.Panel
+                  className={`w-full ${fullscreen ? 'w-full h-full max-w-none' : maxWidthClass} transform overflow-hidden rounded-[35px] md:rounded-[40px] bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-left align-middle transition-all ${modalclass}  mymodal`}
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <div className={`p-0 ${bodyclass} `} >
                     {!hidecontrols ?
                     <div className='px-[30px] py-[20px] bg-[#FF007F] flex  !border-l-0 !border-r-0 !border-t-0 border-b-[3px] border-black items-center '>
