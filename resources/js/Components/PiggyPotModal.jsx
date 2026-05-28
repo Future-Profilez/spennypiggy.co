@@ -17,11 +17,13 @@ export default function PiggyPotModal({
 
     const { successAlert, errorAlert } = useAlerts();
 
+    const defaultCurrency = auth?.user?.default_currency || "GBP";
+
     const defaultValues = {
         title: "",
         description: "",
         target_amount: "",
-        currency: auth.user.default_currency || "GBP",
+        currency: defaultCurrency,
         deadline: "",
         is_pinned: false,
         enable_leaderboard: true,

@@ -6,8 +6,9 @@ import GlobalUploader from '@/uploadcare/Uploader';
 import { ChevronLeft, MessageSquare, AlertCircle, Clock, CheckCircle, Send, Paperclip } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import Guest from '../../../Layouts/GuestLayout';
+import { route } from 'ziggy-js';
 
-export default function Ticket({ ticket, creator, transaction, messages, email, post_url }) {
+export default function Ticket({ ticket, transaction, messages, email, post_url }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
@@ -17,13 +18,11 @@ export default function Ticket({ ticket, creator, transaction, messages, email, 
   const [attachments, setAttachments] = useState([]);
   const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
 
-  const debugUrl = 'http://127.0.0.1:7777/event';
-  const debugSessionId = 'guest-attachment-missing';
-  const debugRunId = 'pre-fix';
-
   const ticketNumber = useMemo(() => {
     return ticket?.uuid ? ticket.uuid.split('-')[0].toUpperCase() : 'UNKNOWN';
   }, [ticket?.uuid]);
+
+  const evidence = ticket?.evidence || null;
 
   const statusLabel = useMemo(() => {
     const s = String(ticket?.status || '');
@@ -37,33 +36,6 @@ export default function Ticket({ ticket, creator, transaction, messages, email, 
   useEffect(() => {
     setAttachments([]);
     if (uploaderRef.current) uploaderRef.current.reset();
-    // #region debug-point B:reset-attachments
-    fetch(debugUrl, { method: 'POST', body: JSON.stringify({ sessionId: debugSessionId, runId: debugRunId, hypothesisId: 'B', location: 'Support/Guest/Ticket.jsx:reset', msg: '[DEBUG] guest ticket reset attachments', data: { ticketUuid: ticket?.uuid || null }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
-  }, [ticket?.uuid]);
-
-  useEffect(() => {
-    // #region debug-point D:popup-state
-    fetch(debugUrl, { method: 'POST', body: JSON.stringify({ sessionId: debugSessionId, runId: debugRunId, hypothesisId: 'D', location: 'Support/Guest/Ticket.jsx:popup-state', msg: '[DEBUG] showAttachmentPicker state change', data: { ticketUuid: ticket?.uuid || null, open: Boolean(showAttachmentPicker), attachmentsCount: attachments.length }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
-  }, [showAttachmentPicker]);
-
-  useEffect(() => {
-    // #region debug-point D:lr-events-global
-    const mk = (target) => (e) => {
-      const detail = e?.detail || null;
-      const eventCtx = detail?.ctx || e?.target?.getAttribute?.('ctx-name') || null;
-      fetch(debugUrl, { method: 'POST', body: JSON.stringify({ sessionId: debugSessionId, runId: debugRunId, hypothesisId: 'D', location: 'Support/Guest/Ticket.jsx:lr-events', msg: `[DEBUG] ${target} ${e?.type} received`, data: { ticketUuid: ticket?.uuid || null, target, eventCtx, hasDetail: Boolean(detail), keys: detail ? Object.keys(detail) : null }, ts: Date.now() }) }).catch(() => {});
-    };
-    const wFinish = mk('window');
-    const dFinish = mk('document');
-    window.addEventListener('LR_UPLOAD_FINISH', wFinish);
-    document.addEventListener('LR_UPLOAD_FINISH', dFinish);
-    return () => {
-      window.removeEventListener('LR_UPLOAD_FINISH', wFinish);
-      document.removeEventListener('LR_UPLOAD_FINISH', dFinish);
-    };
-    // #endregion
   }, [ticket?.uuid]);
 
   useEffect(() => {
@@ -111,9 +83,6 @@ export default function Ticket({ ticket, creator, transaction, messages, email, 
     setLocalMessages(prev => [...prev, tempMsg]);
 
     try {
-      // #region debug-point B:send-payload
-      fetch(debugUrl, { method: 'POST', body: JSON.stringify({ sessionId: debugSessionId, runId: debugRunId, hypothesisId: 'B', location: 'Support/Guest/Ticket.jsx:send', msg: '[DEBUG] guest ticket send', data: { ticketUuid: ticket?.uuid || null, attachmentsCount: attachments.length, attachments: attachments.map(a => ({ uuid: a?.uuid || null, url: a?.url || null, name: a?.name || null, size: a?.size || null, mimeType: a?.mimeType || null })) }, ts: Date.now() }) }).catch(() => {});
-      // #endregion
       await axios.post(post_url, { email, message: msgText, attachments: attachments.length ? attachments : null });
       router.reload({ only: ['messages'], preserveScroll: true });
       setSending(false);
@@ -138,9 +107,6 @@ export default function Ticket({ ticket, creator, transaction, messages, email, 
       if (uploaderRef.current) uploaderRef.current.reset();
       return;
     }
-    // #region debug-point A:add-attachment
-    fetch(debugUrl, { method: 'POST', body: JSON.stringify({ sessionId: debugSessionId, runId: debugRunId, hypothesisId: 'A', location: 'Support/Guest/Ticket.jsx:addAttachment', msg: '[DEBUG] guest ticket addAttachment called', data: { ticketUuid: ticket?.uuid || null, file: { uuid: file?.uuid || null, url: file?.url || null, name: file?.name || null, size: file?.size || null, mimeType: file?.mimeType || null }, prevCount: attachments.length }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
     setAttachments((prev) => [...prev, file]);
     setShowAttachmentPicker(false);
   };
@@ -282,6 +248,53 @@ export default function Ticket({ ticket, creator, transaction, messages, email, 
                           </div>
                         </div>
                       )}
+
+                      {evidence ? (
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Evidence</div>
+                          <div className="bg-gray-50 rounded-[15px] border-2 border-black p-4">
+                            <details>
+                              <summary className="cursor-pointer text-xs font-black uppercase tracking-widest text-black select-none">View Evidence</summary>
+                              <div className="mt-3 space-y-3">
+                                <div className="grid grid-cols-1 gap-2 text-xs font-bold text-gray-800">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">IP</div>
+                                    <div className="text-right break-all">{evidence?.last?.ip || evidence?.created?.ip || 'N/A'}</div>
+                                  </div>
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">User-Agent</div>
+                                    <div className="text-right break-all">{evidence?.last?.user_agent || evidence?.created?.user_agent || 'N/A'}</div>
+                                  </div>
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Session</div>
+                                    <div className="text-right break-all">{evidence?.last?.session_id || evidence?.created?.session_id || 'N/A'}</div>
+                                  </div>
+                                </div>
+
+                                {evidence?.stripe ? (
+                                  <div className="pt-3 border-t-2 border-dashed border-gray-300">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Stripe</div>
+                                    <div className="grid grid-cols-1 gap-2 text-xs font-bold text-gray-800">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">PI Status</div>
+                                        <div className="text-right break-all">{evidence?.stripe?.payment_intent?.status || 'N/A'}</div>
+                                      </div>
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Risk</div>
+                                        <div className="text-right break-all">{evidence?.stripe?.charge?.outcome?.risk_level || 'N/A'}</div>
+                                      </div>
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">3DS</div>
+                                        <div className="text-right break-all">{evidence?.stripe?.charge?.card?.three_d_secure?.result || 'N/A'}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </details>
+                          </div>
+                        </div>
+                      ) : null}
 
                       {ticket.type === 'contact' && !['resolved', 'refunded', 'rejected'].includes(ticket.status) && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-200">

@@ -133,9 +133,9 @@ class PayoutService
                 $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
             }
             
-            $delayDays = 0;
+            $delayDays = 7;
             if (in_array($state, ['THROTTLE', 'FREEZE'], true)) {
-                $delayDays = (int) $metrics->payout_delay_days;
+                $delayDays = max($delayDays, (int) $metrics->payout_delay_days);
             }
             $cutoff = $runDate->copy()->subDays($delayDays);
 

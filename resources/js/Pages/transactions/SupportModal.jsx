@@ -98,8 +98,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
       return;
     }
     setAttachments((prev) => [...prev, file]);
-    // Note: Not calling reset() here because it clears the Uploadcare widget UI
-    // which gives visual feedback to the user that the file is uploaded.
+    if (uploaderRef.current) uploaderRef.current.reset();
   };
 
   const removeAttachment = (idx) => {
@@ -208,7 +207,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
             </div>
           ) : null}
           <div className="rounded-[18px] border-2 border-black bg-gray-50 p-3">
-            <div className="flex justify-center w-full">
+            <div className="w-full">
               <GlobalUploader
                 ref={uploaderRef}
                 ctxName={uploaderCtxName}

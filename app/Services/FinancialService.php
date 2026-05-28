@@ -8,6 +8,7 @@ use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorExpense;
 use App\Models\Currency;
 use App\Models\UkTaxSetting;
+use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -210,6 +211,53 @@ class FinancialService
         $pendingAmountMajor = $pendingAmountMinor / 100;
         $pendingDisplay = $payoutCurrency === $displayCurrency ? $pendingAmountMajor : ($convert($payoutCurrency, $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor);
 
+        $clearingDisplay = 0;
+        $clearingGbp = 0;
+        try {
+            $runDate = Carbon::now()->endOfDay();
+            $cutoff = $runDate->copy()->subDays(7);
+
+            $unclearedPayments = Payment::where('creator_id', $user->uuid)
+                ->where('status', 'succeeded')
+                ->whereNull('payout_run_id')
+                ->where('created_at', '>', $cutoff)
+                ->orderByDesc('created_at')
+                ->get();
+
+            $holdIntentIds = Payment::where('creator_id', $user->uuid)
+                ->whereNull('payout_run_id')
+                ->whereIn('status', ['review_hold', 'disputed'])
+                ->whereNotNull('stripe_payment_intent_id')
+                ->pluck('stripe_payment_intent_id')
+                ->toArray();
+            if (!empty($holdIntentIds)) {
+                $unclearedPayments = $unclearedPayments
+                    ->reject(fn ($p) => $p->stripe_payment_intent_id && in_array($p->stripe_payment_intent_id, $holdIntentIds, true))
+                    ->values();
+            }
+
+            $unclearedPayments = $unclearedPayments
+                ->sortByDesc(function ($p) {
+                    $score = 0;
+                    if ($p->stripe_session_id) $score += 2;
+                    if ($p->stripe_payment_intent_id) $score += 1;
+                    return $score;
+                })
+                ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
+                ->values();
+
+            foreach ($unclearedPayments as $p) {
+                $fts = $payoutService->getAllFinancialTransactionsForPayment($p);
+                foreach ($fts as $ft) {
+                    $from = strtoupper($ft->currency ?? 'GBP');
+                    $net = (float) ($ft->net_amount ?? 0);
+                    $clearingDisplay += $from === $displayCurrency ? $net : \App\Helpers::priceFormat($from, $net, $displayCurrency);
+                    $clearingGbp += $from === 'GBP' ? $net : \App\Helpers::priceFormat($from, $net, 'GBP');
+                }
+            }
+        } catch (\Throwable) {
+        }
+
         $payoutPreview = null;
         if ($payoutInfo) {
             $netEarningsMajor = ((int) ($payoutInfo['net_earnings'] ?? 0)) / 100;
@@ -262,6 +310,7 @@ class FinancialService
             'disputes' => $disputesDisplay,
             'payoutable_balance' => $payoutableDisplay,
             'pending_balance' => $pendingDisplay,
+            'clearing_balance' => $clearingDisplay,
             'carry_over_amount' => $carryOverDisplay,
             'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0,
             'payout_preview' => $payoutPreview,
@@ -274,6 +323,7 @@ class FinancialService
             'profit_gbp' => $netGbp - $expensesGbp,
             'held_reserves_gbp' => $heldReservesAmount,
             'pending_balance_gbp' => $pendingAmountMajor,
+            'clearing_balance_gbp' => $clearingGbp,
             'review_holds_gbp' => $reviewHoldsAmount / 100,
             'disputes_gbp' => $disputesAmount / 100,
         ];
