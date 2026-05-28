@@ -232,6 +232,14 @@ class ActivityObserver
                 $user = $model->user;
             } elseif ($model instanceof \App\Models\UserIntro) {
                 $user = $model->user;
+            } elseif ($model instanceof \App\Models\Task) {
+                $user = $model->creator;
+            } elseif ($model instanceof \App\Models\PiggyPot) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\SocialLinks) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\UserCategory) {
+                $user = $model->user;
             }
 
             if ($user) {

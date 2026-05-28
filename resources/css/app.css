@@ -69,7 +69,7 @@
     from {
         opacity: 0;
         box-shadow: none;
-        transform: scale(0.9) translateY(8vh);
+        transform: scale(0.96) translateY(1vh);
     }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -77,12 +77,12 @@
         .animate-fading {
             animation: fading-effect both;
             animation-timeline: view();
-            animation-range: contain 0% contain 30%;
+            animation-range: contain 0% contain 10%;
         }
         .fading {
             animation: fading-effect both;
             animation-timeline: view();
-            animation-range: contain 0% contain 30%;
+            animation-range: contain 0% contain 10%;
         }
     }
 }

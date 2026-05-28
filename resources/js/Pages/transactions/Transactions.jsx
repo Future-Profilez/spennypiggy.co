@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import LoadingScreen from '@/includes/LoadingScreen';
 import Nocontent from '@/includes/Nocontent';
@@ -160,22 +160,33 @@ export default function Transactions(props) {
     setSupportModalState({ show: true, event, type });
   };
 
+  const supportAutoOpenedRef = useRef(false);
+
   useEffect(() => {
     try {
+      if (supportAutoOpenedRef.current) return;
       const params = new URLSearchParams(window.location.search);
       if (params.get('support_open') !== '1') return;
 
-      const creatorUsername = params.get('creator_username');
+      const source = params.get('source');
+      const sourceId = params.get('source_id');
+      let matched = null;
+      if (source && sourceId && Array.isArray(data?.events)) {
+        matched = data.events.find((e) => e?.source === source && String(e?.source_id) === String(sourceId)) || null;
+      }
+
+      const creatorUsername = params.get('creator_username') || matched?.creator?.username;
       const supportType = params.get('support_type') === 'refund' ? 'refund' : 'contact';
       if (!creatorUsername) return;
 
-      const event = {
+      const event = matched || {
         creator: { username: creatorUsername },
         type: params.get('event_type') || null,
-        source: params.get('source') || null,
-        source_id: params.get('source_id') || null,
+        source: source || null,
+        source_id: sourceId || null,
       };
 
+      supportAutoOpenedRef.current = true;
       openSupportModal(event, supportType);
 
       const next = new URL(window.location.href);
@@ -183,7 +194,7 @@ export default function Transactions(props) {
       window.history.replaceState({}, '', next.toString());
     } catch {
     }
-  }, []);
+  }, [data?.events]);
 
   const submitShopAnswer = async (paymentId) => {
     const answer = shopAnswerDrafts[paymentId];

@@ -41,7 +41,9 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Membership::class,
         \App\Models\Bills::class,
         \App\Models\Task::class,
+        \App\Models\PiggyPot::class,
         \App\Models\User::class,
+        \App\Models\UserCategory::class,
         // Add more models as needed:
         // \App\Models\Comment::class,
         // \App\Models\Payment::class,

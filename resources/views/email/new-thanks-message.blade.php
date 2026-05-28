@@ -3,7 +3,7 @@
 <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
              <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 296px; width: 100%; text-align: center;">
+                 style="max-width: 420px; width: 100%; text-align: center;">
                  <tr>
                      <td style=" padding: 0 0 25px 0; text-align: center;"><img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
                  </tr>

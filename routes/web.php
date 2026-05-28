@@ -319,6 +319,8 @@ Route::get('/deliverable/access/{uuid}', [\App\Http\Controllers\DeliveriesContro
 Route::middleware('signed')->group(function () {
     Route::get('/support/guest/create/{paymentId}', [\App\Http\Controllers\GuestSupportTicketController::class, 'create'])->name('support.guest.create');
     Route::post('/support/guest/create/{paymentId}', [\App\Http\Controllers\GuestSupportTicketController::class, 'store'])->name('support.guest.store');
+    Route::get('/support/guest/tip/{tipPaymentId}', [\App\Http\Controllers\GuestSupportTicketController::class, 'createTip'])->name('support.guest.tip.create');
+    Route::post('/support/guest/tip/{tipPaymentId}', [\App\Http\Controllers\GuestSupportTicketController::class, 'storeTip'])->name('support.guest.tip.store');
     Route::get('/support/guest/tickets/{uuid}', [\App\Http\Controllers\GuestSupportTicketController::class, 'show'])->name('support.guest.tickets.show');
     Route::post('/support/guest/tickets/{uuid}/message', [\App\Http\Controllers\GuestSupportTicketController::class, 'message'])->name('support.guest.tickets.message');
     Route::post('/support/guest/tickets/{uuid}/resolve', [\App\Http\Controllers\GuestSupportTicketController::class, 'resolve'])->name('support.guest.tickets.resolve');

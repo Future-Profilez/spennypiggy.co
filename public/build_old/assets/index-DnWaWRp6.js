@@ -158,7 +158,7 @@ to {
   line-height: 1.3;
   will-change: transform;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1), 0 3px 3px rgba(0, 0, 0, 0.05);
-  max-width: 350px;
+  max-width: 420px;
   pointer-events: auto;
   padding: 8px 10px;
   border-radius: 8px;

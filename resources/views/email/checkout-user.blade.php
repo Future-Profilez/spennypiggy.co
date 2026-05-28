@@ -3,7 +3,7 @@
 <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
              <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 296px; width: 100%; text-align: center;">
+                 style="max-width: 420px; width: 100%; text-align: center;">
                  <tr>
                      <td style=" padding: 0 0 25px 0; text-align: center;"><img style="max-width: 200px; margin:20px 0;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
                  </tr>
@@ -76,10 +76,24 @@
                              <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
                                  Receipt Details
                              </div>
+                             @php
+                                 $orderId = $data->session_id ?? ($data->payment->session_id ?? null);
+                                 $receiptId = $data->uuid ?? ($data->payment->uuid ?? null);
+                                 $paymentIntentId = $data->stripe_payment_intent_id ?? ($data->payment->stripe_payment_intent_id ?? null);
+                                 $internalPaymentId = $data->id ?? null;
+                             @endphp
                              <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
                                  <div><b>Seller (Creator):</b> {{ isset($data->owner) && isset($data->owner->name) ? $data->owner->name : 'Creator' }}</div>
-                                 <div><b>Order ID:</b> {{ $data->payment->session_id ?? $data->payment->stripe_session_id ?? 'N/A' }}</div>
-                                 <div><b>Receipt ID:</b> {{ $data->payment->uuid ?? 'N/A' }}</div>
+                                 <div><b>Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
+                                 @if(!empty($receiptId))
+                                     <div><b>Receipt ID:</b> {{ $receiptId }}</div>
+                                 @endif
+                                 @if(!empty($paymentIntentId))
+                                     <div><b>Payment Intent:</b> {{ $paymentIntentId }}</div>
+                                 @endif
+                                 @if(!empty($internalPaymentId))
+                                     <div><b>Internal ID:</b> {{ $internalPaymentId }}</div>
+                                 @endif
                              </div>
                          </div>
                          <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
@@ -87,13 +101,14 @@
                              <br />
                              Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
                          </div>
-                         <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                         <div style="margin-top: 14px; text-align: center;">
                              <a href="{{ $contactUrl ?? ($supportUrl ?? url('/history')) }}"
-                                 style="display:inline-block; padding: 10px 18px; background-color: #ffffff; color: #141414; text-decoration:none; border: 2px solid #141414; border-radius: 30px; font-family: Arial; font-weight: bold; font-size: 12px;">
+                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
                                  Contact Creator
                              </a>
+                             <div style="height: 10px; line-height: 10px;">&nbsp;</div>
                              <a href="{{ $refundUrl ?? ($supportUrl ?? url('/history')) }}"
-                                 style="display:inline-block; padding: 10px 18px; background-color: #FF007F; color: #141414; text-decoration:none; border: 2px solid #141414; border-radius: 30px; font-family: Arial; font-weight: bold; font-size: 12px;">
+                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
                                  Request Refund
                              </a>
                          </div>

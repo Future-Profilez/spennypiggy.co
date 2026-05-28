@@ -1024,7 +1024,9 @@ class CheckoutMailToUser implements ShouldQueue
             // Create consolidated email data
             $consolidatedEmailData = (object) [
                 'id' => $this->payment->id,
+                'uuid' => $this->payment->uuid,
                 'session_id' => $this->payment->session_id,
+                'stripe_payment_intent_id' => $this->payment->stripe_payment_intent_id,
                 'amount_subtotal' => $this->payment->amount_subtotal,
                 'amount_total' => $this->payment->amount_total,
                 'total_paid' => $this->payment->amount_total, // Prioritize total paid for email template

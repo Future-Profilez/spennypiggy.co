@@ -6,7 +6,7 @@
      <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
              <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 296px; width: 100%; text-align: center;">
+                 style="max-width: 420px; width: 100%; text-align: center;">
                  <!-- <tr>
                      <td
                          style=" font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
@@ -39,6 +39,72 @@
                          </td>
                      </tr>
                  @endif
+
+                @php
+                    $creator = $tip->creator ?? ($tip->owner ?? null);
+                    $creatorUsername = $creator->username ?? null;
+                    $orderId = $tip->session_id ?? ($tip->stripe_session_id ?? null);
+                    $receiptId = $tip->uuid ?? null;
+                    $paymentIntentId = $deliverable->payment_intent_id ?? null;
+                    $internalId = $tip->id ?? null;
+                    $isGuest = empty($tip->user) && empty($tip->user_id) && !empty($tip->guest_email);
+
+                    $historyBase = url('/history');
+                    $common = [
+                        'support_open' => '1',
+                        'creator_username' => $creatorUsername,
+                        'event_type' => 'gift_tip',
+                        'source' => 'tip_goals_payments',
+                        'source_id' => (string) ($internalId ?? ''),
+                    ];
+
+                    if ($isGuest && !empty($tip->guest_email) && !empty($internalId)) {
+                        $contactUrl = URL::signedRoute('support.guest.tip.create', ['tipPaymentId' => $internalId, 'email' => $tip->guest_email, 'type' => 'contact']);
+                        $refundUrl = URL::signedRoute('support.guest.tip.create', ['tipPaymentId' => $internalId, 'email' => $tip->guest_email, 'type' => 'refund']);
+                    } else {
+                        $contactUrl = $creatorUsername ? ($historyBase . '?' . http_build_query(array_merge($common, ['support_type' => 'contact']))) : $historyBase;
+                        $refundUrl = $creatorUsername ? ($historyBase . '?' . http_build_query(array_merge($common, ['support_type' => 'refund']))) : $historyBase;
+                    }
+                @endphp
+
+                <tr>
+                    <td style="padding: 0 0 18px 0; text-align: center;">
+                        <div style="padding: 14px; background: #f8f8f8; border: 1px solid #eeeeee; border-radius: 12px; text-align: left;">
+                            <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
+                                Receipt Details
+                            </div>
+                            <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
+                                <div><b>Seller (Creator):</b> {{ ucwords($creator->name ?? 'Creator') }}</div>
+                                <div><b>Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
+                                @if(!empty($receiptId))
+                                    <div><b>Receipt ID:</b> {{ $receiptId }}</div>
+                                @endif
+                                @if(!empty($paymentIntentId))
+                                    <div><b>Payment Intent:</b> {{ $paymentIntentId }}</div>
+                                @endif
+                                @if(!empty($internalId))
+                                    <div><b>Internal ID:</b> {{ $internalId }}</div>
+                                @endif
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
+                            Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
+                            <br />
+                            Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
+                        </div>
+                        <div style="margin-top: 14px; text-align: center;">
+                            <a href="{{ $contactUrl }}"
+                                style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                                Contact Creator
+                            </a>
+                            <div style="height: 10px; line-height: 10px;">&nbsp;</div>
+                            <a href="{{ $refundUrl }}"
+                                style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                                Request Refund
+                            </a>
+                        </div>
+                    </td>
+                </tr>
 
                  @if(isset($deliverable) && !empty($deliverable->deliverable_url))
                  <tr>

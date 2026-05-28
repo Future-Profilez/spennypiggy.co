@@ -378,7 +378,29 @@ export default function Thankyou(props) {
                     </>
                   )}
                 </div>
-             </div>
+
+                {type !== 'monthly_subscription' && (
+                    <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-300 text-center w-full max-w-[550px]">
+                        <h3 className="text-gray-800 font-bold mb-3 uppercase tracking-wider text-sm">Need help with your order?</h3>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            {auth?.user ? (
+                                <>
+                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=contact`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-black hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
+                                        Contact Creator
+                                    </Link>
+                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=refund`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-[#FF007F] hover:bg-pink-50 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
+                                        Request Refund
+                                    </Link>
+                                </>
+                            ) : (
+                                <p className="text-sm text-gray-600 bg-white p-3 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    Please check your email receipt for options to contact the creator or request a refund.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
         </Authenticated>
     )
 }

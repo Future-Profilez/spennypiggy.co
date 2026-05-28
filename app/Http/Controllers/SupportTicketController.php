@@ -30,6 +30,12 @@ class SupportTicketController extends Controller
             'source_id' => 'nullable|string',
             'message' => 'required|string|max:2000',
             'reason' => 'nullable|string|max:2000',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*.uuid' => 'required_with:attachments|string|max:255',
+            'attachments.*.url' => 'nullable|string|max:2000',
+            'attachments.*.name' => 'nullable|string|max:255',
+            'attachments.*.size' => 'nullable|integer|max:5242880',
+            'attachments.*.mimeType' => 'nullable|string|max:255',
         ]);
 
         $supporter = Auth::user();
@@ -67,7 +73,7 @@ class SupportTicketController extends Controller
             'sender_role' => 'supporter',
             'sender_user_id' => $supporter->id,
             'message' => $request->message,
-            'attachments' => null,
+            'attachments' => $request->attachments,
         ]);
 
         if ($creator->email) {
@@ -189,6 +195,222 @@ class SupportTicketController extends Controller
         ]);
     }
 
+    public function transactionDetails(Request $request)
+    {
+        $request->validate([
+            'source' => 'required|string',
+            'source_id' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        if (!$user) {
+            throw new AuthorizationException('Unauthorized');
+        }
+
+        $sourceModelClass = match($request->source) {
+            'stripe_payment_items' => \App\Models\StripePaymentItems::class,
+            'membership_payments' => \App\Models\MembershipPayment::class,
+            'bill_payments' => \App\Models\BillPayment::class,
+            'tip_goals_payments' => \App\Models\TipGoalsPayment::class,
+            'piggy_pot_contributions' => \App\Models\PiggyPotContribution::class,
+            'shop_payments' => \App\Models\ShopPayment::class,
+            'task_purchases' => \App\Models\TaskPurchase::class,
+            'financial_transactions' => \App\Models\FinancialTransaction::class,
+            default => null,
+        };
+
+        if (!$sourceModelClass) {
+            return response()->json(['status' => false, 'message' => 'Invalid source.'], 422);
+        }
+
+        $ft = null;
+        if ($request->source === 'financial_transactions') {
+            $ft = \App\Models\FinancialTransaction::query()
+                ->with([
+                    'user:id,username,name',
+                    'supporter:id,username,name',
+                    'source',
+                ])
+                ->find($request->source_id);
+        } else {
+            $ft = \App\Models\FinancialTransaction::query()
+                ->with([
+                    'user:id,username,name',
+                    'supporter:id,username,name',
+                    'source',
+                ])
+                ->where('source_type', $sourceModelClass)
+                ->where('source_id', $request->source_id)
+                ->first();
+        }
+
+        if ($ft) {
+            if ($ft->user_id !== $user->id && $ft->supporter_id !== $user->id) {
+                throw new AuthorizationException('Unauthorized');
+            }
+
+            $ft->loadMorph('source', [
+                \App\Models\ShopPayment::class => ['shop', 'shop.user'],
+                \App\Models\TaskPurchase::class => ['task', 'creator'],
+                \App\Models\StripePaymentItems::class => ['wish', 'payment', 'payment.owner'],
+                \App\Models\MembershipPayment::class => ['membership', 'membership.user'],
+                \App\Models\BillPayment::class => ['bill', 'bill.user'],
+                \App\Models\PiggyPotContribution::class => ['piggyPot', 'creator'],
+                \App\Models\TipGoalsPayment::class => ['tipGoal'],
+            ]);
+
+            $base = class_basename($ft->source_type);
+            $type = match ($base) {
+                'StripePaymentItems' => 'gift_wish',
+                'MembershipPayment' => 'gift_membership',
+                'BillPayment' => 'gift_bill',
+                'TipGoalsPayment' => 'gift_tip',
+                'PiggyPotContribution' => 'piggy_pot',
+                'ShopPayment' => 'gift_shop',
+                'TaskPurchase' => 'gift_task',
+                default => 'transaction',
+            };
+
+            $title = null;
+            if ($base === 'ShopPayment') {
+                $title = $ft->source?->shop?->name;
+            } elseif ($base === 'TaskPurchase') {
+                $title = $ft->source?->task?->title;
+            } elseif ($base === 'StripePaymentItems') {
+                $title = $ft->source?->wish?->wishname;
+            } elseif ($base === 'MembershipPayment') {
+                $title = $ft->source?->membership?->level;
+            } elseif ($base === 'BillPayment') {
+                $title = $ft->source?->bill?->name;
+            } elseif ($base === 'PiggyPotContribution') {
+                $title = $ft->source?->piggyPot?->title;
+            }
+
+            return response()->json([
+                'status' => true,
+                'event' => [
+                    'uuid' => $ft->uuid,
+                    'type' => $type,
+                    'title' => $title,
+                    'source' => $request->source,
+                    'source_id' => (string) $request->source_id,
+                    'created_at' => optional($ft->transaction_date)->format('Y-m-d H:i:s') ?? $ft->created_at->format('Y-m-d H:i:s'),
+                    'amount' => (float) ($ft->gross_amount ?? 0),
+                    'net_amount' => (float) ($ft->net_amount ?? 0),
+                    'currency' => strtolower($ft->currency ?? 'GBP'),
+                    'creator' => $ft->user ? [
+                        'name' => $ft->user->name,
+                        'username' => $ft->user->username,
+                    ] : null,
+                ],
+            ]);
+        }
+
+        if ($request->source === 'financial_transactions') {
+            return response()->json(['status' => false, 'message' => 'Transaction not found.'], 404);
+        }
+
+        $model = $sourceModelClass::query()->find($request->source_id);
+        if (!$model) {
+            return response()->json(['status' => false, 'message' => 'Transaction not found.'], 404);
+        }
+
+        $type = match ($request->source) {
+            'stripe_payment_items' => 'gift_wish',
+            'membership_payments' => 'gift_membership',
+            'bill_payments' => 'gift_bill',
+            'tip_goals_payments' => 'gift_tip',
+            'piggy_pot_contributions' => 'piggy_pot',
+            'shop_payments' => 'gift_shop',
+            'task_purchases' => 'gift_task',
+            default => 'transaction',
+        };
+
+        $title = null;
+        $creator = null;
+        $amount = null;
+        $currency = null;
+        $createdAt = method_exists($model, 'getAttribute') ? ($model->getAttribute('created_at') ?? null) : null;
+
+        if ($request->source === 'shop_payments') {
+            $model->loadMissing(['shop', 'shop.user']);
+            $title = $model->shop?->name;
+            $creator = $model->shop?->user;
+            $amount = (float) (($model->total_paid && $model->total_paid > 0) ? $model->total_paid : ($model->amount + ((float) ($model->shipping_amount ?? 0)) + ((float) ($model->vat_tax_amount ?? 0))));
+            $currency = $model->currency;
+        } elseif ($request->source === 'task_purchases') {
+            $model->loadMissing(['task', 'creator', 'supporter']);
+            $title = $model->task?->title;
+            $creator = $model->creator;
+            $amount = (float) (($model->total_paid && $model->total_paid > 0) ? $model->total_paid : ($model->amount ?? 0));
+            $currency = $model->currency;
+            if ($model->creator_id !== $user->id && $model->supporter_id !== $user->id) {
+                throw new AuthorizationException('Unauthorized');
+            }
+        } elseif ($request->source === 'stripe_payment_items') {
+            $model->loadMissing(['wish', 'payment', 'payment.owner']);
+            $title = $model->wish?->wishname;
+            $creator = $model->payment?->owner;
+            $amount = (float) (($model->total_paid && $model->total_paid > 0) ? $model->total_paid : ($model->amount ?? 0));
+            $currency = $model->payment?->currency;
+        } elseif ($request->source === 'membership_payments') {
+            $model->loadMissing(['membership', 'membership.user', 'user']);
+            $title = $model->membership?->level;
+            $creator = $model->membership?->user;
+            $amount = (float) (($model->total_paid && $model->total_paid > 0) ? $model->total_paid : ($model->amount ?? 0));
+            $currency = $model->currency;
+        } elseif ($request->source === 'bill_payments') {
+            $model->loadMissing(['bill', 'bill.user', 'user']);
+            $title = $model->bill?->name;
+            $creator = $model->bill?->user;
+            $amount = (float) (($model->total_paid && $model->total_paid > 0) ? $model->total_paid : ($model->amount ?? 0));
+            $currency = $model->currency;
+        } elseif ($request->source === 'tip_goals_payments') {
+            $model->loadMissing(['tipGoal', 'creator', 'user']);
+            $title = $model->tipGoal?->name;
+            $creator = $model->creator;
+            $amount = (float) (($model->total_paid && $model->total_paid > 0) ? $model->total_paid : ($model->amount ?? 0));
+            $currency = $model->currency;
+        } elseif ($request->source === 'piggy_pot_contributions') {
+            $model->loadMissing(['piggyPot', 'creator', 'user']);
+            $title = $model->piggyPot?->title;
+            $creator = $model->creator;
+            $amount = (float) (($model->total_paid && $model->total_paid > 0) ? $model->total_paid : ($model->amount ?? 0));
+            $currency = $model->currency;
+        }
+
+        $creatorUsername = $creator?->username;
+        $creatorName = $creator?->name;
+
+        if ($request->source !== 'task_purchases') {
+            $ownerId = $creator?->id ?? $model->creator_id ?? null;
+            $supporterId = $model->user_id ?? $model->supporter_id ?? null;
+            if ($ownerId && $supporterId) {
+                if ($ownerId !== $user->id && $supporterId !== $user->id) {
+                    throw new AuthorizationException('Unauthorized');
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'event' => [
+                'uuid' => $model->uuid ?? null,
+                'type' => $type,
+                'title' => $title,
+                'source' => $request->source,
+                'source_id' => (string) $request->source_id,
+                'created_at' => $createdAt ? $createdAt->format('Y-m-d H:i:s') : null,
+                'amount' => $amount,
+                'currency' => strtolower($currency ?? 'GBP'),
+                'creator' => $creatorUsername ? [
+                    'name' => $creatorName,
+                    'username' => $creatorUsername,
+                ] : null,
+            ],
+        ]);
+    }
+
     public function resolve(string $uuid)
     {
         $user = Auth::user();
@@ -218,7 +440,12 @@ class SupportTicketController extends Controller
     {
         $request->validate([
             'message' => 'required|string|max:2000',
-            'attachments' => 'nullable|array',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*.uuid' => 'required_with:attachments|string|max:255',
+            'attachments.*.url' => 'nullable|string|max:2000',
+            'attachments.*.name' => 'nullable|string|max:255',
+            'attachments.*.size' => 'nullable|integer|max:5242880',
+            'attachments.*.mimeType' => 'nullable|string|max:255',
         ]);
 
         $user = Auth::user();
