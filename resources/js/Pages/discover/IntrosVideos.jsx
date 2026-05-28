@@ -103,7 +103,7 @@ export default function IntroVideos(props) {
         }
       };
 
-      return  <div className="fading relative rounded-[30px]   h-[230px] md:h-[230px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
+      return  <div className="relative rounded-[30px]   h-[230px] md:h-[230px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
         <ProfileIntro data={w} poster={poster} text={
           <>
             <div className="h-full relative bg-gray-200">

@@ -2,8 +2,8 @@ import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import axios from 'axios';
 
-export default function Create({ payment, creator, email, post_url }) {
-  const [type, setType] = useState('contact');
+export default function Create({ payment, creator, email, post_url, initial_type }) {
+  const [type, setType] = useState(initial_type === 'refund' ? 'refund' : 'contact');
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
