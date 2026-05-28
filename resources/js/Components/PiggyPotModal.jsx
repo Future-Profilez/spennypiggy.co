@@ -35,7 +35,7 @@ export default function PiggyPotModal({
             "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/",
     };
 
-    const { data, setData, post, processing, errors, reset, clearErrors } =
+    const { data, setData, post, processing, errors, reset, clearErrors, setError } =
         useForm(defaultValues);
 
     /*
@@ -91,6 +91,12 @@ export default function PiggyPotModal({
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        if (!data.content_file) {
+            setError("content_file", "Digital reward file is required.");
+            errorAlert("Please upload the digital reward file.");
+            return;
+        }
 
         const options = {
             onSuccess: (page) => {
@@ -262,7 +268,7 @@ export default function PiggyPotModal({
 
                     <div className="pt-2 border-t-2 border-gray-200 mt-6">
                         <label className="block text-sm font-bold text-gray-900 mb-2">
-                            Digital Reward / Exclusive Item (Optional)
+                            Digital Reward / Exclusive Item
                         </label>
                         <p className="text-xs text-gray-500 mb-3">
                             Supporters will automatically receive this file after they contribute to your pot.

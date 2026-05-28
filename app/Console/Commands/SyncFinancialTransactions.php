@@ -437,6 +437,10 @@ class SyncFinancialTransactions extends Command
                 
                 $creator = $payment->membership->user;
                 if (!$creator) continue;
+                
+                if (($payment->status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) {
+                    continue;
+                }
 
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
@@ -509,6 +513,10 @@ class SyncFinancialTransactions extends Command
 
         $query->chunk(100, function ($purchases) {
             foreach ($purchases as $purchase) {
+                if (!in_array($purchase->status, ['paid', 'completed', 'completed_accepted', 'paid_out', 'disputed', 'refunded'], true) && (float) ($purchase->total_paid ?? 0) <= 0) {
+                    continue;
+                }
+
                 $amount = $purchase->amount;
                 $vat = $this->calculateVatIfMissing($amount, $purchase->vat_amount, $purchase->creator);
                 
@@ -585,6 +593,10 @@ class SyncFinancialTransactions extends Command
 
                 $creator = $payment->bill->user;
                 if (!$creator) continue;
+                
+                if (($payment->status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) {
+                    continue;
+                }
 
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
@@ -664,6 +676,7 @@ class SyncFinancialTransactions extends Command
         $query->chunk(100, function ($items) {
             foreach ($items as $item) {
                 if (!$item->payment) continue;
+                if (($item->payment->payment_status ?? null) !== 'paid') continue;
 
                 $creator = $item->payment->owner;
                 $creatorId = $creator?->id;
@@ -752,6 +765,7 @@ class SyncFinancialTransactions extends Command
 
                 $creator = $payment->shop->user;
                 if (!$creator) continue;
+                if (($payment->payment_status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) continue;
 
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
@@ -828,6 +842,7 @@ class SyncFinancialTransactions extends Command
                 $creator = $payment->creator;
                 $creatorId = $payment->creator_id;
                 if (!$creatorId) continue;
+                if (($payment->status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) continue;
 
                 $amount = $payment->amount;
                 $vat = $this->calculateVatIfMissing($amount, $payment->vat_amount, $creator);
@@ -901,6 +916,10 @@ class SyncFinancialTransactions extends Command
 
         $query->chunkById(100, function ($payments) {
             foreach ($payments as $payment) {
+                if (!in_array($payment->status, ['paid', 'succeeded', 'disputed', 'refunded', 'review_hold'], true) && (float) ($payment->total_paid ?? 0) <= 0) {
+                    continue;
+                }
+
                 $currency = strtoupper($payment->currency ?: 'GBP');
                 $creator = User::find($payment->creator_id);
 
