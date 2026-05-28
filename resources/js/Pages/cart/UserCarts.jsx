@@ -795,7 +795,7 @@ export default function UserCarts(props) {
                     </div> */}
                 <div className="w-full">
                     <div className="cartMain">
-                        <h2 className="pb-1 wishtitle fading">
+                        <h2 className="pb-1 wishtitle  ">
                             Your Basket for {datas?.user?.name || ""}
                             <Link
                                 className="text-violet-600"
@@ -923,7 +923,7 @@ export default function UserCarts(props) {
                         </div>
 
                         <div className="cartTotal pt-3 pb-6">
-                            <div className="fading cartSubTotal text-right mt-2">
+                            <div className="  cartSubTotal text-right mt-2">
                                 <strong className="!text-black">Total :</strong>
                                 <strong className="!text-right !text-black">
                                     {formatMultiPrice(
@@ -941,7 +941,7 @@ export default function UserCarts(props) {
                         <div className="addMessage">
                             <form onSubmit={(e) => e.preventDefault()}>
                                 <ul className="flex flex-wrap">
-                                    <li className="fading w-full">
+                                    <li className="  w-full">
                                         <label>Add Message </label>
                                         <textarea
                                             rows={2}
@@ -951,7 +951,7 @@ export default function UserCarts(props) {
                                             placeholder="Send some words of support..."
                                         ></textarea>
                                     </li>
-                                    <li className="w-full mt-3 fading">
+                                    <li className="w-full mt-3  ">
                                         <div className="flex flex-wrap">
                                             <div className="w-full mb-4">
                                                 <label className=" text-start w-full">
@@ -992,7 +992,7 @@ export default function UserCarts(props) {
                                             </div>
                                         </div>
                                     </li>
-                                    <li className="cheklistbox fading">
+                                    <li className="cheklistbox  ">
                                         <label
                                             htmlFor="anonymous"
                                             className="text-left"

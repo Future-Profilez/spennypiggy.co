@@ -3,7 +3,7 @@
 <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
              <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 296px; width: 100%; text-align: center;">
+                 style="max-width: 420px; width: 100%; text-align: center;">
                  <tr>
                      <td style=" padding: 0 0 25px 0; text-align: center;"><img  style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
                  </tr>
@@ -76,6 +76,11 @@
                                  <p style="font-family: Arial; font-size: 14px; font-weight: bold; color: #007bff; margin: 0 0 10px 0;">
                                      🚀 Confirmation Message:
                                  </p>
+                                 @if(($data->shop->type ?? null) !== 'physical' && empty($url))
+                                     <div style="margin: 0 0 12px 0;">
+                                         @include('email.digital-content-notice')
+                                     </div>
+                                 @endif
                                  @if($data->shop->success_page_type === 'url')
                                      <p style="font-family: Arial; font-size: 14px; color: #333; margin: 0; line-height: 1.4;">
                                          Access your content here: <a href="{{ $data->shop->success_page_value }}" style="color: #007bff; text-decoration: underline;" target="_blank">{{ $data->shop->success_page_value }}</a>
@@ -87,6 +92,60 @@
                          </td>
                      </tr>
                  @endif
+                 <tr>
+                     <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                         @php
+                             $creatorUsername = $data->shop->user->username ?? null;
+                             $base = url('/history');
+                             $common = http_build_query([
+                                 'support_open' => '1',
+                                 'creator_username' => $creatorUsername,
+                                 'event_type' => 'gift_shop',
+                                 'source' => 'shop_payments',
+                                 'source_id' => (string) ($data->id ?? ''),
+                             ]);
+                             $contactUrl = $creatorUsername ? ($base . '?' . $common . '&support_type=contact') : $base;
+                             $refundUrl = $creatorUsername ? ($base . '?' . $common . '&support_type=refund') : $base;
+                             $orderId = $data->session_id ?? null;
+                             $receiptId = $data->uuid ?? null;
+                         @endphp
+                         <div style="padding: 14px; background: #f8f8f8; border: 1px solid #eeeeee; border-radius: 12px; text-align: left;">
+                             <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
+                                 Receipt Details
+                             </div>
+                             <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
+                                 <div><b>Seller (Creator):</b> {{ ucwords($data->shop->user->name ?? 'Creator') }}</div>
+                                 <div><b>Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
+                                 @if(!empty($receiptId))
+                                     <div><b>Receipt ID:</b> {{ $receiptId }}</div>
+                                 @endif
+                                 @if(!empty($data->id))
+                                     <div><b>Internal ID:</b> {{ $data->id }}</div>
+                                 @endif
+                             </div>
+                         </div>
+                         <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
+                             @if(($data->shop->type ?? null) === 'physical')
+                                 Physical item purchase. Delivery and tracking will be provided by the creator.
+                             @else
+                                 Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
+                             @endif
+                             <br />
+                             Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
+                         </div>
+                         <div style="margin-top: 14px; text-align: center;">
+                             <a href="{{ $contactUrl }}"
+                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                                 Contact Creator
+                             </a>
+                             <div style="height: 10px; line-height: 10px;">&nbsp;</div>
+                             <a href="{{ $refundUrl }}"
+                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                                 Request Refund
+                             </a>
+                         </div>
+                     </td>
+                 </tr>
                  <tr>
                      <td style="height: 10px;line-height: 10px;">
                      </td>

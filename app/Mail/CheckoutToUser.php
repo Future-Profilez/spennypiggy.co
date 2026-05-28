@@ -112,34 +112,62 @@ class CheckoutToUser extends Mailable
             $refundUrl = url('/history');
 
             $creatorUsername = $this->data->owner->username ?? null;
-            if ($creatorUsername && isset($this->data->id)) {
+            $source = null;
+            $sourceId = null;
+            $baseModel = class_basename($this->data);
+
+            if ($baseModel === 'StripePaymentItems') {
+                $source = 'stripe_payment_items';
+                $sourceId = (string) ($this->data->id ?? '');
+            } elseif ($baseModel === 'StripePaymentDetail') {
+                try {
+                    if (method_exists($this->data, 'items')) {
+                        $this->data->loadMissing(['items']);
+                        $firstItem = $this->data->items?->first();
+                        if ($firstItem && isset($firstItem->id)) {
+                            $source = 'stripe_payment_items';
+                            $sourceId = (string) $firstItem->id;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                }
+            }
+
+            if ($creatorUsername && !empty($source) && !empty($sourceId)) {
                 $base = url('/history');
                 $common = http_build_query([
                     'support_open' => '1',
                     'creator_username' => $creatorUsername,
                     'event_type' => 'gift_wish',
-                    'source' => 'stripe_payment_items',
-                    'source_id' => (string) $this->data->id,
+                    'source' => $source,
+                    'source_id' => $sourceId,
                 ]);
 
                 $contactUrl = $base . '?' . $common . '&support_type=contact';
                 $refundUrl = $base . '?' . $common . '&support_type=refund';
             }
 
-            if (!isset($this->data->user_id) && !empty($this->data->guest_email) && isset($this->data->id)) {
+            $guestPaymentId = null;
+            if ($baseModel === 'StripePaymentDetail') {
+                $guestPaymentId = $this->data->id ?? null;
+            } elseif ($baseModel === 'StripePaymentItems') {
+                $guestPaymentId = $this->data->stripe_payment_detail_id ?? ($this->data->payment?->id ?? null);
+            }
+
+            if (!isset($this->data->user_id) && !empty($this->data->guest_email) && !empty($guestPaymentId)) {
                 $supportUrl = URL::signedRoute('support.guest.create', [
-                    'paymentId' => $this->data->payment?->id ?? $this->data->stripe_payment_detail_id ?? null,
+                    'paymentId' => $guestPaymentId,
                     'email' => $this->data->guest_email,
                 ]);
 
                 $contactUrl = URL::signedRoute('support.guest.create', [
-                    'paymentId' => $this->data->payment?->id ?? $this->data->stripe_payment_detail_id ?? null,
+                    'paymentId' => $guestPaymentId,
                     'email' => $this->data->guest_email,
                     'type' => 'contact',
                 ]);
 
                 $refundUrl = URL::signedRoute('support.guest.create', [
-                    'paymentId' => $this->data->payment?->id ?? $this->data->stripe_payment_detail_id ?? null,
+                    'paymentId' => $guestPaymentId,
                     'email' => $this->data->guest_email,
                     'type' => 'refund',
                 ]);

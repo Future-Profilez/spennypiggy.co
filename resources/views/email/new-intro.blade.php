@@ -3,7 +3,7 @@
 <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
              <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 296px; width: 100%; text-align: center;">
+                 style="max-width: 420px; width: 100%; text-align: center;">
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>
 
                  <tr>

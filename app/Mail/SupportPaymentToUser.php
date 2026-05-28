@@ -63,7 +63,8 @@ class SupportPaymentToUser extends Mailable
                 ->with([
                     'tip' => $this->paymentData,  // Pass as 'tip' for template compatibility
                     'symbol' => $this->symbol,     // Currency symbol
-                    'amount' => $this->paymentData->total_paid ?? $this->paymentData->amount ?? 0  // Amount for template
+                    'amount' => $this->paymentData->total_paid ?? $this->paymentData->amount ?? 0,  // Amount for template
+                    'deliverable' => $this->paymentData->deliverable ?? null,
                 ])
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

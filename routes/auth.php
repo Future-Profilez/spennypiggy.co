@@ -794,6 +794,7 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
 
         Route::post('support/tickets', [\App\Http\Controllers\SupportTicketController::class, 'store'])->name('support.tickets.store');
+        Route::get('support/transaction-details', [\App\Http\Controllers\SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
         Route::get('support/tickets/{uuid}', [\App\Http\Controllers\SupportTicketController::class, 'show'])->name('support.tickets.show');
         Route::post('support/tickets/{uuid}/message', [\App\Http\Controllers\SupportTicketController::class, 'message'])->name('support.tickets.message');
         Route::post('support/tickets/{uuid}/resolve', [\App\Http\Controllers\SupportTicketController::class, 'resolve'])->name('support.tickets.resolve');

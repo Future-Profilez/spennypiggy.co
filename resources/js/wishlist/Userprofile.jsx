@@ -282,6 +282,16 @@ export default function Userprofile({ IsloggedIn }) {
                                     : (
                                         ''
                                     ) || ""}
+
+                                    {/* Contact Creator Button */}
+                                    <div className="mt-2 text-center md:text-left w-full flex justify-center lg:justify-start">
+                                        <a 
+                                            href={`/history?support_open=1&creator_username=${user?.username}&support_type=contact`}
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-black rounded-xl font-bold bg-[#FF007F] text-white hover:bg-pink-600 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm"
+                                        >
+                                            Contact Creator
+                                        </a>
+                                    </div>
                                 </>
                             }
                             

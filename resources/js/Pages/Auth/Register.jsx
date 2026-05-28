@@ -368,7 +368,7 @@ export default function Register(props) {
     const getFieldClassName = useCallback(
         (
             field,
-            baseClassName = "mt-1 block w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]   p-3",
+            baseClassName = "mt-1 block w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]   p-3",
         ) => {
             const status = getFieldStatus(field);
             const value = getFieldValue(field);
@@ -1197,8 +1197,7 @@ export default function Register(props) {
                                                                     data.username,
                                                                 )
                                                             ) {
-                                                                localError =
-                                                                    "The username must only contain letters, numbers, periods (.), and underscores (_).";
+                                                                localError = "The username must only contain letters, numbers, periods (.), and underscores (_).";
                                                             }
 
                                                             if (localError) {
@@ -1217,41 +1216,22 @@ export default function Register(props) {
                                                                 );
                                                                 return;
                                                             }
-                                                            validateRegistration(
-                                                                {
-                                                                    username:
-                                                                        data.username,
-                                                                },
-                                                            );
+                                                            validateRegistration({username:data.username,},);
                                                         }}
                                                         required
                                                     />
-                                                    {renderFieldStatusIcon(
-                                                        "username",
-                                                    )}
+                                                    {renderFieldStatusIcon("username",)}
                                                 </div>
-                                                <InputError
-                                                    message={getFieldError(
-                                                        "username",
-                                                    )}
-                                                    className="mt-2"
-                                                />
+                                                <InputError message={getFieldError( "username",)} className="mt-2" />
                                             </div>
-
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
                                                     Gender*
                                                 </label>
                                                 <select
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "gender",
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="mt-1 block w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]   p-3"
-                                                    value={data.gender}
-                                                >
+                                                    onChange={(e) => setData( "gender",e.target.value,)}
+                                                    className="mt-1 block w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]   p-3"
+                                                    value={data.gender} >
                                                     <option value="" disabled>
                                                         Choose Gender
                                                     </option>
@@ -1318,50 +1298,22 @@ export default function Register(props) {
                                                         "email",
                                                     )}
                                                 </div>
-                                                {role === 1 && (
-                                                    <div className="mt-3 bg-white/5 border border-white/10 rounded-[20px] p-4 space-y-3">
-                                                        <p className="text-xs text-gray-300 leading-relaxed">
-                                                            The e-mail address used for your creator account may appear on supporter receipts, payment confirmations, and transaction records. Please ensure you register using an appropriate e-mail address that you are comfortable sharing with supporters. This is required for payment processing, compliance, and Merchant of Record (MOR) obligations. If you do not wish to share a personal e-mail address, we recommend creating a dedicated creator/business e-mail for your account.
-                                                        </p>
-                                                        <label className="flex items-start gap-3 cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                ref={
-                                                                    creatorEmailReceiptAckRef
-                                                                }
-                                                                id="creator_email_receipt_ack"
-                                                                name="creator_email_receipt_ack"
-                                                                onChange={(e) =>
-                                                                    setData(
-                                                                        "creator_email_receipt_ack",
-                                                                        e.target
-                                                                            .checked,
-                                                                    )
-                                                                }
-                                                                className="h-5 w-5 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
-                                                                required={
-                                                                    role === 1
-                                                                }
-                                                            />
-                                                            <span className="text-sm text-gray-300">
-                                                                I understand my
-                                                                creator e-mail
-                                                                address may
-                                                                appear on
-                                                                supporter
-                                                                transaction
-                                                                records and
-                                                                receipts.
-                                                            </span>
-                                                        </label>
-                                                    </div>
-                                                )}
                                                 <InputError
                                                     message={getFieldError(
                                                         "email",
                                                     )}
                                                     className="mt-2"
-                                                />
+                                                    />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                {role === 1 && (
+                                                    <div className="mt-3 bg-white/5 border border-white/10 rounded-[20px] p-4 space-y-3">
+                                                        <p className="text-xs text-gray-300 leading-relaxed">
+                                                            The e-mail address used for your creator account may appear on supporter receipts, payment confirmations, and transaction records. Please ensure you register using an appropriate e-mail address that you are comfortable sharing with supporters. This is required for payment processing, compliance, and Merchant of Record (MOR) obligations. If you do not wish to share a personal e-mail address, we recommend creating a dedicated creator/business e-mail for your account.
+                                                        </p>
+                                                        
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="md:col-span-1">
@@ -1606,7 +1558,7 @@ export default function Register(props) {
                                                                 }
                                                                 selectClassName={getFieldClassName(
                                                                     "country",
-                                                                    "w-full bg-[#ffffff0d] border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3",
+                                                                    "w-full bg-[#ffffff0d] border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]  p-3",
                                                                 )}
                                                             />
                                                             {renderFieldStatusIcon(
@@ -1767,7 +1719,7 @@ export default function Register(props) {
                                                     readOnly={
                                                         hasReferralFromUrl
                                                     }
-                                                    className={`flex-1 bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]   p-3 ${
+                                                    className={`flex-1 bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]   p-3 ${
                                                         hasReferralFromUrl
                                                             ? "opacity-50 cursor-not-allowed"
                                                             : ""
@@ -1863,6 +1815,43 @@ export default function Register(props) {
                                                     at least 18 years old.
                                                 </span>
                                             </label>
+
+                                             {role === 1 && (
+                                            <div className="mt-3 ">
+                                                
+                                                <label className="flex items-start gap-3 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        ref={
+                                                            creatorEmailReceiptAckRef
+                                                        }
+                                                        id="creator_email_receipt_ack"
+                                                        name="creator_email_receipt_ack"
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "creator_email_receipt_ack",
+                                                                e.target
+                                                                    .checked,
+                                                            )
+                                                        }
+                                                        className="h-5 w-5 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
+                                                        required={
+                                                            role === 1
+                                                        }
+                                                    />
+                                                    <span className="text-normal text-gray-300">
+                                                        I understand my
+                                                        creator e-mail
+                                                        address may
+                                                        appear on
+                                                        supporter
+                                                        transaction
+                                                        records and
+                                                        receipts.
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        )}
 
                                             {role === 0 ? (
                                                 <label

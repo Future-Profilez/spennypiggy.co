@@ -943,6 +943,11 @@ class StripeWebhookController extends Controller
                 $this->processPiggyPotPayment($session, $metadata);
             }
 
+            // Check if this is a support / tip payment
+            if (isset($metadata->type) && $metadata->type === 'support_payment') {
+                $this->processSupportPayment($session, $metadata);
+            }
+
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
             Log::error("Error processing checkout session completed", [
@@ -1084,6 +1089,57 @@ class StripeWebhookController extends Controller
             $pay->save();
         } else {
             $pay->save();
+        }
+    }
+
+    /**
+     * Process support / tip payment via webhook
+     */
+    private function processSupportPayment($session, $metadata)
+    {
+        Log::info("Processing support payment via webhook", ['session_id' => $session->id]);
+
+        $tip = \App\Models\TipGoalsPayment::with(['creator', 'user', 'tipGoal'])->where('session_id', $session->id)->first();
+        if (!$tip) {
+            Log::warning("TipGoalsPayment not found for session", ['session_id' => $session->id]);
+            return;
+        }
+
+        if ($session->payment_status !== 'paid') {
+            $tip->status = $session->payment_status;
+            $tip->save();
+            return;
+        }
+
+        $existingDeliverable = \App\Models\Deliverable::where('session_id', $session->id)
+            ->where('product_type', 'support_payment')
+            ->first();
+        if ($existingDeliverable) {
+            $tip->status = 'paid';
+            $tip->save();
+            return;
+        }
+
+        $tip->status = 'paid';
+        $tip->save();
+
+        try {
+            \App\Models\Payment::where('stripe_session_id', $session->id)->update([
+                'stripe_payment_intent_id' => $session->payment_intent,
+                'status' => 'succeeded'
+            ]);
+        } catch (\Throwable $e) {
+        }
+
+        try {
+            \App\Jobs\TipPaymentMailToUser::dispatch($tip, $tip->currency ?? 'USD');
+        } catch (\Throwable $e) {
+            Log::error('Failed to dispatch TipPaymentMailToUser from webhook: ' . $e->getMessage(), ['tip_pay_id' => $tip->id]);
+        }
+
+        try {
+            \App\Jobs\CreateThankYouPostJob::dispatch($tip);
+        } catch (\Throwable $e) {
         }
     }
 
@@ -1458,7 +1514,8 @@ class StripeWebhookController extends Controller
                             'stripe_payment_intent_id' => $paymentIntentId,
                             'creator_id' => $creatorId,
                             'amount' => $amount,
-                        'reserve_amount_minor' => 0,
+                            'reserve_amount_minor' => 0,
+                            'platform_holds_funds' => true,
                             'currency' => $dispute->currency,
                             'status' => 'disputed',
                         ]);
@@ -1489,7 +1546,6 @@ class StripeWebhookController extends Controller
 
             if (!$dbDispute->wasRecentlyCreated) {
                 Log::info("Risk Engine: Dispute already exists", ['dispute_id' => $dispute->id]);
-                // Still update TaskPurchase status just in case
             } else {
                 Log::info("Risk Engine: Dispute model created", [
                     'db_dispute_id' => $dbDispute->id ?? null,
@@ -1500,11 +1556,6 @@ class StripeWebhookController extends Controller
                 // Update Identity Rollups (Dispute Count)
                 if ($payment && $payment->riskIdentity) {
                     app(\App\Services\Risk\IdentityRollupService::class)->refreshRollups($payment->riskIdentity);
-                }
-
-                // Update Payment Status
-                if ($payment) {
-                    $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
                 }
 
                 // Recalculate Risk Metrics (Always, if we know the creator)
@@ -1542,6 +1593,10 @@ class StripeWebhookController extends Controller
                 }
 
                 Log::info("Risk Engine: Dispute recorded", ['dispute_id' => $dispute->id]);
+            }
+
+            if ($paymentIntentId) {
+                $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
             }
         } catch (\Exception $e) {
             Log::error("Risk Engine: Failed to record dispute: " . $e->getMessage());
@@ -1593,6 +1648,10 @@ class StripeWebhookController extends Controller
                     $payment->update(['status' => 'disputed']);
                 }
             }
+
+            if (!empty($dispute->payment_intent)) {
+                $this->syncRiskLedgerStatus($dispute->payment_intent, 'disputed');
+            }
         } catch (\Exception $e) {
             Log::error("Risk Engine: Failed to update dispute: " . $e->getMessage(), ['stripe_dispute_id' => $dispute->id ?? null]);
         }
@@ -1614,13 +1673,6 @@ class StripeWebhookController extends Controller
                     'resolved_at' => now(),
                 ]);
                 Log::info("Risk Engine: Dispute status updated", ['status' => $dispute->status]);
-
-                // Sync Risk Ledger Status
-                if ($dispute->status === 'won') {
-                    $this->syncRiskLedgerStatus($paymentIntentId, 'succeeded');
-                } elseif ($dispute->status === 'lost') {
-                    $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
-                }
 
                 // Notify Creator
                 if ($riskDispute->creator) {
@@ -1648,6 +1700,14 @@ class StripeWebhookController extends Controller
             Log::error("Risk Engine: Failed to update dispute status: " . $e->getMessage());
         }
         // ------------------------------------------
+
+        if ($paymentIntentId) {
+            if ($dispute->status === 'won') {
+                $this->syncRiskLedgerStatus($paymentIntentId, 'succeeded');
+            } elseif ($dispute->status === 'lost') {
+                $this->syncRiskLedgerStatus($paymentIntentId, 'refunded');
+            }
+        }
 
         if (!$paymentIntentId) {
             return;
@@ -3013,7 +3073,7 @@ class StripeWebhookController extends Controller
             $membershipPayment = \App\Models\MembershipPayment::where('session_id', $paymentIntentId)->first();
         }
         if ($membershipPayment) {
-            $membershipPayment->update(['payment_status' => 'refunded']);
+            $membershipPayment->update(['status' => 'refunded']);
         }
 
         // --- Finalize Sync ---
@@ -3597,13 +3657,16 @@ class StripeWebhookController extends Controller
     private function syncRiskLedgerStatus($paymentIntentId, $newStatus)
     {
         try {
+            $this->syncFinancialTransactionsByPaymentIntent($paymentIntentId, $newStatus);
+            $this->syncSourcePaymentStatusesByPaymentIntent($paymentIntentId, $newStatus);
+
             $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
             if ($payment) {
-                $payment->update(['status' => $newStatus]);
+                $payment->update([
+                    'status' => $newStatus,
+                    'platform_holds_funds' => in_array($newStatus, ['disputed', 'review_hold'], true),
+                ]);
                 Log::info("Risk Ledger: Synced payment status to {$newStatus}", ['id' => $payment->id]);
-
-                // Direct immediate update on financial_transactions
-                $this->syncFinancialTransactionsByPaymentIntent($paymentIntentId, $newStatus);
 
                 // Also queue full sync as fallback (pass integer user_id, not UUID)
                 if ($payment->creator_id) {
@@ -3627,6 +3690,55 @@ class StripeWebhookController extends Controller
             }
         } catch (\Exception $e) {
             Log::error("Failed to sync risk ledger status: " . $e->getMessage());
+        }
+    }
+
+    private function syncSourcePaymentStatusesByPaymentIntent(string $paymentIntentId, string $newStatus): void
+    {
+        try {
+            $sourceStatus = match($newStatus) {
+                'succeeded' => 'paid',
+                'disputed' => 'disputed',
+                'refunded' => 'refunded',
+                'review_hold' => 'review_hold',
+                'failed', 'blocked' => 'failed',
+                default => $newStatus,
+            };
+
+            $riskPayment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+
+            $identifiers = array_values(array_unique(array_filter([
+                $paymentIntentId,
+                $riskPayment->stripe_session_id ?? null,
+            ])));
+
+            \App\Models\TipGoalsPayment::whereIn('session_id', $identifiers)->update(['status' => $sourceStatus]);
+
+            \App\Models\PiggyPotContribution::whereIn('session_id', $identifiers)
+                ->orWhere('payment_intent_id', $paymentIntentId)
+                ->update(['status' => $sourceStatus]);
+
+            \App\Models\ShopPayment::whereIn('session_id', $identifiers)->update(['payment_status' => $sourceStatus]);
+
+            \App\Models\StripePaymentDetail::whereIn('session_id', $identifiers)
+                ->orWhere('stripe_payment_intent_id', $paymentIntentId)
+                ->update(['payment_status' => $sourceStatus]);
+
+            \App\Models\MembershipPayment::whereIn('session_id', $identifiers)->update(['status' => $sourceStatus]);
+
+            \App\Models\BillPayment::whereIn('session_id', $identifiers)->update(['status' => $sourceStatus]);
+
+            \App\Models\Deliverable::whereIn('session_id', $identifiers)
+                ->orWhere('payment_intent_id', $paymentIntentId)
+                ->update(['payment_status' => $sourceStatus]);
+
+            if ($sourceStatus === 'refunded') {
+                \App\Models\Deliverable::whereIn('session_id', $identifiers)
+                    ->orWhere('payment_intent_id', $paymentIntentId)
+                    ->update(['status' => 'refunded']);
+            }
+        } catch (\Exception $e) {
+            Log::error("syncSourcePaymentStatusesByPaymentIntent failed: " . $e->getMessage());
         }
     }
 
@@ -3657,10 +3769,11 @@ class StripeWebhookController extends Controller
             ];
 
             foreach ($sourceModels as [$modelClass, $piCol, $sessionCol]) {
-                $record = $modelClass::where($piCol, $paymentIntentId)
+                $records = $modelClass::where($piCol, $paymentIntentId)
                     ->orWhere($sessionCol, $paymentIntentId)
-                    ->first();
-                if ($record) {
+                    ->get();
+
+                foreach ($records as $record) {
                     $updated = \App\Models\FinancialTransaction::where('source_type', $modelClass)
                         ->where('source_id', $record->id)
                         ->update(['status' => $ftStatus]);
