@@ -299,7 +299,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             <div className={`text-2xl md:text-3xl font-bold mt-2 ${stat.color || 'text-gray-900'}`}>{formatCurrency(stat.value, displayCurrency)}</div>
                                         </div>
                                     </div>
-                                    <div className="relative z-10 mt-3 pt-3 border-t border-gray-100 text-[11px] text-gray-500 font-medium leading-tight">
+                                    <div className="relative z-10 mt-3 pt-3 border-t border-gray-100 text-[14px] text-gray-500 font-medium leading-tight">
                                         {stat.sub}
                                     </div>
                                 </div>
@@ -371,7 +371,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                         Temporarily held for account protection & dispute prevention. Released after 30 days.
                                                     </div>
                                                 </div>
-                                                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
+                                                <div className="w-10 h-10 min-w-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
                                                     <ShieldCheckIcon size={18} className="text-purple-600" />
                                                 </div>
                                             </div>
@@ -423,12 +423,12 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                             ))}
                                                         </div>
                                                     )}
-                                                </div>
+                                                </div> 
                                                 <div className="border-l border-gray-200 px-4 flex-1">
-                                                    <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Pending Completion</div>
+                                                    <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Pending Completion (Cleared)</div>
                                                     <div className="text-2xl font-bold text-yellow-600">{formatCurrency(summary.pending_balance || 0, displayCurrency)}</div>
-                                                    <div className="text-[15px] text-gray-500 mt-1">Waiting for tasks or shop items to be completed.</div>
-                                                </div>
+                                                    <div className="text-[15px] text-gray-500 mt-1">Waiting for tasks or shop items to be completed (after 7-day clearing).</div>
+                                                </div> 
                                                 <div className="text-right border-l text-start border-gray-200 pl-4 flex-1">
                                                     <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Status</div>
                                                     <div className="inline-block bg-green-500/10 text-green-600 text-[15px] font-bold px-3 py-2 rounded-xl uppercase">Healthy</div>
