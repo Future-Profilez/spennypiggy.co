@@ -22,6 +22,7 @@ class SupportTicket extends Model
         'stripe_payment_intent_id',
         'stripe_session_id',
         'reason',
+        'evidence',
         'sla_deadline',
         'reminder_24h_sent_at',
         'reminder_6h_sent_at',
@@ -35,6 +36,7 @@ class SupportTicket extends Model
     ];
 
     protected $casts = [
+        'evidence' => 'array',
         'sla_deadline' => 'datetime',
         'reminder_24h_sent_at' => 'datetime',
         'reminder_6h_sent_at' => 'datetime',

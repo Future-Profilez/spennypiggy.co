@@ -58,19 +58,13 @@ class PiggyPotController extends Controller
             'target_amount' => 'required|numeric|min:1',
             'currency' => 'required|string|max:3',
             'cover_media' => 'nullable|string',
-            'content_file' => 'nullable|string',
+            'content_file' => 'required|string',
             'content_description' => 'nullable|string',
             'deadline' => 'nullable|date',
             'is_pinned' => 'boolean',
             'enable_leaderboard' => 'boolean',
             'allow_anonymous' => 'boolean',
         ]);
-
-        $validator->after(function ($validator) use ($request) {
-            if (empty($request->content_file) && empty($request->content_description)) {
-                $validator->errors()->add('content_file', 'You must provide either a Digital Reward file or a Content Description.');
-            }
-        });
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -104,7 +98,7 @@ class PiggyPotController extends Controller
             'target_amount' => 'required|numeric|min:1',
             'currency' => 'required|string|max:3',
             'cover_media' => 'nullable|string',
-            'content_file' => 'nullable|string',
+            'content_file' => 'required|string',
             'content_description' => 'nullable|string',
             'deadline' => 'nullable|date',
             'is_pinned' => 'boolean',
@@ -112,12 +106,6 @@ class PiggyPotController extends Controller
             'allow_anonymous' => 'boolean',
             'status' => 'in:active,completed,expired,archived,moderation_hold',
         ]);
-
-        $validator->after(function ($validator) use ($request) {
-            if (empty($request->content_file) && empty($request->content_description)) {
-                $validator->errors()->add('content_file', 'You must provide either a Digital Reward file or a Content Description.');
-            }
-        });
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();

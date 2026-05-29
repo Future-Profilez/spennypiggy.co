@@ -117,9 +117,9 @@ class Kernel extends ConsoleKernel
                 ->withoutOverlapping(10);
 
         // Risk Engine: Weekly Payout Run (Fridays at 10 AM)
-        // $schedule->command('payout:run-weekly')
-        //          ->weeklyOn(5, '10:00')
-        //          ->withoutOverlapping();
+        $schedule->command('payout:run-weekly')
+                 ->weeklyOn(5, '10:00')
+                 ->withoutOverlapping();
 
         // Platform Diagnostics — runs daily, emails alert on failure/warning
         $schedule->command('diagnostics:run')

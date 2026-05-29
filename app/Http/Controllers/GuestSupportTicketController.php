@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\EnrichSupportTicketStripeEvidence;
 use App\Mail\SupportTicketCreatedMail;
 use App\Mail\SupportTicketConfirmationMail;
 use App\Mail\SupportTicketUpdatedMail;
@@ -19,6 +20,40 @@ use App\Services\MagicBellService;
 
 class GuestSupportTicketController extends Controller
 {
+    private function appendEvidence(Request $request, SupportTicket $ticket, string $action, array $context = []): void
+    {
+        $event = array_merge([
+            'at' => now()->toISOString(),
+            'action' => $action,
+            'ip' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+            'accept_language' => $request->header('accept-language'),
+            'referer' => $request->header('referer'),
+            'x_forwarded_for' => $request->header('x-forwarded-for'),
+            'cf_connecting_ip' => $request->header('cf-connecting-ip'),
+            'request_id' => $request->header('x-vapor-request-id') ?? $request->header('x-amzn-trace-id'),
+            'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+        ], $context);
+
+        $event = array_filter($event, fn($v) => !($v === null || $v === ''));
+
+        $evidence = $ticket->evidence ?? [];
+        $events = $evidence['events'] ?? [];
+        $events[] = $event;
+        if (count($events) > 50) {
+            $events = array_slice($events, -50);
+        }
+
+        if (!isset($evidence['created'])) {
+            $evidence['created'] = $event;
+        }
+        $evidence['last'] = $event;
+        $evidence['events'] = $events;
+
+        $ticket->evidence = $evidence;
+        $ticket->save();
+    }
+
     public function createTip(Request $request, int $tipPaymentId)
     {
         $request->validate([
@@ -106,6 +141,14 @@ class GuestSupportTicketController extends Controller
             'message' => $request->message,
             'attachments' => $request->attachments,
         ]);
+
+        $this->appendEvidence($request, $ticket, 'ticket_created', [
+            'actor_role' => 'supporter',
+            'actor_guest_email_hash' => hash('sha256', strtolower(trim((string) $payment->guest_email))),
+            'attachments_count' => is_array($request->attachments) ? count($request->attachments) : 0,
+        ]);
+
+        EnrichSupportTicketStripeEvidence::dispatch($ticket->id);
 
         if ($creator->email) {
             Mail::to($creator->email)
@@ -229,6 +272,14 @@ class GuestSupportTicketController extends Controller
             'attachments' => $request->attachments,
         ]);
 
+        $this->appendEvidence($request, $ticket, 'ticket_created', [
+            'actor_role' => 'supporter',
+            'actor_guest_email_hash' => hash('sha256', strtolower(trim((string) $payment->guest_email))),
+            'attachments_count' => is_array($request->attachments) ? count($request->attachments) : 0,
+        ]);
+
+        EnrichSupportTicketStripeEvidence::dispatch($ticket->id);
+
         if ($creator->email) {
             Mail::to($creator->email)
                 ->bcc(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
@@ -340,6 +391,7 @@ class GuestSupportTicketController extends Controller
                 'type' => $ticket->type,
                 'status' => $ticket->status,
                 'reason' => $ticket->reason,
+                'evidence' => $ticket->evidence,
                 'sla_deadline' => optional($ticket->sla_deadline)?->toISOString(),
             ],
             'creator' => $creator ? [
@@ -399,6 +451,12 @@ class GuestSupportTicketController extends Controller
             'sender_user_id' => null,
             'message' => $request->message,
             'attachments' => $request->attachments,
+        ]);
+
+        $this->appendEvidence($request, $ticket, 'message_sent', [
+            'actor_role' => 'supporter',
+            'actor_guest_email_hash' => hash('sha256', strtolower(trim((string) $request->email))),
+            'attachments_count' => is_array($request->attachments) ? count($request->attachments) : 0,
         ]);
 
         $ticket->last_message_at = now();

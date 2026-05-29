@@ -86,35 +86,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
         <AuthenticatedLayout auth={auth} user={auth.user}>
             <Head title="Financial Dashboard" />
 
-            {auth?.user?.payout_paused_at ? (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-                    <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4">
-                        <div className="flex items-start gap-3">
-                            <div className="mt-0.5 text-red-600">
-                                <TriangleAlertIcon width={18} height={18} />
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-[11px] font-black uppercase tracking-widest text-red-700">Payouts Paused</div>
-                                <div className="text-sm font-bold text-red-900 mt-1">
-                                    Your payouts are currently on hold.
-                                </div>
-                                {auth?.user?.payout_pause_reason ? (
-                                    <div className="text-xs font-bold text-red-800 mt-1">
-                                        Reason: {auth.user.payout_pause_reason}
-                                    </div>
-                                ) : (
-                                    <div className="text-xs font-bold text-red-800 mt-1">
-                                        Reason: Under review by SpennyPiggy support.
-                                    </div>
-                                )}
-                                <div className="text-xs text-red-700 mt-1">
-                                    Paused at: {new Date(auth.user.payout_paused_at).toLocaleString('en-GB')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+            
 
             <Modal show={showReserveDetails} onClose={() => setShowReserveDetails(false)} maxWidth="2xl">
                 <div className="bg-white text-gray-900 p-5 md:p-6">
@@ -224,19 +196,18 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
             <div className='bg-white py-4'>
                 <div className='container mx-auto min-h-screen'>
                     <div className="py-8 px-4 sm:px-6 lg:px-8 ">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Financial Hub</h1>
-                        <p className="text-sm md:text-base text-gray-600 mt-1">Real-time tax tracking and business insights.</p>
+                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Financial Hub</h1>
+                        <p className="text-normal md:text-lg text-gray-600 mt-1">Real-time tax tracking and business insights.</p>
                         <p className="text-normal text-green-600 mt-1 font-bold flex items-center gap-1"><ShieldCheckIcon size={19} /> Your earnings are protected.</p>
                         <div className="pt-6 flex flex-col gap-4">
                             <div className="flex flex-col lg:flex-row lg:justify-between items-start md:items-center gap-4">
-                                <div className='w-full lg:w-full'>
-                                    <p className="text-normal  text-gray-500 mb-2 font-bold">You keep 100% of what you earn. Supporters cover all fees.</p>
-                                    <p className="text-normal  text-gray-500 mb-2 font-bold">Payouts are sent every Friday.</p>
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <span className="bg-[#FF007F]/10 text-[#FF007F] text-[11px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-[#FF007F]/20">
+                                <div className='w-full lg:w-[60%]'>
+                                    <p className="text-normal text-gray-500 mb-2 font-bold">You keep 100% of what you earn. Supporters cover all fees. Payouts are sent every Friday.</p>
+                                    <div className="mt-3 flex items-center gap-2">
+                                        <span className="bg-[#FF007F]/10 text-[#FF007F] text-[14px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-[#FF007F]/20">
                                             Tax Year {tax_year}
                                         </span>
-                                        <span className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">
+                                        <span className="text-[14px] text-gray-400 font-bold uppercase tracking-widest">
                                             {date_range?.start} — {date_range?.end}
                                         </span>
                                     </div>
@@ -268,6 +239,47 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             </div>
                         </div>
 
+                        {auth?.user?.payout_paused_at ? (
+                            <div className="mx-auto mt-6">
+                                <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4">
+                                    <div className="flex items-start gap-3">
+                                        
+                                        <div className="flex-1">
+                                            <div className="text-[20px] font-black uppercase tracking-widest text-red-700"><TriangleAlertIcon className='relative top-1' width={38} height={38} /> Payouts Paused</div>
+                                            <div className="text-sm font-bold text-red-900 mt-1">
+                                                Your payouts are currently on hold.
+                                            </div>
+                                            {auth?.user?.payout_pause_reason ? (
+                                                <div className="text-normal font-bold text-red-800 mt-1">
+                                                    Reason: {auth.user.payout_pause_reason}
+                                                </div>
+                                            ) : (
+                                                <div className="text-normal font-bold text-red-800 mt-1">
+                                                    Reason: Under review by SpennyPiggy support.
+                                                </div>
+                                            )}
+                                            <div className="text-normal text-red-700 mt-1">
+                                                Paused at: {new Date(auth.user.payout_paused_at).toLocaleString('en-GB')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        <div className="bg-white flex gap-6 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-200 relative overflow-hidden group hover:border-[#FF007F]/30 transition-colors shadow-sm mt-8">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <WalletIcon size={90} className="text-[#FF007F]" />
+                            </div>
+                            <div className="relative z-10 w-full">
+                                <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Available for Friday Payout</div>
+                                <div className="text-3xl md:text-4xl font-bold text-gray-900">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
+                                <div className="text-[15px] text-gray-500 mt-2 font-bold">
+                                    Includes cleared payments (7-day delay) and any reserve releases. Excludes reserves, pending completion, disputes and refunds.
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Stats Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-8">
                             {[
@@ -287,7 +299,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             <div className={`text-2xl md:text-3xl font-bold mt-2 ${stat.color || 'text-gray-900'}`}>{formatCurrency(stat.value, displayCurrency)}</div>
                                         </div>
                                     </div>
-                                    <div className="relative z-10 mt-3 pt-3 border-t border-gray-100 text-[11px] text-gray-500 font-medium leading-tight">
+                                    <div className="relative z-10 mt-3 pt-3 border-t border-gray-100 text-[14px] text-gray-500 font-medium leading-tight">
                                         {stat.sub}
                                     </div>
                                 </div>
@@ -355,8 +367,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                     {reserve_reason && (
                                                         <div className="text-[12px] text-gray-400 mt-1 font-bold">{reserve_reason}</div>
                                                     )}
+                                                    <div className="text-[13px] text-gray-500 mt-2 font-bold">
+                                                        Temporarily held for account protection & dispute prevention. Released after 30 days.
+                                                    </div>
                                                 </div>
-                                                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
+                                                <div className="w-10 h-10 min-w-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
                                                     <ShieldCheckIcon size={18} className="text-purple-600" />
                                                 </div>
                                             </div>
@@ -369,8 +384,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             <div className="flex items-center justify-between gap-4">
                                                 <div>
                                                     <div className="text-gray-500 text-[15px] font-bold uppercase tracking-wider mb-1">How Releases Work</div>
-                                                    <div className="text-gray-900 text-sm md:text-base font-bold">Reserves release after 30 days</div>
-                                                    <div className="text-[14px] text-gray-500 mt-2 font-bold">Held reserves automatically become available for payout once the release date is reached.</div>
+                                                    <div className="text-gray-900 text-sm md:text-base font-bold">Reserves are automatically released after 30 days</div>
+                                                    <div className="text-[14px] text-gray-500 mt-2 font-bold">This helps protect your account while keeping payouts predictable.</div>
                                                     {reserve_policy?.onboarding_percent > 0 && reserve_policy?.onboarding_ends_at && (
                                                         <div className="text-[14px] text-gray-500 mt-2 font-bold">
                                                             New creator hold ends: <span className="text-gray-900">{reserve_policy.onboarding_ends_at}</span>
@@ -391,15 +406,15 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         <div className="relative z-10 w-full">
                                             <div className="flex justify-between gap-4 text-gray-900">
                                                 <div className="flex-1">
-                                                    <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
+                                                    <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Available for Friday Payout</div>
                                                     <div className="text-2xl font-bold text-gray-900">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
                                                     <div className="text-[15px] text-gray-500 mt-1">
-                                                        Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, unfulfilled tasks & disputes.'}
+                                                        Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, pending completion, disputes and refunds.'}
                                                     </div>
                                                     {summary.payout_preview?.lines && summary.payout_preview.lines.length > 0 && (
                                                         <div className="mt-4 space-y-1.5 border-t border-gray-200 pt-3">
                                                             {summary.payout_preview.lines.map((line, idx) => (
-                                                                <div key={idx} className="flex justify-between items-center text-xs">
+                                                                <div key={idx} className="flex justify-between items-center text-normal">
                                                                     <span className="text-gray-500">{line.label}</span>
                                                                     <span className={line.amount >= 0 ? 'text-gray-700' : 'text-red-600'}>
                                                                         {line.amount >= 0 ? '+' : ''}{formatCurrency(line.amount, displayCurrency)}
@@ -408,12 +423,12 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                             ))}
                                                         </div>
                                                     )}
-                                                </div>
+                                                </div> 
                                                 <div className="border-l border-gray-200 px-4 flex-1">
-                                                    <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Pending Fulfillment</div>
+                                                    <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Pending Completion (Cleared)</div>
                                                     <div className="text-2xl font-bold text-yellow-600">{formatCurrency(summary.pending_balance || 0, displayCurrency)}</div>
-                                                    <div className="text-[15px] text-gray-500 mt-1">Awaiting delivery of tasks or shop items.</div>
-                                                </div>
+                                                    <div className="text-[15px] text-gray-500 mt-1">Waiting for tasks or shop items to be completed (after 7-day clearing).</div>
+                                                </div> 
                                                 <div className="text-right border-l text-start border-gray-200 pl-4 flex-1">
                                                     <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Status</div>
                                                     <div className="inline-block bg-green-500/10 text-green-600 text-[15px] font-bold px-3 py-2 rounded-xl uppercase">Healthy</div>
@@ -423,24 +438,43 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                     </div>
 
                                     {/* Payment Status Breakdown */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5">
                                         {[
-                                            { key: 'completed', label: 'Paid', bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-600', inPayout: true, note: 'Included in payout' },
-                                            // { key: 'pending', label: 'Pending', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-600', inPayout: false, note: 'Awaiting confirmation' },
-                                            { key: 'review_hold', label: 'Review Hold', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-600', inPayout: false, note: 'Not in payout or reserve' },
-                                            { key: 'disputed', label: 'Disputed', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-600', inPayout: false, note: 'Not in payout or reserve' },
-                                            { key: 'refunded', label: 'Refunded', bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-600', inPayout: false, note: 'Deducted from future payout' },
-                                        ].map(({ key, label, bg, border, text, inPayout, note }) => {
+                                            { key: 'queued', label: 'Queued for Friday Payout', bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-600', note: 'Included in upcoming payout batch' },
+                                            { key: 'clearing', label: 'Pending (Clearing)', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-600', note: 'Payment received, clearing for 7 days' },
+                                            { key: 'pending', label: 'Pending Completion', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-600', note: 'Waiting for tasks or shop items to be completed' },
+                                            { key: 'review_hold', label: 'Review Hold', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-600', note: 'Temporarily reviewed for fraud prevention, safety or compliance checks' },
+                                            { key: 'disputed', label: 'Disputed', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-600', note: 'Removed from payout balance' },
+                                            { key: 'refunded', label: 'Refunded', bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-600', note: 'Removed from payout balance' },
+                                        ].map(({ key, label, bg, border, text, note }) => {
                                             const s = status_breakdown.find(sb => sb.status === key);
+                                            const total =
+                                                key === 'queued' ? (summary?.payoutable_balance ?? 0) :
+                                                key === 'clearing' ? (summary?.clearing_balance ?? 0) :
+                                                s?.total ?? 0;
+                                            const count =
+                                                key === 'queued' ? (summary?.payout_preview?.payment_count ?? 0) :
+                                                key === 'clearing' ? null :
+                                                s?.count ?? 0;
                                             return (
                                                 <div key={key} className={`bg-gray-50 border-2 ${border} rounded-[25px] overflow-hidden flex flex-col justify-between`}>
                                                     <div className={`p-4 ${bg} flex flex-col gap-1`}>
-                                                        <div className={`text-[16px] font-bold uppercase tracking-widest ${text}`}>{label}</div>
-                                                        <div className="text-2xl font-bold text-gray-900">{formatCurrency(s?.total ?? 0, displayCurrency)}</div>
-                                                        <div className="text-[15px] text-gray-500">{s?.count ?? 0} payment{(s?.count ?? 0) !== 1 ? 's' : ''}</div>
+                                                        <div className={`text-[16px] font-bold uppercase tracking-widest ${text}`}>
+                                                            {key === 'review_hold' ? (
+                                                                <span title="Payments temporarily reviewed for fraud prevention, safety or compliance checks.">
+                                                                    {label}
+                                                                </span>
+                                                            ) : (
+                                                                label
+                                                            )}
+                                                        </div>
+                                                        <div className="text-2xl font-bold text-gray-900">{formatCurrency(total ?? 0, displayCurrency)}</div>
+                                                        <div className="text-[15px] text-gray-500">
+                                                            {count === null ? '—' : `${count} payment${count !== 1 ? 's' : ''}`}
+                                                        </div>
                                                     </div>
-                                                    <div className={`p-3 text-[11px] font-semibold leading-tight ${inPayout ? 'text-green-600' : 'text-gray-500'}`}>
-                                                        {inPayout ? '✓ In payout' : `✗ ${note}`}
+                                                    <div className="p-3 text-[14px] font-semibold leading-tight text-gray-500">
+                                                        {note}
                                                     </div>
                                                 </div>
                                             );
@@ -543,7 +577,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             <div className="bg-white rounded-[20px] md:rounded-[30px]  border border-gray-200 p-6 shadow-sm">
                                                 <div className="flex justify-between items-center mb-6">
                                                     <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><ChartBarIcon className="text-[#FF007F]" size={20} /> Earnings Trend</h2>
-                                                    <span className="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-full">{tax_year}</span>
+                                                    <span className="text-normal text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-full">{tax_year}</span>
                                                 </div>
                                                 <div className="h-[250px] w-full">
                                                     <ResponsiveContainer width="100%" height="100%">
@@ -570,7 +604,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                                 <tr key={s.supporter_id} className="hover:bg-gray-50 transition-colors">
                                                                     <td className="px-6 py-4 text-sm flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                                                                            {s.supporter.avatar_url ? <img src={s.supporter.avatar_url} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-400">{s.supporter.name[0]}</span>}
+                                                                            {s.supporter.avatar_url ? <img src={s.supporter.avatar_url} className="w-full h-full object-cover" /> : <span className="text-normal font-bold text-gray-400">{s.supporter.name[0]}</span>}
                                                                         </div>
                                                                         <div><div className="text-gray-900 font-medium">{s.supporter.name}</div><div className="text-[14px] text-gray-500">@{s.supporter.username}</div></div>
                                                                     </td>
@@ -592,7 +626,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 {isEditingProfile ? (
                                                     <form onSubmit={submitProfile} className="space-y-4">
                                                         <input type="text" value={data.business_name} onChange={e => setData('business_name', e.target.value)} className="w-full bg-gray-50 border-gray-200 rounded-lg text-gray-900 text-sm p-2.5" placeholder="Business Name" />
-                                                        <div className="flex gap-2 justify-end"><button type="button" onClick={() => setIsEditingProfile(false)} className="text-xs font-bold text-gray-400">Cancel</button><button type="submit" className="bg-[#FF007F] text-white text-xs font-bold px-4 py-1.5 rounded-lg">Save</button></div>
+                                                        <div className="flex gap-2 justify-end"><button type="button" onClick={() => setIsEditingProfile(false)} className="text-normal font-bold text-gray-400">Cancel</button><button type="submit" className="bg-[#FF007F] text-white text-normal font-bold px-4 py-1.5 rounded-lg">Save</button></div>
                                                     </form>
                                                 ) : (
                                                     <div className="space-y-4"><div><span className="block text-[13px] text-gray-500 uppercase font-bold">Entity Name</span><span className="text-gray-900 font-bold">{profile?.business_name || auth.user.name}</span></div><Link href={route('financial.statement')} className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 rounded-[30px]  font-bold">Download Tax Statement</Link></div>
@@ -638,7 +672,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                         <div key={idx} className="group bg-gray-50 hover:bg-gray-100 rounded-[20px] md:rounded-[30px]  p-4 border border-gray-200 transition-all">
                                                             <div className="flex items-center gap-1.5 mb-1">{item.icon}<span className="text-[14px] text-gray-400 uppercase font-bold">{item.sub}</span></div>
                                                             <h4 className="text-normal font-bold text-gray-900 mb-3">{item.label}</h4>
-                                                            <Link href={item.href} className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-[#FF007F] text-white py-2 rounded-lg text-xs font-bold transition-all">View / Download</Link>
+                                                            <Link href={item.href} className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-[#FF007F] text-white py-2 rounded-lg text-normal font-bold transition-all">View / Download</Link>
                                                         </div>
                                                     ))}
                                                 </div>

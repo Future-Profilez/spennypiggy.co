@@ -32,6 +32,8 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
     return ticket?.uuid ? ticket.uuid.split('-')[0].toUpperCase() : 'UNKNOWN';
   }, [ticket?.uuid]);
 
+  const evidence = ticket?.evidence || null;
+
   useEffect(() => {
     setLocalMessages(messages || []);
   }, [messages]);
@@ -283,6 +285,53 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                         </div>
                       </div>
                     )}
+
+                    {evidence ? (
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Evidence</div>
+                        <div className="bg-gray-50 rounded-[15px] border-2 border-black p-4">
+                          <details>
+                            <summary className="cursor-pointer text-xs font-black uppercase tracking-widest text-black select-none">View Evidence</summary>
+                            <div className="mt-3 space-y-3">
+                              <div className="grid grid-cols-1 gap-2 text-xs font-bold text-gray-800">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">IP</div>
+                                  <div className="text-right break-all">{evidence?.last?.ip || evidence?.created?.ip || 'N/A'}</div>
+                                </div>
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">User-Agent</div>
+                                  <div className="text-right break-all">{evidence?.last?.user_agent || evidence?.created?.user_agent || 'N/A'}</div>
+                                </div>
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Session</div>
+                                  <div className="text-right break-all">{evidence?.last?.session_id || evidence?.created?.session_id || 'N/A'}</div>
+                                </div>
+                              </div>
+
+                              {evidence?.stripe ? (
+                                <div className="pt-3 border-t-2 border-dashed border-gray-300">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Stripe</div>
+                                  <div className="grid grid-cols-1 gap-2 text-xs font-bold text-gray-800">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">PI Status</div>
+                                      <div className="text-right break-all">{evidence?.stripe?.payment_intent?.status || 'N/A'}</div>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Risk</div>
+                                      <div className="text-right break-all">{evidence?.stripe?.charge?.outcome?.risk_level || 'N/A'}</div>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">3DS</div>
+                                      <div className="text-right break-all">{evidence?.stripe?.charge?.card?.three_d_secure?.result || 'N/A'}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          </details>
+                        </div>
+                      </div>
+                    ) : null}
 
                     {canActOnRefund && viewer?.role === 'supporter' && (
                       <div className="mt-4 bg-yellow-100 p-3 rounded-[15px] border-2 border-black text-center">

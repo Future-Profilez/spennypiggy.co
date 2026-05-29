@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\CommandFailed;
 use App\Services\Risk\PayoutService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class RunWeeklyPayouts extends Command
 {
@@ -60,10 +62,29 @@ class RunWeeklyPayouts extends Command
             
             // Log Success
             Log::info("Weekly Payout Run executed successfully.", ['run_id' => $run->id, 'count' => $count, 'total' => $total]);
+            
+            $to = config('services.payout_notifications.weekly_job_email');
+            if ($to) {
+                Mail::to($to)->send(new CommandFailed(
+                    '[' . strtoupper(app()->environment()) . '] Weekly Payout Job: SUCCESS (Run ' . $run->id . ')',
+                    'Weekly payout job executed successfully at ' . now()->toDateTimeString()
+                        . '. Run ID: ' . $run->id
+                        . '. Eligible creators: ' . $count
+                        . '. Total net payout: ' . $total
+                ));
+            }
 
         } catch (\Exception $e) {
             $this->error("Payout Run Failed: " . $e->getMessage());
             Log::error("Weekly Payout Run Failed", ['error' => $e->getMessage()]);
+            
+            $to = config('services.payout_notifications.weekly_job_email');
+            if ($to) {
+                Mail::to($to)->send(new CommandFailed(
+                    '[' . strtoupper(app()->environment()) . '] Weekly Payout Job: FAILED',
+                    'Weekly payout job failed at ' . now()->toDateTimeString() . '. Error: ' . $e->getMessage()
+                ));
+            }
         }
     }
 }

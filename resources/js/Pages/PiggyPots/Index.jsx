@@ -20,6 +20,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         errors,
         reset,
         clearErrors,
+        setError,
     } = useForm({
         title: '',
         description: '',
@@ -97,6 +98,12 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        if (!data.content_file) {
+            setError('content_file', 'Digital reward file is required.');
+            errorAlert('Please upload the digital reward file.');
+            return;
+        }
 
         const options = {
             onSuccess: (page) => {
@@ -300,7 +307,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
 
                                     <div className="pt-2 border-t-2 border-gray-200 mt-6">
                                         <label className="block text-sm font-bold text-gray-900 mb-2">
-                                            Digital Reward / Exclusive Item (Optional)
+                                            Digital Reward / Exclusive Item
                                         </label>
                                         <p className="text-xs text-gray-500 mb-3">
                                             Supporters will automatically receive this file after they contribute to your pot.

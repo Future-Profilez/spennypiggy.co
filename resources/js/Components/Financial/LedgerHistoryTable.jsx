@@ -11,6 +11,26 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
         }).format(Number(amount || 0));
     };
 
+    const getPayoutStage = (tx) => {
+        if (tx.status === 'review_hold') return { label: 'Review Hold', tone: 'purple', title: 'Payments temporarily reviewed for fraud prevention, safety or compliance checks.' };
+        if (tx.status === 'disputed') return { label: 'Disputed', tone: 'orange', title: 'Removed from payout balance until dispute is resolved.' };
+        if (tx.status === 'refunded') return { label: 'Refunded', tone: 'red', title: 'Removed from payout balance.' };
+        if (tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out) {
+            return { label: 'Pending Completion', tone: 'yellow', title: 'Waiting for tasks or shop items to be completed.' };
+        }
+
+        try {
+            const txDate = new Date(tx.transaction_date);
+            const days = (Date.now() - txDate.getTime()) / (1000 * 60 * 60 * 24);
+            if (days < 7) {
+                return { label: 'Pending (Clearing)', tone: 'yellow', title: 'Payment received. Clearing for 7 days before it becomes available for Friday payout.' };
+            }
+        } catch (e) {
+        }
+
+        return null;
+    };
+
     return (
         <div className="bg-white rounded-[20px] md:rounded-[30px]  border border-gray-200 overflow-hidden shadow-sm">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -35,6 +55,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                     <tbody className="divide-y divide-gray-200">
                         {transactions.map((tx, i) => {
                             const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out;
+                            const payoutStage = getPayoutStage(tx);
                             return (
                             <tr key={tx.uuid} className={` border border-gray-200 hover:bg-gray-50 
                             transition-colors 
@@ -120,6 +141,19 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                             'bg-gray-100 text-gray-700 border border-gray-200'
                                         }`}>{tx.status?.replace('_', ' ')}
                                         </span>
+                                        {payoutStage && (
+                                            <span
+                                                title={payoutStage.title}
+                                                className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                                    payoutStage.tone === 'purple' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                                    payoutStage.tone === 'orange' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                                                    payoutStage.tone === 'red' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                                    'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                                                }`}
+                                            >
+                                                Payout: {payoutStage.label}
+                                            </span>
+                                        )}
                                         {tx.item_status && (
                                             <span className={`px-2 py-0.5 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider ${
                                                 ['complete', 'delivered', 'accepted'].some(s => tx.item_status.endsWith(s)) ? 'text-green-600 bg-green-50 border border-green-100' : 

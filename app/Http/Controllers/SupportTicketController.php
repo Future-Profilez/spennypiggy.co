@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\EnrichSupportTicketStripeEvidence;
 use App\Mail\SupportTicketCreatedMail;
 use App\Mail\SupportTicketConfirmationMail;
 use App\Mail\SupportTicketUpdatedMail;
@@ -20,6 +21,40 @@ use Inertia\Inertia;
 
 class SupportTicketController extends Controller
 {
+    private function appendEvidence(Request $request, SupportTicket $ticket, string $action, array $context = []): void
+    {
+        $event = array_merge([
+            'at' => now()->toISOString(),
+            'action' => $action,
+            'ip' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+            'accept_language' => $request->header('accept-language'),
+            'referer' => $request->header('referer'),
+            'x_forwarded_for' => $request->header('x-forwarded-for'),
+            'cf_connecting_ip' => $request->header('cf-connecting-ip'),
+            'request_id' => $request->header('x-vapor-request-id') ?? $request->header('x-amzn-trace-id'),
+            'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+        ], $context);
+
+        $event = array_filter($event, fn($v) => !($v === null || $v === ''));
+
+        $evidence = $ticket->evidence ?? [];
+        $events = $evidence['events'] ?? [];
+        $events[] = $event;
+        if (count($events) > 50) {
+            $events = array_slice($events, -50);
+        }
+
+        if (!isset($evidence['created'])) {
+            $evidence['created'] = $event;
+        }
+        $evidence['last'] = $event;
+        $evidence['events'] = $events;
+
+        $ticket->evidence = $evidence;
+        $ticket->save();
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -75,6 +110,14 @@ class SupportTicketController extends Controller
             'message' => $request->message,
             'attachments' => $request->attachments,
         ]);
+
+        $this->appendEvidence($request, $ticket, 'ticket_created', [
+            'actor_role' => 'supporter',
+            'actor_user_id' => $supporter->id,
+            'attachments_count' => is_array($request->attachments) ? count($request->attachments) : 0,
+        ]);
+
+        EnrichSupportTicketStripeEvidence::dispatch($ticket->id);
 
         if ($creator->email) {
             Mail::to($creator->email)
@@ -178,6 +221,7 @@ class SupportTicketController extends Controller
                 'type' => $ticket->type,
                 'status' => $ticket->status,
                 'reason' => $ticket->reason,
+                'evidence' => $ticket->evidence,
                 'event_type' => $ticket->event_type,
                 'source' => $ticket->source,
                 'source_id' => $ticket->source_id,
@@ -475,6 +519,12 @@ class SupportTicketController extends Controller
             'sender_user_id' => $user->id,
             'message' => $request->message,
             'attachments' => $request->attachments,
+        ]);
+
+        $this->appendEvidence($request, $ticket, 'message_sent', [
+            'actor_role' => $senderRole,
+            'actor_user_id' => $user->id,
+            'attachments_count' => is_array($request->attachments) ? count($request->attachments) : 0,
         ]);
 
         $ticket->last_message_at = now();

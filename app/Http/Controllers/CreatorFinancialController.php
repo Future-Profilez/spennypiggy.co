@@ -147,6 +147,12 @@ class CreatorFinancialController extends Controller
                         }
                     }
                 }
+
+                if ($tx->status === 'pending') {
+                    if ($tx->source_type === 'App\Models\BillPayment') {
+                        return 'unpaid';
+                    }
+                }
                 return $tx->status;
             })
             ->map(function ($items, $status) use ($displayCurrency, $allShopShipping) {
