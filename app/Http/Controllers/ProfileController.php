@@ -1236,34 +1236,35 @@ class ProfileController extends Controller
     {
         $user = User::where('username', $username)->first();
 
-        $user_subs = WishItemSubscription::where(function ($q) use ($user) {
+        $user_subs = StripePaymentDetail::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-        })->with(['wish_item', 'wish_item.user'])->where('status', 'paid')->paginate(30);
+        })->with(['items', 'user'])->where('payment_status', 'paid')->paginate(30);
 
         $trackData = [];
         foreach ($user_subs as $key => $value) {
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->wish_item->user->name ?? '',
-                    'avatar' => $value->wish_item->user->avatar_url,
-                    'cover' => $value->wish_item->user->cover_url,
-                    'username' => $value->wish_item->user->username,
-                    'stripe_details_submitted' => $value->wish_item->user->stripe_details_submitted
+                    'name' => $value->items->first()->wish->user->name ?? '',
+                    'avatar' => $value->items->first()->wish->user->avatar_url,
+                    'cover' => $value->items->first()->wish->user->cover_url,
+                    'username' => $value->items->first()->wish->user->username,
+                    'stripe_details_submitted' => $value->items->first()->wish->user->stripe_details_submitted
                 ],
-                'amount' => $value->amount,
-                'tax' => $value->tax,
+                'amount' => $value->amount_total,
+                'tax' => 0,
+                // 'tax' => $value->tax,
                 'currency' => $value->currency,
                 'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
                 'anonymous' => $value->anonymous
             ];
 
 
-            if (!empty($value->wish_item)) {
+            if (!empty($value->items)) {
                 $trackData[$key]['wish_item'] = [
-                    'name' => $value->wish_item->wishname,
-                    'perma_link' => $value->wish_item->perma_link,
+                    'name' => $value->items->first()->wish->wishname,
+                    'perma_link' => $value->items->first()->wish->perma_link,
                 ];
-                $trackData[$key]['media_url'] = $value->recurring_for == 'onetime' ? $value->wish_item->reward_url : false;
+                $trackData[$key]['media_url'] = $value->recurring_for == 'onetime' ? $value->items->first()->wish->reward_url : false;
             }
         }
 

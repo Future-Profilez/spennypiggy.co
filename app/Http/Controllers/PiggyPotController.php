@@ -15,21 +15,38 @@ use App\Services\UserProfileService;
 class PiggyPotController extends Controller
 {
     /**
+     * Restrict this controller to creator users only.
+     *
+     * The Piggy Pot area is only available for creators with role === 1,
+     * so any authenticated user without creator privileges must be blocked.
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware(function ($request, $next) {
+            if (Auth::user()?->role !== 1) {
+                abort(403, 'Unauthorized access.');
+            }
+            return $next($request);
+        });
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
         $query = PiggyPot::where('user_id', Auth::id())
-            ->with(['contributions' => function($q) {
+            ->with(['contributions' => function ($q) {
                 $q->where('status', 'paid')
-                  ->with('user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved')
-                  ->orderBy('created_at', 'desc');
+                    ->with('user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved')
+                    ->orderBy('created_at', 'desc');
             }])
             ->withSum(['contributions as total_raised' => function ($q) {
                 $q->where('status', 'paid');
             }], 'amount')
             ->orderBy('created_at', 'desc');
-            
+
         if ($request->has('pot_id') && $request->pot_id) {
             $query->where('id', $request->pot_id);
         }

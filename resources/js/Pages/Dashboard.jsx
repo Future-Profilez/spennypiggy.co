@@ -551,8 +551,11 @@ export default function Dashboard(props) {
                                                                     </Link>
                                                                 )}
 
-                                                                {auth?.user?.role === 1 && (
-                                                                    <div onClick={
+                                                                {auth?.user
+                                                                    ?.role ===
+                                                                    1 && (
+                                                                    <div
+                                                                        onClick={
                                                                             openCreateModal
                                                                         }
                                                                         className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
