@@ -2,16 +2,15 @@
 
 namespace App\Observers;
 
+use App\Models\AuditLog;
 use App\Services\ActivityLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class ActivityObserver
 {
-    /**
-     * Track newly created models to prevent duplicate update logs
-     * Using static property to persist across event calls
-     */
+    // Add this constant for all models
     private static $justCreated = [];
+    private static $processedEvents = []; // Add for duplicate prevention
 
     /**
      * Sensitive fields that should never be logged
@@ -31,118 +30,235 @@ class ActivityObserver
     ];
 
     /**
-     * Handle the "created" event
-     *
-     * @param Model $model
-     * @return void
+     * Handle the "created" event - Add duplicate check for all models
      */
     public function created(Model $model): void
     {
         $modelName = class_basename($model);
+        $modelKey = $this->getModelKey($model);
 
-        // Only log if model has an ID (saved successfully)
+        // Check for duplicate entries
+        $existingLog = AuditLog::where('action_type', "{$modelName}_CREATED")
+            ->where('reference_id', (string) $model->id)
+            ->where('created_at', '>=', now()->subMinutes(1))
+            ->exists();
+
+        if ($existingLog) {
+            return; // Skip duplicate
+        }
+
         if (!$model->id) {
             return;
         }
 
-        // Clear earnings cache if a new payment is received
-        $this->clearEarningsCache($model);
-
-        // Clear profile data cache for guests so they see new content immediately
-        $this->clearProfileCache($model);
-
-        // Mark that this model was just created to prevent duplicate update logs
+        // Mark as just created
         $this->markAsJustCreated($model);
 
+        // Log creation
         ActivityLogger::log(
             "{$modelName}_CREATED",
             (string) $model->id,
-            [
-                'model_type' => get_class($model),
-                'model_data' => $this->sanitizeData($model->getAttributes()),
-                'event' => 'created'
-            ]
+            $this->buildMetadata($model)
         );
+
+        // Clear caches
+        $this->clearEarningsCache($model);
+        $this->clearProfileCache($model);
+    }
+
+    private function buildMetadata(Model $model): array
+    {
+        switch (true) {
+
+            case $model instanceof \App\Models\WishItem:
+                return [
+                    'activity_type' => 'wish_created',
+                    'title' => $model->wishname,
+                    'price' => $model->price,
+                    'currency' => $model->currency,
+                    'image' => $model->perma_link,
+                ];
+
+            case $model instanceof \App\Models\Membership:
+                return [
+                    'activity_type' => 'membership_created',
+                    'title' => $model->level,
+                    'price' => $model->price,
+                    'currency' => $model->currency,
+                ];
+
+            case $model instanceof \App\Models\Bills:
+                return [
+                    'activity_type' => 'bill_created',
+                    'title' => $model->name,
+                    'price' => $model->price,
+                    'currency' => $model->currency,
+                ];
+
+            case $model instanceof \App\Models\PiggyPot:
+                return [
+                    'activity_type' => 'piggy_pot_created',
+                    'title' => $model->title,
+                    'goal_amount' => $model->goal_amount,
+                    'currency' => $model->currency,
+                ];
+
+            case $model instanceof \App\Models\TipGoal:
+                return [
+                    'activity_type' => 'tip_goal_created',
+                    'title' => $model->title,
+                    'goal_amount' => $model->amount,
+                    'currency' => $model->currency,
+                ];
+
+            case $model instanceof \App\Models\Shop:
+                return [
+                    'activity_type' => 'shop_created',
+                    'title' => $model->name,
+                    'price' => $model->price,
+                    'currency' => $model->currency,
+                ];
+
+            case $model instanceof \App\Models\Post:
+                return [
+                    'activity_type' => 'post_created',
+                    'title' => $model->title,
+                ];
+
+            case $model instanceof \App\Models\PostLike:
+                return [
+                    'activity_type' => 'post_liked',
+                    'post_id' => $model->post_id,
+                ];
+
+            case $model instanceof \App\Models\PostComment:
+                return [
+                    'activity_type' => 'comment_added',
+                    'comment' => $model->comment,
+                ];
+
+            case $model instanceof \App\Models\PostCommentReplies:
+                return [
+                    'activity_type' => 'reply_added',
+                    'reply' => $model->comment,
+                ];
+
+            case $model instanceof \App\Models\Follow:
+                return [
+                    'activity_type' => 'creator_followed',
+                    'creator_id' => $model->following_id,
+                ];
+
+            case $model instanceof \App\Models\User:
+                return [
+                    'activity_type' => 'user_updated',
+                    'username' => $model->username,
+                    'name' => $model->name,
+                ];
+
+            default:
+                return [
+                    'activity_type' => strtolower(class_basename($model)) . '_created'
+                ];
+        }
     }
 
     /**
-     * Handle the "updated" event
-     *
-     * @param Model $model
-     * @return void
+     * Handle the "updated" event - Add better diff handling
      */
     public function updated(Model $model): void
     {
         $modelName = class_basename($model);
 
-        // Skip if this model was just created (prevents duplicate logging)
+        // Skip if just created
         if ($this->wasJustCreated($model)) {
             $this->clearJustCreatedFlag($model);
             return;
         }
 
-        // Clear earnings cache if payment status changed to paid
-        $this->clearEarningsCache($model);
-
-        // Clear profile data cache if content was updated
-        $this->clearProfileCache($model);
-
-        // Get only the fields that changed
+        // Get changes
         $dirty = $model->getDirty();
         $original = $model->getOriginal();
 
-        // If nothing changed, don't log
         if (empty($dirty)) {
             return;
         }
 
-        // Skip auto-updating timestamp fields if they're the only changes
+        // Skip timestamp-only changes
         $timestampFields = ['updated_at', 'created_at'];
         $nonTimestampChanges = array_diff(array_keys($dirty), $timestampFields);
 
-        // If ONLY timestamp fields changed, skip logging
         if (empty($nonTimestampChanges)) {
             return;
         }
 
-        // Build diff (old vs new)
-        $diff = [];
+        // Build changes array properly
+        $changes = [];
         foreach ($dirty as $field => $newValue) {
-            // Skip excluded fields
             if (in_array($field, $this->excludedFields)) {
-                continue;
-            }
-
-            // Skip timestamp fields
-            if (in_array($field, $timestampFields)) {
                 continue;
             }
 
             $oldValue = $original[$field] ?? null;
 
-            // Only record if there's an actual change
             if ($oldValue != $newValue) {
-                $diff[$field] = [
+                $changes[$field] = [
                     'old' => $this->sanitizeValue($oldValue),
                     'new' => $this->sanitizeValue($newValue)
                 ];
             }
         }
 
-        // Only log if there are actual changes
-        if (!empty($diff)) {
+        if (!empty($changes)) {
             ActivityLogger::log(
                 "{$modelName}_UPDATED",
                 (string) $model->id,
                 [
                     'model_type' => get_class($model),
-                    'diff' => $diff,
+                    'diff' => $changes,
                     'event' => 'updated',
-                    'changed_fields' => array_keys($diff)
+                    'changed_fields' => array_keys($changes)
+                ]
+            );
+        }
+
+        // Clear caches
+        $this->clearEarningsCache($model);
+        $this->clearProfileCache($model);
+    }
+
+    /**
+     * Handle approval/rejection events
+     */
+    public function approving(Model $model, string $field = 'approved'): void
+    {
+        $modelName = class_basename($model);
+        $wasApproved = $model->getOriginal($field) ?? false;
+        $isApproved = $model->$field ?? false;
+
+        if (!$wasApproved && $isApproved) {
+            ActivityLogger::log(
+                "{$modelName}_APPROVED",
+                (string) $model->id,
+                [
+                    'model_type' => get_class($model),
+                    'event' => 'approved',
+                    'field' => $field
+                ]
+            );
+        } elseif ($wasApproved && !$isApproved) {
+            ActivityLogger::log(
+                "{$modelName}_REJECTED",
+                (string) $model->id,
+                [
+                    'model_type' => get_class($model),
+                    'event' => 'rejected',
+                    'field' => $field
                 ]
             );
         }
     }
+
 
     /**
      * Clear the earnings cache for the creator associated with the model
@@ -154,7 +270,7 @@ class ActivityObserver
     {
         $creatorId = null;
         $status = $model->status ?? $model->payment_status ?? null;
-        
+
         // For created event, we always want to check if it's a paid record
         // For updated event, we only clear if status changed to 'paid'
         if ($status !== null && $status !== 'paid') {
@@ -216,7 +332,7 @@ class ActivityObserver
     private function clearProfileCache(Model $model): void
     {
         $user = null;
-        
+
         try {
             if ($model instanceof \App\Models\User) {
                 $user = $model;

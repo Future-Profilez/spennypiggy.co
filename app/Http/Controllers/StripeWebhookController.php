@@ -888,6 +888,7 @@ class StripeWebhookController extends Controller
                 }
 
                 if ($payment) {
+                    $oldStatus = $payment->status;
                     $newStatus = 'succeeded';
                     // Check if it was marked for review hold
                     if (
@@ -898,6 +899,14 @@ class StripeWebhookController extends Controller
                         $newStatus = 'review_hold';
                         Log::info("Risk Ledger: Marking payment as review_hold", ['payment_id' => $payment->id]);
                     }
+
+                    // Log payment state change before updating
+                    \App\Services\ActivityLogger::logPaymentStateChange(
+                        $payment,
+                        ['status' => $oldStatus],
+                        ['status' => $newStatus],
+                        'Webhook: checkout.session.completed'
+                    );
 
                     $payment->update([
                         'stripe_payment_intent_id' => $session->payment_intent ?? $payment->stripe_payment_intent_id,

@@ -129,7 +129,13 @@ class CreatorActivityController extends Controller
 
         // Transform logs to include formatted data
         $logs->getCollection()->transform(function ($log) {
-            $metadata = json_decode($log->metadata_json, true) ?? [];
+            $metadata = [];
+
+            if (is_array($log->metadata_json)) {
+                $metadata = $log->metadata_json;
+            } elseif (is_string($log->metadata_json) && !empty($log->metadata_json)) {
+                $metadata = json_decode($log->metadata_json, true) ?? [];
+            }
 
             // Extract model type from metadata or action_type
             $modelType = $metadata['model_type'] ?? $this->getModelTypeFromAction($log->action_type);
@@ -249,25 +255,21 @@ class CreatorActivityController extends Controller
     }
 
     /**
-     * Parse changes from metadata in a readable format
+     * Parse changes from metadata in a readable format - IMPROVED VERSION
      */
     private function parseChanges($metadata)
     {
         $changes = [];
 
-        // Check for event type to determine how to parse
-        $event = $metadata['event'] ?? null;
+        // For UPDATE events
+        if (isset($metadata['event']) && $metadata['event'] === 'updated') {
 
-        // For UPDATE events - THIS IS KEY FOR SHOWING OLD -> NEW
-        if ($event === 'updated') {
-            // Check for changes in various formats
-
-            // ✅ NEW: Handle "diff" format (YOUR CASE)
+            // Handle diff format
             if (isset($metadata['diff']) && is_array($metadata['diff'])) {
                 foreach ($metadata['diff'] as $field => $change) {
-                    if (is_array($change)) {
-                        $old = $change['old'] ?? null;
-                        $new = $change['new'] ?? null;
+                    if (is_array($change) && isset($change['old']) && isset($change['new'])) {
+                        $old = $change['old'];
+                        $new = $change['new'];
 
                         if ($old != $new) {
                             $changes[] = [
@@ -282,110 +284,27 @@ class CreatorActivityController extends Controller
                 }
             }
 
-            // Format 2: Old/New arrays
-            if (empty($changes) && isset($metadata['old']) && isset($metadata['new'])) {
-                if (is_array($metadata['old']) && is_array($metadata['new'])) {
-                    $allKeys = array_unique(array_merge(array_keys($metadata['old']), array_keys($metadata['new'])));
-                    foreach ($allKeys as $key) {
-                        $old = $metadata['old'][$key] ?? null;
-                        $new = $metadata['new'][$key] ?? null;
-                        if ($old != $new) {
-                            $changes[] = [
-                                'field' => $key,
-                                'label' => $this->formatFieldName($key),
-                                'old' => $this->formatValue($old),
-                                'new' => $this->formatValue($new),
-                                'type' => 'change'
-                            ];
-                        }
-                    }
-                }
-            }
-
-            // Format 3: Attributes changed (Laravel style)
-            if (empty($changes) && isset($metadata['attributes_changed']) && is_array($metadata['attributes_changed'])) {
-                foreach ($metadata['attributes_changed'] as $field => $change) {
-                    if (is_array($change) && isset($change['old']) && isset($change['new'])) {
+            // Handle changed_fields format
+            if (empty($changes) && isset($metadata['changed_fields']) && is_array($metadata['changed_fields'])) {
+                foreach ($metadata['changed_fields'] as $field) {
+                    if (isset($metadata['old_values'][$field]) || isset($metadata['new_values'][$field])) {
                         $changes[] = [
                             'field' => $field,
                             'label' => $this->formatFieldName($field),
-                            'old' => $this->formatValue($change['old']),
-                            'new' => $this->formatValue($change['new']),
+                            'old' => $this->formatValue($metadata['old_values'][$field] ?? null),
+                            'new' => $this->formatValue($metadata['new_values'][$field] ?? null),
                             'type' => 'change'
                         ];
                     }
                 }
             }
-
-            // If no changes found but we have model_data with old/new embedded
-            if (empty($changes) && isset($metadata['model_data']) && is_array($metadata['model_data'])) {
-                if (isset($metadata['model_data']['old']) && isset($metadata['model_data']['new'])) {
-                    $oldData = $metadata['model_data']['old'];
-                    $newData = $metadata['model_data']['new'];
-                    if (is_array($oldData) && is_array($newData)) {
-                        $allKeys = array_unique(array_merge(array_keys($oldData), array_keys($newData)));
-                        foreach ($allKeys as $key) {
-                            $old = $oldData[$key] ?? null;
-                            $new = $newData[$key] ?? null;
-                            if ($old != $new) {
-                                $changes[] = [
-                                    'field' => $key,
-                                    'label' => $this->formatFieldName($key),
-                                    'old' => $this->formatValue($old),
-                                    'new' => $this->formatValue($new),
-                                    'type' => 'change'
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
         }
 
-        // For CREATE events, show the created data
-        elseif ($event === 'created') {
-
+        // For CREATE events
+        elseif (isset($metadata['event']) && $metadata['event'] === 'created') {
             $modelType = $metadata['model_type'] ?? null;
-            $data = $metadata['model_data'] ?? [];
+            $title = $this->getCreateTitle($modelType);
 
-            // Get item name
-            $name = $data['wishname']
-                ?? $data['name']
-                ?? $data['title']
-                ?? $data['plan_name']
-                ?? null;
-
-            // Generate readable title
-            $title = '';
-
-            switch ($modelType) {
-                case 'App\\Models\\WishItem':
-                case 'WishItem':
-                case 'WishlistItem':
-                    $title = "You have created a Wishlist";
-                    break;
-
-                case 'App\\Models\\Membership':
-                case 'Membership':
-                    $title = "You have created a Membership Plan";
-                    break;
-
-                case 'App\\Models\\Task':
-                case 'Task':
-                    $title = "You have created a Task";
-                    break;
-
-                case 'App\\Models\\User':
-                case 'User':
-                    $title = "User account created";
-                    break;
-
-                default:
-                    $title = "New item created";
-                    break;
-            }
-
-            // MAIN MESSAGE (IMPORTANT)
             $changes[] = [
                 'field' => 'created_message',
                 'label' => 'Action',
@@ -393,91 +312,34 @@ class CreatorActivityController extends Controller
                 'type' => 'info'
             ];
 
-            // OPTIONAL DETAILS (clean + limited)
-            if ($name) {
+            // Add details if available
+            if (isset($metadata['title'])) {
                 $changes[] = [
-                    'field' => 'name',
-                    'label' => 'Name',
-                    'value' => $this->formatValue($name),
+                    'field' => 'title',
+                    'label' => 'Title',
+                    'value' => $this->formatValue($metadata['title']),
                     'type' => 'info'
                 ];
             }
 
-            if (isset($data['price'])) {
+            if (isset($metadata['price'])) {
                 $changes[] = [
                     'field' => 'price',
                     'label' => 'Price',
-                    'value' => $this->formatValue($data['price']),
+                    'value' => $this->formatCurrency($metadata['price'], $metadata['currency'] ?? null),
                     'type' => 'info'
                 ];
             }
-
-            // if (isset($data['currency'])) {
-            //     $changes[] = [
-            //         'field' => 'currency',
-            //         'label' => 'Currency',
-            //         'value' => $this->formatValue($data['currency']),
-            //         'type' => 'info'
-            //     ];
-            // }
-
-            // if (isset($data['status'])) {
-            //     $changes[] = [
-            //         'field' => 'status',
-            //         'label' => 'Status',
-            //         'value' => $this->formatValue($data['status']),
-            //         'type' => 'info'
-            //     ];
-            // }
         }
 
         // For DELETE events
-        elseif ($event === 'deleted') {
-
-            // Get model type (important)
+        elseif (isset($metadata['event']) && $metadata['event'] === 'deleted') {
             $modelType = $metadata['model_type'] ?? null;
+            $deletedName = $metadata['deleted_name'] ?? null;
 
-            // Try to get deleted item name
-            $deletedName = $metadata['model_data']['name']
-                ?? $metadata['model_data']['wishname']
-                ?? $metadata['model_data']['title']
-                ?? null;
-
-            // Generate proper message based on type
-            $message = '';
-
-            switch ($modelType) {
-                case 'App\\Models\\WishItem':
-                case 'WishItem':
-                case 'WishlistItem':
-                    $message = $deletedName
-                        ? "Your WishItem '{$deletedName}' has been deleted"
-                        : "Your WishItem has been deleted";
-                    break;
-
-                case 'App\\Models\\Membership':
-                case 'Membership':
-                    $message = $deletedName
-                        ? "Your Membership '{$deletedName}' has been deleted"
-                        : "Your Membership has been deleted";
-                    break;
-
-                case 'App\\Models\\Task':
-                case 'Task':
-                    $message = $deletedName
-                        ? "Your Task '{$deletedName}' has been deleted"
-                        : "Your Task has been deleted";
-                    break;
-
-                case 'App\\Models\\User':
-                case 'User':
-                    $message = "User account has been deleted";
-                    break;
-
-                default:
-                    $message = "Item has been deleted";
-                    break;
-            }
+            $message = $deletedName
+                ? "{$this->getModelDisplayName($modelType)} '{$deletedName}' has been deleted"
+                : "{$this->getModelDisplayName($modelType)} has been deleted";
 
             $changes[] = [
                 'field' => 'deleted',
@@ -487,28 +349,103 @@ class CreatorActivityController extends Controller
             ];
         }
 
-        // Fallback: Check for any changes structure
-        if (empty($changes) && isset($metadata['changes']) && is_array($metadata['changes'])) {
-            foreach ($metadata['changes'] as $field => $change) {
-                if (is_array($change) && (isset($change['old']) || isset($change['new']))) {
-                    $readableField = $this->formatFieldName($field);
-                    $oldValue = isset($change['old']) ? $this->formatValue($change['old']) : '—';
-                    $newValue = isset($change['new']) ? $this->formatValue($change['new']) : '—';
+        return $changes;
+    }
 
-                    if ($oldValue !== $newValue) {
-                        $changes[] = [
-                            'field' => $field,
-                            'label' => $readableField,
-                            'old' => $oldValue,
-                            'new' => $newValue,
-                            'type' => 'change'
-                        ];
-                    }
-                }
-            }
+    /**
+     * Get title for create events based on model type
+     */
+    private function getCreateTitle($modelType)
+    {
+        $titles = [
+            'App\\Models\\User' => 'User account created',
+            'App\\Models\\Task' => 'New task created',
+            'App\\Models\\WishItem' => 'New wishlist item created',
+            'App\\Models\\Membership' => 'New membership plan created',
+            'App\\Models\\Product' => 'New product created',
+            'App\\Models\\Cover' => 'Cover image uploaded',
+            'App\\Models\\Post' => 'New post created',
+            'App\\Models\\Shop' => 'New shop item created',
+            'App\\Models\\Bills' => 'New bill created',
+            'App\\Models\\PiggyPot' => 'New piggy pot created',
+            'App\\Models\\TipGoal' => 'New tip goal created',
+            'App\\Models\\PostLike' => 'Post liked',
+            'App\\Models\\PostComment' => 'Comment added',
+            'App\\Models\\PostCommentReplies' => 'Reply added',
+            'App\\Models\\Follow' => 'Creator followed',
+        ];
+
+        // Try to get title from the mapping
+        if (isset($titles[$modelType])) {
+            return $titles[$modelType];
         }
 
-        return $changes;
+        // Extract just the class name if it's a full namespace
+        $cleanType = class_basename($modelType);
+
+        // Check if we have a title for the clean type
+        $cleanTitles = [
+            'User' => 'User account created',
+            'Task' => 'New task created',
+            'WishItem' => 'New wishlist item created',
+            'Membership' => 'New membership plan created',
+            'Product' => 'New product created',
+            'Cover' => 'Cover image uploaded',
+            'Post' => 'New post created',
+            'Shop' => 'New shop item created',
+            'Bills' => 'New bill created',
+            'PiggyPot' => 'New piggy pot created',
+            'TipGoal' => 'New tip goal created',
+            'PostLike' => 'Post liked',
+            'PostComment' => 'Comment added',
+            'PostCommentReplies' => 'Reply added',
+            'Follow' => 'Creator followed',
+        ];
+
+        if (isset($cleanTitles[$cleanType])) {
+            return $cleanTitles[$cleanType];
+        }
+
+        // Default title
+        return "New {$cleanType} created";
+    }
+
+    /**
+     * Format currency values
+     */
+    private function formatCurrency($amount, $currency = null)
+    {
+        if ($amount === null || $amount === '') return '—';
+
+        $symbols = [
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'JPY' => '¥',
+        ];
+
+        $symbol = $currency ? ($symbols[strtoupper($currency)] ?? $currency . ' ') : '';
+        return $symbol . number_format((float)$amount, 2);
+    }
+
+    /**
+     * Get model display name
+     */
+    private function getModelDisplayName($modelType)
+    {
+        $names = [
+            'App\\Models\\User' => 'User',
+            'App\\Models\\Task' => 'Task',
+            'App\\Models\\WishItem' => 'Wishlist Item',
+            'App\\Models\\Membership' => 'Membership Plan',
+            'App\\Models\\Product' => 'Product',
+            'App\\Models\\Cover' => 'Cover Image',
+            'App\\Models\\Post' => 'Post',
+            'App\\Models\\Shop' => 'Shop Item',
+            'App\\Models\\Bills' => 'Bill',
+        ];
+
+        return $names[$modelType] ?? class_basename($modelType);
     }
 
     /**
