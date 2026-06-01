@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Models\FounderBonus;
-use App\Models\Deliverable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -84,11 +83,25 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
         $thirtyDaysLater = $createdAt->copy()->addDays(30);
 
         // Sum all deliverable transaction amounts for the creator in their first 30 days
-        $earnings = Deliverable::where('creator_id', $creator->id)
-            ->where('created_at', '>=', $createdAt)
-            ->where('created_at', '<=', $thirtyDaysLater)
-            ->where('status', 'delivered')
-            ->sum('transaction_amount');
+        $transactions = \App\Models\FinancialTransaction::where('user_id', $creator->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
+            ->whereBetween('transaction_date', [$createdAt, $thirtyDaysLater])
+            ->get();
+
+        $earnings = 0;
+        foreach ($transactions as $tx) {
+            $currency = strtoupper($tx->currency ?? 'GBP');
+            $net = (float) ($tx->net_amount ?? 0);
+            $vat = (float) ($tx->vat_amount ?? 0);
+            $gross = $net + $vat;
+            
+            if ($currency === 'GBP') {
+                $earnings += $gross;
+            } else {
+                $earnings += \App\Helpers::priceFormat($currency, $gross, 'GBP');
+            }
+        }
 
         return (float) $earnings;
     }

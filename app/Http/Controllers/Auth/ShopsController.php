@@ -1041,7 +1041,9 @@ class ShopsController extends Controller
                         'currency' => $stripeid->currency ?? 'GBP',
                         'item_id' => $stripeid->shop->uuid,
                         'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                        'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
+                        'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0',
+                        'source' => 'shop_payments',
+                        'source_id' => $stripeid->id,
                     ];
 
                     if (!empty($stripeid->shop->ask_question) && empty($stripeid->answer)) {
@@ -1205,7 +1207,9 @@ class ShopsController extends Controller
                     'currency' => $stripeid->currency ?? 'GBP',
                     'item_id' => $stripeid->shop->uuid,
                     'item_slug' => \Illuminate\Support\Str::slug($stripeid->shop->name),
-                    'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0'
+                    'is_instant' => $stripeid->shop->type !== 'physical' ? '1' : '0',
+                    'source' => 'shop_payments',
+                    'source_id' => $stripeid->id,
                 ];
 
                 if (!empty($stripeid->shop->ask_question) && empty($stripeid->answer)) {

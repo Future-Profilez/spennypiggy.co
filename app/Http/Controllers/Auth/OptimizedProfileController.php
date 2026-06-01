@@ -7,8 +7,6 @@ use App\Http\Controllers\Auth\StripeController;
 use App\Services\UserProfileService;
 use App\SeoMeta;
 use App\StripeControl;
-use App\Models\FounderBonus;
-use App\Models\Deliverable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -58,8 +56,17 @@ class OptimizedProfileController extends Controller
         // Set SEO meta tags
         $this->setSeoMetaTags($user, $username);
 
-        // Get founder bonus data if user is a founder
+        // Get founder bonus data
         $founderData = $this->getFounderData($user);
+        
+        // Also provide shouldShowFounderBanner calculation logic to React
+        $shouldShowFounderBanner = false;
+        if (!$user->is_founder) {
+            $daysSinceCreation = $user->created_at->diffInDays(now());
+            if ($daysSinceCreation <= 30) {
+                $shouldShowFounderBanner = true;
+            }
+        }
 
         return Inertia::render('Dashboard', [
             'username' => $username,
@@ -78,8 +85,10 @@ class OptimizedProfileController extends Controller
             'selectedCategory' => request()->query('category') ?? false,
             'notification_count' => $profileData['notification_count'],
             'profile_steps' => null,
+            ...$pageData,
             'first30DayEarnings' => $founderData['first30DayEarnings'],
-            ...$pageData
+            'founderData' => $founderData,
+            'shouldShowFounderBanner' => $shouldShowFounderBanner,
         ]);
     }
 
@@ -413,22 +422,39 @@ class OptimizedProfileController extends Controller
     private function getFounderData($user): array
     {
         $first30DayEarnings = 0;
+        $isEligible = false;
+        $daysLeft = 0;
+        $minEarnings = \App\Models\FounderBonus::getMinFirst30dEarnings();
 
-        // Calculate first 30-day earnings for the user
         if ($user) {
             $createdAt = $user->created_at;
             $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
             
-            // Get total earnings from deliverables within first 30 days
-            $first30DayEarnings = Deliverable::where('creator_id', $user->id)
-                ->where('created_at', '>=', $createdAt)
-                ->where('created_at', '<=', $thirtyDaysAfterCreation)
-                ->where('status', 'delivered')
-                ->sum('transaction_amount');
+            // Check if user is eligible (in the race)
+            if (!$user->is_founder && now()->lessThan($thirtyDaysAfterCreation)) {
+                $isEligible = true;
+                $daysLeft = max(0, now()->diffInDays($thirtyDaysAfterCreation, false));
+            } else if (!$user->is_founder) {
+                // Also check if they joined within 60 days, as they might be on the leaderboard
+                // waiting for month-end processing
+                $cutoffDate = now()->subDays(60);
+                if ($createdAt->greaterThanOrEqualTo($cutoffDate)) {
+                    $isEligible = true;
+                    $daysLeft = 0; // Qualification period over, waiting for results
+                }
+            }
+            
+            $endDate = $thirtyDaysAfterCreation->isFuture() ? now() : $thirtyDaysAfterCreation;
+            $financialService = app(\App\Services\FinancialService::class);
+            $summary = $financialService->getSummary($user, $createdAt, $endDate, 'GBP');
+            $first30DayEarnings = (float) ($summary['gross_income'] ?? 0);
         }
 
         return [
-            'first30DayEarnings' => $first30DayEarnings
+            'first30DayEarnings' => $first30DayEarnings,
+            'isEligible' => $isEligible,
+            'daysLeft' => $daysLeft,
+            'minEarnings' => $minEarnings,
         ];
     }
 }

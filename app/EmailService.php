@@ -33,7 +33,9 @@ use App\Mail\Wishlist;
 use App\Mail\WishSubscriptionMailToUsers;
 use App\Mail\FeatureSuggestionMail;
 use App\Models\AppService;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -709,6 +711,53 @@ class EmailService
             Log::error('EmailService::featureSuggestion - Failed to send email', [
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Send marketing email - respects user's marketing email preferences
+     * @param User $user The user to send email to
+     * @param Mailable $mailable The email to send
+     * @return void
+     */
+    public static function sendMarketingEmail(User $user, Mailable $mailable)
+    {
+        try {
+            // Check if user has marketing emails enabled
+            if (!$user->marketing_emails_enabled) {
+                Log::info('EmailService::sendMarketingEmail - Skipping marketing email for user '.$user->id.' (marketing emails disabled)', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
+                return;
+            }
+
+            if ($mailable instanceof \Illuminate\Mail\Mailable) {
+                $mailable->with(['user' => $user]);
+            }
+
+            // Send the marketing email
+            Mail::to($user->email)->send($mailable);
+
+            Log::info('EmailService::sendMarketingEmail - Marketing email sent successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+        } catch (TransportException $e) {
+            Log::error('EmailService::sendMarketingEmail - TransportException', [
+                'user_id' => $user->id ?? 'null',
+                'email' => $user->email ?? 'null',
+                'error' => $e->getMessage()
+            ]);
+            AppService::setStatus('email', 0, $e->getMessage());
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('EmailService::sendMarketingEmail - General Exception', [
+                'user_id' => $user->id ?? 'null',
+                'email' => $user->email ?? 'null',
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 }

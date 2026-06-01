@@ -152,13 +152,23 @@
                             style="padding:15px 0 5px 0; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #666666; text-align: center;">
                             You’re receiving this email because you’re a valued member of the Spenny Piggy community.</td>
                     </tr>
+                    @if(isset($user) && $user instanceof \App\Models\User)
                     <tr>
                         <td
                             style="padding:0 0 10px 0; font-family: Arial; font-weight: normal;font-size: 12px; line-height: 18px;color: #666666; text-align: center;">
-                            To stop receiving notification emails, please <a
-                                href="https://spennypiggy.co/unsubscribe" style="color:#5D25FD">click here</a>
+                            <a href="{{ url('/email-preferences') }}" style="color:#5D25FD; text-decoration: none;">Manage communication preferences</a> | 
+                            <a href="{{ \App\Http\Controllers\EmailPreferenceController::generateUnsubscribeToken($user) }}" style="color:#5D25FD; text-decoration: none;">Unsubscribe from marketing emails</a>
                         </td>
                     </tr>
+                    @else
+                    <tr>
+                        <td
+                            style="padding:0 0 10px 0; font-family: Arial; font-weight: normal;font-size: 12px; line-height: 18px;color: #666666; text-align: center;">
+                            <a href="{{ url('/email-preferences') }}" style="color:#5D25FD; text-decoration: none;">Manage communication preferences</a>
+                            <span style="color:#666666;">(login required)</span>
+                        </td>
+                    </tr>
+                    @endif
 
                     <tr>
                         <td

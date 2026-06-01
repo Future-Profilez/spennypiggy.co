@@ -151,8 +151,10 @@ class GuestSupportTicketController extends Controller
         EnrichSupportTicketStripeEvidence::dispatch($ticket->id);
 
         if ($creator->email) {
+            $adminRecipients = config('support.ticket_admin_recipients', []);
+
             Mail::to($creator->email)
-                ->bcc(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
+                ->bcc($adminRecipients)
                 ->send(new SupportTicketCreatedMail($ticket, $request->message));
 
             \App\Helpers::sendNotification(
@@ -281,8 +283,10 @@ class GuestSupportTicketController extends Controller
         EnrichSupportTicketStripeEvidence::dispatch($ticket->id);
 
         if ($creator->email) {
+            $adminRecipients = config('support.ticket_admin_recipients', []);
+
             Mail::to($creator->email)
-                ->bcc(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
+                ->bcc($adminRecipients)
                 ->send(new SupportTicketCreatedMail($ticket, $request->message));
                 
             \App\Helpers::sendNotification(

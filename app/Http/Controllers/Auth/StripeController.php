@@ -2209,12 +2209,17 @@ class StripeController extends Controller
                 return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
 
+            $successUrl = route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']);
+            if ($request->has('marketing_opt_in') && $request->input('marketing_opt_in')) {
+                $successUrl .= (parse_url($successUrl, PHP_URL_QUERY) ? '&' : '?') . 'marketing_opt_in=1';
+            }
+
             $payload = [
                 'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
                 'payment_method_types' => ['card'],
                 'line_items' => $lineItems, // Total amount determined by line items
                 'customer' => $customer_id,
-                'success_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
+                'success_url' => $successUrl,
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
 
@@ -3202,6 +3207,7 @@ class StripeController extends Controller
         $request->validate([
             'digital_waiver' => ['required', 'accepted'],
         ]);
+
         $user = Auth::user();
         if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
@@ -3713,7 +3719,9 @@ class StripeController extends Controller
                     'type' => 'support',
                     'item_name' => $tip_pay->tipGoal ? $tip_pay->tipGoal->name : 'Support Payment',
                     'amount' => $tip_pay->total_paid ?? 0,
-                    'currency' => $tip_pay->currency ?? 'GBP'
+                    'currency' => $tip_pay->currency ?? 'GBP',
+                    'source' => 'tip_goals_payments',
+                    'source_id' => $tip_pay->id,
                 ])->with('success', "Thank you for your support!");
             }
 
@@ -4386,7 +4394,7 @@ class StripeController extends Controller
     public function deleteConnectedAccount($accountId)
     {
         // Only allow admins to delete connected accounts or the owner
-        $user = auth()->user();
+        $user = \App\Models\User::find(auth()->id());
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
@@ -4402,16 +4410,18 @@ class StripeController extends Controller
 
             // Clear local user account ID if it matches
             if ($user->account_id === $accountId) {
-                $user->account_id = null;
-                $user->stripe_details_submitted = 0;
-                $user->save();
+                \App\Models\User::whereKey($user->id)->update([
+                    'account_id' => null,
+                    'stripe_details_submitted' => 0,
+                ]);
             } else {
                 // If admin deleted it, find the user and clear it
                 $targetUser = \App\Models\User::where('account_id', $accountId)->first();
                 if ($targetUser) {
-                    $targetUser->account_id = null;
-                    $targetUser->stripe_details_submitted = 0;
-                    $targetUser->save();
+                    \App\Models\User::whereKey($targetUser->id)->update([
+                        'account_id' => null,
+                        'stripe_details_submitted' => 0,
+                    ]);
                 }
             }
 

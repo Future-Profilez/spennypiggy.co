@@ -27,9 +27,6 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
     public function __construct(int $deliverableId)
     {
         $this->deliverableId = $deliverableId;
-        
-        // Use low-priority queue for metadata updates
-        $this->onQueue('low');
     }
 
     /**

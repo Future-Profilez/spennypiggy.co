@@ -465,6 +465,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [\App\Http\Controllers\SubscriptionsController::class, 'index'])->name('index');
         Route::get('/{id}', [\App\Http\Controllers\SubscriptionsController::class, 'show'])->name('show');
     });
+
+    // Email preference management routes
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/email-preferences', [App\Http\Controllers\EmailPreferenceController::class, 'showPreferences'])->name('email.preferences');
+        Route::post('/email-preferences/update', [App\Http\Controllers\EmailPreferenceController::class, 'updatePreferences'])->name('email.preferences.update');
+        Route::post('/email-preferences/thankyou', [App\Http\Controllers\EmailPreferenceController::class, 'updatePreferencesFromThankyou'])->name('email.preferences.thankyou');
+    });
+
+    // One-click unsubscribe route (no authentication required)
+    Route::get('/unsubscribe/{user}', [App\Http\Controllers\EmailPreferenceController::class, 'unsubscribe'])
+        ->name('email.unsubscribe')
+        ->middleware('signed');
 });
 
 // Select Default Currency

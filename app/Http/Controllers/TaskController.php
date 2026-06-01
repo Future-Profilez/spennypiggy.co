@@ -681,7 +681,9 @@ class TaskController extends Controller
             'amount' => $displayAmount,
             'currency' => $session->currency ?? 'GBP',
             'item_id' => $task->uuid,
-            'is_instant' => $task->type === 'instant' ? '1' : '0'
+            'is_instant' => $task->type === 'instant' ? '1' : '0',
+            'source' => 'task_purchases',
+            'source_id' => $purchase?->id,
         ];
 
         if ($task->type === 'instant' && $task->deliverable_content) {

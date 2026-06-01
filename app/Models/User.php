@@ -55,6 +55,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'default_currency',
         'terms_accepted_at',
         'creator_email_receipt_acknowledged_at',
+        'marketing_emails_enabled',
+        'marketing_unsubscribed_at',
         'utm_source',
         'utm_medium',
         'utm_campaign',
@@ -76,6 +78,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'identity_admin_reviewed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
         'creator_email_receipt_acknowledged_at' => 'datetime',
+        'marketing_emails_enabled' => 'boolean',
+        'marketing_unsubscribed_at' => 'datetime',
     ];
 
     protected $appends = [

@@ -44,8 +44,10 @@ class ProcessSupportTickets extends Command
             }
 
             if ($hoursLeft <= 24 && !$ticket->reminder_24h_sent_at) {
+                $adminRecipients = config('support.ticket_admin_recipients', []);
+
                 Mail::to($creator->email)
-                    ->bcc(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
+                    ->bcc($adminRecipients)
                     ->send(new SupportTicketReminderMail($ticket, $hoursLeft));
                 $ticket->reminder_24h_sent_at = now();
                 $ticket->save();
@@ -53,8 +55,10 @@ class ProcessSupportTickets extends Command
             }
 
             if ($hoursLeft <= 6 && !$ticket->reminder_6h_sent_at) {
+                $adminRecipients = config('support.ticket_admin_recipients', []);
+
                 Mail::to($creator->email)
-                    ->bcc(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
+                    ->bcc($adminRecipients)
                     ->send(new SupportTicketReminderMail($ticket, $hoursLeft));
                 $ticket->reminder_6h_sent_at = now();
                 $ticket->save();
@@ -77,7 +81,7 @@ class ProcessSupportTickets extends Command
             $ticket->escalation_reason = 'SLA Deadline Missed';
             $ticket->save();
 
-            Mail::to(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
+            Mail::to(config('support.ticket_admin_recipients', []))
                 ->send(new SupportTicketEscalatedMail($ticket));
         }
 
@@ -93,9 +97,8 @@ class ProcessSupportTickets extends Command
             $ticket->escalation_reason = 'Unresolved for 7 Days';
             $ticket->save();
 
-            Mail::to(['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'])
+            Mail::to(config('support.ticket_admin_recipients', []))
                 ->send(new SupportTicketEscalatedMail($ticket));
         }
     }
 }
-

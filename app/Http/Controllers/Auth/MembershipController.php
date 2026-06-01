@@ -1060,7 +1060,9 @@ class MembershipController extends Controller
                     'item_name' => $mem->membership->level,
                     'amount' => $totalAmount,
                     'currency' => $mem->currency ?? 'GBP',
-                    'item_id' => $mem->membership->uuid
+                    'item_id' => $mem->membership->uuid,
+                    'source' => 'membership_payments',
+                    'source_id' => $mem->id,
                 ])->with('success', "Payment for subscription of membership is success.");
             }
 

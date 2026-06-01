@@ -155,10 +155,10 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                         {r.supporter ? (
                                                             <div className="flex flex-col">
                                                                 <span className="text-gray-900 font-medium capitalize">{r.supporter.name}</span>
-                                                                <span className="text-[13px] text-gray-500">@{r.supporter.username}</span>
+                                                                <span className="text-[13px] !text-gray-800">@{r.supporter.username}</span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-gray-500 italic text-[14px] capitalize">{r.source_type === 'transaction' ? 'Guest / System' : 'System'}</span>
+                                                            <span className="text-gray-500 italic text-[14px] capitalize">{r.source_type === 'transaction' ? 'Guest / System' : 'Guest / System'}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-sm min-w-[260px]">
@@ -308,26 +308,10 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
 
                         <div className='pt-8 space-y-8'>
                             <div className="flex items-center gap-2 border-b border-gray-200 pb-px">
-                                <Link
-                                    href={route('financial.dashboard', { tab: 'overview' })}
-                                    className={`px-5 py-3 font-bold text-[14px] uppercase tracking-wider transition-colors border-b-2 ${
-                                        active_tab === 'overview' 
-                                            ? 'border-[#FF007F] text-[#FF007F]' 
-                                            : 'border-transparent text-gray-500 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Overview
-                                </Link>
-                                <Link
-                                    href={route('financial.dashboard', { tab: 'payouts' })}
-                                    className={`px-5 py-3 font-bold text-[14px] uppercase tracking-wider transition-colors border-b-2 ${
-                                        active_tab === 'payouts' 
-                                            ? 'border-[#FF007F] text-[#FF007F]' 
-                                            : 'border-transparent text-gray-500 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Payouts
-                                </Link>
+                                <Link href={route('financial.dashboard', { tab: 'overview' })} className={`px-5 py-3 font-bold text-[14px] uppercase tracking-wider transition-colors border-b-2 ${
+                                active_tab === 'overview' ? 'border-[#FF007F] text-[#FF007F]':'border-transparent text-gray-500 hover:text-gray-900'}`} > Overview </Link>
+                                <Link  href={route('financial.dashboard', { tab: 'payouts' })} className={`px-5 py-3 font-bold text-[14px] uppercase tracking-wider transition-colors border-b-2 ${active_tab === 'payouts' ? 'border-[#FF007F] text-[#FF007F]':'border-transparent text-gray-500 hover:text-gray-900'}`} > Payouts
+                                </Link> 
                             </div>
 
                             {active_tab === 'payouts' && (
