@@ -8,10 +8,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class ActivityObserver
 {
+    private static $justCreated = [];
+
     /**
-     * Track processed events to prevent duplicates
+     * Models that should NOT be logged
      */
-    private static $processedEvents = [];
+    protected $excludedModels = [
+        \App\Models\UserCategory::class,  // Exclude UserCategory from logging
+        // \App\Models\SocialLinks::class,   // Exclude if needed
+        // Add other models you want to exclude
+    ];
+
+    /**
+     * Actions that should be skipped for certain models
+     */
+    protected $excludedActions = [
+        'UserCategory' => ['CREATED', 'UPDATED', 'DELETED'],
+    ];
 
     /**
      * Sensitive fields that should never be logged
@@ -31,48 +44,36 @@ class ActivityObserver
     ];
 
     /**
-     * Models that should NOT be logged
-     */
-    protected $excludedModels = [
-        \App\Models\UserCategory::class,
-    ];
-
-    /**
-     * Fields that should be ignored for update logs
-     */
-    protected $ignoredUpdateFields = [
-        'updated_at',
-        'created_at',
-    ];
-
-    /**
      * Handle the "created" event
      */
     public function created(Model $model): void
     {
-        $modelName = class_basename($model);
-
-        // Skip excluded models
-        if ($this->shouldSkipLogging($model)) {
+        // Skip if model is excluded
+        if ($this->shouldSkipLogging($model, 'CREATED')) {
             return;
         }
 
+        $modelName = class_basename($model);
+
+        // Skip if no ID
         if (!$model->id) {
             return;
         }
 
-        // Create a unique key for this event
-        $eventKey = $this->getEventKey($model, 'CREATED');
+        // Check for duplicate entries
+        $existingLog = AuditLog::where('action_type', "{$modelName}_CREATED")
+            ->where('reference_id', (string) $model->id)
+            ->where('created_at', '>=', now()->subMinutes(1))
+            ->exists();
 
-        // Check if this event was already processed
-        if ($this->isEventProcessed($eventKey)) {
+        if ($existingLog) {
             return;
         }
 
-        // Mark event as processed
-        $this->markEventProcessed($eventKey);
+        // Mark as just created to prevent duplicate update logs
+        $this->markAsJustCreated($model);
 
-        // Build rich metadata with model data
+        // Build rich metadata with model data and log
         $metadata = $this->buildRichMetadata($model);
 
         ActivityLogger::log(
@@ -84,6 +85,46 @@ class ActivityObserver
         // Clear caches
         $this->clearEarningsCache($model);
         $this->clearProfileCache($model);
+    }
+
+    /**
+     * Check if logging should be skipped for this model and action
+     */
+    private function shouldSkipLogging(Model $model, string $action): bool
+    {
+        $modelClass = get_class($model);
+        $modelName = class_basename($model);
+
+        // Check if model is in excluded list
+        if (in_array($modelClass, $this->excludedModels)) {
+            return true;
+        }
+
+        // Check if specific action is excluded for this model
+        if (
+            isset($this->excludedActions[$modelName]) &&
+            in_array($action, $this->excludedActions[$modelName])
+        ) {
+            return true;
+        }
+
+        // Skip logging for internal/system models that are side effects
+        $internalModels = [
+            'UserCategory',
+            'SocialLinks',
+            'UserIntro',
+            'UserCategory',
+            'PostLike',
+            'PostComment',
+            'PostCommentReplies',
+            'Follow',
+        ];
+
+        if (in_array($modelName, $internalModels)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -137,8 +178,8 @@ class ActivityObserver
                     'id' => $model->id,
                     'title' => $model->title ?? 'Untitled Task',
                     'description' => $model->description ? substr($model->description, 0, 200) : null,
-                    'amount' => $model->price ?? 0,
-                    'currency' => 'USD',
+                    'reward_amount' => $model->reward_amount,
+                    'currency' => $model->currency ?? 'USD',
                 ];
                 $metadata['summary'] = "Created new task: {$model->title}";
                 break;
@@ -176,16 +217,6 @@ class ActivityObserver
                 $metadata['summary'] = "Created new piggy pot: {$model->title} with goal of {$model->goal_amount} {$model->currency}";
                 break;
 
-            case $model instanceof \App\Models\TipGoal:
-                $metadata['item'] = [
-                    'id' => $model->id,
-                    'title' => $model->title ?? 'Unnamed Tip Goal',
-                    'goal_amount' => $model->amount,
-                    'currency' => $model->currency ?? 'USD',
-                ];
-                $metadata['summary'] = "Created new tip goal: {$model->title} for {$model->amount} {$model->currency}";
-                break;
-
             case $model instanceof \App\Models\User:
                 $metadata['item'] = [
                     'id' => $model->id,
@@ -197,6 +228,7 @@ class ActivityObserver
                 break;
 
             default:
+                // Skip logging for generic/internal models
                 $modelName = class_basename($model);
                 $internalModels = ['UserCategory', 'SocialLinks', 'UserIntro'];
 
@@ -216,37 +248,20 @@ class ActivityObserver
     }
 
     /**
-     * Check if logging should be skipped for this model
-     */
-    private function shouldSkipLogging(Model $model): bool
-    {
-        $modelClass = get_class($model);
-        $modelName = class_basename($model);
-
-        if (in_array($modelClass, $this->excludedModels)) {
-            return true;
-        }
-
-        $internalModels = [
-            'UserCategory',
-        ];
-
-        if (in_array($modelName, $internalModels)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Handle the "updated" event - REVISED to prevent duplicates
+     * Handle the "updated" event
      */
     public function updated(Model $model): void
     {
+        // Skip if model is excluded
+        if ($this->shouldSkipLogging($model, 'UPDATED')) {
+            return;
+        }
+
         $modelName = class_basename($model);
 
-        // Skip excluded models
-        if ($this->shouldSkipLogging($model)) {
+        // Skip if just created
+        if ($this->wasJustCreated($model)) {
+            $this->clearJustCreatedFlag($model);
             return;
         }
 
@@ -258,54 +273,32 @@ class ActivityObserver
             return;
         }
 
-        // Remove ignored fields (like updated_at)
-        $filteredChanges = array_diff_key($dirty, array_flip($this->ignoredUpdateFields));
+        // Skip timestamp-only changes
+        $timestampFields = ['updated_at', 'created_at'];
+        $nonTimestampChanges = array_diff(array_keys($dirty), $timestampFields);
 
-        // If only ignored fields changed, skip logging
-        if (empty($filteredChanges)) {
+        if (empty($nonTimestampChanges)) {
             return;
         }
 
         // Build changes array
         $changes = [];
-        $hasRealChanges = false;
-
-        foreach ($filteredChanges as $field => $newValue) {
+        foreach ($dirty as $field => $newValue) {
             if (in_array($field, $this->excludedFields)) {
                 continue;
             }
 
             $oldValue = $original[$field] ?? null;
 
-            // Only log if there's an actual change
             if ($oldValue != $newValue) {
-                // Check if this is a real change (not just type casting)
-                $normalizedOld = is_numeric($oldValue) ? (string)$oldValue : $oldValue;
-                $normalizedNew = is_numeric($newValue) ? (string)$newValue : $newValue;
-
-                if ($normalizedOld != $normalizedNew) {
-                    $changes[$field] = [
-                        'old' => $this->sanitizeValue($oldValue),
-                        'new' => $this->sanitizeValue($newValue)
-                    ];
-                    $hasRealChanges = true;
-                }
+                $changes[$field] = [
+                    'old' => $this->sanitizeValue($oldValue),
+                    'new' => $this->sanitizeValue($newValue)
+                ];
             }
         }
 
-        // Only log if there are meaningful changes
-        if ($hasRealChanges) {
-            // Create a unique key for this update event to prevent duplicates
-            $eventKey = $this->getEventKey($model, 'UPDATED', $changes);
-
-            // Check if this exact update was already processed
-            if ($this->isEventProcessed($eventKey)) {
-                return;
-            }
-
-            // Mark event as processed
-            $this->markEventProcessed($eventKey);
-
+        if (!empty($changes)) {
             ActivityLogger::log(
                 "{$modelName}_UPDATED",
                 (string) $model->id,
@@ -328,20 +321,13 @@ class ActivityObserver
      */
     public function deleted(Model $model): void
     {
-        // Skip excluded models
-        if ($this->shouldSkipLogging($model)) {
+        // Skip if model is excluded
+        if ($this->shouldSkipLogging($model, 'DELETED')) {
             return;
         }
 
         $modelName = class_basename($model);
 
-        $eventKey = $this->getEventKey($model, 'DELETED');
-
-        if ($this->isEventProcessed($eventKey)) {
-            return;
-        }
-
-        $this->markEventProcessed($eventKey);
         $this->clearProfileCache($model);
 
         $deletedData = $this->sanitizeData($model->getAttributes());
@@ -358,106 +344,31 @@ class ActivityObserver
         );
     }
 
-    /**
-     * Handle the "restored" event (for soft deletes)
-     */
-    public function restored(Model $model): void
+    // ... Keep all other helper methods (clearEarningsCache, clearProfileCache, etc.)
+
+    private function getModelKey(Model $model): string
     {
-        if ($this->shouldSkipLogging($model)) {
-            return;
-        }
-
-        $modelName = class_basename($model);
-
-        $eventKey = $this->getEventKey($model, 'RESTORED');
-
-        if ($this->isEventProcessed($eventKey)) {
-            return;
-        }
-
-        $this->markEventProcessed($eventKey);
-
-        ActivityLogger::log(
-            "{$modelName}_RESTORED",
-            (string) $model->id,
-            [
-                'model_type' => get_class($model),
-                'event' => 'restored'
-            ]
-        );
+        return get_class($model) . ':' . ($model->id ?? 'new');
     }
 
-    /**
-     * Handle the "forceDeleted" event (for soft deletes)
-     */
-    public function forceDeleted(Model $model): void
+    private function markAsJustCreated(Model $model): void
     {
-        if ($this->shouldSkipLogging($model)) {
-            return;
-        }
-
-        $modelName = class_basename($model);
-
-        $eventKey = $this->getEventKey($model, 'FORCE_DELETED');
-
-        if ($this->isEventProcessed($eventKey)) {
-            return;
-        }
-
-        $this->markEventProcessed($eventKey);
-
-        ActivityLogger::log(
-            "{$modelName}_FORCE_DELETED",
-            (string) $model->id,
-            [
-                'model_type' => get_class($model),
-                'deleted_data' => $this->sanitizeData($model->getAttributes()),
-                'event' => 'force_deleted'
-            ]
-        );
+        $key = $this->getModelKey($model);
+        self::$justCreated[$key] = true;
     }
 
-    /**
-     * Get a unique key for an event
-     */
-    private function getEventKey(Model $model, string $event, array $changes = []): string
+    private function wasJustCreated(Model $model): bool
     {
-        $key = get_class($model) . ':' . ($model->id ?? 'new') . ':' . $event;
-
-        // For updates, include a hash of the changes to detect duplicate updates
-        if ($event === 'UPDATED' && !empty($changes)) {
-            $key .= ':' . md5(json_encode($changes));
-        }
-
-        return $key;
+        $key = $this->getModelKey($model);
+        return isset(self::$justCreated[$key]) && self::$justCreated[$key] === true;
     }
 
-    /**
-     * Check if an event was already processed
-     */
-    private function isEventProcessed(string $eventKey): bool
+    private function clearJustCreatedFlag(Model $model): void
     {
-        // Clean up old events (older than 5 seconds)
-        foreach (self::$processedEvents as $key => $timestamp) {
-            if (time() - $timestamp > 5) {
-                unset(self::$processedEvents[$key]);
-            }
-        }
-
-        return isset(self::$processedEvents[$eventKey]);
+        $key = $this->getModelKey($model);
+        unset(self::$justCreated[$key]);
     }
 
-    /**
-     * Mark an event as processed
-     */
-    private function markEventProcessed(string $eventKey): void
-    {
-        self::$processedEvents[$eventKey] = time();
-    }
-
-    /**
-     * Sanitize entire data array by removing sensitive fields
-     */
     private function sanitizeData(array $data): array
     {
         $sanitized = [];
@@ -471,9 +382,6 @@ class ActivityObserver
         return $sanitized;
     }
 
-    /**
-     * Sanitize individual value (truncate long strings, etc.)
-     */
     private function sanitizeValue($value)
     {
         if ($value === null) {
@@ -495,11 +403,9 @@ class ActivityObserver
         return $value;
     }
 
-    /**
-     * Clear earnings cache for payment-related models
-     */
     private function clearEarningsCache(Model $model): void
     {
+        // Keep your existing implementation
         $paymentModels = [
             \App\Models\TipGoalsPayment::class,
             \App\Models\BillPayment::class,
@@ -547,11 +453,9 @@ class ActivityObserver
         }
     }
 
-    /**
-     * Clear profile cache for content-related models
-     */
     private function clearProfileCache(Model $model): void
     {
+        // Keep your existing implementation
         $user = null;
 
         try {

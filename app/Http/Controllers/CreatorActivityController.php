@@ -294,6 +294,43 @@ class CreatorActivityController extends Controller
             'user_agent' => 'User Agent',
             'profile_status_lock' => 'Profile Status Lock',
             'bio_approved' => 'Bio Approval',
+            'stripe_product_id' => 'Stripe Product ID',
+            'stripe_price_id' => 'Stripe Price ID',
+            'price_id' => 'Price ID',
+            'product_id' => 'Product ID',
+            'category' => 'Category',
+            'type' => 'Type',
+            'deliverable_content_type' => 'Deliverable Content Type',
+            'deliverable_content' => 'Deliverable Content',
+            'deliverable_note' => 'Deliverable Note',
+            'sla_hours' => 'SLA Hours',
+            'is_suspended' => 'Suspended Status',
+            'is_approved' => 'Approval Status',
+            'media_url' => 'Media URL',
+            'perma_link' => 'Permanent Link',
+            'duration' => 'Duration',
+            'billing_interval' => 'Billing Interval',
+            'level' => 'Level',
+            'fulfillment_amount' => 'Fulfillment Amount',
+            'fulfill_amount' => 'Fulfillment Amount',
+            'repeat_purchase_enabled' => 'Repeat Purchase Enabled',
+            'allow_repeat_purchase' => 'Allow Repeat Purchase',
+            'twitter_response' => 'Twitter Response',
+            'instagram_link' => 'Instagram Link',
+            'youtube_link' => 'YouTube Link',
+            'tiktok_link' => 'TikTok Link',
+            'facebook_link' => 'Facebook Link',
+            'external_url' => 'External URL',
+            'reward_amount' => 'Reward Amount',
+            'task_type' => 'Task Type',
+            'task_status' => 'Task Status',
+            'reviewer_id' => 'Reviewer ID',
+            'deliverable_id' => 'Deliverable ID',
+            'payment_id' => 'Payment ID',
+            'subscription_id' => 'Subscription ID',
+            'transaction_id' => 'Transaction ID',
+            'receipt_url' => 'Receipt URL',
+            'invoice_id' => 'Invoice ID',
         ];
 
         if (isset($specialMappings[$field])) {
@@ -333,13 +370,35 @@ class CreatorActivityController extends Controller
             if ($value === 1 || $value === '1') return 'Unlocked';
         }
 
+        if (str_contains($fieldLower, 'stripe')) {
+            // Format Stripe IDs - show first part and last part for readability
+            if (is_string($value) && strlen($value) > 20) {
+                return substr($value, 0, 10) . '...' . substr($value, -10);
+            }
+            return (string)$value;
+        }
+
         if (str_contains($fieldLower, 'price') || str_contains($fieldLower, 'amount')) {
-            return '$' . number_format((float)$value, 2);
+            // Check if it's a numeric value (actual price/amount)
+            if (is_numeric($value) && !str_contains($fieldLower, 'price_id')) {
+                return '$' . number_format((float)$value, 2);
+            }
+            // For price_id and similar fields, truncate if too long
+            if (is_string($value) && strlen($value) > 20) {
+                return substr($value, 0, 10) . '...' . substr($value, -10);
+            }
         }
 
         if (str_contains($fieldLower, 'date') || str_contains($fieldLower, 'created_at') || str_contains($fieldLower, 'updated_at')) {
             if (is_string($value) && strtotime($value)) {
                 return Carbon::parse($value)->format('M d, Y H:i:s');
+            }
+        }
+
+        // Handle URLs and IDs
+        if (str_contains($fieldLower, 'url') || str_contains($fieldLower, 'link') || str_contains($fieldLower, 'id')) {
+            if (is_string($value) && strlen($value) > 50) {
+                return substr($value, 0, 47) . '...';
             }
         }
 
@@ -411,11 +470,46 @@ class CreatorActivityController extends Controller
         $changes = [];
         $event = $metadata['event'] ?? null;
 
-        if ($event === 'updated') {
+        if ($event === 'created') {
+            // Add the summary as the main action
+            if (isset($metadata['summary'])) {
+                $changes[] = [
+                    'field' => 'created',
+                    'label' => 'Action',
+                    'value' => $metadata['summary'],
+                    'type' => 'info',
+                    'old_formatted' => null,
+                    'new_formatted' => $metadata['summary'],
+                ];
+            }
+
+            // Add all item details
+            if (isset($metadata['item']) && is_array($metadata['item'])) {
+                foreach ($metadata['item'] as $key => $value) {
+                    if ($key !== 'id' && !empty($value) && $value !== 'N/A') {
+                        $fieldLabel = $this->formatFieldName($key);
+                        $formattedValue = $this->formatChangeValue($key, $value);
+
+                        $changes[] = [
+                            'field' => $key,
+                            'label' => $fieldLabel,
+                            'value' => $value,
+                            'type' => 'detail',
+                            'old_formatted' => null,
+                            'new_formatted' => $formattedValue,
+                        ];
+                    }
+                }
+            }
+        } elseif ($event === 'updated') {
             // Handle diff format
             if (isset($metadata['diff']) && is_array($metadata['diff'])) {
                 foreach ($metadata['diff'] as $field => $change) {
-                    if (is_array($change) && isset($change['old']) && isset($change['new'])) {
+                    if (
+                        is_array($change) &&
+                        array_key_exists('old', $change) &&
+                        array_key_exists('new', $change)
+                    ) {
                         $old = $change['old'];
                         $new = $change['new'];
 
@@ -433,23 +527,14 @@ class CreatorActivityController extends Controller
                     }
                 }
             }
-        } elseif ($event === 'created') {
+        } elseif ($event === 'deleted') {
+            $itemName = $metadata['item_name'] ?? 'Item';
             $modelType = $metadata['model_type'] ?? null;
-            $title = $this->getCreateTitle($modelType);
 
             $changes[] = [
-                'field' => 'created',
-                'label' => 'Action',
-                'value' => $title,
-                'type' => 'info',
-                'old_formatted' => null,
-                'new_formatted' => $title,
-            ];
-        } elseif ($event === 'deleted') {
-            $changes[] = [
                 'field' => 'deleted',
-                'label' => 'Deleted',
-                'value' => 'Item was deleted',
+                'label' => 'Action',
+                'value' => "{$this->getModelDisplayName($modelType)} '{$itemName}' was deleted",
                 'type' => 'info',
                 'old_formatted' => null,
                 'new_formatted' => 'Deleted',

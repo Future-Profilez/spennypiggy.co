@@ -35,6 +35,9 @@ import {
     FileText,
     Link,
     Hash,
+    Package,
+    CreditCard,
+    Calendar as CalendarIcon,
 } from "lucide-react";
 
 const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
@@ -184,6 +187,9 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
             PiggyPot: <TrendingUp size={14} />,
             Post: <FileText size={14} />,
             Task: <CheckCircle size={14} />,
+            Membership: <CreditCard size={14} />,
+            Shop: <Package size={14} />,
+            Bills: <FileText size={14} />,
         };
         return icons[cleanType] || <Tag size={14} />;
     };
@@ -215,6 +221,17 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
         return "bg-gray-100 text-gray-700 border-gray-200";
     };
 
+    const getFieldIcon = (fieldName) => {
+        const field = fieldName?.toLowerCase() || "";
+        if (field.includes("price") || field.includes("amount"))
+            return <DollarSign size={12} />;
+        if (field.includes("date")) return <CalendarIcon size={12} />;
+        if (field.includes("name") || field.includes("title"))
+            return <Tag size={12} />;
+        if (field.includes("status")) return <Activity size={12} />;
+        return <Info size={12} />;
+    };
+
     const rows = logs?.data || [];
     const filteredRows = searchTerm
         ? rows.filter(
@@ -237,7 +254,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
 
             <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 py-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Header */}
+                    {/* Header - same as before */}
                     <div className="mb-8">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div className="flex items-center gap-4">
@@ -282,7 +299,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                         </div>
                     </div>
 
-                    {/* Filters */}
+                    {/* Filters - same as before */}
                     <div className="mb-6 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md">
                         <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                             <div className="flex items-center gap-2">
@@ -400,6 +417,22 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                     <div className="space-y-4">
                         {filteredRows.length > 0 ? (
                             filteredRows.map((log) => {
+                                // Separate changes into action and details
+                                const actionChange = log.changes?.find(
+                                    (c) =>
+                                        c.field === "created" ||
+                                        c.field === "deleted",
+                                );
+                                const detailChanges = log.changes?.filter(
+                                    (c) =>
+                                        c.field !== "created" &&
+                                        c.field !== "deleted" &&
+                                        c.type === "detail",
+                                );
+                                const updateChanges = log.changes?.filter(
+                                    (c) => c.type === "change",
+                                );
+
                                 const hasStatusChange = log.changes?.some(
                                     (c) =>
                                         c.field
@@ -424,7 +457,6 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                         >
                                             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                                                 <div className="flex items-start gap-4 flex-1">
-                                                    {/* Icon */}
                                                     <div
                                                         className={`flex items-center justify-center h-12 w-12 rounded-xl ${getActionColor(log.action_type)}`}
                                                     >
@@ -433,9 +465,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                         )}
                                                     </div>
 
-                                                    {/* Content */}
                                                     <div className="flex-1">
-                                                        {/* Action Type Badge */}
                                                         <div className="flex flex-wrap items-center gap-2 mb-2">
                                                             <span
                                                                 className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${getActionColor(log.action_type)}`}
@@ -480,13 +510,11 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                             )}
                                                         </div>
 
-                                                        {/* Title */}
                                                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
                                                             {log.reference_name ||
                                                                 `Item #${log.reference_id}`}
                                                         </h3>
 
-                                                        {/* Model & ID Info */}
                                                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-2">
                                                             <div className="flex items-center gap-1">
                                                                 {getModelIcon(
@@ -515,15 +543,36 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                             )}
                                                         </div>
 
-                                                        {/* What Changed Summary */}
-                                                        {log.what_changed &&
-                                                            log.what_changed
-                                                                .length > 0 &&
+                                                        {/* Show action summary */}
+                                                        {actionChange &&
+                                                            !expandedDetails[
+                                                                log.id
+                                                            ] && (
+                                                                <div className="mt-2">
+                                                                    <div className="inline-flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">
+                                                                        <CheckCircle
+                                                                            size={
+                                                                                14
+                                                                            }
+                                                                        />
+                                                                        <span>
+                                                                            {
+                                                                                actionChange.value
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                        {/* Show quick details preview */}
+                                                        {detailChanges &&
+                                                            detailChanges.length >
+                                                                0 &&
                                                             !expandedDetails[
                                                                 log.id
                                                             ] && (
                                                                 <div className="mt-2 flex flex-wrap gap-2">
-                                                                    {log.what_changed
+                                                                    {detailChanges
                                                                         .slice(
                                                                             0,
                                                                             2,
@@ -537,31 +586,29 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                                                     key={
                                                                                         idx
                                                                                     }
-                                                                                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 max-w-full"
+                                                                                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600"
                                                                                 >
-                                                                                    <Info
-                                                                                        size={
-                                                                                            10
-                                                                                        }
-                                                                                        className="flex-shrink-0"
-                                                                                    />
-                                                                                    <span className="truncate">
+                                                                                    {getFieldIcon(
+                                                                                        change.label,
+                                                                                    )}
+                                                                                    <span className="font-medium">
                                                                                         {
-                                                                                            change
+                                                                                            change.label
                                                                                         }
+                                                                                        :
+                                                                                    </span>
+                                                                                    <span>
+                                                                                        {change.new_formatted ||
+                                                                                            change.value}
                                                                                     </span>
                                                                                 </span>
                                                                             ),
                                                                         )}
-                                                                    {log
-                                                                        .what_changed
-                                                                        .length >
+                                                                    {detailChanges.length >
                                                                         2 && (
                                                                         <span className="text-xs text-gray-400">
                                                                             +
-                                                                            {log
-                                                                                .what_changed
-                                                                                .length -
+                                                                            {detailChanges.length -
                                                                                 2}{" "}
                                                                             more
                                                                         </span>
@@ -569,7 +616,84 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                                 </div>
                                                             )}
 
-                                                        {/* Timestamp */}
+                                                        {/* Show update preview */}
+                                                        {updateChanges &&
+                                                            updateChanges.length >
+                                                                0 &&
+                                                            !expandedDetails[
+                                                                log.id
+                                                            ] && (
+                                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                                    {updateChanges
+                                                                        .slice(
+                                                                            0,
+                                                                            2,
+                                                                        )
+                                                                        .map(
+                                                                            (
+                                                                                change,
+                                                                                idx,
+                                                                            ) => (
+                                                                                <span
+                                                                                    key={
+                                                                                        idx
+                                                                                    }
+                                                                                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200"
+                                                                                    title={`${change.label}: ${change.old || "—"} → ${change.new || "—"}`}
+                                                                                >
+                                                                                    <ArrowRight
+                                                                                        size={
+                                                                                            10
+                                                                                        }
+                                                                                    />
+                                                                                    <span className="font-medium">
+                                                                                        {
+                                                                                            change.label
+                                                                                        }
+                                                                                        :
+                                                                                    </span>
+                                                                                    <span className="truncate max-w-xs">
+                                                                                        {(change.old_formatted ||
+                                                                                            "—").length >
+                                                                                        20
+                                                                                            ? (change.old_formatted ||
+                                                                                                  "—"
+                                                                                              ).substring(
+                                                                                                  0,
+                                                                                                  20,
+                                                                                              ) +
+                                                                                              "…"
+                                                                                            : change.old_formatted ||
+                                                                                              "—"}{" "}
+                                                                                        →{" "}
+                                                                                        {(change.new_formatted ||
+                                                                                            "—").length >
+                                                                                        20
+                                                                                            ? (change.new_formatted ||
+                                                                                                  "—"
+                                                                                              ).substring(
+                                                                                                  0,
+                                                                                                  20,
+                                                                                              ) +
+                                                                                              "…"
+                                                                                            : change.new_formatted ||
+                                                                                              "—"}
+                                                                                    </span>
+                                                                                </span>
+                                                                            ),
+                                                                        )}
+                                                                    {updateChanges.length >
+                                                                        2 && (
+                                                                        <span className="text-xs text-gray-400">
+                                                                            +
+                                                                            {updateChanges.length -
+                                                                                2}{" "}
+                                                                            more
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
                                                         <div className="flex items-center gap-1 mt-3 text-xs text-gray-400">
                                                             <Clock size={12} />
                                                             <span>
@@ -581,7 +705,6 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                     </div>
                                                 </div>
 
-                                                {/* Expand Button */}
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -607,82 +730,155 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                         {/* Detailed Changes - Expanded View */}
                                         {expandedDetails[log.id] && (
                                             <div className="p-5 bg-gray-50 border-t border-gray-200 animate-fadeIn">
-                                                {/* Changes Section */}
-                                                {log.changes?.length > 0 && (
-                                                    <>
-                                                        <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                                                            <Edit size={14} />
-                                                            Detailed Changes
-                                                        </h4>
-                                                        <div className="space-y-3 mb-6">
-                                                            {log.changes.map(
-                                                                (
-                                                                    change,
-                                                                    idx,
-                                                                ) => {
-                                                                    const oldStatus =
-                                                                        getStatusColor(
-                                                                            change.old_formatted,
-                                                                        );
-                                                                    const newStatus =
-                                                                        getStatusColor(
-                                                                            change.new_formatted,
-                                                                        );
-
-                                                                    return (
+                                                {/* Item Details Section for Created events */}
+                                                {detailChanges &&
+                                                    detailChanges.length >
+                                                        0 && (
+                                                        <>
+                                                            <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                                                <Package
+                                                                    size={14}
+                                                                />
+                                                                Item Details
+                                                            </h4>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                                                                {detailChanges.map(
+                                                                    (
+                                                                        change,
+                                                                        idx,
+                                                                    ) => (
                                                                         <div
                                                                             key={
                                                                                 idx
                                                                             }
-                                                                            className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+                                                                            className="bg-white rounded-lg p-3 border border-gray-200"
                                                                         >
-                                                                            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                                                                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                                                                    <h5 className="font-semibold text-gray-800">
-                                                                                        {
-                                                                                            change.label
-                                                                                        }
-                                                                                    </h5>
-                                                                                    {change.field
-                                                                                        ?.toLowerCase()
-                                                                                        .includes(
-                                                                                            "status",
-                                                                                        ) && (
-                                                                                        <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                                                                                            Status
-                                                                                            Change
-                                                                                        </span>
-                                                                                    )}
+                                                                            <div className="flex items-center gap-2 mb-1">
+                                                                                {getFieldIcon(
+                                                                                    change.label,
+                                                                                )}
+                                                                                <div className="text-xs text-gray-500">
+                                                                                    {
+                                                                                        change.label
+                                                                                    }
                                                                                 </div>
                                                                             </div>
-                                                                            <div className="p-4">
-                                                                                {change.type ===
-                                                                                "change" ? (
+                                                                            <div className="font-medium text-gray-800 break-words">
+                                                                                {change.new_formatted ||
+                                                                                    change.value ||
+                                                                                    "—"}
+                                                                            </div>
+                                                                        </div>
+                                                                    ),
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                {/* Action Section */}
+                                                {actionChange && (
+                                                    <>
+                                                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                                            <CheckCircle
+                                                                size={14}
+                                                            />
+                                                            Action
+                                                        </h4>
+                                                        <div className="bg-green-50 rounded-lg p-4 border border-green-200 mb-6">
+                                                            <div className="flex items-center gap-2 text-green-700">
+                                                                <CheckCircle
+                                                                    size={16}
+                                                                />
+                                                                <span>
+                                                                    {
+                                                                        actionChange.value
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                                {/* Changes Section for Updates */}
+                                                {updateChanges &&
+                                                    updateChanges.length >
+                                                        0 && (
+                                                        <>
+                                                            <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                                                <Edit
+                                                                    size={14}
+                                                                />
+                                                                Changes Made ({updateChanges.length})
+                                                            </h4>
+                                                            <div className="space-y-3 mb-6">
+                                                                {updateChanges.map(
+                                                                    (
+                                                                        change,
+                                                                        idx,
+                                                                    ) => {
+                                                                        const oldStatus =
+                                                                            getStatusColor(
+                                                                                change.old_formatted,
+                                                                            );
+                                                                        const newStatus =
+                                                                            getStatusColor(
+                                                                                change.new_formatted,
+                                                                            );
+
+                                                                        return (
+                                                                            <div
+                                                                                key={
+                                                                                    idx
+                                                                                }
+                                                                                className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:shadow-md"
+                                                                            >
+                                                                                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                                                                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {getFieldIcon(
+                                                                                                change.field,
+                                                                                            )}
+                                                                                            <h5 className="font-semibold text-gray-800">
+                                                                                                {
+                                                                                                    change.label
+                                                                                                }
+                                                                                            </h5>
+                                                                                        </div>
+                                                                                        {change.field
+                                                                                            ?.toLowerCase()
+                                                                                            .includes(
+                                                                                                "status",
+                                                                                            ) && (
+                                                                                            <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                                                                                                Status
+                                                                                                Change
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="p-4">
                                                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                        {/* Old Value */}
                                                                                         <div
                                                                                             className={`rounded-lg p-4 border ${oldStatus.border} ${oldStatus.bg}`}
                                                                                         >
                                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                                 <div className="w-2 h-2 rounded-full bg-red-500"></div>
                                                                                                 <span className="text-xs font-semibold text-red-600 uppercase">
-                                                                                                    Previous
-                                                                                                    Value
+                                                                                                    Before
                                                                                                 </span>
                                                                                             </div>
-                                                                                            <div className="flex items-center gap-2">
+                                                                                            <div className="flex items-start gap-2 break-all">
                                                                                                 {oldStatus.icon && (
                                                                                                     <oldStatus.icon
                                                                                                         size={
                                                                                                             14
                                                                                                         }
-                                                                                                        className={
-                                                                                                            oldStatus.text
-                                                                                                        }
+                                                                                                        className={`${oldStatus.text} flex-shrink-0 mt-0.5`}
                                                                                                     />
                                                                                                 )}
                                                                                                 <span
                                                                                                     className={`text-sm font-medium ${oldStatus.text}`}
+                                                                                                    title={change.old}
                                                                                                 >
                                                                                                     {change.old_formatted ||
                                                                                                         "—"}
@@ -690,62 +886,42 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
                                                                                             </div>
                                                                                         </div>
 
-                                                                                        {/* New Value */}
                                                                                         <div
                                                                                             className={`rounded-lg p-4 border ${newStatus.border} ${newStatus.bg}`}
                                                                                         >
                                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
                                                                                                 <span className="text-xs font-semibold text-green-600 uppercase">
-                                                                                                    Updated
-                                                                                                    Value
+                                                                                                    After
                                                                                                 </span>
                                                                                             </div>
-                                                                                            <div className="flex items-center gap-2">
+                                                                                            <div className="flex items-start gap-2 break-all">
                                                                                                 {newStatus.icon && (
                                                                                                     <newStatus.icon
                                                                                                         size={
                                                                                                             14
                                                                                                         }
-                                                                                                        className={
-                                                                                                            newStatus.text
-                                                                                                        }
+                                                                                                        className={`${newStatus.text} flex-shrink-0 mt-0.5`}
                                                                                                     />
                                                                                                 )}
                                                                                                 <span
                                                                                                     className={`text-sm font-medium ${newStatus.text}`}
+                                                                                                    title={change.new}
                                                                                                 >
                                                                                                     {change.new_formatted ||
-                                                                                                        change.value ||
                                                                                                         "—"}
                                                                                                 </span>
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
-                                                                                ) : (
-                                                                                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                                                                        <div className="flex items-center gap-2 text-blue-700">
-                                                                                            <Info
-                                                                                                size={
-                                                                                                    16
-                                                                                                }
-                                                                                            />
-                                                                                            <span>
-                                                                                                {
-                                                                                                    change.value
-                                                                                                }
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    );
-                                                                },
-                                                            )}
-                                                        </div>
-                                                    </>
-                                                )}
+                                                                        );
+                                                                    },
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
 
                                                 {/* Technical Details */}
                                                 {(log.ip_address !== "N/A" ||
