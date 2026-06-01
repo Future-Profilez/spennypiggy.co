@@ -15,6 +15,48 @@ export default function Comment({c, update, updateComments, postUserId}) {
   const [approving, setApproving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const isItemOwner = (item) => currentUserId === item?.user_id;
+
+  const getStatusLabel = (item) => {
+    const status = Number(item?.is_approved);
+    const owner = isItemOwner(item);
+
+    if (status === 0) {
+      return owner ? 'Pending review' : (isPostCreator ? 'Pending creator approval' : 'Pending review');
+    }
+
+    if (status === 2) {
+      return owner ? 'In review' : (isPostCreator ? 'Pending admin review' : 'Pending review');
+    }
+
+    if (status === 3) {
+      return owner ? 'Rejected by admin' : (isPostCreator ? 'Rejected by admin' : 'Rejected by admin');
+    }
+
+    return null;
+  };
+
+  const getStatusClass = (item) => {
+    switch (Number(item?.is_approved)) {
+      case 0:
+        return 'bg-yellow-100 text-yellow-700';
+      case 2:
+        return 'bg-blue-100 text-blue-700';
+      case 3:
+        return 'bg-red-100 text-red-700';
+      default:
+        return '';
+    }
+  };
+
+  const getApprovalButtonLabel = (item) => {
+    return Number(item?.is_approved) === 0 ? 'Approve' : 'Hide';
+  };
+
+  const getApprovalButtonClass = (item) => {
+    return Number(item?.is_approved) === 0 ? 'text-green-600 font-bold' : 'text-red-500';
+  };
+
   const updates = () => {
     sethandleReply(false);
     update && update();
@@ -91,9 +133,9 @@ export default function Comment({c, update, updateComments, postUserId}) {
                     <a href="#" className="hover:underline text-sm">
                       <p className='text-base font-bold capitalize' >{item.user?.name || ''}</p>
                     </a>
-                    {!item.is_approved && (
-                      <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
-                        Pending Approval
+                    {getStatusLabel(item) && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(item)}`}>
+                        {getStatusLabel(item)}
                       </span>
                     )}
                   </div>
@@ -116,9 +158,9 @@ export default function Comment({c, update, updateComments, postUserId}) {
                         <button 
                           disabled={approving}
                           onClick={() => approveReply(item.uuid)} 
-                          className={`text-small hover:underline ${item.is_approved ? 'text-red-500' : 'text-green-600 font-bold'}`}
+                          className={`text-small hover:underline ${getApprovalButtonClass(item)}`}
                         >
-                          {item.is_approved ? 'Hide' : 'Approve'}
+                          {getApprovalButtonLabel(item)}
                         </button>
                       </>
                     )}
@@ -160,9 +202,9 @@ export default function Comment({c, update, updateComments, postUserId}) {
                   <a href="#" className="hover:underline text-sm">
                     <p className='text-base font-bold capitalize' >{c?.user?.name || ''}</p>
                   </a>
-                  {!c.is_approved && (
-                    <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
-                      Pending Approval
+                  {getStatusLabel(c) && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(c)}`}>
+                      {getStatusLabel(c)}
                     </span>
                   )}
                 </div>
@@ -185,9 +227,9 @@ export default function Comment({c, update, updateComments, postUserId}) {
                       <button 
                         disabled={approving}
                         onClick={() => approveComment(c.uuid)} 
-                        className={`text-small hover:underline ${c.is_approved ? 'text-red-500' : 'text-green-600 font-bold'}`}
+                        className={`text-small hover:underline ${getApprovalButtonClass(c)}`}
                       >
-                        {c.is_approved ? 'Hide' : 'Approve'}
+                        {getApprovalButtonLabel(c)}
                       </button>
                     </>
                   )}
@@ -210,7 +252,7 @@ export default function Comment({c, update, updateComments, postUserId}) {
 
             {c.replies && c.replies.length ?
                 c.replies.map((item, index) => {
-                  return <CommentReply item={item} />
+                  return <CommentReply key={item.uuid || index} item={item} />
                 })
             : ''}
 

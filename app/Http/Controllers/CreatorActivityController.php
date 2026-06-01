@@ -505,11 +505,7 @@ class CreatorActivityController extends Controller
             // Handle diff format
             if (isset($metadata['diff']) && is_array($metadata['diff'])) {
                 foreach ($metadata['diff'] as $field => $change) {
-                    if (
-                        is_array($change) &&
-                        array_key_exists('old', $change) &&
-                        array_key_exists('new', $change)
-                    ) {
+                    if (is_array($change) && array_key_exists('old', $change) && array_key_exists('new', $change)) {
                         $old = $change['old'];
                         $new = $change['new'];
 

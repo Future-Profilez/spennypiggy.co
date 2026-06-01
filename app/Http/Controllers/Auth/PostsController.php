@@ -292,7 +292,8 @@ class PostsController extends Controller
             // Check if the comment is by the post owner
             $isPostOwner = ($post->user_id === $user->id);
 
-            // Auto-approve if post owner is commenting
+            // Auto-approve owner comments immediately; other comments start pending creator review.
+            // Status values: 0 = waiting creator approval, 1 = visible/approved, 2 = approved by creator and waiting admin review.
             $isApproved = $isPostOwner ? 1 : 0;
 
             $comment = $post->comments()->create([
@@ -356,7 +357,7 @@ class PostsController extends Controller
             // Check if the reply is by the post owner
             $isPostOwner = ($comment->post->user_id === $user->id);
 
-            // Auto-approve if post owner is replying
+            // Auto-approve owner replies immediately; other replies start pending creator review.
             $isApproved = $isPostOwner ? 1 : 0;
 
             $reply = $comment->replies()->create([
@@ -419,7 +420,7 @@ class PostsController extends Controller
         $comments = PostComment::where('post_id', $post->id)
             ->with(['replies' => function ($query) use ($userId, $isCreator) {
                 $query->where(function ($q) use ($userId, $isCreator) {
-                    $q->where('is_approved', 1)
+                    $q->whereIn('is_approved', [1, 2])
                         ->orWhere('user_id', $userId);
 
                     if ($isCreator) {
@@ -428,7 +429,7 @@ class PostsController extends Controller
                 })->with('user');
             }, 'user'])
             ->where(function ($query) use ($userId, $isCreator) {
-                $query->where('is_approved', 1)
+                $query->whereIn('is_approved', [1, 2])
                     ->orWhere('user_id', $userId);
 
                 if ($isCreator) {
@@ -456,13 +457,19 @@ class PostsController extends Controller
             return response()->json(['status' => false, 'msg' => "Unauthorized."]);
         }
 
-        $comment->is_approved = !$comment->is_approved;
+        if ($comment->is_approved === 0) {
+            $comment->is_approved = 2;
+            $msg = "Comment sent to admin review.";
+        } else {
+            $comment->is_approved = 0;
+            $msg = "Comment hidden and reset to pending approval.";
+        }
         $comment->save();
 
         return response()->json([
             'status' => true,
             'is_approved' => $comment->is_approved,
-            'msg' => $comment->is_approved ? "Comment approved." : "Comment hidden."
+            'msg' => $msg
         ]);
     }
 
@@ -478,13 +485,87 @@ class PostsController extends Controller
             return response()->json(['status' => false, 'msg' => "Unauthorized."]);
         }
 
-        $reply->is_approved = !$reply->is_approved;
+        if ($reply->is_approved === 0) {
+            $reply->is_approved = 2;
+            $msg = "Reply sent to admin review.";
+        } else {
+            $reply->is_approved = 0;
+            $msg = "Reply hidden and reset to pending approval.";
+        }
         $reply->save();
 
         return response()->json([
             'status' => true,
             'is_approved' => $reply->is_approved,
-            'msg' => $reply->is_approved ? "Reply approved." : "Reply hidden."
+            'msg' => $msg
+        ]);
+    }
+
+    public function adminApproveComment($uuid)
+    {
+        $comment = PostComment::where('uuid', $uuid)->first();
+        if (empty($comment)) {
+            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+        }
+
+        $comment->is_approved = 1;
+        $comment->save();
+
+        return response()->json([
+            'status' => true,
+            'is_approved' => 1,
+            'msg' => "Comment approved by admin."
+        ]);
+    }
+
+    public function adminRejectComment($uuid)
+    {
+        $comment = PostComment::where('uuid', $uuid)->first();
+        if (empty($comment)) {
+            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+        }
+
+        $comment->is_approved = 3;
+        $comment->save();
+
+        return response()->json([
+            'status' => true,
+            'is_approved' => 3,
+            'msg' => "Comment rejected by admin."
+        ]);
+    }
+
+    public function adminApproveReply($uuid)
+    {
+        $reply = PostCommentReplies::where('uuid', $uuid)->first();
+        if (empty($reply)) {
+            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+        }
+
+        $reply->is_approved = 1;
+        $reply->save();
+
+        return response()->json([
+            'status' => true,
+            'is_approved' => 1,
+            'msg' => "Reply approved by admin."
+        ]);
+    }
+
+    public function adminRejectReply($uuid)
+    {
+        $reply = PostCommentReplies::where('uuid', $uuid)->first();
+        if (empty($reply)) {
+            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+        }
+
+        $reply->is_approved = 3;
+        $reply->save();
+
+        return response()->json([
+            'status' => true,
+            'is_approved' => 3,
+            'msg' => "Reply rejected by admin."
         ]);
     }
 

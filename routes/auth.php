@@ -429,6 +429,10 @@ Route::middleware('auth')->group(function () {
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
             Route::post('comment-approve/{uuid}', [PostsController::class, 'approveComment'])->name('comment-approve');
             Route::post('reply-approve/{uuid}', [PostsController::class, 'approveReply'])->name('reply-approve');
+            Route::post('admin/comment-approve/{uuid}', [PostsController::class, 'adminApproveComment'])->middleware('admin')->name('admin.comment-approve');
+            Route::post('admin/comment-reject/{uuid}', [PostsController::class, 'adminRejectComment'])->middleware('admin')->name('admin.comment-reject');
+            Route::post('admin/reply-approve/{uuid}', [PostsController::class, 'adminApproveReply'])->middleware('admin')->name('admin.reply-approve');
+            Route::post('admin/reply-reject/{uuid}', [PostsController::class, 'adminRejectReply'])->middleware('admin')->name('admin.reply-reject');
             Route::post('comment-delete/{uuid}', [PostsController::class, 'deleteComment'])->name('comment-delete');
             Route::post('reply-delete/{uuid}', [PostsController::class, 'deleteReply'])->name('reply-delete');
         });
