@@ -122,7 +122,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
     const formatFieldValue = (field, value) => {
         // Handle empty values
         if (value === null || value === undefined || value === "") return "—";
-        
+
         // Handle approval fields
         if (field?.toLowerCase().includes("approved")) {
             if (value === 2 || value === "2" || value === "rejected")
@@ -180,7 +180,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
     // Enhanced badge system with proper color mapping for numeric values
     const getStatusBadge = (field, value) => {
         if (value === null || value === undefined || value === "") return null;
-        
+
         const fieldLower = field?.toLowerCase() || "";
 
         // Handle approval status
