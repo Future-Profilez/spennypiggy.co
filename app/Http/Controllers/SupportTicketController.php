@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\MagicBellService;
 use App\Services\SupportTicketRefundService;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
