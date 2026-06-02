@@ -1143,6 +1143,35 @@ class StripeControl
         }
     }
 
+    public static function transferToConnectedAccountMinor(string $destinationAccountId, int $amountMinor, string $currency = 'usd', array $metadata = [], ?string $description = null)
+    {
+        $client = self::getClientForCurrency($currency);
+
+        try {
+            $payload = [
+                'amount' => (int) $amountMinor,
+                'currency' => strtolower($currency),
+                'destination' => $destinationAccountId,
+            ];
+            if (!empty($description)) {
+                $payload['description'] = $description;
+            }
+            if (!empty($metadata)) {
+                $payload['metadata'] = $metadata;
+            }
+
+            return $client->transfers->create($payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
     /**
      * List transfers for an account
      *

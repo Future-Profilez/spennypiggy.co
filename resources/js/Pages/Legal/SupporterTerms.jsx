@@ -8,8 +8,8 @@ export default function SupporterTerms(props) {
         <Guest auth={auth?.user} user={user}>
             <Head title="Supporter Terms" />
             <LegalLayout activePage="SupporterTerms">
-                <div className="mx-auto p-8 md:p-12">
-                    <h1 className="text-3xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter">
+                <div className="mx-auto p-0 lg:p-12">
+                    <h1 className="mx-auto p-0 text-2xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter-12">
                         Supporter Terms
                     </h1>
                     <div className="prose prose-pink max-w-none">

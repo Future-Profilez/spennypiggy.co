@@ -924,6 +924,7 @@ Route::controller(\App\Http\Controllers\StaticPageController::class)->group(func
     Route::get('/return-policy', 'returnPolicy')->name("return-policy");
     Route::get('/us-addendum', 'usAddendum')->name("us-addendum");
     Route::get('/copyright-policy', 'copyrightPolicy')->name("copyright-policy");
+    Route::get('/fast-start-bonus-terms', 'fastStartBonusTerms')->name("fast-start-bonus-terms");
     Route::post('/accept-terms', 'acceptTerms')->name("accept-terms")->middleware('auth');
 });
 

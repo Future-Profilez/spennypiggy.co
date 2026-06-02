@@ -472,6 +472,9 @@ class StripeController extends Controller
                 $account = StripeControl::getAccount($user->account_id);
                 if ($account->charges_enabled) {
                     $user->stripe_details_submitted = 1;
+                    if (!$user->stripe_connected_at) {
+                        $user->stripe_connected_at = now();
+                    }
                     $user->save();
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
                     return redirect(route("user.show", $user->username))->with("success", "Stripe already connected!");
@@ -762,6 +765,9 @@ class StripeController extends Controller
             $account = StripeControl::getAccount($user->account_id);
             if ($account->charges_enabled) {
                 $user->stripe_details_submitted = 1;
+                if (!$user->stripe_connected_at) {
+                    $user->stripe_connected_at = now();
+                }
                 $user->save();
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
                 return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");

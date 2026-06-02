@@ -4,6 +4,7 @@ import Footer from '../../includes/Footer';
 import LiveBar from '../../includes/LiveBar';
 import spennypiggy from '../../../assets/img/logo.png';
 import { FaBolt, FaBriefcase, FaBox, FaCheckCircle, FaDollarSign, FaFire, FaGift, FaHeart, FaStar, FaUsers } from 'react-icons/fa';
+import Header from '@/includes/Header';
 
 const PRIDE_LIVEBAR_ITEMS = [
     "🏳️‍🌈 GET PAID TO BE YOU  ",
@@ -53,8 +54,7 @@ export default function PrideLanding() {
                 <div className="absolute bottom-[-10%] left-[10%] w-[300px] h-[300px] rounded-full bg-[#00F0FF]/15 blur-[100px] hidden md:block"></div>
             </div>
 
-            {/* Header */}
-            <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-[#050505]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(255,0,127,0.1)]' : 'py-4 bg-transparent'}`}>
+            {/* <header className={`hidden fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-[#050505]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(255,0,127,0.1)]' : 'py-4 bg-transparent'}`}>
                 <div className="max-w-6xl mx-auto px-4 md:px-6 flex justify-between items-center">
                     <Link href="/" className="relative group">
                         <div className="absolute -inset-2 bg-gradient-to-r from-[#FF007F] to-[#00F0FF] rounded-[30px]  blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
@@ -64,10 +64,12 @@ export default function PrideLanding() {
                         Start Earning <FaFire className="w-4 h-4 md:w-3.5 md:h-3.5" />
                     </a>
                 </div>
-            </header>
+            </header> */}
+
+            <Header />
 
             {/* Scrolling Marquee Top using LiveBar */}
-            <div className="relative z-20 mt-[70px] md:mt-[80px] w-full   transform -rotate-1 shadow-lg">
+            <div className="relative z-20 mt-[20px] md:mt-[20px] w-full   transform -rotate-1 shadow-lg">
                 <LiveBar 
                     livebartest={PRIDE_LIVEBAR_ITEMS}
                     classes="w-full" 

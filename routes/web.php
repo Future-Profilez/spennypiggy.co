@@ -195,6 +195,12 @@ Route::get('/', function (DiscoveryService $discoveryService) {
         });
     };
 
+    $founderSpots = \Illuminate\Support\Facades\Cache::remember('home_founder_spots_remaining_v1', 900, function () {
+        $maxSeats = (int) config('founder_bonus.limits.max_founder_seats', 150);
+        $used = (int) \App\Models\FounderBonus::getTotalFounderCount();
+        return max(0, $maxSeats - $used);
+    });
+
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -206,6 +212,7 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             'maxBonusPerMonth' => config('founder_bonus.bonus.max_bonus_per_month'),
             'maxFounderSeats' => config('founder_bonus.limits.max_founder_seats'),
             'currencySymbol' => config('founder_bonus.display.currency_symbol'),
+            'founderSpotsRemaining' => $founderSpots,
         ],
         // Use Inertia::lazy to allow the page to load instantly while data fetches in background
         'trendingCreators' => Inertia::lazy($trendingCreators),

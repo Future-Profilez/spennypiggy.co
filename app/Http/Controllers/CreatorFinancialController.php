@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorMetric;
+use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
 use App\Models\UkTaxSetting;
 use App\Services\FinancialService;
 use App\Services\Risk\PayoutService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -409,15 +411,72 @@ class CreatorFinancialController extends Controller
         // Reserve breakdown with release dates
         $reserveBreakdown = $this->payoutService->getHeldReserves($user->uuid);
 
+        $fastStartBonus = null;
+        if ($user->stripe_connected_at) {
+            $windowStart = Carbon::parse($user->stripe_connected_at);
+            $windowEnd = $windowStart->copy()->addDays(30);
+            $now = now();
+            $currency = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
+
+            $rates = \App\Models\Currency::rates();
+            $convert = function (float $amount, string $from, string $to) use ($rates): float {
+                $from = strtoupper($from ?: 'GBP');
+                $to = strtoupper($to ?: 'GBP');
+                if ($from === $to) return $amount;
+                if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+                return ($amount / $rates[$from]) * $rates[$to];
+            };
+
+            if ($now->lt($windowEnd)) {
+                $txs = FinancialTransaction::query()
+                    ->where('user_id', $user->id)
+                    ->where('type', 'income')
+                    ->where('status', 'completed')
+                    ->whereBetween('transaction_date', [$windowStart, $now])
+                    ->get(['net_amount', 'currency']);
+
+                $earnings = 0.0;
+                foreach ($txs as $tx) {
+                    $from = strtoupper((string) ($tx->currency ?? 'GBP'));
+                    $net = (float) ($tx->net_amount ?? 0);
+                    $earnings += $convert($net, $from, $currency);
+                }
+
+                $bonus = round($earnings * 0.05, 2);
+                $fastStartBonus = [
+                    'status' => 'active',
+                    'currency' => $currency,
+                    'window_start' => $windowStart->toDateTimeString(),
+                    'window_end' => $windowEnd->toDateTimeString(),
+                    'days_remaining' => max(0, $now->diffInDays($windowEnd)),
+                    'earnings_so_far' => $earnings,
+                    'bonus_so_far' => $bonus,
+                ];
+            } else {
+                $row = FastStartBonusPayout::where('creator_uuid', $user->uuid)->latest()->first();
+                $fastStartBonus = [
+                    'status' => $row?->status ?? 'ready',
+                    'currency' => $currency,
+                    'window_start' => $windowStart->toDateTimeString(),
+                    'window_end' => $windowEnd->toDateTimeString(),
+                    'earnings_so_far' => $row ? ($row->earnings_minor / 100) : 0,
+                    'bonus_so_far' => $row ? ($row->bonus_minor / 100) : 0,
+                ];
+            }
+        }
+
         // Payout History
         $payoutHistory = \App\Models\PayoutRecord::where('creator_id', $user->uuid)
             ->latest()
             ->get()
             ->map(function ($p) {
+                $bonusMinor = (int) ($p->metadata['fast_start_bonus_applied_minor'] ?? 0);
                 return [
                     'uuid' => $p->uuid,
                     'date' => $p->created_at->format('d M Y'),
                     'amount' => $p->amount_minor / 100,
+                    'fast_start_bonus' => $bonusMinor / 100,
+                    'bonus_type' => $p->metadata['bonus_type'] ?? null,
                     'currency' => $p->currency,
                     'status' => $p->status,
                     'arrival_date' => $p->arrival_date ? $p->arrival_date->format('d M Y') : null,
@@ -478,6 +537,7 @@ class CreatorFinancialController extends Controller
                 'next_payout_at' => $nextPayoutAt->toDateTimeString(),
             ],
             'payout_history' => $payoutHistory,
+            'fast_start_bonus' => $fastStartBonus,
         ]);
     }
 

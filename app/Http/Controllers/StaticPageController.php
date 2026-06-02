@@ -57,6 +57,11 @@ class StaticPageController extends Controller
         return Inertia::render('Legal/CopyrightPolicy');
     }
 
+    public function fastStartBonusTerms()
+    {
+        return Inertia::render('Legal/FastStartBonusTerms');
+    }
+
     public function acceptTerms(Request $request)
     {
         $user = $request->user();

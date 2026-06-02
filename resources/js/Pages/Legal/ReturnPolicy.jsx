@@ -8,8 +8,8 @@ export default function ReturnPolicy(props) {
         <Guest auth={auth?.user} user={user}>
             <Head title="Return Policy" />
             <LegalLayout activePage="ReturnPolicy">
-                <div className="mx-auto p-8 md:p-12">
-                    <h1 className="text-3xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter">
+                <div className="mx-auto p-0 lg:p-12">
+                    <h1 className="mx-auto p-0 text-2xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter-12">
                         RETURN, REFUND AND CANCELLATION POLICY
                     </h1>
                     <div className="prose prose-pink max-w-none">
