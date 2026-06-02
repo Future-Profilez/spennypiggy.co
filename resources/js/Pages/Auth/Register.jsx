@@ -118,6 +118,7 @@ export default function Register(props) {
         utm_source: "",
         utm_medium: "",
         utm_campaign: "",
+        crm_invite_token: "",
     });
 
     useEffect(() => {
@@ -142,6 +143,16 @@ export default function Register(props) {
                 }));
             }
         }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const token = localStorage.getItem('sp_invite_token');
+        if (!token) return;
+        setData(data => ({
+            ...data,
+            crm_invite_token: token,
+        }));
     }, []);
 
     const [referralMessage, setReferralMessage] = useState("");
@@ -832,6 +843,9 @@ export default function Register(props) {
             preserveScroll: true,
             preserveState: true,
             onSuccess: (resp) => {
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('sp_invite_token');
+                }
                 if (resp.props.flash?.success) {
                     successAlert(
                         resp.props.flash?.success || "Signup successfully.",

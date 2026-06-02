@@ -888,6 +888,7 @@ class StripeWebhookController extends Controller
                 }
 
                 if ($payment) {
+                    $oldStatus = $payment->status;
                     $newStatus = 'succeeded';
                     // Check if it was marked for review hold
                     if (
@@ -898,6 +899,14 @@ class StripeWebhookController extends Controller
                         $newStatus = 'review_hold';
                         Log::info("Risk Ledger: Marking payment as review_hold", ['payment_id' => $payment->id]);
                     }
+
+                    // Log payment state change before updating
+                    \App\Services\ActivityLogger::logPaymentStateChange(
+                        $payment,
+                        ['status' => $oldStatus],
+                        ['status' => $newStatus],
+                        'Webhook: checkout.session.completed'
+                    );
 
                     $payment->update([
                         'stripe_payment_intent_id' => $session->payment_intent ?? $payment->stripe_payment_intent_id,
@@ -3507,6 +3516,16 @@ class StripeWebhookController extends Controller
     private function handleAccountUpdated($account)
     {
         try {
+            if (($account->charges_enabled ?? false) === true) {
+                $creator = \App\Models\User::where('account_id', $account->id)->first();
+                if ($creator && !$creator->stripe_connected_at) {
+                    $creator->stripe_connected_at = now();
+                    $creator->stripe_details_submitted = 1;
+                    $creator->save();
+                    $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                }
+            }
+
             if (!isset($account->settings->payouts->schedule->interval)) {
                 return;
             }
@@ -3564,6 +3583,22 @@ class StripeWebhookController extends Controller
                 ]);
 
                 Log::info("Payout Record updated via webhook: {$payout->id} status: {$status}");
+            }
+
+            $bonusRow = \App\Models\FastStartBonusPayout::where('stripe_payout_id', $payout->id)->first();
+            if ($bonusRow) {
+                $bonusStatus = match ($payout->status) {
+                    'paid' => 'paid',
+                    'failed' => 'failed',
+                    'canceled' => 'canceled',
+                    'in_transit' => 'in_transit',
+                    default => 'pending'
+                };
+                $bonusRow->status = $bonusStatus;
+                if ($bonusStatus === 'paid' && !$bonusRow->paid_at) {
+                    $bonusRow->paid_at = now();
+                }
+                $bonusRow->save();
             }
 
             // Check if payout was initiated by our platform (using local records or metadata)

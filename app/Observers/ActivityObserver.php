@@ -2,16 +2,16 @@
 
 namespace App\Observers;
 
+use App\Models\AuditLog;
 use App\Services\ActivityLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class ActivityObserver
 {
     /**
-     * Track newly created models to prevent duplicate update logs
-     * Using static property to persist across event calls
+     * Track processed events to prevent duplicates
      */
-    private static $justCreated = [];
+    private static $processedEvents = [];
 
     /**
      * Sensitive fields that should never be logged
@@ -31,135 +31,497 @@ class ActivityObserver
     ];
 
     /**
+     * Models that should NOT be logged
+     */
+    protected $excludedModels = [
+        \App\Models\UserCategory::class,
+    ];
+
+    /**
+     * Fields that should be ignored for update logs
+     */
+    protected $ignoredUpdateFields = [
+        'updated_at',
+        'created_at',
+    ];
+
+    /**
      * Handle the "created" event
-     *
-     * @param Model $model
-     * @return void
      */
     public function created(Model $model): void
     {
         $modelName = class_basename($model);
 
-        // Only log if model has an ID (saved successfully)
+        // Skip excluded models
+        if ($this->shouldSkipLogging($model)) {
+            return;
+        }
+
         if (!$model->id) {
             return;
         }
 
-        // Clear earnings cache if a new payment is received
-        $this->clearEarningsCache($model);
+        // Create a unique key for this event
+        $eventKey = $this->getEventKey($model, 'CREATED');
 
-        // Clear profile data cache for guests so they see new content immediately
-        $this->clearProfileCache($model);
+        // Check if this event was already processed
+        if ($this->isEventProcessed($eventKey)) {
+            return;
+        }
 
-        // Mark that this model was just created to prevent duplicate update logs
-        $this->markAsJustCreated($model);
+        // Mark event as processed
+        $this->markEventProcessed($eventKey);
+
+        // Build rich metadata with model data
+        $metadata = $this->buildRichMetadata($model);
 
         ActivityLogger::log(
             "{$modelName}_CREATED",
             (string) $model->id,
-            [
-                'model_type' => get_class($model),
-                'model_data' => $this->sanitizeData($model->getAttributes()),
-                'event' => 'created'
-            ]
+            $metadata
         );
+
+        // Clear caches
+        $this->clearEarningsCache($model);
+        $this->clearProfileCache($model);
     }
 
     /**
-     * Handle the "updated" event
-     *
-     * @param Model $model
-     * @return void
+     * Build rich metadata with full model data for create events
+     */
+    private function buildRichMetadata(Model $model): array
+    {
+        $metadata = [
+            'model_type' => get_class($model),
+            'event' => 'created',
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        switch (true) {
+            case $model instanceof \App\Models\Membership:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->level ?? $model->plan_name ?? 'Unnamed Plan',
+                    'price' => $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'duration' => $model->duration ?? $model->billing_interval ?? 'N/A',
+                    'description' => $model->description ? substr($model->description, 0, 200) : null,
+                ];
+                $metadata['summary'] = "Created membership plan: {$model->level} for {$model->price} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\WishItem:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->wishname ?? $model->name ?? 'Unnamed Wish',
+                    'price' => $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'image' => $model->perma_link ?? null,
+                    'url' => $model->item_url ?? null,
+                ];
+                $metadata['summary'] = "Added wishlist item: {$model->wishname} for {$model->price} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\Post:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'title' => $model->title ?? 'Untitled Post',
+                    'content_preview' => $model->content ? substr(strip_tags($model->content), 0, 200) : null,
+                    'status' => $model->approved ? 'Approved' : 'Pending',
+                ];
+                $metadata['summary'] = "Created new post: {$model->title}";
+                break;
+
+            case $model instanceof \App\Models\Task:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'title' => $model->title ?? 'Untitled Task',
+                    'description' => $model->description ? substr($model->description, 0, 200) : null,
+                    'amount' => $model->price ?? 0,
+                    'currency' => 'USD',
+                ];
+                $metadata['summary'] = "Created new task: {$model->title}";
+                break;
+
+            case $model instanceof \App\Models\Shop:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name ?? 'Unnamed Item',
+                    'price' => $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'description' => $model->description ? substr($model->description, 0, 200) : null,
+                ];
+                $metadata['summary'] = "Added shop item: {$model->name} for {$model->price} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\Bills:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name ?? 'Unnamed Bill',
+                    'amount' => $model->amount ?? $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'due_date' => $model->due_date ?? null,
+                ];
+                $metadata['summary'] = "Created new bill: {$model->name}";
+                break;
+
+            case $model instanceof \App\Models\PiggyPot:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'title' => $model->title ?? 'Unnamed Piggy Pot',
+                    'goal_amount' => $model->goal_amount,
+                    'currency' => $model->currency ?? 'USD',
+                    'target_date' => $model->target_date ?? null,
+                ];
+                $metadata['summary'] = "Created new piggy pot: {$model->title} with goal of {$model->goal_amount} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\TipGoal:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'title' => $model->title ?? 'Unnamed Tip Goal',
+                    'goal_amount' => $model->amount,
+                    'currency' => $model->currency ?? 'USD',
+                ];
+                $metadata['summary'] = "Created new tip goal: {$model->title} for {$model->amount} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\User:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name,
+                    'username' => $model->username,
+                    'email' => $model->email,
+                ];
+                $metadata['summary'] = "User account created: {$model->name} (@{$model->username})";
+                break;
+
+            default:
+                $modelName = class_basename($model);
+                $internalModels = ['UserCategory', 'SocialLinks', 'UserIntro'];
+
+                if (in_array($modelName, $internalModels)) {
+                    return ['skipped' => true];
+                }
+
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name ?? $model->title ?? $model->wishname ?? 'Item',
+                ];
+                $metadata['summary'] = "Created new " . class_basename($model);
+                break;
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * Check if logging should be skipped for this model
+     */
+    private function shouldSkipLogging(Model $model): bool
+    {
+        $modelClass = get_class($model);
+        $modelName = class_basename($model);
+
+        if (in_array($modelClass, $this->excludedModels)) {
+            return true;
+        }
+
+        $internalModels = [
+            'UserCategory',
+        ];
+
+        if (in_array($modelName, $internalModels)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Handle the "updated" event - REVISED to prevent duplicates
      */
     public function updated(Model $model): void
     {
         $modelName = class_basename($model);
 
-        // Skip if this model was just created (prevents duplicate logging)
-        if ($this->wasJustCreated($model)) {
-            $this->clearJustCreatedFlag($model);
+        // Skip excluded models
+        if ($this->shouldSkipLogging($model)) {
             return;
         }
 
-        // Clear earnings cache if payment status changed to paid
-        $this->clearEarningsCache($model);
-
-        // Clear profile data cache if content was updated
-        $this->clearProfileCache($model);
-
-        // Get only the fields that changed
+        // Get changes
         $dirty = $model->getDirty();
         $original = $model->getOriginal();
 
-        // If nothing changed, don't log
         if (empty($dirty)) {
             return;
         }
 
-        // Skip auto-updating timestamp fields if they're the only changes
-        $timestampFields = ['updated_at', 'created_at'];
-        $nonTimestampChanges = array_diff(array_keys($dirty), $timestampFields);
+        // Remove ignored fields (like updated_at)
+        $filteredChanges = array_diff_key($dirty, array_flip($this->ignoredUpdateFields));
 
-        // If ONLY timestamp fields changed, skip logging
-        if (empty($nonTimestampChanges)) {
+        // If only ignored fields changed, skip logging
+        if (empty($filteredChanges)) {
             return;
         }
 
-        // Build diff (old vs new)
-        $diff = [];
-        foreach ($dirty as $field => $newValue) {
-            // Skip excluded fields
-            if (in_array($field, $this->excludedFields)) {
-                continue;
-            }
+        // Build changes array
+        $changes = [];
+        $hasRealChanges = false;
 
-            // Skip timestamp fields
-            if (in_array($field, $timestampFields)) {
+        foreach ($filteredChanges as $field => $newValue) {
+            if (in_array($field, $this->excludedFields)) {
                 continue;
             }
 
             $oldValue = $original[$field] ?? null;
 
-            // Only record if there's an actual change
+            // Only log if there's an actual change
             if ($oldValue != $newValue) {
-                $diff[$field] = [
-                    'old' => $this->sanitizeValue($oldValue),
-                    'new' => $this->sanitizeValue($newValue)
-                ];
+                // Check if this is a real change (not just type casting)
+                $normalizedOld = is_numeric($oldValue) ? (string)$oldValue : $oldValue;
+                $normalizedNew = is_numeric($newValue) ? (string)$newValue : $newValue;
+
+                if ($normalizedOld != $normalizedNew) {
+                    $changes[$field] = [
+                        'old' => $this->sanitizeValue($oldValue),
+                        'new' => $this->sanitizeValue($newValue)
+                    ];
+                    $hasRealChanges = true;
+                }
             }
         }
 
-        // Only log if there are actual changes
-        if (!empty($diff)) {
+        // Only log if there are meaningful changes
+        if ($hasRealChanges) {
+            // Create a unique key for this update event to prevent duplicates
+            $eventKey = $this->getEventKey($model, 'UPDATED', $changes);
+
+            // Check if this exact update was already processed
+            if ($this->isEventProcessed($eventKey)) {
+                return;
+            }
+
+            // Mark event as processed
+            $this->markEventProcessed($eventKey);
+
             ActivityLogger::log(
                 "{$modelName}_UPDATED",
                 (string) $model->id,
                 [
                     'model_type' => get_class($model),
-                    'diff' => $diff,
+                    'diff' => $changes,
                     'event' => 'updated',
-                    'changed_fields' => array_keys($diff)
+                    'changed_fields' => array_keys($changes)
                 ]
             );
         }
+
+        // Clear caches
+        $this->clearEarningsCache($model);
+        $this->clearProfileCache($model);
     }
 
     /**
-     * Clear the earnings cache for the creator associated with the model
-     *
-     * @param Model $model
-     * @return void
+     * Handle the "deleted" event
+     */
+    public function deleted(Model $model): void
+    {
+        // Skip excluded models
+        if ($this->shouldSkipLogging($model)) {
+            return;
+        }
+
+        $modelName = class_basename($model);
+
+        $eventKey = $this->getEventKey($model, 'DELETED');
+
+        if ($this->isEventProcessed($eventKey)) {
+            return;
+        }
+
+        $this->markEventProcessed($eventKey);
+        $this->clearProfileCache($model);
+
+        $deletedData = $this->sanitizeData($model->getAttributes());
+
+        ActivityLogger::log(
+            "{$modelName}_DELETED",
+            (string) $model->id,
+            [
+                'model_type' => get_class($model),
+                'deleted_data' => $deletedData,
+                'event' => 'deleted',
+                'item_name' => $model->name ?? $model->title ?? $model->wishname ?? null,
+            ]
+        );
+    }
+
+    /**
+     * Handle the "restored" event (for soft deletes)
+     */
+    public function restored(Model $model): void
+    {
+        if ($this->shouldSkipLogging($model)) {
+            return;
+        }
+
+        $modelName = class_basename($model);
+
+        $eventKey = $this->getEventKey($model, 'RESTORED');
+
+        if ($this->isEventProcessed($eventKey)) {
+            return;
+        }
+
+        $this->markEventProcessed($eventKey);
+
+        ActivityLogger::log(
+            "{$modelName}_RESTORED",
+            (string) $model->id,
+            [
+                'model_type' => get_class($model),
+                'event' => 'restored'
+            ]
+        );
+    }
+
+    /**
+     * Handle the "forceDeleted" event (for soft deletes)
+     */
+    public function forceDeleted(Model $model): void
+    {
+        if ($this->shouldSkipLogging($model)) {
+            return;
+        }
+
+        $modelName = class_basename($model);
+
+        $eventKey = $this->getEventKey($model, 'FORCE_DELETED');
+
+        if ($this->isEventProcessed($eventKey)) {
+            return;
+        }
+
+        $this->markEventProcessed($eventKey);
+
+        ActivityLogger::log(
+            "{$modelName}_FORCE_DELETED",
+            (string) $model->id,
+            [
+                'model_type' => get_class($model),
+                'deleted_data' => $this->sanitizeData($model->getAttributes()),
+                'event' => 'force_deleted'
+            ]
+        );
+    }
+
+    /**
+     * Get a unique key for an event
+     */
+    private function getEventKey(Model $model, string $event, array $changes = []): string
+    {
+        $key = get_class($model) . ':' . ($model->id ?? 'new') . ':' . $event;
+
+        // For updates, include a hash of the changes to detect duplicate updates
+        if ($event === 'UPDATED' && !empty($changes)) {
+            $key .= ':' . md5(json_encode($changes));
+        }
+
+        return $key;
+    }
+
+    /**
+     * Check if an event was already processed
+     */
+    private function isEventProcessed(string $eventKey): bool
+    {
+        // Clean up old events (older than 5 seconds)
+        foreach (self::$processedEvents as $key => $timestamp) {
+            if (time() - $timestamp > 5) {
+                unset(self::$processedEvents[$key]);
+            }
+        }
+
+        return isset(self::$processedEvents[$eventKey]);
+    }
+
+    /**
+     * Mark an event as processed
+     */
+    private function markEventProcessed(string $eventKey): void
+    {
+        self::$processedEvents[$eventKey] = time();
+    }
+
+    /**
+     * Sanitize entire data array by removing sensitive fields
+     */
+    private function sanitizeData(array $data): array
+    {
+        $sanitized = [];
+        foreach ($data as $key => $value) {
+            if (in_array($key, $this->excludedFields)) {
+                $sanitized[$key] = '[REDACTED]';
+            } else {
+                $sanitized[$key] = $this->sanitizeValue($value);
+            }
+        }
+        return $sanitized;
+    }
+
+    /**
+     * Sanitize individual value (truncate long strings, etc.)
+     */
+    private function sanitizeValue($value)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value);
+        }
+
+        if (is_string($value) && strlen($value) > 1000) {
+            return substr($value, 0, 1000) . '... [TRUNCATED]';
+        }
+
+        if (is_resource($value)) {
+            return '[RESOURCE]';
+        }
+
+        return $value;
+    }
+
+    /**
+     * Clear earnings cache for payment-related models
      */
     private function clearEarningsCache(Model $model): void
     {
-        $creatorId = null;
-        $status = $model->status ?? $model->payment_status ?? null;
-        
-        // For created event, we always want to check if it's a paid record
-        // For updated event, we only clear if status changed to 'paid'
-        if ($status !== null && $status !== 'paid') {
+        $paymentModels = [
+            \App\Models\TipGoalsPayment::class,
+            \App\Models\BillPayment::class,
+            \App\Models\MembershipPayment::class,
+            \App\Models\StripePaymentDetail::class,
+            \App\Models\WishItemSubscription::class,
+            \App\Models\ShopPayment::class,
+        ];
+
+        $shouldProcess = false;
+        foreach ($paymentModels as $paymentModel) {
+            if ($model instanceof $paymentModel) {
+                $shouldProcess = true;
+                break;
+            }
+        }
+
+        if (!$shouldProcess) {
             return;
         }
+
+        $creatorId = null;
 
         try {
             if ($model instanceof \App\Models\TipGoalsPayment) {
@@ -178,45 +540,20 @@ class ActivityObserver
 
             if ($creatorId) {
                 \Illuminate\Support\Facades\Cache::forget('user_earnings_v2_' . $creatorId);
-                // Also clear supporters count cache as a new payment usually means a new/active supporter
                 \Illuminate\Support\Facades\Cache::forget('user_supporters_count_v2_' . $creatorId);
             }
         } catch (\Throwable $e) {
-            // Silently fail to not block the main request
+            // Silently fail
         }
     }
 
     /**
-     * Handle the "deleted" event
-     *
-     * @param Model $model
-     * @return void
-     */
-    public function deleted(Model $model): void
-    {
-        $modelName = class_basename($model);
-
-        // Clear profile data cache if content was deleted
-        $this->clearProfileCache($model);
-
-        ActivityLogger::log(
-            "{$modelName}_DELETED",
-            (string) $model->id,
-            [
-                'model_type' => get_class($model),
-                'deleted_data' => $this->sanitizeData($model->getAttributes()),
-                'event' => 'deleted'
-            ]
-        );
-    }
-
-    /**
-     * Clear the profile data cache for the associated user
+     * Clear profile cache for content-related models
      */
     private function clearProfileCache(Model $model): void
     {
         $user = null;
-        
+
         try {
             if ($model instanceof \App\Models\User) {
                 $user = $model;
@@ -242,152 +579,12 @@ class ActivityObserver
                 $user = $model->user;
             }
 
-            if ($user) {
+            if ($user && class_exists(\App\Services\UserProfileService::class)) {
                 $profileService = app(\App\Services\UserProfileService::class);
                 $profileService->clearUserCaches($user->username, $user->id);
             }
         } catch (\Throwable $e) {
             // Silently fail
         }
-    }
-
-    /**
-     * Handle the "restored" event (for soft deletes)
-     *
-     * @param Model $model
-     * @return void
-     */
-    public function restored(Model $model): void
-    {
-        $modelName = class_basename($model);
-
-        ActivityLogger::log(
-            "{$modelName}_RESTORED",
-            (string) $model->id,
-            [
-                'model_type' => get_class($model),
-                'event' => 'restored'
-            ]
-        );
-    }
-
-    /**
-     * Handle the "forceDeleted" event (for soft deletes)
-     *
-     * @param Model $model
-     * @return void
-     */
-    public function forceDeleted(Model $model): void
-    {
-        $modelName = class_basename($model);
-
-        ActivityLogger::log(
-            "{$modelName}_FORCE_DELETED",
-            (string) $model->id,
-            [
-                'model_type' => get_class($model),
-                'deleted_data' => $this->sanitizeData($model->getAttributes()),
-                'event' => 'force_deleted'
-            ]
-        );
-    }
-
-    /**
-     * Generate a unique key for the model
-     *
-     * @param Model $model
-     * @return string
-     */
-    private function getModelKey(Model $model): string
-    {
-        return get_class($model) . ':' . ($model->id ?? 'new');
-    }
-
-    /**
-     * Mark a model as just created to prevent duplicate update logging
-     *
-     * @param Model $model
-     * @return void
-     */
-    private function markAsJustCreated(Model $model): void
-    {
-        $key = $this->getModelKey($model);
-        self::$justCreated[$key] = true;
-    }
-
-    /**
-     * Check if the model was just created
-     *
-     * @param Model $model
-     * @return bool
-     */
-    private function wasJustCreated(Model $model): bool
-    {
-        $key = $this->getModelKey($model);
-        return isset(self::$justCreated[$key]) && self::$justCreated[$key] === true;
-    }
-
-    /**
-     * Clear the just created flag
-     *
-     * @param Model $model
-     * @return void
-     */
-    private function clearJustCreatedFlag(Model $model): void
-    {
-        $key = $this->getModelKey($model);
-        unset(self::$justCreated[$key]);
-    }
-
-    /**
-     * Sanitize entire data array by removing sensitive fields
-     *
-     * @param array $data
-     * @return array
-     */
-    private function sanitizeData(array $data): array
-    {
-        $sanitized = [];
-
-        foreach ($data as $key => $value) {
-            if (in_array($key, $this->excludedFields)) {
-                $sanitized[$key] = '[REDACTED]';
-            } else {
-                $sanitized[$key] = $this->sanitizeValue($value);
-            }
-        }
-
-        return $sanitized;
-    }
-
-    /**
-     * Sanitize individual value (truncate long strings, etc.)
-     *
-     * @param mixed $value
-     * @return mixed
-     */
-    private function sanitizeValue($value)
-    {
-        // Handle null values
-        if ($value === null) {
-            return null;
-        }
-
-        // Handle arrays and objects (JSON fields)
-        if (is_array($value) || is_object($value)) {
-            return json_encode($value);
-        }
-
-        // Truncate long strings to avoid huge log entries
-        if (is_string($value) && strlen($value) > 1000) {
-            return substr($value, 0, 1000) . '... [TRUNCATED]';
-        }
-
-        // Don't log binary data
-        if (is_resource($value)) {
-            return '[RESOURCE]';
-        }
-
-        return $value;
     }
 }

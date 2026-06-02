@@ -71,16 +71,16 @@ export default function History({ auth, transactions }) {
                     </div>
 
                     {/* Table Container */}
-                    <div className="bg-white border-[1px] border-black rounded-[32px] !overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="bg-white border-[1px] border-black rounded-[32px] !overflow-hidden ">
                         <div className="overflow-x-auto  ">
                             <table className=" rounded-[45px] w-full text-left border-collapse">
-                                <thead className="bg-[#FFE951]  border-b-[3px] border-black">
-                                    <tr className="text-black text-[10px] md:text-xs uppercase font-black tracking-widest">
-                                        <th className="px-6 py-4 border-r-[2px] border-black">Date</th>
-                                        <th className="px-6 py-4 border-r-[2px] border-black">Supporter</th>
-                                        <th className="px-6 py-4 border-r-[2px] border-black">Description</th>
-                                        <th className="px-6 py-4 border-r-[2px] border-black text-center">Reserve</th>
-                                        <th className="px-6 py-4 border-r-[2px] border-black text-right">Earned</th>
+                                <thead className="bg-[#FFE951]  border-b-[3px] !border-r-[2px] !border-l-0 !border-t-0 border-black">
+                                    <tr className="text-black text-[10px]   !border-l-0 !border-t-0 md:text-xs uppercase font-black tracking-widest">
+                                        <th className="px-6 py-4 border-r-[2px] !border-r-2 !border-l-0 !border-t-0 border-black">Date</th>
+                                        <th className="px-6 py-4 border-r-[2px]  !border-l-0 !border-t-0 border-black">Supporter</th>
+                                        <th className="px-6 py-4 border-r-[2px] !border-l-0 !border-t-0 border-black">Description</th>
+                                        <th className="px-6 py-4 border-r-[2px]  !border-l-0 !border-t-0 border-black text-center">Reserve</th>
+                                        <th className="px-6 py-4 border-r-[2px] !border-r-0 !border-l-0 !border-t-0 border-black text-right">Earned</th>
                                         <th className="px-6 py-4 text-center">Status</th>
                                     </tr>
                                 </thead>

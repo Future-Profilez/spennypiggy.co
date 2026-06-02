@@ -133,7 +133,8 @@ export default function Footer(props) {
                                         { name: "Payments", route: "reserves-and-payments-policy" },
                                         { name: "Paid Tasks", route: "paid-tasks-terms" },
                                         { name: "Return Policy", route: "return-policy" },
-                                        { name: "US Addendum", route: "us-addendum" }
+                                        { name: "US Addendum", route: "us-addendum" },
+                                        { name: "Fast Payout", route: "fast-start-bonus-terms" }
                                     ].map((item, index) => (
                                         <div key={index}>
                                             {item.external ? (

@@ -22,6 +22,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
+use App\Jobs\LinkUserToCrmCreator;
 use App\Models\AllowedDomain;
 use App\Models\CreatorReferral;
 use App\Models\Follow;
@@ -125,6 +126,7 @@ class RegisteredUserController extends Controller
             'username' => ['required', 'string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'role'     => ['required'],
             'promo'    => ['nullable', 'string'], // referral code
+            'crm_invite_token' => ['nullable', 'string', 'max:255'],
         ], $messages);
 
         if (config('app.url') === 'https://spennypiggy.co') {
@@ -327,6 +329,7 @@ class RegisteredUserController extends Controller
         }
         /* =========================SEND WELCOME EMAIL========================== */
         WelcomeUser::dispatch($user);
+        LinkUserToCrmCreator::dispatch($user->id, $request->input('crm_invite_token'));
 
         /* =========================REDIRECT========================== */
         if ($user->email_verified_at) {

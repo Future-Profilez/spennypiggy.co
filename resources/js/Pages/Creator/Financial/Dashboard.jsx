@@ -9,7 +9,7 @@ import { WalletIcon,TrendingUpIcon,TrendingDownIcon,DownloadIcon,PlusIcon,Triang
 import { Calculator,FileText,Building2,ScrollText,HelpCircle,Pencil,RefreshCw,ScrollText as ScrollTextIcon,Calculator as CalculatorIcon,FileText as FileTextIcon } from "lucide-react";
 import { XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,AreaChart,Area } from 'recharts';
 
-export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], active_tab = 'overview' }) {
+export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], fast_start_bonus = null, active_tab = 'overview' }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [showReserveDetails, setShowReserveDetails] = useState(false);
     const [reserveDetails, setReserveDetails] = useState(null);
@@ -383,6 +383,73 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                         </div>
                                     </div>
 
+                                    {fast_start_bonus ? (() => {
+                                        const start = fast_start_bonus.window_start ? new Date(fast_start_bonus.window_start) : null;
+                                        const end = fast_start_bonus.window_end ? new Date(fast_start_bonus.window_end) : null;
+                                        const totalMs = start && end ? Math.max(1, end.getTime() - start.getTime()) : 1;
+                                        const nowMs = start ? Date.now() : 0;
+                                        const progress = start && end ? Math.min(100, Math.max(0, ((nowMs - start.getTime()) / totalMs) * 100)) : 0;
+                                        const statusLabel = String(fast_start_bonus.status || '').replaceAll('_', ' ').toUpperCase();
+                                        return (
+                                            <div className="bg-white p-6 md:p-8 rounded-[25px] md:rounded-[30px] border border-gray-200 shadow-sm relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-6 opacity-[0.06]">
+                                                    <CircleCheckIcon size={110} className="text-[#FF007F]" />
+                                                </div>
+                                                <div className="relative z-10 flex flex-col gap-6">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="text-gray-500 text-[14px] font-black uppercase tracking-widest">Fast Start Bonus</div>
+                                                                <div className="inline-flex items-center gap-2 bg-[#FF007F]/10 text-[#FF007F] border border-[#FF007F]/20 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest">
+                                                                    Platform Bonus
+                                                                </div>
+                                                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest border ${
+                                                                    fast_start_bonus.status === 'active'
+                                                                        ? 'bg-green-500/10 text-green-700 border-green-500/20'
+                                                                        : 'bg-gray-100 text-gray-700 border-gray-200'
+                                                                }`}>
+                                                                    {statusLabel}
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-3 text-3xl md:text-4xl font-bold text-gray-900">
+                                                                {formatCurrency(fast_start_bonus.bonus_so_far || 0, fast_start_bonus.currency)}
+                                                            </div>
+                                                            <div className="text-[15px] text-gray-600 font-bold mt-2">
+                                                                Tracked earnings: <span className="text-gray-900">{formatCurrency(fast_start_bonus.earnings_so_far || 0, fast_start_bonus.currency)}</span>
+                                                            </div>
+                                                            <div className="text-[13px] text-gray-500 font-bold mt-2">
+                                                                This bonus is paid as a one-time payout after your 30-day window ends.
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="hidden md:flex items-center justify-center w-14 h-14 rounded-full bg-[#FF007F]/10 border border-[#FF007F]/20">
+                                                            <CircleCheckIcon size={22} className="text-[#FF007F]" />
+                                                        </div>
+                                                    </div>
+
+                                                    {fast_start_bonus.status === 'active' ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                            <div className="bg-gray-50 border border-gray-200 rounded-[22px] px-4 py-3">
+                                                                <div className="text-[11px] font-black uppercase tracking-widest text-gray-500">Window Ends</div>
+                                                                <div className="mt-1 text-[15px] font-bold text-gray-900">{end ? end.toLocaleDateString('en-GB') : '—'}</div>
+                                                            </div>
+                                                            <div className="bg-gray-50 border border-gray-200 rounded-[22px] px-4 py-3">
+                                                                <div className="text-[11px] font-black uppercase tracking-widest text-gray-500">Days Left</div>
+                                                                <div className="mt-1 text-[15px] font-bold text-gray-900">{fast_start_bonus.days_remaining ?? '—'}</div>
+                                                            </div>
+                                                            <div className="bg-gray-50 border border-gray-200 rounded-[22px] px-4 py-3">
+                                                                <div className="text-[11px] font-black uppercase tracking-widest text-gray-500">Progress</div>
+                                                                <div className="mt-2 w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                                                    <div className="bg-[#FF007F] h-full rounded-full" style={{ width: `${progress}%` }} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            </div>
+                                        );
+                                    })() : null}
+
                                     <div className="bg-white flex gap-6 p-5 md:p-6 rounded-[25px] md:rounded-[30px]  border border-gray-200 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-sm">
                                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                             <ShieldCheckIcon size={80} className="text-blue-500" />
@@ -488,7 +555,16 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                         payout_history.map((p) => (
                                                             <tr key={p.uuid} className="hover:bg-gray-50 transition-colors">
                                                                 <td className="px-6 py-4 text-[14px] text-gray-900 font-medium">{p.date}</td>
-                                                                <td className="px-6 py-4 text-sm font-bold text-gray-900">{formatCurrency(p.amount, p.currency)}</td>
+                                                                <td className="px-6 py-4 text-sm font-bold text-gray-900">
+                                                                    <div className="flex flex-col">
+                                                                        <span>{formatCurrency(p.amount, p.currency)}</span>
+                                                                        {p.bonus_type === 'fast_start' ? (
+                                                                            <span className="text-[11px] font-bold text-[#FF007F] uppercase tracking-wider">
+                                                                                Fast Start Bonus Payout: {formatCurrency(p.fast_start_bonus, p.currency)}
+                                                                            </span>
+                                                                        ) : null}
+                                                                    </div>
+                                                                </td>
                                                                 <td className="px-6 py-4 text-[14px] text-gray-600">
                                                                     {p.status === 'failed' ? (
                                                                         <span className="text-red-600 font-bold text-[11px] italic">{p.failure_reason || 'Declined by Stripe'}</span>

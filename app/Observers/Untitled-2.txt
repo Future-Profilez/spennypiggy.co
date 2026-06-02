@@ -1,0 +1,494 @@
+<?php
+
+namespace App\Observers;
+
+use App\Models\AuditLog;
+use App\Services\ActivityLogger;
+use Illuminate\Database\Eloquent\Model;
+
+class ActivityObserver
+{
+    private static $justCreated = [];
+
+    /**
+     * Models that should NOT be logged
+     */
+    protected $excludedModels = [
+        \App\Models\UserCategory::class,  // Exclude UserCategory from logging
+        // \App\Models\SocialLinks::class,   // Exclude if needed
+        // Add other models you want to exclude
+    ];
+
+    /**
+     * Actions that should be skipped for certain models
+     */
+    protected $excludedActions = [
+        'UserCategory' => ['CREATED', 'UPDATED', 'DELETED'],
+    ];
+
+    /**
+     * Sensitive fields that should never be logged
+     */
+    protected $excludedFields = [
+        'password',
+        'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_key',
+        'api_key',
+        'secret_key',
+        'private_key',
+        'token',
+        'access_token',
+        'refresh_token'
+    ];
+
+    /**
+     * Handle the "created" event
+     */
+    public function created(Model $model): void
+    {
+        // Skip if model is excluded
+        if ($this->shouldSkipLogging($model, 'CREATED')) {
+            return;
+        }
+
+        $modelName = class_basename($model);
+
+        // Skip if no ID
+        if (!$model->id) {
+            return;
+        }
+
+        // Check for duplicate entries
+        $existingLog = AuditLog::where('action_type', "{$modelName}_CREATED")
+            ->where('reference_id', (string) $model->id)
+            ->where('created_at', '>=', now()->subMinutes(1))
+            ->exists();
+
+        if ($existingLog) {
+            return;
+        }
+
+        // Mark as just created to prevent duplicate update logs
+        $this->markAsJustCreated($model);
+
+        // Build rich metadata with model data and log
+        $metadata = $this->buildRichMetadata($model);
+
+        ActivityLogger::log(
+            "{$modelName}_CREATED",
+            (string) $model->id,
+            $metadata
+        );
+
+        // Clear caches
+        $this->clearEarningsCache($model);
+        $this->clearProfileCache($model);
+    }
+
+    /**
+     * Check if logging should be skipped for this model and action
+     */
+    private function shouldSkipLogging(Model $model, string $action): bool
+    {
+        $modelClass = get_class($model);
+        $modelName = class_basename($model);
+
+        // Check if model is in excluded list
+        if (in_array($modelClass, $this->excludedModels)) {
+            return true;
+        }
+
+        // Check if specific action is excluded for this model
+        if (
+            isset($this->excludedActions[$modelName]) &&
+            in_array($action, $this->excludedActions[$modelName])
+        ) {
+            return true;
+        }
+
+        // Skip logging for internal/system models that are side effects
+        $internalModels = [
+            'UserCategory',
+            'SocialLinks',
+            'UserIntro',
+            'UserCategory',
+            'PostLike',
+            'PostComment',
+            'PostCommentReplies',
+            'Follow',
+        ];
+
+        if (in_array($modelName, $internalModels)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Build rich metadata with full model data for create events
+     */
+    private function buildRichMetadata(Model $model): array
+    {
+        $metadata = [
+            'model_type' => get_class($model),
+            'event' => 'created',
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        switch (true) {
+            case $model instanceof \App\Models\Membership:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->level ?? $model->plan_name ?? 'Unnamed Plan',
+                    'price' => $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'duration' => $model->duration ?? $model->billing_interval ?? 'N/A',
+                    'description' => $model->description ? substr($model->description, 0, 200) : null,
+                ];
+                $metadata['summary'] = "Created membership plan: {$model->level} for {$model->price} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\WishItem:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->wishname ?? $model->name ?? 'Unnamed Wish',
+                    'price' => $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'image' => $model->perma_link ?? null,
+                    'url' => $model->item_url ?? null,
+                ];
+                $metadata['summary'] = "Added wishlist item: {$model->wishname} for {$model->price} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\Post:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'title' => $model->title ?? 'Untitled Post',
+                    'content_preview' => $model->content ? substr(strip_tags($model->content), 0, 200) : null,
+                    'status' => $model->approved ? 'Approved' : 'Pending',
+                ];
+                $metadata['summary'] = "Created new post: {$model->title}";
+                break;
+
+            case $model instanceof \App\Models\Task:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'title' => $model->title ?? 'Untitled Task',
+                    'description' => $model->description ? substr($model->description, 0, 200) : null,
+                    'reward_amount' => $model->reward_amount,
+                    'currency' => $model->currency ?? 'USD',
+                ];
+                $metadata['summary'] = "Created new task: {$model->title}";
+                break;
+
+            case $model instanceof \App\Models\Shop:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name ?? 'Unnamed Item',
+                    'price' => $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'description' => $model->description ? substr($model->description, 0, 200) : null,
+                ];
+                $metadata['summary'] = "Added shop item: {$model->name} for {$model->price} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\Bills:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name ?? 'Unnamed Bill',
+                    'amount' => $model->amount ?? $model->price,
+                    'currency' => $model->currency ?? 'USD',
+                    'due_date' => $model->due_date ?? null,
+                ];
+                $metadata['summary'] = "Created new bill: {$model->name}";
+                break;
+
+            case $model instanceof \App\Models\PiggyPot:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'title' => $model->title ?? 'Unnamed Piggy Pot',
+                    'goal_amount' => $model->goal_amount,
+                    'currency' => $model->currency ?? 'USD',
+                    'target_date' => $model->target_date ?? null,
+                ];
+                $metadata['summary'] = "Created new piggy pot: {$model->title} with goal of {$model->goal_amount} {$model->currency}";
+                break;
+
+            case $model instanceof \App\Models\User:
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name,
+                    'username' => $model->username,
+                    'email' => $model->email,
+                ];
+                $metadata['summary'] = "User account created: {$model->name} (@{$model->username})";
+                break;
+
+            default:
+                // Skip logging for generic/internal models
+                $modelName = class_basename($model);
+                $internalModels = ['UserCategory', 'SocialLinks', 'UserIntro'];
+
+                if (in_array($modelName, $internalModels)) {
+                    return ['skipped' => true];
+                }
+
+                $metadata['item'] = [
+                    'id' => $model->id,
+                    'name' => $model->name ?? $model->title ?? $model->wishname ?? 'Item',
+                ];
+                $metadata['summary'] = "Created new " . class_basename($model);
+                break;
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * Handle the "updated" event
+     */
+    public function updated(Model $model): void
+    {
+        // Skip if model is excluded
+        if ($this->shouldSkipLogging($model, 'UPDATED')) {
+            return;
+        }
+
+        $modelName = class_basename($model);
+
+        // Skip if just created
+        if ($this->wasJustCreated($model)) {
+            $this->clearJustCreatedFlag($model);
+            return;
+        }
+
+        // Get changes
+        $dirty = $model->getDirty();
+        $original = $model->getOriginal();
+
+        if (empty($dirty)) {
+            return;
+        }
+
+        // Skip timestamp-only changes
+        $timestampFields = ['updated_at', 'created_at'];
+        $nonTimestampChanges = array_diff(array_keys($dirty), $timestampFields);
+
+        if (empty($nonTimestampChanges)) {
+            return;
+        }
+
+        // Build changes array
+        $changes = [];
+        foreach ($dirty as $field => $newValue) {
+            if (in_array($field, $this->excludedFields)) {
+                continue;
+            }
+
+            $oldValue = $original[$field] ?? null;
+
+            if ($oldValue != $newValue) {
+                $changes[$field] = [
+                    'old' => $this->sanitizeValue($oldValue),
+                    'new' => $this->sanitizeValue($newValue)
+                ];
+            }
+        }
+
+        if (!empty($changes)) {
+            ActivityLogger::log(
+                "{$modelName}_UPDATED",
+                (string) $model->id,
+                [
+                    'model_type' => get_class($model),
+                    'diff' => $changes,
+                    'event' => 'updated',
+                    'changed_fields' => array_keys($changes)
+                ]
+            );
+        }
+
+        // Clear caches
+        $this->clearEarningsCache($model);
+        $this->clearProfileCache($model);
+    }
+
+    /**
+     * Handle the "deleted" event
+     */
+    public function deleted(Model $model): void
+    {
+        // Skip if model is excluded
+        if ($this->shouldSkipLogging($model, 'DELETED')) {
+            return;
+        }
+
+        $modelName = class_basename($model);
+
+        $this->clearProfileCache($model);
+
+        $deletedData = $this->sanitizeData($model->getAttributes());
+
+        ActivityLogger::log(
+            "{$modelName}_DELETED",
+            (string) $model->id,
+            [
+                'model_type' => get_class($model),
+                'deleted_data' => $deletedData,
+                'event' => 'deleted',
+                'item_name' => $model->name ?? $model->title ?? $model->wishname ?? null,
+            ]
+        );
+    }
+
+    // ... Keep all other helper methods (clearEarningsCache, clearProfileCache, etc.)
+
+    private function getModelKey(Model $model): string
+    {
+        return get_class($model) . ':' . ($model->id ?? 'new');
+    }
+
+    private function markAsJustCreated(Model $model): void
+    {
+        $key = $this->getModelKey($model);
+        self::$justCreated[$key] = true;
+    }
+
+    private function wasJustCreated(Model $model): bool
+    {
+        $key = $this->getModelKey($model);
+        return isset(self::$justCreated[$key]) && self::$justCreated[$key] === true;
+    }
+
+    private function clearJustCreatedFlag(Model $model): void
+    {
+        $key = $this->getModelKey($model);
+        unset(self::$justCreated[$key]);
+    }
+
+    private function sanitizeData(array $data): array
+    {
+        $sanitized = [];
+        foreach ($data as $key => $value) {
+            if (in_array($key, $this->excludedFields)) {
+                $sanitized[$key] = '[REDACTED]';
+            } else {
+                $sanitized[$key] = $this->sanitizeValue($value);
+            }
+        }
+        return $sanitized;
+    }
+
+    private function sanitizeValue($value)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value);
+        }
+
+        if (is_string($value) && strlen($value) > 1000) {
+            return substr($value, 0, 1000) . '... [TRUNCATED]';
+        }
+
+        if (is_resource($value)) {
+            return '[RESOURCE]';
+        }
+
+        return $value;
+    }
+
+    private function clearEarningsCache(Model $model): void
+    {
+        // Keep your existing implementation
+        $paymentModels = [
+            \App\Models\TipGoalsPayment::class,
+            \App\Models\BillPayment::class,
+            \App\Models\MembershipPayment::class,
+            \App\Models\StripePaymentDetail::class,
+            \App\Models\WishItemSubscription::class,
+            \App\Models\ShopPayment::class,
+        ];
+
+        $shouldProcess = false;
+        foreach ($paymentModels as $paymentModel) {
+            if ($model instanceof $paymentModel) {
+                $shouldProcess = true;
+                break;
+            }
+        }
+
+        if (!$shouldProcess) {
+            return;
+        }
+
+        $creatorId = null;
+
+        try {
+            if ($model instanceof \App\Models\TipGoalsPayment) {
+                $creatorId = $model->creator_id;
+            } elseif ($model instanceof \App\Models\BillPayment) {
+                $creatorId = $model->bill?->user_id;
+            } elseif ($model instanceof \App\Models\MembershipPayment) {
+                $creatorId = $model->membership?->user_id;
+            } elseif ($model instanceof \App\Models\StripePaymentDetail) {
+                $creatorId = $model->owner_id;
+            } elseif ($model instanceof \App\Models\WishItemSubscription) {
+                $creatorId = $model->wish_item?->user_id;
+            } elseif ($model instanceof \App\Models\ShopPayment) {
+                $creatorId = $model->shop?->user_id;
+            }
+
+            if ($creatorId) {
+                \Illuminate\Support\Facades\Cache::forget('user_earnings_v2_' . $creatorId);
+                \Illuminate\Support\Facades\Cache::forget('user_supporters_count_v2_' . $creatorId);
+            }
+        } catch (\Throwable $e) {
+            // Silently fail
+        }
+    }
+
+    private function clearProfileCache(Model $model): void
+    {
+        // Keep your existing implementation
+        $user = null;
+
+        try {
+            if ($model instanceof \App\Models\User) {
+                $user = $model;
+            } elseif ($model instanceof \App\Models\WishItem) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Membership) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Bills) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Shop) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Post) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\UserIntro) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\Task) {
+                $user = $model->creator;
+            } elseif ($model instanceof \App\Models\PiggyPot) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\SocialLinks) {
+                $user = $model->user;
+            } elseif ($model instanceof \App\Models\UserCategory) {
+                $user = $model->user;
+            }
+
+            if ($user && class_exists(\App\Services\UserProfileService::class)) {
+                $profileService = app(\App\Services\UserProfileService::class);
+                $profileService->clearUserCaches($user->username, $user->id);
+            }
+        } catch (\Throwable $e) {
+            // Silently fail
+        }
+    }
+}

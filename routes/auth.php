@@ -57,6 +57,11 @@ use Carbon\Carbon;
 // Guest routes
 Route::middleware('guest')->group(function () {
     // Auth routes
+    Route::get('invite/{token}', function ($token) {
+        return Inertia::render('Auth/Invite', [
+            'token' => $token,
+        ]);
+    })->name('invite');
     Route::get('register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
         ->name('register');
     Route::post('register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);
@@ -428,6 +433,10 @@ Route::middleware('auth')->group(function () {
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
             Route::post('comment-approve/{uuid}', [PostsController::class, 'approveComment'])->name('comment-approve');
             Route::post('reply-approve/{uuid}', [PostsController::class, 'approveReply'])->name('reply-approve');
+            Route::post('admin/comment-approve/{uuid}', [PostsController::class, 'adminApproveComment'])->middleware('admin')->name('admin.comment-approve');
+            Route::post('admin/comment-reject/{uuid}', [PostsController::class, 'adminRejectComment'])->middleware('admin')->name('admin.comment-reject');
+            Route::post('admin/reply-approve/{uuid}', [PostsController::class, 'adminApproveReply'])->middleware('admin')->name('admin.reply-approve');
+            Route::post('admin/reply-reject/{uuid}', [PostsController::class, 'adminRejectReply'])->middleware('admin')->name('admin.reply-reject');
             Route::post('comment-delete/{uuid}', [PostsController::class, 'deleteComment'])->name('comment-delete');
             Route::post('reply-delete/{uuid}', [PostsController::class, 'deleteReply'])->name('reply-delete');
         });
@@ -919,6 +928,7 @@ Route::controller(\App\Http\Controllers\StaticPageController::class)->group(func
     Route::get('/return-policy', 'returnPolicy')->name("return-policy");
     Route::get('/us-addendum', 'usAddendum')->name("us-addendum");
     Route::get('/copyright-policy', 'copyrightPolicy')->name("copyright-policy");
+    Route::get('/fast-start-bonus-terms', 'fastStartBonusTerms')->name("fast-start-bonus-terms");
     Route::post('/accept-terms', 'acceptTerms')->name("accept-terms")->middleware('auth');
 });
 
