@@ -12,8 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Use raw SQL to remove the automatic update on transaction_date
-        DB::statement("ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        // Skip for SQLite as it doesn't support altering column types in this way and doesn't have ON UPDATE for TIMESTAMP
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        }
     }
 
     /**
@@ -21,6 +23,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        // Skip for SQLite as it doesn't support altering column types in this way and doesn't have ON UPDATE for TIMESTAMP
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        }
     }
 };

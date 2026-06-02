@@ -76,6 +76,7 @@ const EnableCardCapabilities = lazy(
 const ActionRequired = lazy(() => import("./stripe/ActionRequired"));
 const ErrorBoundary = lazy(() => import("@/Components/ErrorBoundary"));
 const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
+const FounderProgressTracker = lazy(() => import("@/Components/FounderProgressTracker"));
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
 const CreatorRiskBanner = lazy(
     () => import("@/Components/Risk/CreatorRiskBanner"),
@@ -127,6 +128,7 @@ export default function Dashboard(props) {
         stripe_requirements,
         migration_status,
         has_stripe_account,
+        founderData,
     } = props;
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -193,7 +195,7 @@ export default function Dashboard(props) {
         );
     }, [stripe_requirements]);
 
-    const shouldShowFounderBanner = useMemo(() => {
+    const shouldShowFounderBannerClient = useMemo(() => {
         if (!IsloggedIn || auth?.user?.role !== 1) return false;
         const createdAt = auth?.user?.created_at || user?.created_at;
         if (!createdAt) return false;
@@ -668,7 +670,15 @@ export default function Dashboard(props) {
                 <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
                     <div className="containerbox relative z-10">
                         <VersionUpdate />
-                        {shouldShowFounderBanner ? (
+                        {props.founderData?.isEligible && (IsloggedIn || auth?.user?.role === 1) ? (
+                            <FounderProgressTracker
+                                founderData={props.founderData}
+                                variant="mini"
+                            />
+                        ) : (
+                            ""
+                        )}
+                        {shouldShowFounderBannerClient && !props.founderData?.isEligible ? (
                             <OfferAnnouncement variant="default" />
                         ) : (
                             ""

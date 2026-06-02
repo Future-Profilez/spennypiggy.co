@@ -21,7 +21,6 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
     public function __construct(int $ticketId)
     {
         $this->ticketId = $ticketId;
-        $this->onQueue('low');
     }
 
     public function handle(): void
@@ -251,4 +250,3 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
         return $decoded;
     }
 }
-

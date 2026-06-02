@@ -104,6 +104,13 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                 </div>
                             </div>
                         </div>
+
+                        <div className="mt-12 fading">
+                            <Link href="/founder/bonus" className="inline-flex items-center gap-3 bg-yellow-400 text-black font-gulfs uppercase tracking-wider text-sm md:text-base py-4 px-8 rounded-full hover:bg-yellow-300 hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(250,204,21,0.3)]">
+                                <span>Learn More About Founder Bonus</span>
+                                <FaArrowRight />
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </section>

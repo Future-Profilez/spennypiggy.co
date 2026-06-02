@@ -170,6 +170,7 @@ export default function Transactions(props) {
 
       const source = params.get('source');
       const sourceId = params.get('source_id');
+      const eventType = params.get('event_type');
       let matched = null;
       if (source && sourceId && Array.isArray(data?.events)) {
         matched = data.events.find((e) => e?.source === source && String(e?.source_id) === String(sourceId)) || null;
@@ -179,9 +180,19 @@ export default function Transactions(props) {
       const supportType = params.get('support_type') === 'refund' ? 'refund' : 'contact';
       if (!creatorUsername) return;
 
+      if (!matched && Array.isArray(data?.events)) {
+        const candidates = data.events
+          .filter((e) => e?.creator?.username === creatorUsername)
+          .filter((e) => (eventType ? String(e?.type) === String(eventType) : true));
+
+        if (candidates.length > 0) {
+          matched = candidates.sort((a, b) => String(b?.created_at || '').localeCompare(String(a?.created_at || '')))[0] || null;
+        }
+      }
+
       const event = matched || {
         creator: { username: creatorUsername },
-        type: params.get('event_type') || null,
+        type: eventType || null,
         source: source || null,
         source_id: sourceId || null,
       };

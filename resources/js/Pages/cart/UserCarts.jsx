@@ -1022,6 +1022,7 @@ export default function UserCarts(props) {
                                                 setDigitalWaiver(checked);
                                             }}
                                         />
+
                                     </li>
                                 </ul>
                                 {turnstileSiteKey ? (

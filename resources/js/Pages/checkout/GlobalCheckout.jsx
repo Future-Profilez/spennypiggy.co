@@ -23,6 +23,7 @@ export default function GlobalCheckout({
     classes,
     text,
 }) {
+    const { auth } = usePage().props;
     const deviceID = DeviceID();
 
     const [close, setClose] = useState();

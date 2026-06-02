@@ -428,6 +428,8 @@
         }
     </script>
 
+    <script nonce="{{ $cspNonce ?? '' }}" type="text/javascript" src="https://app.termly.io/embed.min.js" data-auto-block="off" data-website-uuid="1f6672bd-7b65-47a4-8a75-d02946c93b2e"></script>
+
     {{-- @laravelPWA --}}
     @viteReactRefresh
     

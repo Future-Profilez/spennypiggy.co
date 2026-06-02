@@ -939,7 +939,9 @@ class BillsController extends Controller
                     'item_name' => $bill_pay->bill->name,
                     'amount' => $totalAmount,
                     'currency' => $bill_pay->currency ?? 'GBP',
-                    'item_id' => $bill_pay->bill->uuid
+                    'item_id' => $bill_pay->bill->uuid,
+                    'source' => 'bill_payments',
+                    'source_id' => $bill_pay->id,
                 ])->with('success', "Payment for subscription of bill is successful.");
             }
 

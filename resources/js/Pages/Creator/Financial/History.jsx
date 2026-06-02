@@ -123,6 +123,28 @@ const TransactionRow = ({ tx, formatCurrency }) => {
     const iconRef = useRef(null);
     const isPending = tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out;
 
+    const getPayoutStage = (tx) => {
+        if (tx.status === 'review_hold') return { label: 'Review Hold', tone: 'purple', title: 'Payments temporarily reviewed for fraud prevention, safety or compliance checks.' };
+        if (tx.status === 'disputed') return { label: 'Disputed', tone: 'orange', title: 'Removed from payout balance until dispute is resolved.' };
+        if (tx.status === 'refunded') return { label: 'Refunded', tone: 'red', title: 'Removed from payout balance.' };
+        if (tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out) {
+            return { label: 'Pending Completion', tone: 'yellow', title: 'Waiting for tasks or shop items to be completed.' };
+        }
+
+        try {
+            const txDate = new Date(tx.transaction_date || tx.display_date);
+            const days = (Date.now() - txDate.getTime()) / (1000 * 60 * 60 * 24);
+            if (days < 7) {
+                return { label: 'Pending (Clearing)', tone: 'yellow', title: 'Payment received. Clearing for 7 days before it becomes available for Friday payout.' };
+            }
+        } catch (e) {
+        }
+
+        return null;
+    };
+
+    const payoutStage = getPayoutStage(tx);
+
     useEffect(() => {
         if (tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-')) {
             const startLoop = () => {
@@ -153,7 +175,7 @@ const TransactionRow = ({ tx, formatCurrency }) => {
                 ) : (
                     <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
-                        <span className="text-gray-400 font-bold italic text-[10px] uppercase tracking-widest">System</span>
+                        <span className="text-gray-600 font-bold italic text-[13px] uppercase tracking-widest">Guest User</span>
                     </div>
                 )}
             </td>
@@ -191,22 +213,37 @@ const TransactionRow = ({ tx, formatCurrency }) => {
             </td>
             <td className="px-6 py-4 text-xs text-center">
                 <div className="flex flex-col items-center gap-2">
-                    {tx.display_status && (
+                    {tx.status && (
                         <span className={`inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border-[1.5px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
-                            tx.display_status === 'paid' ? 'bg-[#90FFB1] text-black' : 
-                            tx.display_status === 'pending' ? 'bg-[#FFE951] text-black' : 
-                            tx.display_status === 'review_hold' ? 'bg-[#C590FF] text-black' :
-                            tx.display_status === 'dispute_hold' ? 'bg-[#FFB190] text-black' :
-                            tx.display_status === 'refunds' ? 'bg-[#FF9090] text-black' :
+                            tx.status === 'completed' ? 'bg-[#90FFB1] text-black' : 
+                            tx.status === 'pending' ? 'bg-[#FFE951] text-black' : 
+                            tx.status === 'review_hold' ? 'bg-[#C590FF] text-black' :
+                            tx.status === 'disputed' ? 'bg-[#FFB190] text-black' :
+                            tx.status === 'refunded' ? 'bg-[#FF9090] text-black' :
                             'bg-gray-300 text-black'
-                        }`}>{tx.display_status.replace('_', ' ')}
+                        }`}>{tx.status.replace('_', ' ')}
+                        </span>
+                    )}
+                    {payoutStage && (
+                        <span
+                            title={payoutStage.title}
+                            className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-[0.1em] border-[1px] border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                                payoutStage.tone === 'purple' ? 'bg-[#C590FF] text-black' :
+                                payoutStage.tone === 'orange' ? 'bg-[#FFB190] text-black' :
+                                payoutStage.tone === 'red' ? 'bg-[#FF9090] text-black' :
+                                'bg-[#FFE951] text-black'
+                            }`}
+                        >
+                            Payout: {payoutStage.label}
                         </span>
                     )}
                     {tx.item_status && (
-                        <span className={`inline-block px-2 py-0.5 mt-1 rounded text-[8px] font-black uppercase tracking-[0.1em] border-[1px] border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
-                            tx.item_status === 'delivered' || tx.item_status === 'completed' || tx.item_status === 'paid_out' ? 'bg-[#90FFB1] text-black' : 'bg-[#FFE951] text-black'
+                        <span className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-[0.1em] border-[1px] border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                            ['complete', 'delivered', 'accepted'].some(s => tx.item_status.endsWith(s)) ? 'bg-[#90FFB1] text-black' : 
+                            tx.item_status === 'shipped' ? 'bg-[#90E0FF] text-black' :
+                            'bg-[#FFE951] text-black'
                         }`}>
-                            {tx.item_status.replace('_', ' ')}
+                            Status: {tx.item_status.replace('_', ' ')}
                         </span>
                     )}
                     {tx.type === 'income' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (

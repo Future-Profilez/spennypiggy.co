@@ -74,6 +74,7 @@ class SystemDiagnosticsController extends Controller
             'pending_migrations' => $this->testPendingMigrations(),
             'app_response_time' => $this->testAppResponseTime(),
             'stuck_payouts' => $this->testStuckPayouts(),
+            'termly_consent' => $this->testTermlyConsent(),
         ];
 
         $overallStatus = 'passed';
@@ -1425,6 +1426,51 @@ class SystemDiagnosticsController extends Controller
             ];
         } catch (\Exception $e) {
             return ['status' => 'failed', 'message' => 'Stuck payouts check failed: ' . $e->getMessage()];
+        }
+    }
+
+    private function testTermlyConsent()
+    {
+        try {
+            $start = microtime(true);
+            $issues = [];
+
+            // Check if termly script is present in app.blade.php
+            $appBladePath = resource_path('views/app.blade.php');
+            if (file_exists($appBladePath)) {
+                $content = file_get_contents($appBladePath);
+                if (!str_contains($content, 'app.termly.io/embed.min.js')) {
+                    $issues[] = 'Termly consent script (app.termly.io/embed.min.js) is missing from app.blade.php.';
+                }
+                if (!str_contains($content, 'data-website-uuid')) {
+                    $issues[] = 'Termly script is missing the data-website-uuid attribute.';
+                }
+            } else {
+                $issues[] = 'app.blade.php not found to verify Termly consent script.';
+            }
+
+            $time = round((microtime(true) - $start) * 1000, 2);
+
+            if (count($issues) > 0) {
+                return [
+                    'status' => 'failed',
+                    'message' => 'Termly consent script configuration issues found.',
+                    'errors' => $issues,
+                    'time_ms' => $time
+                ];
+            }
+
+            return [
+                'status' => 'passed',
+                'message' => 'Termly consent script is properly configured in app.blade.php.',
+                'errors' => [],
+                'time_ms' => $time
+            ];
+        } catch (\Exception $e) {
+            return [
+                'status' => 'failed',
+                'message' => 'Termly consent check failed: ' . $e->getMessage()
+            ];
         }
     }
 }

@@ -3,16 +3,55 @@ import { Link, Head, usePage } from '@inertiajs/react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/siteicon.png";
 import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'react-icons/fa';
-import { useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function Thankyou(props) {
 
-  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant, wish_content, success_page_type, ask_question, payment_id} = props;
+  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant, wish_content, success_page_type, ask_question, payment_id, source, source_id} = props;
   const { global_currency, auth, user } = usePage().props;
   const { errorAlert, successAlert } = useAlerts();
-  console.log("Thank you page props", amount);
+
+  const [marketingEmailsEnabled, setMarketingEmailsEnabled] = useState(
+    Boolean(auth?.user?.marketing_emails_enabled),
+  );
+  const [marketingSaving, setMarketingSaving] = useState(false);
+
+  useEffect(() => {
+    setMarketingEmailsEnabled(Boolean(auth?.user?.marketing_emails_enabled));
+  }, [auth?.user?.marketing_emails_enabled]);
+
+  const updateMarketingEmailsEnabled = (nextValue) => {
+    if (!auth?.user) {
+      return;
+    }
+
+    const previous = marketingEmailsEnabled;
+    setMarketingEmailsEnabled(nextValue);
+    setMarketingSaving(true);
+
+    axios
+      .post(route("email.preferences.thankyou"), {
+        marketing_emails_enabled: nextValue ? 1 : 0,
+      })
+      .then((res) => {
+        if (res?.data?.status) {
+          setMarketingEmailsEnabled(Boolean(res.data.marketing_emails_enabled));
+          successAlert(res.data.message || "Saved.");
+          return;
+        }
+        setMarketingEmailsEnabled(previous);
+        errorAlert(res?.data?.message || "Something went wrong!");
+      })
+      .catch((err) => {
+        setMarketingEmailsEnabled(previous);
+        errorAlert(err.response?.data?.message || "Something went wrong!");
+      })
+      .finally(() => {
+        setMarketingSaving(false);
+      });
+  };
 
   const normalizedWishContent = useMemo(() => {
     if (!wish_content) return null;
@@ -357,6 +396,67 @@ export default function Thankyou(props) {
                 {type !== 'monthly_subscription' && (!auth || !auth.user) && (
                   <p className='mt-6 mb-2 text-center px-6 text-black text-sm font-black'>Please create an account to see the content you have purchased.</p>
                 )}
+
+                <div className="w-full max-w-[550px] mt-6">
+                  {auth?.user ? (
+                    <div className="bg-white border-[3px] border-black rounded-[22px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="text-[12px] uppercase tracking-wider font-black text-black">
+                            Marketing emails (optional)
+                          </div>
+                          <div className="text-xs text-gray-700 font-semibold mt-1">
+                            Get occasional updates and offers. You can change this anytime in your email preferences.
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => updateMarketingEmailsEnabled(!marketingEmailsEnabled)}
+                          disabled={marketingSaving}
+                          className={`relative inline-flex h-[30px] w-[54px] items-center rounded-full border-[3px] border-black transition-colors ${marketingEmailsEnabled ? "bg-[#FF007F]" : "bg-gray-300"} ${marketingSaving ? "opacity-60 cursor-not-allowed" : ""}`}
+                          aria-pressed={marketingEmailsEnabled}
+                          aria-label="Toggle marketing emails"
+                        >
+                          <span
+                            className={`inline-block h-[20px] w-[20px] transform rounded-full bg-white border-[3px] border-black transition-transform ${marketingEmailsEnabled ? "translate-x-[24px]" : "translate-x-[4px]"}`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="mt-2 text-[11px] font-bold text-gray-600">
+                        {marketingSaving ? "Saving..." : marketingEmailsEnabled ? "Enabled" : "Disabled"}
+                        <span className="mx-2">•</span>
+                        <a href="/email-preferences" className="text-[#FF007F] hover:underline">
+                          Manage
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white border-[3px] border-black rounded-[22px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-4 text-center">
+                      <div className="text-[12px] uppercase tracking-wider font-black text-black">
+                        Marketing emails (optional)
+                      </div>
+                      <div className="text-xs text-gray-700 font-semibold mt-1">
+                        Create an account (or log in) to choose whether you want marketing emails.
+                      </div>
+                      <div className="mt-3 flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link
+                          href={route("login")}
+                          className="px-6 py-2 border-[3px] border-black rounded-xl font-black bg-white text-black hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm uppercase"
+                        >
+                          Log in
+                        </Link>
+                        <Link
+                          href={route("register")}
+                          className="px-6 py-2 border-[3px] border-black rounded-xl font-black bg-[#FF007F] text-white hover:bg-pink-600 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm uppercase"
+                        >
+                          Create account
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 <div className='w-full max-w-[450px] mt-6 flex flex-col sm:flex-row gap-4 justify-center items-center' >
                   {type === 'monthly_subscription' ? (
@@ -385,10 +485,10 @@ export default function Thankyou(props) {
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             {auth?.user ? (
                                 <>
-                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=contact`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-black hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
+                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=contact&event_type=${type}${source && source_id ? `&source=${encodeURIComponent(source)}&source_id=${encodeURIComponent(source_id)}` : ''}`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-black hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
                                         Contact Creator
                                     </Link>
-                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=refund`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-[#FF007F] hover:bg-pink-50 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
+                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=refund&event_type=${type}${source && source_id ? `&source=${encodeURIComponent(source)}&source_id=${encodeURIComponent(source_id)}` : ''}`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-[#FF007F] hover:bg-pink-50 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
                                         Request Refund
                                     </Link>
                                 </>

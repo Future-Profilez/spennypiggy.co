@@ -71,7 +71,6 @@ Route::middleware('guest')->group(function () {
     Route::get('reset-password/{token}', [App\Http\Controllers\Auth\NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])->name('password.store');
     Route::get('verify-token/{token}', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'authRedirects']);
-    Route::get('update-2fa-key', [ProfileController::class, 'update2FaKey']);
 });
 
 /*
@@ -783,8 +782,6 @@ Route::middleware('auth')->group(function () {
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
 
-        Route::post('/report-content', [ProfileController::class, 'reportContent'])->name('report-content');
-
 
         Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
         Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
@@ -981,8 +978,6 @@ Route::get('/problem-solving', function () {
     return $a;
 })->name("problem-solving");
 
-Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
-Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('username.check');
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 
@@ -996,7 +991,6 @@ Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('us
 // Founder routes - must come before profile route to prevent interception
 Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/founder/data', [FounderBonusController::class, 'getData'])->name('founder.data');
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
     Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
     Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
@@ -1062,6 +1056,8 @@ Route::get('payment/thankyou/{username}', function (Illuminate\Http\Request $req
         'success_page_type' => $request->query('success_page_type'),
         'ask_question' => $request->query('ask_question'),
         'payment_id' => $request->query('payment_id'),
+        'source' => $request->query('source'),
+        'source_id' => $request->query('source_id'),
     ]);
 })->name("thank-you");
 

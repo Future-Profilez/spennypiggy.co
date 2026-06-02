@@ -324,8 +324,13 @@ class CheckoutController extends Controller
                 'total_charge' => $grandTotalSupporterPays
             ]);
 
+            $successUrl = route('checkout.success', [$creator_id]);
+            if (request()->has('marketing_opt_in') && request()->input('marketing_opt_in')) {
+                $successUrl .= (parse_url($successUrl, PHP_URL_QUERY) ? '&' : '?') . 'marketing_opt_in=1';
+            }
+
             $payload = [
-                'success_url' => route('checkout.success', [$creator_id]),
+                'success_url' => $successUrl,
                 'cancel_url' => route('checkout.cancel', [$creator_id]),
                 "mode"  =>  "payment",
                 'line_items' => $lineItems, // This determines the total amount automatically
@@ -977,12 +982,14 @@ class CheckoutController extends Controller
                         // Also clear discovery cache to update top earners and trending
                         app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
                     }
-                    
+
                     $thankYouParams = ['username' => $existingPayment->owner->username];
                     $firstItem = $existingPayment->items()->with('wish')->first();
                     if ($firstItem && $firstItem->wish) {
                         $wish = $firstItem->wish;
                         $thankYouParams['type'] = 'wish';
+                        $thankYouParams['source'] = 'stripe_payment_items';
+                        $thankYouParams['source_id'] = $firstItem->id;
                         $thankYouParams['item_name'] = $wish->name;
                         $thankYouParams['amount'] = $existingPayment->amount_total;
                         $thankYouParams['currency'] = $existingPayment->currency;
@@ -995,7 +1002,6 @@ class CheckoutController extends Controller
                             ];
                         }
                     }
-                    
                     return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
                 }
             } else {
@@ -1294,6 +1300,8 @@ class CheckoutController extends Controller
             if ($firstItem && $firstItem->wish) {
                 $wish = $firstItem->wish;
                 $thankYouParams['type'] = 'wish';
+                $thankYouParams['source'] = 'stripe_payment_items';
+                $thankYouParams['source_id'] = $firstItem->id;
                 $thankYouParams['item_name'] = $wish->name;
                 $thankYouParams['amount'] = $stripeid->amount_total;
                 $thankYouParams['currency'] = $stripeid->currency;
@@ -1326,6 +1334,8 @@ class CheckoutController extends Controller
                 if ($firstItem && $firstItem->wish) {
                     $wish = $firstItem->wish;
                     $thankYouParams['type'] = 'wish';
+                    $thankYouParams['source'] = 'stripe_payment_items';
+                    $thankYouParams['source_id'] = $firstItem->id;
                     $thankYouParams['item_name'] = $wish->name;
                     $thankYouParams['amount'] = $stripeid->amount_total;
                     $thankYouParams['currency'] = $stripeid->currency;

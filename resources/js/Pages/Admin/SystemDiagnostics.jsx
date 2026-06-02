@@ -237,6 +237,7 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                                 <DiagnosticRow title="Pending Database Migrations" result={results.pending_migrations} errors={results.pending_migrations?.errors} />
                                 <DiagnosticRow title="App Homepage Response Time" result={results.app_response_time} />
                                 <DiagnosticRow title="Stuck Payouts & Blocked Reserves" result={results.stuck_payouts} errors={results.stuck_payouts?.errors} />
+                                <DiagnosticRow title="Termly Consent Test" result={results.termly_consent} errors={results.termly_consent?.errors} />
 
                             </ul>
                         </div>

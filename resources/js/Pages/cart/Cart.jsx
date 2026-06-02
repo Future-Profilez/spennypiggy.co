@@ -144,10 +144,10 @@ export default function Cart(props) {
                                             <>
                                                 {cartsItems.map((c, i) => {
                                                     return (
-                                                        <>
+                                                        <div key={`user-cart-${c?.user?.id ?? i}`}>
                                                             {i > 0 ? <div className="w-full h-1 bg-gray-200 my-22 "></div> : ''}
-                                                            <UserCarts auth={auth} key={`user-cart-${i}`} data={c} currency={c?.user?.default_currency || c?.user?.currency} /> 
-                                                        </>
+                                                            <UserCarts auth={auth} data={c} currency={c?.user?.default_currency || c?.user?.currency} />
+                                                        </div>
                                                     );
                                                 })}
                                             </>

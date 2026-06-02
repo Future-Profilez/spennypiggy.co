@@ -425,6 +425,8 @@ class PiggyPotPaymentController extends Controller
                     'item_name' => $pay->piggyPot?->title ?? 'Piggy Pot',
                     'amount' => $pay->total_paid,
                     'currency' => $pay->currency,
+                    'source' => 'piggy_pot_contributions',
+                    'source_id' => $pay->id,
                 ];
 
                 if (!empty($pay->piggyPot?->content_file)) {

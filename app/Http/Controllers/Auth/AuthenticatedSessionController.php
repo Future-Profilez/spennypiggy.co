@@ -317,19 +317,20 @@ class AuthenticatedSessionController extends Controller
                     'has_stripe_account' => !empty($user->account_id),
                     'isNeedToUpgrade' => $isNeedToUpgrade,
                     'stripe_requirements' => $stripeRequirements,
-                'migration_status' => $migrationStatus,
-                'sociallinks' => $sociallinks,
-                'slinks' => $sociallinks,
-                'intro' => $userIntro,
-                'supporters' => $profileData['supporters'],
-                'wish_categories' => $page === 'wishes' ? $this->getCategoriesWithItems($user) : [],
-                'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories : [],
-                'selectedCategory' => request()->query('category') ?? false,
-                'page' => $page,
-                'is_blocked' => $isBlocked,
-                'first30DayEarnings' => $founderData['first30DayEarnings'],
-                ...$pageData
-            ];
+                    'migration_status' => $migrationStatus,
+                    'sociallinks' => $sociallinks,
+                    'slinks' => $sociallinks,
+                    'intro' => $userIntro,
+                    'supporters' => $profileData['supporters'],
+                    'wish_categories' => $page === 'wishes' ? $this->getCategoriesWithItems($user) : [],
+                    'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories : [],
+                    'selectedCategory' => request()->query('category') ?? false,
+                    'page' => $page,
+                    'is_blocked' => $isBlocked,
+                    ...$pageData,
+                    'first30DayEarnings' => $founderData['first30DayEarnings'],
+                    'founderData' => $founderData,
+                ];
         };
         $data = $getData();
 
@@ -1111,22 +1112,36 @@ class AuthenticatedSessionController extends Controller
     private function getFounderData($user): array
     {
         $first30DayEarnings = 0;
+        $isEligible = false;
+        $daysLeft = 0;
+        $minEarnings = \App\Models\FounderBonus::getMinFirst30dEarnings();
 
-        // Calculate first 30-day earnings for the user
         if ($user) {
             $createdAt = $user->created_at;
             $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
 
-            // Get total earnings from deliverables within first 30 days
-            $first30DayEarnings = Deliverable::where('creator_id', $user->id)
-                ->where('created_at', '>=', $createdAt)
-                ->where('created_at', '<=', $thirtyDaysAfterCreation)
-                ->where('status', 'delivered')
-                ->sum('transaction_amount');
+            if (!$user->is_founder && now()->lessThan($thirtyDaysAfterCreation)) {
+                $isEligible = true;
+                $daysLeft = max(0, now()->diffInDays($thirtyDaysAfterCreation, false));
+            } else if (!$user->is_founder) {
+                $cutoffDate = now()->subDays(60);
+                if ($createdAt->greaterThanOrEqualTo($cutoffDate)) {
+                    $isEligible = true;
+                    $daysLeft = 0;
+                }
+            }
+
+            $endDate = $thirtyDaysAfterCreation->isFuture() ? now() : $thirtyDaysAfterCreation;
+            $financialService = app(\App\Services\FinancialService::class);
+            $summary = $financialService->getSummary($user, $createdAt, $endDate, 'GBP');
+            $first30DayEarnings = (float) ($summary['gross_income'] ?? 0);
         }
 
         return [
-            'first30DayEarnings' => $first30DayEarnings
+            'first30DayEarnings' => $first30DayEarnings,
+            'isEligible' => $isEligible,
+            'daysLeft' => $daysLeft,
+            'minEarnings' => $minEarnings,
         ];
     }
 }

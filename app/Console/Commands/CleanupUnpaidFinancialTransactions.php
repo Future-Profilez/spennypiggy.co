@@ -68,10 +68,6 @@ class CleanupUnpaidFinancialTransactions extends Command
             ->where(function ($w) use ($allowed) {
                 $w->whereNull('bp.status')
                     ->orWhereNotIn('bp.status', $allowed);
-            })
-            ->where(function ($w) {
-                $w->whereNull('bp.total_paid')
-                    ->orWhere('bp.total_paid', '<=', 0);
             });
 
         if ($userId) {
@@ -96,10 +92,6 @@ class CleanupUnpaidFinancialTransactions extends Command
             ->where(function ($w) use ($allowed) {
                 $w->whereNull('mp.status')
                     ->orWhereNotIn('mp.status', $allowed);
-            })
-            ->where(function ($w) {
-                $w->whereNull('mp.total_paid')
-                    ->orWhere('mp.total_paid', '<=', 0);
             });
 
         if ($userId) {
@@ -124,10 +116,6 @@ class CleanupUnpaidFinancialTransactions extends Command
             ->where(function ($w) use ($allowed) {
                 $w->whereNull('sp.payment_status')
                     ->orWhereNotIn('sp.payment_status', $allowed);
-            })
-            ->where(function ($w) {
-                $w->whereNull('sp.total_paid')
-                    ->orWhere('sp.total_paid', '<=', 0);
             });
 
         if ($userId) {
@@ -142,7 +130,7 @@ class CleanupUnpaidFinancialTransactions extends Command
 
     private function cleanupWishes(?int $userId, bool $apply): int
     {
-        $allowed = ['paid', 'refunded', 'disputed', 'review_hold'];
+        $allowed = ['paid', 'refunded', 'disputed', 'review_hold', 'succeeded'];
 
         $q = DB::table('financial_transactions as ft')
             ->join('stripe_payment_items as spi', 'spi.id', '=', 'ft.source_id')
@@ -177,10 +165,6 @@ class CleanupUnpaidFinancialTransactions extends Command
             ->where(function ($w) use ($allowed) {
                 $w->whereNull('tp.status')
                     ->orWhereNotIn('tp.status', $allowed);
-            })
-            ->where(function ($w) {
-                $w->whereNull('tp.total_paid')
-                    ->orWhere('tp.total_paid', '<=', 0);
             });
 
         if ($userId) {
@@ -195,20 +179,16 @@ class CleanupUnpaidFinancialTransactions extends Command
 
     private function cleanupPiggyPots(?int $userId, bool $apply): int
     {
-        $allowed = ['paid', 'succeeded', 'refunded', 'disputed', 'review_hold'];
+        $allowed = ['paid', 'refunded', 'disputed', 'review_hold', 'succeeded'];
 
         $q = DB::table('financial_transactions as ft')
-            ->join('piggy_pot_contributions as pc', 'pc.id', '=', 'ft.source_id')
+            ->join('piggy_pot_contributions as pp', 'pp.id', '=', 'ft.source_id')
             ->whereNull('ft.deleted_at')
             ->where('ft.type', 'income')
             ->where('ft.source_type', 'App\\Models\\PiggyPotContribution')
             ->where(function ($w) use ($allowed) {
-                $w->whereNull('pc.status')
-                    ->orWhereNotIn('pc.status', $allowed);
-            })
-            ->where(function ($w) {
-                $w->whereNull('pc.total_paid')
-                    ->orWhere('pc.total_paid', '<=', 0);
+                $w->whereNull('pp.status')
+                    ->orWhereNotIn('pp.status', $allowed);
             });
 
         if ($userId) {
@@ -223,7 +203,7 @@ class CleanupUnpaidFinancialTransactions extends Command
 
     private function cleanupTasks(?int $userId, bool $apply): int
     {
-        $allowed = ['paid', 'completed', 'completed_accepted', 'paid_out', 'disputed', 'refunded'];
+        $allowed = ['paid', 'completed', 'completed_accepted', 'paid_out', 'disputed', 'refunded', 'review_hold'];
 
         $q = DB::table('financial_transactions as ft')
             ->join('task_purchases as tp', 'tp.id', '=', 'ft.source_id')
@@ -233,10 +213,6 @@ class CleanupUnpaidFinancialTransactions extends Command
             ->where(function ($w) use ($allowed) {
                 $w->whereNull('tp.status')
                     ->orWhereNotIn('tp.status', $allowed);
-            })
-            ->where(function ($w) {
-                $w->whereNull('tp.total_paid')
-                    ->orWhere('tp.total_paid', '<=', 0);
             });
 
         if ($userId) {

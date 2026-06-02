@@ -70,7 +70,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                         </Link>
                                     ) : (
                                         <div className="flex flex-col">
-                                            <span className="text-gray-900 font-bold capitalize">{tx.guest_name || 'Guest / System'}</span>
+                                            <span className="text-gray-900 font-bold capitalize">{tx.guest_name || 'Guest'}</span>
                                             {!tx.guest_name && <span className="text-gray-400 italic text-[13px]">Guest User</span>}
                                         </div>
                                     )}
