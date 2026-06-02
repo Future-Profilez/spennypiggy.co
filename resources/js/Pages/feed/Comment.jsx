@@ -5,40 +5,49 @@ import userphoto from "../../../assets/siteicon.png";
 import { usePage } from "@inertiajs/react";
 import axios from "axios";
 
-export default function Comment({ c, update, updateComments, postUserId }) {
+export default function Comment({
+    c,
+    update,
+    updateComments,
+    postUserId,
+    isAdmin = false,
+}) {
     const { auth } = usePage().props;
     const currentUserId = auth?.user?.id || null;
     const isPostCreator = currentUserId && currentUserId === postUserId;
-    console.log("Post Creator:", isPostCreator, "Current User ID:", currentUserId, "Post User ID:", postUserId);
+    const isAdminUser = auth?.user?.role === "admin" || isAdmin;
 
-    const [handleReply, sethandleReply] = useState(false);
-    const [approving, setApproving] = useState(false);
+    const [handleReply, setHandleReply] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
     const isItemOwner = (item) => currentUserId === item?.user_id;
-
-    // CRITICAL CONDITION: Post Creator + Own Comment = NO button
-    // Post Creator + Someone Else's Comment = SHOW button
     const isOwnComment = isItemOwner(c);
+
+    // Post Creator can manage others' comments, but NOT their own
     const canManageComment = isPostCreator && !isOwnComment;
 
-    // For replies: Post Creator + Own Reply = NO button
-    // Post Creator + Someone Else's Reply = SHOW button
+    // For replies: Post Creator can manage replies from others (not their own)
     const canManageReply = (reply) => {
-        const isOwnReply = currentUserId === reply?.user_id;
-        return isPostCreator && !isOwnReply;
+        const isReplyOwner = currentUserId === reply?.user_id;
+        return isPostCreator && !isReplyOwner;
     };
 
     const canViewComment = (item) => {
         const status = Number(item?.is_approved);
 
-        // approved by admin
+        // approved by admin - everyone can see
         if (status === 1) {
             return true;
         }
 
-        // creator can see everything
+        // creator can see everything (including pending)
         if (isPostCreator) {
+            return true;
+        }
+
+        // admin can see everything
+        if (isAdminUser) {
             return true;
         }
 
@@ -55,31 +64,26 @@ export default function Comment({ c, update, updateComments, postUserId }) {
         const owner = isItemOwner(item);
 
         if (status === 0) {
-            return owner
-                ? "Awaiting Creator Approval"
-                : isPostCreator
-                  ? "Pending Creator Approval"
-                  : null;
+            if (owner) return "Awaiting Creator Approval";
+            if (isPostCreator) return "Pending Your Approval";
+            return "Pending Creator Approval";
         }
 
         if (status === 1) {
-            return owner ? "Published" : null;
+            if (owner) return "Published";
+            return null;
         }
 
         if (status === 2) {
-            return owner
-                ? "In review"
-                : isPostCreator
-                  ? "Pending admin review"
-                  : "Pending review";
+            if (owner) return "In Review";
+            if (isPostCreator) return "Pending Admin Review";
+            if (isAdminUser) return "Pending Admin Review";
+            return "Pending Review";
         }
 
         if (status === 3) {
-            return owner
-                ? "Rejected by admin"
-                : isPostCreator
-                  ? "Rejected by admin"
-                  : "Rejected by admin";
+            if (owner) return "Rejected";
+            return "Rejected by Admin";
         }
 
         return null;
@@ -89,6 +93,8 @@ export default function Comment({ c, update, updateComments, postUserId }) {
         switch (Number(item?.is_approved)) {
             case 0:
                 return "bg-yellow-100 text-yellow-700";
+            case 1:
+                return "bg-green-100 text-green-700";
             case 2:
                 return "bg-blue-100 text-blue-700";
             case 3:
@@ -98,48 +104,65 @@ export default function Comment({ c, update, updateComments, postUserId }) {
         }
     };
 
-    const getApprovalButtonLabel = (item) => {
-        return Number(item?.is_approved) === 0
-            ? "Approve Comment"
-            : "Move To Pending";
+    // Get button label based on current status and user role
+    const getActionButtonLabel = (item) => {
+        const status = Number(item?.is_approved);
+
+        if (status === 0) {
+            return "Approve Comment";
+        }
+        if (status === 2) {
+            return "Move To Pending";
+        }
+        return "Approve Comment";
     };
 
-    const getApprovalButtonClass = (item) => {
-        return Number(item?.is_approved) === 0
-            ? "text-green-600 font-bold"
-            : "text-red-500";
+    const getActionButtonClass = (item) => {
+        const status = Number(item?.is_approved);
+
+        if (status === 0) {
+            return "text-green-600 font-bold hover:text-green-700";
+        }
+        if (status === 2) {
+            return "text-red-500 font-bold hover:text-red-600";
+        }
+        return "text-green-600 font-bold hover:text-green-700";
     };
 
     const updates = () => {
-        sethandleReply(false);
+        setHandleReply(false);
         update && update();
     };
 
-    const approveComment = (uuid) => {
-        setApproving(true);
+    // Send comment to admin review (Post Creator action) - Using original endpoint
+    const sendCommentToAdmin = (uuid) => {
+        setActionLoading(true);
         axios
             .post(`/post/comment-approve/${uuid}`)
             .then(() => {
                 update();
-                setApproving(false);
+                setActionLoading(false);
             })
             .catch((err) => {
                 console.error(err);
-                setApproving(false);
+                setActionLoading(false);
+                alert("Failed to send comment to admin");
             });
     };
 
-    const approveReply = (uuid) => {
-        setApproving(true);
+    // Send reply to admin review (Post Creator action) - Using original endpoint
+    const sendReplyToAdmin = (uuid) => {
+        setActionLoading(true);
         axios
             .post(`/post/reply-approve/${uuid}`)
             .then(() => {
                 update();
-                setApproving(false);
+                setActionLoading(false);
             })
             .catch((err) => {
                 console.error(err);
-                setApproving(false);
+                setActionLoading(false);
+                alert("Failed to send reply to admin");
             });
     };
 
@@ -155,6 +178,7 @@ export default function Comment({ c, update, updateComments, postUserId }) {
                 .catch((err) => {
                     console.error(err);
                     setDeleting(false);
+                    alert("Failed to delete comment");
                 });
         }
     };
@@ -171,138 +195,127 @@ export default function Comment({ c, update, updateComments, postUserId }) {
                 .catch((err) => {
                     console.error(err);
                     setDeleting(false);
+                    alert("Failed to delete reply");
                 });
         }
     };
 
     const CommentReply = ({ item }) => {
-        // CONDITION FOR REPLY: Post Creator + Someone Else's Reply = Show button
-        const showReplyActionButton = canManageReply(item);
+        const canManage = canManageReply(item);
+        const replyStatus = Number(item?.is_approved);
+        const isReplyVisible = canViewComment(item);
 
         return (
-            <>
-                <div className="pt-4 pb-2 flex justify-center items-center">
-                    <div className="w-full h-auto flex flex-col space-y-2">
-                        <div className="flex items-center space-x-2">
-                            <div className="flex flex-shrink-0 self-start cursor-pointer">
-                                <img
-                                    src={item.user?.avatar_url || userphoto}
-                                    alt=""
-                                    className="h-10 w-10 object-fill rounded-full"
-                                />
-                            </div>
-                            <div className="flex items-center justify-center space-x-2 w-full">
-                                <div className="block w-full">
-                                    <div className="w-auto rounded-[30px]   px-2 ps-0  pb-2">
-                                        <div className="font-medium flex items-center justify-between">
-                                            <a
-                                                href="#"
-                                                className="hover:underline text-sm"
+            <div className="pt-4 pb-2 flex justify-center items-center">
+                <div className="w-full h-auto flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2">
+                        <div className="flex flex-shrink-0 self-start cursor-pointer">
+                            <img
+                                src={item.user?.avatar_url || userphoto}
+                                alt=""
+                                className="h-10 w-10 object-fill rounded-full"
+                            />
+                        </div>
+                        <div className="flex items-center justify-center space-x-2 w-full">
+                            <div className="block w-full">
+                                <div className="w-auto rounded-[30px] px-2 ps-0 pb-2">
+                                    <div className="font-medium flex items-center justify-between flex-wrap gap-2">
+                                        <a
+                                            href="#"
+                                            className="hover:underline text-sm"
+                                        >
+                                            <p className="text-base font-bold capitalize">
+                                                {item.user?.name || ""}
+                                            </p>
+                                        </a>
+                                        {getStatusLabel(item) && (
+                                            <span
+                                                className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(item)}`}
                                             >
-                                                <p className="text-base font-bold capitalize">
-                                                    {item.user?.name || ""}
-                                                </p>
-                                            </a>
-                                            {getStatusLabel(item) && (
-                                                <span
-                                                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(item)}`}
-                                                >
-                                                    {getStatusLabel(item)}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="text-small font-ligth text-gray-600">
-                                            {canViewComment(item)
-                                                ? item.reply
-                                                : "Reply awaiting approval"}
-                                        </div>
+                                                {getStatusLabel(item)}
+                                            </span>
+                                        )}
                                     </div>
-                                    <div className="flex justify-start items-center text-xs w-full">
-                                        <div className=" text-gray-700 pe-2 flex items-center justify-center space-x-1">
-                                            <button
-                                                onClick={() =>
-                                                    sethandleReply(true)
-                                                }
-                                                href="#"
-                                                className="hover:underline"
-                                            >
-                                                <p className="text-small ">
-                                                    Reply
-                                                </p>
-                                            </button>
-                                            <p className="self-center mx-2">
-                                                .
-                                            </p>
-                                            <p className="ppointer-none">
-                                                <p className="text-small">
-                                                    <TimeFormat
-                                                        dateString={
-                                                            item.created_at ||
-                                                            ""
-                                                        }
-                                                    />
-                                                </p>
-                                            </p>
+                                    <div className="text-small font-light text-gray-600 mt-1">
+                                        {isReplyVisible
+                                            ? item.reply
+                                            : "Reply awaiting approval"}
+                                    </div>
+                                </div>
+                                <div className="flex justify-start items-center text-xs w-full flex-wrap gap-2">
+                                    {auth?.user && (
+                                        <button
+                                            onClick={() => setHandleReply(true)}
+                                            className="text-blue-600 hover:underline text-sm"
+                                        >
+                                            Reply
+                                        </button>
+                                    )}
+                                    <span className="text-gray-400">•</span>
+                                    <span className="text-gray-500 text-sm">
+                                        <TimeFormat
+                                            dateString={item.created_at || ""}
+                                        />
+                                    </span>
 
-                                            {/* ONLY SHOW FOR POST CREATOR + SOMEONE ELSE'S REPLY */}
-                                            {showReplyActionButton && (
-                                                <>
-                                                    <p className="self-center mx-2">
-                                                        .
-                                                    </p>
-                                                    <button
-                                                        disabled={approving}
-                                                        onClick={() =>
-                                                            approveReply(
-                                                                item.uuid,
-                                                            )
-                                                        }
-                                                        className={`text-small hover:underline ${getApprovalButtonClass(item)}`}
-                                                    >
-                                                        {getApprovalButtonLabel(
-                                                            item,
-                                                        )}
-                                                    </button>
-                                                </>
-                                            )}
-                                            {isPostCreator && (
-                                                <>
-                                                    <p className="self-center mx-2">
-                                                        .
-                                                    </p>
-                                                    <button
-                                                        disabled={deleting}
-                                                        onClick={() =>
-                                                            deleteReply(
-                                                                item.uuid,
-                                                            )
-                                                        }
-                                                        className="text-small text-red-500 hover:underline"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
+                                    {/* Post Creator can manage others' replies - NOT their own */}
+                                    {canManage && replyStatus !== 1 && (
+                                        <>
+                                            <span className="text-gray-400">
+                                                •
+                                            </span>
+                                            <button
+                                                disabled={actionLoading}
+                                                onClick={() =>
+                                                    sendReplyToAdmin(item.uuid)
+                                                }
+                                                className={`text-sm ${getActionButtonClass(item)} disabled:opacity-50`}
+                                            >
+                                                {actionLoading
+                                                    ? "Processing..."
+                                                    : getActionButtonLabel(
+                                                          item,
+                                                      )}
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {/* Delete button for Post Creator or Reply Owner */}
+                                    {(isPostCreator || isItemOwner(item)) && (
+                                        <>
+                                            <span className="text-gray-400">
+                                                •
+                                            </span>
+                                            <button
+                                                disabled={deleting}
+                                                onClick={() =>
+                                                    deleteReply(item.uuid)
+                                                }
+                                                className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+                                            >
+                                                {deleting
+                                                    ? "Deleting..."
+                                                    : "Remove"}
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </>
+            </div>
         );
     };
 
     const status = Number(c?.is_approved);
+    const isOwnCommentFlag = isOwnComment;
+    const canManage = canManageComment;
 
     // Guest users should only see approved comments
     if (!auth?.user && status !== 1) {
         return null;
     }
-
-    // CONDITION FOR COMMENT: Post Creator + Someone Else's Comment = Show button
-    const showCommentActionButton = canManageComment;
 
     return (
         <div className="comment-box py-3 flex justify-center items-center">
@@ -316,10 +329,10 @@ export default function Comment({ c, update, updateComments, postUserId }) {
                         />
                     </div>
 
-                    <div className="items-center w-full ">
+                    <div className="items-center w-full">
                         <div className="block">
-                            <div className="w-auto rounded-[30px]   px-2 ps-0  pb-2">
-                                <div className="font-medium flex items-center justify-between">
+                            <div className="w-auto rounded-[30px] px-2 ps-0 pb-2">
+                                <div className="font-medium flex items-center justify-between flex-wrap gap-2">
                                     <a
                                         href="#"
                                         className="hover:underline text-sm"
@@ -328,112 +341,105 @@ export default function Comment({ c, update, updateComments, postUserId }) {
                                             {c?.user?.name || ""}
                                         </p>
                                     </a>
-                                    {getStatusLabel(c) &&
-                                        !(
-                                            isPostCreator &&
-                                            currentUserId === c?.user_id
-                                        ) &&
-                                        Number(c?.is_approved) !== 1 && (
-                                            <span
-                                                className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(c)}`}
-                                            >
-                                                {getStatusLabel(c)}
-                                            </span>
-                                        )}
+                                    {getStatusLabel(c) && status !== 1 && (
+                                        <span
+                                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(c)}`}
+                                        >
+                                            {getStatusLabel(c)}
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="text-small font-ligth text-gray-600">
-                                    {c?.comment || ""}
+                                <div className="text-small font-light text-gray-600 mt-1">
+                                    {canViewComment(c)
+                                        ? c?.comment || ""
+                                        : "Comment awaiting approval"}
                                 </div>
                             </div>
-                            <div className="flex justify-start items-center text-xs w-full">
-                                <div className="  text-gray-700 px-2 flex items-center justify-center space-x-1">
-                                    {auth?.user && (
+                            <div className="flex justify-start items-center text-xs w-full flex-wrap gap-2">
+                                {auth?.user && (
+                                    <button
+                                        onClick={() => setHandleReply(true)}
+                                        className="text-blue-600 hover:underline text-sm"
+                                    >
+                                        Reply
+                                    </button>
+                                )}
+                                {auth?.user && (
+                                    <span className="text-gray-400">•</span>
+                                )}
+                                <span className="text-gray-500 text-sm">
+                                    <TimeFormat
+                                        dateString={c?.created_at || ""}
+                                    />
+                                </span>
+
+                                {/* Post Creator can manage others' comments - NOT their own */}
+                                {canManage && status !== 1 && (
+                                    <>
+                                        <span className="text-gray-400">•</span>
                                         <button
-                                            onClick={() => sethandleReply(true)}
-                                            className="hover:underline"
+                                            disabled={actionLoading}
+                                            onClick={() =>
+                                                sendCommentToAdmin(c.uuid)
+                                            }
+                                            className={`text-sm ${getActionButtonClass(c)} disabled:opacity-50`}
                                         >
-                                            <p className="text-small">Reply</p>
+                                            {actionLoading
+                                                ? "Processing..."
+                                                : getActionButtonLabel(c)}
                                         </button>
-                                    )}
-                                    {auth?.user && (
-                                        <p className="self-center mx-2">.</p>
-                                    )}
-                                    <a className=" ">
-                                        <p className="text-small">
-                                            <TimeFormat
-                                                dateString={c?.created_at || ""}
-                                            />
-                                        </p>
-                                    </a>
+                                    </>
+                                )}
 
-                                    {/* ONLY SHOW FOR POST CREATOR + SOMEONE ELSE'S COMMENT */}
-                                    {showCommentActionButton && (
-                                        <>
-                                            <p className="self-center mx-2">
-                                                .
-                                            </p>
-                                            <button
-                                                disabled={approving}
-                                                onClick={() =>
-                                                    approveComment(c.uuid)
-                                                }
-                                                className={`text-small hover:underline ${getApprovalButtonClass(c)}`}
-                                            >
-                                                {getApprovalButtonLabel(c)}
-                                            </button>
-                                        </>
-                                    )}
-
-                                    {isPostCreator && (
-                                        <>
-                                            <p className="self-center mx-2">
-                                                .
-                                            </p>
-                                            <button
-                                                disabled={deleting}
-                                                onClick={() =>
-                                                    deleteComment(c.uuid)
-                                                }
-                                                className="text-small text-red-500 hover:underline"
-                                            >
-                                                Remove
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                {/* Delete button for Post Creator or Comment Owner (for their own comments) */}
+                                {(isPostCreator || isOwnCommentFlag) && (
+                                    <>
+                                        <span className="text-gray-400">•</span>
+                                        <button
+                                            disabled={deleting}
+                                            onClick={() =>
+                                                deleteComment(c.uuid)
+                                            }
+                                            className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+                                        >
+                                            {deleting
+                                                ? "Deleting..."
+                                                : "Remove"}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
 
-                        {c.replies && c.replies.length
-                            ? c.replies
-                                  .filter((reply) => {
-                                      if (!auth?.user) {
-                                          return (
-                                              Number(reply.is_approved) === 1
-                                          );
-                                      }
+                        {/* Replies Section */}
+                        {c.replies && c.replies.length > 0 && (
+                            <div className="mt-3 pl-4 border-l-2 border-gray-200">
+                                {c.replies
+                                    .filter((reply) => {
+                                        if (!auth?.user) {
+                                            return (
+                                                Number(reply.is_approved) === 1
+                                            );
+                                        }
+                                        return true;
+                                    })
+                                    .map((item, index) => (
+                                        <CommentReply
+                                            key={item.uuid || index}
+                                            item={item}
+                                        />
+                                    ))}
+                            </div>
+                        )}
 
-                                      return true;
-                                  })
-                                  .map((item, index) => {
-                                      return (
-                                          <CommentReply
-                                              key={item.uuid || index}
-                                              item={item}
-                                          />
-                                      );
-                                  })
-                            : ""}
-
-                        {auth?.user && handleReply ? (
+                        {/* Reply Form */}
+                        {auth?.user && handleReply && (
                             <AddComment
                                 updateComments={updateComments}
                                 is_reply={true}
                                 update={updates}
                                 comment_uuid={c?.uuid || ""}
                             />
-                        ) : (
-                            ""
                         )}
                     </div>
                 </div>
