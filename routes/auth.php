@@ -57,6 +57,11 @@ use Carbon\Carbon;
 // Guest routes
 Route::middleware('guest')->group(function () {
     // Auth routes
+    Route::get('invite/{token}', function ($token) {
+        return Inertia::render('Auth/Invite', [
+            'token' => $token,
+        ]);
+    })->name('invite');
     Route::get('register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
         ->name('register');
     Route::post('register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);

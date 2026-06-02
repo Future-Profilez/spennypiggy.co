@@ -27,6 +27,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     protected $fillable = [
         'uuid',
         '2fa_key',
+        'crm_creator_id',
         'name',
         'email',
         'role',
@@ -449,6 +450,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function social_links()
     {
         return $this->hasOne(SocialLinks::class, 'user_id');
+    }
+
+    public function crmCreator()
+    {
+        return $this->belongsTo(CrmCreator::class, 'crm_creator_id');
     }
 
     public function wishItems()
