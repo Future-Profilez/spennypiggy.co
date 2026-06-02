@@ -3,14 +3,14 @@
 <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
              <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 296px; width: 100%; text-align: center;">
+                 style="max-width: 420px; width: 100%; text-align: center;">
                  <tr>
                      <td style=" padding: 0 0 25px 0; text-align: center;"><img style="max-width: 200px; margin:20px 0;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
                  </tr>
                  <tr>
                      <td
                          style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        <span style="color:#F94F97; font-weight: bold;">
+                        <span style="color:#FF007F; font-weight: bold;">
                             Thank you for granting {{ isset($data->owner) && isset($data->owner->name) ? $data->owner->name : 'their' }}'s wish!
                         </span><br><br>
                         <span style="color:#141414;">
@@ -22,7 +22,9 @@
                                 
                                 try {
                                     // Get amount from various possible sources
-                                    if (isset($data->amount_subtotal) && is_numeric($data->amount_subtotal)) {
+                                    if (isset($data->total_paid) && is_numeric($data->total_paid)) {
+                                        $convertedAmount = $data->total_paid;
+                                    } elseif (isset($data->amount_subtotal) && is_numeric($data->amount_subtotal)) {
                                         $convertedAmount = $data->amount_subtotal;
                                     } elseif (isset($data->amount) && is_numeric($data->amount)) {
                                         $convertedAmount = $data->amount;
@@ -68,6 +70,50 @@
                      <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
                          Go to <a href="https://spennypiggy.co/">Spenny Piggy</a>  and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
                      </tr>
+                 <tr>
+                     <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                         <div style="padding: 14px; background: #f8f8f8; border: 1px solid #eeeeee; border-radius: 12px; text-align: left;">
+                             <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
+                                 Receipt Details
+                             </div>
+                             @php
+                                 $orderId = $data->session_id ?? ($data->payment->session_id ?? null);
+                                 $receiptId = $data->uuid ?? ($data->payment->uuid ?? null);
+                                 $paymentIntentId = $data->stripe_payment_intent_id ?? ($data->payment->stripe_payment_intent_id ?? null);
+                                 $internalPaymentId = $data->id ?? null;
+                             @endphp
+                             <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
+                                 <div><b>Seller (Creator):</b> {{ isset($data->owner) && isset($data->owner->name) ? $data->owner->name : 'Creator' }}</div>
+                                 <div><b>Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
+                                 @if(!empty($receiptId))
+                                     <div><b>Receipt ID:</b> {{ $receiptId }}</div>
+                                 @endif
+                                 @if(!empty($paymentIntentId))
+                                     <div><b>Payment Intent:</b> {{ $paymentIntentId }}</div>
+                                 @endif
+                                 @if(!empty($internalPaymentId))
+                                     <div><b>Internal ID:</b> {{ $internalPaymentId }}</div>
+                                 @endif
+                             </div>
+                         </div>
+                         <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
+                             Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
+                             <br />
+                             Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
+                         </div>
+                         <div style="margin-top: 14px; text-align: center;">
+                             <a href="{{ $contactUrl ?? ($supportUrl ?? url('/history')) }}"
+                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                                 Contact Creator
+                             </a>
+                             <div style="height: 10px; line-height: 10px;">&nbsp;</div>
+                             <a href="{{ $refundUrl ?? ($supportUrl ?? url('/history')) }}"
+                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                                 Request Refund
+                             </a>
+                         </div>
+                     </td>
+                 </tr>
                 @php
                      // Get content deliverables and certificates for this payment
                      $contentDeliverables = [];
@@ -114,8 +160,10 @@
                  @if($contentDeliverables && count($contentDeliverables) > 0)
                  <tr>
                      <td style="padding: 20px 0; border-top: 1px solid #eee;">
-                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #F94F97; text-align: center; margin-bottom: 15px;">🎁 Your Content is Ready!</h3>
+                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">🎁 Your Content is Ready!</h3>
                          <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">Click the links below to access your exclusive content:</p>
+                         
+                         @include('email.digital-content-notice')
                          
                          @foreach($contentDeliverables as $deliverable)
                              @php
@@ -159,8 +207,10 @@
                                      }
                                  }
                                  
-                                 // Get deliverable URL
-                                 $contentUrl = $deliverable->deliverable_url ?? '#';
+                                 // Get deliverable URL - Use tracking URL if UUID is available
+                                 $contentUrl = isset($deliverable->uuid) 
+                                    ? route('deliverable.access', $deliverable->uuid) 
+                                    : ($deliverable->deliverable_url ?? '#');
                              @endphp
                              <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF;">
                                  <p style="font-family: Arial; font-size: 16px; font-weight: bold; color: #333; margin: 0 0 5px 0;">{{ $wishName }}</p>
@@ -224,7 +274,7 @@
                  
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
-                       <a href="{{ env('APP_URL') . '/' . (isset($data->owner) && isset($data->owner->username) ? $data->owner->username : '') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
+                       <a href="{{ env('APP_URL') . '/' . (isset($data->owner) && isset($data->owner->username) ? $data->owner->username : '') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
                      </td>
                  </tr>
                  <tr style="line-height: 20px; height: 20px;">

@@ -39,6 +39,7 @@ class TaskPurchase extends Model
         'transfer_id',
         'refund_id',
         'amount',
+        'total_paid',
         'currency',
         'status',
         'payment_type',
@@ -57,6 +58,8 @@ class TaskPurchase extends Model
         'refunded_at',
         'gifter_message',
         'last_reminder_at',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $casts = [

@@ -36,13 +36,17 @@ class ShopBuyedMail extends Mailable
      */
     public function build()
     {
-        try {
-            $name = $this->anon ? 'Anonymous user' : $this->data->name;
-            $subject = "$name just claimed shop item " . $this->data->shop->name;
-            return $this->view('email.shopbuy')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
-                ->subject($subject);
-        } catch (\Exception $e) {
+        // Ensure relationships are loaded with trashed items if this is being handled in the queue or if relationships were cleared
+        if (!$this->data->relationLoaded('shop') || $this->data->shop === null) {
+            $this->data->load(['shop' => function($q) { $q->withTrashed(); }, 'shop.user']);
         }
+
+        $name = $this->anon ? 'Anonymous user' : ucwords($this->data->name ?? 'A customer');
+        $itemName = $this->data->shop?->name ?? 'Shop Item';
+        $subject = "{$name} purchased {$itemName}";
+
+        return $this->view('email.shopbuy')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject($subject);
     }
 }

@@ -78,6 +78,17 @@ export default function Notifications() {
     });
   };
 
+  const deleteAll = (e) => {
+    if (confirm("Are you sure you want to delete all notifications?")) {
+      axios.get(`/delete-all-notifications`).then((resp) => {
+        getNotifications();
+        setCount(0);
+      }).catch((_err) => {
+        console.error("error", _err);
+      });
+    }
+  };
+
 
   return (
     <>
@@ -92,14 +103,14 @@ export default function Notifications() {
                 {count}
             </span>
           : ''}
-          <div onClick={()=>setOpen(!open)} className="bg-[#F94F96] cursor-pointer rounded-full w-10 h-10 md:w-12 md:h-12 me-2 md:me-3  flex items-center justify-center">
+          <div onClick={()=>setOpen(!open)} className="bg-[#FF007F] cursor-pointer rounded-full w-10 h-10 md:w-12 md:h-12 me-2 md:me-3  flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="text-white w-5 h-5 md:w-5 md:h-5"
             viewBox="0 0 16 16"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5.002 5.002 0 0 1 13 6c0 .88.32 4.2 1.22 6z"
             /></svg>
           </div>
         </div>
 
-        {open ? <div id="toast-notification" className="w-full p-4 text-gray-900 bg-white rounded-[30px]  shadow " role="alert">
+        {open ? <div id="toast-notification" className="w-full p-4 text-gray-900 bg-white rounded-[30px]   shadow " role="alert">
 
             <div className='md:hidden flex justify-between mb-3' >
                 <button onClick={()=>setOpen(false)} className="items-center flex text-gray-400 hover:text-gray-900 mb-2 " >
@@ -110,12 +121,20 @@ export default function Notifications() {
                 <button onClick={readAll} className="items-center flex text-gray-500 hover:text-gray-900 mb-2 " >
                     Mark all as read
                 </button>
+                <button onClick={deleteAll} className="items-center flex text-red-500 hover:text-red-700 mb-2 " >
+                    Delete all
+                </button>
             </div>
             <div className="flex items-center noti-title justify-between ">
                 <p className="text-lg font-semibold text-black-900   mb-2">Notifications</p>
-                <button onClick={readAll} className="items-center flex text-gray-600 hover:text-gray-900 " >
-                    Mark all as read
-                </button>
+                <div className='flex gap-4'>
+                    <button onClick={readAll} className="items-center flex text-gray-600 hover:text-gray-900 " >
+                        Mark all as read
+                    </button>
+                    <button onClick={deleteAll} className="items-center flex text-red-500 hover:text-red-700 " >
+                        Delete all
+                    </button>
+                </div>
             </div>
 
             <div className='notifications-lists' >
@@ -129,12 +148,12 @@ export default function Notifications() {
                       }
                       <div className="me-3 text-sm font-normal">
                           <div className={` capitalize text-[16px] font-normal ${n && n.is_read ? "text-gray-500" : "text-gray-900" }`}>{n && n.notification}</div>
-                          <span className="text-xs font-medium text-blue-600 dark:text-blue-500"> <TimeFormat dateString={n && n.created_at} /> </span>
+                          <span className="text-xs font-medium text-blue-600"> <TimeFormat dateString={n && n.created_at} /> </span>
                       </div>
                     </div>
                     <div className="relative inline-block shrink-0">
                       <Link href={n && n.user && n.user.username || '/'} >
-                        <img className="w-12 h-12 rounded-[30px]  object-cover" src={ n && n?.user && n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
+                        <img className="w-12 h-12 rounded-[30px]   object-cover" src={ n && n?.user && n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
                       </Link>
                     </div>
                 </div>

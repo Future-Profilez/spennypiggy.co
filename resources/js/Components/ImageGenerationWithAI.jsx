@@ -97,19 +97,19 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                             {AiImage && AiImage.url ? (
                                 <div className="pt-4">
                                     <img
-                                        className="w-full max-h-[350px] object-cover rounded-[20px] md:rounded-[30px] "
+                                        className="w-full max-h-[350px] object-cover rounded-[20px] md:rounded-[30px]  "
                                         src={AiImage.url}
                                         alt="image"
                                     />
                                     <button
-                                        className="btn bg-gray-300 text-black py-2 px-3 hover:border-gray-300 uppercase mx-auto block rounded-[30px]   mt-4"
+                                        className="btn bg-gray-300 text-black py-2 px-3 hover:border-gray-300 uppercase mx-auto block rounded-[30px]    mt-4"
                                         onClick={ReDesign}
                                     >
                                         Re-Generate
                                     </button>
                                     <button
                                         className="btn pinkbg py-2 px-3 text-white hover:border-gray-300 hover:bg-black
-                                 uppercase mx-auto block rounded-[30px]   mt-2"
+                                 uppercase mx-auto block rounded-[30px]    mt-2"
                                         onClick={useThis}
                                     >
                                         {updating
@@ -130,7 +130,7 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                                         />
                                     </div>
                                     <button
-                                        className="btn pinkbg w-full font-gulfs btn-shadow py-2 px-3 text-white uppercase hover:border-gray-300 hover:bg-black mx-auto block rounded-[30px]   mt-3"
+                                        className="btn pinkbg w-full font-gulfs btn-shadow py-2 px-3 text-white uppercase hover:border-gray-300 hover:bg-black mx-auto block rounded-[30px]    mt-3"
                                         onClick={renerate}
                                     >
                                         Generate

@@ -41,6 +41,19 @@ class UserCart extends Model
     {
         parent::boot();
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+
+        // Revalidate cart count cache on change
+        static::saved(function ($cart) {
+            if ($cart->user_id) {
+                \Illuminate\Support\Facades\Cache::forget("user_cart_count_{$cart->user_id}");
+            }
+        });
+
+        static::deleted(function ($cart) {
+            if ($cart->user_id) {
+                \Illuminate\Support\Facades\Cache::forget("user_cart_count_{$cart->user_id}");
+            }
+        });
     }
 
     public function user()

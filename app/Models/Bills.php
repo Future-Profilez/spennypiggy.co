@@ -19,19 +19,24 @@ class Bills extends Model
         'product_id',
         'price_id',
         'name',
-        // Deprecated monetary fields - use supporterCount and social metrics instead
-        // 'price',
-        // 'currency',
-        // 'tax_amount',
+        'price',
+        'currency',
+        'tax_amount',
         'thumbnail',
+        'content_file',
+        'period',
         'status',
+        'approved',
+        'edited_reason',
+        'edited_status',
         // New social engagement fields
         'supporter_count',
         'gift_frequency',
         'creator_growth_rate',
         'rising_score',
         'engagement_level',
-        'trending_status'
+        'trending_status',
+        'is_suspended'
     ];
 
     protected $appends = [
@@ -47,7 +52,60 @@ class Bills extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(BillPayment::class);
+    }
+
+    public function totalRevenue()
+    {
+        return $this->payments()->where('status', 'paid')->sum('amount');
+    }
+
+    public function uniqueBuyersCount()
+    {
+        return $this->payments()
+            ->where('status', 'paid')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id ELSE guest_email END) as count')
+            ->value('count');
+    }
+
+    public function totalPaymentsCount()
+    {
+        return $this->payments()->where('status', 'paid')->count();
+    }
+
+    public function monthlyRevenue($month = null, $year = null)
+    {
+        $month = $month ?? now()->month;
+        $year = $year ?? now()->year;
+
+        return $this->payments()
+            ->where('status', 'paid')
+            ->whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->sum('amount');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 1);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('approved', 1);
+    }
+
+    public function uniqueBuyers()
+    {
+        return $this->payments()
+            ->where('status', 'paid')
+            ->distinct('user_id', 'guest_email')
+            ->count('user_id');
     }
 
     public function getPermaLinkAttribute()
@@ -60,11 +118,6 @@ class Bills extends Model
         }
 
         return $url;
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(BillPayment::class);
     }
 
     public function getContentFileUrlAttribute()

@@ -31,6 +31,8 @@ class  TipGoalsPayment extends Model
         'twitter_response',
         'certificate_url',
         'status',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $hidden = [
@@ -56,7 +58,7 @@ class  TipGoalsPayment extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
 
@@ -67,7 +69,7 @@ class  TipGoalsPayment extends Model
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'creator_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'creator_id');
     }
 
     public function getSenderAttribute()

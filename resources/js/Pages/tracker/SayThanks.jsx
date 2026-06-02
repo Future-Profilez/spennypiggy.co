@@ -24,7 +24,10 @@ export default function SayThanks(props) {
 
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = (data) => {
-      setMsgMedia(data);
+      setMsgMedia({
+         uuid: data?.uuid,
+         contentInfo: data?.contentInfo || null
+      });
    };
 
    const [close,setClose] = useState();
@@ -68,7 +71,7 @@ export default function SayThanks(props) {
          <p className='text-red-500 mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
 
          <textarea rows={5} placeholder="Say Something..."
-            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
             onChange={(e) => setMessage(e.target.value)} type="text"
          />
          <p className='mb-2 mt-3' >Choose Video or Picture</p>

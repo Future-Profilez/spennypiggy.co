@@ -23,6 +23,8 @@ class FinancialTransaction extends Model
         'stripe_fee',
         'vat_amount',
         'net_amount',
+        'reserve_amount',
+        'reserve_status',
         'currency',
         'status',
         'description',

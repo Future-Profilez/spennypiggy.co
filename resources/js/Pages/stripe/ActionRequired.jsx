@@ -97,7 +97,7 @@ export default function ActionRequired({ requirements = [] }) {
                 return (
                     <div 
                         key={index}
-                        className={`mb-6 w-full bg-white rounded-[30px]  shadow-sm border-2 ${reqColors.border} overflow-hidden`}
+                        className={`mb-6 w-full bg-white rounded-[30px]   shadow-sm border-2 ${reqColors.border} overflow-hidden`}
                     >
                         <div className="flex">
                             {/* Accent Bar */}
@@ -133,7 +133,7 @@ export default function ActionRequired({ requirements = [] }) {
                                 </p>
 
                                 {/* Action Box */}
-                                <div className="bg-gray-50 rounded-[30px] p-4 md:p-6 mb-6 border border-gray-100">
+                                <div className="bg-gray-50 rounded-[30px]  p-4 md:p-6 mb-6 border border-gray-100">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex-1">
                                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Required Action</span>
@@ -161,7 +161,7 @@ export default function ActionRequired({ requirements = [] }) {
                                     <a
                                         onClick={() => setLoading(!loading)}
                                         href={requirement.action_url}
-                                        className={`block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]`}
+                                        className={`block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]`}
                                     >
                                         {loading ? "Processing..." : "Resolve Issue Now"}
                                     </a>

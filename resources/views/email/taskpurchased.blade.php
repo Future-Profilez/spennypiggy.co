@@ -9,7 +9,7 @@
 </tr>
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 420px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
                     New <span style="color: #8C52FF">Task Order</span> Received! 📋
@@ -22,7 +22,7 @@
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
                     Great news! <br>
-                    {{ $supporter ? $supporter->name : "A Guest" }} just purchased your task <strong>{{ $task->title }}</strong> for {{ $currencySymbol }}{{ $task->price }}.
+                    {{ $supporter ? ucwords($supporter->name) : "A Guest" }} just purchased your task <strong>{{ $task->title }}</strong> for {{ $currencySymbol }}{{ $task->price }}.
                 </td>
             </tr>
             <tr>
@@ -34,11 +34,21 @@
                     @endif
                 </td>
             </tr>
+
+            @if($purchase->gifter_message)
+            <tr>
+                <td style="padding: 15px; background-color: #f9f9f9; border-radius: 10px; border-left: 4px solid #FF007F; text-align: left; font-family: Arial; font-size: 14px; line-height: 20px; color: #333; font-style: italic;">
+                    <strong>Message from Supporter:</strong><br>
+                    "{{ $purchase->gifter_message }}"
+                </td>
+            </tr>
+            <tr style="line-height: 20px; height: 20px;"><td></td></tr>
+            @endif
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">
                     <a href="{{ env('APP_URL') . '/task/dashboard' }}"
-                        style="display: inline-block; border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                        style="display: inline-block; border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
                         Manage Order
                     </a>
                 </td>

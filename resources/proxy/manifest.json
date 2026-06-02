@@ -1,73 +1,41 @@
 {
-    "theme_color": "#5D25FD",
-    "background_color": "#5D25FD",
-    "display": "standalone",
-    "orientation": "portrait",
-    "scope": "/",  
-    "start_url": "/login",  
-    "lang": "en",
-    "dir": "ltr",
-    "categories": ["social", "entertainment"],
-    "prefer_related_applications": false,
-    "name": "Spenny Piggy - Financial Gifts, Exclusive Content & Memberships",
-    "short_name": "Spenny Piggy",
-    "description":"Join Memberships, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!.",
-    "icons": [
-      {
-          "src": "/android-chrome-192x192.png",
-          "sizes": "16x32",
-          "type": "image/png",
-        "purpose": "any"
-
-      },
-      {
-          "src": "/android-chrome-192x192.png",
-          "sizes": "32x32",
-          "type": "image/png",
-        "purpose": "any"
-
-      },
-      {
-          "src": "/android-chrome-192x192.png",
-          "sizes": "128x128",
-          "type": "image/png",
-        "purpose": "any"
-
-      },
-      {
-          "src": "/android-chrome-192x192.png",
-          "sizes": "148x148",
-          "type": "image/png",
-        "purpose": "any"
-
-      },
-      {
-          "src": "/android-chrome-192x192.png",
-          "sizes": "192x192",
-          "type": "image/png",
-        "purpose": "any"
-
-      },
-      {
-          "src": "/android-chrome-512x512.png",
-          "sizes": "256x256",
-          "type": "image/png",
-        "purpose": "any"
-
-      },
-      {
-          "src": "/android-chrome-512x512.png",
-          "sizes": "384x384",
-          "type": "image/png",
-        "purpose": "any"
-
-      },
-      {
-          "src": "/android-chrome-512x512.png",
-          "sizes": "512x512",
-          "type": "image/png",
-        "purpose": "any"
-
+    "theme_color": "#05EFB8", 
+    "background_color": "#ffffff", 
+    "display": "standalone", 
+    "orientation": "portrait", 
+    "scope": "/", 
+    "start_url": "/login?source=pwa", 
+    "lang": "en", 
+    "dir": "ltr", 
+    "categories": ["social", "entertainment"], 
+    "prefer_related_applications": false, 
+    "name": "Spenny Piggy - Financial Gifts, Exclusive Content & Memberships", 
+    "short_name": "Spenny Piggy", 
+    "description":"Join Memberships, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!.", 
+    "shortcuts": [ 
+      { 
+        "name": "Wallet", 
+        "short_name": "Wallet", 
+        "description": "View your wallet and transactions", 
+        "url": "/wallet", 
+        "icons": [{"src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"}] 
+      }, 
+      { 
+        "name": "Discover", 
+        "short_name": "Discover", 
+        "description": "Discover new creators and items", 
+        "url": "/discover", 
+        "icons": [{"src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"}] 
       }
+    ],
+    "icons": [ 
+        {"src":"/android-chrome-192x192.png","sizes":"16x32","type":"image/png","purpose":"any"}, 
+        {"src":"/android-chrome-192x192.png","sizes":"32x32","type":"image/png","purpose":"any"}, 
+        {"src":"/android-chrome-192x192.png","sizes":"128x128","type":"image/png","purpose":"any"}, 
+        {"src":"/android-chrome-192x192.png","sizes":"148x148","type":"image/png","purpose":"any"}, 
+        {"src":"/android-chrome-192x192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"}, 
+        {"src":"/android-chrome-512x512.png","sizes":"256x256","type":"image/png","purpose":"any"}, 
+        {"src":"/android-chrome-512x512.png","sizes":"384x384","type":"image/png","purpose":"any"}, 
+        {"src":"/android-chrome-512x512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"} 
   ]
 } 

@@ -33,8 +33,7 @@ class AutoSuspendAccount extends Command
     {
         try {
 
-            $user = MonthlyCharge::pluck('user_id');
-            $user = array_unique($user);
+            $user = MonthlyCharge::pluck('user_id')->unique()->toArray();
 
             $users = User::whereIn('id',$user)->get();
             foreach ($users as $key => $value) {

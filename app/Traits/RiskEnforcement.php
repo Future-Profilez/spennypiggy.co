@@ -79,6 +79,12 @@ trait RiskEnforcement
         $riskResult = app(\App\Services\Risk\RiskEngineService::class)->evaluate($context);
         $decision = $riskResult['decision'] ?? 'ALLOW';
 
+        // Bypass STEP_UP if emulated by admin
+        if ($decision === 'STEP_UP' && session()->get('emulated_by_admin')) {
+            Log::info("Bypassing STEP_UP for payment because user is being emulated by admin.");
+            $decision = 'ALLOW';
+        }
+
         // 5. Handle BLOCK / COOLDOWN
         if (in_array($decision, ['BLOCK', 'COOLDOWN'], true)) {
             $msg = $riskResult['ui']['body'] ?? 'Payment blocked for security reasons.';
@@ -120,6 +126,12 @@ trait RiskEnforcement
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $identity->id,
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']),
+                        'reserve_amount_minor' => (function () use ($creator, $context) {
+                            $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']);
+                            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
+                            $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                            return $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
+                        })(),
                         'currency' => 'gbp',
                         'status' => 'step_up',
                         'reason_codes' => $riskResult['reason_codes'] ?? [],

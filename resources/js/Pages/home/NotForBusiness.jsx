@@ -50,8 +50,8 @@ export default function NotForBusiness() {
                             </div>
 
                             <div className="w-full mb-8 relative max-w-[300px]">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px]  transform rotate-3 scale-105 opacity-0 group-hover:opacity-30 transition-all duration-500 blur-xl"></div>
-                                <div className="bg-black rounded-[30px]  transition-all duration-300  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]   relative overflow-hidden transition-all duration-300">
+                                <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px]   transform rotate-3 scale-105 opacity-0 group-hover:opacity-30 transition-all duration-500 blur-xl"></div>
+                                <div className="bg-black rounded-[30px]   transition-all duration-300  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]   relative overflow-hidden transition-all duration-300">
                                      <LazyLoadImage
                                         alt={item.title}
                                         effect="blur"
@@ -61,7 +61,7 @@ export default function NotForBusiness() {
                                 </div>
                             </div>
 
-                            <h3 className="fading text-xl lg:text-2xl font-gulfs text-white mb-1 md:mb-4 uppercase leading-tight px-4 group-hover:text-pink-500 transition-colors">
+                            <h3 className="fading text-xl lg:text-2xl font-gulfs text-white mb-1 md:mb-4 uppercase leading-tight px-4 group-hover:text-[#FF007F] transition-colors">
                                 {item.title}
                             </h3>
                             <p className="fading text-gray-400 font-poppins text-sm lg:text-base leading-relaxed max-w-xs mx-auto whitespace-pre-line group-hover:text-gray-300 transition-colors">

@@ -27,6 +27,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     protected $fillable = [
         'uuid',
         '2fa_key',
+        'crm_creator_id',
         'name',
         'email',
         'role',
@@ -52,14 +53,19 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'is_subscribed',
         'is_founder',
         'show_piggy_bank',
-        'referral_code',
         'default_currency',
+        'terms_accepted_at',
+        'creator_email_receipt_acknowledged_at',
+        'marketing_emails_enabled',
+        'marketing_unsubscribed_at',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
-        'created_at',
         'account_id',
         'updated_at',
         'deleted_at',
@@ -71,6 +77,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'password' => 'hashed',
         'identity_admin_status' => 'integer',
         'identity_admin_reviewed_at' => 'datetime',
+        'stripe_connected_at' => 'datetime',
+        'terms_accepted_at' => 'datetime',
+        'creator_email_receipt_acknowledged_at' => 'datetime',
+        'marketing_emails_enabled' => 'boolean',
+        'marketing_unsubscribed_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -81,11 +92,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'followers_count',
         'following_count',
         'subscription_status',
+        'is_site_subscription_active',
+        'display_subscription_status',
         'grace_period_started_at',
         'grace_period_ends_at',
         'is_in_grace_period',
         'grace_period_days_remaining',
-        'social_url'
+        'social_url',
+        'upcoming_payment_date',
+        'subscription_end',
+        'is_subscription_cancelled'
     ];
     protected $with = ['social_links'];
 
@@ -95,9 +111,46 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         static::creating(fn($u) => $u->uuid = Uuid::uuid4());
     }
 
+    public function getUpcomingPaymentDateAttribute()
+    {
+        if ($this->role != 1) return null;
+        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        if ($charge && $charge->upcoming_payment) {
+            return Carbon::parse($charge->upcoming_payment)->format('d M Y');
+        }
+        return null;
+    }
+
+    public function getSubscriptionEndAttribute()
+    {
+        if ($this->role != 1) return null;
+        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        if ($charge && $charge->current_end_subscription_date) {
+            return Carbon::parse($charge->current_end_subscription_date)->format('d M Y');
+        }
+        return null;
+    }
+
+    public function getIsSubscriptionCancelledAttribute()
+    {
+        if ($this->role != 1) return false;
+        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        return $charge ? ($charge->status === 'canceled' || $charge->cancelled_at !== null) : false;
+    }
+
     // ───────────────────────
     // Accessors
     // ───────────────────────
+
+    public function getNameAttribute($value)
+    {
+        return ucwords(strtolower($value));
+    }
+
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = ucwords(strtolower($value));
+    }
 
     public function getAvatarUrlAttribute()
     {
@@ -171,19 +224,19 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                             ->whereDate('current_end_trial_date', '>=', $now);
                     });
                 })
-                // Order by start date DESC to get the newest period first (handles overlaps)
-                ->orderByDesc('current_start_subscription_date')
+                // Order by id DESC to get the newest period first (handles overlaps and exact timestamps)
+                ->latest('id')
                 ->first();
 
             // If no active period found, get the most recent one
             if (!$subscription) {
                 $subscription = MonthlyCharge::where('user_id', $this->id)
-                    ->orderByDesc('current_start_subscription_date')
+                    ->latest('id')
                     ->first();
             }
 
             if (!$subscription) {
-                return 0;
+                return 3; // INACTIVE / NEVER SUBSCRIBED
             }
 
             // Use the same logic as account settings route
@@ -198,7 +251,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
             $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
             // Check subscription status from MonthlyCharge table instead of is_subscribed column
-            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active']) && $subEndCarbon && $now->lessThan($subEndCarbon);
+            // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
+            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active', 'canceled']) && $subEndCarbon && $now->lessThan($subEndCarbon);
             $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
 
             // Check for trialing status first, before other conditions
@@ -278,6 +332,36 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             return $this->gifterCardVerification ? 1 : 0;
         }
         return 'Unknown';
+    }
+
+    /**
+     * Check if site subscription is active (either status 1 or 2)
+     */
+    public function getIsSiteSubscriptionActiveAttribute()
+    {
+        $status = $this->subscription_status;
+        return ($status === 1 || $status === 2) ? 1 : 0;
+    }
+
+    /**
+     * Get a unified subscription status for display purposes
+     */
+    public function getDisplaySubscriptionStatusAttribute()
+    {
+        $status = $this->subscription_status;
+
+        $displayMap = [
+            1 => 'Active Subscription',
+            2 => 'Free Trial',
+            0 => 'Subscription Expired',
+            3 => 'Not Subscribed',
+        ];
+
+        if ($this->role == 0) {
+            return $status == 1 ? 'Card Verified' : 'Not Verified';
+        }
+
+        return $displayMap[$status] ?? 'Unknown Status';
     }
 
     // ───────────────────────
@@ -369,6 +453,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return $this->hasOne(SocialLinks::class, 'user_id');
     }
 
+    public function crmCreator()
+    {
+        return $this->belongsTo(CrmCreator::class, 'crm_creator_id');
+    }
+
     public function wishItems()
     {
         return $this->hasMany(WishItem::class, 'user_id');
@@ -397,6 +486,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function tip_goal_payment()
     {
         return $this->hasMany(TipGoalsPayment::class, 'creator_id');
+    }
+
+    public function piggy_pots()
+    {
+        return $this->hasMany(PiggyPot::class, 'user_id');
+    }
+
+    public function piggy_pot_contributions()
+    {
+        return $this->hasMany(PiggyPotContribution::class, 'creator_id');
     }
 
     public function subscriptions()
@@ -499,6 +598,21 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function documents()
     {
         return $this->hasMany(\App\Models\UserDocuments::class, 'user_id');
+    }
+
+    public function blockedUsers()
+    {
+        return $this->hasMany(UserBlock::class, 'creator_id');
+    }
+
+    public function blockedBy()
+    {
+        return $this->hasMany(UserBlock::class, 'blocked_id');
+    }
+
+    public function isBlockedBy($creatorId)
+    {
+        return $this->blockedBy()->where('creator_id', $creatorId)->exists();
     }
     public function paymentitems()
     {
@@ -724,5 +838,25 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function metric()
     {
         return $this->hasOne(CreatorMetric::class, 'creator_id', 'uuid');
+    }
+
+    /**
+     * Whether this user has email notifications enabled.
+     */
+    public function wantsEmailNotifications(): bool
+    {
+        return (int) ($this->notification_send ?? 0) === 1;
+    }
+
+    /**
+     * Whether to send email to a registered user. Guests (no user record) still receive emails.
+     */
+    public static function shouldSendEmail(?self $user): bool
+    {
+        if ($user === null) {
+            return true;
+        }
+
+        return $user->wantsEmailNotifications();
     }
 }

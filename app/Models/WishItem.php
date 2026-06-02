@@ -47,7 +47,8 @@ class WishItem extends Model
         'creator_growth_rate',
         'rising_score',
         'engagement_level',
-        'trending_status'
+        'trending_status',
+        'is_suspended'
     ];
 
     protected $appends = [

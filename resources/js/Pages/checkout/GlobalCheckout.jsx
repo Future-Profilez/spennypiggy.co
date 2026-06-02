@@ -14,6 +14,7 @@ import DeviceID from "@/includes/DeviceID";
 
 import { CiSquareCheck } from "react-icons/ci";
 import toast from "react-hot-toast";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 
 export default function GlobalCheckout({
     action,
@@ -22,6 +23,7 @@ export default function GlobalCheckout({
     classes,
     text,
 }) {
+    const { auth } = usePage().props;
     const deviceID = DeviceID();
 
     const [close, setClose] = useState();
@@ -31,6 +33,7 @@ export default function GlobalCheckout({
 
     const [checked, setChecked] = useState("");
     const [loading, setLoading] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState("");
     const [iban, setiban] = useState("");
     const [sortCode, setSortCode] = useState("");
@@ -165,7 +168,7 @@ export default function GlobalCheckout({
           `}</style>
 
             <Popup
-                modalclass={`pinkmodal full stripe-terms shadow-pink ps-0`}
+                modalclass={`pinkmodal full stripe-terms shadow-[4px_4px_0px_0px_#FF007F]ink ps-0`}
                 space="4"
                 size="md"
                 action={close}
@@ -185,7 +188,7 @@ export default function GlobalCheckout({
                                 <div className="flex items-center">
                                     {checked === "plaid" ? (
                                         <FaCheckCircle
-                                            color={`#f94f97`}
+                                            color={`#FF007F`}
                                             className="me-2 h-8 w-8"
                                         />
                                     ) : (
@@ -248,7 +251,7 @@ export default function GlobalCheckout({
                             <div className="flex">
                                 {checked === "paypal" ? (
                                     <FaCheckCircle
-                                        color={`#f94f97`}
+                                        color={`#FF007F`}
                                         className="me-2 h-8 w-8"
                                     />
                                 ) : (
@@ -283,7 +286,7 @@ export default function GlobalCheckout({
                             <div className="flex">
                                 {selectedCurrency === "GBP" ? (
                                     <FaCheckCircle
-                                        color={`#f94f97`}
+                                        color={`#FF007F`}
                                         className="me-[12px] h-7 w-7"
                                     />
                                 ) : (
@@ -310,7 +313,7 @@ export default function GlobalCheckout({
                             <div className="flex">
                                 {selectedCurrency === "EUR" ? (
                                     <FaCheckCircle
-                                        color={`#f94f97`}
+                                        color={`#FF007F`}
                                         className="me-2 h-7 w-7"
                                     />
                                 ) : (
@@ -348,14 +351,14 @@ export default function GlobalCheckout({
                                         setAccountNo(e.target.value)
                                     }
                                     placeholder="Enter Account number"
-                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[30px]  mt-2"
+                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[30px]   mt-2"
                                 />
                                 <input
                                     type="text"
                                     value={sortCode}
                                     onChange={handleSortCode}
                                     placeholder="Sort Code eg. 00-00-00"
-                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[30px]  mt-2"
+                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[30px]   mt-2"
                                 />
 
                                 {GBPpaymentMethods &&
@@ -380,7 +383,7 @@ export default function GlobalCheckout({
                                                 method.uuid
                                                     ? "pinkbg text-white"
                                                     : "bg-gray-200"
-                                            }  p-3 rounded-[30px]  cursor-pointer mb-2`}
+                                            }  p-3 rounded-[30px]   cursor-pointer mb-2`}
                                             key={index}
                                         >
                                             <div className="flex justify-start items-center relative w-full">
@@ -422,7 +425,7 @@ export default function GlobalCheckout({
                                     type="text"
                                     onChange={(e) => setiban(e.target.value)}
                                     placeholder="Enter IBAN number"
-                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[30px]  mt-2"
+                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[30px]   mt-2"
                                 />
 
                                 {EURpaymentMethods &&
@@ -448,7 +451,7 @@ export default function GlobalCheckout({
                                                 method.uuid
                                                     ? "pinkbg text-white"
                                                     : "bg-gray-200"
-                                            }  p-3 rounded-[30px]  cursor-pointer mb-2`}
+                                            }  p-3 rounded-[30px]   cursor-pointer mb-2`}
                                             key={index}
                                         >
                                             <div className="flex justify-start items-center relative w-full">
@@ -481,12 +484,16 @@ export default function GlobalCheckout({
                             ""
                         )}
                         {selectedCurrency ? (
-                            <button
-                                onClick={handleSubmit}
-                                className="btn-pink md m-auto mt-4  d-table"
-                            >
-                                {loading ? "Processing" : "Pay Now"}
-                            </button>
+                            <>
+                                <CheckoutLegalTerms onAgreeChange={(checked) => setDigitalWaiver(checked)} />
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={!digitalWaiver || loading}
+                                    className={`${!digitalWaiver || loading ? 'opacity-50 cursor-not-allowed' : ''} btn-pink md m-auto mt-4 d-table`}
+                                >
+                                    {loading ? "Processing" : "Pay Now"}
+                                </button>
+                            </>
                         ) : (
                             ""
                         )}

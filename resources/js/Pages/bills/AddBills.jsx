@@ -22,10 +22,11 @@ import { SlCalender } from "react-icons/sl";
 export default function AddBills(props) {
     const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
     const { global_currency, auth } = usePage().props;
+    const subscriberOnlyPostsCount = auth?.subscriber_only_posts_count || 0;
     const [thumbnail, setThumbnail] = useState("");
     const [close, setClose] = useState();
     const { updatebill, item, isEdit, editpop, text, classes, fetchBills } = props;
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const BillsImages = [
         "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
         "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
@@ -101,6 +102,7 @@ export default function AddBills(props) {
                     );
                     successAlert(resp.data.msg);
                     setClose(false);
+                    window.dispatchEvent(new Event("closeAddOptions"));
                     setTimeout(() => {
                         setClose();
                     }, 100);
@@ -121,7 +123,7 @@ export default function AddBills(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 !rounded-[30px] bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 !rounded-[30px]  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="pl-3 text-left">
@@ -140,7 +142,7 @@ export default function AddBills(props) {
             modalclass="pinkmodal full"
             size="md"
             action={close}
-            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-[30px]  p-3 mb-2 text-center"}`}
+            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-[30px]   p-3 mb-2 text-center"}`}
             text={text ? text : <AddItem />} >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
@@ -148,6 +150,25 @@ export default function AddBills(props) {
                         {isEdit ? "Update Bill" : "Add A Bill"}
                     </h2>
                     <div className="wishinfo  p-4  ">
+                        {item && item.is_suspended == 1 && (
+                            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-red-800">Item Suspended</h3>
+                                        {item.suspend_reason && (
+                                            <div className="mt-2 text-sm text-red-700">
+                                                <p>{item.suspend_reason}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <form onSubmit={createBills}>
                             <ul className="pl-0">
                                 <li className="mb-4">
@@ -161,7 +182,7 @@ export default function AddBills(props) {
                                         type="text"
                                         placeholder="Eg. Netflix subscription"
                                         value={data.name}
-                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("name", e.target.value)
@@ -186,13 +207,37 @@ export default function AddBills(props) {
                                                 (item && item.price) ||
                                                 data.price
                                             }
-                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
                                             }
                                         />
                                     </div>
+                                    {data.price > 0 && (
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px]  border border-gray-100">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-sm text-gray-600">Fans pay:</span>
+                                                <span className="font-bold text-gray-900">
+                                                    {new Intl.NumberFormat('en-GB', { 
+                                                        style: 'currency', 
+                                                        currency: defaultCurrency 
+                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">You receive:</span>
+                                                <span className="font-bold text-green-600">
+                                                    {new Intl.NumberFormat('en-GB', { 
+                                                        style: 'currency', 
+                                                        currency: defaultCurrency 
+                                                    }).format(data.price)}
+                                                </span>
+                                            </div>
+                                            <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
+                                            <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+                                        </div>
+                                    )}
                                     {defaultCurrency !== global_currency && data.price > 0 && (
                                     <p className="mt-1 text-sm text-gray-500">
                                         ≈ {formatMultiPrice(
@@ -335,7 +380,7 @@ export default function AddBills(props) {
                                 </li>
                             </ul>
 
-                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[30px]   bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300" role="alert">
+                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[30px]    bg-yellow-50" role="alert">
                                 When adding items please ensure they are specific
                                 i.e Holiday Clothes or New Gym Equipment. Items that
                                 are non specific will be rejected and removed. Our
@@ -344,31 +389,39 @@ export default function AddBills(props) {
                                 support for further clarification.
                             </p>
 
-                            <div className="publish text-start">
-                                {isEdit ? (
-                                    <LoaderButton
-                                        disabled={loading}
-                                        type="submit"
-                                        className="p w-full"
-                                        spinnerclass="fill-red-600"
-                                    >
-                                        {loading ? "Updating.." : "Update Bill"}
-                                    </LoaderButton>
-                                ) : (
-                                    <>
-                                        <LoaderButton
-                                            disabled={loading}
-                                            type="submit"
-                                            className="p w-full"
-                                            spinnerclass="fill-red-600"
-                                        >
-                                            {loading
-                                                ? "Processing"
-                                                : "Add Bills"}
-                                        </LoaderButton>
-                                    </>
-                                )}
-                            </div>
+                            <div className="publish text-start mt-6 mb-4">
+    {isEdit ? (
+        <LoaderButton
+            disabled={loading}
+            type="submit"
+            className="p w-full min-h-[54px]"
+            spinnerclass="fill-red-600"
+        >
+            {loading ? "Updating.." : "Update Bill"}
+        </LoaderButton>
+    ) : (
+        <>
+            <LoaderButton
+                disabled={loading || subscriberOnlyPostsCount === 0}
+                type="submit"
+                className="p w-full min-h-[54px]"
+                spinnerclass="fill-red-600"
+            >
+                {loading ? "Processing" : "Add Bills"}
+            </LoaderButton>
+
+            {subscriberOnlyPostsCount === 0 && (
+                <div className="pt-3 px-2">
+                    <p className="text-center text-red-500 text-sm leading-6">
+                        You haven't added any subscriber-only posts yet.
+                        <br />
+                        Please create at least one before adding a bill.
+                    </p>
+                </div>
+            )}
+        </>
+    )}
+</div>
                         </form>
                     </div>
                 </div>

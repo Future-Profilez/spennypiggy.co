@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
-import { Head, Link, router } from "@inertiajs/react";
+import { useEffect, useState, useRef } from "react";
+import { lazy } from "react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
+import { route } from "ziggy-js";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
@@ -11,38 +13,46 @@ import ChangeCurrency from "@/Components/ChangeCurrency";
 import LinkTwitter from "../twitter/LinkTwitter";
 import { useAlerts } from "@/Components/Alerts";
 import ChangeVat from "../account/ChangeVat";
+const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 import DeleteStripeAccount from "../Profile/DeleteStripeAccount";
 import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory from "@/Components/SubscriptionHistory";
-import ManagePasskey from '@/Components/ManagePasskey';
+import ManagePasskey from "@/Components/ManagePasskey";
+import SecurityZone from "@/Components/SecurityZone";
 import { Switch } from "@headlessui/react";
 import {
-    User,
-    CreditCard,
-    Bell,
+    UserIcon,
+    CreditCardIcon,
+    BellIcon,
+    LogoutIcon,
+    ExternalLinkIcon,
+    ChevronRightIcon,
+    SettingsIcon,
+    DollarSignIcon,
+    HeartIcon,
+    DashboardIcon,
+    ActivityIcon,
+    MapPinIcon,
+    TwitterIcon,
+    UsersIcon,
+    Trash2Icon,
+    MailIcon,
+    LockIcon,
+    GlobeIcon,
+    ShieldCheckIcon,
+} from "@animateicons/react/lucide";
+import {
     Shield,
     LogOut,
-    ExternalLink,
-    ChevronRight,
-    Settings,
-    DollarSign,
-    Heart,
     Gift,
     LayoutDashboard,
     History,
-    MapPin,
     Percent,
-    Twitter,
     PiggyBank,
-    Users,
-    Trash2,
-    Mail,
-    Lock,
     HelpCircle,
     FileText,
-    Globe,
     Fingerprint,
 } from "lucide-react";
 
@@ -58,7 +68,7 @@ export default function Accountsetting(props) {
         site_subscription,
         subscription_history,
         subscription_status,
-    } = props;
+    } = usePage().props;
 
     const [emailPopupAction, setEmailPopupAction] = useState(null);
     const [emailEnabled, setSetEnabled] = useState(
@@ -238,53 +248,58 @@ export default function Accountsetting(props) {
         value,
         className,
         bordercolor,
-    }) => (
-        <div
-            onClick={onClick}
-            className={`relative group w-full w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-pink-500"}  !rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
-        >
-            <div className="flex !items-center gap-4 text-left">
-                <div
-                    className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
-                    ${isDestructive ? "bg-red-200 text-red-600" : "bg-pink-200 text-pink-600"}`}
-                >
-                    <Icon size={28} strokeWidth={2} />
-                </div>
-                <div>
-                    <h3
-                        className={`font-bold text-base ${isDestructive ? "text-red-600" : "text-gray-800"}`}
+    }) => {
+        const iconRef = useRef(null);
+
+        return (
+            <div
+                onClick={onClick}
+                onMouseEnter={() => iconRef.current?.startAnimation?.()}
+                onMouseLeave={() => iconRef.current?.stopAnimation?.()}
+                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-[#FF007F]"}  !rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
+            >
+                <div className="flex !items-center gap-4 text-left">
+                    <div
+                        className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
+                        ${isDestructive ? "bg-red-200 text-red-600" : "bg-pink-200 text-[#FF007F]"}`}
                     >
-                        {title}
-                    </h3>
-                    {subtitle && (
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">
-                            {subtitle}
-                        </p>
+                        <Icon ref={iconRef} size={28} strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h3
+                            className={`font-bold text-base ${isDestructive ? "text-red-600" : "text-gray-800"}`}
+                        >
+                            {title}
+                        </h3>
+                        {subtitle && (
+                            <p className="text-sm text-gray-500 font-medium mt-0.5">
+                                {subtitle}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    {value && (
+                        <span
+                            className={`mt-4 md:mt-0 text-sm font-semibold px-3 py-1 rounded-lg border ${
+                                value.toLowerCase() === "active" ||
+                                value.toLowerCase() === "connected" ||
+                                value.toLowerCase() === "enabled" ||
+                                value.toLowerCase() === "linked"
+                                    ? "text-green-600 bg-green-50 border-green-500"
+                                    : "text-gray-600 bg-gray-50 border-[#FF007F]"
+                            }`} > {value} </span>
+                    )} 
+                    {action ? ( action ) : (
+                        <ChevronRightIcon size={18} className="text-gray-300 group-hover:text-[#FF007F] absolute md:static !text-xl top-[30px] right-4" />
                     )}
                 </div>
             </div>
-            <div className="flex items-center gap-3">
-                {value && (
-                    <span className=" mt-4 md:mt-0 text-sm font-semibold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg border border-pink-500">
-                        {value}
-                    </span>
-                )}
-                {action ? (
-                    action
-                ) : (
-                    <ChevronRight
-                        size={18}
-                        className="
-                 text-gray-300 group-hover:text-pink-400 absolute md:static !text-xl
-                 top-[30px] right-4 "
-                    />
-                )}
-            </div>
-        </div>
-    );
+        );
+    };
 
     const SectionTitle = ({ title }) => (
-        <h2 className="text-normal text-gray-600 mb-4 px-2 uppercase tracking-widest font-gulfs">
+        <h2 className="text-normal text-gray-800 mb-4 px-2 uppercase tracking-widest font-gulfs">
             {title}
         </h2>
     );
@@ -301,7 +316,7 @@ export default function Accountsetting(props) {
                     <div className="md:text-center mb-10">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-gray-900 uppercase tracking-wide mb-2">
                             Account{" "}
-                            <span className="text-pink-600">Settings</span>
+                            <span className="text-[#FF007F]">Settings</span>
                         </h1>
                         <p className="text-gray-500 font-medium text-normal">
                             Manage your profile, preferences and security
@@ -312,6 +327,20 @@ export default function Accountsetting(props) {
                     {isCreator && (
                         <div className="mb-10 animate-fade-in-up">
                             <SectionTitle title="Creator Studio" />
+
+                            <EditProfile
+                                user={auth?.user}
+                                text={
+                                    <SettingItem
+                                        icon={UsersIcon}
+                                        title="My Profile"
+                                        subtitle="Manage your earnings and payouts"
+                                        value={auth?.user?.name}
+                                    />
+                                }
+                                classes="w-full"
+                                global_currency={global_currency}
+                            />
 
                             {stripeSubmitted && (
                                 <PaymentDashboard
@@ -329,6 +358,7 @@ export default function Accountsetting(props) {
 
                             <Popup
                                 space="4"
+                                size="lg"
                                 modalclass="pinkmodal"
                                 classes="w-full"
                                 text={
@@ -336,8 +366,10 @@ export default function Accountsetting(props) {
                                         icon={Gift}
                                         title="Platform Subscription"
                                         subtitle={
-                                            site_subscription?.status ===
-                                            "ACTIVE"
+                                            site_subscription?.subscription_status_code ===
+                                                1 ||
+                                            site_subscription?.subscription_status_code ===
+                                                2
                                                 ? "Active Subscription"
                                                 : "Manage Subscription"
                                         }
@@ -350,13 +382,20 @@ export default function Accountsetting(props) {
                                     subscription_status={subscription_status}
                                     user={auth?.user}
                                     site_subscription={site_subscription}
-                                />
+                                >
+                                    <SubscriptionHistory
+                                        subscriptionHistory={
+                                            subscription_history
+                                        }
+                                    />
+                                </SiteSubscription>
                             </Popup>
 
                             {subscription_history &&
                                 subscription_history.length > 0 && (
                                     <Popup
                                         space="4"
+                                        size="md"
                                         classes="w-full"
                                         modalclass="pinkmodal"
                                         text={
@@ -386,7 +425,7 @@ export default function Accountsetting(props) {
                                 modalclass="pinkmodal"
                                 text={
                                     <SettingItem
-                                        icon={Twitter}
+                                        icon={TwitterIcon}
                                         title="Auto Tweet"
                                         subtitle={
                                             auth.user.twitter_username
@@ -416,7 +455,7 @@ export default function Accountsetting(props) {
                             <FollowersBulkNotification
                                 trigger={
                                     <SettingItem
-                                        icon={Users}
+                                        icon={UsersIcon}
                                         title="Follower Notifications"
                                         subtitle="Send push notifications to followers"
                                     />
@@ -443,7 +482,7 @@ export default function Accountsetting(props) {
                             text={
                                 <SettingItem
                                     iconcolor={`text-voilet`}
-                                    icon={DollarSign}
+                                    icon={DollarSignIcon}
                                     title="Display Currency"
                                     subtitle="Choose your preferred currency"
                                     value={global_currency}
@@ -464,7 +503,7 @@ export default function Accountsetting(props) {
                                     text={
                                         <SettingItem
                                             iconcolor={`text-voilet`}
-                                            icon={MapPin}
+                                            icon={MapPinIcon}
                                             title="Address"
                                             subtitle="Manage your physical address"
                                         />
@@ -497,9 +536,17 @@ export default function Accountsetting(props) {
                                     />
                                 </Popup>
 
-                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-2xl hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[20px] md:rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                                     <div className="flex items-center gap-4 text-left">
-                                        <div className="p-2.5 rounded-xl bg-pink-50 text-pink-600">
+                                        {/* <div className="p-2.5 rounded-[10px] md:rounded-[20px]  bg-pink-50 text-[#FF007F]">
+                                            <PiggyBank
+                                                size={20}
+                                                strokeWidth={2.5}
+                                            />
+                                        </div> */}
+                                        <div
+                                            className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
+                                        >
                                             <PiggyBank
                                                 size={20}
                                                 strokeWidth={2.5}
@@ -509,7 +556,7 @@ export default function Accountsetting(props) {
                                             <h3 className="font-bold text-base text-gray-800">
                                                 Piggy Bank Earnings
                                             </h3>
-                                            <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                            <p className="text-sm text-gray-500 font-medium mt-0.5">
                                                 Show earnings goal on profile
                                             </p>
                                         </div>
@@ -527,16 +574,18 @@ export default function Accountsetting(props) {
                             </>
                         )}
 
-                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-2xl hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                             <div className="flex items-center gap-4 text-left">
-                                <div className="p-2.5 rounded-xl bg-pink-50 text-pink-600">
-                                    <Bell size={20} strokeWidth={2.5} />
+                                <div
+                                    className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
+                                >
+                                    <BellIcon size={20} strokeWidth={2.5} />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-base text-gray-800">
                                         Email Notifications
                                     </h3>
-                                    <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                    <p className="text-sm text-gray-500 font-medium mt-0.5">
                                         Receive updates via email
                                     </p>
                                 </div>
@@ -551,6 +600,22 @@ export default function Accountsetting(props) {
                                 />
                             </Switch>
                         </div>
+
+                        <SettingItem
+                            icon={History}
+                            title="Activity Logs"
+                            subtitle="View your audit trail and filter activity entries"
+                            onClick={() => router.get(route("activity.logs"))}
+                        />
+
+                        <SettingItem
+                            icon={Gift}
+                            title="Support History"
+                            subtitle="View your complete support history"
+                            onClick={() =>
+                                router.get(route("support.history.page"))
+                            }
+                        />
                     </div>
 
                     {/* SECURITY SECTION */}
@@ -560,6 +625,30 @@ export default function Accountsetting(props) {
                     >
                         <SectionTitle title="Security" />
 
+                        <ManagePasskey
+                            className="w-full border-2 border-[#FF007F] rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all"
+                            email={auth.user.email}
+                        />
+
+                        {isCreator && (
+                            <Popup
+                                size={"lg"}
+                                action={passClose}
+                                space="4"
+                                classes="w-full"
+                                modalclass="pinkmodal"
+                                text={
+                                    <SettingItem
+                                        icon={Shield}
+                                        title="Creator Security Zone"
+                                        subtitle="Manage sessions and blocked users"
+                                    />
+                                }
+                            >
+                                <SecurityZone />
+                            </Popup>
+                        )}
+
                         <Popup
                             action={emailPopupAction}
                             space="4"
@@ -567,7 +656,7 @@ export default function Accountsetting(props) {
                             modalclass="pinkmodal"
                             text={
                                 <SettingItem
-                                    icon={Mail}
+                                    icon={MailIcon}
                                     title="Email Address"
                                     subtitle="Update your email address"
                                     value={auth?.user?.email}
@@ -586,7 +675,7 @@ export default function Accountsetting(props) {
                             modalclass="pinkmodal"
                             text={
                                 <SettingItem
-                                    icon={Lock}
+                                    icon={LockIcon}
                                     title="Password"
                                     subtitle="Change your password"
                                     value="••••••••"
@@ -613,8 +702,6 @@ export default function Accountsetting(props) {
                                 }
                             />
                         </Link>
-
-                        <ManagePasskey email={auth.user.email} />
                     </div>
 
                     {/* SUPPORT SECTION */}
@@ -629,7 +716,7 @@ export default function Accountsetting(props) {
                             className="block w-full"
                         >
                             <SettingItem
-                                icon={Users}
+                                icon={UsersIcon}
                                 title="Refer & Earn"
                                 subtitle="Invite creators and earn rewards"
                             />
@@ -663,7 +750,7 @@ export default function Accountsetting(props) {
                                 className="block w-full"
                             >
                                 <SettingItem
-                                    icon={Globe}
+                                    icon={GlobeIcon}
                                     title="Privacy Policy"
                                     subtitle="Read our privacy policy"
                                     className="!mb-0"
@@ -685,7 +772,7 @@ export default function Accountsetting(props) {
                             text={
                                 <SettingItem
                                     bordercolor="border-red-600"
-                                    icon={Trash2}
+                                    icon={Trash2Icon}
                                     title="Delete Account"
                                     subtitle="Permanently remove your account and data"
                                     isDestructive
@@ -697,6 +784,11 @@ export default function Accountsetting(props) {
                     </div>
 
                     <div className="text-center text-xs text-gray-400 mt-10 pb-10">
+                        {auth?.user?.created_at && (
+                            <div className="mb-2">
+                                Joined on {new Date(auth.user.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                        )}
                         Version 2.0.0 • Spenny Piggy ©{" "}
                         {new Date().getFullYear()}
                     </div>

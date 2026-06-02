@@ -38,7 +38,7 @@ export default function ChangeVat({defaultvalue, updatevat}) {
       <p className="pb-4 font-normal text-gray-500">Add VAT percetage here eg. 40%</p>
       <div className="form-field mb-4">
           {/* <label className="d-block text-start"></label> */}
-          <input defaultValue={defaultvalue} onChange={handleinput} type="number" placeholder="VAT Percent" className="input-field w-full border rounded-[30px]  p-3 py-3" />
+          <input defaultValue={defaultvalue} onChange={handleinput} type="number" placeholder="VAT Percent" className="input-field w-full border rounded-[30px]   p-3 py-3" />
       </div>
       <LoaderButton onClick={()=>changeVat(data.currency)}
         disabled={processing}

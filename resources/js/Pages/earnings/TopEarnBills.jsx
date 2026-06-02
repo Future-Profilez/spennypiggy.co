@@ -30,22 +30,29 @@ export default function TopEarnBills({earnType}) {
     fetchingStats();
   },[earnType]);
 
-  function WishItem({ item }) {
+  function BillItem({ item }) {
     return (
-      <div className="flex gap-4 justify-between items-center py-3 border-b border-gray-50 last:border-0 group hover:bg-gray-50/50 px-2 -mx-2 rounded-xl transition-colors">
+      <div className="flex gap-4 justify-between items-center py-3 border-b-2 border-black last:border-0 group hover:bg-gray-100 px-2 -mx-2 rounded-[16px] transition-colors">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="relative shrink-0">
+          <div className="relative shrink-0 border-2 border-black rounded-[8px] overflow-hidden w-10 h-10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-200">
             <img 
               src={item.media || userphoto} 
               alt={item.title} 
-              className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:shadow transition-shadow" 
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
             />
           </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold text-gray-900 truncate">{item.title}</h3>
+          <div className="min-w-0 flex flex-col">
+            <h3 className="text-sm font-black text-black truncate flex items-center gap-2 uppercase">
+              {item.title}
+              {item.has_dispute ? (
+                <span className="text-[9px] font-black uppercase tracking-wider bg-red-100 text-red-600 px-2 py-0.5 rounded-md border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">Disputed</span>
+              ) : item.has_hold ? (
+                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">Hold</span>
+              ) : null}
+            </h3>
           </div>
         </div>
-        <div className="shrink-0 text-sm font-black text-gray-900 bg-gray-100 px-3 py-1.5 rounded-xl">
+        <div className="shrink-0 text-sm font-black text-black bg-white px-3 py-1.5 rounded-[12px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
           {formatMultiPrice((item && item.amount), (auth && auth.user && auth.user.currency || 'gbp'))}
         </div>
       </div>
@@ -53,31 +60,31 @@ export default function TopEarnBills({earnType}) {
   }
 
   return (
-    <section className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden h-full">
-      <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-        <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Top Bills</h2>
-        <span className="bg-orange-50 text-orange-700 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest">
+    <section className="bg-white rounded-[30px]  p-6 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden h-full flex flex-col hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-1">
+      <div className="pb-4 mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-black uppercase tracking-widest text-black">Top Bills</h2>
+        <span className="bg-orange-100 text-orange-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
           Essential
         </span>
       </div>
 
-      <div className="p-6 pt-2">
+      <div className="flex-grow">
         {loading ? (
           <div className="space-y-4 animate-pulse">
-            {[1, 2, 3].map(i => <div key={i} className="h-12 bg-gray-50 rounded-xl" />)}
+            {[1, 2, 3].map(i => <div key={i} className="h-14 bg-gray-200 rounded-xl border-2 border-gray-300" />)}
           </div>
         ) : lists && lists.length ? (
           lists.map((item, index) => (
-            <WishItem key={index} item={item} />
+            <BillItem key={index} item={item} />
           ))
         ) : (
           <div className="py-12 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-              <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-14 h-14 bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No bills found</p>
+            <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No bills found</p>
           </div>
         )}
       </div>

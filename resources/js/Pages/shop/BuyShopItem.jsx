@@ -1,4 +1,5 @@
 import React from 'react';
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import Popup from "@/Components/Popup";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
@@ -13,20 +14,18 @@ import AllContries from "../../includes/AllCountries";
 import Turnstile from "@/Components/Turnstile";
 
 export default function BuyShopItem({
-    vat_percent,
     opened,
     classes,
     text,
     s,
     open,
     isPaid,
-    selectedVarient,
     country,
     shippingPrice,
     card_capabilities,
 }) {
-    const { formatMultiPrice } = PriceFormat();
-    const { global_currency, auth, turnstileSiteKey, shop } = usePage().props;
+    const { formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
+    const { auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const turnstileRef = useRef(null);
     const [close, setClose] = useState();
 
@@ -36,8 +35,7 @@ export default function BuyShopItem({
         }
     }, [open]);
 
-    const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
-    const [isfairPrice, setIsfaiPrice] = useState(false);
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const actualPrice = () => {
         if (s && s.is_member == 1 && s.special_member_price) {
@@ -63,14 +61,10 @@ export default function BuyShopItem({
 
     const [fairPrice, setfaiPrice] = useState(actualPrice());
 
-    const enterFairPrice = (e) => {
-        if (e.target.value) {
-            setIsfaiPrice(true);
-        } else {
-            setIsfaiPrice(false);
-        }
-        setfaiPrice(e.target.value);
-    };
+    useEffect(() => {
+        setfaiPrice(actualPrice());
+    }, [s]);
+
     const slug = (inputString) => {
         return inputString
             .toLowerCase()
@@ -84,6 +78,7 @@ export default function BuyShopItem({
     const [name, setName] = useState((auth && auth.user?.name) || "");
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
@@ -96,9 +91,9 @@ export default function BuyShopItem({
     const [typedConfirmation, setTypedConfirmation] = useState("");
     const [verifyingOtp, setVerifyingOtp] = useState(false);
 
-    const onVerify = (token) => {
+    const onVerify = React.useCallback((token) => {
         setCaptchaToken(token || "");
-    };
+    }, []);
 
     
     const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -157,18 +152,12 @@ export default function BuyShopItem({
         return window.PublicKeyCredential !== undefined;
     };
 
-    
-    const isZeroDecimalCurrency = (currencyCode) => {
-        const zeroDecimalCurrencies = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'];
-        return zeroDecimalCurrencies.includes(currencyCode?.toUpperCase());
-    };
 
-    
     const [hasPasskey, setHasPasskey] = React.useState(false);
     
     React.useEffect(() => {
         const checkPasskey = async () => {
-            const userEmail = (typeof email !== 'undefined' ? email : null) || (typeof data !== 'undefined' && data?.email ? data.email : null) || auth?.user?.email;
+            const userEmail = email || auth?.user?.email;
             if (userEmail && isWebAuthnSupported()) {
                 try {
                     const res = await axios.post('/webauthn/check', { email: userEmail });
@@ -178,15 +167,15 @@ export default function BuyShopItem({
                 }
             }
         };
-        if (typeof showStepUp !== 'undefined' && showStepUp) {
+        if (showStepUp) {
             checkPasskey();
         }
-    }, [typeof showStepUp !== 'undefined' ? showStepUp : false]);
+    }, [showStepUp]);
 
     const handlePasskeyStepUp = async () => {
         try {
             setPasskeyLoading(true);
-            const userEmail = (typeof email !== 'undefined' ? email : null) || (typeof data !== 'undefined' && data?.email ? data.email : null) || auth?.user?.email;
+            const userEmail = email || auth?.user?.email;
 
             if (!userEmail) {
                 toast.error("Email required for passkey verification.");
@@ -233,7 +222,6 @@ export default function BuyShopItem({
             if (response.data.success) {
                 toast.success("Identity verified! Proceeding to checkout...");
                 setShowStepUp(false);
-                if (typeof setSkipCaptcha !== 'undefined') setSkipCaptcha(true);
                 buyItem("verified");
             } else {
                 toast.error("Passkey verification failed.");
@@ -297,23 +285,41 @@ export default function BuyShopItem({
             errorAlert("Please enter your name and email");
             return false;
         }
-        
+
+        if (shop.type === "physical") {
+            if (!shipping_info.country) {
+                errorAlert("Please select a shipping country");
+                return false;
+            }
+            if (!shipping_info.street_address || !shipping_info.city || !shipping_info.state || !shipping_info.postal_code) {
+                errorAlert("Please fill in all shipping address fields");
+                return false;
+            }
+        }
+
         // If token is passed directly (e.g. from verify), use it, otherwise use state
-        const currentToken = typeof token === 'string' ? token : captchaToken;
-        
+        const currentToken = typeof token === "string" ? token : captchaToken;
+
         const captchaQuery = currentToken
-            ? `&cf_turnstile_response=${encodeURIComponent(currentToken)}`
-            : "";
+            ? `&cf_turnstile_response=${encodeURIComponent(
+                  currentToken
+              )}&digital_waiver=1`
+            : "&digital_waiver=1";
+        
+        setLoading(true);
+        setChecking(true);
         if (shop.type === "physical") {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
+                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
                     {
                         shipping_info: JSON.stringify(shipping_info),
                     }
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        setLoading(false);
+                        setChecking(false);
                         if (res.data.step_up_required) {
                             setStepUpData({ ui: res.data.ui });
                             setStepUpContext(res.data.step_up_context);
@@ -333,21 +339,24 @@ export default function BuyShopItem({
                         window.location.href = res.data.url;
                     } else {
                         setLoading(false);
+                        setChecking(false);
                         errorAlert(res.data.message || "Something went wrong");
                     }
                 })
                 .catch((err) => {
                     setLoading(false);
+                    setChecking(false);
                     errorsHandling(err);
                 });
         } else {
-            setLoading(true);
             axios
-                .get(
-                    `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
+                .post(
+                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        setLoading(false);
+                        setChecking(false);
                         if (res.data.step_up_required) {
                             setStepUpData({ ui: res.data.ui });
                             setStepUpContext(res.data.step_up_context);
@@ -367,11 +376,13 @@ export default function BuyShopItem({
                         window.location.href = res.data.url;
                     } else {
                         setLoading(false);
+                        setChecking(false);
                         errorAlert(res.data.message || "Something went wrong");
                     }
                 })
                 .catch((err) => {
                     setLoading(false);
+                    setChecking(false);
                     errorsHandling(err);
                 });
         }
@@ -405,15 +416,11 @@ export default function BuyShopItem({
             });
     };
 
-    const [copied, setCopied] = useState(false);
     const handleCopy = () => {
-        const text = window.location.href;
         navigator.clipboard
-            .writeText(text)
+            .writeText(window.location.href)
             .then(() => {
-                setCopied(true);
                 toast.success("Copied to clipboard");
-                setTimeout(() => setCopied(false), 2000);
             })
             .catch((err) => {
                 console.error("Failed to copy: ", err);
@@ -452,38 +459,14 @@ export default function BuyShopItem({
                             <h2 className="text-center font-bold text-xl py-2">
                                 Thank you for your purchase!
                             </h2>
-                            <div className="border border-gray-200 p-3 rounded-[30px]  mt-4">
-                                <div className="mb-3 shop-item flex justify-between w-full items-center bg-white rounded-[30px] ">
-                                    <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[30px]  items-center">
-                                        <Link
-                                            href={`/shop/item/${slug(s.name)}/${
-                                                s.uuid
-                                            }`}
-                                            className="shop-img w-12 h-12 min-w-12"
-                                        >
-                                            <img
-                                                className="w-full h-full object-cover rounded-[30px]  "
-                                                src={s.perma_link}
-                                                alt=""
-                                            />
-                                        </Link>
-                                        <Link
-                                            href={`/shop/item/${slug(s.name)}/${
-                                                s.uuid
-                                            }`}
-                                            className="shop-text pl-3 "
-                                        >
-                                            <h2 className="text-md font-bold">
-                                                {s.name}
-                                            </h2>
-                                            <p className="text-gray-500 text-sm line-clamp-1 ">
-                                                {s.description}
-                                            </p>
-                                        </Link>
-                                    </div>
-                                </div>
+                            <div className="border border-gray-200 p-3 rounded-[30px]   mt-4">
 
-                                {s && s.success_page_type == "text" ? (
+                                {shop.type === "physical" ? (
+                                    <div className="text-center py-2">
+                                        <p className="text-gray-700 font-medium">📦 Your order has been placed!</p>
+                                        <p className="text-sm text-gray-500 mt-1">The creator will process and ship your order soon. You&apos;ll receive an email with tracking details once it&apos;s dispatched.</p>
+                                    </div>
+                                ) : s && s.success_page_type == "text" ? (
                                     <p>{s && s.success_page_value}</p>
                                 ) : (
                                     <a
@@ -505,14 +488,14 @@ export default function BuyShopItem({
                                             onChange={(e) =>
                                                 setReply(e.target.value)
                                             }
-                                            className="text-black bg-gray-100 rounded-[30px]   w-full mt-2 px-3 py-2 border border-gray-200"
+                                            className="text-black bg-gray-100 rounded-[30px]    w-full mt-2 px-3 py-2 border border-gray-200"
                                             type="text"
                                             placeholder="Ask your question ??"
                                         />
                                         {reply ? (
                                             <button
                                                 onClick={sendReply}
-                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[30px] "
+                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[30px]  "
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -535,7 +518,7 @@ export default function BuyShopItem({
                                 </p>
                                 <button
                                     onClick={handleCopy}
-                                    className="bg-gray-200 rounded-[30px]  px-4 py-2 mx-auto block mt-3 text-sm"
+                                    className="bg-gray-200 rounded-[30px]   px-4 py-2 mx-auto block mt-3 text-sm"
                                 >
                                     Copy Link
                                 </button>
@@ -549,19 +532,15 @@ export default function BuyShopItem({
                                         You will be charged{" "}
                                         <strong className="text-black">
                                             {formatMultiPrice(
-                                                fairPrice || s.price,
+                                            calculateTotalSupporterPays(
+                                                ((parseFloat(fairPrice || s.price) || 0) * (1 + (s?.user?.vat_amount_percentage || 0) / 100) + (parseFloat(shippingPrice) || 0)) * quantity,
                                                 s?.currency || "GBP"
-                                            )}{" "}
-                                            {vat_percent
-                                                ? `+${formatMultiPrice(
-                                                      vat_percent,
-                                                      s?.currency || "GBP"
-                                                  )}`
-                                                : ""}{" "}
-                                            + processing fee
+                                            ).total_supporter_pays,
+                                            s?.currency || "GBP"
+                                        )}
                                         </strong>
                                         <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                            * Includes all fees. You will be charged in {s?.currency || "GBP"}.
+                                            *Includes platform and payment processing fees and shipping. You will be charged in {s?.currency || "GBP"}.
                                         </span>
                                         <button className="tooltipbtn flex justify-center items-center !font-normal">
                                             ?
@@ -578,8 +557,8 @@ export default function BuyShopItem({
                                     </p>
                                 )}
                             </div>
-                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-[30px] ">
-                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[30px]  items-center">
+                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-[30px]  ">
+                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[30px]   items-center">
                                     <Link
                                         href={`/shop/item/${slug(s.name)}/${
                                             s.uuid
@@ -587,7 +566,7 @@ export default function BuyShopItem({
                                         className="shop-img w-12 h-12 min-w-12"
                                     >
                                         <img
-                                            className="w-full h-full object-cover rounded-[30px]  "
+                                            className="w-full h-full object-cover rounded-[30px]   "
                                             src={s.perma_link}
                                             alt=""
                                         />
@@ -609,7 +588,7 @@ export default function BuyShopItem({
                             </div>
                             {/* <p className='mb-1' >Enter a fair price (optional)</p>
                <input required onChange={enterFairPrice} min={s.price}
-               className="w-full border-gray-300 border px-4 py-2 rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
+               className="w-full border-gray-300 border px-4 py-2 rounded-[30px]   focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
 
                             <div className="form-field mb-3">
                                 <p className="mb-1">Name</p>
@@ -618,7 +597,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.name ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded"
+                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded"
                                     defaultValue={auth && auth.user?.name}
                                     onChange={(e) => setName(e.target.value)}
                                     type="text"
@@ -632,7 +611,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.email ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                     defaultValue={auth && auth.user?.email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     type="email"
@@ -644,14 +623,47 @@ export default function BuyShopItem({
                                 </p>
                             </div>
 
+                            {s.quantity_allow == 1 ? (
+                                <div className="form-field mb-3">
+                                    <p className="mb-1">Quantity</p>
+                                    <input
+                                        required
+                                        min="1"
+                                        max={s.slot_limitation !== null ? s.slot_limitation : undefined}
+                                        className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                        value={quantity}
+                                        onChange={(e) => {
+                                            if (e.target.value === '') {
+                                                setQuantity('');
+                                                return;
+                                            }
+                                            let val = parseInt(e.target.value);
+                                            if (isNaN(val) || val < 1) val = 1;
+                                            if (s.slot_limitation !== null && val > s.slot_limitation) {
+                                                val = s.slot_limitation;
+                                            }
+                                            setQuantity(val);
+                                        }}
+                                        onBlur={(e) => {
+                                            if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                                                setQuantity(1);
+                                            }
+                                        }}
+                                        type="number"
+                                        placeholder="1"
+                                    />
+                                </div>
+                            ) : null}
+
                             {shop.type === "physical" ? (
                                 <>
                                     <div className="mb-3">
-                                        <p className="mb-2">
-                                            Shipping Information
+                                        <p className="mb-2 font-bold text-gray-700">
+                                            Shipping Information <span className="text-red-500">*</span>
                                         </p>
                                         <select
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            required
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             name="country"
                                             onChange={handleShipInput}
                                         >
@@ -672,42 +684,42 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
-                                            placeholder="Street Address"
+                                            placeholder="Street Address *"
                                         />
                                     </div>
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
-                                            placeholder="City"
+                                            placeholder="City *"
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
-                                                placeholder="State"
+                                                placeholder="State *"
                                             />
                                         </div>
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
                                                 onChange={handleShipInput}
                                                 name="postal_code"
-                                                type="email"
-                                                placeholder="Postal Code"
+                                                type="text"
+                                                placeholder="Postal Code *"
                                             />
                                         </div>
                                     </div>
@@ -732,11 +744,13 @@ export default function BuyShopItem({
                                 </div>
                             )}
 
+                            <CheckoutLegalTerms onAgreeChange={(checked) => setDigitalWaiver(checked)} />
+
                             <button
-                                disabled={checking || !card_capabilities}
+                                disabled={checking || !card_capabilities || !digitalWaiver}
                                 onClick={executeCaptcha}
                                 className={`${
-                                    checking || !card_capabilities ? "opacity-[0.5] disabled" : ""
+                                    checking || !card_capabilities || !digitalWaiver ? "opacity-[0.5] disabled" : ""
                                 }  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}
                             >
                                 {checking ? "Buying.." : "Pay"}
@@ -767,7 +781,7 @@ export default function BuyShopItem({
                             <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -778,7 +792,7 @@ export default function BuyShopItem({
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -808,12 +822,12 @@ export default function BuyShopItem({
                             <button
                                 type="button"
                                 onClick={handlePasskeyStepUp}
-                                disabled={passkeyLoading || (typeof verifyingOtp !== 'undefined' ? verifyingOtp : false)}
+                                disabled={passkeyLoading || verifyingOtp}
                                 className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>

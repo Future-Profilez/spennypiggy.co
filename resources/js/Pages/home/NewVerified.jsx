@@ -22,7 +22,7 @@ Stay updated with our newest community members.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-6">
           {creators.map((c) => (
-            <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-[30px]   p-4 border-2 border-green-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#22c55e] hover:shadow-[6px_6px_0_0_#22c55e] text-white">
+            <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-[30px]    p-4 border-2 border-green-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#22c55e] hover:shadow-[6px_6px_0_0_#22c55e] text-white">
               <div className="absolute top-[-13px] right-[-13px] bg-red-500 text-white text-xs  px-2 py-1 rounded-full">New</div>
             <Avatar 
               name={c.name}

@@ -55,7 +55,7 @@ function base64urlToUint8Array(base64url) {
     return bytes;
 }
 
-export default function ManagePasskey({ email }) {
+export default function ManagePasskey({ email, className }) {
     const [loading, setLoading] = useState(false);
     const [hasPasskey, setHasPasskey] = useState(null);
     const [passkeys, setPasskeys] = useState([]);
@@ -189,7 +189,7 @@ export default function ManagePasskey({ email }) {
     };
 
     return (
-        <div className="bg-gray-50 rounded-[20px] border border-gray-200 mb-4 overflow-hidden">
+        <div className={`bg-gray-50 rounded-[20px] border border-gray-200 mb-4 overflow-hidden ${className || ""}`}>
             <div className="p-4 flex items-center justify-between border-b border-gray-200">
                 <div className="pe-4">
                     <h4 className="font-medium text-gray-800">Passkeys / FaceID</h4>
@@ -203,7 +203,7 @@ export default function ManagePasskey({ email }) {
                         type="button"
                         onClick={handleRegister}
                         disabled={loading}
-                        className=" whitespace-nowrap px-4 py-2 bg-pink-100 text-pink-600 rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50 flex items-center"
+                        className=" whitespace-nowrap px-4 py-2 bg-pink-100 text-[#FF007F] rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50 flex items-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

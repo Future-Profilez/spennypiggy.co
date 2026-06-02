@@ -17,18 +17,23 @@ class Membership extends Model
         'product_id',
         'price_id',
         'level',
-        // Deprecated monetary fields - use supporterCount and social metrics instead
-        // 'price',
+        'price',
+        'currency',
+        'tax_amount',
         'thumbnail',
         'rewards',
         'status',
+        'approved',
+        'edited_reason',
+        'edited_status',
         // New social engagement fields
         'supporter_count',
         'gift_frequency',
         'creator_growth_rate',
         'rising_score',
         'engagement_level',
-        'trending_status'
+        'trending_status',
+        'is_suspended'
     ];
 
 
@@ -72,7 +77,8 @@ class Membership extends Model
         return $url;
     }
 
-    public function user(){
-        return $this->belongsTo(User::class)->where('is_uk', 0);
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

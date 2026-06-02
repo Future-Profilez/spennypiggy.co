@@ -39,13 +39,13 @@ export default function StripeSafe() {
                           <ArrowRight />
                         </Link>
                         <div className="text-xs md:text-sm font-medium text-gray-700">
-                          3 days free • £4/month after • Cancel anytime
+                          3 days free • £8.99 + VAT / month after • Cancel anytime
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className=" grid lg:grid-cols-2 gap-0 overflow-hidden rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                  <div className=" grid lg:grid-cols-2 gap-0 overflow-hidden rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                      
                      <div className="bg-black text-white p-4 sm:!p-8 md:!p-12 lg:!p-16 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-800">
                         <div className="mb-10">
@@ -59,7 +59,7 @@ export default function StripeSafe() {
                         
                         <ul className="space-y-8">
                            <li className="flex gap-4">
-                              <div className="bg-red-500/20 p-3 rounded-[30px]  h-fit shrink-0">
+                              <div className="bg-red-500/20 p-3 rounded-[30px]   h-fit shrink-0">
                                  <AlertTriangle className="text-red-500" size={24} />
                               </div>
                               <div>
@@ -67,7 +67,7 @@ export default function StripeSafe() {
                               </div>
                            </li>
                            <li className="flex gap-4">
-                              <div className="bg-red-500/20 p-3 rounded-[30px]  h-fit shrink-0">
+                              <div className="bg-red-500/20 p-3 rounded-[30px]   h-fit shrink-0">
                                  <AlertTriangle className="text-red-500" size={24} />
                               </div>
                               <div>
@@ -111,20 +111,20 @@ export default function StripeSafe() {
                   </div>
 
                   <div className=" mt-12">
-                     <div className="bg-[#fdfbf7] text-gray-900 p-4 md:!p-8 lg:!p-12 rounded-[25px] md:rounded-[30px] border-[3px] border-black flex flex-col md:flex-row items-center justify-between gap-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                     <div className="bg-[#fdfbf7] text-gray-900 p-4 md:!p-8 lg:!p-12 rounded-[25px] md:rounded-[30px]  border-[3px] border-black flex flex-col md:flex-row items-center justify-between gap-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                         <div>
                            <h2 className="text-2xl md:text-3xl lg:text-3xl font-gulfs uppercase mb-4">Disputes</h2>
                            <ul className="space-y-3">
                               <li className="flex items-center gap-3 text-lg text-gray-600">
-                                 <Lock className="text-pink-600" size={20} /> Disputes are handled by the platform.
+                                 <Lock className="text-[#FF007F]" size={20} /> Disputes are handled by the platform.
                               </li>
                               <li className="flex items-center gap-3 text-lg text-gray-600">
-                                 <Lock className="text-pink-600" size={20} /> Creators are never debited.
+                                 <Lock className="text-[#FF007F]" size={20} /> Creators are never debited.
                               </li>
                            </ul>
                         </div>
                         <div className="shrink-0">
-                           <ShieldCheck size={80} className="text-pink-500 opacity-80" />
+                           <ShieldCheck size={80} className="text-[#FF007F] opacity-80" />
                         </div>
                      </div>
                   </div>

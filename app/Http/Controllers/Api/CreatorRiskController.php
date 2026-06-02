@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CreatorMetric;
 use App\Models\EarlyFraudWarning;
+use App\Models\Payment;
 use App\Models\PlatformRiskState;
 use Illuminate\Http\Request;
 
@@ -22,25 +23,62 @@ class CreatorRiskController extends Controller
         }
 
         $banners = [];
-        $metrics = CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
+        $policy = app(\App\Services\Risk\ReservePolicy::class)->getReservePolicySummary($user, $metrics, now());
+        $creatorRules = \App\Models\RiskSetting::get('creator_rules', []);
+        $newCreatorAgeDays = (int) ($creatorRules['new_creator_age_days'] ?? 30);
+        $isNewCreator = $user->created_at?->diffInDays(now()) < $newCreatorAgeDays;
+        $isStripeConnected = ((int) ($user->stripe_details_submitted ?? 0)) === 1;
+        $hasAnyEarnings = Payment::where('creator_id', (string) $user->uuid)
+            ->whereIn('status', ['succeeded', 'review_hold', 'disputed', 'refunded'])
+            ->exists();
 
         // 1. RESERVE_APPLIED
-        if ($metrics->reserve_percent > 0) {
-            $banners[] = [
-                'key' => 'RESERVE_APPLIED',
-                'type' => 'warning',
-                'title' => 'Reserve Applied',
-                'body' => "A temporary reserve of {$metrics->reserve_percent}% has been applied due to increased disputes. This protects payouts long-term.",
-                'action_url' => '/stripe/login',
-                'action_label' => 'View Payouts',
-                'action_method' => 'post',
-                'what_happened' => "To ensure platform stability and protect against potential disputes, a temporary reserve has been placed on your account. This means {$metrics->reserve_percent}% of your earnings is held for a rolling period before being released.",
-                'what_to_do' => "Continue fulfilling orders and maintaining good standing. The reserve is automatically reviewed and may be lowered as your account history improves. You can check your payout schedule in the dashboard.",
-            ];
+        if (($policy['effective_percent'] ?? 0) > 0 && $isStripeConnected && $hasAnyEarnings) {
+            $isHighRisk = ($metrics->risk_level ?? null) === 'high';
+            $isMediumRisk = ($metrics->risk_level ?? null) === 'medium';
+
+            if ($isNewCreator && !$isHighRisk && !$isMediumRisk) {
+                $daysRemaining = (int) ($policy['onboarding_days_remaining'] ?? 0);
+                $endsAt = $policy['onboarding_ends_at'] ?? null;
+                $banners[] = [
+                    'key' => 'RESERVE_APPLIED',
+                    'type' => 'info',
+                    'title' => 'New Creator Reserve',
+                    'body' => "A portion of your earnings ({$policy['effective_percent']}%) is temporarily reserved for 30 days. Funds auto-release after the rolling period." . ($endsAt ? " New-creator period ends on {$endsAt}" : "") . ($daysRemaining > 0 ? " ({$daysRemaining} days left)" : ""),
+                    'action_url' => '/stripe/login',
+                    'action_label' => 'View Payouts',
+                    'action_method' => 'post',
+                    'what_happened' => "New creators start with a small rolling reserve for the first {$newCreatorAgeDays} days while account history is built. Reserves are released automatically after the rolling period.",
+                    'what_to_do' => "No action needed. Keep fulfilling orders and collecting genuine supporters. Your reserve is reviewed as your account history grows.",
+                ];
+            } else {
+                $reason = $isHighRisk ? 'account risk signals' : ($isMediumRisk ? 'additional safety checks' : 'platform safety');
+                $banners[] = [
+                    'key' => 'RESERVE_APPLIED',
+                    'type' => 'warning',
+                    'title' => 'Reserve Applied',
+                    'body' => "A portion of your earnings ({$policy['effective_percent']}%) is temporarily reserved for 30 days due to {$reason}. Funds auto-release after the rolling period.",
+                    'action_url' => '/stripe/login',
+                    'action_label' => 'View Payouts',
+                    'action_method' => 'post',
+                    'what_happened' => "To protect against potential disputes and keep payouts stable, a rolling reserve is held. This means {$policy['effective_percent']}% of your earnings is held temporarily before being released.",
+                    'what_to_do' => "Continue fulfilling orders and maintaining good standing. The reserve is reviewed automatically and may be lowered as your account history improves.",
+                ];
+            }
         }
 
         // 2. PAYOUT_DELAYED
-        if ($metrics->payout_delay_days > 0) {
+        if (
+            $metrics->payout_delay_days > 0
+            && $isStripeConnected
+            && $hasAnyEarnings
+            && (
+                ($metrics->risk_level && $metrics->risk_level !== 'low')
+                || ($metrics->reserve_percent > 0)
+                || ((bool) ($metrics->is_overridden ?? false))
+            )
+        ) {
             $banners[] = [
                 'key' => 'PAYOUT_DELAYED',
                 'type' => 'info',
@@ -81,7 +119,7 @@ class CreatorRiskController extends Controller
             ->where('created_at', '>=', now()->subHours(48))
             ->exists();
 
-        if ($recentEFW) {
+        if ($recentEFW && $isStripeConnected && $hasAnyEarnings) {
              $banners[] = [
                 'key' => 'REFUND_RECOMMENDED',
                 'type' => 'action_required',
@@ -95,7 +133,7 @@ class CreatorRiskController extends Controller
         }
         
         // 5. CONCENTRATION_RISK (Top Buyer)
-        if ($metrics->top_buyer_percent >= 40.0) {
+        if ($metrics->top_buyer_percent >= 40.0 && $isStripeConnected && $hasAnyEarnings) {
              $banners[] = [
                 'key' => 'GROWTH_PACING_ACTIVE',
                 'type' => 'info',
@@ -112,7 +150,7 @@ class CreatorRiskController extends Controller
             'banners' => $banners,
             'metrics' => [
                 'dispute_rate_30d' => $metrics->dispute_rate_30d,
-                'reserve_percent' => $metrics->reserve_percent,
+                'reserve_percent' => $policy['effective_percent'] ?? $metrics->reserve_percent,
             ]
         ]);
     }

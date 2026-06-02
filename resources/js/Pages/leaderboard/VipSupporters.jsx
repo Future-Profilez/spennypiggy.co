@@ -67,7 +67,7 @@ export default function VipSupporters() {
                 <div className="flex justify-between gap-3 text-center">
                     {/* <div className="stat-item">
                         <div className="flex items-center justify-center mb-1">
-                            <RiGiftLine size={16} className="text-pink-500 mr-1" />
+                            <RiGiftLine size={16} className="text-[#FF007F] mr-1" />
                             <span className="text-xs text-gray-500">Gifts</span>
                         </div>
                         <p className="font-bold text-gray-900 text-sm">{supporter.total_gifts}</p>
@@ -85,7 +85,7 @@ export default function VipSupporters() {
                         <p className="font-bold text-gray-900 text-sm">{supporter.creators_supported_count}</p>
                         <div className="flex items-center justify-center mb-1">
                             <RiUserStarLine size={16} className="text-blue-500 mr-1" />
-                            <span className="text-xs text-gray-500">Supportors</span>
+                            <span className="text-xs text-gray-500">Supporters</span>
                         </div>
                     </div>
                     <div className="stat-item">
@@ -120,7 +120,7 @@ export default function VipSupporters() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
+            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading VIP Supporters...</span>
                 </div>
@@ -130,7 +130,7 @@ export default function VipSupporters() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 text-center">
+            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
                 <div className="alert alert-danger" role="alert">
                     {error}
                     <button 
@@ -144,7 +144,7 @@ export default function VipSupporters() {
     }
 
     return vipSupporters.length > 0 ? (
-        <div className="bg-gray-100 rounded-[30px]  p-4 mb-6">
+        <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
             <h2 className="font-GillSans text-2xl uppercase text-dark text-start mb-2">
                 💎 VIP Supporters
             </h2>

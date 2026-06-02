@@ -25,7 +25,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                        Hey <strong style="color:#8C52FF;">{{ $name ?? 'there' }}</strong>!<br><br>
+                        Hey <strong style="color:#8C52FF;">{{ ucwords($name ?? 'there') }}</strong>!<br><br>
                         Welcome to Spenny Piggy! Your wishlist has been added successfully.
                     </td>
                 </tr>
@@ -37,7 +37,7 @@
                 <tr style="line-height: 10px; height: 10px;"><td></td></tr>
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href="{{ env('APP_URL') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View My Wishlist</a>
+                        <a href="{{ env('APP_URL') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View My Wishlist</a>
                     </td>
                 </tr>
                 <tr style="line-height: 10px; height: 10px;"><td></td></tr>

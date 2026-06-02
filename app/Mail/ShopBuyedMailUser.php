@@ -16,6 +16,7 @@ class ShopBuyedMailUser extends Mailable
     public $data;
     public $url;
     public $curr;
+    public $deliverable;
 
 
     /**
@@ -23,11 +24,12 @@ class ShopBuyedMailUser extends Mailable
      *
      * @return void
      */
-    public function __construct($data,$url,$curr)
+    public function __construct($data,$url,$curr, $deliverable = null)
     {
         $this->data = $data;
         $this->url = $url;
         $this->curr = $curr;
+        $this->deliverable = $deliverable;
     }
 
     /**
@@ -37,12 +39,17 @@ class ShopBuyedMailUser extends Mailable
      */
     public function build()
     {
-        try {
-            $subject = "Thank You For Claiming Shop Item  " . $this->data->shop->name;
-            return $this->view('email.shop-buy-user')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
-                ->subject($subject);
-        } catch (\Exception $e) {
+        // Ensure relationships are loaded if this is being handled in the queue
+        if (!$this->data->relationLoaded('shop.user')) {
+            $this->data->load(['shop.user']);
         }
+
+        $creatorName = $this->data->shop?->user?->name ?? 'a creator';
+        $itemName = $this->data->shop?->name ?? 'Shop Item';
+        $subject = "Purchase confirmed: {$creatorName}'s {$itemName}";
+
+        return $this->view('email.shop-buy-user')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject($subject);
     }
 }

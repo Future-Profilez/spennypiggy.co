@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\WebVitalsController;
 use App\Http\Controllers\Api\DeliverableController;
+use App\Http\Controllers\Api\RiskController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\FounderBonusController;
@@ -68,14 +69,15 @@ Route::middleware('web')->group(function () {
 
 // Risk Engine Routes
 Route::prefix('risk')->group(function () {
-    Route::post('/evaluate', [\App\Http\Controllers\Api\RiskController::class, 'evaluate']);
-    Route::post('/step-up/verify', [\App\Http\Controllers\Api\RiskController::class, 'verifyStepUp'])->middleware('web');
-    Route::post('/step-up/verify-passkey', [\App\Http\Controllers\Api\RiskController::class, 'verifyStepUpPasskey'])->middleware('web');
-    Route::get('/limits', [\App\Http\Controllers\Api\RiskController::class, 'getEffectiveLimits']);
+    Route::post('/evaluate', [RiskController::class, 'evaluate']);
+    Route::post('/step-up/verify', [RiskController::class, 'verifyStepUp'])->middleware('web');
+    Route::post('/step-up/resend',[RiskController::class, 'resendStepUpOtp'])->middleware('web');
+    Route::post('/step-up/verify-passkey', [RiskController::class, 'verifyStepUpPasskey'])->middleware('web');
+    Route::get('/limits', [RiskController::class, 'getEffectiveLimits']);
 });
 
 Route::prefix('payments')->group(function () {
-    Route::post('/create-intent', [\App\Http\Controllers\Api\RiskController::class, 'createPaymentIntent']);
+    Route::post('/create-intent', [RiskController::class, 'createPaymentIntent']);
 });
 
 // Creator Risk Dashboard moved to web.php for session auth
@@ -83,18 +85,21 @@ Route::prefix('payments')->group(function () {
 //     Route::get('/risk-status', [\App\Http\Controllers\Api\CreatorRiskController::class, 'getRiskStatus']);
 // });
 
+// Internal Sync Routes
+Route::post('/internal/sync-financials', [\App\Http\Controllers\Api\InternalSyncController::class, 'syncFinancials']);
+
 // Admin Dashboard & Exports
 Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);
     Route::get('/export/audit-pack', [\App\Http\Controllers\Admin\AuditExportController::class, 'export']);
-    
+
     // Risk Management Routes
     Route::post('/risk/override', [\App\Http\Controllers\Admin\RiskController::class, 'override']);
     Route::post('/risk/reset', [\App\Http\Controllers\Admin\RiskController::class, 'reset']);
     Route::get('/risk/creators/{id}/disputes', [\App\Http\Controllers\Admin\RiskController::class, 'disputes']);
     Route::get('/risk/creators/{id}/reserves', [\App\Http\Controllers\Admin\RiskController::class, 'reserves']);
     Route::post('/risk/recalculate/{id}', [\App\Http\Controllers\Admin\RiskController::class, 'recalculate']);
-    
+
     // Payout Routes
     Route::prefix('payout')->group(function () {
         Route::post('/preview', [\App\Http\Controllers\Admin\PayoutController::class, 'preview']);

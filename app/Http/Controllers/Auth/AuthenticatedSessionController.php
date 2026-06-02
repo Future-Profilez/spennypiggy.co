@@ -44,6 +44,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use PragmaRX\Google2FALaravel\Google2FA;
@@ -87,7 +88,7 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerateToken();
             return response()->json([
                 'status' => false,
-                'message' => 'Your account is suspended. Please contact support.'
+                'message' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.'
             ], 403);
         }
         $request->session()->regenerate();
@@ -97,8 +98,20 @@ class AuthenticatedSessionController extends Controller
             'status' => true,
             'message' => 'Logged in successfully',
             'user' => $user,
-            'redirect_url' => route('user.show', ['username' => $user->username])
+            'redirect_url' => $this->getRedirectUrl($user)
         ]);
+    }
+
+    /**
+     * Get redirect URL after login
+     */
+    protected function getRedirectUrl($user): string
+    {
+        if (session()->has('url.intended')) {
+            return session()->pull('url.intended');
+        }
+
+        return route('user.show', ['username' => $user->username]);
     }
 
     // public function store(LoginRequest $request)
@@ -169,8 +182,15 @@ class AuthenticatedSessionController extends Controller
 
     public function verifyUser(Request $request)
     {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-        $user = User::where('email', $request->email)->where('is_uk', 0)->first();
+        $email = Str::lower(trim((string) $validated['email']));
+        $user = User::withTrashed()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
 
         if (empty($user)) {
             return response()->json([
@@ -179,9 +199,16 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        if (method_exists($user, 'trashed') && $user->trashed()) {
+            return response()->json([
+                'status' => false,
+                'msg' => "This account is deactivated. Please contact support."
+            ]);
+        }
+
         $is_2fa = false;
         if ($user->is_2fa) {
-            if (!Hash::check($request->password, $user->password)) {
+            if (!Hash::check($validated['password'], $user->password)) {
                 return response()->json([
                     'status' => false,
                     'msg' => "Either email or password is wrong."
@@ -223,19 +250,28 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username, $page = 'about')
     {
-        $getData = function () use ($username, $page) {
+        $forceRefresh = request()->has('refresh');
+        if ($forceRefresh && Auth::check()) {
+            $targetUser = \App\Models\User::where('username', $username)->first();
+            if ($targetUser && (string) Auth::id() === (string) $targetUser->id) {
+                $this->profileService->clearUserCaches($username, $targetUser->id);
+            }
+        }
+
+        $getData = function () use ($username, $page, $forceRefresh) {
             $profileData = $this->profileService->preloadUserProfileData($username);
             if (empty($profileData)) {
                 return ['__page' => 'NotFound'];
             }
 
             $user = $profileData['user'];
+            $isOwner = Auth::check() && (string) Auth::id() === (string) $user->id;
 
             if ($user->suspended_account == 1) {
                 return ['__page' => 'Suspanded'];
             }
 
-            $pageData = $this->getPageSpecificData($user->id, $page);
+            $pageData = $this->getCachedPageSpecificData($user->id, $page, $isOwner, $forceRefresh);
 
             $this->setSeoMetaTags($user, $username);
 
@@ -245,16 +281,32 @@ class AuthenticatedSessionController extends Controller
             $cardCapabilities = true;
             $stripeRequirements = [];
 
-            if ($user->role == 1 && !empty($user->account_id)) {
+            // Deferred stripe API calls for non-owners using Inertia Lazy
+            // Only do it synchronously if viewing OWN profile
+            if ($page === 'about' && $user->role == 1 && !empty($user->account_id) && $isOwner) {
                 [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
             }
-            $sociallinks = SocialLinks::where('user_id', $user->id)->first();
+            // Fetch social links using eager loaded relation or cache
+            $sociallinks = $user->social_links;
+            if ($sociallinks && $sociallinks->status != 1 && (!Auth::check() || Auth::id() !== $user->id)) {
+                $sociallinks = null;
+            }
             if ($page == 'about') {
                 $userIntro = $user->intro;
             }
 
-            $migrationStatus = $this->getMigrationStatus($user);
+            $migrationStatus = ['needs_migration' => false, 'show_warning' => false];
+            if ($page === 'about') {
+                $migrationStatus = $this->getMigrationStatus($user);
+            }
             $founderData = $this->getFounderData($user);
+
+            $isBlocked = false;
+            if (Auth::check() && Auth::id() !== $user->id) {
+                $isBlocked = \App\Models\UserBlock::where('creator_id', Auth::id())
+                    ->where('blocked_id', $user->id)
+                    ->exists();
+            }
 
                 return [
                     '__page' => 'Dashboard',
@@ -265,25 +317,22 @@ class AuthenticatedSessionController extends Controller
                     'has_stripe_account' => !empty($user->account_id),
                     'isNeedToUpgrade' => $isNeedToUpgrade,
                     'stripe_requirements' => $stripeRequirements,
-                'migration_status' => $migrationStatus,
-                'sociallinks' => $sociallinks,
-                'slinks' => $sociallinks,
-                'intro' => $userIntro,
-                'supporters' => $profileData['supporters'],
-                'wish_categories' => $this->getCategoriesWithItems($user),
-                'selectedCategory' => request()->query('category') ?? false,
-                'page' => $page,
-                'first30DayEarnings' => $founderData['first30DayEarnings'],
-                ...$pageData
-            ];
+                    'migration_status' => $migrationStatus,
+                    'sociallinks' => $sociallinks,
+                    'slinks' => $sociallinks,
+                    'intro' => $userIntro,
+                    'supporters' => $profileData['supporters'],
+                    'wish_categories' => $page === 'wishes' ? $this->getCategoriesWithItems($user) : [],
+                    'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories : [],
+                    'selectedCategory' => request()->query('category') ?? false,
+                    'page' => $page,
+                    'is_blocked' => $isBlocked,
+                    ...$pageData,
+                    'first30DayEarnings' => $founderData['first30DayEarnings'],
+                    'founderData' => $founderData,
+                ];
         };
-
-        if (Auth::check()) {
-            $data = $getData();
-        } else {
-            $cacheKey = 'profile_' . $username . '_' . $page . '_' . md5(json_encode(request()->all()));
-            $data = Cache::remember($cacheKey, 600, $getData);
-        }
+        $data = $getData();
 
         if (($data['__page'] ?? null) === 'NotFound') {
             return Inertia::render('NotFound');
@@ -294,6 +343,22 @@ class AuthenticatedSessionController extends Controller
         $pageName = $data['__page'] ?? 'Dashboard';
         unset($data['__page']);
         return Inertia::render($pageName, $data);
+    }
+
+    private function getCachedPageSpecificData(int $userId, string $page, bool $isOwner, bool $bypassCache): array
+    {
+        if ($bypassCache) {
+            return $this->getPageSpecificData($userId, $page);
+        }
+
+        $version = $this->profileService->getProfileCacheToken($userId);
+        $categoryKey = request()->query('category') ?? 'all';
+        $cacheKey = "profile_page_data_{$userId}_{$categoryKey}_{$page}_v{$version}";
+        $ttl = $isOwner ? 30 : 600;
+
+        return Cache::remember($cacheKey, $ttl, function () use ($userId, $page) {
+            return $this->getPageSpecificData($userId, $page);
+        });
     }
 
 
@@ -308,33 +373,32 @@ class AuthenticatedSessionController extends Controller
             return [false, false, []];
         }
 
-        // Removed caching
         try {
-            $account = StripeControl::getAccount($user->account_id);
+            $cacheKey = 'stripe_caps_v1_' . $user->account_id;
+            return Cache::remember($cacheKey, 300, function () use ($user) {
+                StripeControl::getAccount($user->account_id);
 
-            // Use the proper migration check to determine if upgrade is needed
-            $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-            $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
+                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+                $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
 
-            $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
+                $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
 
-            // Get comprehensive account requirements
-            $requirements = StripeControl::getAccountRequirements($user->account_id);
+                $requirements = StripeControl::getAccountRequirements($user->account_id);
 
-            // Add migration requirement if account needs upgrade
-            if ($isNeedToUpgrade) {
-                $requirements['has_requirements'] = true;
-                $requirements['requirements'][] = [
-                    'type' => 'legacy_upgrade',
-                    'severity' => 'high',
-                    'title' => 'Account Upgrade Required',
-                    'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
-                    'action' => 'Upgrade your Stripe account now.',
-                    'action_url' => '/stripe/upgrade-express-account'
-                ];
-            }
+                if ($isNeedToUpgrade) {
+                    $requirements['has_requirements'] = true;
+                    $requirements['requirements'][] = [
+                        'type' => 'legacy_upgrade',
+                        'severity' => 'high',
+                        'title' => 'Account Upgrade Required',
+                        'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
+                        'action' => 'Upgrade your Stripe account now.',
+                        'action_url' => '/stripe/upgrade-express-account'
+                    ];
+                }
 
-            return [$isNeedToUpgrade, $cardCapabilities, $requirements];
+                return [$isNeedToUpgrade, $cardCapabilities, $requirements];
+            });
         } catch (\Exception $e) {
             // Update user if account is invalid
             $user->update(['stripe_details_submitted' => 0]);
@@ -364,9 +428,9 @@ class AuthenticatedSessionController extends Controller
             
             $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
                 $q->where('user_id', $user->id);
-                if ($isPublicView) {
-                    $q->where('is_approved', 1);
-                }
+                // For both public and owner, only show categories with approved items
+                // This matches the user's request to only show categories with items (meaning visible items)
+                $q->where('is_approved', 1);
             })->pluck('user_category_id')->unique()->filter();
 
             // Return the filtered categories as a collection
@@ -390,18 +454,20 @@ class AuthenticatedSessionController extends Controller
             return ['needs_migration' => false, 'show_warning' => false];
         }
 
-        // Removed caching
         try {
-            $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+            $cacheKey = 'stripe_migration_status_v1_' . $user->id;
+            return Cache::remember($cacheKey, 300, function () use ($user) {
+                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
 
-            return [
-                'needs_migration' => $migrationCheck['needs_migration'] ?? false,
-                'show_warning' => $migrationCheck['needs_migration'] ?? false,
-                'current_agreement' => $migrationCheck['current_agreement'] ?? null,
-                'required_agreement' => $migrationCheck['required_agreement'] ?? null,
-                'country' => $migrationCheck['country'] ?? $user->country,
-                'reason' => $migrationCheck['reason'] ?? 'Account check not available'
-            ];
+                return [
+                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
+                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
+                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
+                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
+                    'country' => $migrationCheck['country'] ?? $user->country,
+                    'reason' => $migrationCheck['reason'] ?? 'Account check not available'
+                ];
+            });
         } catch (\Exception $e) {
             return [
                 'needs_migration' => false,
@@ -422,7 +488,10 @@ class AuthenticatedSessionController extends Controller
             'memberships' => [],
             'bills' => [],
             'shops' => [],
-            'tasks' => []
+            'tasks' => [],
+            'piggyPots' => [],
+            'piggyPotTopSupporters' => [],
+            'piggyPotFeed' => []
         ];
 
         switch ($page) {
@@ -436,8 +505,17 @@ class AuthenticatedSessionController extends Controller
                 break;
 
             case 'feed':
+                $data['posts'] = $this->profileService->getUserPosts($userId);
+                break;
+            case 'piggy-pots':
+                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId, false);
+                break;
+
             case 'about':
                 $data['posts'] = $this->profileService->getUserPosts($userId);
+                $data['piggyPots'] = $this->profileService->getOptimizedPiggyPots($userId, Auth::id() === $userId, true);
+                $data['piggyPotTopSupporters'] = $this->profileService->getPiggyPotTopSupporters($userId);
+                $data['piggyPotFeed'] = $this->profileService->getPiggyPotFeed($userId);
                 break;
 
             case 'memberships':
@@ -461,19 +539,67 @@ class AuthenticatedSessionController extends Controller
      */
     private function setSeoMetaTags($user, string $username): void
     {
-        $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
+        $defaultImage = url('/og-image.png');
+        $image = $defaultImage;
+        if (!empty($user->social_image)) {
+            $image = "https://ucarecdn.com/{$user->social_image}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        } elseif (!empty($user->cover)) {
+            $image = "https://ucarecdn.com/{$user->cover}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        } elseif (!empty($user->avatar)) {
+            $image = "https://ucarecdn.com/{$user->avatar}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        }
 
-        SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");
-        SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:description', 'content' => 'Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image', 'content' => $image]);
-        SeoMeta::addTag('meta', ['property' => 'twitter:site', 'content' => '@spennypiggy']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:creator', 'content' => '@spennypiggy']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
-        SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
-        SeoMeta::addTag('link', ['rel' => 'canonical', 'href' => "https://spennypiggy.co/{$username}"]);
+        $isWishPage = request()->routeIs('wish.show');
+        $wish = null;
+        if ($isWishPage) {
+            $wishId = request()->route('id');
+            if ($wishId) {
+                $wish = WishItem::find($wishId);
+            }
+        }
+        if ($isWishPage && $wish && !empty($wish->thumbnail)) {
+            $image = "https://ucarecdn.com/{$wish->thumbnail}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        }
+
+        $canonicalUrl = $isWishPage && $wish
+            ? SeoMeta::getPageCanonical('wish.show', ['username' => $username, 'id' => $wish->id])
+            : SeoMeta::getPageCanonical('user.show', ['username' => $username]);
+
+        $title = $isWishPage && $wish
+            ? "{$wish->wishname} — {$user->name} | Spenny Piggy"
+            : "{$user->name} — Spenny Piggy";
+
+        $description = $isWishPage && $wish
+            ? (($wish->description ? trim((string) $wish->description) . ' ' : '') . "Support {$user->name} on Spenny Piggy. Send gifts, join memberships, and explore wishlists.")
+            : "Support {$user->name} on Spenny Piggy. Explore wishlists, memberships, paid tasks, and tips — all in one creator platform.";
+
+        SeoMeta::addTag('title', $title);
+        SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
+
+        $keywords = "{$user->name}, {$user->username}, creator, memberships, wishlists, paid tasks, tips, Spenny Piggy";
+        if (!empty($user->creator_category)) {
+            $keywords .= ", {$user->creator_category}";
+        }
+        if ($isWishPage && $wish) {
+            $keywords = "{$wish->wishname}, gift, wishlist, {$user->name}, {$user->username}, Spenny Piggy";
+            if (!empty($wish->category)) {
+                $keywords .= ", {$wish->category}";
+            }
+        }
+        SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
+
+        SeoMeta::setCanonical($canonicalUrl);
+        SeoMeta::setOgData($isWishPage ? 'product' : 'profile', $title, $description, $image, $canonicalUrl);
+        SeoMeta::setTwitterCard('summary_large_image', $title, $description, $image);
+
+        $breadcrumbs = [
+            ['name' => 'Home', 'url' => url('/')],
+            ['name' => $user->name, 'url' => SeoMeta::getPageCanonical('user.show', ['username' => $username])],
+        ];
+        if ($isWishPage && $wish) {
+            $breadcrumbs[] = ['name' => $wish->wishname, 'url' => $canonicalUrl];
+        }
+        SeoMeta::addBreadcrumbJsonLd($breadcrumbs);
     }
 
 
@@ -509,11 +635,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function userItems($username, $category_id = null)
     {
-        $user = User::where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->firstWhere('username', $username);
+        $user = User::firstWhere('username', $username);
 
         if ($user) {
             $query = $user->wishItems()
@@ -555,11 +677,7 @@ class AuthenticatedSessionController extends Controller
     public function user_category($username)
     {
         try {
-            $user = User::where('username', $username)->where(
-                'is_uk',
-                0
-                // $q->whereNot('country', 'GB')->orWhereNull('country');
-            )->first();
+            $user = User::where('username', $username)->first();
             $categories = [];
             if (!empty($user)) {
                 $categories = $user->user_categories()->get();
@@ -591,11 +709,7 @@ class AuthenticatedSessionController extends Controller
     {
         $authUser = Auth::user(); // Get the logged-in user
 
-        $user = User::where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->firstWhere('username', $username);
+        $user = User::firstWhere('username', $username);
 
         if (!$user) {
             return response()->json([
@@ -626,11 +740,7 @@ class AuthenticatedSessionController extends Controller
     public function sociallinks($username)
     {
         try {
-            $user = User::where('username', $username)->where(
-                'is_uk',
-                0
-                // $q->whereNot('country', 'GB')->orWhereNull('country');
-            )->first();
+            $user = User::where('username', $username)->first();
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
@@ -696,11 +806,7 @@ class AuthenticatedSessionController extends Controller
         try {
             if (preg_match("/^[a-z0-9_]+$/", $username)) {
                 // Username contains only lowercase letters, numbers, and underscores
-                $user = User::where('username', $username)->where(
-                    'is_uk',
-                    0
-                    // $q->whereNot('country', 'GB')->orWhereNull('country');
-                )->first();
+                $user = User::where('username', $username)->first();
                 if (!empty($user)) {
                     return response()->json(['status' => false, 'msg' => 'Username is not available']);
                 } else {
@@ -717,7 +823,7 @@ class AuthenticatedSessionController extends Controller
 
     public function unlinkTwitter()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if (!empty($user->twitter_token)) {
             //     $req = TwitterAuthService::revokeToken($user->twitter_token);
@@ -783,7 +889,7 @@ class AuthenticatedSessionController extends Controller
 
     public function updateVat($percent)
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $user->vat_amount_percentage = $percent;
         $user->save();
@@ -805,7 +911,7 @@ class AuthenticatedSessionController extends Controller
         $email = $request->input('email');
         $password = $request->input('password');
 
-        $user = User::where('email', $email)->where('is_uk', 0)->first();
+        $user = User::where('email', $email)->first();
 
         $otp = $request->input('otp');
         $backup_code = $request->input('backup_code');
@@ -877,7 +983,7 @@ class AuthenticatedSessionController extends Controller
                 // return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
                 return response()->json([
                     'status' => true,
-                    'redirect_url' => route("user.show", ['username' => $user->username]),
+                    'redirect_url' => $this->getRedirectUrl($user),
                     'message' => 'Logged in successfully.'
                 ]);
             } else {
@@ -957,7 +1063,7 @@ class AuthenticatedSessionController extends Controller
 
         $sign = $request->query('sign');
 
-        $user = User::where('id', Auth::guard('sanctum')->id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::guard('sanctum')->id())->first();
 
         $contract = new FanContract();
         $contract->user_id = $user->id;
@@ -965,9 +1071,10 @@ class AuthenticatedSessionController extends Controller
         $contract->sign = $sign;
         $contract->save();
 
-        if (class_exists('Mccarlosen\LaravelMpdf\Facades\LaravelMpdf')) {
-            $pdf = \Mccarlosen\LaravelMpdf\Facades\LaravelMpdf::loadView('pdf.creator-contract', [
-                'contract' => $contract
+        $mpdfFacade = 'Mccarlosen\\LaravelMpdf\\Facades\\LaravelMpdf';
+        if (class_exists($mpdfFacade)) {
+            $pdf = call_user_func([$mpdfFacade, 'loadView'], 'pdf.creator-contract', [
+                'contract' => $contract,
             ]);
 
             $pdfContent = $pdf->output();
@@ -1005,22 +1112,36 @@ class AuthenticatedSessionController extends Controller
     private function getFounderData($user): array
     {
         $first30DayEarnings = 0;
+        $isEligible = false;
+        $daysLeft = 0;
+        $minEarnings = \App\Models\FounderBonus::getMinFirst30dEarnings();
 
-        // Calculate first 30-day earnings for the user
         if ($user) {
             $createdAt = $user->created_at;
             $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
 
-            // Get total earnings from deliverables within first 30 days
-            $first30DayEarnings = Deliverable::where('creator_id', $user->id)
-                ->where('created_at', '>=', $createdAt)
-                ->where('created_at', '<=', $thirtyDaysAfterCreation)
-                ->where('status', 'delivered')
-                ->sum('transaction_amount');
+            if (!$user->is_founder && now()->lessThan($thirtyDaysAfterCreation)) {
+                $isEligible = true;
+                $daysLeft = max(0, now()->diffInDays($thirtyDaysAfterCreation, false));
+            } else if (!$user->is_founder) {
+                $cutoffDate = now()->subDays(60);
+                if ($createdAt->greaterThanOrEqualTo($cutoffDate)) {
+                    $isEligible = true;
+                    $daysLeft = 0;
+                }
+            }
+
+            $endDate = $thirtyDaysAfterCreation->isFuture() ? now() : $thirtyDaysAfterCreation;
+            $financialService = app(\App\Services\FinancialService::class);
+            $summary = $financialService->getSummary($user, $createdAt, $endDate, 'GBP');
+            $first30DayEarnings = (float) ($summary['gross_income'] ?? 0);
         }
 
         return [
-            'first30DayEarnings' => $first30DayEarnings
+            'first30DayEarnings' => $first30DayEarnings,
+            'isEligible' => $isEligible,
+            'daysLeft' => $daysLeft,
+            'minEarnings' => $minEarnings,
         ];
     }
 }

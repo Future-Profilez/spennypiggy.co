@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Head, Link, usePage } from "@inertiajs/react";
-import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-import { addicon } from "@/includes/Icons";
+import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 const Wishlist = lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = lazy(() => import("@/wishlist/Wishlistbox"));
 import Userprofile from "@/wishlist/Userprofile";
@@ -28,35 +28,87 @@ const SocialLinks = lazy(() => import("@/includes/SocialLinks"));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import useWidthCount from "@/Components/useWidthCount";
+import PiggyPotModal from "@/Components/PiggyPotModal";
 
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy,} from "@dnd-kit/sortable";
-import { closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+    closestCorners,
+    DndContext,
+    KeyboardSensor,
+    MouseSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
+    MeasuringStrategy,
+    defaultDropAnimation,
+} from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
-const ProfileProductLists = lazy(() => import("./shop/profile/ProfileProductLists"),);
+import AddGift from "./feed/AddGift";
+import { CiGift } from "react-icons/ci";
+import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
+import { FaRegHeart } from "react-icons/fa";
+import InstantTabSystem from "@/Components/InstantTabSystem";
+import AddMoreTile from "@/Components/AddMoreTile";
+
+const ProfileProductLists = lazy(
+    () => import("./shop/profile/ProfileProductLists"),
+);
 const ProfileTaskLists = lazy(() => import("./Tasks/Profile/ProfileTaskLists"));
 const AddItem = lazy(() => import("./shop/AddItem"));
-import AddGift from "./feed/AddGift";
-import GiftListing from "./rye/GiftListing";
-import { FaRegHeart } from "react-icons/fa";
-import { CiGift } from "react-icons/ci";
-import OldSubscribe from "./webpush/OldSubscribe";
-import AddSocial from "./Auth/Social";
-import CreatorVerification from "./Profile/CreatorVerification";
-import SiteSubscription from "./Profile/SiteSubscription";
-import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
-import ActionRequired from "./stripe/ActionRequired";
-import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
-import ErrorBoundary from "@/Components/ErrorBoundary";
-import InstantTabSystem from "@/Components/InstantTabSystem";
-import OfferAnnouncement from "@/Components/OfferAnnouncement";
-import FounderBadge from "@/Components/FounderBadge";
-import CreatorRiskBanner from "@/Components/Risk/CreatorRiskBanner";
 
-const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
+const ReferralBanner = lazy(() => import("@/Components/ReferralBanner"));
+const GiftListing = lazy(() => import("./rye/GiftListing"));
+const OldSubscribe = lazy(() => import("./webpush/OldSubscribe"));
+const AddSocial = lazy(() => import("./Auth/Social"));
+const CreatorVerification = lazy(() => import("./Profile/CreatorVerification"));
+const SiteSubscription = lazy(() => import("./Profile/SiteSubscription"));
+const EnableCardCapabilities = lazy(
+    () => import("./stripe/EnableCardCapabilities"),
+);
+const ActionRequired = lazy(() => import("./stripe/ActionRequired"));
+const ErrorBoundary = lazy(() => import("@/Components/ErrorBoundary"));
+const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
+const FounderProgressTracker = lazy(() => import("@/Components/FounderProgressTracker"));
+const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+const CreatorRiskBanner = lazy(
+    () => import("@/Components/Risk/CreatorRiskBanner"),
+);
+const CreatorActivityWidget = lazy(
+    () => import("@/Components/CreatorActivityWidget"),
+);
+const PiggyPotWidget = lazy(
+    () => import("@/Components/PiggyPots/PiggyPotWidget"),
+);
+const PiggyPotSocialProof = lazy(
+    () => import("@/Components/PiggyPots/PiggyPotSocialProof"),
+);
+const PiggyPotsGrid = lazy(
+    () => import("@/Components/PiggyPots/PiggyPotsGrid"),
+);
+
+const handleDelete = (id) => {
+    if (confirm("Are you sure you want to delete this Piggy Pot?")) {
+        destroy(route("piggy-pots.destroy", id), {
+            onSuccess: () => {
+                successAlert("Piggy Pot deleted successfully!");
+            },
+
+            onError: () => {
+                errorAlert("Failed to delete Piggy Pot.");
+            },
+        });
+    }
+};
 
 export default function Dashboard(props) {
-
     const { ziggy } = usePage().props;
     const w = useWidthCount();
     const {
@@ -76,10 +128,52 @@ export default function Dashboard(props) {
         stripe_requirements,
         migration_status,
         has_stripe_account,
+        founderData,
     } = props;
+
+    const [showPotModal, setShowPotModal] = useState(false);
+    const [selectedPot, setSelectedPot] = useState(null);
+    const [modalMode, setModalMode] = useState("create");
+
+    const openCreateModal = () => {
+        setModalMode("create");
+        setSelectedPot(null);
+        setShowPotModal(true);
+    };
+
+    const openEditModal = (pot) => {
+        setModalMode("edit");
+        setSelectedPot(pot);
+        setShowPotModal(true);
+    };
 
     const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
+    const [activeId, setActiveId] = useState(null);
+
+    const defaultPotValues = {
+        title: "",
+        description: "",
+        target_amount: "",
+        currency: auth.user?.default_currency || "GBP",
+        deadline: "",
+        is_pinned: false,
+        enable_leaderboard: true,
+        allow_anonymous: true,
+        status: "active",
+        content_file: "",
+        content_description: "",
+        cover_media:
+            "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/",
+    };
+
+    const activeItem = useMemo(
+        () =>
+            activeId
+                ? wishitems.find((item) => (item.id || item.uuid) === activeId)
+                : null,
+        [activeId, wishitems],
+    );
 
     useEffect(() => {
         if (items && Array.isArray(items)) {
@@ -89,11 +183,32 @@ export default function Dashboard(props) {
         }
     }, [items, selectedCategory]);
 
-    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+    const [IsloggedIn, setIsLoggedIn] = useState(
+        auth?.user?.username == user?.username,
+    );
 
     const hasPendingCardPayments = useMemo(() => {
-        return stripe_requirements?.requirements?.some(r => r.type === 'card_payments_pending') || false;
+        return (
+            stripe_requirements?.requirements?.some(
+                (r) => r.type === "card_payments_pending",
+            ) || false
+        );
     }, [stripe_requirements]);
+
+    const shouldShowFounderBannerClient = useMemo(() => {
+        if (!IsloggedIn || auth?.user?.role !== 1) return false;
+        const createdAt = auth?.user?.created_at || user?.created_at;
+        if (!createdAt) return false;
+        const createdTs = new Date(createdAt).getTime();
+        if (Number.isNaN(createdTs)) return false;
+        const diffDays = (Date.now() - createdTs) / (1000 * 60 * 60 * 24);
+        return diffDays <= 40;
+    }, [
+        IsloggedIn,
+        auth?.user?.role,
+        auth?.user?.created_at,
+        user?.created_at,
+    ]);
 
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -106,7 +221,6 @@ export default function Dashboard(props) {
     const [gifts, setGifts] = useState([]);
     const [activityStatus, setActivityStatus] = useState(null);
     const [activityLoading, setActivityLoading] = useState(false);
-
 
     const fetch_gifts = async (signal) => {
         setGiftsLoading(true);
@@ -184,31 +298,38 @@ export default function Dashboard(props) {
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, {
-            activationConstraint: { delay: 50, tolerance: 10 },
+            activationConstraint: { delay: 250, tolerance: 5 },
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         }),
     );
 
+    const handleDragStart = (event) => {
+        if (!IsloggedIn) return;
+        setActiveId(event.active.id);
+    };
+
     const handleDragEnd = (event) => {
-        if (!IsloggedIn) {
-            return false;
-        }
         const { active, over } = event;
-        const activeIndex = wishitems.findIndex(
-            (item) => item.id === active.id,
-        );
-        const newOverIndex = over
-            ? wishitems.findIndex((item) => item.id === over.id)
-            : null;
-        if (activeIndex !== newOverIndex) {
-            const updated = arrayMove(wishitems, activeIndex, newOverIndex, {
-                key: "id",
-            });
+
+        if (over && active.id !== over.id) {
+            const activeIndex = wishitems.findIndex(
+                (item) => (item.id || item.uuid) === active.id,
+            );
+            const newOverIndex = wishitems.findIndex(
+                (item) => (item.id || item.uuid) === over.id,
+            );
+
+            const updated = arrayMove(wishitems, activeIndex, newOverIndex);
             setWishitems(updated);
             updateMovement(updated);
         }
+        setActiveId(null);
+    };
+
+    const handleDragCancel = () => {
+        setActiveId(null);
     };
 
     const [showAlert, setShowAlert] = useState(true);
@@ -239,12 +360,18 @@ export default function Dashboard(props) {
                 setShowAdd(true);
             };
 
+            const handleCloseEvent = () => {
+                setShowAdd(false);
+            };
+
             window.addEventListener("toggleAddOptions", handleToggleEvent);
+            window.addEventListener("closeAddOptions", handleCloseEvent);
             return () => {
                 window.removeEventListener(
                     "toggleAddOptions",
                     handleToggleEvent,
                 );
+                window.removeEventListener("closeAddOptions", handleCloseEvent);
             };
         }, []);
         useEffect(() => {
@@ -252,6 +379,7 @@ export default function Dashboard(props) {
                 document.body.classList.add("overflow-hidden");
             } else {
                 document.body.classList.remove("overflow-hidden");
+                setWishOptions(false);
             }
         }, [showAdd]);
 
@@ -263,29 +391,34 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer p-2 
-                            bg-pink-400 border-4 border-black !rounded-[20px] 
-                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
-                            hover:translate-x-[2px] hover:translate-y-[2px] 
-                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] 
-                            transition-all z-50"
+                            className="addoption-action cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-[16px] 
+                            shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] 
+                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-50  "
                             // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
-                        ><b className="!text-xl md:!text-2xl px-4">+</b></div>
+                        >
+                            <b className="text-2xl md:text-3xl px-3 text-white !leading-[8px] top-[4px] relative">
+                                +
+                            </b>
+                        </div>
                         {showAdd ? (
                             <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
-                                <div className="w-full max-w-[550px]  px-3">
+                                <div className="w-full md:max-w-[600px] lg:max-w-[900px] px-6 !overflow-hidden">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-10 rounded-3xl z-10 max-h-[70vh] overflow-y-auto">
-                                            <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-4 text-center m-auto ">
+                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px]  md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
+                                            <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-2 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
-                                           
-                                                {AuthUserStripeConnected !== 1 ?
-                                                     <p className="!mb-6">
-                                                     Please complete your Stripe account setup to add your wishlist.
-                                                    </p>
-                                                    : ""} 
-                                            <div className="!max-h-[40vh] p-4 overflow-auto">
+
+                                            {AuthUserStripeConnected !== 1 ? (
+                                                <p className="!mb-2 text-center">
+                                                    Please complete your Stripe
+                                                    account setup to add your
+                                                    wishlist.
+                                                </p>
+                                            ) : (
+                                                ""
+                                            )}
+                                            <div className="!max-h-[56vh] !min-h-[56vh] p-2 md:p-4 !pt-2 overflow-auto">
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
@@ -300,9 +433,9 @@ export default function Dashboard(props) {
                                                                     : false
                                                             }
                                                         />
-                                                        <div className="w-full font-bold disabled addop bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[30px] p-3 mb-4 text-center">
+                                                        <div className="w-full font-bold disabled addop bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[30px]  p-3 mb-4 text-center">
                                                             <div className=" flex items-center">
-                                                                <div className="p-1 rounded-[30px] border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <div className="p-1 rounded-[30px]  border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                     <CiGift
                                                                         color="#000"
                                                                         size="1.5rem"
@@ -331,7 +464,16 @@ export default function Dashboard(props) {
                                                         </div>
 
                                                         <div className="flex justify-center">
-                                                            <button className="bg-gray-200 text-back rounded-[30px] px-3 py-2">Back</button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    setWishOptions(
+                                                                        !wishOptions,
+                                                                    )
+                                                                }
+                                                                className="bg-gray-200 text-back rounded-[30px]  px-3 py-2"
+                                                            >
+                                                                Back
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -344,61 +486,112 @@ export default function Dashboard(props) {
                                                                     : "disabled"
                                                             }`}
                                                         >
-
-                                                            <div className="w-full">
+                                                            <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-1">
                                                                 <div
                                                                     onClick={() =>
                                                                         setWishOptions(
                                                                             true,
                                                                         )
                                                                     }
-                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                 >
                                                                     <div className=" flex items-center">
-                                                                        <div className="p-1 !rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                        <div className="p-1 !rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                             <FaRegHeart
-                                                                                color="#F94F97"
+                                                                                color="#FF007F"
                                                                                 size="1.6rem"
                                                                             />
                                                                         </div>
                                                                         <div className="pl-4 text-left">
                                                                             <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
-                                                                                Add Wish
+                                                                                Add
+                                                                                Wish
                                                                             </h2>
                                                                             <p className="text-sm font-bold text-gray-700">
-                                                                                Let fans fund your lifestyle for a reward.
+                                                                                Let
+                                                                                fans
+                                                                                fund
+                                                                                your
+                                                                                lifestyle
+                                                                                for
+                                                                                a
+                                                                                reward.
                                                                             </p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
-                                                                <Link
-                                                                    className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
-                                                                    href="/task/create"
-                                                                >
-                                                                    <div className=" flex items-center">
-                                                                        <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
-                                                                            <BiTask
-                                                                                color="#F94F97"
-                                                                                size="1.6rem"
-                                                                            />
+                                                                {auth?.user
+                                                                    ?.role ===
+                                                                    1 && (
+                                                                    <Link
+                                                                        className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                        href="/task/create"
+                                                                    >
+                                                                        <div className=" flex items-center">
+                                                                            <div className="p-1 rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                                <BiTask
+                                                                                    color="#FF007F"
+                                                                                    size="1.6rem"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="pl-4 text-left">
+                                                                                <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
+                                                                                    Create
+                                                                                    Task
+                                                                                </h2>
+                                                                                <p className="text-sm font-bold text-gray-700">
+                                                                                    Offer
+                                                                                    something
+                                                                                    unique
+                                                                                    to
+                                                                                    your
+                                                                                    supporters.
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="pl-4 text-left">
-                                                                            <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
-                                                                                Create Task
-                                                                            </h2>
-                                                                            <p className="text-sm font-bold text-gray-700">
-                                                                                Offer something unique to your supporters.
-                                                                            </p>
+                                                                    </Link>
+                                                                )}
+
+                                                                {auth?.user
+                                                                    ?.role ===
+                                                                    1 && (
+                                                                    <div
+                                                                        onClick={
+                                                                            openCreateModal
+                                                                        }
+                                                                        className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                    >
+                                                                        <div className=" flex items-center">
+                                                                            <div className="p-1 rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                                <span className="text-2xl">
+                                                                                    🐷
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="pl-4 text-left">
+                                                                                <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
+                                                                                    Create
+                                                                                    Piggy
+                                                                                    Pot
+                                                                                </h2>
+                                                                                <p className="text-sm font-bold text-gray-700">
+                                                                                    Set
+                                                                                    fundraising
+                                                                                    goals
+                                                                                    for
+                                                                                    your
+                                                                                    supporters.
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </Link>
+                                                                )}
 
-                                                                {/* <AddItem
-                                                                    classes="w-full font-bold addop bg-white rounded-[30px]  p-3 mb-2 text-center"
+                                                                <AddItem
+                                                                    classes="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                     product_type="digital_products"
-                                                                /> */}
-                                                                <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
+                                                                />
+                                                                <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] " />
                                                                 {/* <AddGift
                                                                     text="Add Gift "
                                                                     classes="font-bold py-3 px-3 mb-2 text-center"
@@ -410,22 +603,28 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                <AddMembership classes=" font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] !w-full" />
-                                                                <AddBills classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
+                                                                <AddMembership classes=" font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  !w-full" />
+                                                                <AddBills classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] " />
                                                             </div>
                                                         </div>
                                                     </>
                                                 )}
                                             </div>
-                                            {!wishOptions ? <button
-                                                onClick={() => {
-                                                    setShowAdd(false);
-                                                    // setWishOptions(false);
-                                                }}
-                                                className="w-[80%] mx-auto rounded-full bg-gray-200 border-[3px] border-black font-black uppercase tracking-widest block p-3 mt-6 hover:bg-gray-300 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
-                                            >
-                                                Cancel
-                                            </button> : ""}
+                                            {!wishOptions ? (
+                                                <div className="flex justify-center">
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowAdd(false);
+                                                            // setWishOptions(false);
+                                                        }}
+                                                        className="w-[80%] mx-w-[200px] pt-3 rounded-[30px]    font-black uppercase tracking-widest block    transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                ""
+                                            )}
                                         </div>
                                     </Suspense>
                                 </div>
@@ -442,56 +641,77 @@ export default function Dashboard(props) {
     };
 
     const [UserStripeConnected, setUserStripeConnected] = useState(
-        (user && user?.stripe_details_submitted == 1) ? 1 : 0,
+        user && user?.stripe_details_submitted == 1 ? 1 : 0,
     );
     const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(
-        (auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0,
+        auth && auth?.user && auth?.user?.stripe_details_submitted == 1 ? 1 : 0,
     );
 
     useEffect(() => {
-        setUserStripeConnected((user && user?.stripe_details_submitted == 1) ? 1 : 0);
+        setUserStripeConnected(
+            user && user?.stripe_details_submitted == 1 ? 1 : 0,
+        );
     }, [user?.stripe_details_submitted]);
 
     useEffect(() => {
-        setAuthUserStripeConnected((auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0);
+        setAuthUserStripeConnected(
+            auth && auth?.user && auth?.user?.stripe_details_submitted == 1
+                ? 1
+                : 0,
+        );
     }, [auth?.user?.stripe_details_submitted]);
 
     return (
-            <>
-                <Guest auth={auth.user} user={user}>
-                    <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
-                    <div className="wishlistPage bg-[#A2E4B8] min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
-
-                        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                            {/* Removed glowing orbs to fit brutalism style better, or kept them minimal */}
-                        </div>
-
-                        <div className="containerbox relative z-10">
-                            <VersionUpdate />
+        <>
+            <Guest auth={auth.user} user={user} className="bg-[#A2E4B8]">
+                <Head
+                    title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
+                />
+                <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
+                    <div className="containerbox relative z-10">
+                        <VersionUpdate />
+                        {props.founderData?.isEligible && (IsloggedIn || auth?.user?.role === 1) ? (
+                            <FounderProgressTracker
+                                founderData={props.founderData}
+                                variant="mini"
+                            />
+                        ) : (
+                            ""
+                        )}
+                        {shouldShowFounderBannerClient && !props.founderData?.isEligible ? (
                             <OfferAnnouncement variant="default" />
-                            <div className="wishbanner relative ">
-                                <div className="relative border-b-4 border-black rounded-[40px] overflow-hidden">
-                                    {user?.is_founder ? (
-                                        <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-2xl p-1">
-                                            <FounderBadge size="md" />
-                                        </div>
-                                    ) : (
-                                        ""
-                                    )}
-                                    <img
-                                        alt={`${user?.name} - Cover Image`}
-                                        height={400}
-                                        width={1200}
-                                        className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
-                                        src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
-                                        loading="eager"
-                                        fetchPriority="high"
-                                    />
-                                    {IsloggedIn &&
-                                    auth &&
-                                    auth?.user.cover_url &&
-                                    auth?.user?.cover_approved == 0 ? (
-                                        <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
+                        ) : (
+                            ""
+                        )}
+                        <div className="wishbanner relative ">
+                            <div className="relative border-b-4 border-black rounded-[30px]  overflow-hidden">
+                                {user?.is_founder ? (
+                                    <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-[30px]  p-1">
+                                        <FounderBadge size="md" />
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
+                                <img
+                                    alt={`${user?.name} - Cover Image`}
+                                    height={400}
+                                    width={1200}
+                                    className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
+                                    src={
+                                        IsloggedIn
+                                            ? user?.cover_url ||
+                                              wishlistbannerimg
+                                            : user?.cover_url
+                                              ? user?.cover_url
+                                              : wishlistbannerimg
+                                    }
+                                    loading="eager"
+                                    fetchpriority="high"
+                                />
+                                {IsloggedIn &&
+                                auth?.user?.cover_url &&
+                                auth?.user?.cover_approved == 0 ? (
+                                    <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
                                         <button className="flex items-center gap-2">
                                             <svg
                                                 width="20"
@@ -506,9 +726,10 @@ export default function Dashboard(props) {
                                                 />
                                             </svg>
                                             <p>
+                                                {" "}
                                                 Cover image is waiting for
                                                 approval. Currently only you can
-                                                see this.
+                                                see this.{" "}
                                             </p>
                                         </button>
                                     </div>
@@ -522,7 +743,7 @@ export default function Dashboard(props) {
                         {/* Stripe Account Migration Warning */}
 
                         {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px]  ">
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px]   ">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
                                         Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
@@ -536,9 +757,8 @@ export default function Dashboard(props) {
                                 </div>
                             : ''} */}
 
-
                         {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto px-4 md:px-6">
+                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto">
                                 {/* Creator Subscription Widget - Show on all tabs for creators */}
                                 {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                         <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
@@ -548,20 +768,16 @@ export default function Dashboard(props) {
                                         </Suspense>
                                     )} */}
 
+                                {IsloggedIn && <ReferralBanner />}
+                                {IsloggedIn && <CreatorRiskBanner />}
+
                                 <div className="userManageRt mt-4 mb-10">
                                     <div
                                         className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
                                     >
                                         <div className="inlinetab ">
-                                            {/* Show rejection message if profile is rejected */}
-                                            {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
-                                                <div className="text-red-600 text-xl">
-                                                    This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
-                                                </div>
-                                            )} */}
-
                                             <InstantTabSystem
-                                                Toggle={Toggle} 
+                                                Toggle={Toggle}
                                                 activeTab={page || "about"}
                                                 user={user}
                                                 username={user.username}
@@ -571,24 +787,103 @@ export default function Dashboard(props) {
                                                 }}
                                             />
 
-
-
                                             <div className="tabs-containers min-height">
                                                 {page === "about" ||
                                                 page === false ? (
-                                                    <Suspense fallback={ <LoadingScreen /> } >
-                                                        {IsloggedIn && <CreatorRiskBanner />}
-
+                                                    <Suspense
+                                                        fallback={
+                                                            <LoadingScreen />
+                                                        }
+                                                    >
                                                         <div className="flex flex-wrap about-sec self-start ">
+                                                            {props.piggyPotTopSupporters &&
+                                                                (props
+                                                                    .piggyPotTopSupporters
+                                                                    .length >
+                                                                    0 ||
+                                                                    (props.piggyPotFeed &&
+                                                                        props
+                                                                            .piggyPotFeed
+                                                                            .length >
+                                                                            0)) && (
+                                                                    <Suspense
+                                                                        fallback={
+                                                                            <div className="mb-4">
+                                                                                Loading
+                                                                                community
+                                                                                activity...
+                                                                            </div>
+                                                                        }
+                                                                    >
+                                                                        <PiggyPotSocialProof
+                                                                            topSupporters={
+                                                                                props.piggyPotTopSupporters
+                                                                            }
+                                                                            feed={
+                                                                                props.piggyPotFeed
+                                                                            }
+                                                                            user={
+                                                                                user
+                                                                            }
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
                                                             <div className="w-full lg:w-1/2 h-auto ">
-                                                                <div className="!sticky !top-[100px]">
-                                                                <DashboardStripeMigrationWarning
-                                                                        migrationStatus={migration_status} />
+                                                                <div className="!sticky !top-[113px]">
+                                                                    {IsloggedIn ||
+                                                                    user?.intro
+                                                                        ?.approved ==
+                                                                        1 ? (
+                                                                        <Suspense
+                                                                            fallback={
+                                                                                <div className="h-40 bg-gray-100 rounded-3xl animate-pulse border-3 border-black"></div>
+                                                                            }
+                                                                        >
+                                                                            <AddIntro
+                                                                                uuid={
+                                                                                    user?.id ||
+                                                                                    null
+                                                                                }
+                                                                                IsloggedIn={
+                                                                                    IsloggedIn
+                                                                                }
+                                                                                user={
+                                                                                    user
+                                                                                }
+                                                                            />
+                                                                        </Suspense>
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
 
-                                                                    {IsloggedIn && auth?.user && auth?.user ?.role == 1 && stripe_requirements && stripe_requirements.has_requirements && stripe_requirements.requirements && stripe_requirements .requirements .length > 0 &&
-                                                                    (AuthUserStripeConnected || has_stripe_account) ? (
-                                                                        <ActionRequired requirements={stripe_requirements.requirements} />
-                                                                    ) : ''}
+                                                                    <DashboardStripeMigrationWarning
+                                                                        migrationStatus={
+                                                                            migration_status
+                                                                        }
+                                                                    />
+
+                                                                    {IsloggedIn &&
+                                                                    auth?.user &&
+                                                                    auth?.user
+                                                                        ?.role ==
+                                                                        1 &&
+                                                                    stripe_requirements &&
+                                                                    stripe_requirements.has_requirements &&
+                                                                    stripe_requirements.requirements &&
+                                                                    stripe_requirements
+                                                                        .requirements
+                                                                        .length >
+                                                                        0 &&
+                                                                    (AuthUserStripeConnected ||
+                                                                        has_stripe_account) ? (
+                                                                        <ActionRequired
+                                                                            requirements={
+                                                                                stripe_requirements.requirements
+                                                                            }
+                                                                        />
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
 
                                                                     {IsloggedIn &&
                                                                     auth?.user &&
@@ -598,90 +893,96 @@ export default function Dashboard(props) {
                                                                     !card_capabilities &&
                                                                     !isNeedToUpgrade &&
                                                                     !hasPendingCardPayments &&
-                                                                    (AuthUserStripeConnected || has_stripe_account) ? (
+                                                                    (AuthUserStripeConnected ||
+                                                                        has_stripe_account) ? (
                                                                         <EnableCardCapabilities />
                                                                     ) : (
                                                                         ""
                                                                     )}
-                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && 
-                                                                    auth?.user?.subscription_status == 0 ? (
-                                                                        <SiteSubscription 
-                                                                            auth={auth}
-                                                                            subscription_status={auth?.user?.subscription_status}
-                                                                            charges={auth?.user?.monthly_charge_enabled }
-                                                                            user={auth?.user }
-                                                                            card_capabilities={card_capabilities}
+                                                                    {IsloggedIn &&
+                                                                    auth?.user &&
+                                                                    auth?.user
+                                                                        ?.role ==
+                                                                        1 &&
+                                                                    (auth?.user
+                                                                        ?.subscription_status ==
+                                                                        3 ||
+                                                                        auth
+                                                                            ?.user
+                                                                            ?.subscription_status ==
+                                                                            0) ? (
+                                                                        <SiteSubscription
+                                                                            auth={
+                                                                                auth
+                                                                            }
+                                                                            subscription_status={
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.subscription_status
+                                                                            }
+                                                                            charges={
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.monthly_charge_enabled
+                                                                            }
+                                                                            user={
+                                                                                auth?.user
+                                                                            }
+                                                                            card_capabilities={
+                                                                                card_capabilities
+                                                                            }
                                                                         />
                                                                     ) : (
                                                                         ""
                                                                     )}
 
-                                                                    
-                                                                    
-
-
-                                                                    <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
-                                                                        <div className="p-6 md:p-8">
-                                                                            <h2 className="text-2xl font-black text-black uppercase tracking-wider">
-                                                                                About
-                                                                                Me
+                                                                    {IsloggedIn &&
+                                                                    (user?.profile_status_lock ==
+                                                                        0 ||
+                                                                        (user?.edit_bio_reason &&
+                                                                            user?.bio_approved ==
+                                                                                2) ||
+                                                                        slinks?.reason ||
+                                                                        user?.avatar_approved ==
+                                                                            2) ? (
+                                                                        <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px]  mb-4 p-4">
+                                                                            <h2 className="text-red-600 font-bold text-xl ">
+                                                                                Action
+                                                                                Required{" "}
                                                                             </h2>
-                                                                            <p
-                                                                                className={`text-gray-700 font-bold text-lg text-left mt-4 ${
-                                                                                    user &&
-                                                                                    !user.bio
-                                                                                        ? "hidden"
-                                                                                        : ""
-                                                                                }`}
-                                                                            >
-                                                                                {(user &&
-                                                                                    user.bio) ||
-                                                                                    "Hy, I am a creator on SpennyPiggy."}
-                                                                            </p>
-
-                                                                            {user?.creator_category && (
-                                                                                <div className="mt-6 flex flex-wrap gap-2">
-                                                                                    {(() => {
-                                                                                        try {
-                                                                                            const tags = typeof user.creator_category === 'string' 
-                                                                                                ? JSON.parse(user.creator_category) 
-                                                                                                : user.creator_category;
-                                                                                            
-                                                                                            if (!Array.isArray(tags)) return null;
-                                                                                            
-                                                                                            return tags.map((tag, index) => (
-                                                                                                <span 
-                                                                                                    key={index} 
-                                                                                                    className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
-                                                                                                >
-                                                                                                    {tag}
-                                                                                                </span>
-                                                                                            ));
-                                                                                        } catch (e) {
-                                                                                            return null;
-                                                                                        }
-                                                                                    })()}
-                                                                                </div>
-                                                                            )}
-
-                                                                           
-
-                                                                            {IsloggedIn &&
-                                                                            user?.edit_bio_reason &&
+                                                                            {user?.profile_status_lock ==
+                                                                                0 &&
+                                                                                user?.profile_reject_reason && (
+                                                                                    <div className="mt-3">
+                                                                                        <p className="text-red-700 font-bold">
+                                                                                            Profile
+                                                                                            Edit
+                                                                                            Request
+                                                                                        </p>
+                                                                                        <p className="text-red-500 text-sm">
+                                                                                            Reason:{" "}
+                                                                                            {
+                                                                                                user.profile_reject_reason
+                                                                                            }
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                            {user?.edit_bio_reason &&
                                                                             user?.bio_approved ==
                                                                                 2 ? (
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700">
+                                                                                <div className="mt-3 ">
+                                                                                    <p className="text-red-700 font-bold">
+                                                                                        {" "}
                                                                                         Bio
                                                                                         Edit
-                                                                                        Request
+                                                                                        Request{" "}
                                                                                     </p>
                                                                                     <p className="text-red-500 text-sm">
                                                                                         Reason
-                                                                                        :{" "}
+                                                                                        :
                                                                                         {
                                                                                             user?.edit_bio_reason
-                                                                                        }{" "}
+                                                                                        }
                                                                                         Please
                                                                                         update
                                                                                         your
@@ -695,33 +996,207 @@ export default function Dashboard(props) {
                                                                                 ""
                                                                             )}
 
-                                                                            <SocialLinks
-                                                                                links={
-                                                                                    sLinks
-                                                                                }
-                                                                            />
+                                                                            {user?.avatar_approved ==
+                                                                                2 && (
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700 font-semibold">
+                                                                                        Avatar
+                                                                                        Edit
+                                                                                        Request
+                                                                                    </p>
+                                                                                    <p className="text-red-500 text-sm">
+                                                                                        Profile
+                                                                                        avatar
+                                                                                        has
+                                                                                        been
+                                                                                        rejected
+                                                                                        by
+                                                                                        admin.
+                                                                                        Please
+                                                                                        upload
+                                                                                        a
+                                                                                        new
+                                                                                        avatar.
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                            {slinks?.reason && (
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700 font-semibold">
+                                                                                        Social
+                                                                                        Media
+                                                                                        Edit
+                                                                                        Request
+                                                                                    </p>
+                                                                                    <p className="text-red-500 text-sm">
+                                                                                        Reason:
+                                                                                        {
+                                                                                            slinks.reason
+                                                                                        }
+                                                                                        <br />
+                                                                                        Please
+                                                                                        update
+                                                                                        your
+                                                                                        social
+                                                                                        links
+                                                                                        as
+                                                                                        per
+                                                                                        the
+                                                                                        requested
+                                                                                        changes.
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
 
-                                                                            {/* SOCIAL MEDIA REJECT REASON */}
-                                                                            {IsloggedIn && slinks?.reason && (
-                                                                                    <div className="mt-3">
-                                                                                        <p className="text-red-700 font-semibold">
-                                                                                            Social Media Edit Request
-                                                                                        </p>
-                                                                                        <p className="text-red-500 text-sm">
-                                                                                            Reason: 
-                                                                                            {slinks.reason}
-                                                                                            <br />
-                                                                                            Please
-                                                                                            update
-                                                                                            your
-                                                                                            social
-                                                                                            links
-                                                                                            as
-                                                                                            per
-                                                                                            the
-                                                                                            requested
-                                                                                            changes.
-                                                                                        </p>
+                                                                    <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
+                                                                        <div className="p-4 md:p-8">
+                                                                            <h2 className="text-xl sm:text-2xl font-black text-black uppercase tracking-wide">
+                                                                                About
+                                                                                Me
+                                                                            </h2>
+                                                                            <p
+                                                                                className={`text-gray-700 font-bold text-md md:text-lg text-left mt-4 ${
+                                                                                    user &&
+                                                                                    !user.bio
+                                                                                        ? "hidden"
+                                                                                        : ""
+                                                                                }`}
+                                                                            >
+                                                                                {(user &&
+                                                                                    user.bio) ||
+                                                                                    "Hy, I am a creator on SpennyPiggy."}
+                                                                            </p>
+
+                                                                            {IsloggedIn &&
+                                                                                user?.bio_approved ==
+                                                                                    0 && (
+                                                                                    <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <svg
+                                                                                                width="20"
+                                                                                                height="20"
+                                                                                                viewBox="0 0 20 20"
+                                                                                                fill="none"
+                                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                            >
+                                                                                                <path
+                                                                                                    d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z"
+                                                                                                    fill="#FF8E25"
+                                                                                                />
+                                                                                            </svg>
+                                                                                            <p>
+                                                                                                Your
+                                                                                                bio
+                                                                                                is
+                                                                                                waiting
+                                                                                                for
+                                                                                                admin
+                                                                                                approval.
+                                                                                                Currently
+                                                                                                only
+                                                                                                you
+                                                                                                can
+                                                                                                see
+                                                                                                this.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                            {user?.creator_category && (
+                                                                                <div className="mt-6 flex flex-wrap gap-1 md:gap-2">
+                                                                                    {(() => {
+                                                                                        try {
+                                                                                            const tags =
+                                                                                                typeof user.creator_category ===
+                                                                                                "string"
+                                                                                                    ? JSON.parse(
+                                                                                                          user.creator_category,
+                                                                                                      )
+                                                                                                    : user.creator_category;
+
+                                                                                            if (
+                                                                                                !Array.isArray(
+                                                                                                    tags,
+                                                                                                )
+                                                                                            )
+                                                                                                return null;
+
+                                                                                            return tags.map(
+                                                                                                (
+                                                                                                    tag,
+                                                                                                    index,
+                                                                                                ) => (
+                                                                                                    <span
+                                                                                                        key={
+                                                                                                            index
+                                                                                                        }
+                                                                                                        className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-[12px] md:text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
+                                                                                                    >
+                                                                                                        {
+                                                                                                            tag
+                                                                                                        }
+                                                                                                    </span>
+                                                                                                ),
+                                                                                            );
+                                                                                        } catch (e) {
+                                                                                            return null;
+                                                                                        }
+                                                                                    })()}
+                                                                                </div>
+                                                                            )}
+
+                                                                            <Suspense
+                                                                                fallback={
+                                                                                    null
+                                                                                }
+                                                                            >
+                                                                                <SocialLinks
+                                                                                    links={
+                                                                                        sLinks
+                                                                                    }
+                                                                                />
+                                                                            </Suspense>
+
+                                                                            {IsloggedIn &&
+                                                                                slinks?.status ===
+                                                                                    0 && (
+                                                                                    <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <svg
+                                                                                                width="20"
+                                                                                                height="20"
+                                                                                                viewBox="0 0 20 20"
+                                                                                                fill="none"
+                                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                            >
+                                                                                                <path
+                                                                                                    d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z"
+                                                                                                    fill="#FF8E25"
+                                                                                                />
+                                                                                            </svg>
+                                                                                            <p>
+                                                                                                Your
+                                                                                                social
+                                                                                                media
+                                                                                                links
+                                                                                                are
+                                                                                                waiting
+                                                                                                for
+                                                                                                admin
+                                                                                                approval.
+                                                                                                Currently
+                                                                                                only
+                                                                                                you
+                                                                                                can
+                                                                                                see
+                                                                                                them.
+                                                                                            </p>
+                                                                                        </div>
                                                                                     </div>
                                                                                 )}
 
@@ -736,7 +1211,12 @@ export default function Dashboard(props) {
                                                                                     <div className="addsocial flex">
                                                                                         <ul>
                                                                                             <li>
-                                                                                                <AddSocial sLinks={sLinks} />
+                                                                                                <AddSocial
+                                                                                                    classes={`bg-[#A2E4B8] hover:bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black`}
+                                                                                                    sLinks={
+                                                                                                        sLinks
+                                                                                                    }
+                                                                                                />
                                                                                             </li>
 
                                                                                             <li>
@@ -746,9 +1226,15 @@ export default function Dashboard(props) {
                                                                                                         user.username
                                                                                                     }
                                                                                                     classes={
-                                                                                                        "flex ml-auto font-black uppercase text-pink-600 hover:text-pink-800 transition-colors tracking-widest text-sm"
+                                                                                                        " bg-yellow-300 hover:bg-yellow-500 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black"
                                                                                                     }
-                                                                                                    custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
+                                                                                                    custom={
+                                                                                                        wishitems &&
+                                                                                                        wishitems.length >
+                                                                                                            0
+                                                                                                            ? `${ziggy?.location}/${user?.username ?? "creator_test"}/wishes?item=${wishitems[0]?.uuid}`
+                                                                                                            : `${ziggy?.location}/${user?.username ?? "creator_test"}`
+                                                                                                    }
                                                                                                 >
                                                                                                     Share
                                                                                                     Profile
@@ -756,93 +1242,164 @@ export default function Dashboard(props) {
                                                                                             </li>
                                                                                         </ul>
                                                                                     </div>
-
-
                                                                                 </div>
                                                                             ) : (
                                                                                 ""
                                                                             )}
 
-                                                                            {UserStripeConnected == 1 ? (
-                                                                                <MyGoal IsloggedIn={IsloggedIn} />
-                                                                            ) :  "" }
+                                                                            {UserStripeConnected ==
+                                                                            1 ? (
+                                                                                <MyGoal
+                                                                                    IsloggedIn={
+                                                                                        IsloggedIn
+                                                                                    }
+                                                                                />
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
 
-                                                                                    {auth.user && auth .user .role == 1 && AuthUserStripeConnected == 1 ? (
-                                                                                        <PaymentDashboard
-                                                                                            classes="  font-poppins tracking-wider  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase text-sm transition-all duration-200"
-                                                                                            text="Creator Payment Dashboard"
-                                                                                        />
+                                                                            {auth
+                                                                                ?.user
+                                                                                ?.role ==
+                                                                                1 &&
+                                                                            AuthUserStripeConnected ==
+                                                                                1 ? (
+                                                                                <PaymentDashboard
+                                                                                    classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px]  bg-pink-600 hover:bg-pink-700   transition-all duration-200"
+                                                                                    text="Creator Payment Dashboard"
+                                                                                />
+                                                                            ) : (
+                                                                                <>
+                                                                                    {auth
+                                                                                        ?.user
+                                                                                        ?.identity_status ==
+                                                                                    1 ? (
+                                                                                        <div className="finish mt-4 block">
+                                                                                            <p className="mb-4 text-lg font-bold text-black">
+                                                                                                {" "}
+                                                                                                Finish
+                                                                                                setting
+                                                                                                up
+                                                                                                your
+                                                                                                account
+                                                                                                to
+                                                                                                receive
+                                                                                                funds.
+                                                                                                You
+                                                                                                have
+                                                                                                more
+                                                                                                steps
+                                                                                                to
+                                                                                                complete
+                                                                                                your
+                                                                                                payment
+                                                                                                setup.
+                                                                                            </p>
+                                                                                            <Link
+                                                                                                disabled={
+                                                                                                    auth
+                                                                                                        ?.user
+                                                                                                        ?.monthly_charge_enabled
+                                                                                                        ? ""
+                                                                                                        : true
+                                                                                                }
+                                                                                                href={
+                                                                                                    "/stripe"
+                                                                                                }
+                                                                                                className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center"
+                                                                                            >
+                                                                                                {" "}
+                                                                                                Finish
+                                                                                                Setup
+                                                                                            </Link>
+                                                                                        </div>
                                                                                     ) : (
-                                                                                        <>
-                                                                                            {auth?.user?.identity_status == 1 ? 
-                                                                                            <div className="finish mt-4 block">
-                                                                                                <p className="mb-4 text-lg font-bold text-black"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center" > Finish Setup
-                                                                                                </Link>
-                                                                                            </div> 
-                                                                                            : ''}
-                                                                                        </>
+                                                                                        ""
                                                                                     )}
-                                                                                
+                                                                                </>
+                                                                            )}
                                                                         </div>
                                                                     </div>
-                                                                    {IsloggedIn ||
-                                                                    user?.intro
-                                                                        ?.approved ==
-                                                                        1 ? (
-                                                                        <AddIntro
-                                                                            uuid={
-                                                                                user?.id ||
-                                                                                null
-                                                                            }
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
-                                                                    {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
+
+                                                                    {!IsloggedIn &&
+                                                                    auth?.user
+                                                                        ?.username &&
+                                                                    auth?.user
+                                                                        ?.username !==
+                                                                        user?.username ? (
                                                                         <div className="mb-6 !mt-6 relative group">
-                                                                            {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#F94F97] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
+                                                                            {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
+                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
                                                                                 <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
                                                                                     <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
                                                                                         <div className="relative">
                                                                                             <img
-                                                                                                src={(auth?.user?.avatar_url) || ""}
+                                                                                                src={
+                                                                                                    auth
+                                                                                                        ?.user
+                                                                                                        ?.avatar_url ||
+                                                                                                    ""
+                                                                                                }
                                                                                                 alt="you"
                                                                                                 className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                                                             />
                                                                                         </div>
-                                                                                        <div className="text-black text-xl font-black tracking-widest">+</div>
+                                                                                        <div className="text-black text-xl font-black tracking-widest">
+                                                                                            +
+                                                                                        </div>
                                                                                         <div className="relative">
                                                                                             <img
-                                                                                                src={(user?.avatar_url) || ""}
+                                                                                                src={
+                                                                                                    user?.avatar_url ||
+                                                                                                    ""
+                                                                                                }
                                                                                                 alt="creator"
                                                                                                 className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                                                             />
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="flex-1 order-2 text-center md:text-left mt-6">
-                                                                                        <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">Support Story</p>
+                                                                                        <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
+                                                                                            Support
+                                                                                            Story
+                                                                                        </p>
                                                                                         <p className="text-black font-black uppercase   text-xl md:text-xl leading-snug">
-                                                                                            Relive your moments with {user?.name || '@'+user?.username}
+                                                                                            Relive
+                                                                                            your
+                                                                                            moments
+                                                                                            with{" "}
+                                                                                            {user?.name ||
+                                                                                                "@" +
+                                                                                                    user?.username}
                                                                                         </p>
                                                                                         <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
-                                                                                            Gifts, thank‑yous and milestones — beautifully in one place.
+                                                                                            Gifts,
+                                                                                            thank‑yous
+                                                                                            and
+                                                                                            milestones
+                                                                                            —
+                                                                                            beautifully
+                                                                                            in
+                                                                                            one
+                                                                                            place.
                                                                                         </p>
                                                                                     </div>
                                                                                     <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
-                                                                                        <Link href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                            className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-xl text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 " >
-                                                                                            View Your Story
-                                                                                        </Link> 
+                                                                                        <Link
+                                                                                            href={`/support/${user?.username}/${auth?.user?.username}`}
+                                                                                            className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-xl text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 "
+                                                                                        >
+                                                                                            View
+                                                                                            Your
+                                                                                            Story
+                                                                                        </Link>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
-                                                                    ) : ('')}
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                             <div className="lg:pl-6 w-full lg:w-1/2">
@@ -885,30 +1442,99 @@ export default function Dashboard(props) {
                                                                 {IsloggedIn &&
                                                                 UserStripeConnected ==
                                                                     1 ? (
-                                                                    <ProfileSteps
-                                                                        sLinks={
-                                                                            sLinks
+                                                                    <Suspense
+                                                                        fallback={
+                                                                            <div className="mb-4">
+                                                                                Loading
+                                                                                steps...
+                                                                            </div>
                                                                         }
+                                                                    >
+                                                                        <ProfileSteps
+                                                                            sLinks={
+                                                                                sLinks
+                                                                            }
+                                                                            user={
+                                                                                user
+                                                                            }
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                        />
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+
+                                                                {props.piggyPots &&
+                                                                    props
+                                                                        .piggyPots
+                                                                        .length >
+                                                                        0 && (
+                                                                        <div className="flex flex-col md:flex-row gap-6 md:gap-8 mb-6">
+                                                                            <Suspense
+                                                                                fallback={
+                                                                                    <div className="mb-4">
+                                                                                        Loading
+                                                                                        Piggy
+                                                                                        Pot...
+                                                                                    </div>
+                                                                                }
+                                                                            >
+                                                                                <PiggyPotWidget
+                                                                                    piggyPots={
+                                                                                        props.piggyPots
+                                                                                    }
+                                                                                    user={
+                                                                                        user
+                                                                                    }
+                                                                                    global_currency={
+                                                                                        global_currency
+                                                                                    }
+                                                                                />
+                                                                            </Suspense>
+                                                                        </div>
+                                                                    )}
+
+                                                                {!IsloggedIn &&
+                                                                UserStripeConnected ==
+                                                                    1 &&
+                                                                w > 767 &&
+                                                                (!props.piggyPots ||
+                                                                    props
+                                                                        .piggyPots
+                                                                        .length ===
+                                                                        0) ? (
+                                                                    <Suspense
+                                                                        fallback={
+                                                                            null
+                                                                        }
+                                                                    >
+                                                                        <TipInner
+                                                                            classes={`mb-4`}
+                                                                        />
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+                                                                <Suspense
+                                                                    fallback={
+                                                                        <div className="mb-4">
+                                                                            Loading
+                                                                            posts...
+                                                                        </div>
+                                                                    }
+                                                                >
+                                                                    <FeedList
                                                                         user={
                                                                             user
                                                                         }
                                                                         IsloggedIn={
                                                                             IsloggedIn
                                                                         }
+                                                                        initialFilter="all"
                                                                     />
-                                                                ) : (
-                                                                    ""
-                                                                )}
-                                                                {!IsloggedIn && UserStripeConnected == 1 && w > 767 ? (
-                                                                    <TipInner classes={`mb-4`} />
-                                                                ) : (
-                                                                    ""
-                                                                )}
-                                                                <FeedList
-                                                                    user={user}
-                                                                    IsloggedIn={IsloggedIn}
-                                                                    initialFilter="all"
-                                                                />
+                                                                </Suspense>
                                                             </div>
                                                         </div>
                                                     </Suspense>
@@ -930,7 +1556,7 @@ export default function Dashboard(props) {
                                                                         {wish_categories &&
                                                                         wish_categories.length ? (
                                                                             <>
-                                                                                <div className="new-wish-cats flex mb-6 gap-2 flex-wrap p-2">
+                                                                                <div className="new-wish-cats flex items-center mb-6 gap-2 flex-wrap p-2">
                                                                                     <Link
                                                                                         preserveScroll
                                                                                         href={route(
@@ -944,7 +1570,7 @@ export default function Dashboard(props) {
                                                                                         className={` ${
                                                                                             selectedCategory ==
                                                                                             ""
-                                                                                                ? "bg-pink-400 text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+                                                                                                ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
                                                                                                 : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
                                                                                         } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
                                                                                     >
@@ -969,8 +1595,9 @@ export default function Dashboard(props) {
                                                                                                         },
                                                                                                     )}
                                                                                                     className={`${
-                                                                                                        selectedCategory == c.id 
-                                                                                                            ? "bg-pink-400 text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]" 
+                                                                                                        selectedCategory ==
+                                                                                                        c.id
+                                                                                                            ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
                                                                                                             : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
                                                                                                     } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                     key={`cats-${i}`}
@@ -1011,25 +1638,35 @@ export default function Dashboard(props) {
                                                                           wishitems.length >
                                                                               0 ? (
                                                                             <>
-                                                                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
-                                                                                    <DndContext
-                                                                                        sensors={
-                                                                                            sensors
-                                                                                        }
-                                                                                        collisionDetection={
-                                                                                            closestCenter
-                                                                                        }
-                                                                                        onDragEnd={
-                                                                                            handleDragEnd
-                                                                                        }
-                                                                                    >
+                                                                                <DndContext
+                                                                                    sensors={
+                                                                                        sensors
+                                                                                    }
+                                                                                    collisionDetection={
+                                                                                        closestCorners
+                                                                                    }
+                                                                                    onDragStart={
+                                                                                        handleDragStart
+                                                                                    }
+                                                                                    onDragEnd={
+                                                                                        handleDragEnd
+                                                                                    }
+                                                                                    onDragCancel={
+                                                                                        handleDragCancel
+                                                                                    }
+                                                                                >
+                                                                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                         <SortableContext
                                                                                             strategy={
                                                                                                 rectSortingStrategy
                                                                                             }
-                                                                                            items={
-                                                                                                wishitems
-                                                                                            }
+                                                                                            items={wishitems.map(
+                                                                                                (
+                                                                                                    item,
+                                                                                                ) =>
+                                                                                                    item.id ||
+                                                                                                    item.uuid,
+                                                                                            )}
                                                                                         >
                                                                                             {wishitems.map(
                                                                                                 (
@@ -1070,12 +1707,131 @@ export default function Dashboard(props) {
                                                                                                 },
                                                                                             )}
                                                                                         </SortableContext>
-                                                                                    </DndContext>
-                                                                                </div>
+                                                                                        {IsloggedIn && (
+                                                                                            <AddMoreTile
+                                                                                                title="Add Wish"
+                                                                                                subtitle="Create a new wish for your supporters."
+                                                                                                onClick={() =>
+                                                                                                    window.dispatchEvent(
+                                                                                                        new Event(
+                                                                                                            "toggleAddOptions",
+                                                                                                        ),
+                                                                                                    )
+                                                                                                }
+                                                                                                minHeightClass="min-h-[300px]"
+                                                                                            />
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {createPortal(
+                                                                                        <DragOverlay
+                                                                                            dropAnimation={{
+                                                                                                duration: 250,
+                                                                                                easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+                                                                                                sideEffects:
+                                                                                                    defaultDropAnimationSideEffects(
+                                                                                                        {
+                                                                                                            styles: {
+                                                                                                                active: {
+                                                                                                                    opacity:
+                                                                                                                        "0.3",
+                                                                                                                },
+                                                                                                            },
+                                                                                                        },
+                                                                                                    ),
+                                                                                            }}
+                                                                                            zIndex={
+                                                                                                999999
+                                                                                            }
+                                                                                        >
+                                                                                            {activeItem ? (
+                                                                                                <div
+                                                                                                    style={{
+                                                                                                        width: "320px",
+                                                                                                        maxWidth:
+                                                                                                            "90vw",
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <Wishlistbox
+                                                                                                        itm={
+                                                                                                            activeItem
+                                                                                                        }
+                                                                                                        currency={
+                                                                                                            global_currency
+                                                                                                        }
+                                                                                                        IsloggedIn={
+                                                                                                            IsloggedIn
+                                                                                                        }
+                                                                                                        auth={
+                                                                                                            auth.user
+                                                                                                        }
+                                                                                                        itemid={
+                                                                                                            itemid
+                                                                                                        }
+                                                                                                        setuped={
+                                                                                                            AuthUserStripeConnected ==
+                                                                                                            1
+                                                                                                        }
+                                                                                                        classes=" "
+                                                                                                        isOverlay
+                                                                                                    />
+                                                                                                </div>
+                                                                                            ) : null}
+                                                                                        </DragOverlay>,
+                                                                                        document.body,
+                                                                                    )}
+                                                                                </DndContext>
                                                                             </>
                                                                         ) : (
                                                                             <div className="w-full">
-                                                                                <Nocontent text="Nothing to see." />
+                                                                                {IsloggedIn ? (
+                                                                                    <>
+                                                                                        <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                            <div className="text-4xl mb-3">
+                                                                                                🎁
+                                                                                            </div>
+                                                                                            <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                                No
+                                                                                                Wishes
+                                                                                                Yet
+                                                                                            </h3>
+                                                                                            <p className="text-gray-600 font-bold mb-6">
+                                                                                                Add
+                                                                                                items
+                                                                                                to
+                                                                                                your
+                                                                                                wishlist
+                                                                                                and
+                                                                                                let
+                                                                                                your
+                                                                                                fans
+                                                                                                buy
+                                                                                                them
+                                                                                                for
+                                                                                                you.
+                                                                                            </p>
+                                                                                            <button
+                                                                                                onClick={() =>
+                                                                                                    window.dispatchEvent(
+                                                                                                        new Event(
+                                                                                                            "toggleAddOptions",
+                                                                                                        ),
+                                                                                                    )
+                                                                                                }
+                                                                                                className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                            >
+                                                                                                Add
+                                                                                                Wish
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <Nocontent
+                                                                                        showdiscover={
+                                                                                            true
+                                                                                        }
+                                                                                        text="Nothing to see."
+                                                                                    />
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -1116,8 +1872,59 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
-                                                                    profileUser={user}
+                                                                    profileUser={
+                                                                        user
+                                                                    }
+                                                                    suppressEmptyState={
+                                                                        IsloggedIn &&
+                                                                        (!tasks ||
+                                                                            tasks.length ===
+                                                                                0)
+                                                                    }
                                                                 />
+                                                                {IsloggedIn &&
+                                                                    (!tasks ||
+                                                                        tasks.length ===
+                                                                            0) && (
+                                                                        <>
+                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                <div className="text-4xl mb-3">
+                                                                                    📋
+                                                                                </div>
+                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                    No
+                                                                                    Active
+                                                                                    Tasks
+                                                                                </h3>
+                                                                                <p className="text-gray-600 font-bold mb-6">
+                                                                                    Create
+                                                                                    tasks
+                                                                                    and
+                                                                                    let
+                                                                                    your
+                                                                                    fans
+                                                                                    pay
+                                                                                    you
+                                                                                    to
+                                                                                    complete
+                                                                                    them.
+                                                                                </p>
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        window.dispatchEvent(
+                                                                                            new Event(
+                                                                                                "toggleAddOptions",
+                                                                                            ),
+                                                                                        )
+                                                                                    }
+                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                >
+                                                                                    Create
+                                                                                    Task
+                                                                                </button>
+                                                                            </div>
+                                                                        </>
+                                                                    )}
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1140,7 +1947,53 @@ export default function Dashboard(props) {
                                                                             ?.user
                                                                             ?.username
                                                                     }
+                                                                    suppressEmptyState={
+                                                                        IsloggedIn &&
+                                                                        (!props.memberships ||
+                                                                            props
+                                                                                .memberships
+                                                                                ?.length ===
+                                                                                0)
+                                                                    }
                                                                 />
+                                                                {IsloggedIn &&
+                                                                    (!props.memberships ||
+                                                                        props
+                                                                            .memberships
+                                                                            ?.length ===
+                                                                            0) && (
+                                                                        <>
+                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                <div className="text-4xl mb-3">
+                                                                                    ⭐
+                                                                                </div>
+                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                    No
+                                                                                    Memberships
+                                                                                    Yet
+                                                                                </h3>
+                                                                                <p className="text-gray-600 font-bold mb-6">
+                                                                                    Create
+                                                                                    membership
+                                                                                    tiers
+                                                                                    for
+                                                                                    your
+                                                                                    most
+                                                                                    loyal
+                                                                                    supporters.
+                                                                                </p>
+                                                                                <Link
+                                                                                    href={route(
+                                                                                        "membershipDashboard",
+                                                                                    )}
+                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                >
+                                                                                    Create
+                                                                                    Membership
+                                                                                </Link>
+                                                                            </div>
+                                                                        </>
+                                                                    )}
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1156,7 +2009,58 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    suppressEmptyState={
+                                                                        IsloggedIn &&
+                                                                        (!props.bills ||
+                                                                            props
+                                                                                .bills
+                                                                                ?.length ===
+                                                                                0)
+                                                                    }
                                                                 />
+                                                                {IsloggedIn &&
+                                                                    (!props.bills ||
+                                                                        props
+                                                                            .bills
+                                                                            ?.length ===
+                                                                            0) && (
+                                                                        <>
+                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                <div className="text-4xl mb-3">
+                                                                                    🧾
+                                                                                </div>
+                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                    No
+                                                                                    Active
+                                                                                    Bills
+                                                                                </h3>
+                                                                                <p className="text-gray-600 font-bold mb-6">
+                                                                                    Split
+                                                                                    bills
+                                                                                    with
+                                                                                    your
+                                                                                    fans
+                                                                                    and
+                                                                                    let
+                                                                                    them
+                                                                                    contribute.
+                                                                                </p>
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        window.dispatchEvent(
+                                                                                            new Event(
+                                                                                                "toggleAddOptions",
+                                                                                            ),
+                                                                                        )
+                                                                                    }
+                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                >
+                                                                                    Create
+                                                                                    Bill
+                                                                                </button>
+                                                                            </div>
+                                                                        </>
+                                                                    )}
                                                             </Suspense>
                                                         ) : (
                                                             ""
@@ -1174,6 +2078,89 @@ export default function Dashboard(props) {
                                                                     }
                                                                     IsloggedIn={
                                                                         IsloggedIn
+                                                                    }
+                                                                    suppressEmptyState={
+                                                                        IsloggedIn &&
+                                                                        (!props.shops ||
+                                                                            props
+                                                                                .shops
+                                                                                .length ===
+                                                                                0)
+                                                                    }
+                                                                />
+                                                                {IsloggedIn &&
+                                                                    (!props.shops ||
+                                                                        props
+                                                                            .shops
+                                                                            .length ===
+                                                                            0) && (
+                                                                        <>
+                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                <div className="text-4xl mb-3">
+                                                                                    🛍️
+                                                                                </div>
+                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                    No
+                                                                                    Shop
+                                                                                    Items
+                                                                                    Yet
+                                                                                </h3>
+                                                                                <p className="text-gray-600 font-bold mb-6">
+                                                                                    Create
+                                                                                    physical
+                                                                                    or
+                                                                                    digital
+                                                                                    products
+                                                                                    for
+                                                                                    your
+                                                                                    fans
+                                                                                    to
+                                                                                    buy.
+                                                                                </p>
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        window.dispatchEvent(
+                                                                                            new Event(
+                                                                                                "toggleAddOptions",
+                                                                                            ),
+                                                                                        )
+                                                                                    }
+                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                >
+                                                                                    Add
+                                                                                    Item
+                                                                                </button>
+                                                                            </div>
+                                                                        </>
+                                                                    )}
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
+                                                        {page ===
+                                                        "piggy-pots" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <PiggyPotsGrid
+                                                                    piggyPots={
+                                                                        props.piggyPots
+                                                                    }
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                    user={user}
+                                                                    global_currency={
+                                                                        global_currency
+                                                                    }
+                                                                    topSupporters={
+                                                                        props.piggyPotTopSupporters
+                                                                    }
+                                                                    feed={
+                                                                        props.piggyPotFeed
                                                                     }
                                                                 />
                                                             </Suspense>
@@ -1237,7 +2224,50 @@ export default function Dashboard(props) {
                                                                     </div>
                                                                 ) : (
                                                                     <div className="w-full">
-                                                                        <Nocontent text="Nothing to see." />
+                                                                        {IsloggedIn ? (
+                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                <div className="text-4xl mb-3">
+                                                                                    🎁
+                                                                                </div>
+                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                    No
+                                                                                    Active
+                                                                                    Gifts
+                                                                                </h3>
+                                                                                <p className="text-gray-600 font-bold mb-6">
+                                                                                    Create
+                                                                                    physical
+                                                                                    gifts
+                                                                                    for
+                                                                                    your
+                                                                                    fans
+                                                                                    to
+                                                                                    buy
+                                                                                    for
+                                                                                    you.
+                                                                                </p>
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        window.dispatchEvent(
+                                                                                            new Event(
+                                                                                                "toggleAddOptions",
+                                                                                            ),
+                                                                                        )
+                                                                                    }
+                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                >
+                                                                                    Add
+                                                                                    Gift
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <Nocontent
+                                                                                showdiscover={
+                                                                                    true
+                                                                                }
+                                                                                text="Nothing to see."
+                                                                            />
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </Suspense>
@@ -1282,6 +2312,14 @@ export default function Dashboard(props) {
                 ) : (
                     ""
                 )}
+
+                <PiggyPotModal
+                    show={showPotModal}
+                    onClose={() => setShowPotModal(false)}
+                    mode={modalMode}
+                    pot={selectedPot}
+                    auth={auth}
+                />
 
                 <OldSubscribe />
             </Guest>

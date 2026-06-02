@@ -48,7 +48,7 @@ export default function BillsTracker({ auth }) {
         };
         return (
             <>
-                <div className="trackItem cursor-pointer shadow-pink box mb-4">
+                <div className="trackItem cursor-pointer shadow-[4px_4px_0px_0px_#FF007F]ink box mb-4">
                     <div
                         onClick={openState}
                         aria-controls="example-collapse-text"
@@ -160,7 +160,7 @@ export default function BillsTracker({ auth }) {
                     >
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
-                                <div className="wishitem-des box border rounded-[30px]  ">
+                                <div className="wishitem-des box border rounded-[30px]   ">
                                     <div className="flex justify-between items-center">
                                         <div className="wish-item">
                                             <img

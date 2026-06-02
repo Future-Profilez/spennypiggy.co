@@ -85,21 +85,21 @@ function updateFontCSS() {
   font-family: 'CeraGRBold';
   font-display: swap;
   src: url('../assets/fonts/optimized/CeraGRBold.woff2') format('woff2');
-  unicode-range: U+0020-007F, U+00A0-00FF, U+0100-017F; /* Latin, Latin-1, Latin Extended-A */
+  unicode-range: U+0020-#FF007F, U+00A0-00FF, U+0100-017F; /* Latin, Latin-1, Latin Extended-A */
 }
 
 @font-face {
   font-family: 'CeraGRMedium';
   font-display: swap;
   src: url('../assets/fonts/optimized/CeraGRMedium.woff2') format('woff2');
-  unicode-range: U+0020-007F, U+00A0-00FF, U+0100-017F; /* Latin, Latin-1, Latin Extended-A */
+  unicode-range: U+0020-#FF007F, U+00A0-00FF, U+0100-017F; /* Latin, Latin-1, Latin Extended-A */
 }
 
 @font-face {
   font-family: 'gulfs';
   font-display: swap;
   src: url('../assets/fonts/optimized/newfont.woff2') format('woff2');
-  unicode-range: U+0020-007F, U+00A0-00FF, U+0100-017F; /* Latin, Latin-1, Latin Extended-A */
+  unicode-range: U+0020-#FF007F, U+00A0-00FF, U+0100-017F; /* Latin, Latin-1, Latin Extended-A */
 }
 
 body {
@@ -108,7 +108,7 @@ body {
   --gray:#cccccc;
   --gray2:#4D4D4D;
   --mint:#05EFB8;
-  --pink:#F94F97;
+  --pink:#FF007F;
   --yellow:#E6EA7B;
   --lightpink:#FFC4E2;
   --voilet: #8C52FF;

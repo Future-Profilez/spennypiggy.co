@@ -10,7 +10,7 @@
             style="max-width: 400px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                    🎉 Congratulations, <span style="color: #8C52FF">{{ $creator->name }}</span>! 🐷
+                    🎉 Congratulations, <span style="color: #8C52FF">{{ ucwords($creator->name) }}</span>! 🐷
                 </td>
             </tr>
             <tr>
@@ -30,7 +30,7 @@
 
             <!-- Achievement Highlight -->
             <tr>
-                <td style="padding: 20px; background: linear-gradient(135deg, #8C52FF 0%, #F94F97 100%); border-radius: 10px; margin: 20px 0;">
+                <td style="padding: 20px; background: linear-gradient(135deg, #8C52FF 0%, #FF007F 100%); border-radius: 10px; margin: 20px 0;">
                     <table width="100%" cellspacing="0" cellpadding="0" border="0">
                         <tr>
                             <td style="color: white; font-weight: bold; font-size: 18px; text-align: center; padding-bottom: 10px;">
@@ -94,7 +94,7 @@
 
             <tr>
                 <td style="padding:0 0 20px 0; text-align: center;">
-                    <a href="{{ config('app.url') }}/founder/bonus" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View Your Founder Dashboard</a>
+                    <a href="{{ config('app.url') }}/founder/bonus" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View Your Founder Dashboard</a>
                 </td>
             </tr>
 
@@ -127,7 +127,7 @@
 
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 12px; line-height: 18px; color: #666666; text-align: center;">
-                    Questions? Reply to this email or contact us at <a href="mailto:support@spennypiggy.co" style="color:#F94F97; text-decoration:none;">support@spennypiggy.co</a>
+                    Questions? Reply to this email or contact us at <a href="mailto:support@spennypiggy.co" style="color:#FF007F; text-decoration:none;">support@spennypiggy.co</a>
                 </td>
             </tr>
 

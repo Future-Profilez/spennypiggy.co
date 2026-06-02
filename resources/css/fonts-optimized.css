@@ -6,21 +6,21 @@
   font-family: 'CeraGRBold';
   font-display: swap;
   src: url('../assets/fonts/optimized/CeraGRBold.woff2') format('woff2');
-  unicode-range: U+0020-007F,U+00A0-00FF,U+0100-017F,U+2010-2027,U+00A2-00A5,U+20AC,U+00A3;
+  unicode-range: U+0020-#FF007F,U+00A0-00FF,U+0100-017F,U+2010-2027,U+00A2-00A5,U+20AC,U+00A3;
 }
 
 @font-face {
   font-family: 'CeraGRMedium';
   font-display: swap;
   src: url('../assets/fonts/optimized/CeraGRMedium.woff2') format('woff2');
-  unicode-range: U+0020-007F,U+00A0-00FF,U+0100-017F,U+2010-2027,U+00A2-00A5,U+20AC,U+00A3;
+  unicode-range: U+0020-#FF007F,U+00A0-00FF,U+0100-017F,U+2010-2027,U+00A2-00A5,U+20AC,U+00A3;
 }
 
 @font-face {
   font-family: 'gulfs';
   font-display: swap;
   src: url('../assets/fonts/optimized/newfont.woff2') format('woff2');
-  unicode-range: U+0020-007F,U+00A0-00FF,U+0100-017F,U+2010-2027,U+00A2-00A5,U+20AC,U+00A3;
+  unicode-range: U+0020-#FF007F,U+00A0-00FF,U+0100-017F,U+2010-2027,U+00A2-00A5,U+20AC,U+00A3;
 }
 
 /* Fallback fonts for characters outside the subset */

@@ -41,7 +41,7 @@ export default function GifterSubscriptions({IsloggedIn}) {
   const MessageMedia = ({w}) => {
     return <>
       <Popup
-        modalclass="pinkmodal shadow-pink" space="0" size="md" action={false} classes={`mt-2 text-pink ps-1`}
+        modalclass="pinkmodal shadow-[4px_4px_0px_0px_#FF007F]ink" space="0" size="md" action={false} classes={`mt-2 text-pink ps-1`}
         text={<> Adventure awaits 🌟🔍 tap here !! </>} > 
           <div className='video-payer-pop' >
             <img src={w && w?.media_url || ''} />
@@ -58,7 +58,7 @@ export default function GifterSubscriptions({IsloggedIn}) {
     return () => controller.abort();
   },[]);
 
-  const Item = ({key, w}) => { 
+  const Item = ({w}) => { 
     const Template = () => { 
       const total_amount = (+w.amount)+(+w.tax)
       const uname = user && user.username;
@@ -72,13 +72,13 @@ export default function GifterSubscriptions({IsloggedIn}) {
           </p>
       </div>
     }
-    return <div className='wish-grant my-2' key={key} >
+    return <div className='wish-grant my-2' >
         <Template  />
     </div>
   }
 
   return (
-    <div className='box rounded-[30px]   p-4 mt-4 ' >
+    <div className='box rounded-[30px]    p-4 mt-4 ' >
       <h3 className='text-large text-dark title mb-2' >Subscriptions </h3>
         {data && data.map((d, i)=>{ 
           return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>

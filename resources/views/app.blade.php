@@ -140,10 +140,27 @@
     </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-    <meta name="robots" content="index, follow">
-    <meta name="googlebot" content="index,follow" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
+    @inject('preloadService', 'App\Services\ResourcePreloadService')
+    @php
+        $pageComponent = $page['component'] ?? 'home';
+        $template = str_contains(strtolower($pageComponent), 'welcome') ? 'home' : 
+                   (str_contains(strtolower($pageComponent), 'dashboard') ? 'dashboard' : 
+                   (str_contains(strtolower($pageComponent), 'profile') ? 'profile' : 'default'));
+        
+        $preloadService->preloadCriticalResources($template);
+        
+        $criticalCssPath = storage_path("app/critical-css/{$template}.css");
+        $criticalCss = file_exists($criticalCssPath) ? file_get_contents($criticalCssPath) : null;
+    @endphp
+    
+    @if($criticalCss)
+        <style id="critical-css">{!! $criticalCss !!}</style>
+    @endif
+    
+    {!! $preloadService->renderPreloadTags() !!}
+
     {{-- Critical performance hints --}}
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//widget.trustpilot.com">
@@ -164,6 +181,32 @@
     <meta name="theme-color" content="#05EFB8">
     <meta name="application-name" content="Spenny Piggy">
     
+    {{-- Prevent rubber-banding and zooming for native app feel --}}
+    <style>
+        html, body {
+            background-color: #000000 !important;
+        }
+        @media all and (display-mode: standalone) {
+            html, body {
+                background-color: #05EFB8 !important;
+            }
+            body {
+                overscroll-behavior-y: none;
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+            input, textarea, [contenteditable] {
+                -webkit-user-select: auto;
+                user-select: auto;
+            }
+            a, button {
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+    </style>
+    
     {{-- Optimized favicon loading --}}
     <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" sizes="any">
     <link rel="icon" href="{{ URL::asset('/favicon.svg') }}" type="image/svg+xml">
@@ -172,8 +215,6 @@
     
     <meta name="msapplication-TileColor" content="#05EFB8" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
-    <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
-    <meta name="keywords" content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
     
     {{-- Minimal critical CSS --}}
     <style>
@@ -186,12 +227,6 @@
     {{-- Optimized Google Fonts loading --}}
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" rel="stylesheet"></noscript>
-    <meta property="og:title" content="Exclusive Content, Memberships & More!" />
-    <meta property="og:type" content="video.movie" />
-    <meta property="og:url" content="spennypiggy.co" />
-    <meta property="og:image" content="{{ URL::asset('/siteicon.png') }}" />
-    <meta property="og:site_name" content="spennypiggy.co" />
-    <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
 
     <link rel="manifest" href="{{ url('/manifest.json')}}" />
 
@@ -212,7 +247,6 @@
             "padding:30px 30px",
         ];
         
-        // PWA detection and behavior
         (function() {
             // Detect if running as PWA
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
@@ -223,6 +257,59 @@
             if (isStandalone) {
                 document.addEventListener('DOMContentLoaded', function() {
                     document.body.classList.add('pwa-mode');
+                    
+                    // Add safe area padding specifically for header if not already handled
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @supports (padding-top: env(safe-area-inset-top)) {
+                            body.pwa-mode {
+                                padding-top: env(safe-area-inset-top) !important;
+                                padding-bottom: env(safe-area-inset-bottom) !important;
+                            }
+                            
+                            /* Adjust header if it's fixed */
+                            body.pwa-mode header, body.pwa-mode .header, body.pwa-mode nav {
+                                padding-top: env(safe-area-inset-top) !important;
+                            }
+                            
+                            /* Fix for bottom bar */
+                            body.pwa-mode .retro-bottom-bar, body.pwa-mode .bottom-navigation {
+                                position: fixed !important;
+                                bottom: 0 !important;
+                                left: 0 !important;
+                                padding-bottom: env(safe-area-inset-bottom) !important;
+                                box-sizing: content-box !important;
+                                display: flex !important;
+                                z-index: 999999 !important;
+                                height: 60px !important;
+                                width: 100vw !important;
+                                margin: 0 !important;
+                                transform: none !important;
+                            }
+                            
+                            /* Ensure main content doesn't push bottom bar */
+                            body.pwa-mode {
+                                min-height: 100vh;
+                                min-height: -webkit-fill-available;
+                                display: block;
+                            }
+                            
+                            body.pwa-mode main {
+                                padding-bottom: calc(60px + env(safe-area-inset-bottom));
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    
+                    // Prevent context menu (long press popup) except on inputs/images
+                    document.addEventListener('contextmenu', function(e) {
+                        if (e.target.tagName !== 'INPUT' && 
+                            e.target.tagName !== 'TEXTAREA' && 
+                            e.target.tagName !== 'IMG' && 
+                            !e.target.isContentEditable) {
+                            e.preventDefault();
+                        }
+                    });
                 });
             }
             
@@ -234,21 +321,10 @@
                     if (viewport) {
                         viewport.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
                     }
-                    
-                    // Add iOS PWA specific styling
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        body.pwa-mode {
-                            padding-top: env(safe-area-inset-top);
-                            padding-bottom: env(safe-area-inset-bottom);
-                        }
-                    `;
-                    document.head.appendChild(style);
                 });
             }
         })();
         
-        // Global platform fee configuration
         window.platformFeePercentage = {{ config('app.platform_fee_percentage', 20) }};
     </script>
     <script nonce="{{ $cspNonce ?? '' }}" type="application/ld+json">
@@ -264,22 +340,40 @@
         }
     </script>
 
-    <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Spenny Piggy",
-      "alternateName": "Exclusive Content, Memberships & More!",
-      "url": "https://spennypiggy.co/",
-      "logo": "https://d36ape3u423eoo.cloudfront.net/329a3236-4b42-40ed-abf7-61da55dbcb22/build/assets/logo-164abf9b.png",
-      "sameAs": [
-        "https://www.facebook.com/spennypiggy",
-        "https://twitter.com/spennypiggy",
-        "https://www.instagram.com/spennypiggy/",
-        "https://blog.spennypiggy.co/"
-      ]
-    }
+    @if(request()->is('/'))
+    <script type="application/ld+json"> 
+    { 
+      "@context": "https://schema.org", 
+      "@type": "Organization", 
+      "name": "Spenny Piggy", 
+      "alternateName": "Spenny Piggy by Social Vortex", 
+      "url": "https://spennypiggy.co", 
+      "logo": "https://spennypiggy.co/logo.png", 
+      "description": "A creator monetisation platform combining memberships, wishlists, paid tasks, and tips in one place. Built for creators globally.", 
+      "sameAs": [ 
+        "https://x.com/spennypiggy", 
+        "https://instagram.com/spennypiggy", 
+        "https://tiktok.com/@spennypiggy", 
+        "https://www.snapchat.com/add/spennypiggy", 
+        "https://www.youtube.com/@spennypiggy" 
+      ], 
+      "contactPoint": { 
+        "@type": "ContactPoint", 
+        "email": "support@spennypiggy.co", 
+        "telephone": "+44 20 335 52057", 
+        "contactType": "customer support", 
+        "availableLanguage": ["English"] 
+      }, 
+      "address": { 
+        "@type": "PostalAddress", 
+        "streetAddress": "55 Colmore Row", 
+        "addressLocality": "Birmingham", 
+        "postalCode": "B3 2AA", 
+        "addressCountry": "GB" 
+      } 
+    } 
     </script>
+    @endif
     <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
         {
         "@context":"http://schema.org",
@@ -295,45 +389,47 @@
     </script>
     <script async type="application/ld+json">
         {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {
-                "@type": "Question",
-                "name": "What is Spenny Piggy?",
-                "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Spenny Piggy is your one-stop party platform for every type of creator out there! Get those financial love taps, whip up a wishlist, dish out free and exclusive goodies, and even roll out bespoke memberships and custom commissions. It's the ultimate creator playground! 🚀"
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": "What is Spenny Piggy?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Spenny Piggy is a creator monetisation platform where supporters can send gifts, join memberships, and purchase creator offerings like wishlists and paid tasks."
+                    }
+                }, 
+                {
+                    "@type": "Question",
+                    "name": "How do I get paid?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Creators get paid via Stripe payouts to their connected account. Payout timing depends on Stripe and account status, and can vary by country and verification."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "How much does it cost?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Creators set their prices and supporters pay at checkout. Fees may apply depending on the product and plan. See the Pricing page for the latest details."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "What currencies do you offer?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                        "text": "Creators can choose supported currencies such as GBP and USD depending on their country and Stripe configuration. Supporters pay in the currency shown at checkout."
+                    }
                 }
-            }, {
-                "@type": "Question",
-                "name": "How do I get paid?",
-                "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Bag those bucks effortlessly with automatic Stripe payments! Your payment dashboard lets you be the money maestro, changing payout details on a whim. Initial payouts may take 7-14 days but are usually quick. In the United States/Aus, it's a snappy 2-day roll—charge Monday, party Wednesday. UK/European pals, enjoy a slick 7-day roll—the Monday magic. Keep in mind, payout dates may change based on your account status. If in doubt, reach out to Stripe and us for help! 💰"
-                }
-            }, {
-                "@type": "Question",
-                "name": "How much does it cost?",
-                "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Creators, listen up! The best part? It won't cost you a dime! You pocket the whole 100%. Sure, there might be some tiny conversion costs, but fear not—US, CAD, and UK creators, you're in the clear! Now, here's the scoop for Supporters: there's a service fee, starting at just 8%. But, for those creators craving extra perks, drop £29.99 per month for exclusive features and no service fees for supporters. They just handle the processing fees, making each transaction way cheaper. More money in your pocket, less in fees—win-win! 💸"
-                }
-            },
-            {
-            "@type": "Question",
-            "name": "What currencies do you offer?",
-            "acceptedAnswer": {
-            "@type": "Answer",
-                "text": "Pick your currency! Creators, you've got the choice between USD or GBP. If you're based in the UK, GBP; for the rest of the world, USD is the go-to. Customize your display currency, and supporters can do the same when making payments. Keeping it simple for everyone! 💲"
-            }
-            }
-        ]
+            ]
         }
     </script>
 
-    <script nonce="{{ $cspNonce ?? '' }}" async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
-    
+    <script nonce="{{ $cspNonce ?? '' }}" type="text/javascript" src="https://app.termly.io/embed.min.js" data-auto-block="off" data-website-uuid="1f6672bd-7b65-47a4-8a75-d02946c93b2e"></script>
+
     {{-- @laravelPWA --}}
     @viteReactRefresh
     
@@ -347,7 +443,12 @@
     
     {{-- Standard Vite asset loading for both development and production --}}
     @vite(['resources/js/app.jsx'])
-    
+        
+    <style>
+        @media (max-width:991px){
+            html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
+        }
+    </style>
     @inertiaHead
 </head>
 
@@ -398,7 +499,7 @@
                 height: 4px;
                 margin: 0 auto; width: 100%;
                 padding: 20px;
-                background: linear-gradient(90deg, #F94F96, #5D25FD);
+                background: linear-gradient(90deg, #FF007F, #5D25FD);
                 border-radius: 2px;
                 margin-bottom: 20px;
                 animation: loadingBar 1.5s ease-in-out infinite;
@@ -454,6 +555,7 @@
         .app-loaded #initial-loading-screen {
             opacity: 0;
             pointer-events: none;
+            display: none !important;
         }
     </style>
 
@@ -466,8 +568,17 @@
         }
 
         if (!@json($isMarketingRoute) && isPWA()) {
-            document.getElementById('initial-loading-screen').style.display = 'flex';
+            const initialLoadingScreen = document.getElementById('initial-loading-screen');
+            if (initialLoadingScreen) {
+                initialLoadingScreen.style.display = 'flex';
+            }
         }
+        
+        // Failsafe: hide loading screen after 5 seconds no matter what
+        setTimeout(() => {
+            const ls = document.getElementById('initial-loading-screen');
+            if (ls) ls.style.display = 'none';
+        }, 5000);
     </script>
     @endunless
     <script nonce="{{ $cspNonce ?? '' }}" type="speculationrules">

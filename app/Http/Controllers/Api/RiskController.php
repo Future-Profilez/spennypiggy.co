@@ -53,7 +53,7 @@ class RiskController extends Controller
         $credentialId = $request->input('id');
         $credential = \Laragear\WebAuthn\Models\WebAuthnCredential::where('credential_id', $credentialId)
             ->orWhere('id', $credentialId)->first();
-        
+
         if ($credential) {
             $credential->update([
                 'last_used_at' => now(),
@@ -63,17 +63,30 @@ class RiskController extends Controller
         }
 
         $context = $this->buildContext($request);
-        
+
         // 1. Resolve Identity
         if ($request->filled('risk_identity_id')) {
-            $riskIdentityId = $request->risk_identity_id;
-            $identity = \App\Models\RiskIdentity::find($riskIdentityId);
-            if (!$identity) {
-                return response()->json(['error' => 'Session expired. Please request a new verification code.'], 400);
-            }
+
+            $identity = \App\Models\RiskIdentity::find(
+                $request->risk_identity_id
+            );
         } else {
-            $identityService = app(\App\Services\Risk\RiskIdentityService::class);
-            $identity = $identityService->resolveIdentity($context);
+
+            $identityService = app(
+                \App\Services\Risk\RiskIdentityService::class
+            );
+
+            $identity = $identityService->resolveIdentity(
+                $context
+            );
+        }
+
+        if (!$identity) {
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Verification session expired.'
+            ], 400);
         }
 
         // 2. Bypass OTP by creating a log
@@ -106,7 +119,7 @@ class RiskController extends Controller
         ]);
 
         $context = $this->buildContext($request);
-        
+
         // 1. Resolve Identity
         if ($request->filled('risk_identity_id')) {
             $riskIdentityId = $request->risk_identity_id;
@@ -121,18 +134,99 @@ class RiskController extends Controller
 
         // 2. Verify OTP
         $otpResult = $this->verificationService->verifyOtp(
-            $identity, 
-            $request->otp, 
+            $identity,
+            $request->otp,
             $request->typed_confirmation
         );
 
         if (!($otpResult['ok'] ?? false)) {
             return response()->json(['error' => $otpResult['error'] ?? 'OTP verification failed.'], 400);
         }
-        
+
         $log = $otpResult['log'];
 
         return $this->processVerifiedStepUp($request, $context, $identity, $log);
+    }
+
+    public function resendStepUpOtp(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|integer',
+            'creator_id' => 'required|string',
+            'email' => 'nullable|email',
+            'risk_identity_id' => 'nullable',
+            'card_fingerprint' => 'nullable|string',
+            'device_id' => 'nullable|string',
+            'currency' => 'required|string|size:3',
+        ]);
+
+        try {
+
+            $context = $this->buildContext($request);
+
+            // Resolve Identity
+            if ($request->filled('risk_identity_id')) {
+
+                $riskIdentityId = $request->risk_identity_id;
+
+                $identity = \App\Models\RiskIdentity::find(
+                    $riskIdentityId
+                );
+
+                if (!$identity) {
+
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Session expired. Please request a new verification code.'
+                    ], 400);
+                }
+            } else {
+
+                $identityService = app(
+                    \App\Services\Risk\RiskIdentityService::class
+                );
+
+                $identity = $identityService->resolveIdentity(
+                    $context
+                );
+            }
+
+            // Generate & Send OTP using existing service
+            $otpSent = $this->verificationService
+                ->sendOtp(
+                    $identity,
+                    [
+                        'email' => $request->email,
+                        'amount' => $request->amount,
+                        'currency' => $request->currency,
+                    ]
+                );
+
+            if (!$otpSent) {
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to resend OTP.',
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'OTP resent successfully.',
+                'risk_identity_id' => $identity->id,
+            ]);
+        } catch (\Exception $e) {
+
+            Log::error(
+                'Resend Step-Up OTP Error: ' .
+                    $e->getMessage()
+            );
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to resend OTP.'
+            ], 500);
+        }
     }
 
     protected function processVerifiedStepUp($request, $context, $identity, $log)
@@ -140,9 +234,9 @@ class RiskController extends Controller
         // 3. Re-evaluate Risk (to get reason codes like MARK_REVIEW_HOLD)
         $riskResult = $this->riskEngine->evaluate($context);
         $reasons = $riskResult['reason_codes'];
-        
+
         // Remove STEP_UP related reasons since we just verified it
-        $reasons = array_filter($reasons, function($reason) {
+        $reasons = array_filter($reasons, function ($reason) {
             return !in_array($reason, ['HIGH_VALUE_TX', 'FORCE_3DS', 'ACCELERATION_3_IN_10M', 'HIGH_VALUE_VELOCITY_2H']);
         });
         $reasons[] = 'STEP_UP_VERIFIED';
@@ -157,7 +251,7 @@ class RiskController extends Controller
         if ($request->has('is_checkout_session') && $request->is_checkout_session) {
             // Mark the session as verified so the next call to createCheckout bypasses STEP_UP
             session(['step_up_verified_log_id' => $log->id]);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Step-Up verified successfully. Please proceed with checkout.'
@@ -166,23 +260,35 @@ class RiskController extends Controller
 
         // Create Payment Record (for Payment Intent flow)
         $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
+
+        // Estimate Net Amount (approx 85% of gross to avoid over-calculating reserve before webhook sync)
+        // Webhook will backfill the exact net-based reserve once Stripe fees are known.
+        $estimatedNetGbp = (int) round($amountGbp * 0.85);
+
+        $riskService = app(\App\Services\Risk\RiskService::class);
+        $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
+        $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
+        $reservePercent = $creator
+            ? app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
+            : (int) ($metrics->reserve_percent ?? 0);
+        $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
+
         $payment = \App\Models\Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
             'amount' => $amountGbp,
+            'reserve_amount_minor' => $reserveGbp,
+            'platform_holds_funds' => true,
             'currency' => 'gbp',
             'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
             'reason_codes' => $reasons,
             'confirmation_log_id' => $log->id,
         ]);
-        
-        // Call Stripe
+
+        // Call Stripe — funds stay on platform; weekly payout engine transfers net amounts
         try {
-            // Fetch Creator
             $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
             if (!$creator) return response()->json(['error' => 'Creator not found'], 404);
-            
-            $connectedAccountId = $creator->account_id ?? null;
 
             $stripePayload = [
                 'amount' => $request->amount,
@@ -193,22 +299,17 @@ class RiskController extends Controller
                     'risk_identity_id' => $identity->id,
                     'creator_id' => $request->creator_id,
                     'step_up_verified' => 'true',
+                    'platform_holds_funds' => 'true',
                 ],
             ];
-            
-            if ($connectedAccountId) {
-                $stripePayload['transfer_data'] = ['destination' => $connectedAccountId];
-                $stripePayload['application_fee_amount'] = (int)($request->amount * 0.05); 
-            }
 
-            $pi = StripeControl::createPaymentIntent($stripePayload);
+            $pi = StripeControl::createPaymentIntent($stripePayload, null, false, $creator->username);
 
             $payment->update([
                 'stripe_payment_intent_id' => $pi->id,
                 'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
             ]);
-            
-            // Link payment to confirmation log
+
             $log->update(['payment_id' => $payment->id]);
 
             return response()->json([
@@ -216,7 +317,6 @@ class RiskController extends Controller
                 'payment_id' => $payment->id,
                 'decision' => $decision,
             ]);
-
         } catch (\Exception $e) {
             Log::error("Stripe PI Creation Failed after Step-Up: " . $e->getMessage());
             $payment->update(['status' => 'failed']);
@@ -232,14 +332,14 @@ class RiskController extends Controller
     {
         // We need identity context to give accurate limits (e.g. Tier 1)
         // If guest, use IP/Fingerprint from request if provided, or default guest limits.
-        
+
         $context = $this->buildContext($request);
         $identityService = app(\App\Services\Risk\RiskIdentityService::class);
         $identity = $identityService->resolveIdentity($context);
-        
+
         $limitsService = app(\App\Services\Risk\EffectiveLimitsService::class);
         $limits = $limitsService->getEffectiveLimits($identity);
-        
+
         return response()->json($limits);
     }
 
@@ -259,9 +359,9 @@ class RiskController extends Controller
         ]);
 
         $context = $this->buildContext($request);
-        
+
         $result = $this->riskEngine->evaluate($context);
-        
+
         return response()->json($result);
     }
 
@@ -298,10 +398,14 @@ class RiskController extends Controller
         // 1. Evaluate Risk
         $context = $this->buildContext($request);
         $riskResult = $this->riskEngine->evaluate($context);
-        
+
         $decision = $riskResult['decision'];
         $reasons = $riskResult['reason_codes'];
-        
+
+        if (is_array($reasons) && in_array('MARK_REVIEW_HOLD', $reasons, true) && $decision === 'ALLOW') {
+            $decision = 'REVIEW_HOLD';
+        }
+
         // 2. Handle Decisions
         if (in_array($decision, ['BLOCK', 'COOLDOWN'])) {
             return response()->json([
@@ -324,7 +428,7 @@ class RiskController extends Controller
                 // So we return here.
             ]);
         }
-        
+
         // 3. Create Payment Record (Initiated)
         // Resolve Identity ID again (or modify evaluate to return identity object/id)
         // For now, re-resolve or trust context. Ideally evaluate returns identity ID.
@@ -336,21 +440,34 @@ class RiskController extends Controller
         $identity = $identityService->resolveIdentity($context);
 
         $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
-        
+
+        // Estimate Net Amount (approx 85% of gross to avoid over-calculating reserve before webhook sync)
+        // Webhook will backfill the exact net-based reserve once Stripe fees are known.
+        $estimatedNetGbp = (int) round($amountGbp * 0.85);
+
+        $riskService = app(\App\Services\Risk\RiskService::class);
+        $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
+        $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
+        $reservePercent = $creator
+            ? app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
+            : (int) ($metrics->reserve_percent ?? 0);
+        $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
+
         $payment = Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
             'amount' => $amountGbp,
+            'reserve_amount_minor' => $reserveGbp,
+            'platform_holds_funds' => true,
             'currency' => 'gbp',
-            'status' => 'initiated',
+            'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
             'reason_codes' => $reasons,
         ]);
-        
-        // 4. Call Stripe
+
+        // 4. Call Stripe — funds stay on platform; weekly payout engine transfers net amounts
         try {
-            // Determine if 3DS is forced
             $force3ds = in_array('FORCE_3DS', $reasons);
-            
+
             $stripePayload = [
                 'amount' => $request->amount,
                 'currency' => $request->currency,
@@ -359,6 +476,7 @@ class RiskController extends Controller
                     'payment_id' => $payment->id,
                     'risk_identity_id' => $identity->id,
                     'creator_id' => $request->creator_id,
+                    'platform_holds_funds' => 'true',
                 ],
             ];
 
@@ -367,76 +485,25 @@ class RiskController extends Controller
                     'card' => ['request_three_d_secure' => 'any']
                 ];
             }
-            
-            // Connected Account ID?
-            // Need to fetch creator's stripe account ID from User model.
-            // Assuming User model has stripe_account_id or similar.
-            // I'll fetch User model.
+
             $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
-            // Fallback to id search if uuid fails? No, stick to uuid.
-            
             if (!$creator) {
-                 return response()->json(['error' => 'Creator not found'], 404);
-            }
-            
-            // Assume stripe_account_id column or similar.
-            // Migration "add_stripe_id_in_users.php" added stripe_id (customer)
-            // "add_account_id_in_users.php" added account_id (connected account)?
-            // Let's check user model or migration.
-            // I'll assume 'stripe_account_id' or 'account_id'.
-            // Let's check the migration: "2023_11_02_144558_add_account_id_in_users.php".
-            // It likely adds `account_id`.
-            
-            $connectedAccountId = $creator->account_id ?? null; // Adjust column name if needed
-            
-            // Calculate Application Fee
-            // Spec says "Store platform fee and apply it consistently".
-            // Logic: (Price + VAT + FixedFees) / (1 - TotalFeeRate).
-            // This is gross-up logic. Here we just take a cut.
-            // Let's assume a fixed percentage for now or 0 if not specified.
-            // The request should probably include application_fee_amount or we calculate it.
-            // For now, let's assume 0 or standard.
-            // $appFee = ...;
-            // $stripePayload['application_fee_amount'] = $appFee;
-            // $stripePayload['transfer_data'] = ['destination' => $connectedAccountId];
-            
-            // Important: Destination Charge
-            if ($connectedAccountId) {
-                $stripePayload['transfer_data'] = [
-                    'destination' => $connectedAccountId,
-                ];
-                // Application fee is mandatory for destination charges usually if you want to keep money.
-                // Let's add a placeholder fee (e.g. 5%).
-                $stripePayload['application_fee_amount'] = (int)($request->amount * 0.05); 
+                return response()->json(['error' => 'Creator not found'], 404);
             }
 
-            $pi = StripeControl::createPaymentIntent($stripePayload); // Standard connect or direct?
-            // Wait, createPaymentIntent in StripeControl handles 'stripe_account' header if passed.
-            // Destination charges are created on Platform account but with transfer_data.destination.
-            // So we call createPaymentIntent WITHOUT connectedAccountId (it uses platform keys),
-            // but payload has transfer_data.
-            // If we call WITH connectedAccountId, it's a Direct Charge (on connected account).
-            // Spec says: "Recommended approach (destination charge pattern)".
-            // So we call on Platform, with transfer_data.
-            // So $connectedAccountId argument to createPaymentIntent should be null.
-            
-            // Correction:
-            $pi = StripeControl::createPaymentIntent($stripePayload); 
+            $pi = StripeControl::createPaymentIntent($stripePayload, null, $force3ds, $creator->username);
 
             // 5. Update Payment Record
             $payment->update([
                 'stripe_payment_intent_id' => $pi->id,
-                'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated', // Or keep initiated until webhook?
-                // If REVIEW_HOLD, we might want to flag it internally.
-                // But status usually reflects lifecycle. 'initiated' is fine.
+                'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
             ]);
-            
+
             return response()->json([
                 'client_secret' => $pi->client_secret,
                 'payment_id' => $payment->id,
                 'decision' => $decision, // ALLOW or REVIEW_HOLD
             ]);
-
         } catch (\Exception $e) {
             Log::error("Stripe PI Creation Failed: " . $e->getMessage());
             $payment->update(['status' => 'failed']);

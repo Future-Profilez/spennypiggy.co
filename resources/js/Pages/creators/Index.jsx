@@ -38,7 +38,7 @@ export default function Index() {
                         <span>Start Free Creator Trial</span>
                         <ArrowRight />
                       </Link>
-                      <span className="text-xs md:text-sm font-medium text-gray-700">3 days free • £4/month after • Cancel anytime</span>
+                      <span className="text-xs md:text-sm font-medium text-gray-700">3 days free • £8.99 + VAT / month after • Cancel anytime</span>
                     </div>
                   </div>
                 </div>
@@ -48,7 +48,7 @@ export default function Index() {
               <div className="py-10 md:py-16 relative z-1">
                 <div className="">
                   <h2 className="text-3xl sm:text-4xl lg:text-5xl md:leading-snug font-gulfs uppercase mb-6   items-center gap-3 text-black">
-                    Why Creators <br/> <span className="text-pink-600">Choose This</span>
+                    Why Creators <br/> <span className="text-[#FF007F]">Choose This</span>
                   </h2>
                   
                   <div className="grid lg:grid-cols-2 gap-8">
@@ -62,9 +62,9 @@ export default function Index() {
                       ].map((item, i) => {
                         const [title, desc] = item.split("—");
                         return (
-                          <div key={i} className="bg-white p-4 md:p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
+                          <div key={i} className="bg-white p-4 md:p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
                             <div className="flex gap-2 md:!gap-4">
-                              <div className="bg-yellow-300 text-black p-2 rounded-2xl h-fit shrink-0 border-[3px] border-black">
+                              <div className="bg-yellow-300 text-black p-2 rounded-[30px]  h-fit shrink-0 border-[3px] border-black">
                                 <Check size={20} strokeWidth={3} />
                               </div>
                               <div>
@@ -78,7 +78,7 @@ export default function Index() {
                     </div>
                     
                     {/* Founder Bonuses Block embedded in grid */}
-                    <div className="bg-[#fdfbf7] text-black p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black relative overflow-hidden flex flex-col justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="bg-[#fdfbf7] text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden flex flex-col justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                       <div className="relative z-1">
                           <h2 className="text-2xl sm:text-4xl lg:text-4xl  font-gulfs uppercase mb-6 leading-none">
                             Founder Bonuses <br className='hidden lg:visible'/> for Early Creators
@@ -110,7 +110,7 @@ export default function Index() {
                         "Works alongside your existing platforms"
                       ].map((item, i) => (
                         <li key={i} className="flex items-start gap-4 text-md md:text-lg font-medium text-gray-700">
-                            <div className="bg-gray-100 p-2 rounded-full text-pink-600 shrink-0"><DollarSign size={20} /></div>
+                            <div className="bg-gray-100 p-2 rounded-full text-[#FF007F] shrink-0"><DollarSign size={20} /></div>
                             {item}
                         </li>
                       ))}
@@ -118,7 +118,7 @@ export default function Index() {
                   </div>
 
                   {/* Toolkit */}
-                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px] shadow-xl md:border border-gray-100">
+                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_#FF007F]l md:border border-gray-100">
                     <h2 className="text-2xl md:text-3xl font-gulfs uppercase mb-8 text-black">
                       Your Full <br/> Monetisation Toolkit
                     </h2>
@@ -133,7 +133,7 @@ export default function Index() {
                         const [title, desc] = item.split("—");
                         return (
                             <li key={i} className="group">
-                              <h3 className="font-bold text-md md:text-xl flex items-center gap-2 group-hover:text-pink-600 transition-colors text-gray-900">
+                              <h3 className="font-bold text-md md:text-xl flex items-center gap-2 group-hover:text-[#FF007F] transition-colors text-gray-900">
                                   <Zap size={18} className="text-yellow-500 fill-yellow-500" /> {title}
                               </h3>
                               <p className="text-gray-500 pl-7">{desc}</p>
@@ -164,7 +164,7 @@ export default function Index() {
                             "Sends monthly reminders to creators",
                             "Keeps transaction records Stripe expects"
                           ].map((item, i) => (
-                            <div key={i} className="bg-[#fdfbf7] p-4 md:p-6 rounded-[25px] md:rounded-[30px] text-center flex flex-col items-center justify-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div key={i} className="bg-[#fdfbf7] p-4 md:p-6 rounded-[25px] md:rounded-[30px]  text-center flex flex-col items-center justify-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <p className="font-bold text-gray-80 text-lg">{item}</p>
                             </div>
                           ))}
@@ -173,12 +173,12 @@ export default function Index() {
                     </div>
 
                     {/* Disputes */}
-                    <div className="bg-black text-white rounded-[25px] md:rounded-[30px] p-6 md:p-10 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                    <div className="bg-black text-white rounded-[25px] md:rounded-[30px]  p-6 md:p-10 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
                       
                       <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
                           <div>
                             <h2 className="text-2xl md:text-4xl font-gulfs uppercase mb-6">
-                                Disputes Are <br/> <span className="text-pink-500">Our Problem</span> — Not Yours
+                                Disputes Are <br/> <span className="text-[#FF007F]">Our Problem</span> — Not Yours
                             </h2>
                             <ul className="space-y-4 mb-8">
                                 {[
@@ -192,13 +192,13 @@ export default function Index() {
                                   </li>
                                 ))}
                             </ul>
-                            <p className="text-[17px] md:text-xl font-bold text-white border-l-4 border-pink-500 pl-4">
+                            <p className="text-[17px] md:text-xl font-bold text-white border-l-4 border-[#FF007F] pl-4">
                                 If the platform ever loses a dispute, Spenny Piggy absorbs the loss — not the creator.
                             </p>
                           </div>
 
                           {/* Why Creators Lose Money on Other Apps */}
-                          <div className="bg-white text-black p-6 rounded-[25px] md:rounded-[30px] border-[3px] border-black">
+                          <div className="bg-white text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black">
                             <h3 className="text-[16px] md:text-xl font-bold uppercase mb-6 text-red-400 flex items-center gap-2">
                                 <AlertTriangle  /> Why Creators Lose Money on Other Payment Apps
                             </h3>
@@ -214,7 +214,7 @@ export default function Index() {
                                   </li>
                                 ))}
                             </ul>
-                            <p className="text-black font-bold text-sm md:text-lg text-center bg-white py-3 px-4 rounded-[30px] ">
+                            <p className="text-black font-bold text-sm md:text-lg text-center bg-white py-3 px-4 rounded-[30px]  ">
                                 Spenny Piggy exists to remove that risk.
                             </p>
                           </div>
@@ -230,7 +230,7 @@ export default function Index() {
                   <ArrowRight />
                 </Link>
                 <div className="mt-2 text-sm font-medium text-gray-700">
-                  3 days free • £4/month after • Live support included
+                  3 days free • £8.99 + VAT / month after • Live support included
                 </div>
               </div>
 

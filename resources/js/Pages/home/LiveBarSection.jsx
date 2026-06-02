@@ -17,19 +17,19 @@ export default function LiveBarSection() {
         src={HeroWishlistImage}
         alt="Wishlist image"
         />
-        <p className='uppercase text-center mt-4 text-gray-400 font-poppins text-[10px] xl:text-[15px] tracking-wider'>*3 days Free trial and then requires a monthly £4 payment to cover stripe fees and compliance costs. </p>
+        {/* <p className='uppercase px-6 text-center mt-4 text-gray-400 font-poppins text-[10px] xl:text-[15px] tracking-wider'>*3 days Free trial and then requires a monthly £8.99 + VAT payment to cover stripe fees and compliance costs. </p> */}
       </div>
      
 
     <div className='w-full livebarsections-hidden relative'>
-      <div className=' livebarsections pt-0 pt-md-5 mt-12 '>
+      <div className='pt-6 livebarsections pt-0 pt-md-5 mt-12 '>
         <div className='container px-4 w-full' >
           <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-4 uppercase leading-none' >
             What is <span className="text-gradient-wishlist">Spenny Piggy</span> ? 🐷
           </h2>
 
            <Lightbox classes="mx-auto block" text={<>
-              <div className="videoBg !h-auto w-full mt-3 rounded-[30px]  border-2 border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.3)] overflow-hidden group cursor-pointer hover:scale-[1.01] transition-transform duration-300" >
+              <div className="videoBg !h-auto w-full mt-3 rounded-[30px]   border-2 border-[#FF007F] shadow-[0_0_30px_rgba(236,72,153,0.3)] overflow-hidden group cursor-pointer hover:scale-[1.01] transition-transform duration-300" >
                 <div className="relative">
                     <img alt={"image"}  className='w-full h-full' src={spennys} />
                     <div className="absolute  inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">

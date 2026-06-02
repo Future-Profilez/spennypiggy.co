@@ -23,18 +23,21 @@ class CheckGifterCardVerification
         if (!$user){
             return $next($request);
         }
-        if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (!empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             $isVerified = $user->gifterCardVerification()
                 ->where('status', 'success')
                 ->exists();
             if (!$isVerified || $user->profile_status_lock != 2){
                 $gifterCard = $user->gifterCardVerification()->first();
                 $status = $gifterCard && $gifterCard->status === 'success';
-                return Inertia::render('gifter/GifterCardVerification', [
-                    'gifterCardVerification' => $status,
-                    'status' => false,
-                    'message' => 'Please complete your card verification process.',
-                ]);
+                if ($request->wantsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'status' => false,
+                        'card_verification_required' => true,
+                        'message' => 'Please complete your card verification process.',
+                    ]);
+                }
+                return Inertia::location(route('gifter.card.verification'));
             }
         }
         return $next($request);

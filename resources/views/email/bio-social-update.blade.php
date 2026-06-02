@@ -31,7 +31,7 @@ if ($bio && $hasBioContent) {
         <table width="100%" style="max-width: 500px; text-align: center;">
             <tr>
                 <td style="font-family: Arial; font-weight: bold; font-size: 18px; color:#000; line-height: 26px;">
-                    {{ $user->name }} has updated their <span style="color: #8C52FF">{{ $updateText }}</span>.
+                    {{ ucwords($user->name) }} has updated their <span style="color: #8C52FF">{{ $updateText }}</span>.
                 </td>
             </tr>
             <tr>
@@ -42,7 +42,7 @@ if ($bio && $hasBioContent) {
             <tr>
                 <td style="padding:20px 0;">
                     <a href="{{ env('APP_URL') }}/{{ $user->username }}"
-                        style="background-color: #f94f97; color: #ffffff; padding: 13px 25px; border-radius: 30px; text-decoration: none; font-family: Arial; font-weight: bold; font-size: 15px;">
+                        style="background-color: #FF007F; color: #ffffff; padding: 13px 25px; border-radius: 30px; text-decoration: none; font-family: Arial; font-weight: bold; font-size: 15px;">
                         Review Profile
                     </a>
                 </td>

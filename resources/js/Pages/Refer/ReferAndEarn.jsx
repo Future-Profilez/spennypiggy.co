@@ -48,7 +48,7 @@ export default function ReferAndEarn({
                 <div className="w-full h-3 bg-gray-200 rounded-full border border-black overflow-hidden">
                     <div
                         className={`h-full transition-all duration-500 ${
-                            percent >= 100 ? "bg-green-500" : "bg-pink-500"
+                            percent >= 100 ? "bg-green-500" : "bg-[#FF007F]"
                         }`}
                         style={{ width: `${percent}%` }}
                     />
@@ -56,7 +56,7 @@ export default function ReferAndEarn({
 
                 {/* Percentage text */}
                 <div className="text-[11px] text-gray-500 mt-1 text-center">
-                    {Math.floor(percent)}% completed
+                    £{formatMoney(value || 0)} / £1,000
                 </div>
 
                 {/* Qualified label (only when 100%) */}
@@ -89,13 +89,13 @@ export default function ReferAndEarn({
         <Authenticated auth={auth?.user} user={auth?.user}>
             <Head title="Refer & Earn" />
 
-            <div className="blackbg pt-6 pb-10">
+            <div className="bg-[#A2E4B8] pt-6 pb-10">
                 <div className="containerbox">
                     {/* ================= HEADER ================= */}
                     {/* ================= HEADER + REFERRAL LINK (MERGED) ================= */}
-                    <div className="mb-6 border-[3px] border-black shadow-pink rounded-[30px]  overflow-hidden">
+                    <div className="mb-6 border-[3px] border-black shadow-[6px_6px_0_0_#000] rounded-[30px]   overflow-hidden">
                         {/* Mac style bar */}
-                        <div className="p-4 pinkbg flex items-center border-b-[3px] border-black">
+                        <div className="p-4 pinkbg flex items-center border-b-[3px] border-black !border-t-[0px] !border-r-[0px] !border-l-[0px] border-black">
                             <span className="border-black border-2 bg-red-700 mr-2 w-5 h-5 rounded-full block"></span>
                             <span className="border-black border-2 bg-yellow-400 mr-2 w-5 h-5 rounded-full block"></span>
                             <span className="border-black border-2 bg-mint mr-2 w-5 h-5 rounded-full block"></span>
@@ -122,7 +122,7 @@ export default function ReferAndEarn({
                             </p>
 
                             {/* Referral Link Box */}
-                            <div className="border-2 border-black rounded-[30px]   p-4 md:p-5">
+                            <div className="py-2">
                                 <h2 className="text-lg font-GillSans uppercase mb-3">
                                     Your Referral Link
                                 </h2>
@@ -134,17 +134,21 @@ export default function ReferAndEarn({
                                         readOnly
                                         value={hasReferral ? referralLink : ""}
                                         placeholder="Click Generate to create your referral link"
-                                        className={`w-full px-4 py-3 md:py-4 pr-[220px] rounded-[30px]  border-2 border-black text-sm
-                                        ${
-                                            hasReferral
-                                                ? "bg-white text-black"
-                                                : "bg-gray-100 text-gray-500"
-                                        }
-                                    `}
+                                        className={`w-full px-4 py-3 md:py-4 
+                                        md:pr-[220px] pr-4
+                                        rounded-[30px]  border-2 border-black text-sm
+                                        overflow-hidden text-ellipsis
+                                        ${hasReferral ? "bg-white text-black" : "bg-gray-100 text-gray-500"}`}
                                     />
 
                                     {/* CTA AREA */}
-                                    <div className="md:absolute top-1/2 right-2 md:-translate-y-1/2 !mt-2 md:!mt-0 flex items-center gap-2">
+                                    <div
+                                        className="
+                                            flex flex-wrap items-center gap-2
+                                            mt-3
+                                            md:absolute md:top-1/2 md:right-2 md:-translate-y-1/2 md:mt-0
+                                        "
+                                    >
                                         {/* GENERATE */}
                                         {!hasReferral && (
                                             <button
@@ -204,15 +208,15 @@ export default function ReferAndEarn({
                                 </div>
 
                                 <p className="text-xs text-gray-500 mt-3">
-                    Share this link with creators. You’ll earn
-                    £50 once they reach £1,000 lifetime GMV.
-                </p>
+                                    Share this link with creators. You’ll earn
+                                    £50 once they reach £1,000 lifetime GMV.
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     {/* ================= HOW IT WORKS ================= */}
-                    <div className="pink-round p-6 mb-6">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6 mb-6">
                         <h2 className="text-xl font-GillSans uppercase mb-4">
                             How You Earn £50
                         </h2>
@@ -227,7 +231,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= STATS ================= */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                         <Stat
                             label="Total Referrals"
                             value={stats.total_referrals || 0}
@@ -241,17 +245,21 @@ export default function ReferAndEarn({
                             label="Available (£)"
                             value={stats.available_for_payout}
                         />
+                        <Stat
+                            label="Paid Out (£)"
+                            value={stats.paid_out_amount}
+                        />
                     </div>
 
                     {/* ================= REDEEM ================= */}
-                    <div className="pink-round p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-GillSans uppercase mb-1">
                                 Redeem Referral Earnings
                             </h3>
                             <p className="text-sm text-gray-500">
-                            Redemption requests are reviewed before payout.
-                        </p>
+                                Redemption requests are reviewed before payout.
+                            </p>
                         </div>
 
                         <div className="flex flex-col items-end gap-2">
@@ -281,7 +289,7 @@ export default function ReferAndEarn({
                                         {},
                                         {
                                             onFinish: () => setLoading(false),
-                                        }
+                                        },
                                     );
                                 }}
                             >
@@ -306,7 +314,7 @@ export default function ReferAndEarn({
                     </div>
 
                     {/* ================= REFERRAL TABLE ================= */}
-                    <div className="pink-round p-6">
+                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6">
                         <h2 className="text-xl font-GillSans uppercase mb-4">
                             Referred Creators
                         </h2>
@@ -328,10 +336,16 @@ export default function ReferAndEarn({
                                                 Joined
                                             </th>
                                             <th className="text-center">
+                                                Lifetime GMV
+                                            </th>
+                                            <th className="text-center">
                                                 Status
                                             </th>
                                             <th className="text-center">
                                                 Progress
+                                            </th>
+                                            <th className="text-center">
+                                                Reward
                                             </th>
                                         </tr>
                                     </thead>
@@ -347,6 +361,13 @@ export default function ReferAndEarn({
 
                                                 <td className="text-center">
                                                     {r.joined_at}
+                                                </td>
+
+                                                <td className="text-center">
+                                                    £
+                                                    {formatMoney(
+                                                        r.lifetime_gmv,
+                                                    )}
                                                 </td>
 
                                                 <td className="text-center">
@@ -377,6 +398,10 @@ export default function ReferAndEarn({
                                                         )
                                                     )}
                                                 </td>
+
+                                                <td className="text-center font-semibold">
+                                                    £50
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -393,7 +418,7 @@ export default function ReferAndEarn({
 /* ================= HELPERS ================= */
 
 const Stat = ({ label, value }) => (
-    <div className="pink-round p-5 text-center">
+    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-5 text-center">
         <div className="text-3xl font-bold">{value}</div>
         <div className="text-xs uppercase mt-1">{label}</div>
     </div>

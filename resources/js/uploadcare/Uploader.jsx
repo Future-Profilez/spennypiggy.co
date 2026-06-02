@@ -1,12 +1,12 @@
-import * as LR from "@uploadcare/blocks";
-import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
-import CustomProgressBar from "@/Components/CustomProgressBar";
-import { useAlerts } from "@/Components/Alerts";
+import * as LR from "@uploadcare/blocks"; 
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react"; 
+import { PACKAGE_VERSION } from "@uploadcare/blocks/env"; 
+import CustomProgressBar from "@/Components/CustomProgressBar"; 
+import { useAlerts } from "@/Components/Alerts"; 
 import axios from "axios"; 
-LR.registerBlocks(LR);
+LR.registerBlocks(LR); 
 
-const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true }, ref) => {
+const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true }, ref) => {
   const { successAlert, errorAlert } = useAlerts();
   const [files, setFiles] = useState([]);
   const [checkIsUploading, setCheckIsUploading] = useState(false);
@@ -31,7 +31,6 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
     reset: () => handleResetUploader(),
   }));
 
-  // Calculate time remaining based on upload progress
   const calculateTimeRemaining = (progress, startTime) => {
     if (!startTime || progress <= 0) return '';
     
@@ -62,6 +61,9 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
     const finishHandler = e => {
       // Check if this event is for our specific context
       const eventCtx = e.detail?.ctx || e.target?.getAttribute?.('ctx-name');
+      // #region debug-point D:lr-finish
+      fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "D", location: "uploadcare/Uploader.jsx:finishHandler", msg: "[DEBUG] LR_UPLOAD_FINISH received", data: { ctxName, eventCtx: eventCtx || null, hasDetail: Boolean(e?.detail), hasData: Boolean(e?.detail?.data), dataLen: Array.isArray(e?.detail?.data) ? e.detail.data.length : null }, ts: Date.now() }) }).catch(() => {});
+      // #endregion
       if (eventCtx && eventCtx !== ctxName) return;
       
       const data = e.detail.data; // final files array
@@ -74,6 +76,9 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
     const startHandler = e => {
       // Check if this event is for our specific context
       const eventCtx = e.detail?.ctx || e.target?.getAttribute?.('ctx-name');
+      // #region debug-point D:lr-start
+      fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "D", location: "uploadcare/Uploader.jsx:startHandler", msg: "[DEBUG] LR_UPLOAD_START received", data: { ctxName, eventCtx: eventCtx || null }, ts: Date.now() }) }).catch(() => {});
+      // #endregion
       if (eventCtx && eventCtx !== ctxName) return;
       
       setCheckIsUploading(true);
@@ -86,6 +91,9 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
     const progressHandler = e => {
       // Check if this event is for our specific context
       const eventCtx = e.detail?.ctx || e.target?.getAttribute?.('ctx-name');
+      // #region debug-point D:lr-progress
+      fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "D", location: "uploadcare/Uploader.jsx:progressHandler", msg: "[DEBUG] LR_UPLOAD_PROGRESS received", data: { ctxName, eventCtx: eventCtx || null, uploadProgress: e?.detail?.uploadProgress || null }, ts: Date.now() }) }).catch(() => {});
+      // #endregion
       if (eventCtx && eventCtx !== ctxName) return;
       
       const progress = e.detail?.uploadProgress || 0;
@@ -142,8 +150,11 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
       isAudio: (f?.contentInfo?.mime?.type === 'audio') || false,
       url: f?.cdnUrl || `https://ucarecdn.com/${fileuid}/`
     };
+    // #region debug-point A:checkAdult-entry
+    fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "A", location: "uploadcare/Uploader.jsx:checkAdult", msg: "[DEBUG] checkAdult entry", data: { ctxName, file: fileMetadata, mimeTypeTop: type || null }, ts: Date.now() }) }).catch(() => {});
+    // #endregion
 
-    if (fileuid && type !== 'video') {
+    if (fileuid && type === 'image') {
       setScanning(true);
       try {
         const resp = await axios.get(`/scanning/check-adult-content/${fileuid}`);
@@ -151,18 +162,31 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
 
         if (resp.data.status) {
           successAlert("File has been scanned !!");
+          // #region debug-point A:scan-ok
+          fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "A", location: "uploadcare/Uploader.jsx:checkAdult:scan-ok", msg: "[DEBUG] scan ok -> sendFile", data: { ctxName, file: fileMetadata }, ts: Date.now() }) }).catch(() => {});
+          // #endregion
           sendFile(fileMetadata); // Pass the full metadata
           setFiles(d);
           controller.current.abort();
         } else {
+          // #region debug-point A:scan-failed
+          fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "A", location: "uploadcare/Uploader.jsx:checkAdult:scan-failed", msg: "[DEBUG] scan failed -> reset uploader", data: { ctxName, file: fileMetadata, resp: resp?.data || null }, ts: Date.now() }) }).catch(() => {});
+          // #endregion
           errorAlert(resp.data.msg);
           handleResetUploader();
         }
       } catch (err) {
-        console.error("error", err);
+        // #region debug-point A:scan-error
+        fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "A", location: "uploadcare/Uploader.jsx:checkAdult:catch", msg: "[DEBUG] scan request error", data: { ctxName, file: fileMetadata, error: String(err?.message || err) }, ts: Date.now() }) }).catch(() => {});
+        // #endregion
         setTimeout(() => setScanning(false), 2000);
+        sendFile(fileMetadata);
+        setFiles(d);
       }
     } else {
+      // #region debug-point A:no-scan
+      fetch("http://127.0.0.1:7777/event", { method: "POST", body: JSON.stringify({ sessionId: "guest-attachment-missing", runId: "pre-fix", hypothesisId: "A", location: "uploadcare/Uploader.jsx:checkAdult:no-scan", msg: "[DEBUG] no scan path -> sendFile", data: { ctxName, file: fileMetadata }, ts: Date.now() }) }).catch(() => {});
+      // #endregion
       sendFile(fileMetadata); // Pass the full metadata
       setFiles(d);
     }
@@ -217,10 +241,8 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
           {files.map((file) => (
             <div className="uploadcare-view-wrap" key={file.uuid}>
               {file.isImage ? (
-                <img
-                  className="rounded border"
-                  width="25%"
-                  alt="Preview"
+                <img className={`rounded border ${imgclasses}`}
+                  width="25%" alt="Preview"
                   src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
                 />
               ) : (

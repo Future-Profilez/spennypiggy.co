@@ -52,9 +52,10 @@ export default function Register(props) {
     const turnstileContainerRef = useRef(null);
     const [turnstileContainerEl, setTurnstileContainerEl] = useState(null);
     const turnstileWidgetIdRef = useRef(null);
-    const checkRef = useRef(); 
-    const gifterref = useRef(); 
-    const addressCheck = useRef(); 
+    const checkRef = useRef();
+    const gifterref = useRef();
+    const addressCheck = useRef();
+    const creatorEmailReceiptAckRef = useRef();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const errorAlertRef = useRef(errorAlert);
     const lowerLetter = /[a-z]/;
@@ -113,7 +114,46 @@ export default function Register(props) {
         role: type && type === "creator" ? 1 : 0,
         creator_category: "",
         cf_turnstile_response: "",
+        creator_email_receipt_ack: false,
+        utm_source: "",
+        utm_medium: "",
+        utm_campaign: "",
+        crm_invite_token: "",
     });
+
+    useEffect(() => {
+        // Read UTM params from URL or localStorage
+        let utm_source = "";
+        let utm_medium = "";
+        let utm_campaign = "";
+
+        if (typeof window !== 'undefined') {
+            const searchParams = new URLSearchParams(window.location.search);
+            
+            utm_source = searchParams.get('utm_source') || localStorage.getItem('utm_source') || "";
+            utm_medium = searchParams.get('utm_medium') || localStorage.getItem('utm_medium') || "";
+            utm_campaign = searchParams.get('utm_campaign') || localStorage.getItem('utm_campaign') || "";
+
+            if (utm_source || utm_medium || utm_campaign) {
+                setData(data => ({
+                    ...data,
+                    utm_source,
+                    utm_medium,
+                    utm_campaign
+                }));
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const token = localStorage.getItem('sp_invite_token');
+        if (!token) return;
+        setData(data => ({
+            ...data,
+            crm_invite_token: token,
+        }));
+    }, []);
 
     const [referralMessage, setReferralMessage] = useState("");
     const [referralType, setReferralType] = useState(""); // success | error
@@ -141,6 +181,7 @@ export default function Register(props) {
             // await handleIpRedirection(ziggy);
             setStep(1);
         } else {
+            setData("creator_email_receipt_ack", false);
             setStep(3);
         }
     };
@@ -239,7 +280,7 @@ export default function Register(props) {
                 }
             }
         },
-        []
+        [],
     );
 
     const getFieldError = useCallback(
@@ -274,7 +315,7 @@ export default function Register(props) {
             if (Array.isArray(serverMsg)) return serverMsg[0] || "";
             return serverMsg || "";
         },
-        [errors, liveErrors, showFieldErrors, touchedFields]
+        [errors, liveErrors, showFieldErrors, touchedFields],
     );
 
     const markFieldTouched = useCallback((field) => {
@@ -295,7 +336,7 @@ export default function Register(props) {
             }
             return data?.[field] || "";
         },
-        [address, data]
+        [address, data],
     );
 
     const getFieldStatus = useCallback(
@@ -332,13 +373,13 @@ export default function Register(props) {
             }
             return "idle";
         },
-        [data?.name, errors, fieldValidity, liveErrors, showFieldErrors]
+        [data?.name, errors, fieldValidity, liveErrors, showFieldErrors],
     );
 
     const getFieldClassName = useCallback(
         (
             field,
-            baseClassName = "mt-1 block w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3"
+            baseClassName = "mt-1 block w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]   p-3",
         ) => {
             const status = getFieldStatus(field);
             const value = getFieldValue(field);
@@ -348,7 +389,7 @@ export default function Register(props) {
             if (!String(value || "").trim()) return baseClassName;
             return padded;
         },
-        [getFieldStatus, getFieldValue]
+        [getFieldStatus, getFieldValue],
     );
 
     const FieldStatusIcon = ({ status }) => {
@@ -398,12 +439,12 @@ export default function Register(props) {
             if (!String(value || "").trim()) return null;
 
             return (
-                <div className="absolute bg-white p-2 right-2 rounded-[30px]  top-1/2 -translate-y-1/2">
+                <div className="absolute bg-white p-2 right-2 rounded-[30px]   top-1/2 -translate-y-1/2">
                     <FieldStatusIcon status={status} />
                 </div>
             );
         },
-        [getFieldStatus, getFieldValue]
+        [getFieldStatus, getFieldValue],
     );
 
     useEffect(() => {
@@ -448,9 +489,9 @@ export default function Register(props) {
                 localError = "The username must be lowercase.";
             } else if (/\s/.test(data.username)) {
                 localError = "The username must not contain spaces.";
-            } else if (/[^a-z0-9]/.test(data.username)) {
+            } else if (/[^a-z0-9_\.]/.test(data.username)) {
                 localError =
-                    "The username must only contain letters and numbers.";
+                    "The username must only contain letters, numbers, periods (.), and underscores (_).";
             }
 
             if (localError) {
@@ -605,11 +646,11 @@ export default function Register(props) {
 
     const [verified, setVerified] = useState(false);
     const onVerify = (token) => {
-        if(token !== null || token !== '' || token !== undefined) {
+        if (token !== null || token !== "" || token !== undefined) {
             setData("cf_turnstile_response", token || "");
             setVerified(!!token);
             console.warn("Turnstile token VERIFIED");
-        }else { 
+        } else {
             console.warn("No Turnstile token VERIFIED");
         }
     };
@@ -652,7 +693,7 @@ export default function Register(props) {
                     callback: (token) => onVerify(token),
                     "expired-callback": () => onVerify(""),
                     "error-callback": () => onVerify(""),
-                }
+                },
             );
         };
 
@@ -662,7 +703,7 @@ export default function Register(props) {
         }
 
         const existingScript = document.querySelector(
-            'script[data-turnstile-script="true"]'
+            'script[data-turnstile-script="true"]',
         );
         if (existingScript) {
             existingScript.addEventListener("load", renderWidget);
@@ -727,8 +768,6 @@ export default function Register(props) {
             submit();
         }
     };
-     
-
 
     const submit = (e) => {
         e && e.preventDefault();
@@ -746,7 +785,7 @@ export default function Register(props) {
         const liveErrorMessages = Object.entries(liveErrors || {})
             .filter(
                 ([field, msg]) =>
-                    !!msg && !ignoredLiveErrorFields.includes(field)
+                    !!msg && !ignoredLiveErrorFields.includes(field),
             )
             .map(([, msg]) => msg)
             .filter(Boolean);
@@ -761,6 +800,18 @@ export default function Register(props) {
             return false;
         }
 
+        if (
+            role == 1 &&
+            creatorEmailReceiptAckRef &&
+            creatorEmailReceiptAckRef?.current?.checked == false
+        ) {
+            errorAlert(
+                "Please confirm you understand your creator email address may appear on supporter receipts.",
+            );
+            creatorEmailReceiptAckRef.current.focus();
+            return false;
+        }
+
         if (!checkRef.current.checked) {
             errorAlert("Please check accept terms & conditions checkbox");
             checkRef.current.focus();
@@ -770,7 +821,11 @@ export default function Register(props) {
             errorAlert("Please verify you are not a robot.");
             return false;
         }
-        if (role == 0 && addressCheck && addressCheck?.current?.checked == false) {
+        if (
+            role == 0 &&
+            addressCheck &&
+            addressCheck?.current?.checked == false
+        ) {
             errorAlert("Please accept all terms and conditions.");
             // addressCheck && addressCheck?.current && addressCheck?.current?.focus();
             return false;
@@ -788,14 +843,17 @@ export default function Register(props) {
             preserveScroll: true,
             preserveState: true,
             onSuccess: (resp) => {
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('sp_invite_token');
+                }
                 if (resp.props.flash?.success) {
                     successAlert(
-                        resp.props.flash?.success || "Signup successfully."
+                        resp.props.flash?.success || "Signup successfully.",
                     );
                 }
                 if (resp.props.flash?.error) {
                     errorAlert(
-                        resp.props.flash?.error || "Something went wrong."
+                        resp.props.flash?.error || "Something went wrong.",
                     );
                 }
             },
@@ -866,7 +924,7 @@ export default function Register(props) {
             .catch(() => {
                 setCodeValid(false);
                 setReferralMessage(
-                    "Unable to verify referral code. Please try again."
+                    "Unable to verify referral code. Please try again.",
                 );
                 setReferralType("error");
             });
@@ -910,14 +968,14 @@ export default function Register(props) {
                             Already registered ?
                             <Link
                                 href={route("login")}
-                                className="ml-1 text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                                className="ml-1 text-[#FF007F] hover:text-[#FF007F] font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
                             >
                                 Log In
                             </Link>
                         </p>
                     </div>
 
-                    <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-[30px]   p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                    <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-[30px]    p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div className="hidden md:flex md:bg-black/20 md:border-b border-white/5 flex items-center !p-5 space-x-2 rounded-t-xl">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -933,14 +991,14 @@ export default function Register(props) {
                                             onClick={() =>
                                                 handleBecomeCreator(1)
                                             }
-                                            className={`cursor-pointer rounded-[30px]   p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
+                                            className={`cursor-pointer rounded-[30px]    p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 1
-                                                    ? "border-pink-500 bg-pink-500/10"
-                                                    : "border-white/10 bg-white/5 hover:border-pink-500/50 hover:bg-white/10"
+                                                    ? "border-[#FF007F] bg-[#FF007F]/10"
+                                                    : "border-white/10 bg-white/5 hover:border-[#FF007F]/50 hover:bg-white/10"
                                             }`}
                                         >
                                             <div className="text-center">
-                                                <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-pink-500 transition-colors uppercase">
+                                                <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-[#FF007F] transition-colors uppercase">
                                                     I'm a Creator
                                                 </h3>
                                                 <p className="text-gray-400 text-sm">
@@ -954,7 +1012,7 @@ export default function Register(props) {
                                             onClick={() =>
                                                 handleBecomeCreator(0)
                                             }
-                                            className={`cursor-pointer rounded-[30px]   p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
+                                            className={`cursor-pointer rounded-[30px]    p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 0
                                                     ? "border-blue-500 bg-blue-500/10"
                                                     : "border-white/10 bg-white/5 hover:border-blue-500/50 hover:bg-white/10"
@@ -993,7 +1051,8 @@ export default function Register(props) {
                                     </p>
                                     <button
                                         onClick={handleNext}
-                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px]  shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit" >
+                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px]   shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit"
+                                    >
                                         Got it – I’ll link my socials
                                     </button>
                                 </div>
@@ -1013,20 +1072,28 @@ export default function Register(props) {
                                             return (
                                                 <div
                                                     key={s.value}
-                                                    className="relative" >
-                                                    <input id={`types-${index}`} type="checkbox" value={s.value} className="hidden"
-                                                        onChange={handleProfileTags }
+                                                    className="relative"
+                                                >
+                                                    <input
+                                                        id={`types-${index}`}
+                                                        type="checkbox"
+                                                        value={s.value}
+                                                        className="hidden"
+                                                        onChange={
+                                                            handleProfileTags
+                                                        }
                                                         checked={isSelected}
                                                     />
                                                     <label
                                                         htmlFor={`types-${index}`}
                                                         className={`block px-6 py-2 font-cera text-lg md:text-lg rounded-full text-normal 
                                                             font-medium cursor-pointer transition-all duration-300 border 
-                                                            ${isSelected 
-                                                                ?  "bg-pink-600 !border-pink-500 text-white shadow-lg shadow-pink-500/30" 
-                                                                : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20"
+                                                            ${
+                                                                isSelected
+                                                                    ? "bg-pink-600 !border-[#FF007F] text-white shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30"
+                                                                    : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20"
                                                             }`}
-                                                         >
+                                                    >
                                                         {s.label}
                                                     </label>
                                                 </div>
@@ -1040,7 +1107,7 @@ export default function Register(props) {
                                                 profileTags &&
                                                 profileTags.length < 1
                                             }
-                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px]  shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px]   shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/30 hover:shadow-[4px_4px_0px_0px_#FF007F]ink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                             Next
                                         </button>
@@ -1057,7 +1124,7 @@ export default function Register(props) {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Display Name
+                                                    Display Name*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1065,24 +1132,24 @@ export default function Register(props) {
                                                         name="name"
                                                         value={data.name}
                                                         className={getFieldClassName(
-                                                            "name"
+                                                            "name",
                                                         )}
                                                         autoComplete="name"
                                                         onChange={(e) =>
                                                             setData(
                                                                 "name",
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         required
                                                     />
                                                     {renderFieldStatusIcon(
-                                                        "name"
+                                                        "name",
                                                     )}
                                                 </div>
                                                 <InputError
                                                     message={getFieldError(
-                                                        "name"
+                                                        "name",
                                                     )}
                                                     className="mt-2"
                                                 />
@@ -1090,7 +1157,7 @@ export default function Register(props) {
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Username
+                                                    Username*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1098,18 +1165,18 @@ export default function Register(props) {
                                                         name="username"
                                                         value={data.username}
                                                         className={getFieldClassName(
-                                                            "username"
+                                                            "username",
                                                         )}
                                                         autoComplete="username"
                                                         onChange={(e) =>
                                                             setData(
                                                                 "username",
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         onBlur={() => {
                                                             markFieldTouched(
-                                                                "username"
+                                                                "username",
                                                             );
                                                             let localError =
                                                                 null;
@@ -1127,25 +1194,24 @@ export default function Register(props) {
                                                                     "The username must not be greater than 20 characters.";
                                                             } else if (
                                                                 /[A-Z]/.test(
-                                                                    data.username
+                                                                    data.username,
                                                                 )
                                                             ) {
                                                                 localError =
                                                                     "The username must be lowercase.";
                                                             } else if (
                                                                 /\s/.test(
-                                                                    data.username
+                                                                    data.username,
                                                                 )
                                                             ) {
                                                                 localError =
                                                                     "The username must not contain spaces.";
                                                             } else if (
-                                                                /[^a-z0-9]/.test(
-                                                                    data.username
+                                                                /[^a-z0-9_\.]/.test(
+                                                                    data.username,
                                                                 )
                                                             ) {
-                                                                localError =
-                                                                    "The username must only contain letters and numbers.";
+                                                                localError = "The username must only contain letters, numbers, periods (.), and underscores (_).";
                                                             }
 
                                                             if (localError) {
@@ -1154,51 +1220,32 @@ export default function Register(props) {
                                                                         ...prev,
                                                                         username:
                                                                             localError,
-                                                                    })
+                                                                    }),
                                                                 );
                                                                 setFieldValidity(
                                                                     (prev) => ({
                                                                         ...prev,
                                                                         username: false,
-                                                                    })
+                                                                    }),
                                                                 );
                                                                 return;
                                                             }
-                                                            validateRegistration(
-                                                                {
-                                                                    username:
-                                                                        data.username,
-                                                                }
-                                                            );
+                                                            validateRegistration({username:data.username,},);
                                                         }}
                                                         required
                                                     />
-                                                    {renderFieldStatusIcon(
-                                                        "username"
-                                                    )}
+                                                    {renderFieldStatusIcon("username",)}
                                                 </div>
-                                                <InputError
-                                                    message={getFieldError(
-                                                        "username"
-                                                    )}
-                                                    className="mt-2"
-                                                />
+                                                <InputError message={getFieldError( "username",)} className="mt-2" />
                                             </div>
-
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Gender
+                                                    Gender*
                                                 </label>
                                                 <select
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "gender",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="mt-1 block w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3"
-                                                    value={data.gender}
-                                                >
+                                                    onChange={(e) => setData( "gender",e.target.value,)}
+                                                    className="mt-1 block w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]   p-3"
+                                                    value={data.gender} >
                                                     <option value="" disabled>
                                                         Choose Gender
                                                     </option>
@@ -1223,7 +1270,7 @@ export default function Register(props) {
                                                 </select>
                                                 <InputError
                                                     message={getFieldError(
-                                                        "gender"
+                                                        "gender",
                                                     )}
                                                     className="mt-2"
                                                 />
@@ -1231,7 +1278,7 @@ export default function Register(props) {
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Email
+                                                    Email*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1240,42 +1287,52 @@ export default function Register(props) {
                                                         name="email"
                                                         value={data.email}
                                                         className={getFieldClassName(
-                                                            "email"
+                                                            "email",
                                                         )}
                                                         autoComplete="username"
                                                         onChange={(e) =>
                                                             setData(
                                                                 "email",
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         onBlur={() => {
                                                             markFieldTouched(
-                                                                "email"
+                                                                "email",
                                                             );
                                                             validateRegistration(
                                                                 {
                                                                     email: data.email,
-                                                                }
+                                                                },
                                                             );
                                                         }}
                                                         required
                                                     />
                                                     {renderFieldStatusIcon(
-                                                        "email"
+                                                        "email",
                                                     )}
                                                 </div>
                                                 <InputError
                                                     message={getFieldError(
-                                                        "email"
+                                                        "email",
                                                     )}
                                                     className="mt-2"
-                                                />
+                                                    />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                {role === 1 && (
+                                                    <div className="mt-3 bg-white/5 border border-white/10 rounded-[20px] p-4 space-y-3">
+                                                        <p className="text-xs text-gray-300 leading-relaxed">
+                                                            The e-mail address used for your creator account may appear on supporter receipts, payment confirmations, and transaction records. Please ensure you register using an appropriate e-mail address that you are comfortable sharing with supporters. This is required for payment processing, compliance, and Merchant of Record (MOR) obligations. If you do not wish to share a personal e-mail address, we recommend creating a dedicated creator/business e-mail for your account.
+                                                        </p>
+                                                        
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Password
+                                                    Password*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1289,7 +1346,7 @@ export default function Register(props) {
                                                         value={mypass}
                                                         ref={inputFieldRef}
                                                         className={getFieldClassName(
-                                                            "password"
+                                                            "password",
                                                         )}
                                                         autoComplete="off"
                                                         onChange={
@@ -1297,7 +1354,7 @@ export default function Register(props) {
                                                         }
                                                         onBlur={() => {
                                                             markFieldTouched(
-                                                                "password"
+                                                                "password",
                                                             );
                                                             validateRegistration(
                                                                 {
@@ -1305,46 +1362,44 @@ export default function Register(props) {
                                                                         data.password,
                                                                     password_confirmation:
                                                                         data.password_confirmation,
-                                                                }
+                                                                },
                                                             );
                                                         }}
                                                         required
                                                     />
 
                                                     {renderFieldStatusIcon(
-                                                        "password"
+                                                        "password",
                                                     )}
                                                 </div>
 
                                                 <p className="w-full">
                                                     <InputError
-                                                    message={getFieldError(
-                                                        "password"
-                                                    )}
-                                                    className="mt-2"
-                                                />
+                                                        message={getFieldError(
+                                                            "password",
+                                                        )}
+                                                        className="mt-2"
+                                                    />
                                                 </p>
 
                                                 <button
                                                     type="button"
                                                     onClick={() =>
                                                         setShowPassword(
-                                                            (prev) => !prev
+                                                            (prev) => !prev,
                                                         )
                                                     }
-                                                    className="mt-2 text-sm font-medium text-pink-400 hover:text-pink-300 underline underline-offset-4"
+                                                    className="mt-2 text-sm font-medium text-[#FF007F] hover:text-pink-300 underline underline-offset-4"
                                                 >
                                                     {showPassword
                                                         ? "Hide Passwords"
                                                         : "Show Passwords"}
                                                 </button>
-                                                
-                                                
                                             </div>
 
                                             <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                    Confirm Password
+                                                    Confirm Password*
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -1359,18 +1414,18 @@ export default function Register(props) {
                                                             data.password_confirmation
                                                         }
                                                         className={getFieldClassName(
-                                                            "password_confirmation"
+                                                            "password_confirmation",
                                                         )}
                                                         autoComplete="off"
                                                         onChange={(e) =>
                                                             setData(
                                                                 "password_confirmation",
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         onBlur={() => {
                                                             markFieldTouched(
-                                                                "password_confirmation"
+                                                                "password_confirmation",
                                                             );
                                                             validateRegistration(
                                                                 {
@@ -1378,18 +1433,18 @@ export default function Register(props) {
                                                                         data.password,
                                                                     password_confirmation:
                                                                         data.password_confirmation,
-                                                                }
+                                                                },
                                                             );
                                                         }}
                                                         required
                                                     />
                                                     {renderFieldStatusIcon(
-                                                        "password_confirmation"
+                                                        "password_confirmation",
                                                     )}
                                                 </div>
                                                 <InputError
                                                     message={getFieldError(
-                                                        "password_confirmation"
+                                                        "password_confirmation",
                                                     )}
                                                     className="mt-2"
                                                 />
@@ -1399,7 +1454,7 @@ export default function Register(props) {
                                         <div
                                             className={`${
                                                 mypass ? "block" : "hidden"
-                                            } bg-white/5 rounded-[30px]  p-4 border border-white/10`}
+                                            } bg-white/5 rounded-[30px]   p-4 border border-white/10`}
                                         >
                                             <h3 className="text-white font-medium mb-2">
                                                 Password must contain:
@@ -1475,7 +1530,7 @@ export default function Register(props) {
                                                                     address.street_address
                                                                 }
                                                                 className={getFieldClassName(
-                                                                    "street_address"
+                                                                    "street_address",
                                                                 )}
                                                                 autoComplete="street_address"
                                                                 onChange={
@@ -1483,24 +1538,24 @@ export default function Register(props) {
                                                                 }
                                                                 onBlur={() => {
                                                                     markFieldTouched(
-                                                                        "street_address"
+                                                                        "street_address",
                                                                     );
                                                                     validateRegistration(
                                                                         {
                                                                             street_address:
                                                                                 address.street_address,
-                                                                        }
+                                                                        },
                                                                     );
                                                                 }}
                                                                 required
                                                             />
                                                             {renderFieldStatusIcon(
-                                                                "street_address"
+                                                                "street_address",
                                                             )}
                                                         </div>
                                                         <InputError
                                                             message={getFieldError(
-                                                                "street_address"
+                                                                "street_address",
                                                             )}
                                                             className="mt-2"
                                                         />
@@ -1517,16 +1572,16 @@ export default function Register(props) {
                                                                 }
                                                                 selectClassName={getFieldClassName(
                                                                     "country",
-                                                                    "w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3"
+                                                                    "w-full bg-[#ffffff0d] border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]  p-3",
                                                                 )}
                                                             />
                                                             {renderFieldStatusIcon(
-                                                                "country"
+                                                                "country",
                                                             )}
                                                         </div>
                                                         <InputError
                                                             message={getFieldError(
-                                                                "country"
+                                                                "country",
                                                             )}
                                                             className="mt-2"
                                                         />
@@ -1544,7 +1599,7 @@ export default function Register(props) {
                                                                     address.state
                                                                 }
                                                                 className={getFieldClassName(
-                                                                    "state"
+                                                                    "state",
                                                                 )}
                                                                 autoComplete="state"
                                                                 onChange={
@@ -1552,23 +1607,23 @@ export default function Register(props) {
                                                                 }
                                                                 onBlur={() => {
                                                                     markFieldTouched(
-                                                                        "state"
+                                                                        "state",
                                                                     );
                                                                     validateRegistration(
                                                                         {
                                                                             state: address.state,
-                                                                        }
+                                                                        },
                                                                     );
                                                                 }}
                                                                 required
                                                             />
                                                             {renderFieldStatusIcon(
-                                                                "state"
+                                                                "state",
                                                             )}
                                                         </div>
                                                         <InputError
                                                             message={getFieldError(
-                                                                "state"
+                                                                "state",
                                                             )}
                                                             className="mt-2"
                                                         />
@@ -1586,7 +1641,7 @@ export default function Register(props) {
                                                                     address.city
                                                                 }
                                                                 className={getFieldClassName(
-                                                                    "city"
+                                                                    "city",
                                                                 )}
                                                                 autoComplete="city"
                                                                 onChange={
@@ -1594,23 +1649,23 @@ export default function Register(props) {
                                                                 }
                                                                 onBlur={() => {
                                                                     markFieldTouched(
-                                                                        "city"
+                                                                        "city",
                                                                     );
                                                                     validateRegistration(
                                                                         {
                                                                             city: address.city,
-                                                                        }
+                                                                        },
                                                                     );
                                                                 }}
                                                                 required
                                                             />
                                                             {renderFieldStatusIcon(
-                                                                "city"
+                                                                "city",
                                                             )}
                                                         </div>
                                                         <InputError
                                                             message={getFieldError(
-                                                                "city"
+                                                                "city",
                                                             )}
                                                             className="mt-2"
                                                         />
@@ -1628,7 +1683,7 @@ export default function Register(props) {
                                                                     address.postal_code
                                                                 }
                                                                 className={getFieldClassName(
-                                                                    "postal_code"
+                                                                    "postal_code",
                                                                 )}
                                                                 autoComplete="postal_code"
                                                                 onChange={
@@ -1636,24 +1691,24 @@ export default function Register(props) {
                                                                 }
                                                                 onBlur={() => {
                                                                     markFieldTouched(
-                                                                        "postal_code"
+                                                                        "postal_code",
                                                                     );
                                                                     validateRegistration(
                                                                         {
                                                                             postal_code:
                                                                                 address.postal_code,
-                                                                        }
+                                                                        },
                                                                     );
                                                                 }}
                                                                 required
                                                             />
                                                             {renderFieldStatusIcon(
-                                                                "postal_code"
+                                                                "postal_code",
                                                             )}
                                                         </div>
                                                         <InputError
                                                             message={getFieldError(
-                                                                "postal_code"
+                                                                "postal_code",
                                                             )}
                                                             className="mt-2"
                                                         />
@@ -1678,14 +1733,14 @@ export default function Register(props) {
                                                     readOnly={
                                                         hasReferralFromUrl
                                                     }
-                                                    className={`flex-1 bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[30px]  p-3 ${
+                                                    className={`flex-1 bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-[20px]   p-3 ${
                                                         hasReferralFromUrl
                                                             ? "opacity-50 cursor-not-allowed"
                                                             : ""
                                                     }`}
                                                     onChange={(e) => {
                                                         setPromoInputValue(
-                                                            e.target.value
+                                                            e.target.value,
                                                         );
                                                         setCodeValid(false);
                                                         setData("promo", "");
@@ -1700,7 +1755,7 @@ export default function Register(props) {
                                                         <button
                                                             type="button"
                                                             onClick={removecode}
-                                                            className="bg-red-500 hover:bg-red-600 text-white px-4 rounded-[30px]  font-medium transition-colors"
+                                                            className="bg-red-500 hover:bg-red-600 text-white px-4 rounded-[30px]   font-medium transition-colors"
                                                         >
                                                             Remove
                                                         </button>
@@ -1712,7 +1767,7 @@ export default function Register(props) {
                                                                     ? checkCreatorReferral
                                                                     : checkPromo
                                                             }
-                                                            className="bg-pink-600 hover:bg-pink-500 text-white px-4 rounded-[30px]  font-medium transition-colors"
+                                                            className="bg-pink-600 hover:bg-[#FF007F] text-white px-4 rounded-[30px]   font-medium transition-colors"
                                                         >
                                                             Apply
                                                         </button>
@@ -1720,7 +1775,7 @@ export default function Register(props) {
                                             </div>
                                             {referralMessage && (
                                                 <div
-                                                    className={`mt-3 rounded-[30px]  px-4 py-3 text-sm font-medium border ${
+                                                    className={`mt-3 rounded-[30px]   px-4 py-3 text-sm font-medium border ${
                                                         referralType ===
                                                         "success"
                                                             ? "bg-green-500/10 text-green-400 border-green-500/30"
@@ -1739,8 +1794,13 @@ export default function Register(props) {
                                                     ref={checkRef}
                                                     id="termaccept"
                                                     name="termaccept"
-                                                    className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
-                                                    onChange={(e) =>setData("termaccept",e?.target?.value)}
+                                                    className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "termaccept",
+                                                            e?.target?.value,
+                                                        )
+                                                    }
                                                     required
                                                 />
                                                 <span className="text-normal text-gray-400">
@@ -1748,18 +1808,20 @@ export default function Register(props) {
                                                     our{" "}
                                                     <a
                                                         href={route(
-                                                            "terms-and-conditions"
+                                                            "terms-and-conditions",
                                                         )}
                                                         target="_blank"
-                                                        className="text-pink-400 hover:text-pink-300 underline"
+                                                        className="text-[#FF007F] hover:text-pink-300 underline"
                                                     >
                                                         Terms & Conditions
                                                     </a>{" "}
                                                     and{" "}
                                                     <a
-                                                        href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                                        href={route(
+                                                            "terms-and-conditions",
+                                                        )}
                                                         target="_blank"
-                                                        className="text-pink-400 hover:text-pink-300 underline"
+                                                        className="text-[#FF007F] hover:text-pink-300 underline"
                                                     >
                                                         Privacy Policy
                                                     </a>
@@ -1768,16 +1830,61 @@ export default function Register(props) {
                                                 </span>
                                             </label>
 
-                                             
-                                               {role === 0 ? <label className={`flex items-start gap-3 cursor-pointer ${role === 0 ? '' : 'hidden'}`}>
+                                             {role === 1 && (
+                                            <div className="mt-3 ">
+                                                
+                                                <label className="flex items-start gap-3 cursor-pointer">
                                                     <input
-                                                        type="checkbox" 
-                                                        ref={addressCheck}  
-                                                        id="addressCheck" 
-                                                        name="addressCheck" 
-                                                        onChange={(e) =>setData("addressCheck",e?.target?.value)} 
-                                                        className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
-                                                        required 
+                                                        type="checkbox"
+                                                        ref={
+                                                            creatorEmailReceiptAckRef
+                                                        }
+                                                        id="creator_email_receipt_ack"
+                                                        name="creator_email_receipt_ack"
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "creator_email_receipt_ack",
+                                                                e.target
+                                                                    .checked,
+                                                            )
+                                                        }
+                                                        className="h-5 w-5 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
+                                                        required={
+                                                            role === 1
+                                                        }
+                                                    />
+                                                    <span className="text-normal text-gray-300">
+                                                        I understand my
+                                                        creator e-mail
+                                                        address may
+                                                        appear on
+                                                        supporter
+                                                        transaction
+                                                        records and
+                                                        receipts.
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        )}
+
+                                            {role === 0 ? (
+                                                <label
+                                                    className={`flex items-start gap-3 cursor-pointer ${role === 0 ? "" : "hidden"}`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        ref={addressCheck}
+                                                        id="addressCheck"
+                                                        name="addressCheck"
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "addressCheck",
+                                                                e?.target
+                                                                    ?.value,
+                                                            )
+                                                        }
+                                                        className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-[#FF007F] focus:ring-pink-500"
+                                                        required
                                                     />
                                                     <span className="text-normal text-gray-400">
                                                         The above address and
@@ -1788,8 +1895,10 @@ export default function Register(props) {
                                                         suspended if I use any
                                                         other details.
                                                     </span>
-                                                </label> : ''}
-                                            
+                                                </label>
+                                            ) : (
+                                                ""
+                                            )}
                                         </div>
 
                                         {turnstileSiteKey && (
@@ -1805,7 +1914,7 @@ export default function Register(props) {
                                         <div className="">
                                             <Popup
                                                 action={hasPop}
-                                                modalclass="bg-gray-900 border border-white/10 shadow-2xl rounded-[30px]   p-6 max-w-lg w-full"
+                                                modalclass="bg-gray-900 border border-white/10 shadow-[4px_4px_0px_0px_#FF007F]xl rounded-[30px]    p-6 max-w-lg w-full"
                                                 space="4"
                                                 size="md"
                                                 classes={`hidden`}
@@ -1843,13 +1952,20 @@ export default function Register(props) {
                                                         <label className="flex items-start gap-3 cursor-pointer">
                                                             <input
                                                                 type="checkbox"
-                                                                ref={hasNotifiedRef}
+                                                                ref={
+                                                                    hasNotifiedRef
+                                                                }
                                                                 id="hasNotified"
-                                                                onChange={() => setData("hasNotified", 1)}
+                                                                onChange={() =>
+                                                                    setData(
+                                                                        "hasNotified",
+                                                                        1,
+                                                                    )
+                                                                }
                                                                 name="hasNotified"
                                                                 value="hasNotified"
                                                                 required
-                                                                className="mt-1 h-5 w-5 rounded bg-white/90 border-black/30 text-pink-500 focus:ring-pink-500"
+                                                                className="mt-1 h-5 w-5 rounded bg-white/90 border-black/30 text-[#FF007F] focus:ring-pink-500"
                                                             />
                                                             <span className="text-sm text-gray-500">
                                                                 I confirm that
@@ -1877,8 +1993,8 @@ export default function Register(props) {
                                                         onClick={accepted}
                                                         disabled={processing}
                                                         className={`
-                                                            ${hasNotifiedRef && !hasNotifiedRef?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
-                                                            w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]    `}
+                                                            ${hasNotifiedRef && !hasNotifiedRef?.current?.checked ? "opacity-50 cursor-not-allowed disabled" : ""}
+                                                            w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]     `}
                                                         spinnerclass="fill-white"
                                                     >
                                                         {processing
@@ -1888,16 +2004,15 @@ export default function Register(props) {
                                                 </div>
                                             </Popup>
 
-            
-
                                             <LoaderButton
                                                 disabled={processing}
-                                                className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full 
-                                                    ${!verified ? 'opacity-50 cursor-not-allowed disabled' : ''}
-                                                    ${!checkRef?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
-                                                    ${role == 0 && !addressCheck?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
+                                                className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-[#FF007F] hover:!text-white pr-6 !text-black w-full 
+                                                    ${!verified ? "opacity-50 cursor-not-allowed disabled" : ""}
+                                                    ${!checkRef?.current?.checked ? "opacity-50 cursor-not-allowed disabled" : ""}
+                                                    ${role == 0 && !addressCheck?.current?.checked ? "opacity-50 cursor-not-allowed disabled" : ""}
                                                 ]`}
-                                                spinnerclass="fill-white" >
+                                                spinnerclass="fill-white"
+                                            >
                                                 {processing
                                                     ? "Processing"
                                                     : "Create Account"}

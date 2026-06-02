@@ -35,6 +35,8 @@ class Deliverable extends Model
         'refund_eligible',
         'is_deliverable', // NEW: Flag for admin interface
         'delivered_at',
+        'accessed_at',
+        'access_count',
         'customer_email',
         'customer_name',
         'payment_status',
@@ -42,16 +44,39 @@ class Deliverable extends Model
         'payment_currency',
         'anonymous',
         'message',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
+        'tracking_id',
+        'courier_name',
+        'expected_delivery_date',
+        'shipped_at',
+        'is_deactivated',
+        'hidden_from_gifter',
+        'deactivated_at',
+        'deactivated_by',
+        'deactivated_reason',
+        'is_overdue',
+        'system_reminder_count',
+        'last_system_reminder_at',
+        'needs_admin_review',
+        'admin_reminder_sent_at',
+        'admin_reminder_count'
     ];
 
     protected $casts = [
         'delivered_at' => 'datetime',
+        'accessed_at' => 'datetime',
         'metadata' => 'array',
-        'transaction_amount' => 'decimal:2'
+        'transaction_amount' => 'decimal:2',
+        'access_count' => 'integer',
+        'is_deactivated' => 'boolean',
+        'hidden_from_gifter' => 'boolean',
+        'deactivated_at' => 'datetime',
     ];
 
     protected $dates = [
-        'delivered_at'
+        'delivered_at',
+        'accessed_at'
     ];
 
     protected static function boot()
@@ -114,11 +139,24 @@ class Deliverable extends Model
     }
 
     /**
+     * Get the shop item this deliverable is for
+     */
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'item_id');
+    }
+
+    /**
      * Get the purchase/order this deliverable is for
      */
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(TaskPurchase::class, 'order_id');
+    }
+
+    public function shopPayment(): BelongsTo
+    {
+        return $this->belongsTo(ShopPayment::class, 'session_id', 'session_id');
     }
     
     /**
@@ -153,15 +191,20 @@ class Deliverable extends Model
         'access',
         'post',
         'media_bundle',
-        'content_file'
+        'email',
+        'shipping',
+        'platform_access',
+        'content_file',
+        'digital_task'
     ];
 
     // Status enum
     const STATUSES = [
         'pending',
+        'processing',
+        'shipped',
         'delivered',
-        'failed',
-        'refunded'
+        'failed'
     ];
 
     /**
@@ -200,6 +243,14 @@ class Deliverable extends Model
     public function getMetadataValue($key, $default = null)
     {
         return $this->metadata[$key] ?? $default;
+    }
+
+    /**
+     * Get metadata as object
+     */
+    public function getMetadataJsonAttribute()
+    {
+        return (object) ($this->metadata ?? []);
     }
 
     /**

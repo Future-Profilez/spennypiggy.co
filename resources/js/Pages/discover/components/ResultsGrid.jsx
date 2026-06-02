@@ -9,8 +9,10 @@ import CreatorCard from './CreatorCard';
 import { trackSearchClick } from "@/includes/Analytics";
 import Bill from '../../bills/Bill';
 import Membership from '../../membership/Membership';
+import ProfileProduct from '../../shop/ProfileProduct';
+import TaskItem from '@/Components/TaskItem';
 
-export default function ResultsGrid({auth, global_currency, results, mode, setMode, totalCount, activeFilters, removeFilter, onLoadMore }) {
+export default function ResultsGrid({auth, global_currency, results, mode, activeFilters, removeFilter }) {
     const renderedItems = useMemo(() => {
         const items = [];
         (results || []).forEach((item, index) => {
@@ -39,6 +41,12 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                 case 'membership':
                     card = <Membership  item={item} />;
                     break;
+                case 'shop':
+                    card = <ProfileProduct item={item} />;
+                    break;
+                case 'task':
+                    card = <TaskItem task={item} IsloggedIn={false} profileUser={item.user} />;
+                    break;
                 default:
                     card = <Wishlistbox
                             key={`wish-item-${item.id}`}
@@ -55,7 +63,10 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
             }
 
             items.push(
-                <div key={item.id} className="h-full">
+                <div
+                    key={item.id}
+                    className={`h-full ${mode === 'task' ? 'col-span-full' : ''}`}
+                >
                     {card}
                 </div>
             );
@@ -71,9 +82,9 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
         
         if (items.length === 0) {
              return (
-                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-[30px]   border border-dashed border-gray-200">
+                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-[30px]    border border-dashed border-gray-200">
                      <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mb-6">
-                        <RiSearchLine className="text-4xl text-pink-500" />
+                        <RiSearchLine className="text-4xl text-[#FF007F]" />
                      </div>
                      <h3 className="text-xl font-bold text-gray-900 mb-2">No matches found</h3>
                      <p className="text-gray-500 max-w-md mb-8">
@@ -81,7 +92,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                      </p>
                      <button 
                         onClick={() => window.location.reload()} 
-                        className="px-6 py-3 bg-gray-900 text-white rounded-[30px]  font-bold hover:bg-black transition-colors"
+                        className="px-6 py-3 bg-gray-900 text-white rounded-[30px]   font-bold hover:bg-black transition-colors"
                      >
                         Clear All Filters
                      </button>
@@ -113,13 +124,9 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
                 {renderedItems}
             </div>
-            {/* <div className="mt-6 text-center">
-                <button  onClick={onLoadMore} className="p-2 px-3 mb-6 text-gray-700 font-medium 
-                rounded-full hover:bg-gray-200 transition-colors" > Load More </button>
-            </div> */}
         </div>
     );
 }
@@ -144,21 +151,21 @@ function SpotlightSection({ index }) {
     const spot = spotlights[index % spotlights.length];
 
     return (
-        <div className={`rounded-[30px]   border p-6 ${spot.color} flex flex-col md:flex-row items-center justify-between gap-6`}>
+        <div className={`rounded-[30px]    border p-6 ${spot.color} flex flex-col md:flex-row items-center justify-between gap-6`}>
             <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-1">{spot.title}</h3>
                 <p className="text-gray-600">{spot.subtitle}</p>
             </div>
             {spot.title === "Trending Now 🔥" ? (
-                <Link href={route('discover', { type: 'trending', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px]  shadow-sm hover:shadow-md transition-all">
+                <Link href={route('discover', { type: 'trending', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px]   shadow-sm hover:shadow-md transition-all">
                     View Collection
                 </Link>
             ) : spot.title === "Quick Wins ⚡" ? (
-                <Link href={route('discover', { search: 'under 20', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px]  shadow-sm hover:shadow-md transition-all">
+                <Link href={route('discover', { search: 'under 20', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px]   shadow-sm hover:shadow-md transition-all">
                     View Collection
                 </Link>
             ) : (
-                <Link href={route('discover', { search: 'expiring', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px]  shadow-sm hover:shadow-md transition-all">
+                <Link href={route('discover', { search: 'expiring', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px]   shadow-sm hover:shadow-md transition-all">
                     View Collection
                 </Link>
             )}

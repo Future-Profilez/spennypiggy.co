@@ -1,4 +1,6 @@
-
+html, body { 
+  background:#000 !important;
+}
 /* home.css */
 @keyframes menu{0%{opacity:0;transition:0.6s;}
 to{opacity:1;transition:0.6s;}
@@ -12,7 +14,11 @@ to{opacity:1;transition:0.6s;}
 body{background:#000;}
 .wishlistimg span.lazy-load-image-background{display:block !important;width:100% !important;height:100% !important;}
 .box{padding:15px;border-radius:20px;background:#fff;border:1px solid #d6d6d6;}
-.containerbox{max-width:1215px;margin:auto;padding:0 15px;}
+.containerbox{max-width:1215px;margin:auto;}
+.container, .containerbox { 
+  padding-left: 20px;
+  padding-right: 20px;
+}
 /* Original fallback for older browsers */
 .heroSec{background:var(--black);}
 
@@ -148,7 +154,7 @@ select#country{text-transform:capitalize;border-radius:10px;border:1px solid var
 .wishlistdetial{min-height:140px;padding:20px;}
 .wishlistdetial h3{color:var(--gray2);}
 .sharelinks{text-align:center;border-top:1px solid var(--voilet);padding:8px;}
-.sharelinks a,.userprofilesec h2,.userprofilesec h1{font-style:normal;text-transform:uppercase;text-align:center;}
+.sharelinks a,.userprofilesec h2 {font-style:normal;text-transform:uppercase;text-align:center;}
 .sharelinks a{color:var(--pink);text-shadow:1px 1px 0 var(--black);line-height:19px;}
 .userphoto img{border:4px solid #000;}
 .accountphotosm,.wishlistModal .accordion-button::after{display:none;}
@@ -168,7 +174,7 @@ button.editProfile{border-radius:10px;border:1px solid var(--voilet);background:
 .addsocial ul li a,.addsocial ul li button{display:inline-flex;}
 .addsocial ul li a svg,.addsocial ul li button svg{display:inline-block;margin:0 5px 0 0;}
 .addsocial ul li{width:50%;position:relative;}
-.addsocial ul li:last-child{text-align:right;border-left:1px solid var(--voilet);}
+.addsocial ul li:last-child{text-align:right;}
 .wishlistModal h2{color:var(--black);font-size:24px;text-transform:uppercase;text-align:center;margin:0 0 20px;}
 .wishlistModal .nav.nav-tabs{display:flex;align-items:center;align-content:center;justify-content:center;border-bottom-color:var(--pink);}
 .wishlistModal .nav.nav-tabs .nav-link.active{border:0;position:relative;color:var(--pink);}
@@ -245,7 +251,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .quty button,.qutynum{height:33px;align-items:center;align-content:center;justify-content:center;}
 .qutynum{font-size:16px;width:34px;text-align:center;border-left:1px solid var(--gray);border-right:1px solid var(--gray);display:inline-flex;line-height:23px;}
 .quty button{width:33px;font-size:18px !important;display:flex;}
-.cartlist.shadow-purple{box-shadow:5px 8px 0 0 var(--purple);}
+.cartlist.shadow-[4px_4px_0px_0px_#FF007F]urple{box-shadow:5px 8px 0 0 var(--purple);}
 .stripbox{max-width:741px;width:90%;}
 .stripbox .loginheadbox{border-radius:30px 30px 0 0;}
 .termselect label{color:#676767;font-size:17px;font-style:normal;letter-spacing:-0.28px;line-height:24px;}
@@ -404,15 +410,15 @@ div#msgText p.valid svg path{stroke:#27b227;}
 .swiper-button-next,.swiper-button-prev{border-radius:10px;background:#fff;padding:10px;width:35px !important;height:35px !important;}
 .swiper-button-next:after,.swiper-button-prev:after{width:20px !important;height:20px !important;font-size:21px !important;margin-left:3px;color:#000;font-weight:bolder !important;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
-.tooltipbtn{width:13px;height:14px;background:#505050;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
+.tooltipbtn{width:18px;height:18px;background:#505050;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-flex;align-items:center;justify-content:center;position:relative;line-height:1;border:none;padding:0;cursor:pointer;}
 .text-small,.tooltipbtn p{font-size:14px;}
-.tooltipbtn p{position:absolute;background:#505050;padding:10px;border-radius:11px;max-width:190px;left:-118px;z-index:2;top:20px;width:230px;display:none;}
-.tooltipbtn{position:relative;}
+.tooltipbtn p{position:absolute;background:#505050;padding:10px;border-radius:11px;max-width:190px;left:-118px;z-index:2;top:28px;width:230px;display:none;}
+.tooltipbtn:hover p,.tooltipbtn:focus p{display:block;}
 .tooltipbtn p:after{content:"";width:10px;height:10px;background:#505050;position:absolute;right:60px;top:-3px;transform:rotate(45deg);}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li button{margin-right:15px;background:0 0;color:#fff;border:0 !important;padding:15px 10px !important;font-size:17px;border-bottom:2px solid transparent !important;}
-.wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
+.wishtracker .nav.nav-tabs li button.active{color:#FF007F;border-color:#FF007F !important;}
 .wishtracker .nav.nav-tabs{border:0;border-radius:14px;padding:1px 26px;background:#242424;margin:10px 0 !important;}
 .disabled{opacity:0.6;}
 .mytable td{color:#fff;padding:15px;}
@@ -441,7 +447,7 @@ button.editpop{display:none !important;}
 .subsctabs button.active,.subsctabs button:hover{color:#fff;background:#f45595;}
 .plantitle{font-size:22px;}
 .wishbanner span.lazy-load-image-background{width:100% !important;display:block !important;height:100% !important;}
-.movesvg{cursor:grab;border-radius:7px;width:30px;height:30px;padding:6px;background:#ffffffbd;position:absolute;top:10px;left:10px;z-index:1;}
+.movesvg{cursor:grab;border-radius:7px;width:30px;height:30px;padding:6px;background:#ffffffbd;z-index:1;}
 .currency-wrapper input{padding-left:50px !important;}
 .currency-wrapper.dollar input{padding-left:25px !important;}
 .currency-wrapper.dollar-symbols input{padding-left:45px !important;}
@@ -459,7 +465,7 @@ span.currency-tag{position:absolute;top:50%;left:10px;transform:translateY(-50%)
 .uploadcare-view-wrap img,.uploadcare-view-wrap video{max-height:260px;width:100%;}
 .isintro{position:relative;}
 .isintro span{width:100% !important;}
-.isintro img{width:100%;height:100%;object-fit:cover;}
+.isintro img,.isintro video{width:100%;height:100%;object-fit:cover;}
 .video-payer-pop video{max-height:390px;width:100%;}
 .remove-story{position:absolute;top:10px;right:10px;}
 .filter-select{padding-right:30px !important;background:0 0;border-color:var(--voilet) !important;color:var(--voilet);max-width:200px;padding:13px 15px;border-radius:11px;font-size:17px;}
@@ -472,6 +478,7 @@ span.currency-tag{position:absolute;top:50%;left:10px;transform:translateY(-50%)
 .user-links p{font-size:14px;}
 button.close-btn{position:absolute;right:20px;top:20px;z-index:2;background:#fff;width:30px;height:30px;border-radius:10px;font-size:23px;line-height:30px;}
 .isintro span,.isintro span img,.isintro img{height:auto !important;max-height:300px;min-height:200px;display:block !important;}
+.isintro video{display:block !important;width:100%;height:100%;object-fit:cover;background:#f3f4f6;}
 .font-large{font-size:19px;line-height:28px;}
 .tipheading span{font-size:26px;display:inline-block;}
 .new-wish-cats .wish-tags{padding:5px 20px;border-radius:10px;color:#a1a1a1;background:#1b1b1b;}
@@ -631,7 +638,6 @@ select#country{width:150px;}
 .creators-platforms span.lazy-load-image-background{max-width:133px;display:block;}
 .publish-image span{display:block !important;width:100% !important;height:auto !important;}
 .membership-image span{width:100% !important;display:block;height:auto !important;}
-html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 }
 .btn-shadow{text-shadow:0.5px 0.5px #000000 !important;letter-spacing:1px;}
 @media (max-width:767px){.membershipitems svg{height:70px;width:70px;}
@@ -655,7 +661,7 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
 .headingMd{font-size:45px !important;line-height:47px !important;}
-.headermain{padding-top:15px;padding-bottom:15px;}
+.headermain{padding-top:7px;padding-bottom:7px;}
 .closemega{position:absolute;right:31px;top:30px;}
 .closemega svg{width:43px;top:10px;}
 .headtitle,.howitmain p br{display:none;}
@@ -684,12 +690,12 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 /* .wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none !important;transform:inherit !important;border-radius:19px !important;width:100% !important;margin:auto;padding:27px 20px !important;font-size:22px !important;}
 */
  .itsfree{padding-inline-start:0;text-align:center !important;}
-.addsocial ul li{width:auto;padding:0 20px;}
+.addsocial ul li{width:auto; }
 .addsocial ul li a{font-size:20px;line-height:20px;}
 .addsocial ul li a svg{width:24px;height:24px;}
 .addsocial ul li:last-child{border:0 !important;}
 .finish button{width:96%;margin:auto;}
-.text-shadow-black{text-shadow:1px 3px 0 var(--black);}
+.text-shadow-[4px_4px_0px_0px_#FF007F]lack{text-shadow:1px 3px 0 var(--black);}
 .funpart{padding:50px 0;}
 .funboxs{flex-wrap:wrap;justify-content:center;height:auto;}
 .funboximg,.funcnt{width:100%;text-align:center;}
@@ -775,7 +781,7 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .loveboxes h3.headingSm{margin-bottom:6px;}
 .editprofileModalInner,.innermodel{width:100% !important;}
 .welcomeTitle{margin:auto;}
-button.cartLink svg{width:34px;height:34px;}
+/* button.cartLink svg{width:34px;height:34px;} */
 .carticon svg{width:30px;}
 .wishlistbox{flex-wrap:wrap;justify-content:center !important;}
 .wishlistcntbox{margin-bottom:20px;}
@@ -783,7 +789,7 @@ button.cartLink svg{width:34px;height:34px;}
 /* .wishlistbtnFixed a{padding:20px !important;box-shadow:3px 3px 16px 3px #fdfdfd33 !important;}
 */
 .userManageHead .btn-pink-md{width:100%;}
-.wishbanner .shadow-black{box-shadow:7px 15px 0 0 rgba(0,0,0,0.8);}
+.wishbanner .shadow-[4px_4px_0px_0px_#FF007F]lack{box-shadow:7px 15px 0 0 rgba(0,0,0,0.8);}
 .userProfile .shadow-voilet{box-shadow:7px 15px 0 0 var(--voilet);}
 .welcomeHeading{font-size:48px;line-height:53px;}
 .funpart h2.headingMd br{display:none;}
@@ -853,7 +859,6 @@ select#country{width:100%;}
 .user-links{padding:14px;}
 .user-links p{font-size:14px;}
 .isintro span,.isintro span img{max-height:340px;}
-.discover-icon svg{width:30px;height:30px;}
 .sno p{font-size:16px;}
 }
 @media (max-width:575px){.wishlistbutton{padding:5px 25px !important;}

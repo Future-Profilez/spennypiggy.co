@@ -9,12 +9,51 @@ use App\Models\Deliverable;
 use App\Observers\DeliverableObserver;
 use Stripe\ApiRequestor;
 use Stripe\HttpClient\CurlClient;
-
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
+use App\Observers\ActivityObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Models that should be observed by ActivityObserver
+     */
+    protected $activityLogModels = [
+        \App\Models\WishItem::class,
+        \App\Models\WishItemSubscription::class,
+        \App\Models\MonthlyCharge::class,
+        \App\Models\Subscription::class,
+        \App\Models\SubscriptionEvent::class,
+        // \App\Models\StripePaymentDetail::class,
+        // \App\Models\StripePaymentItems::class,
+        \App\Models\TipGoal::class,
+        // \App\Models\TipGoalsPayment::class,
+        // \App\Models\BillPayment::class,
+        // \App\Models\MembershipPayment::class,
+        \App\Models\Membership::class,
+        \App\Models\Bills::class,
+        \App\Models\Task::class,
+        // \App\Models\TaskPurchase::class,
+        \App\Models\PiggyPot::class,
+        // \App\Models\PiggyPotContribution::class,
+        \App\Models\User::class,
+        \App\Models\UserCategory::class,
+        \App\Models\GifterCardVerification::class,
+        \App\Models\PostLike::class,
+        \App\Models\Follow::class,
+        \App\Models\PostComment::class,
+        \App\Models\PostCommentReplies::class,
+        \App\Models\UserIntro::class,
+        \App\Models\SocialLinks::class,
+        \App\Models\Post::class,
+        \App\Models\Shop::class,
+        \App\Models\ShopPayment::class,
+        \App\Models\Deliverable::class,
+        \App\Models\Dispute::class,
+        \App\Models\Payment::class,
+        // Add more models as needed for additional audit coverage.
+    ];
+
     /**
      * Register any application services.
      */
@@ -25,6 +64,10 @@ class AppServiceProvider extends ServiceProvider
             // Use temporary storage path in Lambda
             app()->useStoragePath('/tmp/storage');
         }
+
+        $this->app->singleton(\App\Services\ResourcePreloadService::class, function ($app) {
+            return new \App\Services\ResourcePreloadService();
+        });
     }
 
     /**
@@ -45,15 +88,30 @@ class AppServiceProvider extends ServiceProvider
 
         // Register model observers
         Deliverable::observe(DeliverableObserver::class);
-        
+
+        // Register ActivityObserver for all models
+        $this->registerActivityObservers();
+
         // Register custom notification channel for MagicBell push notifications
         Notification::extend('push', function ($app) {
             return new MagicBellChannel();
         });
-        
+
         // Ensure storage directories exist in Lambda environment
         if (app()->environment('production')) {
             $this->ensureLambdaStorageDirectories();
+        }
+    }
+
+    /**
+     * Register ActivityObserver for all required models
+     */
+    protected function registerActivityObservers(): void
+    {
+        foreach ($this->activityLogModels as $model) {
+            if (class_exists($model)) {
+                $model::observe(ActivityObserver::class);
+            }
         }
     }
 
@@ -71,7 +129,7 @@ class AppServiceProvider extends ServiceProvider
             '/tmp/storage/app',
             '/tmp/storage/logs'
         ];
-        
+
         foreach ($directories as $directory) {
             if (!is_dir($directory)) {
                 @mkdir($directory, 0755, true);

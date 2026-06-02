@@ -52,7 +52,7 @@ export default function ForgotPassword(props) {
                             Log In
                         </Link>
                     </p>
-                    <div className="shadow-layout inputs max-w-[600px] pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden">
+                    <div className="shadow-layout inputs max-w-[600px] pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-[4px_4px_0px_0px_#FF007F]ink overflow-hidden">
                         <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
                         <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>

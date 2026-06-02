@@ -19,11 +19,11 @@ class ProductOrderDetail extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'creater_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'creater_id');
     }
 }

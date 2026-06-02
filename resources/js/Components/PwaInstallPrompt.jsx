@@ -69,22 +69,6 @@ export default function PwaInstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
     
-    // For localhost testing: Try to trigger service worker registration
-    // This can help Chrome recognize the site as a PWA
-    if (isChrome && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      // Force service worker registration check
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          if (registrations.length === 0) {
-            // Try to register service worker
-            navigator.serviceWorker.register('/service-worker.js').catch(err => {
-              console.log('Service worker registration failed:', err);
-            });
-          }
-        });
-      }
-    }
-
     // Debug utilities for development/testing
     window.PwaPromptDebug = {
       getLastShownDate: () => {
@@ -203,8 +187,8 @@ export default function PwaInstallPrompt() {
   // Chrome Help Instructions
   if (showChromeHelp) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40">
-        <div className="w-full sm:max-w-md sm:rounded-[30px]   sm:shadow-xl sm:mx-auto bg-white  border-t sm:border border-neutral-200 ">
+      <div className="fixed inset-0 z-[9999999999] flex items-end sm:items-center justify-center bg-black/40">
+        <div className="w-full sm:max-w-md sm:rounded-[30px]    sm:shadow-[4px_4px_0px_0px_#FF007F]l sm:mx-auto bg-white  border-t sm:border border-neutral-200 ">
           <div className="p-4 sm:p-6">
             <div className="text-center mb-4">
               <div className="text-4xl mb-2">💻</div>
@@ -242,7 +226,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="px-6 py-2 rounded-[30px]  bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                className="px-6 py-2 rounded-[30px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
               >
                 Got it! 🐷
               </button>
@@ -255,8 +239,8 @@ export default function PwaInstallPrompt() {
 
   // Main PWA Install Prompt
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40">
-      <div className="w-full sm:max-w-md sm:rounded-[30px]  sm:shadow-xl sm:mx-auto bg-white  border-t sm:border border-neutral-200  ">
+    <div className="fixed inset-0 z-[9999999999] flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md sm:rounded-[30px]   sm:shadow-[4px_4px_0px_0px_#FF007F]l sm:mx-auto bg-white  border-t sm:border border-neutral-200  ">
         <div className="p-4 sm:p-6">
           <h3 className="text-2xl font-gulfs uppercase text-neutral-900  ">
             Add Spenny Piggy to Your Home Screen 🐷💖
@@ -264,7 +248,7 @@ export default function PwaInstallPrompt() {
           <p className="mt-2 text-sm text-neutral-700  ">
             Never miss a tribute, task, or juicy update again.
             <br />
-            📲 Install the app to get push notifications — including when your favourite creators message you (or demand payment 👀).
+            📲 Install the app to get push notifications — including when your favourite creators message you (or request payment 👀).
           </p>
 
           {isSafari ? (
@@ -285,7 +269,7 @@ export default function PwaInstallPrompt() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="px-4 py-2 rounded-[30px]  border border-neutral-300   text-neutral-700  bg-white   hover:bg-neutral-50  "
+              className="px-4 py-2 rounded-[30px]   border border-neutral-300   text-neutral-700  bg-white   hover:bg-neutral-50  "
             >
               Not now
             </button>
@@ -294,7 +278,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="px-4 py-2 rounded-[30px]  bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                className="px-4 py-2 rounded-[30px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
               >
                 Install
               </button>
@@ -302,7 +286,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="px-4 py-2 rounded-[30px]  bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                className="px-4 py-2 rounded-[30px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
               >
                 Got it
               </button>

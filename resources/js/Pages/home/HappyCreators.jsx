@@ -52,7 +52,7 @@ export default function HappyCreators() {
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
+                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
             </div>
 
             <div className="containerbox relative ">
@@ -72,11 +72,11 @@ export default function HappyCreators() {
                                     <SwiperSlide key={`swiper-item-${i}`}>
                                         <div
                                            
-                                          className="fading min-h-[245px] rounded-[30px]  bg-gray-900 border border-gray-800 p-[25px] shadow-[6px_6px_0_0_#F94F96] hover:translate-y-[-5px] transition-transform duration-300"
+                                          className="fading min-h-[245px] rounded-[30px]   bg-gray-900 border border-gray-800 p-[25px] shadow-[6px_6px_0_0_#FF007F] hover:translate-y-[-5px] transition-transform duration-300"
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">
-                                                    <strong className="text-center text-lg not-italic font-normal leading-[120%] font-gulfs text-white">
+                                                    <strong className="text-center text-lg not-italic uppercase font-normal leading-[120%] tracking-wide font-gulfs text-white">
                                                         @{m.name}
                                                     </strong>
                                                 </div>

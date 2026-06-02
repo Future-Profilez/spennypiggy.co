@@ -265,7 +265,7 @@ class DeliverableService
         try {
             // Generate receipt
             // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
-            $deliverable->update(['receipt_url' => $receiptUrl]);
+            // $deliverable->update(['receipt_url' => $receiptUrl]);
             
             // Send pending notification to buyer
             DeliverableNotification::createDeliverablePending($deliverable);

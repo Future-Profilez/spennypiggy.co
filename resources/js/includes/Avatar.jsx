@@ -1,12 +1,10 @@
 import { Link } from "@inertiajs/react";
-import ModernImage from '../Components/ModernImage';
-import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FounderBadge from "@/Components/FounderBadge";
 
 const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
 
-export default function Avatar({ imgclass,hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
+export default function Avatar({ imgclass,hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick, nolink }) {
 
   return (
     <>
@@ -66,7 +64,7 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
       }
       `}</style>
 
-      {username ? (
+      {username && !nolink ? (
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
@@ -74,7 +72,7 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
               <img
                 src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
-                className="img-fluid bg-gray-200 rounded-[17px]" 
+                className="img-fluid bg-gray-200 !rounded-[17px]" 
                 loading="lazy"
                 decoding="async"
                 style={{
@@ -92,11 +90,11 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
               />
               {role && profile_status_lock && (
                 is_founder ? (
-                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
+                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-[4px_4px_0px_0px_#FF007F]l border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
                 ) : (
                   <RiVerifiedBadgeFill
                     size="1.5rem"
-                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-pink-500 rounded-full p-[1px]"
+                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-[4px_4px_0px_0px_#FF007F]l rounded-full border border-2 !border-[#FF007F] rounded-full p-[1px]"
                   />
                 )
               )}

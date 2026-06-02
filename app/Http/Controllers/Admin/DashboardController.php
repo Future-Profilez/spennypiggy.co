@@ -21,18 +21,18 @@ class DashboardController extends Controller
         $state = $stateRecord ? $stateRecord->state : 'NORMAL';
 
         // 2. GMV Metrics
-        $gmv24h = Payment::where('status', 'succeeded')
+        $gmv24h = Payment::whereIn('status', ['succeeded', 'review_hold', 'disputed'])
             ->where('created_at', '>=', Carbon::now()->subHours(24))
             ->sum('amount');
             
-        $gmv7d = Payment::where('status', 'succeeded')
+        $gmv7d = Payment::whereIn('status', ['succeeded', 'review_hold', 'disputed'])
             ->where('created_at', '>=', Carbon::now()->subDays(7))
             ->sum('amount');
 
         // 3. Dispute Rate (Platform 30d)
         // Reuse query from monitor command or simplified here.
         $totalTx30d = Payment::where('created_at', '>=', Carbon::now()->subDays(30))
-            ->whereIn('status', ['succeeded', 'review_hold', 'refunded', 'disputed'])
+            ->whereIn('status', ['succeeded', 'review_hold', 'disputed'])
             ->count();
             
         $totalDisputes30d = Dispute::where('created_at', '>=', Carbon::now()->subDays(30))->count();

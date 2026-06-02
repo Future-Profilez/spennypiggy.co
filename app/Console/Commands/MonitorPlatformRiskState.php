@@ -50,17 +50,17 @@ class MonitorPlatformRiskState extends Command
                 SELECT COUNT(*) AS total_tx
                 FROM payments
                 WHERE status IN ('succeeded','review_hold','refunded','disputed')
-                AND created_at >= NOW() - INTERVAL '30 days'
+                AND created_at >= NOW() - INTERVAL 30 DAY
             ),
             dp AS (
                 SELECT COUNT(*) AS total_disputes
                 FROM disputes
-                WHERE created_at >= NOW() - INTERVAL '30 days'
+                WHERE created_at >= NOW() - INTERVAL 30 DAY
             )
             SELECT 
                 tx.total_tx, 
                 dp.total_disputes,
-                (dp.total_disputes::decimal / NULLIF(tx.total_tx, 0)) * 100 AS dispute_rate_pct
+                (CAST(dp.total_disputes AS DECIMAL(10,4)) / NULLIF(tx.total_tx, 0)) * 100 AS dispute_rate_pct
             FROM tx, dp
         ");
 
@@ -83,19 +83,19 @@ class MonitorPlatformRiskState extends Command
                 SELECT COALESCE(SUM(amount),0) AS gmv_24h
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '24 hours'
+                AND created_at >= NOW() - INTERVAL 24 HOUR
             ),
             avg_7d AS (
                 SELECT COALESCE(SUM(amount),0)/7 AS avg_daily_7d
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '7 days'
+                AND created_at >= NOW() - INTERVAL 7 DAY
             )
             SELECT 
                 last_24h.gmv_24h, 
                 avg_7d.avg_daily_7d,
                 CASE WHEN avg_7d.avg_daily_7d = 0 THEN 0 
-                ELSE last_24h.gmv_24h::decimal / avg_7d.avg_daily_7d END AS ratio
+                ELSE CAST(last_24h.gmv_24h AS DECIMAL(10,4)) / avg_7d.avg_daily_7d END AS ratio
             FROM last_24h, avg_7d
         ");
 
@@ -127,20 +127,20 @@ class MonitorPlatformRiskState extends Command
                 SELECT COALESCE(SUM(amount),0) AS gmv
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '7 days'
+                AND created_at >= NOW() - INTERVAL 7 DAY
             ),
             prev_week AS (
                 SELECT COALESCE(SUM(amount),0) AS gmv
                 FROM payments
                 WHERE status='succeeded'
-                AND created_at >= NOW() - INTERVAL '14 days'
-                AND created_at < NOW() - INTERVAL '7 days'
+                AND created_at >= NOW() - INTERVAL 14 DAY
+                AND created_at < NOW() - INTERVAL 7 DAY
             )
             SELECT 
                 this_week.gmv AS gmv_this_week, 
                 prev_week.gmv AS gmv_prev_week,
                 CASE WHEN prev_week.gmv = 0 THEN 0 
-                ELSE this_week.gmv::decimal / prev_week.gmv END AS ratio
+                ELSE CAST(this_week.gmv AS DECIMAL(10,4)) / prev_week.gmv END AS ratio
             FROM this_week, prev_week
         ");
 
@@ -162,20 +162,20 @@ class MonitorPlatformRiskState extends Command
             WITH creator_tx AS (
                 SELECT creator_id, COUNT(*) AS tx
                 FROM payments
-                WHERE created_at >= NOW() - INTERVAL '7 days'
+                WHERE created_at >= NOW() - INTERVAL 7 DAY
                 AND status IN ('succeeded','review_hold','refunded','disputed')
                 GROUP BY creator_id
             ),
             creator_dp AS (
                 SELECT creator_id, COUNT(*) AS disputes
                 FROM disputes
-                WHERE created_at >= NOW() - INTERVAL '7 days'
+                WHERE created_at >= NOW() - INTERVAL 7 DAY
                 GROUP BY creator_id
             ),
             rates AS (
                 SELECT 
                     t.creator_id,
-                    (COALESCE(d.disputes,0)::decimal / NULLIF(t.tx,0)) * 100 AS dispute_rate_pct
+                    (CAST(COALESCE(d.disputes,0) AS DECIMAL(10,4)) / NULLIF(t.tx,0)) * 100 AS dispute_rate_pct
                 FROM creator_tx t
                 LEFT JOIN creator_dp d ON d.creator_id = t.creator_id
             )
@@ -269,37 +269,42 @@ class MonitorPlatformRiskState extends Command
             ]
         ]);
 
-        // Notify Admins
-        if ($newState === 'FREEZE' || $newState === 'THROTTLE') {
-            try {
-                $admins = Admin::all(); // Assuming Admin model exists and has email
-                if ($admins->isEmpty()) {
-                    // Fallback to config email or hardcoded if no admins in DB
-                    $fallbackEmail = config('mail.from.address');
-                    if ($fallbackEmail) {
-                        Mail::to($fallbackEmail)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
-                        \App\Helpers::sendNotification(
-                            "Platform Risk Alert: {$newState}", 
-                            "System state changed to {$newState}. Reasons: " . implode(', ', $reasons), 
-                            $fallbackEmail
-                        );
-                    }
-                } else {
-                    foreach ($admins as $admin) {
-                        if ($admin->email) {
-                            Mail::to($admin->email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
-                            \App\Helpers::sendNotification(
-                                "Platform Risk Alert: {$newState}", 
-                                "System state changed to {$newState}. Reasons: " . implode(', ', $reasons), 
-                                $admin->email
-                            );
-                        }
-                    }
+        try {
+
+            $allRecipients = [
+                'naveen@internetbusinesssolutionsindia.com',
+            ];
+
+            if (app()->environment('production')) {
+                $allRecipients[] = 'noreply@spennypiggy.co';
+
+                $adminRecipients = Admin::query()
+                    ->whereNotNull('email')
+                    ->pluck('email')
+                    ->toArray();
+                
+                $allRecipients = array_merge($allRecipients, $adminRecipients);
+
+                $fallbackEmail = config('mail.from.address');
+                if ($fallbackEmail) {
+                    $allRecipients[] = $fallbackEmail;
                 }
-                $this->info("Admin notifications sent.");
-            } catch (\Exception $e) {
-                Log::error("Failed to send Platform Risk Alert email: " . $e->getMessage());
             }
+
+            $allRecipients = array_values(array_unique(array_filter($allRecipients)));
+
+            foreach ($allRecipients as $email) {
+                Mail::to($email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
+                \App\Helpers::sendNotification(
+                    "Platform Risk Alert: {$newState}",
+                    "System state changed to {$newState}. Reasons: " . implode(', ', $reasons),
+                    $email
+                );
+            }
+
+            $this->info("Platform state change notifications sent.");
+        } catch (\Exception $e) {
+            Log::error("Failed to send Platform Risk Alert email: " . $e->getMessage());
         }
     }
 }

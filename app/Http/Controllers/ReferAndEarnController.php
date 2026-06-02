@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
+use App\Models\FinancialTransaction;
 use App\Models\ReferralCode;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -107,7 +108,8 @@ class ReferAndEarnController extends Controller
             ->count();
 
         /* =====================================================| Earnings (LIFETIME)===================================================== */
-        $totalEarned = $qualifiedCount * 50;
+        $rewardAmount = config('referral.reward_amount', 50);
+        $totalEarned = $qualifiedCount * $rewardAmount;
 
         /* =====================================================| Payout State===================================================== */
         $hasActivePayout = CreatorReferralPayout::where('creator_id', $user->id)
@@ -121,11 +123,16 @@ class ReferAndEarnController extends Controller
             ->where('status', 'QUALIFIED')
             ->count();
 
-        $totalEarn = $availableForPayouts * 50;
+        $totalEarn = $availableForPayouts * $rewardAmount;
 
         $availableForPayout = $availableForPayouts ? $totalEarn : 0;
 
-        $canRedeem = $availableForPayout >= 50 && !$hasActivePayout;
+        /* =====================================================| Paid Out Amount===================================================== */
+        $paidOutAmount = CreatorReferralPayout::where('creator_id', $user->id)
+            ->where('status', 'PAID')
+            ->sum('amount');
+
+        $canRedeem = $availableForPayout >= $rewardAmount && !$hasActivePayout;
 
         /* =====================================================| Response===================================================== */
         // dd($referrals, $qualifiedCount, $totalEarned, $hasActivePayout, $availableForPayout, $canRedeem);
@@ -144,6 +151,7 @@ class ReferAndEarnController extends Controller
                 'qualified_referrals'  => $qualifiedCount,
                 'total_earned'         => $totalEarned,
                 'available_for_payout' => $availableForPayout,
+                'paid_out_amount'      => (float) $paidOutAmount,
             ],
 
             'referrals' => $referrals,
@@ -197,6 +205,16 @@ class ReferAndEarnController extends Controller
     {
         $creator = auth()->user();
 
+        // 0️⃣ Check Stripe connection
+        if (empty($creator->account_id)) {
+            return back()->with('error', 'Please connect your Stripe account before requesting a payout.');
+        }
+
+        // 0️⃣ Check if payouts are blocked by admin (suspended account)
+        if ($creator->suspended_account) {
+            return back()->with('error', 'Your payouts are currently disabled. Please contact support.');
+        }
+
         try {
             DB::beginTransaction();
 
@@ -223,7 +241,8 @@ class ReferAndEarnController extends Controller
             }
 
             // 3️⃣ Calculate payout amount
-            $amount = $qualifiedReferrals->count() * 50;
+            $rewardAmount = config('referral.reward_amount', 50);
+            $amount = $qualifiedReferrals->count() * $rewardAmount;
 
             // 4️⃣ Check for last rejected payout
             $rejectedPayout = CreatorReferralPayout::where('creator_id', $creator->id)
@@ -259,6 +278,29 @@ class ReferAndEarnController extends Controller
                 ->update([
                     'status' => 'PAYOUT_REQUESTED',
                 ]);
+
+            // 6️⃣ Create FinancialTransaction record for audit trail
+            FinancialTransaction::updateOrCreate(
+                [
+                    'source_type' => CreatorReferralPayout::class,
+                    'source_id'   => $payout->id,
+                ],
+                [
+                    'user_id'          => $creator->id,
+                    'type'             => 'referral_payout',
+                    'gross_amount'     => $amount,
+                    'platform_fee'     => 0,
+                    'stripe_fee'       => 0,
+                    'vat_amount'       => 0,
+                    'net_amount'       => $amount,
+                    'reserve_amount'   => 0,
+                    'reserve_status'   => 'none',
+                    'currency'         => config('referral.currency', 'gbp'),
+                    'status'           => 'pending',
+                    'description'      => "Referral payout request for {$qualifiedReferrals->count()} referral(s)",
+                    'transaction_date' => now(),
+                ]
+            );
 
             DB::commit();
 

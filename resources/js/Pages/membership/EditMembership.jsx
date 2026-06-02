@@ -9,6 +9,8 @@ import st from "../../../css/uploader.module.css";
 import axios from "axios";
 import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
+import PriceFormat from "@/includes/PriceFormat";
+
 const memberships = [
     {
         title: "Bronze Level",
@@ -32,7 +34,7 @@ const memberships = [
     },
 ];
 
-const membershipBenifits = [
+const membershipBenefits = [
     {
         title: "Green Circle Insta",
         value: "green_circle_insta",
@@ -74,8 +76,10 @@ const membershipBenifits = [
         value: "weekly_video_call",
     },
 ];
+
 export default function EditMembership({ item }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const { auth } = usePage().props;
     const uploaderRef = useRef();
     const resetUploader = () => {
@@ -85,7 +89,7 @@ export default function EditMembership({ item }) {
     };
     const [close, setClose] = useState();
     const [rewardItems, setRewardItems] = useState(
-        item?.rewards ? JSON.parse(item.rewards) : []
+        item?.rewards ? JSON.parse(item.rewards) : [],
     );
     const [thumb, setThumb] = useState(null);
     const [data, setData] = useState({
@@ -137,162 +141,207 @@ export default function EditMembership({ item }) {
         e.preventDefault();
         setLoading(true);
 
-        router.post(`/membership/edit/${item.uuid}`,
+        router.post(
+            `/membership/edit/${item.uuid}`,
             {
                 ...data,
                 thumbnail: thumb,
                 rewards: rewardItems,
-            }, {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                // if(resp?.props?.flash?.success){
-                //     successAlert(resp?.props?.flash?.success);
-                // }
-                // if(resp?.props?.flash?.error){
-                //     errorAlert(resp?.props?.flash?.error);
-                // }
-                setClose(false);
-                setLoading(false);
-                router.visit(
-                    route("user.show", {
-                        username: auth.user.username,
-                        page: "memberships",
-                    }),
-                    {
-                        preserveState: true,
-                        preserveScroll: true,
-                    }
-                );
-                setTimeout(() => setClose(), 100); // optional: this can be simplified
             },
-            onError: (_err) => {
-                console.error("error", _err);
-                setLoading(false);
-                errorAlert("Failed to update membership.Something went wrong.");
+            {
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    setClose(false);
+                    setLoading(false);
+                    router.visit(
+                        route("user.show", {
+                            username: auth.user.username,
+                            page: "memberships",
+                        }),
+                        {
+                            preserveState: true,
+                            preserveScroll: true,
+                        },
+                    );
+                    setTimeout(() => setClose(), 100);
+                },
+                onError: (_err) => {
+                    console.error("error", _err);
+                    setLoading(false);
+                    errorAlert(
+                        "Failed to update membership.Something went wrong.",
+                    );
+                },
             },
-        });
-
-        // router.post(``, {
-        //         ...data,
-        //         thumbnail: thumb,
-        //         rewards: rewardItems,
-        //     })
-        //     .then((resp) => {
-        //         console.log(resp);
-                // if (resp.data.status) {
-                //     successAlert(resp.data.msg);
-                //     setClose(false);
-                //     setTimeout(() => setClose(), 100); // optional: this can be simplified
-                //     reset();
-                //     if (typeof resetUploader === "function") resetUploader();
-                //     router.visit(
-                //         route("user.show", {
-                //             username: auth.user.username,
-                //             page: "memberships",
-                //         }),
-                //         {
-                //             preserveState: true,
-                //             preserveScroll: true,
-                //         }
-                //     );
-                // } else {
-                //     if (resp.data.errors) {
-                //         Object.entries(resp.data.errors).forEach(([_, value]) =>
-                //             errorAlert(value)
-                //         );
-                //     } else {
-                //         errorAlert(resp.data.msg);
-                //     }
-                // }
-        //         setLoading(false);
-        //     })
-        //     .catch((err) => {
-        //         console.error("err", err);
-        //         errorAlert("Something went wrong. Please try again.");
-        //         setLoading(false);
-        //     });
+        );
     };
 
     return (
         <Popup
-            modalclass="pinkmodal full sendSurprize-modal shadow-pink pl-0"
+            modalclass="pinkmodal sendSurprize-modal shadow-[4px_4px_0px_0px_#FF007F]ink membership-modal"
             space="4"
-            size="md"
+            size="xl"
             action={close}
             classes={`btn-pink w-full sm mt-3`}
             text={`Edit`}
         >
-            <div className="addgoal">
-                <h2 className="uppercase font-GillSans pb-4 font-large">
+            <div className="membership-popup-content">
+                <h2 className="uppercase font-GillSans pb-6 text-2xl font-bold text-left w-full">
                     Update Membership
                 </h2>
-                <div className="flex flex-wrap">
-                    <div className="w-full mb-4">
-                        <label className="block text-left mb-2">
+                {item && item.is_suspended == 1 && (
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md text-left">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-red-800">Item Suspended</h3>
+                                {item.suspend_reason && (
+                                    <div className="mt-2 text-sm text-red-700">
+                                        <p>{item.suspend_reason}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <div className="membership-form-wrapper">
+                    <div className="w-full">
+                        <label className="block text-left mb-2 text-lg font-semibold text-gray-800">
                             Choose Membership Level
                         </label>
-                        <ul className="pl-0 flex flex-wrap tiers">
+                        <p className="text-left text-sm text-gray-500 mb-4">Select the tier that best fits your membership offering.</p>
+                        <div className="flex flex-col gap-4 mb-6">
                             {memberships &&
                                 memberships.map((m, i) => {
+                                    const isSelected = data?.level === m.value;
+                                    const getTierIcon = (val) => {
+                                        switch(val) {
+                                            case 'bronze': return '🥉';
+                                            case 'silver': return '🥈';
+                                            case 'gold': return '🥇';
+                                            case 'platinum': return '💎';
+                                            case 'lifetime': return '👑';
+                                            default: return '⭐';
+                                        }
+                                    };
+                                    const getTierDescription = (val) => {
+                                      switch(val) {
+                                        case 'bronze': return 'A great starting point for your casual fans.';
+                                        case 'silver': return 'Step it up with more exclusive perks.';
+                                        case 'gold': return 'Premium access for your loyal supporters.';
+                                        case 'platinum': return 'The ultimate VIP experience.';
+                                        case 'lifetime': return 'One-time payment for endless access.';
+                                        default: return 'Awesome membership tier.';
+                                      }
+                                    };
                                     return (
-                                        <li
+                                        <div
                                             key={`membership-${i}`}
-                                            className="mb-2 mr-2"
+                                            className="relative"
                                         >
                                             <input
                                                 className="cursor-pointer hidden"
-                                                type="checkbox"
+                                                type="radio"
                                                 id={m.value}
                                                 value={m.value}
                                                 name="level"
                                                 onChange={handleInput}
-                                                checked={data.level === m.value}
+                                                checked={isSelected}
                                             />
                                             <label
-                                                className={`cursor-pointer capitalize ${
-                                                    data &&
-                                                    data.level == m.value
-                                                        ? "active"
-                                                        : ""
+                                                className={`cursor-pointer flex items-center p-3 rounded-[30px]  border-[3px] border-black transition-all duration-200 bg-white ${
+                                                    isSelected
+                                                        ? "shadow-[2px_2px_0px_0px_#ff4fa0] border-[#ff4fa0] translate-y-[2px]"
+                                                        : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                 }`}
                                                 htmlFor={m.value}
                                             >
-                                                {m.title}
+                                                <div className={`w-[50px] h-[50px] flex-shrink-0 rounded-[30px]  flex items-center justify-center text-2xl mr-4 ${isSelected ? 'bg-pink-100' : 'bg-[#ffe8f2]'}`}>
+                                                    {getTierIcon(m.value)}
+                                                </div>
+                                                <div className="flex flex-col text-left">
+                                                    <span className={`uppercase font-black text-lg leading-tight ${isSelected ? 'text-[#ff4fa0]' : 'text-black'}`}>
+                                                        {m.title}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-600">
+                                                        {getTierDescription(m.value)}
+                                                    </span>
+                                                </div>
                                             </label>
-                                        </li>
+                                        </div>
                                     );
                                 })}
-                        </ul>
+                        </div>
                     </div>
 
-                    <div className="w-full mb-4">
-                        <label className="block text-left mb-2">
+                    <div className="w-full">
+                        <label className="block text-left mb-2 font-semibold">
                             {data && data.level === "lifetime"
                                 ? "Lifetime membership price"
                                 : "Monthly Price"}
                         </label>
-                        <div className="relative  currency-wrapper">
-                            <span className="currency-tag">{"GBP"}</span>
+                        <div className="relative currency-wrapper">
+                            <span className="currency-tag absolute">GBP</span>
                             <input
-                                        className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
-                                        onChange={handleInput}
-                                defaultValue={(item && item.price) || ""}
+                                className="border border-gray-300 rounded-[30px]  px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-300 bg-white text-black"
+                                onChange={handleInput}
+                                value={data.month_price || ""}
                                 type="number"
+                                min="1"
+                                step="0.01"
                                 name="month_price"
-                                placeholder={
-                                    data && data.level === "lifetime"
-                                        ? "Enter Lifetime membership price"
-                                        : "Enter monthly price.. "
-                                }
+                                placeholder="Enter price"
                             />
                         </div>
+                        {data.month_price > 0 && (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-[30px]  border border-gray-200 shadow-sm w-full">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-gray-600">
+                                        Fans pay:
+                                    </span>
+                                    <span className="font-bold text-gray-900">
+                                        {new Intl.NumberFormat("en-GB", {
+                                            style: "currency",
+                                            currency: "GBP",
+                                        }).format(
+                                            calculateTotalSupporterPays(
+                                                data.month_price,
+                                                "GBP",
+                                            ).total_supporter_pays,
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600">
+                                        You receive:
+                                    </span>
+                                    <span className="font-bold text-green-600">
+                                        {new Intl.NumberFormat("en-GB", {
+                                            style: "currency",
+                                            currency: "GBP",
+                                        }).format(data.month_price)}
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500 font-medium">
+                                    Fans only see the total price to improve
+                                    conversion
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500 font-medium">
+                                    Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="w-full mb-4">
-                        <label className="block text-left mb-1">
+                    <div className="w-full">
+                        <label className="block text-left mb-2 font-semibold">
                             Thumbnail
                         </label>
-                        <p className="text-gray-500 mb-3">
+                        <p className="membership-description">
                             This is not required, but it can be a nice way to
                             build your brand or make the offering more
                             attractive.
@@ -301,9 +350,10 @@ export default function EditMembership({ item }) {
                         <div
                             className={`${
                                 !isEditable ? "" : "hidden"
-                            } editable`}
+                            } editable w-full`}
                         >
-                            <GlobalUploader ctxName='add-edit-membership-context'
+                            <GlobalUploader
+                                ctxName="add-edit-membership-context"
                                 type="minimal"
                                 ref={uploaderRef}
                                 sendFile={getFileUID}
@@ -311,7 +361,7 @@ export default function EditMembership({ item }) {
                             />
                         </div>
                         <div
-                            className={`${isEditable ? "" : "hidden"} editable`}
+                            className={`${isEditable ? "" : "hidden"} editable w-full`}
                         >
                             <UploadcareEditor
                                 setIsEditable={setIsEditable}
@@ -321,44 +371,62 @@ export default function EditMembership({ item }) {
                         </div>
                     </div>
 
-                    <p className="font-bold mb-3">Choose membership Rewards</p>
-                    <div className="flex memberships-lists flex-wrap mb-4">
-                        {membershipBenifits &&
-                            membershipBenifits.map((m, i) => {
-                                return (
-                                    <div
-                                        className="member-reward mr-2 mb-2 text-left"
-                                        key={`reward-${i}`}
-                                    >
-                                        <input
-                                            className="cursor-pointer hidden"
-                                            type="checkbox"
-                                            id={m.value}
-                                            value={m.value}
-                                            name="rewards"
-                                            onChange={selectRewards}
-                                            checked={
-                                                rewardItems.includes(m.value) ||
-                                                false
-                                            }
-                                        />
-                                        <label
-                                            className="cursor-pointer capitalize"
-                                            htmlFor={m.value}
+                    <div className="w-full">
+                        <p className="font-bold text-lg mb-4 text-left">
+                            Choose membership Rewards
+                        </p>
+                        <div className="membership-rewards-wrapper">
+                            {membershipBenefits &&
+                                membershipBenefits.map((m, i) => {
+                                    return (
+                                        <div
+                                            className="member-reward"
+                                            key={`reward-${i}`}
                                         >
-                                            {m.title}
-                                        </label>
-                                    </div>
-                                );
-                            })}
+                                            <input
+                                                className="cursor-pointer hidden"
+                                                type="checkbox"
+                                                id={m.value}
+                                                value={m.value}
+                                                name="rewards"
+                                                onChange={selectRewards}
+                                                checked={
+                                                    rewardItems.includes(
+                                                        m.value,
+                                                    ) || false
+                                                }
+                                            />
+                                            <label
+                                                className={`cursor-pointer capitalize px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                                                    rewardItems.includes(
+                                                        m.value,
+                                                    )
+                                                        ? "bg-purple-500 text-white"
+                                                        : "bg-gray-200 text-black hover:bg-gray-300"
+                                                }`}
+                                                htmlFor={m.value}
+                                            >
+                                                {m.title}
+                                            </label>
+                                        </div>
+                                    );
+                                })}
+                        </div>
                     </div>
 
                     <button
                         onClick={updateMembership}
-                        // disabled={loading}
-                        className="flex w-full btn-pink lg mx-auto"
+                        disabled={loading}
+                        className="membership-update-btn flex items-center justify-center text-center uppercase"
                     >
-                        {loading ? "Processing" : "Update"}
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
+                                Processing...
+                            </span>
+                        ) : (
+                            "UPDATE"
+                        )}
                     </button>
                 </div>
             </div>

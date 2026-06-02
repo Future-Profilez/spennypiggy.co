@@ -1,6 +1,7 @@
 <?php
 
 namespace App;
+
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\ApiConnectionException;
@@ -23,10 +24,11 @@ class StripeControl
     ];
 
     /**
-     * Stripe Client
+     * Stripe Clients
      * @var \Stripe\StripeClient
      */
     private static $client;
+    private static $clientUs;
 
     /**
      * Check and set as well as return the client
@@ -36,35 +38,61 @@ class StripeControl
     {
         try {
             if (empty(self::$client)) {
-                $apiKey = env("STRIPE_SECRET_KEY");
-                
-                // If env() returns null, try to get from config
-                if (is_null($apiKey)) {
-                    $apiKey = config('services.stripe.secret', env("STRIPE_SECRET_KEY"));
-                }
-                
-                // If still null or not a string, log debug info and throw exception
+                $apiKey = config('services.stripe.secret') ?? env("STRIPE_SECRET_KEY");
+
                 if (empty($apiKey) || !is_string($apiKey)) {
-                    Log::error("Stripe API key configuration issue", [
-                        'env_value' => var_export(env("STRIPE_SECRET_KEY"), true),
-                        'config_value' => var_export(config('services.stripe.secret'), true),
-                        'final_key_type' => gettype($apiKey),
-                        'final_key_empty' => empty($apiKey)
-                    ]);
-                    throw new Exception("Stripe API key is not properly configured. Please check STRIPE_SECRET_KEY environment variable. Debug info logged.");
+                    Log::error("Stripe UK API key configuration issue");
+                    throw new Exception("Stripe UK API key is not properly configured.");
                 }
-                
+
                 self::$client = new StripeClient($apiKey);
             }
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
+
+            if (empty(self::$clientUs)) {
+                $apiKeyUs = env("STRIPE_SECRET_KEY_US") ?? config('services.stripe.secret') ?? env("STRIPE_SECRET_KEY");
+
+                if (empty($apiKeyUs) || !is_string($apiKeyUs)) {
+                    Log::error("Stripe US API key configuration issue");
+                    // Fallback to UK client if US key is missing
+                    self::$clientUs = self::$client;
+                } else {
+                    self::$clientUs = new StripeClient($apiKeyUs);
+                }
+            }
+        } catch (Exception $e) {
+            throw new Exception("Stripe Initialization Error: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Get the appropriate client based on currency
+     */
+    public static function getClientForCurrency(?string $currency = 'GBP'): StripeClient
+    {
+        self::setClient();
+        $currency = strtoupper($currency ?? 'GBP');
+        
+        if ($currency === 'USD') {
+            return self::$clientUs;
+        }
+        
+        return self::$client;
+    }
+
+    /**
+     * Get the appropriate client based on account ID
+     * (Currently defaults to currency-based logic or manual override)
+     */
+    public static function getClientForAccount(?string $accountId = null): StripeClient
+    {
+        self::setClient();
+        return self::$client;
+    }
+
+    public static function getClient()
+    {
+        self::setClient();
+        return self::$client;
     }
 
     /**
@@ -118,11 +146,44 @@ class StripeControl
         }
     }
 
-    public static function getClient()
-        {
-            self::setClient();
-            return self::$client;
+    public static function getStripeFeeMinorForPaymentIntent(string $paymentIntentId, ?string $connectedAccountId = null): int
+    {
+        self::setClient();
+        try {
+            $params = [
+                'expand' => ['charges.data.balance_transaction'],
+            ];
+            $opts = [];
+            if (!empty($connectedAccountId)) {
+                $opts['stripe_account'] = $connectedAccountId;
+            }
+
+            $pi = self::$client->paymentIntents->retrieve($paymentIntentId, $params, $opts);
+            $charge = $pi->charges->data[0] ?? null;
+            if (!$charge) {
+                return 0;
+            }
+
+            $balanceTx = $charge->balance_transaction ?? null;
+            if (!$balanceTx) {
+                return 0;
+            }
+
+            if (is_string($balanceTx)) {
+                $balanceTx = self::$client->balanceTransactions->retrieve($balanceTx, [], $opts);
+            }
+
+            $fee = $balanceTx->fee ?? 0;
+            return is_numeric($fee) ? (int) $fee : 0;
+        } catch (\Throwable $e) {
+            Log::error('Failed to fetch Stripe fee for payment intent', [
+                'payment_intent_id' => $paymentIntentId,
+                'connected_account_id' => $connectedAccountId,
+                'error' => $e->getMessage(),
+            ]);
+            return 0;
         }
+    }
 
     /**
      * Check if connected account has card_payments capability active
@@ -136,52 +197,66 @@ class StripeControl
         // Use cache to avoid repeated API calls for the same account
         // Removed caching to ensure real-time accuracy for critical payment capability checks
         // $cacheKey = "stripe_card_payments_capability_{$accountId}";
-        
+
         // return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($accountId) {
-            self::setClient();
-            try {
-                $account = self::$client->accounts->retrieve($accountId);
-                $hasCardPayments = ($account->capabilities->card_payments ?? null) === 'active';
-                
-                Log::info('Stripe capability check completed', [
-                    'account_id' => $accountId,
-                    'card_payments_capability' => $account->capabilities->card_payments ?? 'missing',
-                    'has_card_payments' => $hasCardPayments,
-                    'service_agreement' => $account->tos_acceptance->service_agreement ?? 'unknown'
-                ]);
-                
-                return $hasCardPayments;
-            } catch (\Exception $e) {
-                Log::error("Failed to check card_payments capability: " . $e->getMessage(), [
-                    'account_id' => $accountId
-                ]);
-                // Default to true to maintain existing behavior for API failures
-                return true;
-            }
+        self::setClient();
+        try {
+            $account = self::$client->accounts->retrieve($accountId);
+            $hasCardPayments = ($account->capabilities->card_payments ?? null) === 'active';
+
+            Log::info('Stripe capability check completed', [
+                'account_id' => $accountId,
+                'card_payments_capability' => $account->capabilities->card_payments ?? 'missing',
+                'has_card_payments' => $hasCardPayments,
+                'service_agreement' => $account->tos_acceptance->service_agreement ?? 'unknown'
+            ]);
+
+            return $hasCardPayments;
+        } catch (\Exception $e) {
+            Log::error("Failed to check card_payments capability: " . $e->getMessage(), [
+                'account_id' => $accountId
+            ]);
+            // Default to true to maintain existing behavior for API failures
+            return true;
+        }
         // });
+    }
+
+    public static function hasTransfersCapability(string $accountId): bool
+    {
+        self::setClient();
+        try {
+            $account = self::$client->accounts->retrieve($accountId);
+            return ($account->capabilities->transfers ?? null) === 'active';
+        } catch (\Exception $e) {
+            Log::error("Failed to check transfers capability: " . $e->getMessage(), [
+                'account_id' => $accountId
+            ]);
+            return true;
+        }
     }
 
     // ✅   Add a check in your class to validate capabilities
     public static function isAccountReadyForCheckout(string $accountId): bool
-        {
-            self::setClient();
-            try {
-                $account = self::$client->accounts->retrieve($accountId);
-                $agreement = $account->tos_acceptance->service_agreement ?? 'full';
+    {
+        self::setClient();
+        try {
+            $account = self::$client->accounts->retrieve($accountId);
+            $agreement = $account->tos_acceptance->service_agreement ?? 'full';
 
-                // For recipient service agreement, only transfers capability is required
-                // if ($agreement === 'recipient') {
-                //    return ($account->capabilities->transfers ?? null) === 'active';
-                // }
+            // For recipient service agreement, only transfers capability is required
+            // if ($agreement === 'recipient') {
+            //    return ($account->capabilities->transfers ?? null) === 'active';
+            // }
 
-                // For full service agreement, both card_payments and transfers must be active
-                return ($account->capabilities->card_payments ?? null) === 'active'
-                    && ($account->capabilities->transfers ?? null) === 'active';
-            } catch (\Exception $e) {
-                Log::error("Failed to verify account capabilities: " . $e->getMessage());
-                return false;
-            }
+            // For full service agreement, both card_payments and transfers must be active
+            return ($account->capabilities->card_payments ?? null) === 'active'
+                && ($account->capabilities->transfers ?? null) === 'active';
+        } catch (\Exception $e) {
+            Log::error("Failed to verify account capabilities: " . $e->getMessage());
+            return false;
         }
+    }
 
     /**
      * Get comprehensive Stripe account requirements and action items
@@ -196,11 +271,11 @@ class StripeControl
             $account = self::$client->accounts->retrieve($accountId);
             $requirements = [];
             $hasRequirements = false;
-            
+
             // Check if account is disabled
             if (!$account->charges_enabled) {
                 $hasRequirements = true;
-                
+
                 // Check disabled reason
                 if (isset($account->requirements->disabled_reason)) {
                     switch ($account->requirements->disabled_reason) {
@@ -214,18 +289,18 @@ class StripeControl
                                 'action_url' => '/stripe/enable_card_payments'
                             ];
                             break;
-                            
+
                         case 'requirements.pending_verification':
                             $requirements[] = [
                                 'type' => 'pending_verification',
-                                'severity' => 'warning', 
+                                'severity' => 'warning',
                                 'title' => 'Verification Pending',
                                 'message' => 'Your account information is being verified. This process typically takes 1-3 business days.',
                                 'action' => 'Please wait for verification to complete.',
                                 'action_url' => null
                             ];
                             break;
-                            
+
                         case 'rejected.fraud':
                             $requirements[] = [
                                 'type' => 'rejected_fraud',
@@ -236,7 +311,7 @@ class StripeControl
                                 'action_url' => null
                             ];
                             break;
-                            
+
                         case 'rejected.listed':
                             $requirements[] = [
                                 'type' => 'rejected_listed',
@@ -247,7 +322,7 @@ class StripeControl
                                 'action_url' => null
                             ];
                             break;
-                            
+
                         case 'rejected.other':
                             $requirements[] = [
                                 'type' => 'rejected_other',
@@ -260,7 +335,7 @@ class StripeControl
                             break;
                     }
                 }
-                
+
                 // Check currently due requirements
                 if (!empty($account->requirements->currently_due)) {
                     $requirements[] = [
@@ -273,7 +348,7 @@ class StripeControl
                         'fields_needed' => $account->requirements->currently_due
                     ];
                 }
-                
+
                 // Check eventually due requirements  
                 if (!empty($account->requirements->eventually_due)) {
                     $requirements[] = [
@@ -287,7 +362,7 @@ class StripeControl
                     ];
                 }
             }
-            
+
             // Check capabilities issues
             if (isset($account->capabilities->card_payments)) {
                 if ($account->capabilities->card_payments === 'inactive') {
@@ -312,12 +387,12 @@ class StripeControl
                     ];
                 }
             }
-            
+
             // Check for legacy account upgrade needs using proper migration logic
             // Note: We need the user object to check migration needs properly
             // For now, we'll skip this check here since it requires user context
             // The migration check is handled in the controllers where user context is available
-            
+
             // Check payout capability
             if (isset($account->capabilities->transfers) && $account->capabilities->transfers !== 'active') {
                 $hasRequirements = true;
@@ -330,7 +405,7 @@ class StripeControl
                     'action_url' => '/stripe/enable_card_payments'
                 ];
             }
-            
+
             return [
                 'has_requirements' => $hasRequirements,
                 'requirements' => $requirements,
@@ -341,7 +416,6 @@ class StripeControl
                     'disabled_reason' => $account->requirements->disabled_reason ?? null
                 ]
             ];
-            
         } catch (\Exception $e) {
             Log::error("Failed to get account requirements: " . $e->getMessage());
             return [
@@ -366,6 +440,45 @@ class StripeControl
      * @param string $query Query like name, email
      * @return \Stripe\SearchResult
      */
+    /**
+     * Search Customer across both UK and US accounts
+     *
+     * @param string $query Query like name, email
+     * @return array Array of customers from both accounts
+     */
+    public static function searchCustomerAcrossAccounts($email)
+    {
+        self::setClient();
+        $results = [];
+        $query = "email:'" . $email . "'";
+
+        try {
+            // 1. Search UK
+            $searchUk = self::$client->customers->search(['query' => $query]);
+            foreach ($searchUk->data as $customer) {
+                $customer->account_region = 'UK';
+                $results[] = $customer;
+            }
+        } catch (\Exception $e) {
+            Log::warning("Stripe UK search failed: " . $e->getMessage());
+        }
+
+        try {
+            // 2. Search US
+            if (self::$clientUs !== self::$client) {
+                $searchUs = self::$clientUs->customers->search(['query' => $query]);
+                foreach ($searchUs->data as $customer) {
+                    $customer->account_region = 'US';
+                    $results[] = $customer;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("Stripe US search failed: " . $e->getMessage());
+        }
+
+        return $results;
+    }
+
     public static function searchCustomer($query)
     {
         self::setClient();
@@ -394,6 +507,18 @@ class StripeControl
     {
         self::setClient();
         try {
+            // Force manual payout schedule for all created accounts
+            if (!isset($payload['settings'])) {
+                $payload['settings'] = [];
+            }
+            if (!isset($payload['settings']['payouts'])) {
+                $payload['settings']['payouts'] = [];
+            }
+            if (!isset($payload['settings']['payouts']['schedule'])) {
+                $payload['settings']['payouts']['schedule'] = [];
+            }
+            $payload['settings']['payouts']['schedule']['interval'] = 'manual';
+
             return self::$client->accounts->create($payload);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
@@ -476,14 +601,28 @@ class StripeControl
      * Create Payment Intent
      *
      * @param array $payload Payment Payload
+     * @param string|null $connectedAccountId Connected Account ID
+     * @param bool $force3DS Whether to force 3D Secure
+     * @param string|null $creatorUsername The username of the creator to use in statement descriptor
      * @return Throwable|\Stripe\PaymentIntent
      */
-    public static function createPaymentIntent(array $payload, $connectedAccountId = null, bool $force3DS = false)
+    public static function createPaymentIntent(array $payload, $connectedAccountId = null, bool $force3DS = false, $creatorUsername = null)
     {
         self::setClient();
-        
+
         if ($force3DS) {
             $payload['payment_method_options']['card']['request_three_d_secure'] = 'any';
+        }
+
+        if ($creatorUsername) {
+            // Stripe statement descriptor rules: max 22 characters
+            $descriptor = "SP*" . strtoupper($creatorUsername);
+            $descriptor = substr($descriptor, 0, 22);
+            
+            // For card payments, statement_descriptor_suffix is preferred if a prefix is set.
+            // However, statement_descriptor is often accepted as a full override for some payment methods.
+            // We'll set both to be safe, or just statement_descriptor if it's a full override.
+            $payload['statement_descriptor'] = $descriptor;
         }
         
         try {
@@ -511,14 +650,36 @@ class StripeControl
      * Create Payment Session
      *
      * @param array $payload Payment Payload
+     * @param string|null $connectedAccountId Connected Account ID
+     * @param bool $force3DS Whether to force 3D Secure
+     * @param string|null $creatorUsername The username of the creator to use in statement descriptor
      * @return Throwable|\Stripe\Checkout\Session
      */
-    public static function createCheckoutSession(array $payload, $connectedAccountId = null, bool $force3DS = false)
+    public static function createCheckoutSession(array $payload, $connectedAccountId = null, bool $force3DS = false, $creatorUsername = null)
     {
         self::setClient();
-        
+
         if ($force3DS) {
             $payload['payment_method_options']['card']['request_three_d_secure'] = 'any';
+        }
+
+        if ($creatorUsername) {
+            // Stripe statement descriptor rules: max 22 characters
+            $descriptor = "SP*" . strtoupper($creatorUsername);
+            $descriptor = substr($descriptor, 0, 22);
+            
+            // For one-time payments (mode: payment)
+            if (isset($payload['mode']) && $payload['mode'] === 'payment') {
+                if (!isset($payload['payment_intent_data'])) {
+                    $payload['payment_intent_data'] = [];
+                }
+                $payload['payment_intent_data']['statement_descriptor'] = $descriptor;
+            } 
+            // For subscriptions (mode: subscription)
+            elseif (isset($payload['mode']) && $payload['mode'] === 'subscription') {
+                // Note: subscription_data does not support statement_descriptor in the Checkout Session API.
+                // For subscriptions, Stripe uses the descriptor defined on the Product or the Account.
+            }
         }
 
         try {
@@ -577,21 +738,45 @@ class StripeControl
      * Get Active subscription of customer
      *
      */
-    public static function getActiveSubscriptionByCustomer($customerId, $connectedAccountId)
+    public static function getActiveSubscriptionByCustomer($customerId, $connectedAccountId = null)
     {
         self::setClient();
 
         try {
+            $options = [];
+            if ($connectedAccountId) {
+                $options['stripe_account'] = $connectedAccountId;
+            }
+
+            // 1. Check UK Account (Default)
             $subscriptions = self::$client->subscriptions->all(
                 [
                     'customer' => $customerId,
-                    'status' => 'active',
                     'limit' => 1,
                 ],
-                ['stripe_account' => $connectedAccountId]
+                $options
             );
 
-            return $subscriptions->data[0] ?? null;
+            if ($subscriptions->data && count($subscriptions->data) > 0) {
+                return $subscriptions->data[0];
+            }
+
+            // 2. Check US Account if no connected account is specified (Platform Sub)
+            if (!$connectedAccountId && self::$clientUs !== self::$client) {
+                $subscriptionsUs = self::$clientUs->subscriptions->all(
+                    [
+                        'customer' => $customerId,
+                        'limit' => 1,
+                    ],
+                    $options
+                );
+
+                if ($subscriptionsUs->data && count($subscriptionsUs->data) > 0) {
+                    return $subscriptionsUs->data[0];
+                }
+            }
+
+            return null;
         } catch (\Exception $e) {
             Log::error("Stripe fetch subscription error: " . $e->getMessage());
             return null;
@@ -650,9 +835,13 @@ class StripeControl
      * @param array $payload Price Payload
      * @return Throwable|\Stripe\Price
      */
-    public static function getProduct(string $productId, string $connectedAccountId = null)
+    public static function getProduct(?string $productId, string $connectedAccountId = null)
     {
-        // $stripe = new StripeClient(env("STRIPE_SECRET_KEY"));
+        // Return null if productId is null or empty
+        if (empty($productId)) {
+            return null;
+        }
+
         self::setClient();
         $options = [];
         if ($connectedAccountId) {
@@ -762,13 +951,27 @@ class StripeControl
      * @param array $payload Update Payload
      * @return Throwable|\Stripe\Subscription
      */
-    public static function cancelSubscription($sub_id, $connectedAccountId = null)
+    /**
+     * Cancel a subscription at the end of the period (disable auto-renewal)
+     *
+     * @param string $sub_id Subscription Id
+     * @param bool $atPeriodEnd Whether to cancel at the end of the current period
+     * @param string|null $connectedAccountId
+     * @return \Stripe\Subscription
+     */
+    public static function cancelSubscription($sub_id, $atPeriodEnd = false, $connectedAccountId = null)
     {
         self::setClient();
         try {
             $options = [];
             if ($connectedAccountId) {
                 $options['stripe_account'] = $connectedAccountId;
+            }
+
+            if ($atPeriodEnd) {
+                return self::$client->subscriptions->update($sub_id, [
+                    'cancel_at_period_end' => true,
+                ], $options);
             }
 
             return self::$client->subscriptions->cancel($sub_id, [], $options);
@@ -814,7 +1017,7 @@ class StripeControl
     public static function getAccountBalance($connectedAccountId)
     {
         self::setClient();
-        
+
         try {
             return self::$client->balance->retrieve([], ['stripe_account' => $connectedAccountId]);
         } catch (RateLimitException $e) {
@@ -828,6 +1031,35 @@ class StripeControl
         }
     }
 
+    public static function ensureManualPayoutSchedule(string $connectedAccountId, string $currency = 'GBP'): bool
+    {
+        $client = self::getClientForCurrency($currency);
+
+        try {
+            $account = $client->accounts->retrieve($connectedAccountId, []);
+            $interval = $account->settings->payouts->schedule->interval ?? null;
+
+            if ($interval === 'manual') {
+                return false;
+            }
+
+            $client->accounts->update($connectedAccountId, [
+                'settings' => [
+                    'payouts' => [
+                        'schedule' => [
+                            'interval' => 'manual',
+                        ],
+                    ],
+                ],
+            ]);
+
+            return true;
+        } catch (Exception $e) {
+            Log::error("Failed to ensure manual payout schedule: " . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Create a payout to a connected account's bank account
      *
@@ -838,21 +1070,17 @@ class StripeControl
      */
     public static function createPayout(array $payload, $connectedAccountId)
     {
-        self::setClient();
-        
+        $currency = $payload['currency'] ?? 'GBP';
+        $client = self::getClientForCurrency($currency);
+
         try {
-            return self::$client->payouts->create(
+            return $client->payouts->create(
                 $payload,
                 ['stripe_account' => $connectedAccountId]
             );
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error("Stripe Payout Error: " . $e->getMessage());
+            throw new Exception("Stripe Payout Error: " . $e->getMessage());
         }
     }
 
@@ -866,7 +1094,7 @@ class StripeControl
     public static function getTransfer($transferId)
     {
         self::setClient();
-        
+
         try {
             return self::$client->transfers->retrieve($transferId);
         } catch (RateLimitException $e) {
@@ -892,7 +1120,7 @@ class StripeControl
     public static function transferToConnectedAccount($destinationAccountId, $amount, $currency = 'usd')
     {
         self::setClient();
-        
+
         try {
             // Convert to minor units (cents/pence)
             $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
@@ -915,6 +1143,35 @@ class StripeControl
         }
     }
 
+    public static function transferToConnectedAccountMinor(string $destinationAccountId, int $amountMinor, string $currency = 'usd', array $metadata = [], ?string $description = null)
+    {
+        $client = self::getClientForCurrency($currency);
+
+        try {
+            $payload = [
+                'amount' => (int) $amountMinor,
+                'currency' => strtolower($currency),
+                'destination' => $destinationAccountId,
+            ];
+            if (!empty($description)) {
+                $payload['description'] = $description;
+            }
+            if (!empty($metadata)) {
+                $payload['metadata'] = $metadata;
+            }
+
+            return $client->transfers->create($payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
     /**
      * List transfers for an account
      *
@@ -925,7 +1182,7 @@ class StripeControl
     public static function listTransfers(array $params = [])
     {
         self::setClient();
-        
+
         try {
             return self::$client->transfers->all($params);
         } catch (RateLimitException $e) {

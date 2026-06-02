@@ -49,7 +49,7 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'was updated', 'bod
 
 <tr>
     <td align="center" style="padding: 20px 0;">
-        <p style="font-size: 18px; color: #000; margin: 0;"><strong>Hello {{ $array['name'] ?? 'there' }}!</strong></p>
+        <p style="font-size: 18px; color: #000; margin: 0;"><strong>Hello {{ ucwords($array['name'] ?? 'there') }}!</strong></p>
         <p style="font-size: 16px; color: #333; margin-top: 10px;">{{ $status['desc'] }}</p>
     </td>
 </tr>
@@ -59,9 +59,11 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'was updated', 'bod
     <td style="padding: 10px 20px; font-size: 14px; color: #555; text-align: center;">
         🎉 Your subscription was renewed on <strong>{{ \Carbon\Carbon::parse($array['renew_on'])->format('F j, Y') }}</strong>.<br>
         Amount charged: <strong>{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}. </strong>.
-        <p style="font-size: 16px; color: #333; margin-top: 10px;">Thank you for continuing your journey with Spenny Piggy! 🐷 Your subscription keeps all your premium features active without interruption.</p>
-    </td>
-</tr>
+         <p style="font-size: 16px; color: #333; margin-top: 10px;">Thank you for continuing your journey with Spenny Piggy! 🐷 Your subscription keeps all your premium features active without interruption.</p>
+         
+         @include('email.digital-content-notice')
+     </td>
+ </tr>
 @endif
  
 @if($type == 'trial' && isset($array['trial_end']))

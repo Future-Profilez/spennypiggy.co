@@ -22,6 +22,7 @@ class WishItemSubscription extends Model
         'guest_email',
         'currency',
         'amount',
+        'total_paid',
         'tax',
         'vat_tax_amount',
         'recurring_for',
@@ -29,6 +30,8 @@ class WishItemSubscription extends Model
         'payment_method',
         'surprise_message',
         'anonymous',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
         'end',
         'upcoming_payment',
         'twitter_response',
@@ -91,7 +94,7 @@ class WishItemSubscription extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
 

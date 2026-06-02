@@ -23,6 +23,7 @@ const ModernImage = ({
     breakpoints = null,
     preventCLS = true,
     reserveSpace = true,
+    fetchPriority: _ignoredFetchPriority, // Destructure to prevent passing to DOM
     ...props
 }) => {
     const [imageData, setImageData] = useState(null);
@@ -242,7 +243,7 @@ const ModernImage = ({
                         alt={alt}
                         loading={loadingAttr}
                         decoding={decoding}
-                        fetchPriority={fetchPriority}
+                        fetchpriority={fetchPriority}
                         className={className}
                         width={width}
                         height={height}
@@ -279,7 +280,7 @@ const ModernImage = ({
                 alt={alt}
                 loading={loadingAttr}
                 decoding={decoding}
-                fetchPriority={fetchPriority}
+                fetchpriority={fetchPriority}
                 className={className}
                 width={width}
                 height={height}

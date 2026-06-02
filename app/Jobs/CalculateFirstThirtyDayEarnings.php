@@ -4,14 +4,12 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Models\FounderBonus;
-use App\Models\Deliverable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class CalculateFirstThirtyDayEarnings implements ShouldQueue
 {
@@ -45,8 +43,8 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
         Log::info("Found {$candidateCreators->count()} creators who are exactly 30 days old");
 
         // Check if we have available founder seats
-        $currentFounderCount = FounderBonus::getFounderCount();
-        $availableSeats = FounderBonus::MAX_FOUNDER_SEATS - $currentFounderCount;
+        $currentFounderCount = FounderBonus::getTotalFounderCount();
+        $availableSeats = FounderBonus::getMaxFounderSeats() - $currentFounderCount;
 
         if ($availableSeats <= 0) {
             Log::info('No available founder seats remaining');
@@ -66,7 +64,7 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
 
             Log::info("Creator {$creator->name} (ID: {$creator->id}) earned £{$first30DayEarnings} in first 30 days");
 
-            if ($first30DayEarnings >= FounderBonus::MIN_FIRST_30D_EARNINGS) {
+            if ($first30DayEarnings >= FounderBonus::getMinFirst30dEarnings()) {
                 // This creator qualifies! But we'll let the CheckFounderQualifications job handle the actual qualification
                 // This job is just for tracking and logging
                 Log::info("Creator {$creator->name} (ID: {$creator->id}) qualifies for founder status with £{$first30DayEarnings}");
@@ -85,11 +83,25 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
         $thirtyDaysLater = $createdAt->copy()->addDays(30);
 
         // Sum all deliverable transaction amounts for the creator in their first 30 days
-        $earnings = Deliverable::where('creator_id', $creator->id)
-            ->where('created_at', '>=', $createdAt)
-            ->where('created_at', '<=', $thirtyDaysLater)
-            ->where('status', 'delivered')
-            ->sum('transaction_amount');
+        $transactions = \App\Models\FinancialTransaction::where('user_id', $creator->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
+            ->whereBetween('transaction_date', [$createdAt, $thirtyDaysLater])
+            ->get();
+
+        $earnings = 0;
+        foreach ($transactions as $tx) {
+            $currency = strtoupper($tx->currency ?? 'GBP');
+            $net = (float) ($tx->net_amount ?? 0);
+            $vat = (float) ($tx->vat_amount ?? 0);
+            $gross = $net + $vat;
+            
+            if ($currency === 'GBP') {
+                $earnings += $gross;
+            } else {
+                $earnings += \App\Helpers::priceFormat($currency, $gross, 'GBP');
+            }
+        }
 
         return (float) $earnings;
     }

@@ -114,7 +114,9 @@ export default function Login({ status, canResetPassword }) {
             setHasPasskey(userHasPasskey);
         }
 
-        if (isWebAuthnSupported() && userHasPasskey === false) {
+        const platformAuthAvailable = await isPlatformAuthenticatorAvailable();
+
+        if (platformAuthAvailable && userHasPasskey === false) {
             // Abort conditional UI before showing prompt
             if (abortController) {
                 abortController.abort("Showing setup prompt");
@@ -138,6 +140,16 @@ export default function Login({ status, canResetPassword }) {
     // Check if WebAuthn is supported
     const isWebAuthnSupported = () => {
         return typeof window !== 'undefined' && window.PublicKeyCredential !== undefined;
+    };
+
+    // Check if platform authenticator (FaceID/Windows Hello) is available
+    const isPlatformAuthenticatorAvailable = async () => {
+        if (!isWebAuthnSupported()) return false;
+        try {
+            return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        } catch (e) {
+            return false;
+        }
     };
 
     // Check if user has passkey registered
@@ -241,224 +253,63 @@ export default function Login({ status, canResetPassword }) {
         };
     }, []);
 
-    const loginWithWindowsHello = async () => {
-        const { data } = await axios.post(
-            route("webauthn.login.userless.options"),
-        );
-
-        const publicKey = data.publicKey ?? data;
-
-        publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
-
-        const credential = await navigator.credentials.get({
-            publicKey,
-        });
-
-        const response = await axios.post(route("webauthn.login"), formatCredentialForServer(credential));
-
-        if (response.data.success) {
-            window.location.href = response.data.redirect_url;
-        }
-    };
-
-    // Handle passkey action (login with email, register, or userless login)
-    const handlePasskeyAction = async () => {
-        // Abort any pending conditional UI request first
-        if (abortController) {
-            abortController.abort("Starting manual passkey action");
-        }
-
+    const handlePasskeyLogin = async (fallbackToPassword = false) => {
+        setPasskeyLoading(true);
         try {
-            setPasskeyLoading(true);
+            const { data: options } = await axios.post(
+                route("webauthn.login.userless.options"),
+            );
 
-            // USERNAME-LESS LOGIN (no email entered)
-            if (!data.email) {
-                try {
-                    const { data: options } = await axios.post(
-                        route("webauthn.login.userless.options"),
-                    );
+            const publicKey = options.publicKey ?? options;
+            publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
 
-                    const publicKey = options.publicKey ?? options;
-                    publicKey.challenge = base64urlToUint8Array(
-                        publicKey.challenge,
-                    );
-
-                    const credential = await navigator.credentials.get({
-                        publicKey,
-                    });
-
-                    const response = await axios.post(
-                        route("webauthn.login"),
-                        formatCredentialForServer(credential),
-                    );
-
-                    console.log("Login response:", response.data);
-
-                    if (response.data.success) {
-                        const redirectUrl = response.data.redirect_url || "/";
-                        router.visit(redirectUrl);
-                    } else {
-                        errorAlert(response.data.message || "Login failed");
-                    }
-                    return;
-                } catch (routeError) {
-                    console.error("Userless route error:", routeError);
-                    
-                    if (routeError.response?.data?.message) {
-                        errorAlert(routeError.response.data.message);
-                    } else if (routeError.name === "NotAllowedError" || routeError.name === "AbortError") {
-                        errorAlert("Authentication cancelled.");
-                    } else {
-                        errorAlert("Please enter your email first");
-                    }
-                    return;
-                }
+            if (publicKey.allowCredentials) {
+                publicKey.allowCredentials = publicKey.allowCredentials.map(
+                    (item) => ({
+                        ...item,
+                        id: base64urlToUint8Array(item.id),
+                    }),
+                );
             }
 
-            // First, check if user has a passkey
-            const hasPasskey = await checkUserHasPasskey(data.email);
+            const credential = await navigator.credentials.get({
+                publicKey,
+            });
 
-            // If user has no passkey, they need to login with password first
-            if (!hasPasskey) {
-                errorAlert("No passkey found. Please login with your password first.");
-                document.getElementById('password').focus();
-                return;
-            }
-
-            // If user has passkey, login
-            if (hasPasskey) {
-                const { data: options } = await axios.post(
-                    route("webauthn.login.options"),
-                    { email: data.email },
-                );
-
-                const publicKey = options.publicKey ?? options;
-                publicKey.challenge = base64urlToUint8Array(
-                    publicKey.challenge,
-                );
-
-                if (publicKey.allowCredentials) {
-                    publicKey.allowCredentials = publicKey.allowCredentials.map(
-                        (item) => ({
-                            ...item,
-                            id: base64urlToUint8Array(item.id),
-                        }),
-                    );
-                }
-
-                const credential = await navigator.credentials.get({
-                    publicKey,
-                });
-
+            if (credential) {
                 const response = await axios.post(
                     route("webauthn.login"),
                     formatCredentialForServer(credential),
                 );
 
-                console.log("Login response:", response.data);
-
                 if (response.data.success) {
                     const redirectUrl = response.data.redirect_url || "/";
-                    router.visit(redirectUrl);
+                    window.location.href = redirectUrl;
                 } else {
-                    errorAlert(response.data.message || "Passkey login failed");
+                    if (!fallbackToPassword) {
+                        errorAlert(response.data.message || "Passkey login failed");
+                    }
+                    if (fallbackToPassword) proceedToStandardLogin();
                 }
-                return;
+            } else if (fallbackToPassword) {
+                proceedToStandardLogin();
             }
         } catch (error) {
-            console.error("Passkey error:", error);
-
-            if (error.response?.data?.message) {
-                errorAlert(error.response.data.message);
-            } else if (error.name === "NotAllowedError") {
-                errorAlert("Authentication cancelled. Please try again.");
-            } else if (error.name === "InvalidStateError") {
-                errorAlert("This device already has a passkey registered.");
-            } else {
-                errorAlert("Unable to authenticate. Please try again.");
+            if (error.name !== "AbortError" && error.name !== "NotAllowedError") {
+                console.error("Passkey login error:", error);
+                if (!fallbackToPassword) {
+                    errorAlert("Passkey authentication failed");
+                }
+            }
+            if (fallbackToPassword) {
+                proceedToStandardLogin();
             }
         } finally {
             setPasskeyLoading(false);
         }
     };
 
-    const submit = (e) => {
-        setAnimate("");
-        const deviceId = DeviceID();
-        const loginData = {
-            ...data,
-            device_id: deviceId,
-        };
-        setLoading(true);
-
-        axios
-            .post(route("login-user"), loginData, {
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                },
-            })
-            .then(async (response) => {
-                localStorage.removeItem("cart");
-                
-                let targetUrl = null;
-                if (paramValue) {
-                    targetUrl = paramValue;
-                } else if (response.data && response.data.redirect_url) {
-                    targetUrl = response.data.redirect_url;
-                }
-
-                let userHasPasskey = hasPasskey;
-                if (userHasPasskey === null && data.email && isWebAuthnSupported()) {
-                    userHasPasskey = await checkUserHasPasskey(data.email);
-                    setHasPasskey(userHasPasskey);
-                }
-                
-                if (isWebAuthnSupported() && userHasPasskey === false) {
-                    // Abort conditional UI before showing prompt
-                    if (abortController) {
-                        abortController.abort("Showing setup prompt");
-                    }
-                    setPromptEmail(data.email);
-                    setPendingRedirectUrl(targetUrl);
-                    setShowSetupPrompt(true);
-                    setLoading(false);
-                } else {
-                    if (targetUrl) {
-                        router.visit(targetUrl);
-                    } else {
-                        window.location.reload();
-                    }
-                }
-                reset();
-            })
-            .catch((error) => {
-                setLoading(false);
-                setAnimate("animate-shake");
-                reset("password");
-
-                if (error.response) {
-                    if (error.response.data?.message) {
-                        errorAlert(error.response.data.message);
-                    }
-
-                    if (error.response.data?.errors) {
-                        Object.entries(error.response.data.errors).forEach(
-                            ([field, messages]) => {
-                                if (Array.isArray(messages)) {
-                                    messages.forEach((message) =>
-                                        errorAlert(message),
-                                    );
-                                }
-                            },
-                        );
-                    }
-                }
-            });
-    };
-
-    const checkTFA = (e) => {
-        e.preventDefault();
+    const proceedToStandardLogin = () => {
         setLoading(true);
         axios
             .post("/verify-user", data)
@@ -503,20 +354,101 @@ export default function Login({ status, canResetPassword }) {
             });
     };
 
-    // Get button text based on state
-    const getPasskeyButtonText = () => {
-        if (passkeyLoading) return "PROCESSING...";
-        if (hasPasskey === true) return "LOGIN WITH PASSKEY";
-        return "CHECKING PASSKEY...";
+    const submit = (e) => {
+        setAnimate("");
+        const deviceId = DeviceID();
+        const loginData = {
+            ...data,
+            device_id: deviceId,
+        };
+        setLoading(true);
+
+        axios
+            .post(route("login-user"), loginData, {
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                },
+            })
+            .then(async (response) => {
+                localStorage.removeItem("cart");
+                
+                let targetUrl = null;
+                if (paramValue) {
+                    targetUrl = paramValue;
+                } else if (response.data && response.data.redirect_url) {
+                    targetUrl = response.data.redirect_url;
+                }
+
+                let userHasPasskey = hasPasskey;
+                if (userHasPasskey === null && data.email && isWebAuthnSupported()) {
+                    userHasPasskey = await checkUserHasPasskey(data.email);
+                    setHasPasskey(userHasPasskey);
+                }
+                
+                const platformAuthAvailable = await isPlatformAuthenticatorAvailable();
+                
+                if (platformAuthAvailable && userHasPasskey === false) {
+                    // Abort conditional UI before showing prompt
+                    if (abortController) {
+                        abortController.abort("Showing setup prompt");
+                    }
+                    setPromptEmail(data.email);
+                    setPendingRedirectUrl(targetUrl);
+                    setShowSetupPrompt(true);
+                    setLoading(false);
+                } else {
+                    if (targetUrl) {
+                        router.visit(targetUrl);
+                    } else {
+                        window.location.reload();
+                    }
+                }
+                reset();
+            })
+            .catch((error) => {
+                setLoading(false);
+                setAnimate("animate-shake");
+                reset("password");
+
+                if (error.response) {
+                    if (error.response.data?.message) {
+                        errorAlert(error.response.data.message);
+                    }
+
+                    if (error.response.data?.errors) {
+                        Object.entries(error.response.data.errors).forEach(
+                            ([field, messages]) => {
+                                if (Array.isArray(messages)) {
+                                    messages.forEach((message) =>
+                                        errorAlert(message),
+                                    );
+                                }
+                            },
+                        );
+                    }
+                }
+            });
     };
 
-    // Get button styling based on state
-    const getPasskeyButtonStyle = () => {
-        if (hasPasskey === true) {
-            return "hover:!bg-green-500"; // Green for login
+    const checkTFA = async (e) => {
+        e.preventDefault();
+        
+        // If user has a passkey and is using a supported browser, 
+        // try passkey login first for a seamless "system prompt" experience
+        if (isWebAuthnSupported() && hasPasskey === true) {
+            const platformAuthAvailable = await isPlatformAuthenticatorAvailable();
+            if (platformAuthAvailable) {
+                handlePasskeyLogin(true);
+                return;
+            }
         }
-        return "hover:!bg-gray-500"; // Default
+
+        proceedToStandardLogin();
     };
+
+
+  
 
     const handlePromptClose = () => {
         setShowSetupPrompt(false);
@@ -527,57 +459,67 @@ export default function Login({ status, canResetPassword }) {
         }
     };
 
-    console.log("hasPasskey:", isWebAuthnSupported());
+    const getPasskeyButtonText = () => {
+        return "LOG IN WITH PASSKEY";
+    };
+
+    const getPasskeyButtonStyle = () => {
+        return "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-all duration-200 active:shadow-none active:translate-x-[1px] active:translate-y-[1px]";
+    };
+
+    const handlePasskeyAction = (e) => {
+        e.preventDefault();
+        handlePasskeyLogin(false);
+    };
 
     return (
-        <GuestLayout>
+        <GuestLayout className="bg-[#A2E4B8]">
             <Head title="Log in" description="Log in to your account" />
-            <div className="min-h-[90vh] bg-black relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <div className="min-h-[90vh]  relative flex flex-col items-center justify-center py-12 md:py-18 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 {/* Decorative Background Elements */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                {/* <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
                     <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
-                </div>
+                </div> */}   
 
                 {status && (
-                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px] border border-green-500/30 backdrop-blur-sm relative z-20">
+                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px]  border border-green-500/30 backdrop-blur-sm relative z-20">
                         {status}
                     </div>
                 )}
 
                 <div className="relative w-full">
                     <div className="text-center mb-10">
-                        <h2 className="text-4xl md:text-5xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        <h2 className="text-3xl md:text-5xl lg:text-6xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Welcome{" "}
                             <span className="text-gradient-wishlist">
                                 Back!
                             </span>
                         </h2>
                         <h1 className="hidden">Login to your account.</h1>
-                        <p className="text-gray-400 text-lg font-medium">
+                        <p className="text-gray-800 text-lg font-medium">
                             Don't have an account?{" "}
                             <Link
                                 href={route("register")}
-                                className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                                className="text-[#FF007F] hover:text-[#FF007F] font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
                             >
                                 Signup
                             </Link>
                         </p>
                     </div>
 
-                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border !border-pink-500/40 rounded-[30px] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="!bg-[#121212]/20 border-b border-pink-500/30 flex items-center p-4 space-x-2 rounded-t-xl">
+                    <div className="max-w-md m-auto bg-white rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group">
+                        <div className="!border-r-0 !border-l-0 !border-t-0 border-b border-black flex items-center p-4 space-x-2 rounded-t-xl">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
                         </div>
 
-                        <div className="p-6 sm:p-8 bg-black/20 rounded-b-xl">
+                        <div className="p-6 sm:p-8   rounded-b-xl">
                             <form onSubmit={checkTFA} className="space-y-6">
                                 {redirectmessage && (
-                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px] border border-red-500/20 animate-pulse">
+                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px]  border border-red-500/20 animate-pulse">
                                         {redirectmessage}
                                     </p>
                                 )}
@@ -599,13 +541,13 @@ export default function Login({ status, canResetPassword }) {
 
                                 <div>
                                     <label
-                                        className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide"
+                                        className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide"
                                         htmlFor="email"
                                     >
                                         Email Address
                                     </label>
                                     <div className="relative group">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[20px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <FaCircleUser
                                             size="24"
                                             color="#000000"
@@ -616,7 +558,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="email"
                                             name="email"
                                             value={data.email}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[20px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
                                             autoComplete="username webauthn"
                                             autoFocus={true}
                                             placeholder="you@example.com"
@@ -633,13 +575,13 @@ export default function Login({ status, canResetPassword }) {
 
                                 <div>
                                     <label
-                                        className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide"
+                                        className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide"
                                         htmlFor="password"
                                     >
                                         Password
                                     </label>
                                     <div className="relative group relative">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[20px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <RiLockPasswordLine
                                             color="#000000"
                                             size="24"
@@ -650,7 +592,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[20px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
                                             autoComplete="current-password webauthn"
                                             placeholder="••••••••"
                                             onChange={(e) =>
@@ -667,11 +609,11 @@ export default function Login({ status, canResetPassword }) {
                                     />
 
                                     {canResetPassword && (
-                                        <div className="flex justify-end mt-2 relative z-1">
+                                        <div className="flex justify-center mt-2 relative z-1">
                                             <Link
                                                 method="get"
                                                 href={route("password.request")}
-                                                className="!cursor-pointer text-sm text-gray-400 hover:text-white transition-colors duration-200"
+                                                className="!cursor-pointer text-sm text-gray-600 hover:text-black transition-colors duration-200"
                                             >
                                                 Forgot your password?
                                             </Link>
@@ -683,32 +625,43 @@ export default function Login({ status, canResetPassword }) {
                                 <div>
                                     <LoaderButton
                                         disabled={loading}
-                                        className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full`}
-                                        spinnerclass="fill-white"
-                                    >   
+                                        className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-[#FF007F] hover:!text-white pr-6 bg-black !text-white w-full`}
+                                        spinnerclass="fill-white" >   
                                         {loading || passkeyLoading ? "Logging In..." : "LOG IN"}
                                     </LoaderButton>
                                 </div>
 
-                                {/* Single Smart Passkey Button for Email Users */}
-                                {/* {isWebAuthnSupported() && hasPasskey === true && (
-                                    <div className="space-y-2">
+                                {/* Smart Passkey Button */}
+                                {isWebAuthnSupported() && (
+                                    <div className="hidden space-y-2 pt-2">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <div className="w-full border-t border-gray-200"></div>
+                                            </div>
+                                            <div className="relative flex justify-center text-xs uppercase">
+                                                <span className="px-2 bg-white text-gray-500">
+                                                    Or use passkey
+                                                </span>
+                                            </div>
+                                        </div>
                                         <LoaderButton
                                             type="button"
                                             onClick={handlePasskeyAction}
-                                            disabled={passkeyLoading}
-                                            className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent ${getPasskeyButtonStyle()} hover:!text-white pr-6 !text-black w-full ${passkeyLoading ? "opacity-70 cursor-not-allowed" : ""}`}
-                                            spinnerclass="fill-white"
+                                            disabled={passkeyLoading || loading}
+                                            className={`relative flex flex-row items-center text-lg px-4 py-[8px] focus:outline-none text-gray-700 border-l-4 border-transparent ${getPasskeyButtonStyle()} hover:!text-black pr-6 !text-black w-full ${(passkeyLoading || loading) ? "opacity-70 cursor-not-allowed" : ""}`}
+                                            spinnerclass="fill-black"
                                         >
-                                            {passkeyLoading
-                                                ? "LOGGING WITH PASSKEY..."
-                                                : getPasskeyButtonText()}
+                                            <div className="flex items-center justify-center w-full space-x-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                                    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/>
+                                                    <path d="M12 6c-3.309 0-6 2.691-6 6s2.691 6 6 6 6-2.691 6-6-2.691-6-6-6zm0 10c-2.206 0-4-1.794-4-4s1.794-4 4-4 4 1.794 4 4-1.794 4-4 4z"/>
+                                                    <path d="M12 9c-1.654 0-3 1.346-3 3s1.346 3 3 3 3-1.346 3-3-1.346-3-3-3z"/>
+                                                </svg>
+                                                <span>{passkeyLoading ? "LOGGING IN..." : getPasskeyButtonText()}</span>
+                                            </div>
                                         </LoaderButton>
-                                        <p className="text-xs text-gray-500 text-center">
-                                            Use your fingerprint, face ID, or security key to login instantly
-                                        </p>
                                     </div>
-                                )} */}
+                                )}
                             </form>
                         </div>
                     </div>
@@ -720,6 +673,7 @@ export default function Login({ status, canResetPassword }) {
                 email={promptEmail} 
                 onSkip={handlePromptClose} 
                 onSuccess={handlePromptClose} 
+                silent={true}
             />
         </GuestLayout>
     );

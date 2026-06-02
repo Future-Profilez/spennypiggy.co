@@ -34,7 +34,7 @@ class CheckError extends Mailable
         try {
             $subject = 'Check Error.';
             return $this->view('email.check_error')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

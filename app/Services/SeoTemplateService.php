@@ -1,9 +1,6 @@
 <?php
-
 namespace App\Services;
-
 use App\SeoMeta;
-
 class SeoTemplateService
 {
     /**
@@ -16,12 +13,19 @@ class SeoTemplateService
     {
         $title = static::getCreatorTitle($creator);
         $description = static::getCreatorDescription($creator);
-        $image = $creator->avatar ? static::getCreatorAvatarUrl($creator) : static::getDefaultImage();
+        $image = static::getCreatorOgImage($creator);
         $canonicalUrl = SeoMeta::getPageCanonical('user.show', ['username' => $creator->username]);
         
         // Set basic meta
         SeoMeta::addTag('title', $title);
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
+
+        $keywords = "{$creator->name}, {$creator->username}, creator, memberships, wishlists, SpennyPiggy";
+        if (!empty($creator->creator_category)) {
+            $keywords .= ", {$creator->creator_category}";
+        }
+        SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
+        
         SeoMeta::setCanonical($canonicalUrl);
         
         // Set OpenGraph
@@ -46,7 +50,9 @@ class SeoTemplateService
     {
         $title = static::getWishItemTitle($creator, $wishItem);
         $description = static::getWishItemDescription($creator, $wishItem);
-        $image = $wishItem->image_url ?? static::getDefaultImage();
+        $image = !empty($wishItem->thumbnail)
+            ? "https://ucarecdn.com/{$wishItem->thumbnail}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/"
+            : static::getDefaultImage();
         $canonicalUrl = SeoMeta::getPageCanonical('wish.show', [
             'username' => $creator->username,
             'id' => $wishItem->id
@@ -55,6 +61,13 @@ class SeoTemplateService
         // Set basic meta
         SeoMeta::addTag('title', $title);
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
+
+        $keywords = "{$wishItem->wishname}, gift, wishlist, {$creator->name}, {$creator->username}, SpennyPiggy";
+        if ($wishItem->category) {
+            $keywords .= ", {$wishItem->category}";
+        }
+        SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
+        
         SeoMeta::setCanonical($canonicalUrl);
         
         // Set OpenGraph
@@ -88,6 +101,12 @@ class SeoTemplateService
         
         SeoMeta::addTag('title', static::validateTitle($title));
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => static::validateDescription($description)]);
+
+        $keywords = $filter 
+            ? "discover creators, {$filter} creators, SpennyPiggy creators, support {$filter}"
+            : "discover creators, top creators, SpennyPiggy creators, support creators";
+        SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
+        
         SeoMeta::setCanonical($canonicalUrl);
         
         // Set OpenGraph
@@ -264,7 +283,21 @@ class SeoTemplateService
      */
     protected static function getDefaultImage()
     {
-        return url('/siteicon.png');
+        return url('/og-image.png');
+    }
+
+    protected static function getCreatorOgImage($creator)
+    {
+        if (!empty($creator->social_image)) {
+            return "https://ucarecdn.com/{$creator->social_image}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        }
+        if (!empty($creator->cover)) {
+            return "https://ucarecdn.com/{$creator->cover}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        }
+        if (!empty($creator->avatar)) {
+            return "https://ucarecdn.com/{$creator->avatar}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        }
+        return static::getDefaultImage();
     }
 
     /**

@@ -7,28 +7,39 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { 
-    FaSearch, FaHeart, FaUserPlus, 
-    FaMagic, FaShieldAlt, FaShareAlt,
-    FaRocket, FaBolt, FaCrown
-} from 'react-icons/fa';
-
+    SearchIcon, 
+    HeartIcon, 
+    UserPlusIcon, 
+    ShieldCheckIcon, 
+    ShareIcon,
+    RocketIcon, 
+    BoltIcon,
+    SparklesIcon,
+} from "@animateicons/react/lucide";
+import { 
+    Wand2, 
+    Crown 
+} from "lucide-react";
 import vishitimg from "../../../assets/img/vishitimg01.png";
 import giftbasketimg from "../../../assets/img/giftbasketimg01.png";
 import fundbasketimg from "../../../assets/img/fundbasketimg01.png";
 import yourwishlist from "../../../assets/img/yourwishlist01.png";
 import setuppaymentimg from "../../../assets/img/setuppaymentimg01.png";
 import sharlinkimg from "../../../assets/img/sharlinkimg.png";
+import { useRef } from 'react';
 
 const StepCard = ({ step, title, description, img, icon: Icon, color, shadowColor, index }) => {
+    const iconRef = useRef(null);
     return (
         <div 
-            className={`group bg-gray-900 border-2 border-${color} rounded-[30px] p-6 md:p-8 relative hover:-translate-y-3 transition-all duration-300 shadow-[8px_8px_0px_0px_${shadowColor}] h-full flex flex-col`}
+            className={`group bg-gray-900 border-2 border-${color} rounded-[30px]  p-6 md:p-8 relative hover:-translate-y-3 transition-all duration-300 shadow-[8px_8px_0px_0px_${shadowColor}] h-full flex flex-col`}
             data-aos="fade-up"
             data-aos-delay={index * 100}
+            onMouseEnter={() => iconRef.current?.startAnimation()}
         >
             {/* Floating Icon */}
             <div className={`absolute -top-6 -right-6 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg transform group-hover:rotate-12 transition-transform duration-300 bg-${color} text-black`}>
-                <Icon />
+                <Icon ref={iconRef} />
             </div>
 
             {/* Step Label */}
@@ -43,7 +54,7 @@ const StepCard = ({ step, title, description, img, icon: Icon, color, shadowColo
             <p className="text-gray-400 text-lg mb-8 leading-snug flex-grow" dangerouslySetInnerHTML={{ __html: description }} />
 
             {/* Image Container */}
-            <div className="relative mt-auto rounded-[20px] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-inner group-hover:shadow-2xl transition-shadow duration-300">
+            <div className="relative mt-auto rounded-[20px] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-inner group-hover:shadow-[4px_4px_0px_0px_#FF007F]xl transition-shadow duration-300">
                 <LazyLoadImage 
                     src={img} 
                     alt={title} 
@@ -72,16 +83,16 @@ export default function Works(props) {
             title: "Seek & Search",
             description: "Find your favorite creators. Browse their profile, shop items, and check out their latest wishes.",
             img: vishitimg,
-            icon: FaSearch,
+            icon: SearchIcon,
             color: "pink-500",
-            shadowColor: "#EC4899"
+            shadowColor: "#FF007F"
         },
         {
             step: "Step 2",
             title: "Support Them",
             description: "Join a membership, purchase a wish, or simply send some love to fill their Piggy Bank.",
             img: giftbasketimg,
-            icon: FaHeart,
+            icon: HeartIcon,
             color: "yellow-400",
             shadowColor: "#FACC15"
         },
@@ -90,7 +101,7 @@ export default function Works(props) {
             title: "Create Account",
             description: "Sign up to track your exclusive content and custom orders. Quick and easy checkout!",
             img: fundbasketimg,
-            icon: FaUserPlus,
+            icon: UserPlusIcon,
             color: "purple-500",
             shadowColor: "#A855F7"
         }
@@ -102,16 +113,16 @@ export default function Works(props) {
             title: "Set Up Page",
             description: "Craft your unique space. Publish a reward-based Wishlist or offer tailored memberships.",
             img: yourwishlist,
-            icon: FaMagic,
+            icon: SparklesIcon,
             color: "pink-500",
-            shadowColor: "#EC4899"
+            shadowColor: "#FF007F"
         },
         {
             step: "Step 2",
             title: "Secure Payouts",
             description: "Connect our secure third-party payment processor and start funding your fabulous lifestyle!",
             img: setuppaymentimg,
-            icon: FaShieldAlt,
+            icon: ShieldCheckIcon,
             color: "yellow-400",
             shadowColor: "#FACC15"
         },
@@ -120,7 +131,7 @@ export default function Works(props) {
             title: "Share & Grow",
             description: "Update your fans, share on socials, and watch the support roll in with auto-tweets.",
             img: sharlinkimg,
-            icon: FaShareAlt,
+            icon: ShareIcon,
             color: "purple-500",
             shadowColor: "#A855F7"
         }
@@ -134,7 +145,7 @@ export default function Works(props) {
                 {/* Decorative Background Shapes */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-10 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape"></div>
-                    <div className="absolute top-40 right-10 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute top-40 right-10 w-64 h-64 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
                     <div className="absolute bottom-40 left-1/2 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20 floating-shape" style={{animationDelay: '2s'}}></div>
                 </div>
 
@@ -146,7 +157,7 @@ export default function Works(props) {
                         </span>
                     </div>
 
-                    <h1 className="uppercase text-4xl md:text-6xl lg:text-7xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-2xl" data-aos="fade-down">
+                    <h1 className="uppercase text-4xl md:text-6xl lg:text-7xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-[4px_4px_0px_0px_#FF007F]xl" data-aos="fade-down">
                         How it <span className="text-gradient-wishlist">works</span>
                     </h1>
                     
@@ -159,7 +170,7 @@ export default function Works(props) {
                 {/* Tab Section */}
                 <div className="relative z-10 px-4 max-w-7xl mx-auto">
                     <Tab.Group>
-                        <Tab.List className="flex p-2 space-x-4 bg-gray-500/10 backdrop-blur-xl rounded-[25px] max-w-md mx-auto mb-20 border-2 border-white/10 shadow-2xl" data-aos="zoom-in" data-aos-delay="400">
+                        <Tab.List className="flex p-2 space-x-4 bg-gray-500/10 backdrop-blur-xl rounded-[25px] max-w-md mx-auto mb-20 border-2 border-white/10 shadow-[4px_4px_0px_0px_#FF007F]xl" data-aos="zoom-in" data-aos-delay="400">
                             <Tab as={Fragment}>
                                 {({ selected }) => (
                                     <button
@@ -167,7 +178,7 @@ export default function Works(props) {
                                             w-full py-3 text-lg font-gulfs leading-5 rounded-[18px] uppercase tracking-wider transition-all duration-300
                                             focus:outline-none ring-0 border-0
                                             ${selected 
-                                                ? 'bg-pink-500 text-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] scale-105' 
+                                                ? 'bg-[#FF007F] text-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] scale-105' 
                                                 : 'text-gray-400 hover:text-white hover:bg-white/5'}
                                         `}
                                     >

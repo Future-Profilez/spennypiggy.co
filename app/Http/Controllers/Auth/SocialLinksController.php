@@ -33,10 +33,11 @@ class SocialLinksController extends Controller
         $userId = Auth::id();
 
         try {
-            if (Helpers::checkBlockData($request) === 1) {
+            $blockedWord = Helpers::checkBlockData($request);
+            if ($blockedWord !== false) {
                 return response([
                     'status' => 422,
-                    'message' => 'Some words and emojis are not allowed.'
+                    'message' => "The word or emoji '{$blockedWord}' is not allowed as per our policies."
                 ], 422);
             }
 

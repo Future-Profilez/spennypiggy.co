@@ -5,15 +5,17 @@ import PriceFormat from "@/includes/PriceFormat";
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import toast from "react-hot-toast";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 
 export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
-    const { turnstileSiteKey } = usePage().props;
+    const { turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage, flash } = usePage().props;
     const turnstileRef = useRef(null);
     const { data, setData, post, processing } = useForm({
         gifter_message: '',
         agree: false,
+        digital_waiver: false,
         cf_turnstile_response: '',
     });
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
@@ -39,17 +41,21 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 17) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const [verified, setVerified] = useState(false);
@@ -78,7 +84,6 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             });
     }, [auth?.user?.id]);
 
-    const { flash } = usePage().props;
     const lastFlashRef = useRef({ error: null, success: null, warning: null, info: null });
 
     // Step-Up Modal State
@@ -290,7 +295,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                 toast.error("Verification failed.");
             }
         } catch (error) {
-            toast.error(error.response?.data?.error || "OTP Verification failed.");
+            toast.error(error.response?.data?.error || "OTP Verification failedss.");
         } finally {
             setVerifyingOtp(false);
         }
@@ -334,9 +339,9 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     return (
         <Guest auth={auth?.user} user={auth?.user}>
             <Head title={task.title} />
-            <div className="bg-white px-3 py-3 min-h-screen">
+            <div className="bg-white px-4 py-8 min-h-screen">
                 <div className="max-w-3xl mx-auto">
-                    <Link href={route('task.dashboard')} className="inline-block mb-6 mt-6 text-black font-bold uppercase tracking-wide hover:text-pink-500 transition-colors">
+                    <Link href={route('task.dashboard')} className="inline-block mb-6 text-black font-bold uppercase tracking-wide hover:text-[#FF007F] transition-colors">
                         &larr; Back to Dashboard
                     </Link>
 
@@ -363,240 +368,245 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                 </div>
                             </div>
                         )}
-
-                        {/* Retro Header */}
-                        
-
-                        {/* Media Cover */}
-                        {/* {task.media_url && (
-                            <div className="border-b-2 border-black">
-                                <img src={task.media_url} alt={task.title} className="w-full h-80 object-cover" />
+                        {task?.is_suspended == 1 && isCreator && (
+                            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-xl">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <h3 className="text-sm leading-5 font-bold text-red-700 uppercase tracking-wide">
+                                            Suspended
+                                        </h3>
+                                        <div className="mt-2 text-sm text-red-700">
+                                            <p>
+                                                <span className="font-semibold">Reason:</span>{" "}
+                                                <span className="whitespace-pre-wrap break-words leading-relaxed normal-case">
+                                                    {task?.suspend_reason?.trim() || "This task has been suspended by admin."}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        )} */} 
+                        )}
 
-                        <div className="py-8">
-                            <div className='md:flex justify-between items-start'>
-                                <div>
-                                    <h1 className="text-2xl font-black font-fre uppercase font-light  text-gray-900  ">
+                        {/* Main Content Box */}
+                        <div className="bg-white border border-gray-200 rounded-[20px] p-6 md:p-8 mb-8">
+                            {/* Header Section */}
+                            <div className="flex flex-col md:flex-row md:justify-between md:items-start border-b-2 border-gray-100 pb-6 mb-6">
+                                <div className="flex-1 md:pr-6 mb-4 md:mb-0">
+                                    <h1 className="text-2xl md:text-3xl font-black uppercase text-gray-900 mb-4 leading-tight">
                                         {task.title}
                                     </h1>
-                                    <div className="mt-2 mb-4 prose prose-lg text-gray-600 leading-relaxed border-l-4 border-pink-300 pl-4">
-                                        {task.description}
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className={`uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
+                                            task.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                        }`}>{task.status}</span>
+                                        <span className="uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border !bg-blue-100 text-blue-800 !border-blue-200">
+                                            {task.type} Delivery
+                                        </span>
+                                        {task?.sla_hours ? <span className="uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
+                                            {task.sla_hours === 168 ? '7d' : `${task.sla_hours}h`}
+                                        </span> : null}
+                                        <span className="uppercase inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
+                                            {task.category || 'Paid Task'}
+                                        </span>
                                     </div>
-                                </div> 
-                                <span className="text-2xl font-black text-pink font-anton tracking-wider text-right">
-                                    {isCreator ? (
-                                        formatMultiPrice(task.price, task.currency || 'USD')
-                                    ) : (
-                                        <>
-                                            {formatMultiPrice(
+                                </div>
+                                <div className="text-left md:text-right shrink-0">
+                                    <div className="text-3xl md:text-4xl font-black text-[#FF007F] font-anton tracking-wider">
+                                        {isCreator ? (
+                                            formatMultiPrice(task.price, task.currency || 'USD')
+                                        ) : (
+                                            formatMultiPrice(
                                                 calculateTotalSupporterPays(
                                                     task.price, 
                                                     task.currency || 'USD',
                                                     ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)
                                                 ), 
                                                 task.currency || 'USD'
-                                            )}
-                                            <span className="block text-xs text-gray-500 font-normal mt-1 leading-tight">
-                                                * Includes all fees. You will be charged in {task.currency || 'USD'}.
-                                            </span>
-                                        </>
+                                            )
+                                        )}
+                                    </div>
+                                    {!isCreator && (
+                                        <span className="block text-xs text-gray-500 font-medium mt-2 leading-tight">
+                                            *Includes platform & payment fees.
+                                        </span>
                                     )}
-                                </span>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mt-4 mb-4">
-                                <span className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                    task.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                }`}>{task.status}
-                                </span>
-                                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-blue-100 text-blue-800 !border-blue-200">
-                                    {task.type} Delivery
-                                </span>
-                                {task?.sla_hours ? <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
-                                    {task.sla_hours} Hours
-                                </span>: ''}
-                                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
-                                    {task.category || 'Paid Task'}
-                                </span>
-                            </div>
-
-                            <div className="items-center gap-4 ">
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>
-                                <div className='flex'>
-                                    <Link href={`/${task.creator.username}/tasks`} className="flex items-center gap-3 group">
-                                        <img 
-                                            src={task.creator.avatar_url || userphoto} 
-                                            alt={task.creator.name} 
-                                            className="w-14 h-14 rounded-full border-2 border-black object-cover"
-                                        />
-                                        <div>
-                                            <h4 className="text-lg font-black font-anton tracking-wide leading-none group-hover:text-pink-500 transition-colors">
-                                                {task.creator.name}
-                                            </h4>
-                                            <p className="text-sm text-gray-600 font-medium">@{task.creator.username}</p>
-                                            <p className="text-xs text-gray-400 mt-1 font-bold uppercase tracking-wider">
-                                                On {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                                            </p>
-                                        </div>
-                                    </Link>
                                 </div>
                             </div>
-                            
-                            <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
-                                {isCreator ? (
-                                    <div className="text-center  rounded-[30px]  py-6">
-                                        <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
-                                        <a href={route('task.dashboard')} className="button b">
-                                            Manage Orders
-                                        </a>
-                                    </div>
-                                ) : (
+
+                            {/* Description Section */}
+                            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8 whitespace-pre-wrap">
+                                {task.description}
+                            </div>
+
+                            {/* Creator Profile Section */}
+                            <div className="bg-gray-50 rounded-[16px] p-5 flex items-center justify-between border-2 border-gray-100 mt-6">
+                                <div className="flex items-center gap-4">
+                                    <img 
+                                        src={task.creator.avatar_url || userphoto} 
+                                        alt={task.creator.name} 
+                                        className="w-14 h-14 rounded-full border-2 border-black object-cover"
+                                    />
                                     <div>
-                                        {/* Instant Delivery Section - Only if access granted */}
-                                        {task.type === 'instant' && deliverableUrl && (
-                                            <div className="mb-8">
-                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[30px]  border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
-                                                    ✓ Purchased Successfully
-                                                </div>
-                                                <div className="space-y-4">
-                                                    {task.deliverable_note && (
-                                                        <div className="bg-white border-2 border-black rounded-[30px]  p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                                            <h4 className="font-black text-gray-900 mb-3 uppercase tracking-wide">Note from Creator:</h4>
-                                                            <p className="whitespace-pre-wrap text-gray-700 font-medium">{task.deliverable_note}</p>
-                                                        </div>
-                                                    )}
-                                                    <a 
-                                                        href={deliverableUrl} 
-                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[30px]  hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                    >
-                                                        Download Content 📥
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Purchase History List */}
-                                        {purchaseHistory && purchaseHistory.length > 0 && (
-                                            <div className="mb-8">
-                                                 <h3 className="text-lg font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
-                                                 <div className="space-y-3">
-                                                     {purchaseHistory.map((historyItem) => (
-                                                         <div key={historyItem.uuid} className="bg-white border-2 border-gray-200 rounded-[20px]  p-4 flex flex-col gap-3">
-                                                             <div className="flex justify-between items-start">
-                                                                 <div>
-                                                                     <p className="font-bold text-xs uppercase text-gray-500 mb-1">
-                                                                         {new Date(historyItem.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                                     </p>
-                                                                     <span className={`uppercase inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
-                                                                         historyItem.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
-                                                                     }`}>
-                                                                         {historyItem.status}
-                                                                     </span>
-                                                                 </div>
-                                                                 <a href={route('task.order', historyItem.uuid)} className="text-xs font-black text-pink-600 hover:text-pink-700 uppercase tracking-wide border-b-2 border-pink-200 hover:border-pink-600 transition-colors">
-                                                                     View Order &rarr;
-                                                                 </a>
-                                                             </div>
-                                                             {historyItem.gifter_message && (
-                                                                 <div className="bg-gray-50 p-3 rounded-[30px]   text-sm italic text-gray-600 border border-gray-100">
-                                                                     "{historyItem.gifter_message}"
-                                                                 </div>
-                                                             )}
-                                                         </div>
-                                                     ))}
-                                                 </div>
-                                            </div>
-                                        )}
-
-                                        {/* Purchase Form */}
-                                        <div className="mt-6">
-                                            {!card_capabilities && (
-                                                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
-                                                    <p className="font-bold">Payments Unavailable</p>
-                                                    <p>This creator cannot accept payments at the moment (Card Payments capability missing).</p>
-                                                </div>
-                                            )}
-                                             <form onSubmit={(e) => e.preventDefault()}>
-                                                 <div className="mb-4">
-                                                     <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                                         Message to Creator (Optional)
-                                                     </label>
-                                                     <textarea
-                                                         id="gifter_message"
-                                                         value={data.gifter_message}
-                                                         onChange={e => setData('gifter_message', e.target.value)}
-                                                         className="w-full border-2 border-gray-200 rounded-[20px]  p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y"
-                                                         placeholder="Add a personal note with your purchase..."
-                                                     />
-                                                 </div>
-
-
-                                                 {turnstileSiteKey ? (
-                                                     <div className="mb-4 flex justify-start">
-                                                         <Turnstile
-                                                             ref={turnstileRef}
-                                                             size="normal"
-                                                             theme="light"
-                                                             onVerify={onVerify}
-                                                         />
-                                                     </div>
-                                                 ) : null}
-                                                 <div className="mb-4">
-                                                     <label htmlFor="task-terms" className="flex items-start gap-2 text-normal text-gray-700">
-                                                         <input
-                                                             id="task-terms"
-                                                             type="checkbox"
-                                                             className="mt-1"
-                                                             checked={!!data.agree}
-                                                             onChange={(e) => setData("agree", e.target.checked)}
-                                                         />
-                                                         <span>
-                                                             I agree to the{" "}
-                                                             <Link
-                                                                 href={route("paid-tasks-terms")}
-                                                                 target="_blank"
-                                                                 className="text-pink-600 underline font-bold">
-                                                                 Paid Tasks Terms
-                                                             </Link>
-                                                         </span>
-                                                     </label>
-                                                     <div className="mt-2 text-sm text-gray-600">
-                                                         <ul className="list-disc pl-5 space-y-1">
-                                                             <li>Payments are processed securely via Stripe.</li>
-                                                             <li>Refunds are eligibility-based (e.g., non-delivery), not satisfaction-based.</li>
-                                                             <li>Creators may accept or decline requests at their discretion.</li>
-                                                             <li>Delivered work is treated as completed under the agreed format.</li>
-                                                             <li>Spenny Piggy facilitates payments and workflow, not the task itself.</li>
-                                                         </ul>
-                                                     </div>
-                                                 </div>
-
-                                                 <button
-                                                     type="button"
-                                                     onClick={handlePurchase}
-                                                     disabled={
-                                                         processing ||
-                                                         !data.agree || !verified || !card_capabilities
-                                                     }
-                                                     className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
-                                                         !data.agree || !verified || !card_capabilities) ?'disabled':'enabled'}`} >
-                                                     {processing ? 'Processing...' : (
-                            purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')
-                        )}
-                                                 </button>
-                                             </form>
-                                        </div>
+                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Created By</p>
+                                        <Link href={`/${task.creator.username}/tasks`} className="group">
+                                            <h4 className="text-lg font-black font-anton tracking-wide text-gray-900 group-hover:text-[#FF007F] transition-colors leading-none">
+                                                {task.creator.name}
+                                            </h4>
+                                            <p className="text-sm text-gray-500 mt-1 font-medium">@{task.creator.username}</p>
+                                        </Link>
                                     </div>
-                                )}
+                                </div>
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+                                        Listed On
+                                    </p>
+                                    <p className="text-sm text-gray-600 font-medium mt-1">
+                                        {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                    </p>
+                                </div>
                             </div>
                         </div>
+
+                        {/* Actions / Purchase Form */}
+                        <div className="bg-white border border-gray-200 rounded-[20px] p-6 md:p-8 mb-8">
+                            {isCreator ? (
+                                <div className="text-center py-4">
+                                    <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
+                                    <a href={route('task.dashboard')} className="button b w-full md:w-auto justify-center">
+                                        Manage Orders
+                                    </a>
+                                </div>
+                            ) : (
+                                <div>
+                                    {/* Instant Delivery Section - Only if access granted */}
+                                    {task.type === 'instant' && deliverableUrl && (
+                                        <div className="mb-8">
+                                            <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[20px] border-2 border-green-300 mb-4 font-bold text-base text-center">
+                                                ✓ Purchased Successfully
+                                            </div>
+                                            <div className="space-y-4">
+                                                {task.deliverable_note && (
+                                                    <div className="bg-gray-50 border border-gray-200 rounded-[16px] p-4 text-left">
+                                                        <h4 className="font-black text-gray-900 mb-2 uppercase tracking-wide text-sm">Note from Creator:</h4>
+                                                        <p className="whitespace-pre-wrap text-gray-700 font-medium text-sm">{task.deliverable_note}</p>
+                                                    </div>
+                                                )}
+                                                <a 
+                                                    href={deliverableUrl} 
+                                                    className="flex items-center justify-center gap-2 w-full text-center bg-black text-white px-4 py-3 rounded-[20px] hover:bg-gray-800 cursor-pointer font-black uppercase tracking-widest text-sm transition-all"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    Download Content 📥
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Purchase Form */}
+                                    <div className="">
+                                        {!card_capabilities && (
+                                            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
+                                                <p className="font-bold">Payments Unavailable</p>
+                                                <p className="text-sm">This creator cannot accept payments at the moment (Card Payments capability missing).</p>
+                                            </div>
+                                        )}
+                                        <form onSubmit={(e) => e.preventDefault()}>
+                                            <div className="mb-4">
+                                                <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                                    Message to Creator (Optional)
+                                                </label>
+                                                <textarea
+                                                    id="gifter_message"
+                                                    value={data.gifter_message}
+                                                    onChange={e => setData('gifter_message', e.target.value)}
+                                                    className="w-full border-2 border-gray-200 rounded-[16px] p-3 focus:ring-pink-500 focus:border-[#FF007F] min-h-[100px] resize-y text-sm"
+                                                    placeholder="Add a personal note with your purchase..."
+                                                />
+                                            </div>
+
+                                            {turnstileSiteKey ? (
+                                                <div className="mb-4 flex justify-start">
+                                                    <Turnstile
+                                                        ref={turnstileRef}
+                                                        size="normal"
+                                                        theme="light"
+                                                        onVerify={onVerify}
+                                                    />
+                                                </div>
+                                            ) : null}
+                                            <CheckoutLegalTerms onAgreeChange={(checked) => {
+                                                setData('agree', checked);
+                                                setData('digital_waiver', checked);
+                                            }} />
+
+                                            <button
+                                                type="button"
+                                                onClick={handlePurchase}
+                                                disabled={
+                                                    processing ||
+                                                    !data.agree || !data.digital_waiver || !verified || !card_capabilities
+                                                }
+                                                className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
+                                                    !data.agree || !data.digital_waiver || !verified || !card_capabilities) ?'disabled':'enabled'}`} >
+                                                {processing ? 'Processing...' : (
+                                                    purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')
+                                                )}
+                                            </button>
+                                            {!isCreator && (
+                                                <p className="text-center text-xs text-gray-500 font-normal mt-3 leading-tight">
+                                                    You will be charged in {task.currency || 'USD'}.
+                                                </p>
+                                            )}
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Purchase History */}
+                        {purchaseHistory && purchaseHistory.length > 0 && (
+                            <div className="bg-white border border-gray-200 rounded-[20px] p-6 md:p-8 mb-8">
+                                <h3 className="text-xl font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
+                                <div className="space-y-4">
+                                    {purchaseHistory.map((historyItem) => (
+                                        <div key={historyItem.uuid} className="bg-gray-50 border-2 border-gray-200 rounded-[16px] p-4 flex flex-col gap-3">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-bold text-xs uppercase text-gray-500 mb-1">
+                                                        {new Date(historyItem.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                    <span className={`uppercase inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
+                                                        historyItem.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                                                    }`}>
+                                                        {historyItem.status}
+                                                    </span>
+                                                </div>
+                                                <a href={route('task.order', historyItem.uuid)} className="text-sm font-black text-[#FF007F] hover:text-pink-700 uppercase tracking-wide border-b-2 border-pink-200 hover:border-pink-600 transition-colors">
+                                                    View Order &rarr;
+                                                </a>
+                                            </div>
+                                            {historyItem.gifter_message && (
+                                                <div className="bg-white p-3 rounded-[12px] text-sm italic text-gray-600 border border-gray-200">
+                                                    "{historyItem.gifter_message}"
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         
                         {!auth?.user && !purchase && (
-                            <div className="bg-gray-50 p-4 text-center !border-t-2 !border-black">
-                                <p className="text-normal text-gray-600 font-bold">
-                                    Please <a href={route('login')} className="text-pink-600 hover:underline">login</a> to purchase.
+                            <div className="bg-gray-50 p-4 text-center rounded-[20px] border border-gray-200 mt-6">
+                                <p className="text-sm text-gray-600 font-bold uppercase tracking-wider">
+                                    Please <a href={route('login')} className="text-[#FF007F] hover:text-[#FF007F] hover:underline">login</a> to purchase.
                                 </p>
                             </div>
                         )}
@@ -622,7 +632,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -633,7 +643,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -668,7 +678,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             >
                                 {passkeyLoading ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>

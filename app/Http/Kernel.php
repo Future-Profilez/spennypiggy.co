@@ -38,12 +38,14 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\StaticPageSeoMiddleware::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             // \App\Http\Middleware\PreventBackHistory::class, // Force no-cache headers for all web routes
             // \App\Http\Middleware\CacheInertiaResponse::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             // \App\Http\Middleware\BlockWordsAndEmojis::class,
             \App\Http\Middleware\IpTracker::class,
+            \App\Http\Middleware\CheckSuspendedUser::class,
         ],
 
         'api' => [
@@ -78,6 +80,8 @@ class Kernel extends HttpKernel
         'mustCompletedCardVerification' => \App\Http\Middleware\CheckGifterCardVerification::class,
         'membership' => \App\Http\Middleware\RequireActiveMembership::class,
         'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
+        'check.block' => \App\Http\Middleware\CheckUserBlock::class,
+        'check.suspended' => \App\Http\Middleware\CheckSuspendedUser::class,
     ];
 
     protected $except = [

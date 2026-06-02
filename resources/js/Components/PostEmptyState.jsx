@@ -30,7 +30,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
             return (
                 <button 
                     onClick={() => onFilterChange('all')}
-                    className="mt-4 text-pink-600 hover:text-pink-700 font-medium underline"
+                    className="mt-4 text-[#FF007F] hover:text-pink-700 font-medium underline"
                 >
                     View all posts instead
                 </button>
@@ -60,11 +60,11 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
                 </div>
 
                 {/* Message */}
-                <h3 className="text-xl font-semibold text-gray-200 mb-2">
+                <h3 className="text-xl font-semibold text-black mb-2">
                     {getEmptyMessage()}
                 </h3>
                 
-                <p className="text-gray-400 max-w-md mb-4">
+                <p className="text-gray-800 max-w-md mb-4">
                     {getEmptyDescription()}
                 </p>
 
@@ -73,7 +73,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
                 
                 {/* Additional context for filtered views */}
                 {filter !== 'all' && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-[30px]   max-w-md">
+                    <div className="mt-6 p-4 bg-gray-50 rounded-[30px]    max-w-md">
                         <p className="text-sm text-gray-700">
                             <strong>Tip:</strong> {filter === 'supporters' && 'Send a tip'} 
                             {filter === 'members' && 'Purchase a membership'} 

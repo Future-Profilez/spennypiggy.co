@@ -9,7 +9,7 @@
      </tr>
      <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
-             <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
+             <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 420px; width: 100%; text-align: center;">
                 <tr>
                     <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
                         New <span style="color: #8C52FF">Subscription!</span> 🎉💝
@@ -25,20 +25,20 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                        <strong style="color:#8C52FF;">{{ $sub->anonymous == 1 ? 'Someone' : $sub->user->name }}</strong> subscribed to your wish <strong style="color:#8C52FF;">{{ $sub->wish_item->wishname }}</strong>!<br><br>
+                        <strong style="color:#8C52FF;">{{ $sub->anonymous == 1 ? 'Someone' : ucwords($sub->user->name) }}</strong> subscribed to your wish <strong style="color:#8C52FF;">{{ $sub->wish_item->wishname }}</strong>!<br><br>
                         They'll be supporting you with <strong style="color:#8C52FF;">{{ $creatorFinalAmount }}</strong> on a <strong style="color:#8C52FF;">{{ $sub->wish_item->subscription_period }}</strong> basis.
                     </td>
                 </tr>
      
                 <tr>
                     <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                        Visit <a href="{{ env('APP_URL') . '/history' }}" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> to manage your current subscriptions and send a thank you message to your supporter!
+                        Visit <a href="{{ env('APP_URL') . '/history' }}" style="color:#FF007F; text-decoration:none;">Spenny Piggy</a> to manage your current subscriptions and send a thank you message to your supporter!
                     </td>
                 </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href="{{ env('APP_URL') . '/history' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Subscriptions</a>
+                        <a href="{{ env('APP_URL') . '/history' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Subscriptions</a>
                      </td>
                  </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>

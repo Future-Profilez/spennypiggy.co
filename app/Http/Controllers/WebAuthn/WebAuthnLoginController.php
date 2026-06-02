@@ -65,17 +65,39 @@ class WebAuthnLoginController extends Controller
         try {
             Log::info('WebAuthn login attempt', [
                 'credential_id' => $request->input('id'),
-                'user_agent' => $request->userAgent()
+                'user_agent' => $request->userAgent(),
+                'all_input' => $request->all()
             ]);
 
             // Attempt to login the user 
-            $user = $request->login();
+            try {
+                $user = $request->login();
+            } catch (\Exception $loginException) {
+                Log::error('WebAuthn request->login() exception', [
+                    'message' => $loginException->getMessage(),
+                    'trace' => $loginException->getTraceAsString()
+                ]);
+                throw $loginException;
+            }
 
             if (!$user) {
-                Log::warning('WebAuthn login failed - authentication rejected');
+                $userHandle = $request->input('response.userHandle');
+                Log::warning('WebAuthn login failed - authentication rejected', [
+                    'credential_id' => $request->input('id'),
+                    'user_handle_present' => !empty($userHandle),
+                    'user_handle' => $userHandle,
+                ]);
+                
+                $message = 'Passkey authentication failed.';
+                if (empty($userHandle)) {
+                    $message .= ' This passkey does not contain user information. Please try logging in with your email first, then re-register your passkey.';
+                } else {
+                    $message .= ' The device may not be registered or verification failed.';
+                }
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Passkey authentication failed. The device may not be registered or verification failed.'
+                    'message' => $message
                 ], 422);
             }
 

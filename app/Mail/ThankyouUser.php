@@ -43,7 +43,7 @@ class ThankyouUser extends Mailable
             $subject = 'Thank You from ' . $creatorName . ' !!';
             
             return $this->view('email.thankyou-user')
-                ->from(env('MAIL_FROM_ADDRESS', 'Noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'SPENNY PIGGY'))
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
             \Log::error('ThankyouUser email build error', [

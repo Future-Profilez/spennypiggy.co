@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +22,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
+use App\Jobs\LinkUserToCrmCreator;
 use App\Models\AllowedDomain;
 use App\Models\CreatorReferral;
 use App\Models\Follow;
@@ -33,7 +35,6 @@ use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
 use PragmaRX\Google2FALaravel\Google2FA;
 
@@ -68,9 +69,13 @@ class RegisteredUserController extends Controller
 
     public function validateRegistration(Request $request)
     {
+        $messages = [
+            'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
+        ];
+
         $validator = Validator::make($request->all(), [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'username' => ['sometimes', 'required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['sometimes', 'required', 'string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
             'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
@@ -79,7 +84,7 @@ class RegisteredUserController extends Controller
             'city' => ['sometimes', 'required', 'string'],
             'state' => ['sometimes', 'required', 'string'],
             'postal_code' => ['sometimes', 'required', 'integer', 'digits_between:4,8'],
-        ]);
+        ], $messages);
 
         $validator->after(function ($validator) use ($request) {
             $email = (string) $request->input('email', '');
@@ -110,32 +115,39 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================BASIC VALIDATION========================== */
+        $messages = [
+            'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
+        ];
+
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => ['required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['required', 'string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'role'     => ['required'],
             'promo'    => ['nullable', 'string'], // referral code
-        ]);
+            'crm_invite_token' => ['nullable', 'string', 'max:255'],
+        ], $messages);
 
-        $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
-        if (!empty($turnstileSecret)) {
-            $request->validate([
-                'cf_turnstile_response' => ['required', 'string'],
-            ]);
-
-            $verifyResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-                'secret' => $turnstileSecret,
-                'response' => $request->input('cf_turnstile_response'),
-                'remoteip' => $request->ip(),
-            ]);
-
-            $verifyBody = $verifyResponse->json();
-            if (!($verifyBody['success'] ?? false)) {
-                throw ValidationException::withMessages([
-                    'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
+        if (config('app.url') === 'https://spennypiggy.co') {
+            $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
+            if (!empty($turnstileSecret)) {
+                $request->validate([
+                    'cf_turnstile_response' => ['required', 'string'],
                 ]);
+
+                $verifyResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                    'secret' => $turnstileSecret,
+                    'response' => $request->input('cf_turnstile_response'),
+                    'remoteip' => $request->ip(),
+                ]);
+
+                $verifyBody = $verifyResponse->json();
+                if (!($verifyBody['success'] ?? false)) {
+                    throw ValidationException::withMessages([
+                        'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
+                    ]);
+                }
             }
         }
 
@@ -150,17 +162,32 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        /* =========================IP CHECK (LIVE ONLY)========================== */
+        if ($request->role == 1) {
+            $request->validate([
+                'creator_email_receipt_ack' => ['accepted'],
+            ], [
+                'creator_email_receipt_ack.accepted' => 'Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.',
+            ]);
+        }
+
+        /* =========================FRAUD PREVENTION CHECK (LIVE ONLY)========================== */
         $ip_address = $request->ip();
-
-        if (config('app.url') === 'https://spennypiggy.co') {
-            $ipExists = User::where('ip_address', $ip_address)
-                ->where('is_uk', 0)
-                ->exists();
-
-            if ($ipExists) {
+        
+        if (app()->environment('production') || config('app.url') === 'https://spennypiggy.co') {
+            // Solution C: Check device cookie/session first
+            // If they already have a "registered_device" cookie, block them immediately
+            if ($request->cookie('registered_device')) {
                 throw ValidationException::withMessages([
-                    'email' => 'You can not create multiple accounts with the same IP address.',
+                    'email' => 'Multiple accounts from the same device are not allowed.',
+                ]);
+            }
+
+            // Solution A: Max accounts per IP limit
+            $ipCount = User::where('ip_address', $ip_address)->count();
+            
+            if ($ipCount >= 3) {
+                throw ValidationException::withMessages([
+                    'email' => 'Too many accounts have been created from this IP address.',
                 ]);
             }
         }
@@ -176,9 +203,10 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================BLOCKED CONTENT CHECK========================== */
-        if (Helpers::checkBlockData($request) == 1) {
+        $blockedWord = Helpers::checkBlockData($request);
+        if ($blockedWord !== false) {
             throw ValidationException::withMessages([
-                'name' => 'Some words or emojis are not allowed.',
+                'name' => "The word or emoji '{$blockedWord}' is not allowed as per our policies.",
             ]);
         }
 
@@ -189,42 +217,68 @@ class RegisteredUserController extends Controller
                 ->where('is_active', 1)
                 ->first();
 
-            if (!$referralCode) {
-                throw ValidationException::withMessages([
-                    'promo' => 'Invalid referral code.',
-                ]);
-            }
-
-            $referrer = User::where('id', $referralCode->creator_id)
-                ->where('role', 1)
-                ->first();
-
-            if (!$referrer) {
-                throw ValidationException::withMessages([
-                    'promo' => 'Invalid referral code.',
-                ]);
+            if ($referralCode) {
+                $referrer = User::where('id', $referralCode->creator_id)
+                    ->where('role', 1)
+                    ->first();
             }
         }
 
         /* =========================CREATE USER========================== */
         $secret = $this->google2FA->generateSecretKey();
 
+        $creatorCovers = [
+            '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
+            '21de57a2-c786-4a5a-b7e4-2edcdb61fc42',
+            '6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2',
+            'fcdb1692-d64d-4de8-b7af-5e0556cdf6e8',
+            '40aaf556-fa59-4f8e-b482-e49726026499',
+            'a2cad976-2480-4c77-baa3-cb5df3cdc0d6',
+            'b81b3097-5c4c-4f48-aaf0-3687bc928a18',
+            '32c130a9-37e6-4934-8d72-a83a5d8bdaa6',
+            'e71ed424-f17a-47d9-b0e7-3e5eca4e51cb',
+            'dc1021e2-41a4-4dfa-8379-b27fb7e3834e',
+            '175e706f-ae6a-4920-a131-bf90502084f8',
+            'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
+            '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
+            'c3b7ff7a-719a-452a-ba8f-d074d916b395',
+            '133b057f-f069-4ea4-82e4-ba9184d721cd'
+        ];
+
+        $assignedCover = $request->role == 1 
+            ? $creatorCovers[array_rand($creatorCovers)] 
+            : 'dc1021e2-41a4-4dfa-8379-b27fb7e3834e';
+
         $user = User::create([
+            'uuid'                => Uuid::uuid4()->toString(),
             'tfa_key'             => $secret,
             'name'                => $request->name,
             'email'               => $request->email,
-            'username'            => $request->username,
+            'username'            => strtolower($request->username),
             'gender'              => $request->gender ?? null,
             'password'            => Hash::make($request->password),
             'role'                => $request->role,
             'creator_category'    => $request->creator_category ?? null,
             'ip_address'          => $ip_address,
             'country'             => $request->country_code ?? null,
+            'terms_accepted_at'   => now(),
+            'creator_email_receipt_acknowledged_at' => $request->role == 1 ? now() : null,
             'bio_approved'        => 0,
             'profile_status_lock' => 0,
+            'cover'               => $assignedCover,
+            'cover_approved'      => 1,
+            'utm_source'          => $request->input('utm_source'),
+            'utm_medium'          => $request->input('utm_medium'),
+            'utm_campaign'        => $request->input('utm_campaign'),
         ]);
 
         Auth::login($user);
+        
+        if (app()->environment('production') || config('app.url') === 'https://spennypiggy.co') {
+            // Solution C: Set a long-lived cookie to identify this device
+            // This prevents the same device from creating another account, even if IP changes
+            \Illuminate\Support\Facades\Cookie::queue('registered_device', '1', 60 * 24 * 365 * 10); // 10 years
+        }
 
         /* =========================AUTO FOLLOW SPENNY========================== */
         $spenny = User::where('username', 'spenny_piggy')->first();
@@ -258,7 +312,7 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================✅ CREATOR REFERRAL LOGIC========================== */
-        if ($referralCode && $referrer && $request->role == 1) {
+        if ($referralCode && $referrer && $request->role == 1 && $referrer->id !== $user->id) {
             // ❌ Prevent duplicate referral entry
             $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)
                 ->exists();
@@ -275,10 +329,11 @@ class RegisteredUserController extends Controller
         }
         /* =========================SEND WELCOME EMAIL========================== */
         WelcomeUser::dispatch($user);
+        LinkUserToCrmCreator::dispatch($user->id, $request->input('crm_invite_token'));
 
         /* =========================REDIRECT========================== */
         if ($user->email_verified_at) {
-            return redirect(route('user.show', $user->username))->with('success', 'Registration successful.');
+            return redirect()->intended(route('user.show', $user->username))->with('success', 'Registration successful.');
         }
 
         return redirect(route('verification.notice'));
@@ -310,7 +365,7 @@ class RegisteredUserController extends Controller
                 "max:20"
             ]
         ]);
-        $exist = User::whereUsername($request->username)->where('is_uk', 0)->first();
+        $exist = User::whereUsername($request->username)->first();
         return response()->json([
             "available" => empty($exist)
         ]);
@@ -341,6 +396,10 @@ class RegisteredUserController extends Controller
      */
     public function gifterCardVerification(Request $request)
     {
+        if ($request->header('X-Inertia') || !$request->ajax()) {
+            return Inertia::render('gifter/GifterCardVerification');
+        }
+
         $currency = strtoupper($request->cookie("currency", "GBP"));
         $user = Auth::user();
         if (!($user instanceof User)) {
@@ -349,7 +408,7 @@ class RegisteredUserController extends Controller
                 'message' => 'Unauthorized.',
             ], 401);
         }
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // Ensure Stripe customer
         if (empty($user->stripe_id)) {
@@ -378,9 +437,9 @@ class RegisteredUserController extends Controller
 
         // Use new gross-up flow
         $breakdown = Helpers::calculateStripeDirectChargeFlow($baseAmount, 'GBP');
-        
+
         $finalTotalAmount = $breakdown['total_supporter_pays'];
-        
+
         // Convert final amount to selected currency if not GBP
         if ($currency !== 'GBP') {
             $convertedAmount = Helpers::priceFormat('gbp', $finalTotalAmount, $currency);
@@ -392,9 +451,10 @@ class RegisteredUserController extends Controller
         // Create Stripe Checkout session
         $session = $stripe->checkout->sessions->create([
             'success_url' => route('card.verification.success', [$user->uuid]),
-            'cancel_url' => route('card.verification.failed', [$user->uuid]),
+            'cancel_url' => route('card.verification.failed', [$user->uuid]), // Use explicit failed route
             'mode' => 'payment',
             'customer' => $user->stripe_id,
+            'billing_address_collection' => 'required',
             'line_items' => [[
                 'price_data' => [
                     'currency' => $currency,
@@ -436,7 +496,11 @@ class RegisteredUserController extends Controller
     // This method is called when the payment is successful
     public function cardVerificationSuccess($uuid)
     {
-        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
+        $user = User::where('uuid', $uuid)->first();
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'User not found.');
+        }
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -455,12 +519,29 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        // $billingDetails = $charge->billing_details;
+        // Retrieve full session object to ensure customer_details are populated
+        $session = $stripe->checkout->sessions->retrieve($session->id);
+
         $address = $session->customer_details->address ?? null;
 
-        $gifterAddress = GifterAddress::where('user_id', $user->id)->whereNotNull('stripe_address')->exists();
+        // Fallback: Check payment intent billing details if session address is incomplete
+        if ((!$address || empty($address->line1)) && $session->payment_intent) {
+            try {
+                $paymentIntent = $stripe->paymentIntents->retrieve($session->payment_intent);
+                if ($paymentIntent->shipping && $paymentIntent->shipping->address) {
+                    $address = $paymentIntent->shipping->address;
+                } elseif ($paymentIntent->latest_charge) {
+                    $charge = $stripe->charges->retrieve($paymentIntent->latest_charge);
+                    if ($charge->billing_details && $charge->billing_details->address) {
+                        $address = $charge->billing_details->address;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to retrieve fallback address: " . $e->getMessage());
+            }
+        }
 
-        if ($address && !$gifterAddress) {
+        if ($address) {
             $encryptedAddress = [
                 'line1' => $address->line1 ?? null,
                 'line2' => $address->line2 ?? null,
@@ -468,15 +549,14 @@ class RegisteredUserController extends Controller
                 'state' => $address->state ?? null,
                 'postal_code' => $address->postal_code ?? null,
                 'country' => $address->country ?? null,
-                'name' => $session->customer_details->name ?? null,
+                'name' => ($session->customer_details->name ?? null) ?: ($address->name ?? null),
             ];
 
             $encryptedJson = json_encode($encryptedAddress);
-            // $encryptedJson = Crypt::encryptString(json_encode($encryptedAddress));
 
-            $gifterAddress = GifterAddress::updateOrCreate(
-                ['user_id' => $user->id],  // Match user by their ID
-                ['stripe_address' => $encryptedJson]  // Update the stripe_address column
+            GifterAddress::updateOrCreate(
+                ['user_id' => $user->id],
+                ['stripe_address' => $encryptedJson]
             );
         }
 
@@ -521,13 +601,10 @@ class RegisteredUserController extends Controller
      */
     public function cardVerificationFailed($uuid)
     {
-        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
+        $user = User::where('uuid', $uuid)->first();
 
         if (!$user) {
-            return response()->json([
-                'status' => false,
-                'message' => 'User not found.',
-            ]);
+            return redirect()->route('login')->with('error', 'User not found.');
         }
 
         // Update the latest verification record for the user
@@ -543,10 +620,8 @@ class RegisteredUserController extends Controller
             $verification->save();
         }
 
-        return response()->json([
-            'status' => false,
-            'message' => 'Card verification failed or was canceled by the user.',
-        ]);
+        return redirect()->route('user.show', ['username' => $user->username])
+            ->with('error', 'Card verification was canceled or failed. Please try again.');
     }
 
     // public function gifterCardVerification(Request $request)

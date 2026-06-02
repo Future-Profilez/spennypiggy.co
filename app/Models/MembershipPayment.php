@@ -25,6 +25,7 @@ class MembershipPayment extends Model
         'guest_name',
         'currency',
         'amount',
+        'total_paid',
         'tax',
         'vat_tax_amount',
         'recurring_for',
@@ -45,6 +46,8 @@ class MembershipPayment extends Model
         'supporter_country',
         'card_country',
         'fee_variance',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $appends = [
@@ -65,7 +68,7 @@ class MembershipPayment extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class)->where('is_uk', 0);
+        return $this->belongsTo(User::class);
     }
     
     public function deliverables()

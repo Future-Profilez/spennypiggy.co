@@ -25,7 +25,7 @@ class CheckSuspendedUser
                 $request->session()->regenerateToken();
 
                 // Redirect to login with message
-                return redirect()->route('login')->withErrors(['account' => 'Your account has been suspended. Please contact support.']);
+                return redirect()->route('login')->withErrors(['account' => 'Your account has been suspended due to a policy violation or payout configuration issue. Please contact support.']);
             }
         }
 

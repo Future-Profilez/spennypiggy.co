@@ -48,7 +48,7 @@ export default function VerifyEmail({auth}) {
             <div>
                 <div className="mailicon flex justify-center items-center my-4" >
                     <svg width="341" height="287" viewBox="0 0 341 287" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M54.1393 241.814V237.535H49.8604H31.1628C16.3152 237.535 4.27889 225.499 4.27889 210.651V79.7678C4.27889 64.9202 16.3152 52.8839 31.1628 52.8839H261.767C276.615 52.8839 288.651 64.9202 288.651 79.7677V210.651C288.651 225.499 276.615 237.535 261.767 237.535H102.837H101.26L100.06 238.559L54.1393 277.727V241.814Z" fill="#F94F97" stroke="#E6EA7B" strokeWidth="8.55778" />
+                        <path d="M54.1393 241.814V237.535H49.8604H31.1628C16.3152 237.535 4.27889 225.499 4.27889 210.651V79.7678C4.27889 64.9202 16.3152 52.8839 31.1628 52.8839H261.767C276.615 52.8839 288.651 64.9202 288.651 79.7677V210.651C288.651 225.499 276.615 237.535 261.767 237.535H102.837H101.26L100.06 238.559L54.1393 277.727V241.814Z" fill="#FF007F" stroke="#E6EA7B" strokeWidth="8.55778" />
                         <rect x="266.941" width="4.62903" height="33.9462" rx="2.31452" fill="#E6EA7B" />
                         <rect x="302.994" y="9.2583" width="4.62903" height="33.9462" rx="2.31452" transform="rotate(31.1065 302.994 9.2583)" fill="#E6EA7B" />
                         <rect x="327.876" y="30.0889" width="4.62903" height="33.9462" rx="2.31452" transform="rotate(57.1905 327.876 30.0889)" fill="#E6EA7B" />
@@ -100,8 +100,8 @@ export default function VerifyEmail({auth}) {
                         </defs>
                     </svg>
                 </div>
-                <h3 className="headingSm !text-3xl md:!text-5xl tracking-wider mb-3 text-center" >Verification Email Sent !!</h3>
-                <h5 className="text-xl  text-center text-mint w-3/4 mx-auto block" >Thanks for signing up! Before getting started, please verify your email.</h5> 
+                <h3 className="text-mint !text-xl md:!text-3xl font-bold mb-3 text-center" >Verification Email Sent !!</h3>
+                <h5 className="text-xl text-center text-mint w-3/4 mx-auto block" >Thanks for signing up! Before getting started, please verify your email.</h5> 
                 <div className="flex justify-center mt-6 mb-2">
                     <button  onClick={()=>{setSent(true);sendMail()}} className="text-pink m-auto">{loading ? 'Sending..' : 
                     <>
@@ -116,7 +116,7 @@ export default function VerifyEmail({auth}) {
                         method="post"
                         href={route("logout")}
                         as="button" className="text-white" >
-                            Use Another Email Address ?
+                            Want to Use Another Email Address ?
                     </Link>
                 </div>
             </div>

@@ -10,23 +10,100 @@ use Illuminate\Support\Facades\DB;
 class SitemapController extends Controller
 {
     /**
+     * Generate custom flat sitemap.xml as requested
+     */
+    public function customSitemap()
+    {
+        $pages = [
+            '/',
+            '/pricing',
+            '/features',
+            '/about',
+            '/contact',
+            '/terms-and-conditions',
+            '/privacy-policy',
+            '/cookies-policy',
+            '/creator-agreement',
+            '/supporter-terms',
+            '/return-policy',
+            '/paid-tasks-terms',
+            '/reserves-and-payments-policy',
+            '/mor-agreement',
+            '/us-addendum',
+            '/copyright-policy',
+            '/leaderboard',
+            '/how-it-works',
+            '/discover',
+            '/creator-supporter-contract',
+            '/founder-program',
+            // Landing pages
+            '/creators',
+            '/creators/stripe-safe',
+            '/creators/keep-100',
+            '/creators/features',
+            '/creators/disputes',
+            '/creators/founder-bonus',
+            '/pride',
+            '/giftstore',
+        ];
+
+        $content = '<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+
+        foreach ($pages as $url) {
+            $content .= '
+  <url>
+    <loc>' . url($url) . '</loc>
+    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>' . ($url === '/' ? '1.0' : '0.8') . '</priority>
+  </url>';
+        }
+
+        $content .= '
+</urlset>';
+
+        return response($content, 200, [
+            'Content-Type' => 'application/xml',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
+    }
+
+    /**
      * Generate the main sitemap index
      */
     public function index()
     {
+        $staticLastmod = now();
+        try {
+            $creatorsLastmod = User::where('is_public_profile', 1)
+                ->where('suspended_account', 0)
+                ->max('updated_at') ?? $staticLastmod;
+        } catch (\Exception $e) {
+            $creatorsLastmod = $staticLastmod;
+        }
+
+        try {
+            $wishlistsLastmod = WishItem::where('is_approved', 1)->max('updated_at') ?? $staticLastmod;
+        } catch (\Exception $e) {
+            $wishlistsLastmod = $staticLastmod;
+        }
+
         $content = '<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
     <loc>' . url('/seo/sitemap-static.xml') . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <lastmod>' . $staticLastmod->toW3cString() . '</lastmod>
   </sitemap>
   <sitemap>
     <loc>' . url('/seo/sitemap-creators.xml') . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <lastmod>' . $creatorsLastmod->toW3cString() . '</lastmod>
   </sitemap>
   <sitemap>
     <loc>' . url('/seo/sitemap-wishlists.xml') . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <lastmod>' . $wishlistsLastmod->toW3cString() . '</lastmod>
   </sitemap>
 </sitemapindex>';
 
@@ -49,8 +126,6 @@ class SitemapController extends Controller
             ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
             ['url' => '/how-it-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/terms-and-conditions', 'priority' => '0.5', 'changefreq' => 'monthly'],
-            ['url' => '/register', 'priority' => '0.6', 'changefreq' => 'weekly'],
-            ['url' => '/login', 'priority' => '0.6', 'changefreq' => 'weekly'],
         ];
 
         $content = '<?xml version="1.0" encoding="UTF-8"?>

@@ -1,32 +1,33 @@
 import { Link, Head } from "@inertiajs/react";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
-import ComingNext from "./home/ComingNext";
-import LiveBarSection from "./home/LiveBarSection";
-import ForCreators from "./home/ForCreators";
 import LiveBar from '@/includes/LiveBar';
-import FunPart from './home/FunPart';
-import WhyLove from './home/WhyLove';
-import HappyCreators from './home/HappyCreators';
-import JoinUs from '@/Components/JoinUs';
-import seek from "../../assets/img/seeksearch.png";
-import fill from "../../assets/img/fillbank.png";
 import fun1 from "../../assets/new/Fun1.png";
 import fun2 from "../../assets/new/Fun2.png";
 import fun3 from "../../assets/new/Fun3.png";
-import commingsoon from "../../assets/img/commingsoon.png";
-import lockprofile from "../../assets/img/lockprofile.png";
-import Membership from "./home/Membership";
-import NotForBusiness from "./home/NotForBusiness";
-import FAQ from "./home/FAQ";
-import SitelinksSearchBox from "@/global/SiteLink";
-import PaymentSlider from "./home/PaymentSlider";
-import FounderProgramAnnouncement from "./home/FounderProgramAnnouncement";
-import PaidTasksAnnouncement from "./home/PaidTasksAnnouncement";
-import TrendingCreators from './home/TrendingCreators';
-import NewVerified from './home/NewVerified';
-import TopEarners from './home/TopEarners';
+
+// Lazy load components that are "below the fold"
+const ComingNext = lazy(() => import("./home/ComingNext"));
+const LiveBarSection = lazy(() => import("./home/LiveBarSection"));
+const ForCreators = lazy(() => import("./home/ForCreators"));
+const FunPart = lazy(() => import('./home/FunPart'));
+const WhyLove = lazy(() => import('./home/WhyLove'));
+const HappyCreators = lazy(() => import('./home/HappyCreators'));
+const FeatureSuggestionSection = lazy(() => import('./home/FeatureSuggestionSection'));
+const JoinUs = lazy(() => import('@/Components/JoinUs'));
+const Membership = lazy(() => import("./home/Membership"));
+const NotForBusiness = lazy(() => import("./home/NotForBusiness"));
+const FAQ = lazy(() => import("./home/FAQ"));
+const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
+const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
+const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
+const FounderProgramAnnouncement = lazy(() => import("./home/FounderProgramAnnouncement"));
+const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
+const TrendingCreators = lazy(() => import('./home/TrendingCreators'));
+const NewVerified = lazy(() => import('./home/NewVerified'));
+const TopEarners = lazy(() => import('./home/TopEarners'));
+const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'));
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
 
     useEffect(()=>{},[]);
@@ -62,101 +63,84 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         </Head>
 
         <Guest auth={auth.user} user={auth.user}>
-        <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
-        <Hero auth={auth} />
-        <PaidTasksAnnouncement />
-        <FounderProgramAnnouncement founderBonus={founderBonus} />
-        <LiveBarSection />
+            <LiveBar reps={15} classes={'blackbg barouter'} 
+            livebartest={[
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                "🤑 Keep 100% of what you earn!",
+                "⚡️Fast & Easy Payment's through 🍎 Pay!"
+                ]
+            }
+             />
+            <Hero auth={auth} />
+            
+            <Suspense fallback={<div className="h-20" />}>
+                <EarnMoreAnnouncement founderBonus={founderBonus} />
+                <PaidTasksAnnouncement />
+                <ReferEarnAnnouncement />
+                <FounderProgramAnnouncement founderBonus={founderBonus} />
+                <LiveBarSection />
 
-        {trendingCreators && trendingCreators.length > 0 ? <TrendingCreators creators={trendingCreators} /> : ''}
-        
-        {newVerifiedCreators && newVerifiedCreators.length > 0 ? <NewVerified creators={newVerifiedCreators} /> : ''}
-        
-        {topEarners && topEarners.length > 0 ? <TopEarners creators={topEarners} periodLabel={topEarnersLabel} /> : ''}
+                {trendingCreators && trendingCreators.length > 0 ? <TrendingCreators creators={trendingCreators} /> : ''}
+                {newVerifiedCreators && newVerifiedCreators.length > 0 ? <NewVerified creators={newVerifiedCreators} /> : ''}
+                {topEarners && topEarners.length > 0 ? <TopEarners creators={topEarners} periodLabel={topEarnersLabel} /> : ''}
 
-        <PaymentSlider/>
+                <PaymentSlider/>
 
-        {/* <ForCreators /> */}
-
-        {/* <FunPart classes={``}
-        img={seek}
-        imgbg={`bluebg`}
-        textbg={`lightpink-50`}
-        heading={`Seek & Search`}
-        text={`Looking for your favorite creator or their wishlist? Seek & Search makes it easy. Whether you're eager to support your beloved content creators or find the perfect gift, our intuitive search feature lets you quickly locate creators or their wishlists with just a few clicks. Dive into the world of creativity and generosity today with Seek & Search!`}
-        /> */}
-
-        {/* <FunPart classes={`border-top-0`}
-        img={fill} reverse={true}
-        imgbg={`pinkbg`} eclasses={``}
-        textbg={`lightyellow`}
-        heading={`Receive Support with 100% payout`}
-        text={`All Creators on Spenny Piggy receive 100%, and the profile piggy bank provides a fast and easy way for fans to directly support you!`}
-        /> */}
-
-        {/* <FunPart classes={``}
-        img={commingsoon}
-        imgbg={`mintbg`}
-        textbg={`lightpink-50`}
-        heading={`Your Profile Shop, the creative way to sell`}
-        text={`Think ebooks, art commissions, 1-1 zoom calls and everything else in between. Anything that probably doesn’t have a place on shopify, Your profile shop is the place to start selling direct to your fans whilst enhancing your earnings potential.`}
-        /> */}
-
-        {/* <FunPart classes={`border-top-0`}
-        img={lockprofile} reverse={true}
-        imgbg={`yellowbg`} eclasses={``}
-        textbg={`lightyellow`}
-        heading={`Fraud Protection and Privacy Options`}
-        text={`All the data on Spenny Piggy is hosted on Google Servers in the UK.
-        All of your data on Spenny Piggy is secured by TLS (SSL) 256-bit encryption.
-        All the creator & Fan information stays private and is not shared between parties. `}
-        /> */}
-
-        <FunPart 
-            classes={`border-top-0`}
-            img={fun1} reverse={true}
-            mainbg={`bg-[#EFEA7B]`} eclasses={``}
-            textbg={`bg-[#EFEA7B]`} textcolor='text-black'
-            heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
-        />
-
-        <FunPart 
-            classes={`border-top-0`}
-            img={fun2} reverse={false}
-            mainbg={`bg-[#F94F96]`} eclasses={``}
-            textbg={`bg-[#F94F96]`}
-            heading={`Let your fans spoil you with gifts from any online store!`}
-        />
-        <FunPart 
-            classes={`border-top-0`}
-            img={fun3} reverse={true}
-            mainbg={`bg-[#EFEA7B]`} eclasses={``}
-            textbg={`bg-[#EFEA7B]`} textcolor='text-black'
-            heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
-        />
-
-        <Membership />
-
-        <NotForBusiness />
-
-        <WhyLove />
-
-        <HappyCreators />
-        <FAQ />
-
-        <JoinUs />
-        <LiveBar
-                reps={15}
-                classes={"py-3 bg-[#E6EA7B]"}
-                textclassName={`!text-4xl font-gulfs mb-0 mx-4 uppercase`}
-                color={`bg-[#E6EA7B]`}
-                text={
-                    <>
-                      ❤️ Keep <span className="text-[#F94F96]">100%</span> of what you Earn!
-                    </>
-                  }
+                <FunPart 
+                    classes={`border-top-0`}
+                    img={fun1} reverse={true}
+                    mainbg={`bg-[#EFEA7B]`} eclasses={``}
+                    textbg={`bg-[#EFEA7B]`} textcolor='text-black'
+                    heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
                 />
-        <SitelinksSearchBox />
+
+                <FunPart 
+                    classes={`border-top-0`}
+                    img={fun2} reverse={false}
+                    mainbg={`bg-[#FF007F]`} eclasses={``}
+                    textbg={`bg-[#FF007F]`}
+                    heading={`Let your fans spoil you with gifts from any online store!`}
+                />
+                <FunPart 
+                    classes={`border-top-0`}
+                    img={fun3} reverse={true}
+                    mainbg={`bg-[#EFEA7B]`} eclasses={``}
+                    textbg={`bg-[#EFEA7B]`} textcolor='text-black'
+                    heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
+                />
+
+                <Membership />
+                <NotForBusiness />
+                <WhyLove />
+                <HappyCreators />
+                <FeatureSuggestionSection auth={auth} />
+                <FAQ />
+                <JoinUs />
+                
+                <LiveBar
+                    reps={15}
+                    classes={"py-3 bg-[#E6EA7B]"}
+                    textclassName={`!text-4xl font-gulfs mb-0 mx-4 uppercase`}
+                    color={`bg-[#E6EA7B]`}
+                    text={
+                        <>
+                          ❤️ Keep <span className="text-[#FF007F]">100%</span> of what you Earn!
+                        </>
+                    }
+                />
+                <SitelinksSearchBox />
+            </Suspense>
         </Guest>
     </>
 }

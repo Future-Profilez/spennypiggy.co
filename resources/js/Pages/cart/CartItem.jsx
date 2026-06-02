@@ -52,7 +52,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
     }
 
     return (
-        <div className={`fading border cartlist flex justify-between  content-between items-center border-black shadow-black rounded-[20px] 
+        <div className={`fading border cartlist flex justify-between  content-between items-center border-black shadow-[4px_4px_0px_0px_#FF007F]lack rounded-[20px] 
             mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}>
             <div className='prodcartbox items-center'>
                 <div className='productimg !rounded-[15px]  me-3'>
@@ -66,7 +66,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
                                 {formatMultiPrice(totalPrice || ((data.price || 0) + (data.tax || 0)), currency)}
                             </span>
                             <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                                * Includes all applicable fees
+                                *Includes platform and payment processing fees{data?.type === 'physical' ? " and shipping" : ""}
                             </span>
                         </div>
                     </div>

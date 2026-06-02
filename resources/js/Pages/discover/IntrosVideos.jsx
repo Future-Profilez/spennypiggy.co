@@ -18,19 +18,32 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 
 export default function IntroVideos(props) {
 
-    const [intros, setIntros] = useState();
+    const { intros: initialIntros, onSeeMore, showAll } = props;
+    const [intros, setIntros] = useState(initialIntros || []);
+    const [displayedIntros, setDisplayedIntros] = useState([]);
     const [order, setorder] = useState('new');
     const [gender, setgender] = useState('all');
-    const [loading, setloading] = useState(false);
+    const [loading, setloading] = useState(!initialIntros);
+    const [errorMsg, setErrorMsg] = useState(null);
     const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
 
     const fetch_videos = () => {
+        if (initialIntros && initialIntros.length > 0 && order === 'new' && gender === 'all') {
+            setloading(false);
+            return;
+        }
         setloading(true);
+        setErrorMsg(null);
         axios.get(`/discover/creators/${order}/${gender}`).then((resp) => {
-            setIntros(resp.data && resp.data?.intro?.data);
+            if (resp.data && resp.data.intro && resp.data.intro.data) {
+                setIntros(resp.data.intro.data);
+            } else {
+                setErrorMsg("Invalid data structure: " + JSON.stringify(resp.data).substring(0, 100));
+            }
             setloading(false);
         }).catch((_err) => {
             console.error("error", _err);
+            setErrorMsg("Fetch failed: " + _err.message);
             setloading(false);
         });
     }
@@ -42,8 +55,21 @@ export default function IntroVideos(props) {
     }, []);
 
     useEffect(()=>{
-      !loading && fetch_videos();
+      fetch_videos();
     },[order, gender]);
+
+    useEffect(() => {
+        if (intros && intros.length > 0) {
+            if (showAll) {
+                setDisplayedIntros(intros);
+            } else {
+                const shuffled = [...intros].sort(() => 0.5 - Math.random());
+                setDisplayedIntros(shuffled.slice(0, 9));
+            }
+        } else {
+            setDisplayedIntros([]);
+        }
+    }, [intros, showAll]);
 
     const Switch = () => {
         return <div className='flex mb-3 sm:mb-0 items-center gap-2' >
@@ -52,40 +78,72 @@ export default function IntroVideos(props) {
     </div>
     }
 
-    const ProfileIntro = ({ data, text}) => {
+    const ProfileIntro = ({ data, text, poster }) => {
     return <>
       <Popup space="0" size="md"  classes={`w-full h-full`}
         text={text} >
             <div className='video-payer-pop' >
-              <video playsInline='false'  controlsList='nodownload' autoPlay   controls src={data && data.perma_link} />
+              <video playsInline='false' poster={poster} controlsList='nodownload' autoPlay controls src={data && data.perma_link} />
             </div>
         </Popup>
       </>
     }
 
-
     const Intro = ({w}) => {
+      const [imgLoaded, setImgLoaded] = useState(false);
+      const [videoError, setVideoError] = useState(false);
       const verified = w && w.user && ((w.user.role === 1) && (w.user.profile_status_lock === 2));
-      return  <div className="relative rounded-[30px]  h-[250px] md:h-[270px] overflow-hidden border border-pink-200 bg-black group"> 
-        <ProfileIntro data={w}  text={
+      const poster = (w && w?.poster_url && w.poster_url !== false) ? w.poster_url : (w && w?.user && w?.user?.avatar_url) || userphoto;
+      const introVideo = w && w?.perma_link ? w.perma_link : null;
+
+      const handlePreviewTimeUpdate = (e) => {
+        const v = e.currentTarget;
+        if (v.currentTime >= 3) {
+          v.pause();
+        }
+      };
+
+      return  <div className="relative rounded-[30px]   h-[230px] md:h-[230px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
+        <ProfileIntro data={w} poster={poster} text={
           <>
-            <div className="h-full relative">
-              <LazyLoadImage
-                alt={"image"}
-                effect="blur"
-                height={360}
-                src={(w && w?.poster_url) || (w && w?.user && w?.user?.avatar_url) || userphoto}
-                className="w-full !h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                width={260}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70"></div>
-              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-[30px] ">
+            <div className="h-full relative bg-gray-200">
+              {!videoError && introVideo ? (
+                <video
+                  muted
+                  playsInline
+                  autoPlay
+                  preload="metadata"
+                  poster={poster}
+                  src={introVideo}
+                  onLoadedData={() => setImgLoaded(true)}
+                  onTimeUpdate={handlePreviewTimeUpdate}
+                  onError={() => {
+                    setVideoError(true);
+                    setImgLoaded(true);
+                  }}
+                  className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
+                />
+              ) : (
+                <img
+                  alt={"image"}
+                  height={360}
+                  src={poster}
+                  onLoad={() => setImgLoaded(true)}
+                  className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  width={260}
+                />
+              )}
+              {!imgLoaded && (
+                  <div className="absolute inset-0 bg-gray-300 animate-pulse z-10" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70 z-20"></div>
+              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-[30px]  z-30">
                 Intro Video
               </div>
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center z-30">
                 <div className="transform transition-transform duration-300 group-hover:scale-105">
                   <svg className="h-10 w-10" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="32" cy="32" r="32" fill="#F94F97"/>
+                    <circle cx="32" cy="32" r="32" fill="#FF007F"/>
                     <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
                   </svg>
                 </div>
@@ -93,9 +151,9 @@ export default function IntroVideos(props) {
             </div>
           </>
         } />
-        <div className="absolute bottom-0 left-0 w-full p-3 md:p-4 z-[99] text-white">
+        <div className="absolute bottom-0 left-0 w-full p-3 md:p-4 z-30 text-white pointer-events-none">
           {w && w.user && w.user.username ? (
-            <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)} className="block">
+            <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)} className="block pointer-events-auto">
               <p className="text-base !line-clamp-1 md:text-lg font-GillSans uppercase mb-0 flex items-center gap-2">
                 {w.user.name}
                 {/* {verified ? <RiVerifiedBadgeFill size={'1rem'} className="text-pink" /> : ''} */}
@@ -126,16 +184,33 @@ export default function IntroVideos(props) {
         </div>
 
         <div className='' >
+          {errorMsg && <div className="text-red-500 bg-red-100 p-4 rounded mb-4">{errorMsg}</div>}
           {loading ?
-          <div className='w-full flex justify-center' ><LoadingScreen /></div>
+          <div className='w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
+              {Array(9).fill(0).map((_, i) => (
+                  <div key={`intro-skeleton-${i}`} className="h-[230px] md:h-[270px] bg-gray-200/40 animate-ping border-2 border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+              ))}
+          </div>
           :
           <>
-            {intros && intros.length ?
-            <div className=' w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2'>
-                {intros.map((w, i)=> (
-                    <Intro w={w} />
-                ))}
-            </div>
+            {displayedIntros && displayedIntros.length ?
+            <>
+                <div className=' w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
+                    {displayedIntros.map((w, i)=> (
+                        <Intro key={i} w={w} />
+                    ))}
+                </div>
+                {!showAll && intros && intros.length > 9 && (
+                    <div className="mt-8 flex justify-center">
+                        <button 
+                            onClick={onSeeMore}
+                            className="bg-white border-2 border-black text-black hover:bg-black hover:text-white px-8 py-3 rounded-full font-bold text-sm md:text-base uppercase tracking-wider transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+                        >
+                            See More
+                        </button>
+                    </div>
+                )}
+            </>
             : <div className='my-5' >
               {/* <Nocontent text={'New Creators are on their way! Start exploring now!'} /> */}
             </div> }

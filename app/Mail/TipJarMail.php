@@ -15,15 +15,17 @@ class TipJarMail extends Mailable
 
     public $tip;
     public $symbol;
+    public $net_amount;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($tip,$symbol)
+    public function __construct($tip, $symbol, $net_amount = null)
     {
         $this->tip = $tip;
         $this->symbol = $symbol;
+        $this->net_amount = $net_amount;
     }
 
     /**
@@ -36,7 +38,7 @@ class TipJarMail extends Mailable
         try {
             $subject = 'You’ve just received a tip for your tip jar on Spenny Piggy.';
             return $this->view('email.tip-recieved')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

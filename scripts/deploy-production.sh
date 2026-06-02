@@ -59,9 +59,18 @@ npm run build
 
 # 5. Optimize Laravel for production
 log_info "Optimizing Laravel..."
-php artisan config:cache
-php artisan view:cache
-php artisan route:cache
+if [ -w "bootstrap/cache" ]; then
+    php artisan config:cache
+    php artisan route:cache
+else
+    log_warning "bootstrap/cache is not writable (read-only filesystem). Skipping config:cache and route:cache."
+fi
+
+if [ -w "storage/framework" ]; then
+    php artisan view:cache
+else
+    log_warning "storage/framework is not writable (read-only filesystem). Skipping view:cache."
+fi
 
 # 6. Run database migrations (if needed)
 if [ "$1" = "--migrate" ]; then
@@ -75,8 +84,18 @@ php artisan storage:link
 
 # 8. Fix file permissions
 log_info "Setting correct file permissions..."
-chmod -R 755 storage bootstrap/cache
-chmod -R 775 storage/logs storage/framework
+if [ -w "storage" ]; then
+    chmod -R 755 storage
+    chmod -R 775 storage/logs storage/framework
+else
+    log_warning "storage is not writable. Skipping chmod on storage paths."
+fi
+
+if [ -w "bootstrap/cache" ]; then
+    chmod -R 755 bootstrap/cache
+else
+    log_warning "bootstrap/cache is not writable. Skipping chmod on bootstrap/cache."
+fi
 
 # 9. Deploy to Laravel Vapor (if configured)
 if command -v vapor &> /dev/null; then

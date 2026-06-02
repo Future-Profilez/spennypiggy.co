@@ -9,7 +9,7 @@ export default function CategoryLeaders() {
     const { formatMultiPrice } = PriceFormat();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('tips');
+    const [activeTab, setActiveTab] = useState('wishes');
     const [data, setData] = useState({
         wishes: [],
         subscriptions: [],
@@ -40,8 +40,8 @@ export default function CategoryLeaders() {
     }, []);
 
     const categories = [
+        { key: 'wishes', label: 'Wishes', icon: RiHeartLine, color: 'text-[#FF007F]' },
         { key: 'tips', label: 'Supports', icon: RiStarLine, color: 'text-yellow-600' },
-        { key: 'wishes', label: 'Wishes', icon: RiHeartLine, color: 'text-pink-600' },
         // { key: 'subscriptions', label: 'Subscriptions', icon: RiGroupLine, color: 'text-purple-600' },
         { key: 'memberships', label: 'Memberships', icon: RiBankCardLine, color: 'text-blue-600' },
         { key: 'bills', label: 'Bills', icon: RiBankCardLine, color: 'text-green-600' },
@@ -49,7 +49,7 @@ export default function CategoryLeaders() {
     ];
 
     const CategoryItem = ({ creator, rank }) => (
-        <div className="animate-fading category-item relative bg-white rounded-[30px]  p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="animate-fading category-item relative bg-white rounded-[30px]   p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
                 <div className="flex items-center ">
                     <div className="absolute top-2 left-2 z-10 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
@@ -79,7 +79,7 @@ export default function CategoryLeaders() {
                         </>
                     ) : (
                         <>
-                            <p className="font-bold text-lg">{formatMultiPrice(creator.total_amount, creator.currency || 'USD')}</p>
+                            <p className="font-bold text-lg">{formatMultiPrice(creator.total_amount, creator.currency || 'GBP')}</p>
                             <p className="text-sm text-gray-600">Last 3 months</p>
                             <p className="text-xs text-gray-500">{creator.total_count || creator.supporters_count || 0} {creator.supporters_count ? 'supporters' : 'transactions'}</p>
                         </>
@@ -101,8 +101,8 @@ export default function CategoryLeaders() {
 
     if (loading) {
         return (
-            <div className="animate-fading bg-gray-100 rounded-[30px]  p-4 mb-6 flex justify-center items-center min-h-[400px]">
-                <svg className="animate-spin h-8 w-8 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <div className="animate-fading bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center min-h-[400px]">
+                <svg className="animate-spin h-8 w-8 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -113,7 +113,7 @@ export default function CategoryLeaders() {
 
     if (error) {
         return (
-            <div className="animate-fading bg-gray-100 rounded-[30px]  p-4 mb-6 text-center">
+            <div className="animate-fading bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -131,7 +131,7 @@ export default function CategoryLeaders() {
     const currentData = data[activeTab] || [];
 
     return (
-        <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 mt-6">
+        <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 mt-6">
             <h2 className="animate-fading font-GillSans text-2xl uppercase text-gray-900 text-left mb-2">🏆 Category Leaders Creators</h2>
             <p className="animate-fading text-gray-500 mb-6 ">Top performers in each category</p>
 
@@ -144,7 +144,7 @@ export default function CategoryLeaders() {
                             <button
                                 key={category.key}
                                 onClick={() => setActiveTab(category.key)}
-                                className={`animate-fading category-tab flex items-center space-x-2 px-4 py-2 rounded-[30px]   font-medium transition-all ${
+                                className={`animate-fading category-tab flex items-center space-x-2 px-4 py-2 rounded-[30px]    font-medium transition-all ${
                                     activeTab === category.key
                                         ? 'bg-white shadow-md text-gray-900'
                                         : 'text-gray-600 hover:bg-white/50'
@@ -182,44 +182,6 @@ export default function CategoryLeaders() {
                     <EmptyState category={currentCategory?.label || 'Category'} />
                 )}
             </div>
-
-            {/* Category Stats */}
-            {currentData.length > 0 && (''
-                // <div className="mt-6 pt-6 border-t border-gray-200">
-                //     <div className="grid grid-cols-3 gap-4 text-center">
-                //         <div>
-                //             <p className="text-2xl font-bold text-gray-900">
-                //                 {/* Show engagement total if available, otherwise monetary */}
-                //                 {currentData.some(creator => creator.engagement_score) ? (
-                //                     currentData.reduce((sum, creator) => sum + (creator.engagement_score || 0), 0)
-                //                 ) : (
-                //                     formatMultiPrice(
-                //                         currentData.reduce((sum, creator) => sum + creator.total_amount, 0),
-                //                         'USD'
-                //                     )
-                //                 )}
-                //             </p>
-                //             <p className="text-sm text-gray-600">{currentData.some(creator => creator.engagement_score) ? 'Total Engagement' : 'Total Volume'}</p>
-                //         </div>
-                //         <div>
-                //             <p className="text-2xl font-bold text-gray-900">
-                //                 {currentData.reduce((sum, creator) => sum + creator.total_count, 0)}
-                //             </p>
-                //             <p className="text-sm text-gray-600">Total Transactions</p>
-                //         </div>
-                //         <div>
-                //             <p className="text-2xl font-bold text-gray-900">
-                //                 {/* Show average engagement if available, otherwise monetary */}
-                //                 {currentData.some(creator => creator.engagement_score) ? (
-                //                     Math.round( currentData.length > 0  ? currentData.reduce((sum, creator) => sum + (creator.engagement_score || 0), 0) / currentData.length: 0)
-                //                 ) : (
-                //                     formatMultiPrice(currentData.length > 0  ? currentData.reduce((sum, creator) => sum + creator.total_amount, 0) / currentData.length : 0,'USD'))}
-                //             </p>
-                //             <p className="text-sm text-gray-600">Average per Creator</p>
-                //         </div>
-                //     </div>
-                // </div>
-            )}
         </div>
     );
 }

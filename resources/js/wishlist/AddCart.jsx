@@ -10,43 +10,13 @@ import { trackSearchClick } from "@/includes/Analytics";
 
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;
-    const { auth, card_capabilities } = usePage().props;
+    const { auth, card_capabilities, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const { usdtogbp, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+    const { usdtogbp, formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
 
     const gbpprice = usdtogbp(item.price, "GBP");
-
-    // Helper to identify zero decimal currencies
-    const isZeroDecimalCurrency = (curr) => {
-        const zeroDecimalCurrencies = [
-            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
-            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
-        ];
-        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
-    };
-
-    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr) => {
-        const listedPrice = parseFloat(price || 0);
-        const isZeroDecimal = isZeroDecimalCurrency(curr);
-        
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
-        const adminFee = adminFeeInCurrency(curr); 
-
-        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-        
-        if (totalDeductionRate >= 1) return listedPrice;
-
-        const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        
-        return totalSupporterPays;
-    };
 
     const isCreator = auth?.user?.id === item?.user_id;
 
@@ -107,12 +77,15 @@ export default function AddCart(props) {
                                 <div className="flex flex-col items-center">
                                     <span>
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(item.price, item?.currency || 'USD'), 
+                                            calculateTotalSupporterPays(
+                                                (parseFloat(item.price || 0) * (1 + (item?.user?.vat_amount_percentage || 0) / 100)), 
+                                                item?.currency || 'USD'
+                                            ).total_supporter_pays, 
                                             item?.currency || 'USD'
                                         )}
                                     </span>
                                     <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                                        * Includes all applicable fees. You will be charged in {item?.currency || 'USD'}.
+                                        *Includes platform and payment processing fees. You will be charged in {item?.currency || 'USD'}.
                                     </span>
                                 </div>
                             )}
@@ -132,11 +105,11 @@ export default function AddCart(props) {
                                 onChange={(e) => setcartamount(e.target.value)}
                                 placeholder={`Eg. 50`}
                                 type="number"
-                                className="block w-full rounded-[30px]  border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
+                                className="block w-full rounded-[30px]   border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
                             />
                         </div>
                         <p className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                            * Includes all fees. You will be charged in {item?.currency || 'USD'}. Amounts shown in {currency || 'GBP'} are estimates.
+                            *Includes platform and payment processing fees. You will be charged in {item?.currency || 'USD'}. Amounts shown in {currency || 'GBP'} are estimates.
                         </p>
                         <div className="crowd pt-2 mb-4">
                             <CustomProgressBar
@@ -168,7 +141,7 @@ export default function AddCart(props) {
                     <>
                     <div className=" pb-2">
                         {card_capabilities === false ? (
-                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-[30px] ">
+                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-[30px]  ">
                                 <div className="flex">
                                     <div className="flex-shrink-0">
                                         <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -273,7 +246,7 @@ export default function AddCart(props) {
                             isEqual={item.price <= item.fullfill_amount}
                             is_cart={is_cart}
                             text={`Add To Cart And Keep Shopping`}
-                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink btn-shadow shadow-[4px_4px_0px_0px_#FF007F]lack !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                         <ToCart
@@ -289,7 +262,7 @@ export default function AddCart(props) {
                             is_cart={is_cart}
                             text={`Add To Cart And Checkout`}
                             checkoutbtn={true}
-                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink btn-shadow shadow-[4px_4px_0px_0px_#FF007F]lack !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                     </div>

@@ -10,10 +10,14 @@ export default function ShareProfile(props) {
         const width = window && window.innerWidth;
         const currentURL = custom ? custom : window.location.href;
 
-        if (navigator) {
-            navigator && navigator?.share({
+        if (navigator?.share) {
+            navigator.share({
                     url: currentURL,
                     title: username ? username : "Spenny Piggy",
+                }).catch((error) => {
+                    // User cancellation is expected; don't throw noisy unhandled promise errors.
+                    if (error?.name === "AbortError") return;
+                    console.error("Share failed:", error);
                 });
         } else {
             navigator.clipboard.writeText(currentURL);

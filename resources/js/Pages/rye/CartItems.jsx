@@ -6,15 +6,17 @@ import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import { Link, usePage } from "@inertiajs/react";
 import Turnstile from "@/Components/Turnstile";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import AllCountries from '../../includes/AllCountries';
 
 export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     const { turnstileSiteKey } = usePage().props;
     const turnstileRef = useRef(null);
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [totalPrice, setTotalPrice] = useState(0);
     const [isChecked, setIsChecked] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
     const [checking, setChecking] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
@@ -135,15 +137,18 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     }, [datatoMap]); // Recalculate whenever datatoMap changes
 
     const calculateTotalPrice = () => {
-        let newTotalPrice = 0;
-        if (datatoMap) {
-            // Check if datatoMap is not null or undefined
+        let baseTotal = 0;
+        let currency = 'USD';
+        if (datatoMap && datatoMap.length > 0) {
+            currency = datatoMap[0]?.product?.price?.currency || 'USD';
             datatoMap.forEach((item) => {
-                newTotalPrice +=
-                    (item.product.price.value / 100) * item.quantity; // Correct price calculation
+                baseTotal += (item.product.price.value / 100) * item.quantity;
             });
         }
-        setTotalPrice(newTotalPrice);
+        
+        // Rye items are grossed up as a batch in the backend
+        const breakdown = calculateTotalSupporterPays(baseTotal, currency);
+        setTotalPrice(breakdown.total_supporter_pays);
     };
 
     const removeItem = async (productId) => {
@@ -220,6 +225,10 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                 errorAlert("Please verify the captcha");
                 return false;
             }
+            if (!digitalWaiver) {
+                errorAlert("Please accept the digital waiver");
+                return false;
+            }
             const response = await axios.post(
                 route("handle.rye.product.payment"),
                 {
@@ -227,6 +236,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                     creator_id: cartsItems?.creator?.id,
                     is_anonymous: isAnonymous,
                     cf_turnstile_response: captchaToken || "",
+                    digital_waiver: digitalWaiver,
                 }
             );
             if (response?.data?.status === true) {
@@ -255,7 +265,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
     return (
         <div className={`px-2`}>
-            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-[30px]  ">
+            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-[4px_4px_0px_0px_#FF007F]ink border-pink rounded-[30px]   ">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Your Basket for {cartsItems?.creator?.name || ""}
@@ -277,7 +287,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                             datatoMap?.map((c, i) => {
                                 return (
                                     <div
-                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-violet-600 shadow-violet rounded-[30px] 
+                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-violet-600 shadow-violet rounded-[30px]  
                                         mb-3 md:mb-4 md:ml-5 p-3 md:p-4`}
                                     >
                                         <div className="prodcartbox items-center">
@@ -408,7 +418,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                 )}
                                 <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                     ?
-                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px]  top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px]   top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
                                         <strong className="text-white font-normal">
                                             Card Payments:
                                         </strong>{" "}
@@ -467,7 +477,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="mb-3">
                                         <p className='mb-1'>Name</p>
                                         <input required disabled={auth && auth.user?.name ? true : false}
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             defaultValue={auth && auth.user?.name}
                                             // onChange={(e) => setName(e.target.value)}
                                             type="text" placeholder="Enter name.. " />
@@ -475,7 +485,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="form-field mb-3 ">
                                         <p className='mb-1'>Email</p>
                                         <input required  disabled={auth && auth.user?.email ? true : false}
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             defaultValue={auth && auth.user?.email}
                                             // onChange={(e) => setEmail(e.target.value)}
                                             type="email" placeholder="Enter email.. " />
@@ -495,9 +505,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         </label>
                                         <p className='text-[12px] text-gray-500 mt-1'>Your name will not be shown to the recipient if checked.</p>
                                     </div>
+
+
                                     {/* <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
-                                        <select required className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] " name="country"
+                                        <select required className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  " name="country"
                                         onChange={handleChange}
                                         >
                                             <option value={''} >Choose Country</option>
@@ -535,97 +547,10 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         </div>
                                     </div> */}
                                     {/* Form fields ends here */}
-                                    <label
-                                        htmlFor="agreeterms"
-                                        className="text-left"
-                                    >
-                                        <input
-                                            onChange={(e) =>
-                                                setIsChecked(e.target.checked)
-                                            }
-                                            type="checkbox"
-                                            id="agreeterms"
-                                            name="agreeterm"
-                                            className="mr-2"
-                                            value="agreeterm"
-                                        ></input>
-                                        I understand I am paying the creator
-                                        directly and I agree to the{" "}
-                                        <Link
-                                            target="_blank"
-                                            className="text-voilet"
-                                            href={route("terms-and-conditions")}
-                                        >
-                                            Terms of Service
-                                        </Link>{" "}
-                                        and{" "}
-                                        <a
-                                            className="text-voilet"
-                                            target="_blank"
-                                            href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                        >
-                                            {" "}
-                                            Privacy Policy{" "}
-                                        </a>{" "}
-                                        and the following statements:
-                                    </label>
-                                    <div className="tearmlist pl-3">
-                                        <ul className="pl-0">
-                                            <li>
-                                                {" "}
-                                                For gift items, I understand I am
-                                                making a non-refundable purchase
-                                                that provides items to my preferred creator
-                                                . This payment is a one time payment and will
-                                                 be non refundable under any circumstances.
-                                            </li>
-                                            {/* <li>
-                                                {" "}
-                                                I understand that for wishes or
-                                                support payments I am making a
-                                                non-refundable gift of support
-                                                and understand in exchange i
-                                                will recieve a supporter
-                                                membership or exclusive content
-                                                reward.{" "}
-                                            </li> */}
-                                            <li>
-                                                I understand that all Profile
-                                                shop purchases are non
-                                                refundable and I have taken all
-                                                necessary steps to understand
-                                                what I am purchasing
-                                            </li>
-                                            <li>
-                                                I have taken the necessary steps
-                                                to confirm the account owner is
-                                                authentic and I understand that
-                                                Spenny Piggy will not be held
-                                                responsible for any issues
-                                                arising from a catfishing
-                                                situation.
-                                            </li>
-                                            <li>
-                                                I understand that by violating
-                                                these terms I may be subject to
-                                                legal action or can fall a
-                                                victim of scams.
-                                            </li>
-                                            <li>
-                                                I understand that by checking
-                                                the box above and then clicking
-                                                "CHECKOUT", I will have created
-                                                a legally binding e-signature to
-                                                this agreement.
-                                            </li>
-                                            <li>
-                                                By providing an e-mail, you
-                                                confirm that you are happy to
-                                                receive marketing updates. You
-                                                can opt out at anytime.
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    <CheckoutLegalTerms onAgreeChange={(checked) => {
+                                        setIsChecked(checked);
+                                        setDigitalWaiver(checked);
+                                    }} />
                                 </li>
                             </ul>
 
@@ -648,9 +573,9 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                 </button>
                                 <button
                                     type="button"
-                                    disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken)}
+                                    disabled={!isChecked || !digitalWaiver || checking || (turnstileSiteKey && !captchaToken)}
                                     onClick={handleSubmit}
-                                    className={`${isChecked && !(turnstileSiteKey && !captchaToken) && !checking ? "" : "disabled"} btn-pink md mt-3 text-center`} >
+                                    className={`${isChecked && digitalWaiver && !(turnstileSiteKey && !captchaToken) && !checking ? "" : "disabled"} btn-pink md mt-3 text-center`} >
                                     {checking ? "Wait.." : "Checkout"}{" "}
                                 </button>
                             </div>

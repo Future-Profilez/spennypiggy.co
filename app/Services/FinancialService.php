@@ -8,6 +8,7 @@ use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorExpense;
 use App\Models\Currency;
 use App\Models\UkTaxSetting;
+use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -44,7 +45,25 @@ class FinancialService
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency']);
+            ->with('source')
+            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status', 'source_type', 'source_id']);
+
+        // Fetch Reserves and Review Holds from PayoutService
+        $payoutService = app(\App\Services\Risk\PayoutService::class);
+        $reserves = $payoutService->getHeldReserves($user->uuid);
+        
+        // getHeldReserves returns totals in major units (GBP)
+        // Note: includes both executed payout-run reserves and pending (unreleased) reserves.
+        $heldReservesAmount = (float) ($reserves['total_held'] ?? 0);
+
+        // Review Holds and Disputed payments
+        $reviewHoldsAmount = \App\Models\Payment::where('creator_id', $user->uuid)
+            ->where('status', 'review_hold')
+            ->sum('amount');
+            
+        $disputesAmount = \App\Models\Payment::where('creator_id', $user->uuid)
+            ->where('status', 'disputed')
+            ->sum('amount');
 
         $grossDisplay = 0;
         $feesDisplay = 0;
@@ -55,6 +74,7 @@ class FinancialService
         $feesGbp = 0;
         $vatGbp = 0;
         $netGbp = 0;
+        $reservesHeldGbp = 0;
 
         $expensesCollection = CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$startDate, $endDate])
@@ -102,19 +122,60 @@ class FinancialService
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
-        foreach ($incomeTx as $tx) {
-            $from = strtoupper($tx->currency ?? 'GBP');
-            $creatorEarned = (float) ($tx->net_amount ?? 0);
-            $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
-            $vat = (float) ($tx->vat_amount ?? 0);
-            $net = $creatorEarned;
+        $netDisplay = 0;
+        $reservesHeldDisplay = 0;
 
-            $grossDisplay += $from === $displayCurrency ? $creatorEarned : ($convert($from, $creatorEarned, $displayCurrency) ?? $creatorEarned);
+        // Collect Shop IDs to fetch shipping amounts
+        $shopPaymentIds = $incomeTx->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
+        $shopShippingAmounts = [];
+        if (!empty($shopPaymentIds)) {
+            $shopShippingAmounts = \App\Models\ShopPayment::whereIn('id', $shopPaymentIds)
+                ->pluck('shipping_amount', 'id')
+                ->toArray();
+        }
+
+        foreach ($incomeTx as $tx) {
+            // Task Completion Logic: Only count toward Gross/Net if completed
+            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source->status)) {
+                if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    continue;
+                }
+            }
+
+            // Shop Completion Logic: Only count toward Gross/Net if delivered (for physical items)
+            if ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source->shop)) {
+                if ($tx->source->shop->type === 'physical') {
+                    $deliverable = \App\Models\Deliverable::where('session_id', $tx->source->session_id)->first();
+                    if (!$deliverable || $deliverable->status !== 'delivered') {
+                        continue;
+                    }
+                }
+            }
+
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $net = (float) ($tx->net_amount ?? 0);
+            $vat = (float) ($tx->vat_amount ?? 0);
+            $reserve = (float) ($tx->reserve_amount ?? 0);
+            
+            // Creator's Gross = Net (Price + Shipping) + VAT
+            // Note: net_amount for Shop already includes shipping_amount
+            $gross = $net + $vat; 
+            
+            $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
+
+            $grossDisplay += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
             $feesDisplay += $from === $displayCurrency ? $fees : ($convert($from, $fees, $displayCurrency) ?? $fees);
             $vatDisplay += $from === $displayCurrency ? $vat : ($convert($from, $vat, $displayCurrency) ?? $vat);
+            
+            // Net for Profit calculation
             $netDisplay += $from === $displayCurrency ? $net : ($convert($from, $net, $displayCurrency) ?? $net);
 
-            $grossGbp += $from === 'GBP' ? $creatorEarned : ($convert($from, $creatorEarned, 'GBP') ?? $creatorEarned);
+            if ($tx->reserve_status === 'held') {
+                $reservesHeldDisplay += $from === $displayCurrency ? $reserve : ($convert($from, $reserve, $displayCurrency) ?? $reserve);
+                $reservesHeldGbp += $from === 'GBP' ? $reserve : ($convert($from, $reserve, 'GBP') ?? $reserve);
+            }
+
+            $grossGbp += $from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross);
             $feesGbp += $from === 'GBP' ? $fees : ($convert($from, $fees, 'GBP') ?? $fees);
             $vatGbp += $from === 'GBP' ? $vat : ($convert($from, $vat, 'GBP') ?? $vat);
             $netGbp += $from === 'GBP' ? $net : ($convert($from, $net, 'GBP') ?? $net);
@@ -129,6 +190,113 @@ class FinancialService
             $expensesGbp += $from === 'GBP' ? $amount : ($convert($from, $amount, 'GBP') ?? $amount);
         }
 
+        // Convert reserves and review holds to display currency
+        $heldReservesDisplay = $convert('GBP', $heldReservesAmount, $displayCurrency) ?? ($heldReservesAmount);
+        $reviewHoldsDisplay = $convert('GBP', $reviewHoldsAmount / 100, $displayCurrency) ?? ($reviewHoldsAmount / 100);
+        $disputesDisplay = $convert('GBP', $disputesAmount / 100, $displayCurrency) ?? ($disputesAmount / 100);
+
+        // Calculate Expected Next Payout using PayoutService directly
+        $payoutData = $payoutService->calculatePayouts();
+        $payoutInfo = $payoutData['payouts'][$user->uuid] ?? null;
+        $netPayoutMinor = $payoutInfo['net_payout'] ?? 0;
+        $netPayoutMajor = $netPayoutMinor / 100;
+        
+        // Use user's default currency directly for payoutable calculation
+        $payoutCurrency = strtoupper($payoutInfo['currency'] ?? $user->default_currency ?? 'GBP');
+        
+        // Payoutable display should just format the major amount based on the payout currency (since the payout engine computes in the creator's currency)
+        $payoutableDisplay = $payoutCurrency === $displayCurrency ? $netPayoutMajor : ($convert($payoutCurrency, $netPayoutMajor, $displayCurrency) ?? $netPayoutMajor);
+
+        $pendingAmountMinor = $payoutInfo['pending_amount'] ?? 0;
+        $pendingAmountMajor = $pendingAmountMinor / 100;
+        $pendingDisplay = $payoutCurrency === $displayCurrency ? $pendingAmountMajor : ($convert($payoutCurrency, $pendingAmountMajor, $displayCurrency) ?? $pendingAmountMajor);
+
+        $clearingDisplay = 0;
+        $clearingGbp = 0;
+        try {
+            $runDate = Carbon::now()->endOfDay();
+            $cutoff = $runDate->copy()->subDays(7);
+
+            $unclearedPayments = Payment::where('creator_id', $user->uuid)
+                ->where('status', 'succeeded')
+                ->whereNull('payout_run_id')
+                ->where('created_at', '>', $cutoff)
+                ->orderByDesc('created_at')
+                ->get();
+
+            $holdIntentIds = Payment::where('creator_id', $user->uuid)
+                ->whereNull('payout_run_id')
+                ->whereIn('status', ['review_hold', 'disputed'])
+                ->whereNotNull('stripe_payment_intent_id')
+                ->pluck('stripe_payment_intent_id')
+                ->toArray();
+            if (!empty($holdIntentIds)) {
+                $unclearedPayments = $unclearedPayments
+                    ->reject(fn ($p) => $p->stripe_payment_intent_id && in_array($p->stripe_payment_intent_id, $holdIntentIds, true))
+                    ->values();
+            }
+
+            $unclearedPayments = $unclearedPayments
+                ->sortByDesc(function ($p) {
+                    $score = 0;
+                    if ($p->stripe_session_id) $score += 2;
+                    if ($p->stripe_payment_intent_id) $score += 1;
+                    return $score;
+                })
+                ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
+                ->values();
+
+            foreach ($unclearedPayments as $p) {
+                $fts = $payoutService->getAllFinancialTransactionsForPayment($p);
+                foreach ($fts as $ft) {
+                    $from = strtoupper($ft->currency ?? 'GBP');
+                    $net = (float) ($ft->net_amount ?? 0);
+                    $clearingDisplay += $from === $displayCurrency ? $net : \App\Helpers::priceFormat($from, $net, $displayCurrency);
+                    $clearingGbp += $from === 'GBP' ? $net : \App\Helpers::priceFormat($from, $net, 'GBP');
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        $payoutPreview = null;
+        if ($payoutInfo) {
+            $netEarningsMajor = ((int) ($payoutInfo['net_earnings'] ?? 0)) / 100;
+            $reserveHeldMajor = ((int) ($payoutInfo['reserve_amount'] ?? 0)) / 100;
+            $reserveReleaseMajor = ((int) ($payoutInfo['reserve_release_amount'] ?? 0)) / 100;
+            $refundDisputeMajor = ((int) ($payoutInfo['refund_dispute_amount'] ?? 0)) / 100;
+            $reviewHoldMajor = ((int) ($payoutInfo['review_hold_amount'] ?? 0)) / 100;
+            $negativeBeforeMajor = ((int) ($payoutInfo['negative_balance_before'] ?? 0)) / 100;
+            $negativeAfterMajor = ((int) ($payoutInfo['negative_balance_after'] ?? 0)) / 100;
+
+            $payoutPreview = [
+                'run_date' => $payoutData['run_date'] ?? null,
+                'state' => $payoutInfo['state'] ?? null,
+                'cutoff_date' => $payoutInfo['cutoff_date'] ?? null,
+                'payment_count' => (int) ($payoutInfo['payment_count'] ?? 0),
+                'is_below_threshold' => (bool) ($payoutInfo['is_below_threshold'] ?? false),
+
+                'net_earnings' => $payoutCurrency === $displayCurrency ? $netEarningsMajor : ($convert($payoutCurrency, $netEarningsMajor, $displayCurrency) ?? $netEarningsMajor),
+                'reserve_held' => $payoutCurrency === $displayCurrency ? $reserveHeldMajor : ($convert($payoutCurrency, $reserveHeldMajor, $displayCurrency) ?? $reserveHeldMajor),
+                'reserve_released' => $payoutCurrency === $displayCurrency ? $reserveReleaseMajor : ($convert($payoutCurrency, $reserveReleaseMajor, $displayCurrency) ?? $reserveReleaseMajor),
+                'refund_disputes' => $payoutCurrency === $displayCurrency ? $refundDisputeMajor : ($convert($payoutCurrency, $refundDisputeMajor, $displayCurrency) ?? $refundDisputeMajor),
+                'review_holds' => $payoutCurrency === $displayCurrency ? $reviewHoldMajor : ($convert($payoutCurrency, $reviewHoldMajor, $displayCurrency) ?? $reviewHoldMajor),
+                'pending' => $pendingDisplay,
+                'negative_balance_before' => $payoutCurrency === $displayCurrency ? $negativeBeforeMajor : ($convert($payoutCurrency, $negativeBeforeMajor, $displayCurrency) ?? $negativeBeforeMajor),
+                'negative_balance_after' => $payoutCurrency === $displayCurrency ? $negativeAfterMajor : ($convert($payoutCurrency, $negativeAfterMajor, $displayCurrency) ?? $negativeAfterMajor),
+
+                'net_payout' => $payoutableDisplay,
+            ];
+        }
+
+        // Calculate if there's a difference between current tax year earnings and total payoutable balance
+        // The payoutable balance includes EVERYTHING. If it's higher than the current period's payoutable net (Net - Reserves), 
+        // it means there's carry-over from previous periods.
+        $currentPeriodPayoutable = $netDisplay - $reservesHeldDisplay;
+        $carryOverDisplay = 0;
+        if ($payoutableDisplay > $currentPeriodPayoutable) {
+            $carryOverDisplay = $payoutableDisplay - $currentPeriodPayoutable;
+        }
+
         return [
             'currency' => $displayCurrency,
             'gross_income' => $grossDisplay,
@@ -137,6 +305,15 @@ class FinancialService
             'net_income' => $netDisplay,
             'expenses' => $expensesDisplay,
             'profit' => $netDisplay - $expensesDisplay,
+            'held_reserves' => $heldReservesDisplay,
+            'review_holds' => $reviewHoldsDisplay,
+            'disputes' => $disputesDisplay,
+            'payoutable_balance' => $payoutableDisplay,
+            'pending_balance' => $pendingDisplay,
+            'clearing_balance' => $clearingDisplay,
+            'carry_over_amount' => $carryOverDisplay,
+            'has_adjustment' => ($payoutInfo['refund_dispute_amount'] ?? 0) > 0,
+            'payout_preview' => $payoutPreview,
 
             'gross_income_gbp' => $grossGbp,
             'fees_gbp' => $feesGbp,
@@ -144,6 +321,11 @@ class FinancialService
             'net_income_gbp' => $netGbp,
             'expenses_gbp' => $expensesGbp,
             'profit_gbp' => $netGbp - $expensesGbp,
+            'held_reserves_gbp' => $heldReservesAmount,
+            'pending_balance_gbp' => $pendingAmountMajor,
+            'clearing_balance_gbp' => $clearingGbp,
+            'review_holds_gbp' => $reviewHoldsAmount / 100,
+            'disputes_gbp' => $disputesAmount / 100,
         ];
     }
 

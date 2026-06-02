@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class StripePaymentItems extends Model
 {
@@ -16,12 +17,23 @@ class StripePaymentItems extends Model
 
     protected $dates = ['deleted_at'];
 
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+    }
+
     protected $fillable = [
         'uuid',
         'stripe_payment_detail_id',
         'wish_item_id',
         'user_cart_id',
         'amount',
+        'total_paid',
         'message_media',
         'media_type',
         'thank_you_approved',

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import LoadingScreen from '@/includes/LoadingScreen';
 import Nocontent from '@/includes/Nocontent';
@@ -7,7 +7,10 @@ import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
 import { FaTwitter } from 'react-icons/fa';
 import Modal from '@/Components/Modal';
+import Popup from '@/Components/Popup';
+import SupportModal from './SupportModal';
 import { router } from '@inertiajs/react';
+import { ChevronLeft, Calendar, FileText, ExternalLink, Filter } from 'lucide-react';
 
 export default function Transactions(props) {
   const { auth, initial, display_currency, spend_summary } = props || {};
@@ -18,6 +21,10 @@ export default function Transactions(props) {
   const [direction, setDirection] = useState('all'); // all | received | sent
   const [query, setQuery] = useState('');
   const [twitterModal, setTwitterModal] = useState({ show: false, event: null });
+  const [supportModalState, setSupportModalState] = useState({ show: false, event: null, type: 'contact' });
+  const [shopAnswerDrafts, setShopAnswerDrafts] = useState({});
+  const [submittingShopAnswers, setSubmittingShopAnswers] = useState(new Set());
+  const [submittedShopAnswers, setSubmittedShopAnswers] = useState(new Set());
 
   const displayCurrency = (display_currency || auth?.user?.default_currency || 'GBP').toUpperCase();
   const displayDigits = currencies?.[displayCurrency]?.ISOdigits ?? 2;
@@ -72,6 +79,7 @@ export default function Transactions(props) {
       case 'gift_membership': return '🎟️';
       case 'gift_bill': return '🧾';
       case 'gift_tip': return '💖';
+      case 'piggy_pot': return '🐷';
       case 'gift_shop': return '🛍️';
       case 'gift_task': return '🧩';
       default: return '✨';
@@ -84,6 +92,7 @@ export default function Transactions(props) {
       case 'gift_membership': return e.category === 'received' ? 'Membership payment' : 'You supported a membership';
       case 'gift_bill': return e.category === 'received' ? 'Bill payment' : 'You supported a bill';
       case 'gift_tip': return e.category === 'received' ? 'Support payment' : 'You sent support';
+      case 'piggy_pot': return e.category === 'received' ? 'Piggy Pot contribution' : 'You contributed to Piggy Pot';
       case 'gift_shop': return e.category === 'received' ? 'Shop order' : 'You purchased from the shop';
       case 'gift_task': return e.category === 'received' ? 'Task purchase' : 'You funded a task';
       default: return 'Transaction';
@@ -104,7 +113,8 @@ export default function Transactions(props) {
       e?.shop?.name || '',
       e?.task?.title || '',
       e?.bill?.name || '',
-      e?.membership?.level || ''
+      e?.membership?.level || '',
+      e?.piggy_pot?.title || ''
     ].join(' ').toLowerCase();
     return hay.includes(q);
   });
@@ -129,53 +139,123 @@ export default function Transactions(props) {
   const shareOnTwitter = (e) => {
     if (!e) return;
     const cp = e.category === 'sent' 
-      ? (e?.creator?.username || e?.creator?.name) 
-      : (e?.gifter?.username || e?.gifter?.name);
-    const handle = cp ? (cp.startsWith('@') ? cp : `@${cp}`) : 'someone';
-    
-    let text = '';
-    const origin = window.location.origin;
-    let url = origin;
+      ? (e?.creator?.username ? `@${e.creator.username}` : (e?.creator?.name || 'a creator'))
+      : (e?.gifter?.username ? `@${e.gifter.username}` : (e?.gifter?.name || 'a supporter'));
 
-    if (e.category === 'received') {
-      url = `${origin}/${auth?.user?.username || ''}`;
-      switch (e.type) {
-        case 'gift_wish': text = `Just received a gift for my "${e.wish?.name || 'wish'}"! Thank you ${handle}! 🎁`; break;
-        case 'gift_tip': text = `Thank you ${handle} for the support! 💖`; break;
-        case 'gift_membership': text = `New member alert! Welcome ${handle} to the family! 🎟️`; break;
-        case 'gift_bill': text = `Bill renewed! Thanks for staying with me ${handle}! 🧾`; break;
-        case 'gift_shop': text = `New shop order from ${handle}! 🛍️`; break;
-        case 'gift_task': text = `Task funded! Getting to work on "${e.task?.title || 'task'}" for ${handle}! 🧩`; break;
-        default: text = `Just received support from ${handle}! ✨`;
-      }
-    } else {
-      const creatorHandle = e?.creator?.username ? `@${e.creator.username}` : (e?.creator?.name || 'a creator');
-      url = e?.creator?.username ? `${origin}/${e.creator.username}` : origin;
-      switch (e.type) {
-        case 'gift_wish': text = `Just funded ${creatorHandle}'s wish: "${e.wish?.name || 'wish'}"! 🎁`; break;
-        case 'gift_tip': text = `Just sent some support to ${creatorHandle}! 💖`; break;
-        case 'gift_membership': text = `Just joined ${creatorHandle}'s membership! 🎟️`; break;
-        case 'gift_bill': text = `Just renewed a bill for ${creatorHandle}! 🧾`; break;
-        case 'gift_shop': text = `Just bought something from ${creatorHandle}'s shop! 🛍️`; break;
-        case 'gift_task': text = `Just funded a task for ${creatorHandle}: "${e.task?.title || 'task'}"! 🧩`; break;
-        default: text = `Just supported ${creatorHandle}! ✨`;
-      }
+    const title = titleFor(e);
+    let tweetText = e.category === 'sent' 
+      ? `I just supported ${cp} with a ${title} on SpennyPiggy! 🎉`
+      : `Thank you ${cp} for the ${title} on SpennyPiggy! 🎉`;
+    
+    if (e.open_link) {
+      tweetText += `\nCheck it out here: ${e.open_link}`;
     }
 
-    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank');
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    window.open(twitterUrl, '_blank', 'noopener,noreferrer');
     setTwitterModal({ show: false, event: null });
+  };
+
+  const openSupportModal = (event, type = 'contact') => {
+    setSupportModalState({ show: true, event, type });
+  };
+
+  const supportAutoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      if (supportAutoOpenedRef.current) return;
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('support_open') !== '1') return;
+
+      const source = params.get('source');
+      const sourceId = params.get('source_id');
+      const eventType = params.get('event_type');
+      let matched = null;
+      if (source && sourceId && Array.isArray(data?.events)) {
+        matched = data.events.find((e) => e?.source === source && String(e?.source_id) === String(sourceId)) || null;
+      }
+
+      const creatorUsername = params.get('creator_username') || matched?.creator?.username;
+      const supportType = params.get('support_type') === 'refund' ? 'refund' : 'contact';
+      if (!creatorUsername) return;
+
+      if (!matched && Array.isArray(data?.events)) {
+        const candidates = data.events
+          .filter((e) => e?.creator?.username === creatorUsername)
+          .filter((e) => (eventType ? String(e?.type) === String(eventType) : true));
+
+        if (candidates.length > 0) {
+          matched = candidates.sort((a, b) => String(b?.created_at || '').localeCompare(String(a?.created_at || '')))[0] || null;
+        }
+      }
+
+      const event = matched || {
+        creator: { username: creatorUsername },
+        type: eventType || null,
+        source: source || null,
+        source_id: sourceId || null,
+      };
+
+      supportAutoOpenedRef.current = true;
+      openSupportModal(event, supportType);
+
+      const next = new URL(window.location.href);
+      ['support_open', 'support_type', 'creator_username', 'event_type', 'source', 'source_id'].forEach((k) => next.searchParams.delete(k));
+      window.history.replaceState({}, '', next.toString());
+    } catch {
+    }
+  }, [data?.events]);
+
+  const submitShopAnswer = async (paymentId) => {
+    const answer = shopAnswerDrafts[paymentId];
+    if (!answer?.trim()) return;
+
+    setSubmittingShopAnswers(prev => new Set([...prev, paymentId]));
+    
+    try {
+        const res = await axios.post(`/shop/answer-to-payment/${paymentId}`, { answer });
+        if (res.data.status) {
+            setSubmittedShopAnswers(prev => new Set([...prev, paymentId]));
+            setShopAnswerDrafts(prev => {
+                const newDrafts = { ...prev };
+                delete newDrafts[paymentId];
+                return newDrafts;
+            });
+            // Update local event data
+            setData(prev => ({
+              ...prev,
+              events: prev.events.map(ev => 
+                ev.payment_id === paymentId ? { ...ev, answer: answer } : ev
+              )
+            }));
+            alert(res.data.msg || res.data.message || 'Answer submitted successfully.');
+        } else {
+            alert(res.data.msg || res.data.message || 'Failed to submit answer.');
+        }
+    } catch (err) {
+        alert(err.response?.data?.message || 'Something went wrong!');
+    } finally {
+        setSubmittingShopAnswers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(paymentId);
+            return newSet;
+        });
+    }
   };
 
   const rewardChip = (e) => {
     if (e.access) return e.access;
     if (e?.wish?.reward_file) return 'Reward file';
+    if (e?.piggy_pot?.content_file) return 'Exclusive Reward';
+    if (e?.piggy_pot?.content_description) return 'Reward unlocked';
     return null;
   };
 
   const currencyTotals = useMemo(() => {
     const sums = {};
     filtered.forEach(e => {
+      if (e?.status !== 'completed') return;
       const total = Number(e.display_amount ?? 0);
       const cur = displayCurrency.toLowerCase();
       sums[cur] = (sums[cur] || 0) + total;
@@ -198,7 +278,7 @@ export default function Transactions(props) {
 
   const toCSV = () => {
     const rows = [
-      ['Type', 'Category', 'Title', 'Counterparty', 'Access', 'Amount', 'Currency', 'Date']
+      ['Type', 'Category', 'Title', 'Counterparty', 'Access', 'Amount', 'Currency', 'Status', 'Date']
     ];
     filtered.forEach(e => {
       const title = titleFor(e);
@@ -207,7 +287,15 @@ export default function Transactions(props) {
         : (e?.gifter?.username ? '@' + e.gifter.username : (e?.gifter?.name || 'Supporter'));
       const amt = Number(e.display_amount ?? 0);
       rows.push([
-        e.type, e.category, title, cp, rewardChip(e) || '', amt.toFixed(displayDigits), displayCurrency, e.created_at
+        e.type,
+        e.category,
+        title,
+        cp,
+        rewardChip(e) || '',
+        amt.toFixed(displayDigits),
+        displayCurrency,
+        e.status || '',
+        e.created_at
       ]);
     });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -233,7 +321,7 @@ export default function Transactions(props) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-green-100 rounded-[25px] md:rounded-[30px] p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-green-100 rounded-[25px] md:rounded-[30px]  p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Received</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.received).length > 0 ? (
@@ -247,7 +335,7 @@ export default function Transactions(props) {
                   )}
                 </div>
               </div>
-              <div className="bg-blue-100 rounded-[25px] md:rounded-[30px] p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-blue-100 rounded-[25px] md:rounded-[30px]  p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Sent</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.sent).length > 0 ? (
@@ -264,20 +352,20 @@ export default function Transactions(props) {
             </div>
 
             {spend_summary && (
-              <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-black text-sm font-black uppercase tracking-widest mb-4">Your Spend (Security Limits)</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
                     <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 1 hour</p>
                     <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_1h)}</p>
                     <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_1h)}</p>
                   </div>
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
                     <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 24 hours</p>
                     <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_24h)}</p>
                     <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_24h)}</p>
                   </div>
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
                     <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 7 days</p>
                     <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_7d)}</p>
                     <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_7d)}</p>
@@ -287,14 +375,14 @@ export default function Transactions(props) {
             )}
             
             {auth?.user?.role === 1 && (
-              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px] bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px]  bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
                   <FaTwitter size={20} className="text-black" />
                   <span className="font-black text-black text-sm uppercase tracking-widest">Creator Feature: Announce on X</span>
                 </div>
                 <p className="text-gray-800 font-bold text-sm leading-relaxed">
                   Easily share your received gifts and support on your X (Twitter) profile! Use the bird icon on any transaction to post a pre-formatted announcement. 
-                  <span className="block mt-2 text-gray-600">Note: Requires <Link href="/account" className="text-pink-600 hover:text-pink-800 underline transition-colors">Auto Tweet</Link> to be enabled in your settings.</span>
+                  <span className="block mt-2 text-gray-600">Note: Requires <Link href="/account" className="text-[#FF007F] hover:text-pink-800 underline transition-colors">Auto Tweet</Link> to be enabled in your settings.</span>
                 </p>
               </div>
             )}
@@ -347,7 +435,14 @@ export default function Transactions(props) {
               </div>
             </Modal>
 
-            <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <SupportModal 
+              show={supportModalState.show}
+              event={supportModalState.event}
+              initialType={supportModalState.type}
+              onClose={() => setSupportModalState({ show: false, event: null, type: 'contact' })}
+            />
+
+            <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
                 <input
                   value={query}
@@ -365,6 +460,7 @@ export default function Transactions(props) {
                   { key: 'gift_membership', label: 'Memberships' },
                   { key: 'gift_bill', label: 'Bills' },
                   { key: 'gift_tip', label: 'Support' },
+                  { key: 'piggy_pot', label: 'Piggy Pots' },
                   { key: 'gift_shop', label: 'Shop' },
                   { key: 'gift_task', label: 'Tasks' },
                 ].map(f => (
@@ -399,17 +495,28 @@ export default function Transactions(props) {
               const avatar = e.category === 'sent' ? (e?.creator?.avatar || '') : (e?.gifter?.avatar || '');
               return (
                 <FadeIn key={`tx-${i}`}>
-                  <div className="rounded-[25px] md:rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 md:px-6 md:py-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+                  <div className="rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 md:px-6 md:py-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-4 w-full md:w-auto">
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-pink-400 text-black' : 'bg-white text-black'}`}>
-                              {e.category === 'sent' ? 'Support Payment' : 'Support Received'}
+                            <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-[#FF007F] text-black' : 'bg-white text-black'}`}>
+                              {titleFor(e)}
                             </span>
                             <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-gray-200 text-black">
                                 {e.category === 'sent' ? 'SENT' : 'RECEIVED'}
                             </span>
+                            {e?.status ? (
+                              <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                                e.status === 'completed'
+                                  ? 'bg-green-300 text-black'
+                                  : (e.status === 'initiated' || e.status === 'pending')
+                                    ? 'bg-yellow-300 text-black'
+                                    : 'bg-red-300 text-black'
+                              }`}>
+                                {String(e.status).replaceAll('_', ' ')}
+                              </span>
+                            ) : null}
                             {isNew(e.created_at) ? (
                               <span className="px-2 py-0.5 rounded-md bg-yellow-300 border-2 border-black text-[9px] font-black text-black uppercase tracking-widest animate-pulse shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">New</span>
                             ) : null}
@@ -419,8 +526,8 @@ export default function Transactions(props) {
                               <img src={avatar || defaultAvatar} alt="" className="h-8 w-8 rounded-full border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" />
                               <p className="text-black font-black text-xs uppercase tracking-widest truncate max-w-[150px] sm:max-w-none">
                                 {e.category === 'sent'
-                                  ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-pink-600 hover:text-pink-800 underline transition-colors">@{e.creator.username}</Link> : cp)
-                                  : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="text-pink-600 hover:text-pink-800 underline transition-colors">@{e.gifter.username}</Link> : cp)
+                                  ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-[#FF007F] hover:text-pink-800 underline transition-colors">@{e.creator.username}</Link> : cp)
+                                  : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="text-[#FF007F] hover:text-pink-800 underline transition-colors">@{e.gifter.username}</Link> : cp)
                                 }
                               </p>
                             </div>
@@ -437,30 +544,102 @@ export default function Transactions(props) {
                               </span>
                             ) : null}
                             {e?.wish?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.wish.name}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.wish.name}”</Link>
                             ) : null}
                             {e?.membership?.level && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">Level “{e.membership.level}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">Level “{e.membership.level}”</Link>
                             ) : null}
                             {e?.bill?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.bill.name}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.bill.name}”</Link>
                             ) : null}
                             {e?.shop?.name && e.open_link ? (
                               <div className="text-sm truncate block max-w-full italic">
                                 {e.open_link.startsWith('http') ? (
-                                  <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-800 font-bold underline">“{e.shop.name}”</a>
+                                  <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.shop.name}”</a>
                                 ) : (
-                                  <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline">“{e.shop.name}”</Link>
+                                  <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.shop.name}”</Link>
                                 )}
                               </div>
                             ) : null}
+                            {e?.piggy_pot?.title ? (
+                              <div className="text-sm truncate block max-w-full italic">
+                                  <Link href={`/${e.creator?.username}?page=piggy-pots`} className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.piggy_pot.title}”</Link>
+                              </div>
+                            ) : null}
                             {e?.task?.title && e.open_link ? (
-                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.task.title}”</Link>
+                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.task.title}”</Link>
                             ) : null}
                           </div>
 
-                          {(e?.task?.reward_file || e?.wish?.reward_file || e.certificate_url || e?.task?.reward_note) && (
+                          {(e.benefits || e.wish_content || e.ask_question || e.certificate_url || e?.task?.reward_file || e?.wish?.reward_file || e?.task?.reward_note) && (
                             <div className="mt-4 flex flex-col gap-3">
+                              {e.benefits && (
+                                <div className="p-3 bg-pink-50 rounded-[20px] border border-pink-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                  <p className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">Benefits Included</p>
+                                  <div className="text-sm font-semibold text-gray-700 break-words">
+                                    {String(e.benefits).startsWith('http') ? (
+                                      <a href={e.benefits} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">{e.benefits}</a>
+                                    ) : e.benefits}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {e.wish_content && (
+                                <div className="mt-2">
+                                  {String(e.wish_content.type || '').includes('video') ? (
+                                    <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border-2 border-black bg-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                      <source src={e.wish_content.url} type={e.wish_content.type} />
+                                    </video>
+                                  ) : String(e.wish_content.type || '').includes('audio') ? (
+                                    <audio controls controlsList="nodownload" className="w-full">
+                                      <source src={e.wish_content.url} type={e.wish_content.type} />
+                                    </audio>
+                                  ) : String(e.wish_content.type || '').includes('pdf') || String(e.wish_content.type || '').includes('zip') ? (
+                                    <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="text-[#FF007F] font-bold hover:underline text-[13px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                      Open Content
+                                    </a>
+                                  ) : (
+                                    <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-[20px] border-2 border-black bg-gray-50 hover:opacity-90 transition-opacity shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                      <img src={e.wish_content.url} alt={e.wish_content.name || 'Exclusive Content'} className="w-full max-h-[250px] object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="p-4 block text-center text-sm font-bold text-gray-500">View Content</span>'; }} />
+                                    </a>
+                                  )}
+                                  {e.wish_content.name && (
+                                    <div className="mt-2 text-center text-xs text-gray-500 font-bold truncate px-2">
+                                      {e.wish_content.name}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {e.ask_question && e.payment_id && (
+                                <div className="p-4 bg-white border-2 border-pink-200 rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                  <p className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">Question From Creator</p>
+                                  <p className="text-sm font-semibold mb-3 text-black">{e.ask_question}</p>
+                                  {e.answer || submittedShopAnswers.has(e.payment_id) ? (
+                                    <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm font-semibold border-2 border-green-200">
+                                      Your answer has been submitted.
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-2">
+                                      <textarea
+                                        value={shopAnswerDrafts[e.payment_id] || ''}
+                                        onChange={(ev) => setShopAnswerDrafts(prev => ({ ...prev, [e.payment_id]: ev.target.value }))}
+                                        placeholder="Type your answer here..."
+                                        className="w-full border-2 border-black rounded-[15px] p-3 text-sm focus:ring-pink-500 focus:border-[#FF007F] font-bold"
+                                        rows="3"
+                                      ></textarea>
+                                      <button
+                                        onClick={() => submitShopAnswer(e.payment_id)}
+                                        disabled={submittingShopAnswers.has(e.payment_id) || !(shopAnswerDrafts[e.payment_id]?.trim())}
+                                        className="bg-[#FF007F] text-black border-2 border-black font-black py-2 px-4 rounded-full hover:translate-x-[-1px] hover:translate-y-[-1px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 text-[10px] uppercase tracking-widest w-fit transition-all"
+                                      >
+                                        {submittingShopAnswers.has(e.payment_id) ? "Submitting..." : "Submit Answer"}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                               <div className="flex flex-wrap gap-2">
                                 {e?.task?.reward_file ? (
                                   <a href={e.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
@@ -473,7 +652,7 @@ export default function Transactions(props) {
                                 ) : null}
                               </div>
                               {e?.task?.reward_note ? (
-                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black">Note: {e.task.reward_note}</p>
+                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">Note: {e.task.reward_note}</p>
                               ) : null}
                             </div>
                           )}
@@ -481,28 +660,16 @@ export default function Transactions(props) {
                       </div>
 
                       <div className="flex items-center md:justify-end gap-4   ">
-                        <div className="flex items-center gap-3">
-                          {auth?.user?.role === 1 && (
-                            <button
-                              onClick={() => handleTwitterClick(e)}
-                              className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
-                              title="Share on X" >
-                              <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
-                            </button>
-                          )}
-                          {e.open_link ? (
-                            e.open_link.startsWith('http') ? (
-                              <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</a>
-                            ) : (
-                              <Link href={e.open_link} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</Link>
-                            )
-                          ) : null}
-                          {storyUrlFor(e) ? (
-                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
-                          ) : null}
-                        </div>
+                      
                         <div className="text-right">
-                          <div className="text-green-600 font-black text-xl md:text-2xl">{amountFor(e)}</div>
+                          <div className={`${e?.status === 'completed' ? 'text-green-600' : 'text-gray-500'} font-black text-xl md:text-2xl`}>
+                            {amountFor(e)}
+                          </div>
+                          {e?.status && e.status !== 'completed' ? (
+                            <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest mt-1">
+                              Not included in totals
+                            </div>
+                          ) : null}
                           {Number(e?.vat_amount || 0) > 0 ? (
                             <div className="text-xs text-gray-600 font-black uppercase mt-1">
                               VAT: {formatMoney(Number(e.vat_amount || 0))}
@@ -512,8 +679,84 @@ export default function Transactions(props) {
                       </div>
                     </div>
                     <div className="pt-0">
-                      <ReactionsAndReply ev={e} viewer={auth?.user} />
+                      <ReactionsAndReply 
+                        ev={e} 
+                        viewer={auth?.user} 
+                        creator={e.category === 'sent' ? e.creator?.username : auth?.user?.username}
+                        gifter={e.category === 'received' ? e.gifter?.username : auth?.user?.username}
+                        canAct={!!(auth?.user && (e.category === 'sent' ? e.creator?.username : e.gifter?.username))}
+                      />
                     </div>
+                      <div className="pt-4 flex items-center gap-3">
+                          {auth?.user?.role === 1 && (
+                            <button
+                              onClick={() => handleTwitterClick(e)}
+                              className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                              title="Share on X" >
+                              <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
+                            </button>
+                          )}
+                          {e.category === 'sent' && e?.creator?.username ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => openSupportModal(e, 'contact')}
+                                  className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                >
+                                  Contact Creator
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openSupportModal(e, 'refund')}
+                                  className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                >
+                                  Request Refund
+                                </button>
+                              </div>
+                              {e.support_tickets && e.support_tickets.length > 0 && (
+                                <div className="mt-2 flex flex-col gap-2">
+                                  {e.support_tickets.map(ticket => (
+                                    <Link
+                                      key={ticket.uuid}
+                                      href={route('support.tickets.show', ticket.uuid)}
+                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all w-max"
+                                    >
+                                      <span>View {ticket.type} Ticket</span>
+                                      <span className={`px-2 py-0.5 rounded-full border border-black ${
+                                        ticket.status === 'resolved' || ticket.status === 'refunded' ? 'bg-green-300' :
+                                        ticket.status === 'rejected' ? 'bg-gray-300' : 'bg-yellow-300'
+                                      }`}>
+                                        {ticket.status.replaceAll('_', ' ')}
+                                      </span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
+                          {e.category === 'received' && e.uuid && !String(e.uuid).startsWith('exp-') && (
+                            <a 
+                                href={route('financial.evidence-pack', { uuid: e.uuid })} 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-[#FF007F] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1"
+                            >
+                                <FileText size={12} />
+                                Evidence Pack
+                            </a>
+                          )}
+                          {e.open_link ? (
+                            e.open_link.startsWith('http') ? (
+                              <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</a>
+                            ) : (
+                              <Link href={e.open_link} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</Link>
+                            )
+                          ) : null}
+                          {storyUrlFor(e) ? (
+                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
+                          ) : null}
+                        </div>
                   </div>
                 </FadeIn>
               );
@@ -523,6 +766,8 @@ export default function Transactions(props) {
                 <button onClick={() => fetchFeed(data?.next_before || null, true)} className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">Load More</button>
               </div>
             ) : null}
+
+
           </div>
         ) : (
           <Nocontent text="No transactions found" />

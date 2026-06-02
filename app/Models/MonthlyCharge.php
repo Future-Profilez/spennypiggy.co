@@ -22,16 +22,22 @@ class MonthlyCharge extends Model
         'amount',
         'tax',
         'status',
+        'cancelled_at',
         'current_start_trial_date',
         'current_end_trial_date',
         'current_start_subscription_date',
         'current_end_subscription_date',
         'upcoming_payment',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $casts = [
         'current_start_subscription_date' => 'date',
         'current_end_subscription_date' => 'date',
+        'current_start_trial_date' => 'date',
+        'current_end_trial_date' => 'date',
+        'upcoming_payment' => 'datetime',
     ];
 
     public static function boot()
@@ -46,10 +52,10 @@ class MonthlyCharge extends Model
     }
     
     /**
-     * Get user relationship excluding UK users (for backwards compatibility)
+     * Get user relationship (for backwards compatibility)
      */
     public function nonUkUser()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

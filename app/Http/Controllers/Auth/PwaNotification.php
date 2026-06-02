@@ -39,7 +39,6 @@ class PwaNotification extends Controller
             ->pluck('follower_id');
 
         $users = User::whereIn('id', $followerIds)
-            ->where('is_uk', 0)
             ->get();
 
         if ($users->isEmpty()) {

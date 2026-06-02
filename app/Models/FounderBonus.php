@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class FounderBonus extends Model
 {
@@ -188,9 +187,6 @@ class FounderBonus extends Model
             ->where('role', 1) // Only include creators (role 1), not gifters (role 0)
             ->where('created_at', '>=', $cutoffDate)
             ->whereNotIn('id', $existingFounderIds)
-            ->with(['createdDeliverables' => function($query) {
-                $query->where('status', 'delivered');
-            }])
             ->get();
 
         $leaderboard = [];
@@ -201,21 +197,9 @@ class FounderBonus extends Model
             $thirtyDaysLater = $joinDate->copy()->addDays(30);
             $calculationEndDate = min($thirtyDaysLater, now());
             
-            // Calculate earnings in their first 30 days (or up to now if less than 30 days)
-            $deliverables = $creator->createdDeliverables()
-                ->whereBetween('created_at', [$joinDate, $calculationEndDate])
-                ->where('status', 'delivered')
-                ->get(['transaction_amount', 'payment_currency']);
-
-            $earnings = 0;
-            foreach ($deliverables as $deliverable) {
-                $currency = $deliverable->payment_currency ?? 'GBP';
-                $amount = $deliverable->transaction_amount ?? 0;
-                
-                // Convert to GBP using the existing helper
-                $gbpAmount = \App\Helpers::priceFormat($currency, $amount, 'GBP');
-                $earnings += $gbpAmount;
-            }
+            $financialService = app(\App\Services\FinancialService::class);
+            $summary = $financialService->getSummary($creator, $joinDate, $calculationEndDate, 'GBP');
+            $earnings = (float) ($summary['gross_income'] ?? 0);
                 
             $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
             $isQualified = $earnings >= $minEarnings && $daysRemaining <= 0;

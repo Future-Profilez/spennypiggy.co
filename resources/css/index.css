@@ -13,11 +13,16 @@
 div{animation:load 0.4s linear;} */
 
 @layer components{
+  input[type="checkbox"] {
+    @apply rounded-[4px] border-gray-300 text-[#FF007F] focus:ring-pink-500 cursor-pointer w-5 h-5 transition-all;
+  }
+  
   .text-gradient-wishlist{
     display: inline-block;
-    background-image: linear-gradient(to right, rgb(253 224 71), rgb(236 72 153), rgb(168 85 247));
+    background-image: linear-gradient(135deg, #FFD700 0%, #FF007F 50%, #8C53FB 100%);
     background-clip: text;
     -webkit-background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(249, 79, 150, 0.3));
   }
   @supports (-webkit-background-clip: text) {
     .text-gradient-wishlist{ color: transparent; -webkit-text-fill-color: transparent; }
@@ -38,16 +43,16 @@ div{animation:load 0.4s linear;} */
   @supports not (-webkit-background-clip: text) {
     .text-gradient-founder{ color: #facc15; }
   }
-  .shadow-pink{box-shadow:7px 7px 0 0 var(--pink); }
-  .main-button { @apply bg-white font-gulfs uppercase px-6 py-2 border !border-[3px]  rounded-[30px]  }
+  .shadow-[4px_4px_0px_0px_#FF007F]ink{box-shadow:7px 7px 0 0 var(--pink); }
+  .main-button { @apply bg-white font-gulfs uppercase px-6 py-2 border !border-[3px]  rounded-[30px]   }
   .b { @apply main-button bg-white !text-[#003D4F] !border-[#003D4F] transition shadow-[3px_3px_0px_#003D4F] hover:shadow-[4px_4px_0px_#003D4F] focus:shadow-[3px_3px_0px_#003D4F] focus:outline    }
   .p { @apply main-button bg-white !text-[var(--pink)] transition !border-[var(--pink)] shadow-[3px_3px_0px_var(--pink)] hover:shadow-[4px_4px_0px_var(--pink)] focus:shadow-[3px_3px_0px_var(--pink)] focus:outline    }
   .y { @apply main-button bg-white !text-[var(--yellow)] transition !border-[var(--yellow)] shadow-[3px_3px_0px_var(--yellow)] hover:shadow-[4px_4px_0px_var(--yellow)] focus:shadow-[3px_3px_0px_var(--yellow)] focus:outline    }
   .w { @apply main-button bg-transparent !text-white transition !border-white shadow-[3px_3px_0px_var(--mint)] hover:shadow-[4px_4px_0px_var(--mint)] focus:shadow-[3px_3px_0px_var(--mint)] focus:outline    }
   .pure-pink { @apply main-button pinkbg !text-[#fff] transition !border-[#fff] shadow-[3px_3px_0px_white] hover:shadow-[4px_4px_0px_white] focus:shadow-[3px_3px_0px_white] focus:outline    }
-  .size-lg { @apply text-[17px] rounded-[30px]   px-[16px] py-[9px] }
-  .pink-round { @apply  overflow-hidden bg-white  rounded-[30px]  md:rounded-[30px]   border-pink shadow-pink }
-  .mint-round { @apply  overflow-hidden bg-white  rounded-[30px]  md:rounded-[30px]   border-mint shadow-mint }
+  .size-lg { @apply text-[17px] rounded-[30px]    px-[16px] py-[9px] }
+  .pink-round { @apply  overflow-hidden bg-white  rounded-[30px]   md:rounded-[30px]    border-pink shadow-[4px_4px_0px_0px_#FF007F]ink }
+  .mint-round { @apply  overflow-hidden bg-white  rounded-[30px]   md:rounded-[30px]    border-mint shadow-mint }
   } 
   
   .button-pink {
@@ -82,12 +87,12 @@ div{animation:load 0.4s linear;} */
 .lightpink-50 {background:#F0E8FF;}
 .lightyellow  {background:#F9E3EC;}
 
-.shadow-black-sm{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
-.shadow-black{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
+.shadow-[4px_4px_0px_0px_#FF007F]lack-sm{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
+.shadow-[4px_4px_0px_0px_#FF007F]lack{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
 
-.shadow-purple{box-shadow:5px 5px 0 0 var(--purple);}
+.shadow-[4px_4px_0px_0px_#FF007F]urple{box-shadow:5px 5px 0 0 var(--purple);}
 .shadow-yellow{text-shadow:5px 4px 0px #e6ea82;-webkit-text-stroke:1px #e6ea82;}
 .text-pink{color:var(--pink) !important;}
 .text-mint{color:var(--mint);}
@@ -184,9 +189,12 @@ div{animation:load 0.4s linear;} */
 .border-voilet{border-color:var(--voilet) !important;}
 
 
+.btn-pink { 
+    font-family: 'CeraGRBold', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+}
 
 @layer components{
-  .btn-pink{@apply !text-[18px] bg-[#F94F96] text-white uppercase font-gulfs rounded-full !px-4 !py-3 m-auto}
+  .btn-pink{@apply !text-[18px] bg-[#FF007F] text-white uppercase  rounded-full !px-4 !py-3 m-auto}
   .lg { @apply !text-[20px] !px-[30px] !py-[12px] text-center }
   .sm { @apply !text-[16px] !px-[20px] !py-[9px] text-center }
 }
@@ -233,14 +241,14 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .modal.mymodal:not(.basic) .modal-content {
     border-radius: 39px;
     border: 3px solid #000000;
-    box-shadow: 6px 6px 0 0 #f94f97;
+    box-shadow: 6px 6px 0 0 #FF007F;
 }
 .shadow-layout {
     border-radius: 39px;
     border: 3px solid #000000;
 }
 .pink-shadow-layout {
-    box-shadow: 6px 6px 0 0 #f94f97;
+    box-shadow: 6px 6px 0 0 #FF007F;
 }
 
 

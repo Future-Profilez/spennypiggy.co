@@ -13,15 +13,18 @@ class MemberMailToUser extends Mailable
 
     public $mem;
     public $amountWithcurrency;
+    public $deliverable;
+
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($mem, $amountWithcurrency)
+    public function __construct($mem, $amountWithcurrency, $deliverable = null)
     {
         $this->mem = $mem;
         $this->amountWithcurrency = $amountWithcurrency;
+        $this->deliverable = $deliverable;
     }
 
     /**
@@ -34,7 +37,7 @@ class MemberMailToUser extends Mailable
         try {
             $subject = 'Membership Granted on Spenny Piggy!';
             return $this->view('email.membership_to_user')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject($subject);
         } catch (\Exception $e) {
         }

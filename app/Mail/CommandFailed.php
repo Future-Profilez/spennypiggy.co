@@ -35,7 +35,7 @@ class CommandFailed extends Mailable
     {
         return new Envelope(
             subject: $this->emailSubject,
-            from: new Address('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
         );
     }
 

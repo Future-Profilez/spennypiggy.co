@@ -8,15 +8,10 @@ export default function ContentPrefrences(props){
   return <>
     <Popup space='0' modalclass="pinkmodal" size="md"
     text={'Consent Preferences'} classes={`${props.classes} content-pre `} >
-          {/* {loader ?
-            <LoadingScreen />  :
-            <div className="content-pr-modal" >
-              <iframe src="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" />
-            </div>
-          } */}
-          {/* <div className="content-pr-modal w-100" >
-            <iframe src="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" />
-          </div>  */}
+          <div className="content-pr-modal" >
+            {/* Local consent preferences content could go here */}
+            <p className="p-4 text-center text-gray-600">Consent preferences are managed via your account settings.</p>
+          </div>
     </Popup>
   </>
 }

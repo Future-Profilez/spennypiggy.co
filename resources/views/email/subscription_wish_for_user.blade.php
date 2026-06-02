@@ -9,14 +9,14 @@
      </tr>
      <tr>
          <td align="center" style="padding:10px 10px 20px 10px;">
-             <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
+             <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 420px; width: 100%; text-align: center;">
                  <tr>
                      <td style=" font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
                          @if(request()->header('X-Is-Renewal') == 'true' || (isset($is_renewal) && $is_renewal))
-                             Your subscription for {{$creator_name}}'s wish <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> has been renewed! 🎉<br><br>
+                             Your subscription for {{ ucwords($creator_name) }}'s wish <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> has been renewed! 🎉<br><br>
                              You've been charged {{$amountTotal}} for your <span style="color: #8C52FF">{{ $sub->wish_item->subscription_period }}</span> subscription.
                          @else
-                             You have successfully subscribed a wish of {{$creator_name}} <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> on a <span style="color: #8C52FF">{{ $sub->wish_item->subscription_period }}</span> basis of amount {{$amountTotal}}.
+                             You have successfully subscribed a wish of {{ ucwords($creator_name) }} <span style="color: #8C52FF">({{ $sub->wish_item->wishname }})</span> on a <span style="color: #8C52FF">{{ $sub->wish_item->subscription_period }}</span> basis of amount {{$amountTotal}}.
                          @endif
                      </td>
                  </tr>
@@ -31,7 +31,7 @@
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
                          <a href="{{ env('APP_URL') . '/history' }}"
-                             style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;">My Account.</a>
+                             style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#FF007F;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;">My Account.</a>
                      </td>
                  </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>

@@ -34,7 +34,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
 
     if (loading) {
         return (
-            <div className={`bg-gray-100 rounded-[30px]   p-4 ${className}`}>
+            <div className={`bg-gray-100 rounded-[30px]    p-4 ${className}`}>
                 <div className="animate-pulse flex space-x-4">
                     <div className="rounded-full bg-gray-300 h-10 w-10"></div>
                     <div className="flex-1 space-y-2 py-1">
@@ -48,7 +48,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
 
     if (error) {
         return (
-            <div className={`bg-red-50 border border-red-200 rounded-[30px]   p-4 ${className}`}>
+            <div className={`bg-red-50 border border-red-200 rounded-[30px]    p-4 ${className}`}>
                 <div className="flex items-center text-red-700">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -66,42 +66,52 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
 
     // Determine alert style based on status
     const getAlertStyle = () => {
-        switch (status.status) {
-            case 'no_subscription':
+        const subStatus = status?.subscription_status;
+        
+        // Status Codes: 1=ACTIVE, 2=FREE_TRIAL, 3=INACTIVE, 0=EXPIRED
+        if (subStatus === 1) return null; // No alert for active
+        
+        if (subStatus === 2) {
+            if (status.action_required) {
                 return {
-                    bgColor: 'bg-red-50',
-                    borderColor: 'border-red-200',
-                    textColor: 'text-red-800',
-                    iconColor: 'text-red-600',
-                    buttonColor: 'bg-red-600 hover:bg-red-700'
+                    bgColor: 'bg-yellow-50',
+                    borderColor: 'border-yellow-200',
+                    textColor: 'text-yellow-800',
+                    iconColor: 'text-yellow-600',
+                    buttonColor: 'bg-yellow-600 hover:bg-yellow-700'
                 };
-            case 'trial_active':
-                if (status.action_required) {
-                    return {
-                        bgColor: 'bg-yellow-50',
-                        borderColor: 'border-yellow-200',
-                        textColor: 'text-yellow-800',
-                        iconColor: 'text-yellow-600',
-                        buttonColor: 'bg-yellow-600 hover:bg-yellow-700'
-                    };
-                }
-                return null; // Don't show for normal trial
-            default:
-                return {
-                    bgColor: 'bg-orange-50',
-                    borderColor: 'border-orange-200',
-                    textColor: 'text-orange-800',
-                    iconColor: 'text-orange-600',
-                    buttonColor: 'bg-orange-600 hover:bg-orange-700'
-                };
+            }
+            return null; // No alert for normal trial
         }
+
+        if (subStatus === 0) {
+            return {
+                bgColor: 'bg-red-50',
+                borderColor: 'border-red-200',
+                textColor: 'text-red-800',
+                iconColor: 'text-red-600',
+                buttonColor: 'bg-red-600 hover:bg-red-700'
+            };
+        }
+
+        if (subStatus === 3) {
+            return {
+                bgColor: 'bg-orange-50',
+                borderColor: 'border-orange-200',
+                textColor: 'text-orange-800',
+                iconColor: 'text-orange-600',
+                buttonColor: 'bg-orange-600 hover:bg-orange-700'
+            };
+        }
+
+        return null;
     };
 
     const alertStyle = getAlertStyle();
     if (!alertStyle) return null;
 
     return (
-        <div className={`${alertStyle.bgColor} border ${alertStyle.borderColor} rounded-[30px]   p-4 ${className}`}>
+        <div className={`${alertStyle.bgColor} border ${alertStyle.borderColor} rounded-[30px]    p-4 ${className}`}>
             
             <div className="flex items-start">
                 <div className="flex-shrink-0">
@@ -129,7 +139,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
                                 <Link
                                     key={index}
                                     href={suggestion.action_url}
-                                    className={`inline-flex items-center px-3 py-2 text-xs font-medium text-white ${alertStyle.buttonColor} rounded-[30px]  transition-colors duration-200`}
+                                    className={`inline-flex items-center px-3 py-2 text-xs font-medium text-white ${alertStyle.buttonColor} rounded-[30px]   transition-colors duration-200`}
                                 >
                                     {suggestion.title}
                                     {suggestion.estimated_time && (
@@ -144,7 +154,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
                         {status.status === 'no_subscription' && (
                             <Link
                                 href="/activate-subscription"
-                                className={`inline-flex items-center px-3 py-2 text-xs font-medium text-white ${alertStyle.buttonColor} rounded-[30px]  transition-colors duration-200`}
+                                className={`inline-flex items-center px-3 py-2 text-xs font-medium text-white ${alertStyle.buttonColor} rounded-[30px]   transition-colors duration-200`}
                             >
                                 Start Free Trial
                             </Link>
@@ -161,7 +171,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
                 <div className="flex-shrink-0 ml-3">
                     <button
                         onClick={() => setStatus({ ...status, eligible: true })}
-                        className={`inline-flex ${alertStyle.textColor} hover:bg-white hover:bg-opacity-20 rounded-[30px]  p-1.5 transition-colors duration-200`}
+                        className={`inline-flex ${alertStyle.textColor} hover:bg-white hover:bg-opacity-20 rounded-[30px]   p-1.5 transition-colors duration-200`}
                         title="Dismiss temporarily"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,9 +187,10 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
                     <div className="flex items-center justify-between text-xs">
                         <span className={alertStyle.textColor}>Subscription Status</span>
                         <span className={`font-medium ${alertStyle.textColor}`}>
-                            {status.subscription_status === 0 ? 'Inactive' : 
+                            {status.subscription_status === 0 ? 'Expired' : 
                              status.subscription_status === 1 ? 'Active' : 
-                             status.subscription_status === 2 ? 'Trial' : 'Unknown'}
+                             status.subscription_status === 2 ? 'Trial' : 
+                             status.subscription_status === 3 ? 'Inactive' : 'Unknown'}
                         </span>
                     </div>
                     <div className="mt-1 w-full bg-white bg-opacity-50 rounded-full h-2">

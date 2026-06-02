@@ -39,7 +39,7 @@ const Countdown = ({ createdAt, hours }) => {
     }
 
     return (
-        <span className="font-mono font-bold text-pink-600 text-sm">
+        <span className="font-mono font-bold text-[#FF007F] text-sm">
             {timeLeft.days > 0 && `${timeLeft.days}d `}
             {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
         </span>
@@ -76,6 +76,7 @@ export default function Index({
 
     // Function to determine task status based on is_approved values
     const getTaskStatus = (task) => {
+        if (Number(task?.is_suspended) === 1) return "suspended";
         if (task.is_approved === 1) return "approved";
         if (task.is_approved === 2) return "rejected";
         return "pending"; // is_approved === 0 or null/undefined
@@ -85,6 +86,7 @@ export default function Index({
     const getStatusDisplay = (task) => {
         const status = getTaskStatus(task);
         const statusMap = {
+            suspended: "Suspended",
             approved: "Approved",
             rejected: "Rejected",
             pending: "Pending Review",
@@ -96,6 +98,7 @@ export default function Index({
     const getStatusBadgeColor = (task) => {
         const status = getTaskStatus(task);
         const colorMap = {
+            suspended: "bg-red-100 text-red-800 border-red-200",
             approved: "bg-green-100 text-green-800 border-green-200",
             rejected: "bg-red-100 text-red-800 border-red-200",
             pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -107,6 +110,34 @@ export default function Index({
         const status = getTaskStatus(task);
 
         switch (status) {
+            case "suspended":
+                return {
+                    title: "🚫 Task Suspended",
+                    message:
+                        task?.suspend_reason?.trim() ||
+                        "This task has been suspended by admin. Please contact support if you want to appeal.",
+                    color: "red",
+                    bgColor: "bg-red-50",
+                    borderColor: "!border-red-400",
+                    textColor: "text-red-800",
+                    lightTextColor: "text-red-700",
+                    icon: (
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v2m0 4h.01m-7.938 4h15.876c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L2.342 16.5c-.77.833.192 2.5 1.732 2.5z"
+                            />
+                        </svg>
+                    ),
+                };
+
             case "rejected":
                 return {
                     title: "⚠️ Action Required",
@@ -212,13 +243,13 @@ export default function Index({
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="My Tasks" />
-            <div className="px-3 py-5 min-h-screen !bg-white">
-                <h2 className="text-4xl font-fre uppercase mb-8 text-center text-pink-500">
+            <div className="px-3 py-8 md:py-18 min-h-screen !bg-white">
+                <h2 className="text-3xl md:text-4xl font-fre uppercase mb-8 text-center text-[#FF007F]">
                     Task Dashboard
                 </h2>
                 <div className="max-w-4xl mx-auto space-y-8">
                     {orders && orders.length > 0 && (
-                        <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout  !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
                             <div className="py-4 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-white">
                                     Active Orders (Action Required)
@@ -290,12 +321,7 @@ export default function Index({
                                                                             SLA Deadline :
                                                                         </span>
                                                                         <span className="text-gray-500">
-                                                                            {
-                                                                                order
-                                                                                    ?.task
-                                                                                    ?.sla_hours
-                                                                            }{" "}
-                                                                            Hours
+                                                                            {order?.task?.sla_hours === 168 ? '7d' : `${order?.task?.sla_hours}h`}
                                                                         </span>
                                                                     </>
                                                                 )}
@@ -308,6 +334,11 @@ export default function Index({
                                                                     )}
                                                                 </span>
                                                             </div>
+                                                            {order.gifter_message && (
+                                                                <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-[20px] text-sm italic text-gray-700">
+                                                                    "{order.gifter_message}"
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div className="text-right">
                                                             <Link
@@ -333,7 +364,7 @@ export default function Index({
 
                     {/* Purchased Tasks */}
                     {purchased_tasks && purchased_tasks.length > 0 ? (
-                        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[30px]  overflow-hidden">
+                        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[30px]   overflow-hidden">
                             <div className="p-4 bg-blue-100 flex !border-b-2 !border-black items-center justify-between">
                                 <h3 className="font-bold text-xl uppercase tracking-tight">
                                     Tasks I've Purchased
@@ -421,7 +452,7 @@ export default function Index({
                                                         "task.order",
                                                         purchase.uuid,
                                                     )}
-                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-[30px]  font-bold hover:bg-gray-100 uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,8)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-[30px]   font-bold hover:bg-gray-100 uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,8)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                                 >
                                                     View Details
                                                 </Link>
@@ -444,7 +475,7 @@ export default function Index({
                     )}
 
                     {auth.user.role === 1 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
                             <div className="py-3 px-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     My Task Definitions
@@ -496,7 +527,7 @@ export default function Index({
                                                                             "task.show",
                                                                             task.uuid,
                                                                         )}
-                                                                        className="hover:text-pink-500"
+                                                                        className="hover:text-[#FF007F]"
                                                                     >
                                                                         {
                                                                             task.title
@@ -527,10 +558,7 @@ export default function Index({
                                                                             </span>
                                                                             {task?.sla_hours && (
                                                                                 <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
-                                                                                    {
-                                                                                        task.sla_hours
-                                                                                    }{" "}
-                                                                                    Hours
+                                                                                    {task.sla_hours === 168 ? '7d' : `${task.sla_hours}h`}
                                                                                 </span>
                                                                             )}
                                                                             <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
@@ -549,7 +577,7 @@ export default function Index({
                                                             </div>
                                                             <div className="flex items-center gap-3">
                                                                 <div className="text-right min-w-[100px]">
-                                                                    <p className="text-2xl font-black text-pink-500 font-bold">
+                                                                    <p className="text-2xl font-black text-[#FF007F] font-bold">
                                                                         {formatMultiPrice(
                                                                             task.price,
                                                                             task.currency ||
@@ -672,7 +700,7 @@ export default function Index({
 
                     {/* Completed Orders / Sales History */}
                     {completed_orders && completed_orders.length > 0 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px] ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
                             <div className="py-3 px-4 bg-green-100 flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     Sales History
@@ -720,6 +748,11 @@ export default function Index({
                                                         )}
                                                     </span>
                                                 </div>
+                                                {order.gifter_message && (
+                                                    <div className="mt-3 p-3 bg-gray-50 border border-gray-100 rounded-[20px] text-sm italic text-gray-600">
+                                                        "{order.gifter_message}"
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="text-right">
                                                 <Link

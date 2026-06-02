@@ -77,7 +77,7 @@ class PasswordResetLinkController extends Controller
             'email' => 'required|email',
         ]);
         $email = $request->input('email');
-        $user = User::where('email', $email)->where('is_uk', 0)->first();
+        $user = User::where('email', $email)->first();
         if (!empty($user)) {
             $user->expired_at = Carbon::now()->addMinutes(10);
             $user->save();
@@ -112,7 +112,7 @@ class PasswordResetLinkController extends Controller
             'confirmpassword' => 'required|same:password|min:6',
         ]);
         try {
-            $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
+            $user = User::where('uuid', $uuid)->first();
             if ($user->expired_at < Carbon::now()) {
                 return back()->with('error', 'Mail expired');
             }

@@ -40,16 +40,16 @@ export default function Keep100() {
                     </Link>
                   </div>
                   <div className="text-xs md:text-sm font-medium text-gray-700">
-                    3 days free • £4/month after
+                    3 days free • £8.99 + VAT / month after
                   </div>
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 md:gap-10">
                  
-                 <div className="bg-[#fdfbf7] p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group">
-                    <div className="bg-yellow-300 w-16 h-16 md:w-20 md:h-20 rounded-2xl border-[3px] border-black flex items-center justify-center mb-8">
-                       <DollarSign className="text-pink-600" size={40} />
+                 <div className="bg-[#fdfbf7] p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group">
+                    <div className="bg-yellow-300 w-16 h-16 md:w-20 md:h-20 rounded-[30px]  border-[3px] border-black flex items-center justify-center mb-8">
+                       <DollarSign className="text-[#FF007F]" size={40} />
                     </div>
                     <h2 className="text-xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-3 md:mb-8 text-black">What This Means</h2>
                     <ul className="space-y-4 md:space-y-6">
@@ -66,12 +66,12 @@ export default function Keep100() {
                     </ul>
                  </div>
 
-                 <div className="bg-black text-white p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px] border-[3px] border-black relative overflow-hidden group shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                 <div className="bg-black text-white p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                     <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
                        <ShieldCheck size={180} className="text-white" />
                     </div>
                     
-                    <div className="bg-white w-16 h-16 md:w-20 md:h-20 rounded-2xl border-[3px] border-black flex items-center justify-center mb-8 relative z-10">
+                    <div className="bg-white w-16 h-16 md:w-20 md:h-20 rounded-[30px]  border-[3px] border-black flex items-center justify-center mb-8 relative z-10">
                        <ShieldCheck className="text-yellow-400" size={40} />
                     </div>
                     <h2 className="text-xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-3 md:mb-8 relative z-10 text-white">Why This Is Safe</h2>

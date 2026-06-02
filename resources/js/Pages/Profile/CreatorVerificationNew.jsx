@@ -51,7 +51,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const validateStep = (step) => {
         const validations = {
             subscription: {
-                isValid: auth?.user?.subscription_status >= 1,
+                isValid: auth?.user?.subscription_status === 1 || auth?.user?.subscription_status === 2,
                 message: "Active subscription required to proceed",
                 requirements: ["Start your 3-day free trial", "No charges until trial ends"]
             },
@@ -63,13 +63,15 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             avatar: {
                 isValid: auth?.user?.avatar && auth?.user?.avatar_approved == 1,
                 isPending: auth?.user?.avatar && auth?.user?.avatar_approved == 0,
-                message: auth?.user?.avatar ? "Profile picture under review" : "Profile picture required",
+                isRejected: auth?.user?.avatar_approved == 2,
+                message: auth?.user?.avatar_approved == 2 ? "Profile picture rejected" : auth?.user?.avatar ? "Profile picture under review" : "Profile picture required",
                 requirements: ["Clear, high-quality image", "Shows your face clearly", "Professional appearance", "No copyrighted content"]
             },
             bio: {
                 isValid: auth?.user?.bio && auth?.user?.bio_approved == 1,
                 isPending: auth?.user?.bio && auth?.user?.bio_approved == 0,
-                message: auth?.user?.bio ? "Bio under review" : "Compelling bio required",
+                isRejected: auth?.user?.bio_approved == 2,
+                message: auth?.user?.bio_approved == 2 ? "Bio rejected" : auth?.user?.bio ? "Bio under review" : "Compelling bio required",
                 requirements: ["At least 50 characters", "Describe what you create", "Professional and engaging", "No inappropriate content"]
             },
             identity: {
@@ -112,8 +114,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         {
             id: 'subscription',
             title: 'Start 3-Days Free Trial',
-            description: 'Unlock full access with a Free Trial subscription of £4/month. No charges until the trial period ends.',
-            isCompleted: auth?.user?.subscription_status >= 1,
+            description: 'Unlock full access with a Free Trial subscription of £8.99 + VAT / month. No charges until the trial period ends.',
+            isCompleted: auth?.user?.subscription_status === 1 || auth?.user?.subscription_status === 2,
             isRequired: true,
             order: 1,
             category: 'basic'
@@ -134,6 +136,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             description: 'Add a clear, high-quality profile picture for your creator profile.',
             isCompleted: auth?.user?.avatar && auth?.user?.avatar_approved == 1,
             isPending: auth?.user?.avatar && auth?.user?.avatar_approved == 0,
+            isRejected: auth?.user?.avatar_approved == 2,
             isRequired: true,
             order: 3,
             category: 'basic'
@@ -144,6 +147,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             description: 'Create a compelling bio that tells fans about yourself and what you create.',
             isCompleted: auth?.user?.bio && auth?.user?.bio_approved == 1,
             isPending: auth?.user?.bio && auth?.user?.bio_approved == 0,
+            isRejected: auth?.user?.bio_approved == 2,
             isRequired: true,
             order: 4,
             category: 'basic'
@@ -181,7 +185,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const getStepStatus = (step) => {
         if (step.id === 'stripe' && auth?.user?.identity_admin_status !== 1) return 'locked';
         if (step.isCompleted) return 'completed';
+        if (step.isRejected) return 'error';
         if (step.isPending) return 'pending';
+        if (step.id === 'identity' && (auth?.user?.subscription_status !== 1 && auth?.user?.subscription_status !== 2)) return 'locked';
         if (step.requiresApproval && auth?.user?.profile_status_lock != 2) return 'locked';
         return 'todo';
     };
@@ -274,7 +280,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
     return (
         <>
-            <div className="bg-white rounded-[30px]  ">
+            <div className="bg-white rounded-[30px]   ">
                 <div className="relative p-8 text-white">
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-6">
@@ -318,11 +324,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                                             status === 'completed' ? 'status-completed' :
                                             status === 'pending' ? 'status-pending' :
+                                            status === 'error' ? 'bg-red-600 text-white' :
                                             status === 'locked' ? 'status-locked' :
                                             'status-active'
                                         }`}>
                                             {status === 'completed' ? <FaCheckCircle size={16} /> :
                                              status === 'pending' ? <FaClock size={14} /> :
+                                             status === 'error' ? <BsXCircleFill size={14} /> :
                                              status === 'locked' ? <FaLock size={14} /> :
                                              index + 1}
                                         </div>
@@ -365,11 +373,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             </div>
                                         )}
                                         {areBasicStepsCompleted() && auth?.user?.profile_status_lock == 0 && (
-                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px]   mt-3">
+                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px]    mt-3">
                                                 <p className="text-sm font-medium mb-1">🚀 Next Steps:</p>
                                                 <p className="text-sm">Your profile will be automatically submitted for admin review within a few minutes</p>
                                                 <Link
-                                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-[30px]   hover:bg-blue-700 transition-colors font-medium text-sm mt-2"
+                                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-[30px]    hover:bg-blue-700 transition-colors font-medium text-sm mt-2"
                                                     href="/update-profile-lock-status"
                                                 >
                                                     Submit for Review Now
@@ -378,7 +386,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         )}
 
                                         {isFullyVerified() && (
-                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px]   mt-3">
+                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px]    mt-3">
                                                 <p className="text-sm font-medium mb-1">🎯 What's Next:</p>
                                                 <div className="space-y-1 text-sm">
                                                     <p>• Create wish items and set up memberships</p>
@@ -386,7 +394,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     <p>• Start receiving payments and support</p>
                                                 </div>
                                                 <Link
-                                                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-[30px]   hover:bg-green-700 transition-colors font-medium text-sm mt-2"
+                                                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-[30px]    hover:bg-green-700 transition-colors font-medium text-sm mt-2"
                                                     href="/dashboard"
                                                 >
                                                     Go to Dashboard
@@ -409,12 +417,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         Profile Verification Rejected
                                     </h3>
                                     <p className="text-red-700 mb-4">{user?.profile_reject_reason}</p>
-                                    <div className="bg-white bg-opacity-50 p-3 rounded-[30px]   mb-4">
+                                    <div className="bg-white bg-opacity-50 p-3 rounded-[30px]    mb-4">
                                         <p className="text-sm font-medium mb-1">📝 How to Fix:</p>
                                         <p className="text-sm">Review the rejection reason above, make necessary changes to your profile, then resubmit for review.</p>
                                     </div>
                                     <Link
-                                        className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-[30px]   hover:bg-red-700 transition-colors font-medium"
+                                        className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-[30px]    hover:bg-red-700 transition-colors font-medium"
                                         href="/update-profile-lock-status"
                                     >
                                         Submit Re-verification Request
@@ -438,7 +446,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             return (
                                 <div
                                     key={step.id}
-                                    className={`step-card rounded-[30px]  p-6 transition-all duration-300 step-${status}`}
+                                    className={`step-card rounded-[30px]   p-6 transition-all duration-300 step-${status}`}
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-start flex-1">
@@ -446,6 +454,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             <div className={`step-number ${status}`}>
                                                 {step.isCompleted ? (
                                                     <FaCheckCircle size={18} />
+                                                ) : validateStep(step)?.isRejected ? (
+                                                    <BsXCircleFill size={16} />
                                                 ) : step.isPending ? (
                                                     <FaClock size={16} />
                                                 ) : (
@@ -484,9 +494,23 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                 {(() => {
                                                     const validation = validateStep(step);
 
+                                                    if (validation.isRejected) {
+                                                        return (
+                                                            <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-[30px]   ">
+                                                                <div className="flex items-center mb-2">
+                                                                    <BsXCircleFill className="mr-2 text-red-600" size={16} />
+                                                                    <span className="font-medium text-red-800">Rejected</span>
+                                                                </div>
+                                                                <p className="text-sm text-red-700">
+                                                                    Your submission was rejected. Please update and resubmit.
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    }
+
                                                     if (step.isPending) {
                                                         return (
-                                                            <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-[30px]  ">
+                                                            <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-[30px]   ">
                                                                 <div className="flex items-center mb-2">
                                                                     <FaClock className="mr-2 text-yellow-600" size={16} />
                                                                     <span className="font-medium text-yellow-800">Under Review</span>
@@ -503,7 +527,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                                     if (step.isCompleted) {
                                                         return (
-                                                            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-[30px]  ">
+                                                            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-[30px]   ">
                                                                 <div className="flex items-center mb-2">
                                                                     <FaCheckCircle className="mr-2 text-green-600" size={16} />
                                                                     <span className="font-medium text-green-800">Completed Successfully</span>
@@ -518,7 +542,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     // Show validation requirements for incomplete steps
                                                     return (
                                                         <div className="mt-3">
-                                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-[30px]  ">
+                                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-[30px]   ">
                                                                 <div className="flex items-center mb-3">
                                                                     <BsInfoCircle className="mr-2 text-blue-600" size={16} />
                                                                     <span className="font-medium text-blue-800">Requirements</span>
@@ -547,7 +571,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         <div className="ml-6">
                                             {step.id === 'subscription' && !step.isCompleted && (
                                                 <Link
-                                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]    hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     href="/activate-subscription"
                                                 >
                                                     Start Free Trial
@@ -562,26 +586,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                             {step.id === 'avatar' && !step.isCompleted && !step.isPending && (
                                                 <EditProfile
-                                                    text="Upload Photo"
+                                                    text={validateStep(step)?.isRejected ? "Re-upload Photo" : "Upload Photo"}
                                                     updateProfileSteps={updateProfileSteps}
                                                     user={user}
-                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]    hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     global_currency={global_currency}
                                                 />
                                             )}
 
                                             {step.id === 'bio' && !step.isCompleted && !step.isPending && (
                                                 <EditProfile
-                                                    text="Write Bio"
+                                                    text={validateStep(step)?.isRejected ? "Rewrite Bio" : "Write Bio"}
                                                     updateProfileSteps={updateProfileSteps}
                                                     user={user}
-                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]    hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     global_currency={global_currency}
                                                 />
                                             )}
 
                                             {step.isCompleted && (
-                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px]   font-medium">
+                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px]    font-medium">
                                                     ✓ Complete
                                                 </div>
                                             )}
@@ -606,7 +630,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             return (
                                 <div
                                     key={step.id}
-                                    className={`step-card rounded-[30px]  p-6 transition-all duration-300 step-${status}`}
+                                    className={`step-card rounded-[30px]   p-6 transition-all duration-300 step-${status}`}
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-start flex-1">
@@ -637,26 +661,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                                 {/* Status Messages */}
                                                 {status === 'locked' && (
-                                                    <div className="flex items-center mt-3 text-gray-500 bg-gray-100 px-3 py-2 rounded-[30px]  ">
+                                                    <div className="flex items-center mt-3 text-gray-500 bg-gray-100 px-3 py-2 rounded-[30px]   ">
                                                         <FaLock className="mr-2" size={16} />
                                                         <span>{step.id === 'stripe' && auth?.user?.profile_status_lock == 2 ? 'Waiting for admin identity approval' : 'Complete profile approval first'}</span>
                                                     </div>
                                                 )}
                                                 {step.isCompleted && (
-                                                    <div className="flex items-center mt-3 text-green-700 bg-green-50 px-3 py-2 rounded-[30px]  ">
+                                                    <div className="flex items-center mt-3 text-green-700 bg-green-50 px-3 py-2 rounded-[30px]   ">
                                                         <FaCheckCircle className="mr-2" size={16} />
                                                         <span className="font-medium">Completed ✓</span>
                                                     </div>
                                                 )}
                                                 {step.id === 'identity' && status === 'pending' && (
-                                                    <div className="flex items-center mt-3 text-yellow-700 bg-yellow-50 px-3 py-2 rounded-[30px]  ">
+                                                    <div className="flex items-center mt-3 text-yellow-700 bg-yellow-50 px-3 py-2 rounded-[30px]   ">
                                                         <BsClockFill className="mr-2" size={16} />
                                                         <span className="font-medium">Submitted. Waiting for admin review.</span>
                                                     </div>
                                                 )}
                                                 {step.id === 'identity' && auth?.user?.identity_admin_status == 2 && (
                                                     <div className="mt-3">
-                                                        <div className="flex items-center text-red-700 bg-red-50 px-3 py-2 rounded-[30px]  ">
+                                                        <div className="flex items-center text-red-700 bg-red-50 px-3 py-2 rounded-[30px]   ">
                                                             <BsXCircleFill className="mr-2" size={16} />
                                                             <span className="font-medium">Rejected by admin</span>
                                                         </div>
@@ -673,17 +697,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         {/* Action Buttons */}
                                         <div className="ml-6">
                                             {step.id === 'identity' && !step.isCompleted && auth?.user?.profile_status_lock == 2 && (
-                                                <Link
-                                                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-[30px]   hover:from-purple-700 hover:to-purple-800 transition-all font-medium whitespace-nowrap shadow-lg"
-                                                    href="/stripe/identity-verification"
-                                                >
-                                                    {auth?.user?.identity_status == 2 ? 'Reverify Identity' : 'Verify Identity'}
-                                                </Link>
+                                                (auth?.user?.subscription_status === 1 || auth?.user?.subscription_status === 2) ? (
+                                                    <Link
+                                                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-[30px]    hover:from-purple-700 hover:to-purple-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                        href="/stripe/identity-verification"
+                                                    >
+                                                        {auth?.user?.identity_status == 2 ? 'Reverify Identity' : 'Verify Identity'}
+                                                    </Link>
+                                                ) : (
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <span className="px-6 py-3 bg-gray-400 text-white rounded-[30px]  font-medium whitespace-nowrap shadow-lg cursor-not-allowed">
+                                                            Verify Identity
+                                                        </span>
+                                                        <span className="text-xs text-red-500 font-medium">Subscription Required</span>
+                                                    </div>
+                                                )
                                             )}
 
                                             {step.id === 'stripe' && !step.isCompleted && auth?.user?.profile_status_lock == 2 && auth?.user?.identity_status == 1 && (
                                                 <Link
-                                                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-[30px]   hover:from-green-700 hover:to-green-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-[30px]    hover:from-green-700 hover:to-green-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     href="/stripe"
                                                 >
                                                     Connect Stripe
@@ -691,13 +724,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             )}
 
                                             {step.isCompleted && (
-                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px]   font-medium">
+                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px]    font-medium">
                                                     ✓ Complete
                                                 </div>
                                             )}
 
                                             {status === 'locked' && (
-                                                <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-[30px]   font-medium">
+                                                <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-[30px]    font-medium">
                                                     Locked
                                                 </div>
                                             )}
@@ -710,7 +743,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                     {/* Help Section */}
                     {!isFullyVerified() && (
-                        <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[30px]  border border-blue-200">
+                        <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[30px]   border border-blue-200">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                                 <span className="text-2xl mr-2">💡</span>
                                 Need Help?

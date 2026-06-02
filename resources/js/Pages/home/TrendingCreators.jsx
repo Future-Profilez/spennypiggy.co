@@ -20,14 +20,15 @@ export default function TrendingCreators({ creators }) {
 Shows what users are actively exploring right now.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {creators.map((c) => (
-              <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-[30px]   p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
+              <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-[30px]    p-4 border-2 border-[#FF007F] hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
                 <Avatar 
                   name={c.name}
                   username={c.username}
                   src={c.avatar_url}
                   role={c.role}
                   profile_status_lock={c.profile_status_lock}
-                  // link={c.username}
+                  nolink={true}
+                  imgclass="!rounded-[17px]"
                 />
                 <div className="mt-4 flex items-center justify-between text-sm text-gray-400 group-hover:text-white transition-colors border-t border-gray-800 pt-3">
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> 24h clicks: <span className="text-white font-bold">{c.clicks_24h}</span></span>

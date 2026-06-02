@@ -5,10 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FounderBonus;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class FounderBonusController extends Controller
 {
@@ -66,11 +63,7 @@ class FounderBonusController extends Controller
                         $userProgress = $userEntry;
                     } else {
                         // User not in top 50, calculate their progress
-                        $calculationEndDate = min($thirtyDaysLater, now());
-                        
-                        $earnings = $user->createdDeliverables()
-                            ->whereBetween('created_at', [$joinDate, $calculationEndDate])
-                            ->sum('transaction_amount');
+                        $earnings = $this->calculateFirst30DayEarnings($user->id);
                             
                         $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
                         
@@ -101,25 +94,6 @@ class FounderBonusController extends Controller
                 'currentMonth' => now()->format('F Y'),
             ]
         ]);
-    }
-
-    /**
-     * Calculate current month earnings for a creator
-     */
-    private function calculateCurrentMonthEarnings($creatorId)
-    {
-        $startDate = now()->startOfMonth();
-        $endDate = now();
-        
-        // Calculate earnings from deliverables table
-        $earnings = DB::table('deliverables')
-            ->where('creator_id', $creatorId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNotNull('transaction_amount')
-            ->where('transaction_amount', '>', 0)
-            ->sum('transaction_amount');
-        
-        return (float) $earnings;
     }
 
     /**
@@ -175,7 +149,7 @@ class FounderBonusController extends Controller
     /**
      * Calculate first 30-day earnings for a user
      */
-    private function calculateFirst30DayEarnings($userId)
+    private function calculateFirst30DayEarnings(int $userId)
     {
         $user = User::find($userId);
         if (!$user) return 0;
@@ -184,57 +158,25 @@ class FounderBonusController extends Controller
         $startDate = $user->created_at;
         $endDate = $user->created_at->copy()->addDays($qualificationDays);
 
-        // Get deliverables with currency information
-        $deliverables = DB::table('deliverables')
-            ->where('creator_id', $userId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNotNull('transaction_amount')
-            ->where('transaction_amount', '>', 0)
-            ->get(['transaction_amount', 'payment_currency']);
-
-        $totalGbp = 0;
-        foreach ($deliverables as $deliverable) {
-            $currency = $deliverable->payment_currency ?? 'GBP';
-            $amount = $deliverable->transaction_amount ?? 0;
-            
-            // Convert to GBP using the existing helper
-            $gbpAmount = \App\Helpers::priceFormat($currency, $amount, 'GBP');
-            $totalGbp += $gbpAmount;
-        }
-        
-        return (float) $totalGbp;
+        $financialService = app(\App\Services\FinancialService::class);
+        $summary = $financialService->getSummary($user, $startDate, $endDate, 'GBP');
+        return (float) ($summary['gross_income'] ?? 0);
     }
 
     /**
      * Calculate current earnings for a user
      */
-    private function calculateCurrentEarnings($userId)
+    private function calculateCurrentEarnings(int $userId)
     {
         $user = User::find($userId);
         if (!$user) return 0;
 
         $startDate = $user->created_at;
-        $endDate = now();
+        $endDate = min($user->created_at->copy()->addDays(FounderBonus::getQualificationDays()), now());
 
-        // Get deliverables with currency information
-        $deliverables = DB::table('deliverables')
-            ->where('creator_id', $userId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNotNull('transaction_amount')
-            ->where('transaction_amount', '>', 0)
-            ->get(['transaction_amount', 'payment_currency']);
-
-        $totalGbp = 0;
-        foreach ($deliverables as $deliverable) {
-            $currency = $deliverable->payment_currency ?? 'GBP';
-            $amount = $deliverable->transaction_amount ?? 0;
-            
-            // Convert to GBP using the existing helper
-            $gbpAmount = \App\Helpers::priceFormat($currency, $amount, 'GBP');
-            $totalGbp += $gbpAmount;
-        }
-        
-        return (float) $totalGbp;
+        $financialService = app(\App\Services\FinancialService::class);
+        $summary = $financialService->getSummary($user, $startDate, $endDate, 'GBP');
+        return (float) ($summary['gross_income'] ?? 0);
     }
 
     /**
@@ -302,7 +244,7 @@ class FounderBonusController extends Controller
                     // Check if user qualifies for founder status
                     if (FounderBonus::checkFounderQualification($user->id, $first30DayEarnings)) {
                         try {
-                            DB::transaction(function () use ($user, $first30DayEarnings) {
+                            \Illuminate\Support\Facades\DB::transaction(function () use ($user, $first30DayEarnings) {
                                 // Update is_founder field in users table
                                 $user->update(['is_founder' => true]);
                                 
@@ -320,9 +262,9 @@ class FounderBonusController extends Controller
                             $qualifiedCount++;
                             
                             // Send congratulations email if enabled
-                            if (config('founder_bonus.features.email_notifications', true)) {
+                            if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
                                 try {
-                                    \Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
+                                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
                                 } catch (\Exception $e) {
                                     $errors[] = "Failed to send email to {$user->email}: " . $e->getMessage();
                                 }
@@ -369,7 +311,7 @@ class FounderBonusController extends Controller
                 // Check if user qualifies for founder status
                 if (FounderBonus::checkFounderQualification($user->id, $first30DayEarnings)) {
                     try {
-                        \DB::transaction(function () use ($user, $first30DayEarnings) {
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $first30DayEarnings) {
                             // Update is_founder field in users table
                             $user->update(['is_founder' => true]);
                             
@@ -387,9 +329,9 @@ class FounderBonusController extends Controller
                         $qualifiedCount++;
                         
                         // Send congratulations email if enabled
-                        if (config('founder_bonus.features.email_notifications', true)) {
+                        if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
                             try {
-                                Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
+                                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
                             } catch (\Exception $e) {
                                 $errors[] = "Failed to send email to {$user->email}: " . $e->getMessage();
                             }
@@ -454,9 +396,6 @@ class FounderBonusController extends Controller
                         $errors[] = "Creator {$creator->username} (ID: {$creator->id}) does not have a connected Stripe account";
                         continue;
                     }
-
-                    // Convert bonus amount to cents for Stripe (assuming GBP)
-                    $amountInCents = (int) round($bonus->bonus_amount * 100);
 
                     // Mark bonus as paid without Stripe transfer (Direct Charge refactor)
                     $bonus->markAsPaid();

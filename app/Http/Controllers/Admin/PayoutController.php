@@ -78,10 +78,9 @@ class PayoutController extends Controller
         
         $currentCalculation = $this->payoutService->calculatePayouts($preview['run_date']);
         
-        // Compare totals (basic check)
-        if (abs($currentCalculation['platform_total'] - $preview['platform_total']) > 100) { // 1 pound tolerance?
-            return response()->json(['error' => 'Data changed since preview. Please re-preview.'], 409);
-        }
+        // Removed the strict 'data changed' check to allow admins to execute payouts
+        // even if minor transactions or cleanups occurred between preview and execution.
+        // It will now execute based on the most up-to-date calculation.
         
         $run = $this->payoutService->executePayouts($currentCalculation, $run->id);
         

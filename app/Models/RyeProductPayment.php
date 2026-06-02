@@ -19,6 +19,7 @@ class RyeProductPayment extends Model
         'user_id',
         'currency',
         'amount',
+        'total_paid',
         'tax',
         'message',
         'anonymous',
@@ -31,10 +32,12 @@ class RyeProductPayment extends Model
         'stripe_payment_intent_status',
         'stripe_payment_intent_last_payment_error',
         'payment_metadata',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class)->where('is_uk', 0);
+        return $this->belongsTo(User::class);
     }
 }

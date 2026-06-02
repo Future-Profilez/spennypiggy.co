@@ -77,7 +77,7 @@ export default function SendSurprise({auth, owner}) {
             <div className="mb-4">
                   <label className="block text-left mb-2">Amount</label>
                   <input
-                     className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                     className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                      onChange={(e) => setData('amount', e.target.value)}
                      type="number"
                      placeholder="Enter amount.. "
@@ -88,7 +88,7 @@ export default function SendSurprise({auth, owner}) {
                   <label className="block text-left mb-2">Suggested use (Required)</label>
                   <textarea
                      placeholder="Message..."
-                     className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                     className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                      onChange={(e) => setData('message',e.target.value)}
                      type="text"
                   />

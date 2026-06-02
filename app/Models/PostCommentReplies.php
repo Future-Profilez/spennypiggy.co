@@ -16,6 +16,7 @@ class PostCommentReplies extends Model
         'post_comment_id',
         'user_id',
         'reply',
+        'is_approved',
     ];
 
     protected $hidden = [
@@ -34,7 +35,8 @@ class PostCommentReplies extends Model
         return $this->belongsTo(PostComment::class,'post_comment_id');
     }
 
-    public function user(){
-        return $this->belongsTo(User::class,'user_id')->where('is_uk', 0);
+    public function user()
+    {
+        return $this->belongsTo(User::class,'user_id');
     }
 }

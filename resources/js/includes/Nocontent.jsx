@@ -2,13 +2,14 @@ import noresultimg from '../../assets/img/noresultimg.png' ;
 import { Link } from '@inertiajs/react';
 
 export default function Nocontent({
-  error,
+  error, showdiscover,
   text = "Nothing to see",
   classes = "",
   subheading,
   actionHref,
   actionText,
   illustrationSrc,
+  discoverHref = "/discover",
   hideImage = false,
   size = "md",
   mode = "card"
@@ -25,7 +26,7 @@ export default function Nocontent({
   const cardClasses = ''
 
   return (
-    <div className={`w-full flex justify-center ${mode === "card" ? "p-4" : ""} ${classes}`}>
+    <div className={`bg-white rounded-[30px]  !p-12 overflow-hidden shadow-[6px_6px_0px_rgba(0,0,0,0.9)] border-2 border-black w-full flex justify-center ${mode === "card" ? "p-4" : ""} ${classes}`}>
         <div className={`${cardClasses} flex flex-col items-center text-center max-w-lg w-full`}>
             {!hideImage && (
                 <div className="mb-6">
@@ -50,18 +51,26 @@ export default function Nocontent({
             {error ? (
                 <Link 
                     href="/" 
-                    className="inline-block bg-[#F94F97] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                    className="inline-block bg-[#FF007F] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                 >
                     Back to Home
                 </Link>
             ) : actionHref && actionText ? (
                 <Link 
                     href={actionHref} 
-                    className="inline-block bg-[#F94F97] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                    className="inline-block bg-[#FF007F] text-white font-gulfs uppercase tracking-wider text-lg px-8 py-3 rounded-full border-[3px] border-black shadow-[4px_4px_0_0_#000] hover:shadow-[2px_2px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                 >
                     {actionText}
                 </Link>
             ) : null}
+
+            {showdiscover && <div className="mt-6 pt-4 text-sm md:text-base font-bold text-gray-700 border-t-2 border-black/10 w-full">
+                Can't find what you're looking for?{" "}
+                <Link href={discoverHref} className="text-[#FF007F] underline font-black uppercase tracking-wider">
+                    Explore Discover
+                </Link>
+                .
+            </div>}
         </div>
     </div>
   )

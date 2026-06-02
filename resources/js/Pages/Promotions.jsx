@@ -13,14 +13,14 @@ export default function Promotions(props) {
             <div className="wishlistPage bg-white pt-8">
                 <div className="containerbox p-3">
                     <div className="max-w-4xl mx-auto md:py-8 text-gray-800">
-                        <h1 className="text-xl md:text-3xl font-bold text-pink-600 mb-6">
+                        <h1 className="text-xl md:text-3xl font-bold text-[#FF007F] mb-6">
                             Founder Bonus — We’ll Pay You to Get Spoiled
                         </h1>
 
-                        <header className="bg-white rounded-[30px]    shadow-sm">
+                        <header className="bg-white rounded-[30px]     shadow-sm">
                             <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-6 md:flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-[30px]  bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                                    <div className="w-10 h-10 rounded-[30px]   bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-semibold">
                                         SP
                                     </div>
                                     <div>
@@ -40,7 +40,7 @@ export default function Promotions(props) {
                                     </div>
                                     <div className="mt-1 no-print">
                                         <button onClick={print}
-                                            className="inline-block px-3 py-1 border rounded-[30px]  text-sm"
+                                            className="inline-block px-3 py-1 border rounded-[30px]   text-sm"
                                         >
                                             Print / Download
                                         </button>
@@ -65,7 +65,7 @@ export default function Promotions(props) {
                                 </p>
 
                                 <div className="mt-6 grid grid-cols-1 md:grid-cols-1 gap-2">
-                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]  border">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]   border">
                                         <h3 className="font-bold text-black">
                                             How the Bonus Works
                                         </h3>
@@ -97,7 +97,7 @@ export default function Promotions(props) {
                                         </ul>
                                     </div>
 
-                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]  border">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]   border">
                                         <h3 className="font-bold text-black">
                                             Quick Facts
                                         </h3>
@@ -140,7 +140,7 @@ export default function Promotions(props) {
                                 </div>
 
                                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
-                                    <article className="bg-gray-50 p-3 sm:p-4 rounded-[30px]  border">
+                                    <article className="bg-gray-50 p-3 sm:p-4 rounded-[30px]   border">
                                         <h4 className="font-semibold">
                                             How to Qualify
                                         </h4>
@@ -164,7 +164,7 @@ export default function Promotions(props) {
                                         </ol>
                                     </article>
 
-                                    <article className="bg-gray-50 p-3 sm:p-4 rounded-[30px]  border">
+                                    <article className="bg-gray-50 p-3 sm:p-4 rounded-[30px]   border">
                                         <h4 className="font-semibold">
                                             Bonus Award Details
                                         </h4>
@@ -208,7 +208,7 @@ export default function Promotions(props) {
                                 </div>
 
                                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-2  lg:gap-4">
-                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]  border text-sm">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]   border text-sm">
                                         <strong>Currency &amp; Payments</strong>
                                         <p className="mt-2 text-gray-600">
                                             Qualifying amounts &amp; bonuses are
@@ -217,7 +217,7 @@ export default function Promotions(props) {
                                             Payments via Stripe.
                                         </p>
                                     </div>
-                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]  border  text-sm">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]   border  text-sm">
                                         <strong>Modification</strong>
                                         <p className="mt-2 text-gray-600">
                                             Spenny Piggy may modify or cancel
@@ -227,7 +227,7 @@ export default function Promotions(props) {
                                             qualified prior to the change.
                                         </p>
                                     </div>
-                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]  border text-sm">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[30px]   border text-sm">
                                         <strong>Liability</strong>
                                         <p className="mt-2 text-gray-600">
                                             Spenny Piggy accepts no

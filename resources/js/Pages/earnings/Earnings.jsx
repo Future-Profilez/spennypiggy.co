@@ -6,6 +6,9 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
 import TopEarnWishes from './TopEarnWishes';
+import TopEarnPiggyPots from './TopEarnPiggyPots';
+import TopEarnShop from './TopEarnShop';
+import TopEarnMemberships from './TopEarnMemberships';
 import TopEarnBills from './TopEarnBills';
 import TopSupporters from './TopSupporters';
 import MonthlyRevenue from './MonthlyRevenue';
@@ -13,7 +16,7 @@ import PaidTask from './PaidTask';
 import ReserveWidget from '@/Components/Creator/ReserveWidget';
 
 export default function Earnings(props) {
-  const colors = [ '#F94F96', '#10b981', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444' ];
+  const colors = [ '#FF007F', '#10b981', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444' ];
   const { formatMultiPrice } = PriceFormat();
   const { auth, global_currency } = usePage().props;
 
@@ -117,6 +120,15 @@ export default function Earnings(props) {
                         <p className='text-gray-400 text-sm md:text-base' >
                             Track your revenue and celebrate your success across all channels.
                         </p>
+                        <div className="mt-4">
+                            <a href="/financial/dashboard" className="inline-flex items-center gap-2 text-brandYellow hover:text-white transition-colors text-sm font-semibold uppercase tracking-wider">
+                                View Financial Dashboard 
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M5 12h14"></path>
+                                    <path d="M12 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        </div>
                     </div>
 
                     <div className="w-full md:w-auto">
@@ -144,7 +156,7 @@ export default function Earnings(props) {
                     {/* Decorative Background Glow */}
                     <div className="absolute -inset-1 bg-gradient-to-r from-brandPink/20 to-brandYellow/20 rounded-[32px] blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
                     
-                    <div className="relative bg-[#0F0F0F] border border-white/10 rounded-[28px] p-6 md:p-8 shadow-2xl overflow-hidden">
+                    <div className="relative bg-[#0F0F0F] border border-white/10 rounded-[28px] p-6 md:p-8 shadow-[4px_4px_0px_0px_#FF007F]xl overflow-hidden">
                         {/* Abstract Background Pattern */}
                         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-brandYellow/5 rounded-full blur-3xl"></div>
                         <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-brandPink/5 rounded-full blur-3xl"></div>
@@ -153,7 +165,7 @@ export default function Earnings(props) {
                             <div className="flex items-center gap-8 w-full md:w-auto">
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-brandPink blur-xl opacity-20 animate-pulse"></div>
-                                    <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-brandPink/20 to-brandPink/5 flex items-center justify-center border border-brandPink/30 shadow-inner">
+                                    <div className="relative w-20 h-20 rounded-[30px]  bg-gradient-to-br from-brandPink/20 to-brandPink/5 flex items-center justify-center border border-brandPink/30 shadow-inner">
                                         <svg className="w-10 h-10 text-brandPink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -163,7 +175,7 @@ export default function Earnings(props) {
                                     <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em] mb-2">Total Earnings</p>
                                     <div className="flex items-center gap-4">
                                         {loading || isChanging ? (
-                                            <div className="h-14 w-64 bg-white/5 rounded-2xl animate-pulse"></div>
+                                            <div className="h-14 w-64 bg-white/5 rounded-[30px]  animate-pulse"></div>
                                         ) : (
                                             <h2 className="text-white mt-3 text-3xl md:text-4xl font-black tabular-nums font-poppins tracking-tighter bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent leading-none">
                                                 {formatMultiPrice(grossTotal, (global_currency || 'gbp'))}
@@ -209,14 +221,15 @@ export default function Earnings(props) {
                     </div> 
                   })}
                 </div>
+                 <div className='pb-12' >
+                        <ReserveWidget />
+                    </div>
 
                 <div className='space-y-10' >
                       <div className={`transition-opacity duration-300 ${isChanging ? 'opacity-50 blur-sm' : 'opacity-100'}`}>
                           <MonthlyRevenue /> 
                       </div>
-                    <div className='lg:col-span-1' >
-                        <ReserveWidget />
-                    </div>
+                   
 
                   <div className="relative">
                     <div className="flex items-center gap-4 mb-10">
@@ -225,8 +238,10 @@ export default function Earnings(props) {
                     </div>
                     
                     <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 transition-opacity duration-300 ${isChanging ? 'opacity-50 blur-sm' : 'opacity-100'}`} >
+                      <TopEarnPiggyPots currency={props?.global_currency || 'gbp'} earnType={earnType} />
                       <TopEarnWishes currency={props?.global_currency || 'gbp'} earnType={earnType}  />
-                      <SubscriptionEarnings auth={auth} earnType={earnType} />
+                      <TopEarnShop currency={props?.global_currency || 'gbp'} earnType={earnType} />
+                      <TopEarnMemberships currency={props?.global_currency || 'gbp'} earnType={earnType} />
                       <PaidTask auth={auth} earnType={earnType}  />
                       <TopEarnBills earnType={earnType} />
                       <TopSupporters earnType={earnType} />

@@ -1,0 +1,39 @@
+stripe listen --forward-to localhost:8000/webhook/payment
+
+SOLO Coder : 
+Easy tarika (aapke current Express + direct charges flow me) ye hai:
+
+## Best + easiest : Bank payouts ko “manual” kar do
+Isse : 
+- Payments creator ke Stripe balance me aate rahenge (normal)
+- Lekin bank me transfer tab hoga jab aap allow karoge (weekly + risk rules ke according)
+
+Steps
+1. Creators ke Express accounts me payouts “manual” set karo
+- Stripe Dashboard → Connect → Accounts → (creator) → Payout schedule → Manual
+- Ya API se settings[payouts][schedule][interval] = manual
+
+2. Weekly payout run ko “bank payout trigger” bana do
+- Aapke system me weekly payout command already scheduled hai: payout:run-weekly
+- Logic: payout preview/execute ke time:
+  - review_hold exclude
+  - reserve_percent hold (already possible)
+  - payout_delay_days wale recent payments skip
+- Fir Stripe payout create karo (creator account ke andar) for calculated amount.
+
+3. Risk state THROTTLE/FREEZE me extra delay
+- Aapke code me payout delay days already THROTTLE/FREEZE me apply hota hai cutoff se:
+   PayoutService.php
+- Manual payout approach me ye delay actually meaningful ho jayega.
+## Reserve ka easy handling (already fits)
+- Reserve percent se platform “application_fee” me reserve hold kar sakta hai (creator ko net kam milega).
+- Reserve release daily job se ho sakta hai.
+## Aapko kya karna hai right now (simple checklist)
+- Stripe me 1–2 test creators par manual payout enable karo
+- Fir weekly payout run se “execute” karke verify karo ki payout bank me tabhi ja raha hai jab aap run karte ho
+Agar aap bolo to main code me exact implementation kar dunga:
+
+- creators ke connected accounts ka payout schedule auto-set (manual)
+- payout:run-weekly execute ke time Stripe payout create logic add
+- admin dashboard me “Payouts delayed because manual schedule” messaging add
+

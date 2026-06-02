@@ -5,14 +5,10 @@ import { Link, usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
-import userdefaultphoto from '../../../../assets/siteicon.png';
 import { TimeFormat } from '@/includes/TimeFormat';
-import { Menu, Transition } from '@headlessui/react'
-import { HiDotsVertical } from "react-icons/hi";
 import OrderDetail from './OrderDetail';
 
-
-export default function OrdersLists() {
+export default function OrdersLists({ type = 'sales' }) {
    const slug = (inputString) => {
       return inputString
       .toLowerCase()
@@ -21,22 +17,57 @@ export default function OrdersLists() {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
    }
-   const { global_currency, auth, user } = usePage().props;
+   const { global_currency, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
    const [orderloading, setOrderLoading] = useState(false);
    const [orders, setOrders] = useState([]);
+   const [userCurrency, setUserCurrency] = useState(global_currency);
 
    const [allEarning, setAllEarning] = useState(0);
    const [monthEarning, setmonthEarning] = useState(0);
    const [claims, setclaims] = useState(0);
 
+   const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+
+   const isZeroDecimalCurrency = (curr) => {
+       const zeroDecimalCurrencies = [
+           'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
+           'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+       ];
+       return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+   };
+
+   const calculateTotalSupporterPays = (price, curr) => {
+       const listedPrice = parseFloat(price || 0);
+       const isZeroDecimal = isZeroDecimalCurrency(curr);
+
+       const stripeFeeRate = 0.029;
+       const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+       const platformFeeRate = (platform_fee_percentage || 17) / 100;
+       const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+       const adminFee = adminFeeInCurrency(curr);
+       const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+
+       if (totalDeductionRate >= 1) return listedPrice;
+
+       const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+
+       if (!isZeroDecimal) {
+           return Math.ceil(totalSupporterPays * 100) / 100;
+       } else {
+           return Math.ceil(totalSupporterPays);
+       }
+   };
+
    const fetchorders = () =>{
       setOrderLoading(true);
-        axios.get(`/shop/orders-list`)
+        axios.get(`/shop/orders-list?type=${type}`)
        .then(res =>{
+        console.log("orders res", res);
          setOrders(res.data.orders);
          setAllEarning(res.data.all_time);
          setmonthEarning(res.data.thirtydays);
          setclaims(res.data.total_claims);
+         setUserCurrency(res.data.user_currency || global_currency);
          setOrderLoading(false);
         })
        .catch(err =>{
@@ -47,9 +78,9 @@ export default function OrdersLists() {
 
    useEffect(()=>{
       fetchorders();
-   }, []);
+   }, [type]);
 
-   const { formatMultiPrice} = PriceFormat();
+   console.log("orders", orders);
 
 
   return <>
@@ -57,86 +88,126 @@ export default function OrdersLists() {
       {!orderloading ?
       <>
 
-      <div className='grid md:grid-cols-3 gap-4 mb-6 ' >
-         <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{claims}</h2>
-            <p className='text-gray-500'>Claims</p>
+      {type === 'sales' && (
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+            <h2 className='font-black text-3xl mb-1' >{claims}</h2>
+            <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Claims</p>
          </div>
-         <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{formatMultiPrice(monthEarning, global_currency)}</h2>
-            <p className='text-gray-500'>Last 30 Days</p>
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+            <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(monthEarning, userCurrency)}</h2>
+            <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Last 30 Days</p>
          </div>
-         <div className='bg-white p-4 text-black rounded-[30px] ' >
-            <h2 className='font-bold text-2xl' >{formatMultiPrice(allEarning, global_currency)}</h2>
-            <p className='text-gray-500'>All Time</p>
+         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+            <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(allEarning, userCurrency)}</h2>
+            <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>All Time</p>
          </div>
       </div>
+      )}
 
-      <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2>
-      <div  className="bg-white rounded-[30px]   px-0">
-         <div className="p-3 py-1 relative ">
-            {orders &&  orders.map((item, index) =>
-               <div key={index} className={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>
-                     <Link href={`/${item.username}`} className="flex w-30">
-                        <div className="p-relative flex-shrink-0">
-                              <img className="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[30px]  object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
-                        </div>
-                        <div className=" ml-3 w-full w-[40%] flex-vert-center">
-                           <div>
-                                 <div className="text-sm text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
-                                    <span className="limit-text-line-2">
-                                     {item.name}
-                                    </span>
-                                 </div>
-                                 <div className='hidden md:block '>
-                                    <div className="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
-                                       {item.email}
-                                    </div>
-                                 </div>
-                                 <div className="block md:hidden">
-                                    <div className="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
-                                       {item.shop.name}
-                                    </div>
-                                 </div>
-                           </div>
-                        </div>
-                     </Link>
-                     <div className="hidden md:block w-40 flex pd-l-16 flex-vert-center">
-                        <Link href={`/shop/item/${slug(item.shop.name)}/${item.shop.uuid}`} className=" text-dark  text-sm  font-cr-regular  flex">
-                           <span className="limit-text-line-1 leading-4  max-w-60  mr-3">{item.shop.name || ""}</span>
-                        </Link>
-                     </div>
-                     <div className=" flex flex-vert-center">
-                        <div className=" text-dark  font-cr-medium  text-sm  block  leading-4">
-                           {item && item.amount ? <> {formatMultiPrice((item.amount), item?.currency || 'GBP') }</> : "FREE"}                                    </div>
-                     </div>
-                     <div className="flex justify-between items-center">
-                        <div className=" text-[#4d4d4d] text-sm hidden lg:block pb-2 me-2">
-                            <TimeFormat dateString={item.created_at} />
-                        </div>
-                        <Menu as="div" className=" relative inline-block text-left">
-                           <Menu.Button className="inline-flex font-semibold text-gray-900  ">
-                              <HiDotsVertical size="1.4rem" />
-                           </Menu.Button>
-                        <Transition
-                           as="div"
-                           enter="transition ease-out duration-100"
-                           enterFrom="transform opacity-0 scale-95"
-                           enterTo="transform opacity-100 scale-100"
-                           leave="transition ease-in duration-75"
-                           leaveFrom="transform opacity-100 scale-100"
-                           leaveTo="transform opacity-0 scale-95" >
-                        <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-[30px]  overflow-hidden bg-white shadow-xl ring-1 ring-black ring-opacity-5">
-                           <OrderDetail date={<TimeFormat dateString={item.created_at} />} item={item} text={'View Info'} />
-                        </Menu.Items>
-                        </Transition>
-                     </Menu>
+      {type === 'sales' ? <h2 className='font-GillSans uppercase text-xl mb-4 pt-3' >Recent Claims</h2> : <h2 className='font-GillSans uppercase text-xl mb-4 pt-3' >My Purchases</h2>}
 
-                     </div>
-               </div>
+      {orders && orders.length > 0 && (
+         <div  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {orders.map((item, index) =>
+                  <article 
+                    key={index} 
+                    className="relative bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
+                  >
+                    <div className="p-3 md:p-4">
+                        <div className="relative">
+                            <div className="block border border-black rounded-[20px] overflow-hidden relative">
+                                <span className={`absolute top-2 left-2 text-[11px] px-3 py-1 rounded-lg border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] z-[5] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                                    {item?.shop?.type === 'physical' ? 'Physical' : 'Digital'}
+                                </span>
+                                
+                                <Link href={item.shop ? `/shop/item/${slug(item.shop.name)}/${item.shop.uuid}` : '#'}>
+                                    <img
+                                        className="object-cover h-[130px] sm:h-[160px] w-full"
+                                        src={item?.shop?.perma_link || 'https://via.placeholder.com/400?text=🛍️'}
+                                        alt={item?.shop?.name || "Product"}
+                                        onError={(e) => {
+                                            e.target.src = 'https://via.placeholder.com/400?text=🛍️';
+                                        }}
+                                    />
+                                 <div className="absolute top-2 right-2 flex items-center gap-2">
+                                       {item.payment_status === 'refunded' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-gray-200 text-gray-700 uppercase">Refunded</span>
+                                       ) : item.status === 'delivered' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-green-100 text-green-700 uppercase">Completed</span>
+                                       ) : item.status === 'shipped' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-blue-100 text-blue-700 uppercase">Shipped</span>
+                                       ) : item.status === 'processing' ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-indigo-100 text-indigo-700 uppercase">Processing</span>
+                                       ) : item.is_delayed ? (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-red-100 text-red-700 uppercase">Delayed</span>
+                                       ) : (
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-yellow-100 text-yellow-700 uppercase">Pending</span>
+                                       )}
+                                 </div>
+                                </Link>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3">
+                            <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
+                                {item?.shop?.name || ""}
+                            </h2>
+                            <div className="flex flex-col gap-1 text-[13px] sm:text-sm font-bold text-gray-700">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-500 uppercase text-[11px]">{type === 'sales' ? 'Buyer' : 'Seller'}:</span>
+                                    {item.username ? (
+                                        <Link href={`/${item.username}`} className="text-blue-500 hover:underline">
+                                            @{item.username}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-gray-500 italic text-[13px]">{item.name || 'Anonymous'}</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-4 flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                                <h2 className="font-black text-lg sm:text-2xl text-black">
+                                    {item && (item?.total_paid || item?.gross_amount || item?.amount) ? (
+                                        type === 'sales' ? (
+                                            formatMultiPrice(item.net_amount || item.amount || 0, item?.currency || userCurrency)
+                                        ) : (
+                                            formatMultiPrice(
+                                                item.total_paid || 
+                                                calculateTotalSupporterPays(
+                                                    ((Number(item.gross_amount || item.amount || 0)) + 
+                                                    (Number(item.tax_amount || 0)) + 
+                                                    (Number(item.vat_tax_amount || 0)) + 
+                                                    (Number(item.shipping_amount || 0))),
+                                                    item?.currency || userCurrency
+                                                ), 
+                                                item?.currency || userCurrency
+                                            )
+                                        )
+                                    ) : "FREE"}
+                                </h2>
+                                <div className="text-gray-500 text-[11px] font-bold uppercase">
+                                    <TimeFormat dateString={item.created_at} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-auto">
+                            <OrderDetail 
+                                date={<TimeFormat dateString={item.created_at} />} 
+                                item={item} 
+                                text={'View Info'} 
+                                classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 text-black text-sm sm:text-base uppercase text-center block" 
+                                onSuccess={fetchorders} 
+                            />
+                        </div>
+                    </div>
+                </article>
             )}
          </div>
-      </div>
+      )}
       </>
       : ''}
 

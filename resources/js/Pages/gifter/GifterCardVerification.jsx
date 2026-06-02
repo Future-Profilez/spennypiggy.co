@@ -14,10 +14,10 @@ export default function GifterCardVerification({ auth, gifterCardVerification}) 
         setLoading(true);
         try {
             const { data: response } = await axios.get(
-                route("card.verification.payment")
+                route("gifter.card.verification")
             );
-            if (response.url) {
-                window.location.href = response.url;
+            if (response.checkout_url) {
+                window.location.href = response.checkout_url;
             } else {
                 errorAlert(
                     "Unexpected response from the server. Please try again later."
@@ -35,7 +35,7 @@ export default function GifterCardVerification({ auth, gifterCardVerification}) 
 
     return (
         <Authenticated>
-            <div className="bg-black py-6 ">
+            <div className="bg-[#A2E4B8] py-6 ">
                 <div className="container">
                     <div className="!h-[80vh]  flex items-center  ">
                     <div className="max-w-[800px] m-auto ">

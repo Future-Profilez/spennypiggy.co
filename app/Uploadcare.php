@@ -23,9 +23,9 @@ class Uploadcare
      */
     private static function setAttrs(): void
     {
-        self::$public = env('UPLOADCARE_PUBLIC_KEY');
-        self::$secret = env('UPLOADCARE_SECRET_KEY');
-        self::$host = env('UPLOADCARE_HOST');
+        self::$public = config('services.uploadcare.public');
+        self::$secret = config('services.uploadcare.secret');
+        self::$host = config('services.uploadcare.host', 'https://api.uploadcare.com/');
     }
 
     /**
@@ -36,7 +36,7 @@ class Uploadcare
     public static function getApiObj()
     {
         static::setAttrs();
-        $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'));
+        $config = Configuration::create(config('services.uploadcare.public'), config('services.uploadcare.secret'));
         $api = new Api($config);
         return $api;
     }
@@ -64,9 +64,9 @@ class Uploadcare
         $req = Http::accept('application/vnd.uploadcare-v0.7+json')
             ->contentType('application/json')
             ->withHeaders([
-                'Authorization' => "Uploadcare.Simple " . env("UPLOADCARE_PUBLIC_KEY") . ":" . env('UPLOADCARE_SECRET_KEY')
+                'Authorization' => "Uploadcare.Simple " . config("services.uploadcare.public") . ":" . config('services.uploadcare.secret')
             ])
-            ->post(env("UPLOADCARE_HOST") . "convert/video/", [
+            ->post(config("services.uploadcare.host", "https://api.uploadcare.com/") . "convert/video/", [
                 "paths" => ["$uuid/video/-/cut/0:0:05.001/0:$time.0/"],
                 "store" => 1
             ]);
@@ -90,9 +90,9 @@ class Uploadcare
         $req = Http::accept('application/vnd.uploadcare-v0.7+json')
             ->contentType('application/json')
             ->withHeaders([
-                'Authorization' => "Uploadcare.Simple " . env("UPLOADCARE_PUBLIC_KEY") . ":" . env('UPLOADCARE_SECRET_KEY')
+                'Authorization' => "Uploadcare.Simple " . config("services.uploadcare.public") . ":" . config('services.uploadcare.secret')
             ])
-            ->post(env("UPLOADCARE_HOST") . "convert/video/", [
+            ->post(config("services.uploadcare.host", "https://api.uploadcare.com/") . "convert/video/", [
                 "paths" => ["$uuid/video/-/cut/0:0:01.001/0:20.0/"],
                 "store" => 1
             ]);

@@ -9,6 +9,9 @@ export default function RiskTestPanel({ auth }) {
     const [unlocked, setUnlocked] = useState(false);
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [reservePercent, setReservePercent] = useState(10);
+    const [payoutDelayDays, setPayoutDelayDays] = useState(0);
+    const [joinedDaysAgo, setJoinedDaysAgo] = useState(0);
 
     const checkPin = () => {
         if (pin === '1212') {
@@ -24,6 +27,19 @@ export default function RiskTestPanel({ auth }) {
         setMessage('Processing...');
         try {
             const res = await axios.post(url);
+            setMessage(`Success: ${res.data.message || 'Done'}`);
+        } catch (error) {
+            setMessage(`Error: ${error.response?.data?.error || error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleActionWithBody = async (url, body) => {
+        setLoading(true);
+        setMessage('Processing...');
+        try {
+            const res = await axios.post(url, body);
             setMessage(`Success: ${res.data.message || 'Done'}`);
         } catch (error) {
             setMessage(`Error: ${error.response?.data?.error || error.message}`);
@@ -94,6 +110,59 @@ export default function RiskTestPanel({ auth }) {
                                             >
                                                 🟢 Clear All Flags
                                             </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="border p-4 rounded-lg">
+                                        <h2 className="text-lg font-semibold mb-4">Reserve & Onboarding (Local)</h2>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Reserve percent</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    className="border rounded w-full py-2 px-3"
+                                                    value={reservePercent}
+                                                    onChange={(e) => setReservePercent(Math.max(0, Math.min(100, Number(e.target.value))))}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Payout delay days</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="90"
+                                                    className="border rounded w-full py-2 px-3"
+                                                    value={payoutDelayDays}
+                                                    onChange={(e) => setPayoutDelayDays(Math.max(0, Math.min(90, Number(e.target.value))))}
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => handleActionWithBody('/api/test/creator/reserve', { reserve_percent: reservePercent, payout_delay_days: payoutDelayDays })}
+                                                disabled={loading}
+                                                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+                                            >
+                                                🟣 Apply Reserve Settings
+                                            </button>
+                                            <div className="pt-2 border-t">
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Creator joined days ago</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="3650"
+                                                    className="border rounded w-full py-2 px-3"
+                                                    value={joinedDaysAgo}
+                                                    onChange={(e) => setJoinedDaysAgo(Math.max(0, Math.min(3650, Number(e.target.value))))}
+                                                />
+                                                <button
+                                                    onClick={() => handleActionWithBody('/api/test/creator/joined-days-ago', { days_ago: joinedDaysAgo })}
+                                                    disabled={loading}
+                                                    className="mt-3 w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+                                                >
+                                                    ⚙️ Set Joined Date
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 

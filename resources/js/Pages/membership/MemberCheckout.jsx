@@ -9,11 +9,12 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import Turnstile from "@/Components/Turnstile";
 import Social from "../Auth/Social";
 import Popup from "@/Components/Popup";
+import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import axios from "axios";
 
 export default function SubCheckout(props) {
+    const { flash, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
     const turnstileRef = useRef(null);
-    const { turnstileSiteKey } = usePage().props;
     const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities, creator_currency, display_currency } = props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [username, setUserName] = useState(
@@ -31,6 +32,7 @@ export default function SubCheckout(props) {
         email: email,
         message: "",
         agree: false,
+        digital_waiver: false,
         anonymous: 0,
         cf_turnstile_response: "",
     });
@@ -45,34 +47,36 @@ export default function SubCheckout(props) {
     };
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
-        const listedPrice = parseFloat(price || 0);
-        const vat = parseFloat(vatAmount || 0);
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        
-        // Client Rule: Add VAT before other fees
-        const priceWithVat = listedPrice + vat;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
 
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 17) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const finalTotalAmount = calculateTotalSupporterPays(
         membership?.price, 
         membership?.currency,
-        vat_amount
+        membership?.user?.vat_amount_percentage || 0
     );
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -124,20 +128,6 @@ export default function SubCheckout(props) {
     }, [setData, setVerified]);
 
     // const executeCaptcha = (e) => {
-    //     e.preventDefault();
-        
-    //     if (!turnstileSiteKey) {
-    //         handleSubmit();
-    //         return;
-    //     }
-        
-    //     if (turnstileRef.current && !verified) {
-    //         turnstileRef.current.execute();
-    //     }
-    //     setChecking(true);
-    // };
-
-    const { flash } = usePage().props;
 
     // Step-Up Modal State
     const [showStepUp, setShowStepUp] = useState(false);
@@ -398,40 +388,11 @@ export default function SubCheckout(props) {
                                     </p>
                                     <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
                                         <ul className="w-full">
-                                            {/* <li className="flex justify-between  border p-3">
-                                                <span className="min-w-[100px] block">Subtotal :</span>
-                                                <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
-                                            </li> */}
-                                            {/* <li className="flex justify-between   border p-3">
-                                                <span className="min-w-[100px] block">Platform Fee :</span>
-                                                <div>
-                                                    <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
-                                                    <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
-                                                    ?
-                                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px]  top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                                        {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
-                                                    all transactions.
-                                                    </p>
-                                                    </button>
-                                                </div>
-                                            </li> */}
-                                            {/* {vat_amount && vat_amount > 0 ? (
-                                                <li className="flex justify-between   border p-3">
-                                                    <span className="min-w-[100px] block">VAT :</span>
-                                                    <strong>{formatMultiPrice(
-                                                            vat_amount || "",
-                                                            membership &&
-                                                                membership.currency
-                                                        )}</strong>
-                                                </li>
-                                            ) : (
-                                                ""
-                                            )} */}
                                             <li className="flex justify-between mb-3">
-                                                <span className="min-w-[100px] text-xl block">Total :</span>
+                                                <span className="min-w-[100px] text-xl block">Total:</span>
                                                 <div className="text-right">
                                                     <strong className="block text-xl">
-                                                        {formatMultiPrice(finalTotalAmount, (membership && membership?.currency))}
+                                                        {formatMultiPrice(finalTotalAmount, membership?.currency)}
                                                     </strong>
                                                 </div>
                                             </li>
@@ -445,7 +406,7 @@ export default function SubCheckout(props) {
                                     )}
 
                                     <span className="text-normal text-gray-500 font-normal mt-1 leading-tight block">
-                                        * Includes all fees. You will be charged in {membership?.currency}.
+                                        *Includes platform and payment processing fees. You will be charged in {membership?.currency}.
                                     </span>
                                     
                                 </div>
@@ -456,7 +417,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label className=" mb-2 text-sm font-medium text-gray-900">Add Message </label>
                                         <textarea
-                                            className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             onKeyUp={(e) => setData("message",e.target.value)}
                                             placeholder="Write message in under 800 Words..."
                                             defaultValue={data.message}
@@ -473,7 +434,7 @@ export default function SubCheckout(props) {
                                                 </label>
                                                 
                                                 <input
-                                                    className={`${auth && auth?.user && auth?.user?.email ? "disabled":""} mt-2 border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
+                                                    className={`${auth && auth?.user && auth?.user?.email ? "disabled":""} mt-2 border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -504,7 +465,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="mt-2 border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 "
+                                                    className="mt-2 border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -540,133 +501,13 @@ export default function SubCheckout(props) {
                                             Your personal email and name
                                             will be private.
                                         </p>
-                                        <label
-                                            htmlFor="agreeterm"
-                                            className="text-left  "
-                                        >
-                                            <input
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "agree",
-                                                        e.target.checked
-                                                    )
-                                                }
-                                                type="checkbox"
-                                                id="agreeterm"
-                                                name="agreeterm"
-                                                className="mr-2"
-                                                value="agreeterm"
-                                            ></input>
-                                            I understand I am paying the
-                                            creator directly and I agree to
-                                            the{" "}
-                                            <Link
-                                                target="_blank"
-                                                className="text-violet-600"
-                                                href={route(
-                                                    "terms-and-conditions"
-                                                )}
-                                            >
-                                                Terms of Service
-                                            </Link>{" "}
-                                            and{" "}
-                                            <a
-                                                className="text-violet-600"
-                                                target="_blank"
-                                                href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                            >
-                                                {" "}
-                                                Privacy Policy{" "}
-                                            </a>{" "}
-                                            and the following statements:
-                                        </label>
-                                        <div className="tearmlist pl-3">
-                                            <ul className="pl-0">
-                                                <li>
-                                                    {" "}
-                                                    This payment will be
-                                                    automatically taken on a
-                                                    daily,weekly,monthly or
-                                                    yearly basis depending
-                                                    on your choice and can be
-                                                    cancelled anytime.{" "}
-                                                </li>
-                                                <li>
-                                                    {" "}
-                                                    For Memberships and
-                                                    subscriptions, I
-                                                    understand I am making a
-                                                    non-refundable purchase
-                                                    that provides access to
-                                                    exclusive posts. This
-                                                    payment will be
-                                                    automatically taken on a
-                                                    daily, weekly, monthly
-                                                    or yearly basis
-                                                    depending on the
-                                                    subscription type. Can
-                                                    be cancelled anytime.{" "}
-                                                </li>
-                                                <li>
-                                                    {" "}
-                                                    I understand that for
-                                                    wishes or support
-                                                    payments I am making a
-                                                    non-refundable donation
-                                                    of support and
-                                                    understand I will
-                                                    recieve a thank you
-                                                    message as a reward.{" "}
-                                                </li>
-                                                <li>
-                                                    {" "}
-                                                    This payment of purchase
-                                                    or donation is intended
-                                                    soley for the wish
-                                                    recipient{" "}
-                                                </li>
-                                                <li>
-                                                    {" "}
-                                                    I have taken the
-                                                    necessary steps to
-                                                    confirm the account
-                                                    owner is authentic and I
-                                                    understand that Spenny
-                                                    Piggy will not be held
-                                                    responsible for any
-                                                    issues arising from a
-                                                    catfishing situation.{" "}
-                                                </li>
-                                                <li>
-                                                    {" "}
-                                                    I understand that by
-                                                    violating these terms I
-                                                    may be subject to legal
-                                                    action or can fall a
-                                                    victim of scams.{" "}
-                                                </li>
-                                                <li>
-                                                    {" "}
-                                                    I understand that by
-                                                    checking the box above
-                                                    and then clicking
-                                                    "CHECKOUT",I will have
-                                                    created a legally
-                                                    binding e-signature to
-                                                    this agreement.{" "}
-                                                </li>
-                                                <li>
-                                                    {" "}
-                                                    By providing an
-                                                    e-mail,you confirm that
-                                                    you are happy to receive
-                                                    marketing updates. You
-                                                    can opt out at anytime.{" "}
-                                                </li>
-                                            </ul>
-                                        </div>
+                                        <CheckoutLegalTerms onAgreeChange={(checked) => {
+                                            setData("agree", checked);
+                                            setData("digital_waiver", checked);
+                                        }} />
                                     </li>
                                 </ul>
+
                                 {!card_capabilities && (
                                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-3" role="alert">
                                         <strong className="font-bold">Payment Unavailable: </strong>
@@ -688,14 +529,16 @@ export default function SubCheckout(props) {
                                         onClick={handleSubmit}
                                         className={`${
                                             !data.agree ||
+                                            !data.digital_waiver ||
                                             processing ||
                                             checking ||
                                             !card_capabilities
                                                 ? "disabled"
                                                 : ""
-                                        } button-pink btn-shadow shadow-black text-white md !px-8 mt-3 text-center`}
+                                        } button-pink btn-shadow shadow-[4px_4px_0px_0px_#FF007F]lack text-white md !px-8 mt-3 text-center`}
                                         disabled={
                                             !data.agree ||
+                                            !data.digital_waiver ||
                                             processing ||
                                             checking ||
                                             !card_capabilities
@@ -743,7 +586,7 @@ export default function SubCheckout(props) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="e.g. 123456"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
@@ -754,7 +597,7 @@ export default function SubCheckout(props) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="CONFIRM"
                                     value={typedConfirmation}
                                     onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -789,7 +632,7 @@ export default function SubCheckout(props) {
                             >
                                 {passkeyLoading ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
@@ -806,7 +649,6 @@ export default function SubCheckout(props) {
                     </div>
                 </Popup>
 
-                <Toaster />
             </Authenticated>
         </>
     );

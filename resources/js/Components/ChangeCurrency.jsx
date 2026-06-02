@@ -36,6 +36,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
    }
 
    const changeCurrency = (e) => {
+      if (!e) return;
       get(route(`change.currency`, { c: e } ),{
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -80,7 +81,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          <>
          <Menu as="div" className="relative inline-block text-left">
             <div>
-               <Menu.Button className="inline-flex justify-center w-full rounded-[30px]  border border-transparent px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+               <Menu.Button className="inline-flex justify-center w-full rounded-[30px]   border border-transparent px-2 md:px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
                   {selectedCurrency ? selectedCurrency : "N/A"}
                </Menu.Button>
             </div>
@@ -118,7 +119,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          </>
          :
          <div className=" ">
-            <h2 className="uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
+            <h2 className="uppercase font-GillSans pb-4 text-2xl"> Display Currency </h2>
             <div className="form-field mb-4">
                   <Select  classNamePrefix="react-select" className="max-h-[100px] react-select mb-4 mt-2 "
                      options={currencies} styles={customStyles}

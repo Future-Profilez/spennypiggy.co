@@ -36,7 +36,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
     setError(null);
     
     try {
-      const options = { page: newPage, perPage: 10, filter: newFilter };
+      const options = { page: newPage, perPage: 5, filter: newFilter };
       const result = await getProfilePosts(username, options);
       
       if (append) {
@@ -66,15 +66,12 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
   // Handle filter change
   const handleFilterChange = async (newFilter) => {
     if (newFilter === filter) return;
-    
     setFilter(newFilter);
     setPage(1);
     setHasMore(true);
-    
-    // If we haven't used API yet and it's 'all' filter, use initial props
     if (!useApi && newFilter === 'all' && initialPosts?.length) {
       setPosts(initialPosts);
-      setHasMore(initialPosts.length >= 10); // Assume more if we got full page
+      setHasMore(initialPosts.length >= 5); // Assume more if we got full page
     } else {
       await fetchPosts(newFilter, 1, false);
     }
@@ -87,17 +84,15 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
     await fetchPosts(filter, nextPage, true);
   };
 
-  // Initialize with API if not 'all' filter or no initial posts
   useEffect(() => {
     if (filter !== 'all' || !initialPosts?.length) {
       fetchPosts(filter, 1, false);
     }
   }, []);
 
-  // Memoized filtered posts for initial props fallback
   const displayPosts = useMemo(() => {
     return posts || [];
-  }, [posts]);
+  }, [posts]); 
 
   if (isLoading && !posts.length) {
     return (
@@ -150,13 +145,13 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
             <Post key={`post-${post.uuid || post.id || i}`} item={post} />
           )}
           {hasMore && (
-            <div className="text-center py-6">
+            <div className="text-center py-4">
               {isLoadingMore ? (
                 <LoadMoreSkeleton />
               ) : (
                 <button
                   onClick={handleLoadMore}
-                  className="bg-yellow-300 text-black border-[3px] border-black font-black uppercase tracking-widest px-6 py-3 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]duration-200"
+                  className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] duration-200"
                   disabled={isLoadingMore}
                 >
                   Load More Posts
@@ -179,13 +174,13 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
 // Filter tabs component
 function PostFilterTabs({ filters, activeFilter, onFilterChange, disabled = false }) {
   return (
-    <div className="flex gap-3 mb-6 overflow-auto hideScroll pb-2 pt-1 px-1">
+    <div className="flex gap-3 mb-3 overflow-auto hideScroll pb-2   px-1">
       {filters.map(({ key, label }) => (
         <button 
           key={key}
           onClick={() => onFilterChange(key)}
           disabled={disabled}
-          className={`px-5 py-2 text-sm md:text-base font-black uppercase tracking-widest border-2 border-black rounded-full transition-all duration-200 whitespace-nowrap ${
+          className={`px-5 py-2 text-sm font-black uppercase tracking-widest border-2 border-black rounded-full transition-all duration-200 whitespace-nowrap ${
             activeFilter === key
               ? 'bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               : 'bg-white text-black hover:bg-yellow-100 shadow-none hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'

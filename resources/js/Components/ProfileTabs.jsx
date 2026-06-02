@@ -5,7 +5,8 @@ export default function ProfileTabs({
     activeTab = 'about', 
     onTabChange, 
     showAddButton = true,
-    onAddClick
+    onAddClick,
+    showSecurity = false
 }) {
     const tabs = [
         { key: 'about', label: 'ABOUT' },
@@ -15,6 +16,10 @@ export default function ProfileTabs({
         { key: 'shop', label: 'SHOP' },
         { key: 'gifts', label: 'GIFTS' }
     ];
+
+    if (showSecurity) {
+        tabs.push({ key: 'security', label: 'SECURITY' });
+    }
 
     return (
         <div className="w-full bg-black sticky top-0 z-40">

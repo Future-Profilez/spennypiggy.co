@@ -13,6 +13,7 @@ use App\Mail\TaskRefunded;
 use App\Mail\TaskGracePeriodStartedMail;
 use App\Mail\TaskGracePeriodReminderMail;
 use App\Mail\TaskRunningLateMail;
+use App\Mail\TaskDueSoonMail;
 use Stripe\Stripe;
 use App\Services\StripeMetadataService;
 use Stripe\Refund;
@@ -40,15 +41,56 @@ class ProcessSlaRefunds extends Command
 
     public function handle()
     {
+        Log::info('SLA Check command triggered via handle()');
         $this->info('Starting SLA check...');
-        // Log::info('Starting SLA check...');
 
+        $this->processPreDeadlineReminders();
         $this->processGracePeriodEntry();
         $this->processGracePeriodReminders();
         $this->processGracePeriodExpirations();
 
         $this->info('SLA check completed.');
-        // Log::info('SLA check completed.');
+        Log::info('SLA Check command completed');
+    }
+
+    private function processPreDeadlineReminders()
+    {
+        // Find purchases where deadline is in the next 24 hours and no reminder sent yet
+        $preDeadlineHours = 24; 
+        $upcomingPurchases = TaskPurchase::whereNotNull('sla_deadline')
+            ->where('sla_deadline', '>', Carbon::now())
+            ->where('sla_deadline', '<', Carbon::now()->addHours($preDeadlineHours))
+            ->whereIn('status', ['pending', 'paid', 'assigned', 'rejected_once'])
+            ->whereNull('last_reminder_at') // Only send if no reminder was sent yet
+            ->get();
+
+        foreach ($upcomingPurchases as $purchase) {
+            $this->info("Sending pre-deadline reminder for purchase UUID: {$purchase->uuid}");
+            
+            $purchase->last_reminder_at = Carbon::now();
+            $purchase->save();
+
+            if ($purchase->creator) {
+                try {
+                    $hoursLeft = Carbon::now()->diffInHours($purchase->sla_deadline);
+                    Log::info("Attempting to send pre-deadline reminder email to creator: {$purchase->creator->email}");
+                    
+                    Helpers::sendNotification(
+                        "Task Due Soon ⏰", 
+                        "Your task '{$purchase->task->title}' is due in approximately {$hoursLeft} hours.", 
+                        $purchase->creator->email
+                    );
+                    
+                    Mail::to($purchase->creator->email)->send(new TaskDueSoonMail([
+                        'title' => $purchase->task->title,
+                        'hours_left' => $hoursLeft
+                    ]));
+                    Log::info("Pre-deadline reminder email sent successfully to {$purchase->creator->email}");
+                } catch (\Exception $e) {
+                    Log::error("Failed to notify creator about upcoming deadline: " . $e->getMessage());
+                }
+            }
+        }
     }
 
     private function processGracePeriodEntry()
@@ -87,6 +129,8 @@ class ProcessSlaRefunds extends Command
             if ($purchase->creator) {
                 try {
                     $graceHours = $this->getGracePeriodHours();
+                    Log::info("Attempting to send grace period start email to creator: {$purchase->creator->email}");
+                    
                     Helpers::sendNotification(
                         "Grace Period Started ⏳", 
                         "Your task '{$purchase->task->title}' has passed the deadline. You have " . $graceHours . " hour" . ($graceHours == 1 ? "" : "s") . " to complete it.", 
@@ -95,6 +139,7 @@ class ProcessSlaRefunds extends Command
                     Mail::to($purchase->creator->email)->send(new TaskGracePeriodStartedMail([
                         'title' => $purchase->task->title
                     ]));
+                    Log::info("Grace period start email sent successfully to {$purchase->creator->email}");
                 } catch (\Exception $e) {
                     Log::error("Failed to notify creator about grace period: " . $e->getMessage());
                 }
@@ -190,11 +235,33 @@ class ProcessSlaRefunds extends Command
             });
 
         if ($expiredPurchases->count() > 0) {
-            Stripe::setApiKey(config('services.stripe.secret'));
-            
             foreach ($expiredPurchases as $purchase) {
-                $this->processRefund($purchase);
+                $this->markAsSlaMissed($purchase);
             }
+        }
+    }
+
+    private function markAsSlaMissed(TaskPurchase $purchase)
+    {
+        $this->info("Marking purchase UUID as SLA missed: {$purchase->uuid}");
+        
+        $purchase->status = 'sla_missed';
+        $purchase->save();
+
+        // Update Deliverable
+        try {
+            $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+            if ($deliverable) {
+                $deliverable->status = 'sla_missed';
+                $deliverable->save();
+
+                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                    'status' => 'sla_missed',
+                    'reason' => 'grace_period_expired'
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to update deliverable for SLA miss: " . $e->getMessage());
         }
     }
 

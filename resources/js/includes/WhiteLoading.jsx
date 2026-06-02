@@ -1,10 +1,3 @@
-import loading from '../../assets/img/loading.gif';
+import LoadingScreen from "./LoadingScreen";
 
-export default function WhiteLoading({hideimage}) {
-  return (
-    <div className=' flex justify-center items-center content-center flex-wrap p-4  '>
-        {hideimage ? '' : <div className='noresultimg mb-3'><img  alt="img" src={loading} /></div>    }
-        <h6 className='headingLg loadingtext w-full text-center shadow-yellow mb-5'>Loading...</h6>
-    </div>
-  )
-}
+export default LoadingScreen;

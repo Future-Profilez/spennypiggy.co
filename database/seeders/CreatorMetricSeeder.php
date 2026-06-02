@@ -27,7 +27,7 @@ class CreatorMetricSeeder extends Seeder
             
             $riskLevel = 'low';
             $reservePercent = 0;
-            $payoutDelay = 7;
+            $payoutDelay = 0;
             
             if ($isHighRisk) {
                 $riskLevel = 'high';

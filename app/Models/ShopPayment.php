@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
+use App\Models\Deliverable;
 
 class ShopPayment extends Model
 {
@@ -16,8 +17,10 @@ class ShopPayment extends Model
         'uuid',
         'session_id',
         'amount',
+        'total_paid',
         'tax_amount',
         'vat_tax_amount',
+        'shipping_amount',
         'currency',
         'shop_id',
         'user_id',
@@ -29,6 +32,9 @@ class ShopPayment extends Model
         'payment_status',
         'twitter_response',
         'quantity',
+        'shipping_info',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
 
@@ -64,11 +70,21 @@ class ShopPayment extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function shop()
     {
         return $this->belongsTo(Shop::class, 'shop_id');
+    }
+
+    public function deliverable()
+    {
+        return $this->hasOne(Deliverable::class, 'session_id', 'session_id');
+    }
+
+    public function financialTransaction()
+    {
+        return $this->morphOne(FinancialTransaction::class, 'source');
     }
 }

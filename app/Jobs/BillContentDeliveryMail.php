@@ -182,6 +182,14 @@ class BillContentDeliveryMail implements ShouldQueue
      */
     private function sendContentDeliveryEmail($bill, $deliverable, $recipientEmail, $recipientName)
     {
+        $payer = $this->billPayment->user;
+        if ($payer && $payer->notification_send != 1) {
+            \Log::info('BillContentDeliveryMail: Skipping email — user notifications disabled', [
+                'user_id' => $payer->id,
+            ]);
+            return;
+        }
+
         try {
             // Prepare email data similar to CheckoutMailToUser
             $emailData = (object) [

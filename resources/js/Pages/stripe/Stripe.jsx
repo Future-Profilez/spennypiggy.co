@@ -10,11 +10,24 @@ export default function Stripe(props) {
     const { auth, user, success, mor_consent_given, mor_consent_details } =
         props;
     const checkRef = useRef();
+    const creatorEmailReceiptAckRef = useRef();
     const { errorAlert, successAlert } = useAlerts();
     const { data, setData, post, processing, errors } = useForm({
         termaccept: "",
         mor_agreed: false,
+        creator_email_receipt_ack: false,
     });
+
+    const acknowledgements = [
+        "I am the seller of my content, services, and any Creator Content made available through my profile or storefront.",
+        "All payments made by supporters are made directly to me via my connected Stripe account, and I am solely responsible for the fulfilment, delivery, and quality of all Creator Content.",
+        "I am responsible for handling refunds, disputes, chargebacks, complaints, and any claims arising from transactions with supporters, subject to the Platform’s rights and payment processor requirements.",
+        "I am responsible for determining, reporting, and paying any applicable taxes in my jurisdiction, including income tax, VAT, sales tax, or any other applicable taxes.",
+        "Spenny Piggy provides payment routing, processing infrastructure, moderation systems, and risk management controls only, and does not act as the seller, merchant, or supplier of any goods or services.",
+        "Spenny Piggy may, at its sole discretion, intervene in transactions, including delaying payouts, applying reserves, withholding funds, reversing transactions, or issuing refunds where required for compliance, fraud prevention, dispute resolution, or risk management purposes.",
+        "All funds are subject to processing, verification, and risk controls and are not guaranteed until successfully paid out in accordance with Platform policies and payment processor requirements.",
+        "I agree to comply with all Platform Terms, Payment Processor requirements (including Stripe), and applicable laws in connection with my use of the Platform."
+    ];
 
     const [countryCurrency, setCountryCurrency] = useState();
     const [country, setCountry] = useState("");
@@ -23,6 +36,8 @@ export default function Stripe(props) {
 
     const adminIdentityApproved = auth?.user?.identity_admin_status === 1;
     const finalStepsUnlocked = auth?.user?.profile_status_lock == 2;
+    const creatorEmailReceiptAcked = !!auth?.user
+        ?.creator_email_receipt_acknowledged_at;
 
     // Show success message if redirected after consent AND scroll to top
     useEffect(() => {
@@ -90,23 +105,42 @@ export default function Stripe(props) {
             return false;
         }
 
-        if (!checkRef.current.checked) {
-            errorAlert("Please check accept terms & conditions checkbox");
-            checkRef.current.focus();
+        if (
+            !creatorEmailReceiptAcked &&
+            creatorEmailReceiptAckRef &&
+            creatorEmailReceiptAckRef.current &&
+            !creatorEmailReceiptAckRef.current.checked
+        ) {
+            errorAlert(
+                "Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.",
+            );
+            creatorEmailReceiptAckRef.current.focus();
             return false;
         }
 
+        // if (!checkRef.current.checked) {
+        //     errorAlert("Please check accept terms & conditions checkbox");
+        //     checkRef.current.focus();
+        //     return false;
+        // }
+
         setConnecting(true);
 
-        // Generate the URL first
-        const stripeUrl = route("stripe.connect", {
-            // step: "init",
-            country: country,
-            currency: countryCurrency,
-        });
-
-        // Then redirect
-        window.location.href = stripeUrl;
+        post(
+            route("stripe.connect", {
+                country: country,
+                currency: countryCurrency,
+            }),
+            {
+                preserveScroll: true,
+                onError: (errs) => {
+                    setConnecting(false);
+                    Object.keys(errs || {}).forEach((k) => {
+                        if (errs[k]) errorAlert(errs[k]);
+                    });
+                },
+            },
+        );
         return true;
     };
 
@@ -129,10 +163,9 @@ export default function Stripe(props) {
             <Authenticated auth={auth.user} user={user}>
                 <Head title="Merchant of Record Consent - Spenny Piggy" />
                 <div className="bg-white min-h-screen py-12 md:py-20">
-                    <div className="max-width-800 mx-auto px-4">
-                        {/* Header Section */}
-                        <div className="text-center mb-10">
-                            <h1 className="text-[29px] font-gulfs uppercase text-pink mb-2">
+                    <div className="containerbox mx-auto px-4">
+                        <div className="text-center mb-10"> 
+                            <h1 className="text-[25px] font-bold font-CeraGR  uppercase text-pink mb-2">
                                 Merchant of Record Acknowledgement
                             </h1>
                             <p className="text-black text-lg font-CeraGR max-w-2xl mx-auto">
@@ -210,16 +243,16 @@ export default function Stripe(props) {
                         )}
 
                         {/* Merchant of Record Agreement Card */}
-                        <div className="bg-white rounded-[30px]   shadow-lg border border-gray-200 overflow-hidden mb-8">
+                        <div className="bg-white rounded-[30px]    shadow-lg border border-gray-200 overflow-hidden mb-8">
                             <div className="p-8">
                                 {/* Agreement Header */}
                                 <div className="text-center mb-8">
                                     <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <span className="text-3xl">📝</span>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-gray-800 font-GillSans uppercase mb-2">
+                                    <p className="text-xl text-gray-800 font-bold uppercase mb-2">
                                         Merchant of Record Agreement
-                                    </h2>
+                                    </p>
                                     <p className="text-lg text-pink font-semibold">
                                         Oink! @{auth?.user?.username}
                                     </p>
@@ -227,8 +260,8 @@ export default function Stripe(props) {
 
                                 {/* Agreement Content */}
                                 <div className="space-y-6 mb-8">
-                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[30px]  p-6">
-                                        <p className="text-gray-700 text-lg text-center font-semibold">
+                                    <div className="bg-pink-50/50 rounded-[30px]  p-8 border border-pink-100">
+                                        <p className="text-gray-900 text-lg text-center font-bold leading-relaxed">
                                             I confirm that I understand and
                                             agree that I am the Merchant of
                                             Record (MoR) for all payments made
@@ -238,167 +271,36 @@ export default function Stripe(props) {
                                     </div>
 
                                     {/* Agreement Points */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-start space-x-3">
-                                            <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                                ✓
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-800 mb-1">
-                                                    What this means:
-                                                </h3>
-                                                <ul className="text-gray-600 space-y-1 pl-5 list-disc">
-                                                    <li>
-                                                        I am the seller of my
-                                                        content, services, or
-                                                        digital goods
-                                                    </li>
-                                                    <li>
-                                                        Payments are made to me
-                                                        via my connected Stripe
-                                                        account
-                                                    </li>
-                                                    <li>
-                                                        I am responsible for
-                                                        fulfilment of supporter
-                                                        purchases
-                                                    </li>
-                                                    <li>
-                                                        I am responsible for
-                                                        refunds, disputes,
-                                                        chargebacks, and
-                                                        applicable taxes
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start space-x-3">
-                                            <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                                ✓
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-800 mb-1">
-                                                    Platform Role:
-                                                </h3>
-                                                <p className="text-gray-600">
-                                                    I understand that Spenny
-                                                    Piggy acts solely as a
-                                                    technology platform and
-                                                    payment facilitator, and is
-                                                    not the seller of my content
-                                                    or services.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start space-x-3">
-                                            <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                                ✓
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-800 mb-1">
-                                                    Disputes & Chargebacks:
-                                                </h3>
-                                                <ul className="text-gray-600 space-y-1 pl-5 list-disc">
-                                                    <li>
-                                                        Spenny Piggy may assist
-                                                        with disputes and
-                                                        chargebacks by providing
-                                                        platform records such as
-                                                        logs, timestamps,
-                                                        messages, and
-                                                        transaction data where
-                                                        available
-                                                    </li>
-                                                    <li>
-                                                        Final responsibility and
-                                                        outcomes for disputes
-                                                        and chargebacks remain
-                                                        with me as the Merchant
-                                                        of Record
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start space-x-3">
-                                            <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                                ✓
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-800 mb-1">
-                                                    Compliance Requirements:
-                                                </h3>
-                                                <p className="text-gray-600">
-                                                    I understand that Spenny
-                                                    Piggy enforces content and
-                                                    platform requirements
-                                                    designed to meet payment
-                                                    processor (including Stripe)
-                                                    compliance standards.
-                                                    Failure to meet these
-                                                    requirements may result in
-                                                    restrictions, removal of
-                                                    content, or suspension of
-                                                    account access.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start space-x-3">
-                                            <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                                ✓
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-800 mb-1">
-                                                    Tax Responsibilities:
-                                                </h3>
-                                                <p className="text-gray-600">
-                                                    Spenny Piggy can provide
-                                                    transaction records and
-                                                    payout documentation to
-                                                    support my tax reporting
-                                                    obligations. I remain solely
-                                                    responsible for determining,
-                                                    reporting, and paying any
-                                                    applicable taxes.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start space-x-3">
-                                            <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                                ✓
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-800 mb-1">
-                                                    Payment Descriptors:
-                                                </h3>
-                                                <p className="text-gray-600">
-                                                    I acknowledge that supporter
-                                                    bank or card statements may
-                                                    display "Spenny Piggy"
-                                                    and/or "Stripe" as the
-                                                    payment descriptor, even
-                                                    though I am the Merchant of
-                                                    Record.
-                                                </p>
-                                            </div>
+                                    <div className="space-y-6 px-2">
+                                        <h3 className="text-sm font-bold text-[#FF007F] uppercase tracking-widest text-center">
+                                            I Acknowledge and Agree That:
+                                        </h3>
+                                        
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {acknowledgements.map((text, index) => (
+                                                <div key={index} className="flex items-start gap-4 p-4 rounded-[30px]  bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
+                                                    <div className="w-6 h-6 bg-[#FF007F] text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                                                        <span className="text-[10px] font-bold">✓</span>
+                                                    </div>
+                                                    <p className="text-gray-700 leading-relaxed font-medium">
+                                                        {text}
+                                                    </p>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
 
-                                    <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-[30px]  p-6">
-                                        <p className="text-gray-700 text-center font-semibold">
-                                            By continuing, I confirm that I have
+                                    <div className="bg-gray-900 rounded-[30px]  p-6 shadow-[4px_4px_0px_0px_#FF007F]l">
+                                        <p className="text-white text-center font-bold text-sm leading-relaxed italic">
+                                            "By continuing, I confirm that I have
                                             read, understood, and agree to this
-                                            Merchant of Record arrangement.
+                                            Merchant of Record arrangement and acknowledge my legal responsibility."
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Confirmation Checkbox */}
-                                <div className="bg-gray-50 rounded-[30px]  p-6 mb-8">
+                                <div className="mb-8">
                                     <label
                                         htmlFor="mor_agreement"
                                         className="flex items-start space-x-3 cursor-pointer"
@@ -416,7 +318,7 @@ export default function Stripe(props) {
                                             }
                                             className="mt-1 w-5 h-5 text-pink border-2 border-gray-300 rounded focus:ring-pink focus:ring-2"
                                         />
-                                        <p className="text-lg font-semibold text-gray-800 leading-relaxed">
+                                        <p className="text-md font-semibold text-gray-800 leading-relaxed">
                                             ✅ I confirm and agree to be the
                                             Merchant of Record for all my
                                             transactions
@@ -431,13 +333,8 @@ export default function Stripe(props) {
 
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                    <button
-                                        className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                                        onClick={handleMorConsent}
-                                        disabled={
-                                            !data.mor_agreed || processing
-                                        }
-                                    >
+                                    <button className="block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white uppercase text-md py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onClick={handleMorConsent} disabled={!data.mor_agreed || processing } >
                                         {processing ? (
                                             <span className="flex items-center justify-center">
                                                 <svg
@@ -512,7 +409,7 @@ export default function Stripe(props) {
         <Authenticated auth={auth.user} user={user}>
             <Head title="Connect Stripe Account - Spenny Piggy" />
             <div className="bg-white min-h-screen py-12 md:py-20">
-                <div className="max-width-800 mx-auto px-4">
+                <div className="containerbox mx-auto px-4">
                     {/* Header Section */}
                     <div className="text-center mb-2">
                         <h1 className="text-[29px] font-gulfs uppercase text-pink mb-1">
@@ -526,7 +423,7 @@ export default function Stripe(props) {
 
                     {/* Show success message if consent was just submitted */}
                     {success && (
-                        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-xl text-green-800 animate-fade-in">
+                        <div className="mb-6 bg-green-50 border border-green-500 p-4 rounded-xl text-green-800 animate-fade-in">
                             <div className="flex items-center">
                                 <svg
                                     className="w-5 h-5 mr-2"
@@ -588,23 +485,10 @@ export default function Stripe(props) {
                     )}
 
                     {/* Main Content Card */}
-                    <div className="whbg rounded-[30px]  overflow-hidden">
+                    <div className="whbg rounded-[30px]   overflow-hidden">
                         <div className="">
-                            {/* Payment Processor Guidelines */}
                             <div className="mb-8">
-                                <div className="flex justify-center mt-4 mb-6">
-                                    <div>
-                                        <h2 className="text-2xl text-center font-bold text-gray-800 font-gulfs uppercase">
-                                            Payment Guidelines
-                                        </h2>
-                                        <p className="text-gray-600 text-center">
-                                            Required by Stripe to prevent
-                                            account rejection
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[30px]   p-6 mb-6">
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[30px]    p-6 mb-6">
                                     <p className="text-gray-700 leading-relaxed">
                                         <strong className="text-voilet">
                                             Stripe supports adult creators
@@ -662,7 +546,7 @@ export default function Stripe(props) {
                                     ].map((item, index) => (
                                         <div
                                             key={index}
-                                            className="bg-white border-2 border-red-100 rounded-[30px]  p-3 hover:border-red-200 transition-colors"
+                                            className="bg-white border-2 border-red-100 rounded-[30px]   p-3 hover:border-red-200 transition-colors"
                                         >
                                             <div className="flex items-center  gap-2">
                                                 <span className="text-2xl">
@@ -684,158 +568,150 @@ export default function Stripe(props) {
 
                             {/* Country Selection */}
                             <div className="mb-2">
-                                <div className="bg-gradient-to-r from-mint/10 to-voilet/10 rounded-[30px]   p-6">
-                                    <h3 className="text-normal text-center font-bold text-gray-800 mb-2 capitalize">
+                                <div className="p-2">
+                                    <h3 className="text-normal text-start font-bold text-gray-800 mb-2 capitalize">
                                         Select Your Country
                                     </h3>
-                                    <div className="max-w-md m-auto">
+                                    <div className="max-w-full m-auto">
                                         <Countries send={getCountry} />
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Terms and Connect Button */}
-                            <div className="text-center">
-                                <Popup
-                                    modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
-                                    space="4"
-                                    size="md"
-                                    action={handlePopupAction}
-                                    onOpen={handlePopupOpen}
-                                    classes={` ${country == null || country == "" ? "disabled" : ""} ${!finalStepsUnlocked ? "disabled" : ""} block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] hover:shadow-voilet transform hover:scale-105`}
-                                    text="Review Terms & Connect Stripe"
-                                >
-                                    <div className="">
-                                        <div className="text-center mb-6">
-                                            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <span className="text-2xl">
-                                                    🐷
-                                                </span>
-                                            </div>
-                                            <h2 className="text-2xl font-bold text-gray-800 font-GillSans uppercase mb-2">
-                                                Important Notice!
-                                            </h2>
-                                            <p className="text-lg text-pink font-semibold">
-                                                Oink! @{auth?.user?.username}
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-[30px]  p-6 mb-6">
-                                            <p className="text-gray-700 mb-4">
-                                                To comply with Stripe's new
-                                                requirements, you must be
-                                                posting exclusive content in:
-                                            </p>
-
-                                            <div className="grid grid-cols-1 gap-2 mb-4">
-                                                <div className="bg-white rounded-[30px]  p-2 text-center border-2 border-voilet">
-                                                    <h3 className="font-bold text-voilet text-normal">
-                                                        MEMBERSHIP
-                                                    </h3>
-                                                </div>
-                                                <div className="bg-white rounded-[30px]  p-2 text-center border-2 border-pink">
-                                                    <h3 className="font-bold text-pink text-normal">
-                                                        BILLS
-                                                    </h3>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2 text-gray-700">
-                                                <p>
-                                                    Please ensure you create{" "}
-                                                    <strong>Membership</strong>{" "}
-                                                    and <strong>Bill</strong>{" "}
-                                                    content for your fans.
-                                                </p>
-                                                <p className="text-pink font-semibold">
-                                                    Oink! Oink! 🐷
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-gray-50 rounded-[30px]  p-6 mb-6">
-                                            <label
-                                                htmlFor="termaccept"
-                                                className="flex items-start space-x-3 cursor-pointer"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    ref={checkRef}
-                                                    id="termaccept"
-                                                    name="termaccept"
-                                                    value="termaccept"
-                                                    required
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "termaccept",
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="mt-1 w-5 h-5 text-pink border-2 border-gray-300 rounded focus:ring-pink focus:ring-2"
-                                                />
-                                                <p className="text-sm text-gray-700 leading-relaxed">
-                                                    I confirm I will only use
-                                                    Spenny Piggy in line with
-                                                    the Terms of Service and
-                                                    understand my account could
-                                                    be suspended for repeated
-                                                    violations. I also confirm
-                                                    that I will create and post
-                                                    exclusive content in
-                                                    exchange for receiving
-                                                    gifts, donations,
-                                                    subscriptions, memberships
-                                                    and bill payments. I also
-                                                    confirm that nothing on the
-                                                    above prohibited list will
-                                                    be added to my profile.
-                                                </p>
-                                            </label>
-                                        </div>
-
-                                        <div className="flex justify-center">
-                                            <button
-                                                className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                onClick={checkTerms}
-                                                disabled={
-                                                    connecting ||
-                                                    !finalStepsUnlocked ||
-                                                    !mor_consent_given
-                                                }
-                                            >
-                                                {connecting ? (
-                                                    <span className="flex items-center justify-center">
-                                                        <svg
-                                                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <circle
-                                                                className="opacity-25"
-                                                                cx="12"
-                                                                cy="12"
-                                                                r="10"
-                                                                stroke="currentColor"
-                                                                strokeWidth="4"
-                                                            ></circle>
-                                                            <path
-                                                                className="opacity-75"
-                                                                fill="currentColor"
-                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                            ></path>
-                                                        </svg>
-                                                        Connecting to Stripe...
-                                                    </span>
-                                                ) : (
-                                                    "Connect to Stripe"
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </Popup>
-                            </div>
+                            
                         </div>
+                    </div>
+                        
+                    <div className="bg-gray-50 rounded-[30px]   p-6 mb-6">
+                        <div className="mb-4 bg-white border border-gray-200 rounded-[20px] p-4">
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                The e-mail address used for your creator
+                                account may appear on supporter receipts,
+                                payment confirmations, and transaction records.
+                                Please ensure you are using an e-mail address
+                                that you are comfortable sharing with
+                                supporters. If you do not wish to share a
+                                personal e-mail address, we recommend creating
+                                a dedicated creator/business e-mail for your
+                                account.
+                            </p>
+                        </div>
+
+                        <label
+                            htmlFor="creator_email_receipt_ack"
+                            className={`flex items-start space-x-3 cursor-pointer ${
+                                creatorEmailReceiptAcked
+                                    ? "opacity-70"
+                                    : ""
+                            }`}
+                        >
+                            <input
+                                type="checkbox"
+                                ref={creatorEmailReceiptAckRef}
+                                id="creator_email_receipt_ack"
+                                name="creator_email_receipt_ack"
+                                checked={
+                                    creatorEmailReceiptAcked ||
+                                    !!data.creator_email_receipt_ack
+                                }
+                                disabled={creatorEmailReceiptAcked}
+                                onChange={(e) =>
+                                    setData(
+                                        "creator_email_receipt_ack",
+                                        e.target.checked,
+                                    )
+                                }
+                                className="mt-1 w-5 h-5 text-pink border-2 border-gray-300 rounded focus:ring-pink focus:ring-2 disabled:cursor-not-allowed"
+                            />
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                I understand my creator e-mail address may
+                                appear on supporter transaction records and
+                                receipts.
+                            </p>
+                        </label>
+
+                        <label
+                            htmlFor="termaccept"
+                            className="flex items-start space-x-3 cursor-pointer"
+                        >
+                            <input
+                                type="checkbox"
+                                ref={checkRef}
+                                id="termaccept"
+                                name="termaccept"
+                                value="termaccept"
+                                required
+                                onChange={(e) =>
+                                    setData(
+                                        "termaccept",
+                                        e.target.value,
+                                    )
+                                }
+                                className="mt-1 w-5 h-5 text-pink border-2 border-gray-300 rounded focus:ring-pink focus:ring-2"
+                            />
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                I confirm I will only use
+                                Spenny Piggy in line with
+                                the Terms of Service and
+                                understand my account could
+                                be suspended for repeated
+                                violations. I also confirm
+                                that I will create and post
+                                exclusive content in
+                                exchange for receiving
+                                gifts, donations,
+                                subscriptions, memberships
+                                and bill payments. I also
+                                confirm that nothing on the
+                                above prohibited list will
+                                be added to my profile.
+                            </p>
+                        </label>
+                    </div>
+
+                    <div className="flex justify-center">
+                        <button
+                            className={`${!country || (checkRef && checkRef.current && !checkRef.current.checked) ? "opacity-50 cursor-not-allowed" : ""} block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105`}
+                            onClick={checkTerms}
+                            disabled={
+                                connecting ||
+                                !finalStepsUnlocked ||
+                                !mor_consent_given ||
+                                !country ||
+                                (checkRef && checkRef.current && !checkRef.current.checked) ||
+                                (!creatorEmailReceiptAcked &&
+                                    creatorEmailReceiptAckRef &&
+                                    creatorEmailReceiptAckRef.current &&
+                                    !creatorEmailReceiptAckRef.current.checked)
+                            }
+                        >
+                            {connecting ? (
+                                <span className="flex items-center justify-center">
+                                    <svg
+                                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        ></circle>
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                    Connecting to Stripe...
+                                </span>
+                            ) : (
+                                "Connect to Stripe"
+                            )}
+                        </button>
                     </div>
 
                     {/* Security Notice */}

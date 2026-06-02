@@ -7,7 +7,7 @@
       <tr>
             <td align="center" style="padding:10px 10px 20px 10px;">
                <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                  style="max-width: 296px; width: 100%; text-align: center;">
+                  style="max-width: 420px; width: 100%; text-align: center;">
                   <tr>
                         <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
                            Payment <span style="color: #8C52FF">{{ ucfirst($sub->status) }}</span> 💳🎁
@@ -24,7 +24,7 @@
                   </tr>
                   <tr>
                         <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                           Hello <strong style="color:#8C52FF;">{{ $sub->name }}</strong>!<br><br>
+                           Hello <strong style="color:#8C52FF;">{{ ucwords($sub->name) }}</strong>!<br><br>
                            Your payment for monthly subscription is <strong style="color:#8C52FF;">{{ $sub->status }}</strong> on Spenny Piggy.
                         </td>
                   </tr>
@@ -40,7 +40,7 @@
                   <tr style="line-height: 10px; height: 10px;"><td></td></tr>
                   <tr>
                         <td style="padding:0 0 10px 0; text-align: center;">
-                            <a href="{{ env('APP_URL') . '/history' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Subscriptions</a>
+                            <a href="{{ env('APP_URL') . '/history' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Subscriptions</a>
                         </td>
                   </tr>
                   <tr style="line-height: 10px; height: 10px;"><td></td></tr>

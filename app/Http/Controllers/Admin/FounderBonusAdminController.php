@@ -268,6 +268,10 @@ class FounderBonusAdminController extends Controller
      */
     private function sendRejectionEmail(FounderBonus $bonus)
     {
+        if (!$bonus->creator || $bonus->creator->notification_send != 1) {
+            return;
+        }
+
         try {
             Mail::send('emails.founder-payout-rejection', [
                 'creator' => $bonus->creator,

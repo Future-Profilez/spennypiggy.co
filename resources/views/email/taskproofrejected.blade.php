@@ -9,7 +9,7 @@
 </tr>
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 420px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
                     Proof <span style="color: #FF0000">Rejected</span> ⚠️
@@ -22,7 +22,7 @@
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
                     Attention Needed <br>
-                    <strong>{{ $supporter->name }}</strong> has rejected your proof for the task <strong>{{ $task->title }}</strong>.
+                    <strong>{{ ucwords($supporter->name) }}</strong> has rejected your proof for the task <strong>{{ $task->title }}</strong>.
                 </td>
             </tr>
              <tr>
@@ -40,7 +40,7 @@
             <tr>
                 <td style="padding:0 0 10px 0; text-align: center;">
                     <a href="{{ env('APP_URL') . '/task/dashboard' }}"
-                        style="display: inline-block; border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
+                        style="display: inline-block; border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
                         View Order
                     </a>
                 </td>

@@ -12,12 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->uuid()->after('id')->nullable();
-            $table->string('avatar')->nullable()->after('username');
-            $table->string('cover')->nullable()->after('avatar');
-            $table->string('currency')->nullable()->after('cover');
-            $table->string('bio')->nullable()->after('currency');
-            $table->longText('tags')->nullable()->after('bio');
+            if (!Schema::hasColumn('users', 'uuid')) {
+                $table->uuid()->after('id')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'avatar')) {
+                $table->string('avatar')->nullable()->after('username');
+            }
+            if (!Schema::hasColumn('users', 'cover')) {
+                $table->string('cover')->nullable()->after('avatar');
+            }
+            if (!Schema::hasColumn('users', 'currency')) {
+                $table->string('currency')->nullable()->after('cover');
+            }
+            if (!Schema::hasColumn('users', 'bio')) {
+                $table->string('bio')->nullable()->after('currency');
+            }
+            if (!Schema::hasColumn('users', 'tags')) {
+                $table->longText('tags')->nullable()->after('bio');
+            }
         });
     }
 
@@ -27,12 +39,24 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn("uuid");
-            $table->dropColumn("avatar");
-            $table->dropColumn("cover");
-            $table->dropColumn("currency");
-            $table->dropColumn("bio");
-            $table->dropColumn("tags");
+            if (Schema::hasColumn('users', 'uuid')) {
+                $table->dropColumn('uuid');
+            }
+            if (Schema::hasColumn('users', 'avatar')) {
+                $table->dropColumn('avatar');
+            }
+            if (Schema::hasColumn('users', 'cover')) {
+                $table->dropColumn('cover');
+            }
+            if (Schema::hasColumn('users', 'currency')) {
+                $table->dropColumn('currency');
+            }
+            if (Schema::hasColumn('users', 'bio')) {
+                $table->dropColumn('bio');
+            }
+            if (Schema::hasColumn('users', 'tags')) {
+                $table->dropColumn('tags');
+            }
         });
     }
 };

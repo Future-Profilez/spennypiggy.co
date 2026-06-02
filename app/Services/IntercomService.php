@@ -19,7 +19,6 @@ class IntercomService
             'enabled' => true,
             'appId' => $appId,
             'boot' => [
-                'api_base' => 'https://api-iam.intercom.io',
                 'app_id' => $appId,
                 'custom_launcher_selector' => '.livechat',
             ],
@@ -31,6 +30,7 @@ class IntercomService
         }
 
         $secret = config('services.intercom.identity_secret');
+        
         $userId = (string) $user->id;
         $userHash = $secret ? hash_hmac('sha256', $userId, $secret) : null;
 
@@ -59,15 +59,6 @@ class IntercomService
             $customAttributes['account_status'] = ($user->suspended_account ?? false) ? 'suspended' : 'active';
             $customAttributes['role'] = $user->role ?? null;
             
-            // Add counts if available
-            try {
-                if (method_exists($user, 'wishItems')) {
-                    $customAttributes['wishlist_items_count'] = $user->wishItems()->count();
-                }
-            } catch (\Exception $e) {
-                // Ignore relationship errors
-            }
-            
             $settings['boot']['custom_attributes'] = $customAttributes;
         }
 
@@ -85,24 +76,6 @@ class IntercomService
         // Check role (both string and numeric)
         if ($user->role === 'creator' || $user->role == 1) {
             return true;
-        }
-        
-        // Check if user has wishlist items (indicates creator activity)
-        try {
-            if (method_exists($user, 'wishItems') && $user->wishItems()->exists()) {
-                return true;
-            }
-        } catch (\Exception $e) {
-            // Ignore errors from relationship checks
-        }
-        
-        // Check if user has memberships (indicates creator activity)
-        try {
-            if (method_exists($user, 'memberships') && $user->memberships()->exists()) {
-                return true;
-            }
-        } catch (\Exception $e) {
-            // Ignore errors from relationship checks
         }
         
         return false;

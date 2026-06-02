@@ -44,7 +44,7 @@ export default function FounderBadge({
     {icon ? 
         <FaCrown className={`${classes} ms-1 text-yellow-500`}  />
         :
-        <div 
+        <span 
             className={`
                 inline-flex items-center rounded-full font-semibold transition-all duration-200
                 ${currentSize.container}
@@ -53,13 +53,13 @@ export default function FounderBadge({
             `}
             title={`SpennyPiggy Founder - Earned £${minEarnings}+ in first ${qualificationDays} days`}
         >
-            <FaCrown className={`${currentSize.icon} ${variant === 'outline' ? 'text-[#eab308]' : ''}`} />
+            <FaCrown className={`${currentSize.icon} ${variant === 'outline' ? 'text-[#0056ff]' : ''}`} />
             {showText && (
                 <span className={`font-bold ${currentSize.text}`}>
                     FOUNDER
                 </span>
             )}
-        </div>
+        </span>
     }
     </>
 }

@@ -1,42 +1,72 @@
-import { lazy } from "react";
+import { lazy, useState, useRef, Suspense } from "react";
 import userphoto from "../../assets/siteicon.png";
 import { usePage } from "@inertiajs/react";
+import { route } from 'ziggy-js';
+import{UserXIcon,InfoIcon,CopyIcon} from "@animateicons/react/lucide";
+import { ShieldAlert, Ban, BadgeCheckIcon } from "lucide-react";
+import axios from "axios";
+import { useAlerts } from "@/Components/Alerts";
+
 const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 const ShareProfile = lazy(() => import("./ShareProfile"));
 const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));
-import { RiVerifiedBadgeFill } from "react-icons/ri";
-import FollowButton from "@/Pages/Profile/FollowButton";
-import { MdOutlineContentCopy } from "react-icons/md";
-import FounderBadge from "@/Components/FounderBadge";
+const FollowButton = lazy(() => import("@/Pages/Profile/FollowButton"));
+const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+const Popup = lazy(() => import("@/Components/Popup"));
+const FeatureSuggestionBanner = lazy(() => import("@/Components/FeatureSuggestionBanner"));
+const FeatureSuggestionModal = lazy(() => import("@/Components/FeatureSuggestionModal"));
+const ReportContentModal = lazy(() => import("@/Components/ReportContentModal"));
 
 export default function Userprofile({ IsloggedIn }) {
-    const {
-        auth,
-        user,
-        global_currency,
-        supporters,
-        follow_status,
-        first30DayEarnings,
-        card_capabilities,
-    } = usePage().props;
+
+    const copyIconRef = useRef(null);
+    const unblockIconRef = useRef(null);
+    const blockIconRef = useRef(null);
+    const{auth,user,global_currency,supporters,follow_status,first30DayEarnings,card_capabilities,is_blocked:initialIsBlocked} = usePage().props;
+    const { successAlert, errorAlert } = useAlerts();
     const opponantUser = auth?.opposite_user;
+    const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+    const [isBlocked, setIsBlocked] = useState(initialIsBlocked);
+    const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+
+    const blockUser = async () => {
+        try {
+            await axios.post(route('creator.security.block-user'), { user_id: user.id });
+            successAlert(`${user?.name} has been blocked.`);
+            setIsBlocked(true);
+            setShowBlockConfirm(false);
+            // Optionally redirect or refresh
+            // window.location.reload();
+        } catch (error) {
+            errorAlert(error.response?.data?.message || 'Failed to block user');
+        }
+    };
+
+    const unblockUser = async () => {
+        try {
+            await axios.delete(route('creator.security.unblock-user', { id: user.id }));
+            successAlert(`${user?.name} has been unblocked.`);
+            setIsBlocked(false);
+        } catch (error) {
+            errorAlert(error.response?.data?.message || 'Failed to unblock user');
+        }
+    };
     
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none rounded-3xl">
+            <div className="userPr  py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[100%] xl:max-w-none rounded-3xl"> 
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
-                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[-80px]">
+                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[0px]">
                         <img
                             alt={`${user?.name || "User"} - Profile Avatar`}
                             src={IsloggedIn ? user?.avatar_url || userphoto : user?.avatar_url && user?.avatar_approved === 1 ? user?.avatar_url : userphoto}
                             height={150}
                             width={150}
                             loading="eager"
-                            className="rounded-[30px] !border-[3px] !border-black bg-white !h-[120px] !w-[120px] min-w-[120px] !min-h-[120px] md:!h-[140px] md:!w-[140px] md:min-w-[140px] md:!min-h-[140px] object-cover shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                            className="rounded-[30px]  !border-[3px] !border-black bg-white !h-[120px] !w-[120px] min-w-[120px] !min-h-[120px] md:!h-[140px] md:!w-[140px] md:min-w-[140px] md:!min-h-[140px] object-cover shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                         />
 
-                        {/* Waiting for approval (ORANGE) */}
-                        {IsloggedIn && auth && auth?.user?.avatar_url && auth?.user?.avatar_approved === 0 && (
+                        {IsloggedIn && auth && auth?.user?.avatar && auth?.user?.avatar_approved === 0 && (
                                 <div className="absolute approvetag top-3 mx-auto">
                                     <button className="tooltipbtn">
                                         <svg
@@ -86,39 +116,41 @@ export default function Userprofile({ IsloggedIn }) {
                             )}
                     </div>
 
-                    <div className="ps-[20px] pt-[20px] lg:pt-[0px] lg:mt-0">
-                        <h1 className="font-gulfs uppercase !text-2xl md:!text-2xl flex items-center justify-center lg:justify-start text-center lg:text-left !text-black">
-                            {user?.name}
+                    <div className="md:ps-[20px] md:pe-[20px] pt-[20px] lg:pt-[0px] lg:mt-0 lg:text-start">
+                        <h1 className="font-gulfs uppercase !text-2xl md:!text-2xl inline-flex items-center justify-center lg:justify-start  text-center lg:text-left !text-black ">
+                            <p  className="line-clamp-1">{user?.name} </p>
                             {(user?.role == 1 &&
                                 user?.profile_status_lock == 2 && (
-                                    <>
+                                    <span className="ms-2">
                                         {user?.is_founder ? (
-                                            <div className="mb-1">
+                                            <Suspense fallback={<span className="min-w-8 min-h-8 w-8 h-8 ml-2"></span>}>
                                                 <FounderBadge
-                                                    classes="w-8 h-8 ml-3"
+                                                    classes="min-w-8 min-h-8 w-8 h-8 ml-2"
                                                     icon={true}
                                                 />
-                                            </div>
+                                            </Suspense>
                                         ) : (
-                                            <RiVerifiedBadgeFill
-                                                size="2rem"
-                                                className="ml-3 text-blue-600"
+                                            <BadgeCheckIcon
+                                                className=" min-w-8 min-h-8 w-8 h-8 text-[#1d3ef8]"
                                             />
                                         )}
-                                    </>
+                                    </span>
                                 )) ||
                                 ""}
                         </h1>
 
-                        <div className="userId mt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
-                            <ShareProfile
-                                username={user?.name}
-                                classes="flex text-black font-black text-normal transition-all mr-4 items-center"
-                                custom={`${window.location.origin}/${user?.username}`}
-                            >
-                                @{user?.username}
-                                <MdOutlineContentCopy className="ml-2 font-black text-black" />
-                            </ShareProfile>
+                        <div className="userId mt- flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
+                            <Suspense fallback={<span className="flex text-gray-800 font-black text-normal mr-4 items-center">@{user?.username}</span>}>
+                                <ShareProfile
+                                    username={user?.name}
+                                    classes="flex text-gray-800 font-black text-normal transition-all mr-4 items-center group"
+                                    onMouseEnter={() => copyIconRef.current?.startAnimation?.()}
+                                    onMouseLeave={() => copyIconRef.current?.stopAnimation?.()}
+                                    custom={`${window.location.origin}/${user?.username}`} >
+                                    @{user?.username}
+                                    <CopyIcon ref={copyIconRef} size={16} className="ml-2 font-black text-black" />
+                                </ShareProfile>
+                            </Suspense>
                         </div>
                     </div>
                 </div>
@@ -127,15 +159,15 @@ export default function Userprofile({ IsloggedIn }) {
                     <div>
                         {user && user?.role == 1 ? (
                             <div className="flex mb-4 justify-center md:mb-4 gap-2 md:gap-3">
-                                <div className="md:flex items-center gap-3 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="md:flex items-center gap-2 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">👥 {user?.followers_count}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Followers</p>
                                 </div>
-                                <div className="md:flex items-center gap-3 text-center  bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="md:flex items-center gap-2 text-center  bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">🤝 {user?.following_count}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Following</p>
                                 </div>
-                                <div className="md:flex items-center gap-3 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="md:flex items-center gap-2 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">🐷 {supporters}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Supporters</p>
                                 </div>
@@ -143,37 +175,143 @@ export default function Userprofile({ IsloggedIn }) {
                         ) : (
                             ""
                         )}
-                        <div className="mt-4 flex items-center justify-center gap-3">
-                            {!IsloggedIn ? (
-                                <div className="">
-                                    <FollowButton
-                                        targetUserId={opponantUser?.id}
-                                        isInitiallyFollowing={follow_status}
-                                    />
-                                </div>
-                            ) : (
-                                ""
-                            )}
-                            {!IsloggedIn ? user && user.stripe_details_submitted == 1 && (
-                                      <div>
-                                        {user && user.role == 1 ? 
-                                            <SendTip card_capabilities={card_capabilities} />
-                                        :  "" }
-                                      </div>
-                                  )
-                                : (
-                                    ''
-                                ) || ""}
+                        <div className="mt-4 flex items-center justify-center lg:justify-end gap-1">
+                            
+                            {IsloggedIn ?
+                                <>
+                                    <Suspense fallback={<button className="bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] uppercase text-black font-black text-xs md:text-sm px-6 py-3 rounded-[18px]">EDIT PROFILE</button>}>
+                                        <EditProfile 
+                                            profilepage={1}
+                                            user={user}
+                                            classes={"bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase text-black font-black text-xs md:text-sm px-6 py-3 rounded-[18px] "}
+                                            global_currency={global_currency}
+                                        /> 
+                                    </Suspense>
+                                </>
+                                :
+                                <>
+                                    {!IsloggedIn ? (
+                                        <div className="flex gap-1"> 
+                                                <Suspense fallback={null}>
+                                                    <ReportContentModal reportedUser={user} />
+                                                </Suspense>
+                                            <Suspense fallback={null}>
+                                                <FollowButton 
+                                                    targetUserId={opponantUser?.id} 
+                                                    isInitiallyFollowing={follow_status} />
+                                            </Suspense>
+                                            
+                                            {auth?.user && (
+                                                isBlocked ? (
+                                                    <button 
+                                                        onClick={unblockUser}
+                                                        onMouseEnter={() => unblockIconRef.current?.startAnimation?.()}
+                                                        onMouseLeave={() => unblockIconRef.current?.stopAnimation?.()}
+                                                        className="bg-green-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white group"
+                                                        title="Unblock User"
+                                                    >
+                                                        <UserXIcon ref={unblockIconRef} size={20} strokeWidth={2.5} className="rotate-180" />
+                                                    </button>
+                                                ) : (
+                                                    <Suspense fallback={null}>
+                                                        <Popup 
+                                                            modalclass="pinkmodal"
+                                                            size="md"
+                                                            space="6"
+                                                            onMouseEnter={() => blockIconRef.current?.startAnimation?.()}
+                                                            onMouseLeave={() => blockIconRef.current?.stopAnimation?.()}
+                                                            classes="bg-red-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white group"
+                                                            text={<UserXIcon ref={blockIconRef} size={20} strokeWidth={2.5} />}
+                                                            action={showBlockConfirm}
+                                                            onHide={() => setShowBlockConfirm(false)}
+                                                        >
+                                                            <div className="text-center">
+                                                                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-black">
+                                                                    <Ban size={40} className="text-red-600" />
+                                                                </div>
+                                                                <h2 className="text-2xl font-gulfs mb-4 uppercase">Block {user?.name}?</h2>
+                                                                <div className="bg-gray-50 border-2 border-black rounded-[20px] p-4 text-left space-y-3 mb-6">
+                                                                    <div className="flex gap-3">
+                                                                        <ShieldAlert size={20} className="text-red-600 shrink-0" />
+                                                                        <p className="text-sm font-bold">They will no longer be able to view your profile or content.</p>
+                                                                    </div>
+                                                                    <div className="flex gap-3">
+                                                                        <Ban size={20} className="text-red-600 shrink-0" />
+                                                                        <p className="text-sm font-bold">They will be blocked from sending you any gifts, tips, or messages.</p>
+                                                                    </div>
+                                                                    <div className="flex gap-3">
+                                                                        <InfoIcon size={20} className="text-blue-600 shrink-0" />
+                                                                        <p className="text-sm font-bold text-gray-500">They won't be notified that you blocked them.</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex justify-center">
+                                                                    <button 
+                                                                        onClick={blockUser}
+                                                                        className="flex-1 bg-red-600 text-white border-2 border-black py-3 rounded-xl font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none transition-all"
+                                                                    >
+                                                                        Block User
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </Popup>
+                                                    </Suspense>
+                                                )
+                                            )}
+                                        </div>
+                                    ) : (
+                                        ""
+                                    )}
+                                    {!IsloggedIn ? user && user.stripe_details_submitted == 1 && (
+                                            <div>
+                                                {user && user.role == 1 ? 
+                                                    <Suspense fallback={null}>
+                                                        <SendTip card_capabilities={card_capabilities} />
+                                                    </Suspense>
+                                                :  "" }
+                                            </div>
+                                        )
+                                    : (
+                                        ''
+                                    ) || ""}
 
-                                {/* <EditProfile
-                                        user={user}
-                                        classes={"bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase text-black font-black text-xs md:text-sm px-6 py-3 rounded-full tracking-widest"}
-                                        global_currency={global_currency}
-                                    /> */}
+                                    {/* <div className="mt-2 text-center md:text-left w-full flex justify-center lg:justify-start">
+                                        <a 
+                                            href={`/history?support_open=1&creator_username=${user?.username}&support_type=contact`}
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-black rounded-xl font-bold bg-[#FF007F] text-white hover:bg-pink-600 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm"
+                                        >
+                                            Contact Creator
+                                        </a>
+                                    </div> */}
+                                </>
+                            }
+                            
+
+                                
+                               
                         </div>
                     </div>
                 </div>
             </div>
+            
+            {IsloggedIn && (
+                <div className="mt-8">
+                    <Suspense fallback={null}>
+                        <FeatureSuggestionBanner 
+                            onSuggestClick={() => setShowSuggestionModal(true)} 
+                        />
+                    </Suspense>
+                </div>
+            )}
+
+            {showSuggestionModal && (
+                <Suspense fallback={null}>
+                    <FeatureSuggestionModal 
+                        show={showSuggestionModal} 
+                        onClose={() => setShowSuggestionModal(false)} 
+                        auth={auth} 
+                    />
+                </Suspense>
+            )}
         </div>
     );
 }

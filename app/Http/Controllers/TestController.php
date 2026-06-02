@@ -259,7 +259,7 @@ class TestController extends Controller
     {
         try {
             // Fetch users with non-null identity_verification_error
-            $users = User::whereNotNull('identity_verification_error')->where('is_uk', 0)->get();
+            $users = User::whereNotNull('identity_verification_error')->get();
 
             if ($users->isEmpty()) {
                 return response()->json(['status' => 'error', 'message' => 'No users found with identity verification errors.']);
@@ -290,7 +290,7 @@ class TestController extends Controller
         // Process CREATORS
         $creators = User::whereHas('creatorMonthlySubscription', function ($q) {
             $q->where('status', 'paid');
-        })->where('role', 1)->where('is_uk', 0)->get();
+        })->where('role', 1)->get();
 
         foreach ($creators as $user) {
             $hasAvatar = !empty($user->avatar) && $user->avatar_approved == 1;
@@ -313,7 +313,7 @@ class TestController extends Controller
         }
 
         // Process GIFTERS
-        $gifters = User::where('role', 0)->where('is_uk', 0)
+        $gifters = User::where('role', 0)
             ->whereHas('gifterCardVerification', function ($q) {
                 $q->where('status', 'success');
             })
@@ -344,9 +344,7 @@ class TestController extends Controller
      */
     public function deleteAllProducts()
     {
-        $users = User::where([
-            ['is_uk', '=', 0],
-        ])->where(function ($q) {
+        $users = User::where(function ($q) {
             $q->whereNull('deleted_at')
                 ->orWhere('deleted_at', '!=', null);
         })->get();

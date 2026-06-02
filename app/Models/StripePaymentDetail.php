@@ -18,6 +18,7 @@ class StripePaymentDetail extends Model
         'id',
         'uuid',
         'session_id',
+        'stripe_payment_intent_id',
         'amount_subtotal',
         'amount_total',
         'currency',
@@ -33,6 +34,9 @@ class StripePaymentDetail extends Model
         'payment_status',
         'session_created',
         'session_expires_at',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
+        'metadata',
         'deleted_at',
     ];
 
@@ -58,12 +62,17 @@ class StripePaymentDetail extends Model
 
     public function owner()
     {
-        return $this->belongsTo(User::class, 'owner_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(StripePaymentItems::class, 'stripe_payment_detail_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function stripePaymentItems()

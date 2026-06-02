@@ -19,7 +19,8 @@ class IdentityVerificationProcess extends Mailable
 
     public function build()
     {
-        return $this->subject('Identity Verification In Process')
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject('Identity Verification In Process')
             ->view('email.identity-verification-process')
             ->with(['user' => $this->user]);
     }

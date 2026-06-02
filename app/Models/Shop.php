@@ -15,6 +15,8 @@ class Shop extends Model
         'user_id',
         'type',
         'stripe_product_id',
+        'price_id',
+        'shipping_profile_id',
         'name',
         'description',
         'image',
@@ -31,6 +33,10 @@ class Shop extends Model
         'quantity_allow',
         'shipping_information',
         'vat_applicable',
+        'approved',
+        'status',
+        'edited_reason',
+        'edited_status',
         // New social engagement fields
         'supporter_count',
         'gift_frequency',
@@ -42,7 +48,7 @@ class Shop extends Model
 
     protected $hidden   =   [
         'id',
-        'user_id',
+        // 'user_id',
         'stripe_product_id',
         'image',
         'created_at',
@@ -64,7 +70,7 @@ class Shop extends Model
     }
 
     public function user(){
-        return $this->belongsTo(User::class,'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class,'user_id');
     }
 
 
@@ -151,7 +157,11 @@ class Shop extends Model
     public function getRewardFileUrlAttribute(){
         $url = false;
         if(!empty($this->reward_file)){
-            $url = "https://ucarecdn.com/" . $this->reward_file . "/";
+            if (\Illuminate\Support\Str::startsWith($this->reward_file, ['http://', 'https://'])) {
+                $url = $this->reward_file;
+            } else {
+                $url = "https://ucarecdn.com/" . $this->reward_file . "/";
+            }
         }
 
         return $url;
@@ -179,9 +189,14 @@ class Shop extends Model
         return $arr;
     }
 
+    public function shop_shipping_info()
+    {
+        return $this->hasMany(ShopShippingInfo::class);
+    }
 
-    public function shop_varients(){
-        return $this->hasMany(ShopVarients::class,'shop_id');
+    public function shipping_profile()
+    {
+        return $this->belongsTo(ShippingProfile::class);
     }
 
 }

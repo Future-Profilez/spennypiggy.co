@@ -104,7 +104,7 @@ export default function FollowersBulkNotification({ trigger }) {
                     className={`${
                         loading
                             ? "bg-gray-400 text-black"
-                            : "bg-pink-500 hover:bg-pink-600"
+                            : "bg-[#FF007F] hover:bg-pink-600"
                     } uppercase w-full btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white`}
                 >
                     {loading ? "Sending..." : "Send Notification"}
@@ -117,11 +117,11 @@ export default function FollowersBulkNotification({ trigger }) {
                         Notification History
                     </h3>
 
-                    <div className=" rounded-[30px]   ">
+                    <div className=" rounded-[30px]    ">
                         {pwa_notification_details &&
                             pwa_notification_details?.map((value, key) => {
                                 return (
-                                    <div className="p-3 rounded-[30px]  border border-gray-400 shadow-sm mb-2">
+                                    <div className="p-3 rounded-[30px]   border border-gray-400 shadow-sm mb-2">
                                         <h2 className="line-clamp-1 font-bold text-black text-[15px]">
                                             {value?.title}
                                         </h2>

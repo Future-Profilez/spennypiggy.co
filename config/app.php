@@ -189,11 +189,11 @@ return [
     ])->toArray(),
 
 
-    'crowd_tax' => 20, // wish crowed fund payment fees
-    'member_tax' => 20, // membership payment fees
-    'jar_tax' => 20, // tip jar payment fees
-    'bill_tax' => 20, // bill payment fees
-    'shop_tax' => 20, // Shop payment fees
+    'crowd_tax' => 17, // wish crowed fund payment fees
+    'member_tax' => 17, // membership payment fees
+    'jar_tax' => 17, // tip jar payment fees
+    'bill_tax' => 17, // bill payment fees
+    'shop_tax' => 17, // Shop payment fees
 
     // 'surprise_tax' => 10,
     // 'crowd_tax' => 20,
@@ -204,7 +204,7 @@ return [
 
 
     'administration_fee' => 1,
-    'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 15),
+    'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 17),
     'transaction_fee_percentage' => env('TRANSACTION_FEE_PERCENTAGE', 2),
 
     /*

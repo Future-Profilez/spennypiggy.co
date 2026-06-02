@@ -5,14 +5,14 @@ import axios from 'axios';
  * @param {string|number} userId - User ID or username
  * @param {Object} options - Query options
  * @param {number} options.page - Page number (default: 1)
- * @param {number} options.perPage - Posts per page (default: 10, max: 50)
+ * @param {number} options.perPage - Posts per page (default: 5, max: 50)
  * @param {string} options.filter - Filter type: 'all', 'supporters', 'members', 'subscribers', 'shoutouts' (default: 'all')
  * @returns {Promise<{data: Array, pagination: Object}>}
  */
 export const getProfilePosts = async (userId, options = {}) => {
     const {
         page = 1,
-        perPage = 10,
+        perPage = 5,
         filter = 'all'
     } = options;
 

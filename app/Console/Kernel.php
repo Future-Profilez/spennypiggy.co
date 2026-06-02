@@ -21,8 +21,13 @@ class Kernel extends ConsoleKernel
             try {
                 \Illuminate\Support\Facades\Log::info('Scheduler heartbeat: executing at ' . now()->toDateTimeString() . ' using driver: ' . config('cache.default'));
                 
-                // Write to default cache - DISABLED for production stability
-                // \Illuminate\Support\Facades\Cache::put('scheduler_last_run', now()->toDateTimeString(), 600);
+                // Write to default cache for diagnostics
+                \Illuminate\Support\Facades\Cache::put('scheduler_heartbeat', time(), 600);
+                
+                // Dispatch a closure to the queue to verify the queue worker is running
+                dispatch(function () {
+                    \Illuminate\Support\Facades\Cache::put('queue_worker_heartbeat', time(), 600);
+                });
                 
                 // Explicitly write to dynamodb store if available - DISABLED
                 if (config('cache.stores.dynamodb')) {
@@ -35,22 +40,30 @@ class Kernel extends ConsoleKernel
             }
         })->everyMinute();
 
-        // Sync subscription status from Stripe every hour
+        $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
+
+        // Sync subscription status from Stripe every 15 minutes
         $schedule->command('subscription:sync')
-                 ->hourly()
+                 ->everyFifteenMinutes()
                  ->withoutOverlapping();
 
-        // Sync all subscriptions status from Stripe every 12 minutes
-        $schedule->command('subscription:sync --all')
-                 ->cron('*/12 * * * *')
-                 ->withoutOverlapping();
+        // Sync all subscriptions only on dev (too heavy for production scheduler)
+        if ($appUrl && str_contains($appUrl, 'dev.spennypiggy.co')) {
+            $schedule->command('subscription:sync --all')
+                     ->everyFifteenMinutes()
+                     ->withoutOverlapping();
+        }
 
         $schedule->command('finance:sync-transactions')
                  ->everyThirtyMinutes()
                  ->withoutOverlapping();
+
+        // Extra sync right before Thursday midnight cutoff (5 mins before Friday)
+        $schedule->command('finance:sync-transactions')
+                 ->weeklyOn(4, '23:55')
+                 ->withoutOverlapping();
                  
         //
-        $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
         // $schedule->job(new SendMailSubscriptions)->everyMinute(); // Runs MyJob every hour
         $schedule->command("app:sync-exchange-rate")->hourly()->withoutOverlapping(4);
 
@@ -67,26 +80,12 @@ class Kernel extends ConsoleKernel
                  ->everyFiveMinutes()
                  ->withoutOverlapping();
 
+        $schedule->command('app:process-support-tickets')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping();
+
         $schedule->command("app:auto-suspend-account")->daily()->withoutOverlapping(4);
         
-        // Schedule pending approval notifications based on configuration
-        $allConfigs = collect(config('pending-approval'));
-        $environmentConfig = $allConfigs->first(fn($config) => in_array($appUrl, $config['domains']));
-        
-        if ($environmentConfig) {
-            $scheduleMethod = $environmentConfig['schedule']; // e.g., 'everyThirtyMinutes' or 'daily'
-            
-            if (str_contains($scheduleMethod, ' ') || str_contains($scheduleMethod, '*')) {
-                $schedule->command('app:notifications-pending-approval')
-                     ->cron($scheduleMethod)
-                     ->withoutOverlapping(4);
-            } else {
-                $schedule->command('app:notifications-pending-approval')
-                     ->{$scheduleMethod}()
-                     ->withoutOverlapping(4);
-            }
-        }
-
         // Founder Bonus System Jobs
         // Daily job to calculate first 30-day earnings for new creators
         $schedule->job(new CalculateFirstThirtyDayEarnings)
@@ -103,25 +102,41 @@ class Kernel extends ConsoleKernel
                  ->monthlyOn(7, '10:00')
                  ->withoutOverlapping(30);
 
-        // Risk Engine: Release Held Reserves (Daily Check)
-        $schedule->call(function () {
-            try {
-                $service = new \App\Services\Risk\PayoutService();
-                $result = $service->releaseReserves();
-                \Illuminate\Support\Facades\Log::info('Reserve Release Job Completed', $result);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Reserve Release Job Failed: ' . $e->getMessage());
-            }
-        })->dailyAt('04:00'); // Run at 4 AM daily when traffic is low
+        // Risk Engine: Enforce Manual Payouts (Every 10 Minutes)
+        $schedule->command('payout:enforce-manual')
+                 ->everyTenMinutes()
+                 ->withoutOverlapping();
 
         // Risk Engine: Monitor Platform State (Every 5 Minutes)
         $schedule->command('risk:monitor-platform')
                  ->everyFiveMinutes()
                  ->withoutOverlapping();
 
+        $schedule->command('app:send-shop-order-reminder-email')
+                ->everyThreeHours()
+                ->withoutOverlapping(10);
+
         // Risk Engine: Weekly Payout Run (Fridays at 10 AM)
         $schedule->command('payout:run-weekly')
                  ->weeklyOn(5, '10:00')
+                 ->withoutOverlapping();
+
+        $schedule->command('bonus:process-fast-start')
+                 ->dailyAt('09:15')
+                 ->withoutOverlapping();
+
+        $schedule->command('bonus:reconcile-fast-start')
+                 ->dailyAt('09:30')
+                 ->withoutOverlapping();
+
+        // Platform Diagnostics — runs daily, emails alert on failure/warning
+        $schedule->command('diagnostics:run')
+                 ->daily()
+                 ->withoutOverlapping(10)
+                 ->runInBackground();
+
+        $schedule->command('crm:sync-creator-stages')
+                 ->everyThirtyMinutes()
                  ->withoutOverlapping();
     }
 

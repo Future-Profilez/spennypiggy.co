@@ -64,8 +64,8 @@ export default function WhyLove() {
 
                     <div className="flex flex-wrap justify-center gap-3 md:gap-8 max-w-[1000px] m-auto">
                       {brandLogos.map((brand, index) => (
-                         <div key={index} className="fading group relative w-24 h-24 sm:w-28 sm:h-28 rounded-[30px]   bg-white backdrop-blur-sm p-6 flex items-center justify-center transition-all duration-300 hover:-translate-y-2 border border-gray-800 hover:border-pink-500 shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
-                           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-[30px]   opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                         <div key={index} className="fading group relative w-24 h-24 sm:w-28 sm:h-28 rounded-[30px]    bg-white backdrop-blur-sm p-6 flex items-center justify-center transition-all duration-300 hover:-translate-y-2 border border-gray-800 hover:border-[#FF007F] shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+                           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-[30px]    opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                            <img
                              src={brand.src}
                              alt={brand.name}

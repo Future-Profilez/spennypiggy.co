@@ -9,15 +9,15 @@ export default function ComingNext() {
        {/* Decorative Background Elements */}
        <div className="absolute top-0 right-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
-            <div className="absolute bottom-10 left-10 w-48 h-48 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+            <div className="absolute bottom-10 left-10 w-48 h-48 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
         </div>
 
       <div className="containerbox relative z-10" >
          <div className="flex flex-col lg:flex-row items-center gap-12" >
             <div className='w-full lg:w-1/2' >
                <div className='nextimage-wrap relative group wiggle' >
-                  <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px]   transform rotate-3 scale-105 opacity-70 blur-lg group-hover:rotate-6 transition-all duration-500"></div>
-                  <div className="relative rounded-[30px]   overflow-hidden border-2 border-white/10 shadow-2xl group-hover:border-pink-500/50 transition-colors duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px]    transform rotate-3 scale-105 opacity-70 blur-lg group-hover:rotate-6 transition-all duration-500"></div>
+                  <div className="relative rounded-[30px]    overflow-hidden border-2 border-white/10 shadow-[4px_4px_0px_0px_#FF007F]xl group-hover:border-[#FF007F]/50 transition-colors duration-300">
                     <LazyLoadImage
                     alt={"image"}  effect="blur"
                     className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500"
@@ -28,7 +28,7 @@ export default function ComingNext() {
             </div>
             <div className='w-full lg:w-1/2' >
                <div className="inline-block mb-4">
-                    <span className="bg-pink-500 text-white font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
+                    <span className="bg-[#FF007F] text-white font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
                         Coming Soon
                     </span>
                </div>
@@ -45,7 +45,7 @@ export default function ComingNext() {
                         <span>Gifts shipped directly to your door!</span>
                    </li>
                    <li className='flex items-start gap-4 text-xl md:text-2xl text-gray-300 font-medium'>
-                        <div className="bg-gray-800 p-3 rounded-full text-pink-400 shadow-lg mt-1">
+                        <div className="bg-gray-800 p-3 rounded-full text-[#FF007F] shadow-lg mt-1">
                             <FaGift />
                         </div>
                         <span>Receive physical Gifts from Fans</span>

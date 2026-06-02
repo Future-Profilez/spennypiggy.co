@@ -10,6 +10,17 @@ export default function MorConsent(props) {
         mor_agreed: false,
     });
 
+    const acknowledgements = [
+        "I am the seller of my content, services, and any Creator Content made available through my profile or storefront.",
+        "All payments made by supporters are made directly to me via my connected Stripe account, and I am solely responsible for the fulfilment, delivery, and quality of all Creator Content.",
+        "I am responsible for handling refunds, disputes, chargebacks, complaints, and any claims arising from transactions with supporters, subject to the Platform’s rights and payment processor requirements.",
+        "I am responsible for determining, reporting, and paying any applicable taxes in my jurisdiction, including income tax, VAT, sales tax, or any other applicable taxes.",
+        "Spenny Piggy provides payment routing, processing infrastructure, moderation systems, and risk management controls only, and does not act as the seller, merchant, or supplier of any goods or services.",
+        "Spenny Piggy may, at its sole discretion, intervene in transactions, including delaying payouts, applying reserves, withholding funds, reversing transactions, or issuing refunds where required for compliance, fraud prevention, dispute resolution, or risk management purposes.",
+        "All funds are subject to processing, verification, and risk controls and are not guaranteed until successfully paid out in accordance with Platform policies and payment processor requirements.",
+        "I agree to comply with all Platform Terms, Payment Processor requirements (including Stripe), and applicable laws in connection with my use of the Platform."
+    ];
+
     const finalStepsUnlocked = auth?.user?.profile_status_lock == 2;
 
     const handleSubmit = (e) => {
@@ -29,10 +40,10 @@ export default function MorConsent(props) {
         <Authenticated auth={auth.user} user={user}>
             <Head title="Merchant of Record Consent - Spenny Piggy" />
             <div className="bg-white min-h-screen py-12 md:py-20">
-                <div className="max-width-800 mx-auto px-4">
+                <div className="containerbox mx-auto px-4">
                     {/* Header Section */}
                     <div className="text-center mb-10">
-                        <h1 className="text-[29px] font-gulfs uppercase text-pink mb-2">
+                        <h1 className="text-[29px] uppercase text-pink mb-2">
                             Merchant of Record Acknowledgement
                         </h1>
                         <p className="text-black text-lg font-CeraGR max-w-2xl mx-auto">
@@ -55,7 +66,7 @@ export default function MorConsent(props) {
                     )}
 
                     {/* Merchant of Record Agreement Card */}
-                    <div className="bg-white rounded-[30px]   shadow-lg border border-gray-200 overflow-hidden mb-8">
+                    <div className="bg-white rounded-[30px]    shadow-lg border border-gray-200 overflow-hidden mb-8">
                         <div className="p-8">
                             {/* Agreement Header */}
                             <div className="text-center mb-8">
@@ -72,8 +83,8 @@ export default function MorConsent(props) {
 
                             {/* Agreement Content */}
                             <div className="space-y-6 mb-8">
-                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[30px]  p-6">
-                                    <p className="text-gray-700 text-lg text-center font-semibold">
+                                <div className="bg-pink-50/50 rounded-[30px]  p-8 border border-pink-100">
+                                    <p className="text-gray-900 text-lg text-center font-bold leading-relaxed">
                                         I confirm that I understand and agree
                                         that I am the Merchant of Record (MoR)
                                         for all payments made by supporters to
@@ -82,160 +93,36 @@ export default function MorConsent(props) {
                                 </div>
 
                                 {/* Agreement Points */}
-                                <div className="space-y-4">
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                            ✓
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-800 mb-1">
-                                                What this means:
-                                            </h3>
-                                            <ul className="text-gray-600 space-y-1 pl-5 list-disc">
-                                                <li>
-                                                    I am the seller of my
-                                                    content, services, or
-                                                    digital goods
-                                                </li>
-                                                <li>
-                                                    Payments are made to me via
-                                                    my connected Stripe account
-                                                </li>
-                                                <li>
-                                                    I am responsible for
-                                                    fulfilment of supporter
-                                                    purchases
-                                                </li>
-                                                <li>
-                                                    I am responsible for
-                                                    refunds, disputes,
-                                                    chargebacks, and applicable
-                                                    taxes
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                            ✓
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-800 mb-1">
-                                                Platform Role:
-                                            </h3>
-                                            <p className="text-gray-600">
-                                                I understand that Spenny Piggy
-                                                acts solely as a technology
-                                                platform and payment
-                                                facilitator, and is not the
-                                                seller of my content or
-                                                services.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                            ✓
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-800 mb-1">
-                                                Disputes & Chargebacks:
-                                            </h3>
-                                            <ul className="text-gray-600 space-y-1 pl-5 list-disc">
-                                                <li>
-                                                    Spenny Piggy may assist with
-                                                    disputes and chargebacks by
-                                                    providing platform records
-                                                    such as logs, timestamps,
-                                                    messages, and transaction
-                                                    data where available
-                                                </li>
-                                                <li>
-                                                    Final responsibility and
-                                                    outcomes for disputes and
-                                                    chargebacks remain with me
-                                                    as the Merchant of Record
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                            ✓
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-800 mb-1">
-                                                Compliance Requirements:
-                                            </h3>
-                                            <p className="text-gray-600">
-                                                I understand that Spenny Piggy
-                                                enforces content and platform
-                                                requirements designed to meet
-                                                payment processor (including
-                                                Stripe) compliance standards.
-                                                Failure to meet these
-                                                requirements may result in
-                                                restrictions, removal of
-                                                content, or suspension of
-                                                account access.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                            ✓
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-800 mb-1">
-                                                Tax Responsibilities:
-                                            </h3>
-                                            <p className="text-gray-600">
-                                                Spenny Piggy can provide
-                                                transaction records and payout
-                                                documentation to support my tax
-                                                reporting obligations. I remain
-                                                solely responsible for
-                                                determining, reporting, and
-                                                paying any applicable taxes.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-6 h-6 bg-pink text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                                            ✓
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-800 mb-1">
-                                                Payment Descriptors:
-                                            </h3>
-                                            <p className="text-gray-600">
-                                                I acknowledge that supporter
-                                                bank or card statements may
-                                                display "Spenny Piggy" and/or
-                                                "Stripe" as the payment
-                                                descriptor, even though I am the
-                                                Merchant of Record.
-                                            </p>
-                                        </div>
+                                <div className="space-y-6 px-2">
+                                    <h3 className="text-sm font-bold text-[#FF007F] uppercase tracking-widest text-center">
+                                        I Acknowledge and Agree That:
+                                    </h3>
+                                    
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {acknowledgements.map((text, index) => (
+                                            <div key={index} className="flex items-start gap-4 p-4 rounded-[30px]  bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
+                                                <div className="w-6 h-6 bg-[#FF007F] text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                                                    <span className="text-[10px] font-bold">✓</span>
+                                                </div>
+                                                <p className="text-gray-700 leading-relaxed font-medium">
+                                                    {text}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-[30px]  p-6">
-                                    <p className="text-gray-700 text-center font-semibold">
-                                        By continuing, I confirm that I have
+                                <div className="bg-gray-900 rounded-[30px]  p-6 shadow-[4px_4px_0px_0px_#FF007F]l">
+                                    <p className="text-white text-center font-bold text-sm leading-relaxed italic">
+                                        "By continuing, I confirm that I have
                                         read, understood, and agree to this
-                                        Merchant of Record arrangement.
+                                        Merchant of Record arrangement and acknowledge my legal responsibility."
                                     </p>
                                 </div>
                             </div>
 
                             {/* Confirmation Checkbox */}
-                            <div className="bg-gray-50 rounded-[30px]  p-6 mb-8">
+                            <div className="bg-gray-50 rounded-[30px]   p-6 mb-8">
                                 <label
                                     htmlFor="mor_agreement"
                                     className="flex items-start space-x-3 cursor-pointer"
@@ -271,7 +158,7 @@ export default function MorConsent(props) {
                                 <button
                                     type="button"
                                     onClick={handleSubmit}
-                                    className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={!data.mor_agreed || processing}
                                 >
                                     {processing ? (

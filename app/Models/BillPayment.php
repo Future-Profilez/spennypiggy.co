@@ -22,6 +22,7 @@ class BillPayment extends Model
         'guest_name',
         'guest_email',
         'amount',
+        'total_paid',
         'currency',
         'recurring_for',
         'tax',
@@ -41,6 +42,8 @@ class BillPayment extends Model
         'supporter_country',
         'card_country',
         'fee_variance',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $appends = [
@@ -55,12 +58,33 @@ class BillPayment extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function bill()
     {
         return $this->belongsTo(Bills::class, 'bills_id');
+    }
+
+    public function creator()
+    {
+        return $this->hasOneThrough(User::class, Bills::class, 'id', 'id', 'bills_id', 'user_id');
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->where('status', 'paid');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeThisMonth($query)
+    {
+        return $query->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year);
     }
 
     public function getSenderAttribute()

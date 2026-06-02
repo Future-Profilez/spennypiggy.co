@@ -82,7 +82,7 @@ export default function Certificate({ profile, user, metrics }) {
             </div>
 
             {/* Certificate Container */}
-            <div className="bg-[#fffdf5] w-full max-w-4xl aspect-[1.414/1] shadow-2xl shadow-slate-900/20 relative print:shadow-none print:w-full print:h-screen print:m-0 overflow-hidden text-slate-900 print-content border-8 border-double border-slate-900">
+            <div className="bg-[#fffdf5] w-full max-w-4xl aspect-[1.414/1] shadow-[4px_4px_0px_0px_#FF007F]xl shadow-slate-900/20 relative print:shadow-none print:w-full print:h-screen print:m-0 overflow-hidden text-slate-900 print-content border-8 border-double border-slate-900">
                 
                 {/* Decorative Corners */}
                 <div className="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-slate-900"></div>

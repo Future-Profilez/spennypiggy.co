@@ -20,7 +20,7 @@ export default function FounderBonusIndex() {
     const availableSeats = programStats?.availableSeats || 150;
     const currentMonth = programStats?.currentMonth || new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     
-    const user = auth.user;
+    const user = auth?.user;
     const { formatMultiPrice } = PriceFormat();
 
     const getRankIcon = (position) => {
@@ -31,7 +31,10 @@ export default function FounderBonusIndex() {
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout
+            auth={auth}
+            user={auth.user}
+        >
             <Head title="Founder Program - Current Month Race" >
                 <meta name="description" content="Compete in our Founder Program to earn a special badge and exclusive rewards. New creators must earn £2,500 in their first 30 days to join." />
             </Head>
@@ -59,7 +62,7 @@ export default function FounderBonusIndex() {
 
                     {/* Founder Congratulations Section */}
                     {auth && auth?.user && auth?.user?.is_founder && founderBonusData && (
-                        <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-[30px]  shadow-xl ring-1 ring-white/20 p-4 md:p-6 mb-8 text-white relative overflow-hidden">
+                        <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-[30px]   shadow-[4px_4px_0px_0px_#FF007F]l ring-1 ring-white/20 p-4 md:p-6 mb-8 text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10 animate-pulse"></div>
                             <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-8 -translate-x-8 animate-pulse"></div>
                             <div className="relative">
@@ -69,12 +72,12 @@ export default function FounderBonusIndex() {
                                             <FaCrown className="w-6 h-6 text-white" />
                                         </div>
                                     </div>
-                                    <h2 className="fading text-xl md:text-2xl font-bold mb-1">🎉 Congratulations, {auth.user.name}!</h2>
+                                    <h2 className="fading text-xl md:text-2xl font-bold mb-1">🎉 Congratulations, {auth?.user?.name}!</h2>
                                     <p className="fading text-sm md:text-base opacity-90">You're officially a SpennyPiggy Founder!</p>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                                    <div className="fading bg-black/5 rounded-[30px]  p-3 backdrop-blur-sm text-center">
+                                    <div className="fading bg-black/5 rounded-[30px]   p-3 backdrop-blur-sm text-center">
                                         <div className=" flex items-center justify-center mb-1">
                                             <FaCalendarAlt className="w-5 h-5 mr-1" />
                                             <p className="text-lg font-bold opacity-90">Became Founder</p>
@@ -88,7 +91,7 @@ export default function FounderBonusIndex() {
                                         </p>
                                     </div>
                                     
-                                    <div className="fading bg-black/5 rounded-[30px]  p-3 backdrop-blur-sm text-center">
+                                    <div className="fading bg-black/5 rounded-[30px]   p-3 backdrop-blur-sm text-center">
                                         <div className="fading flex items-center justify-center mb-1">
                                             <BiDollarCircle className="w-5 h-5 mr-1" />
                                             <p className="text-lg font-bold opacity-90">First 30 Days</p>
@@ -96,7 +99,7 @@ export default function FounderBonusIndex() {
                                         <p className="text-lg font-bold">{formatMultiPrice(founderBonusData.first_30d_earnings, 'GBP')}</p>
                                     </div>
                                     
-                                    <div className="fading bg-black/5 rounded-[30px]  p-3 backdrop-blur-sm text-center">
+                                    <div className="fading bg-black/5 rounded-[30px]   p-3 backdrop-blur-sm text-center">
                                         <div className="flex items-center justify-center mb-1">
                                             <FaGift className="w-5 h-5 mr-1" />
                                             <p className="text-lg font-bold opacity-90">Bonus Amount</p>
@@ -104,7 +107,7 @@ export default function FounderBonusIndex() {
                                         <p className="text-lg font-bold">{formatMultiPrice(founderBonusData.bonus_amount, 'GBP')}</p>
                                     </div>
                                     
-                                    <div className="fading bg-black/5 rounded-[30px]  p-3 backdrop-blur-sm text-center">
+                                    <div className="fading bg-black/5 rounded-[30px]   p-3 backdrop-blur-sm text-center">
                                         <div className="flex items-center justify-center mb-1">
                                             <FaTrophy className="w-5 h-5 mr-1" />
                                             <p className="text-lg font-bold opacity-90">Status</p>
@@ -128,7 +131,7 @@ export default function FounderBonusIndex() {
                                     </div>
                                 </div>
                                 
-                                <div className="fading bg-black/5 rounded-[30px]  p-3 backdrop-blur-sm mb-3">
+                                <div className="fading bg-black/5 rounded-[30px]   p-3 backdrop-blur-sm mb-3">
                                     <h3 className="fading text-xl font-bold mb-2 flex items-center">
                                         <FaCrown className="w-5 h-5 mr-1" />
                                         Your Founder Benefits
@@ -154,7 +157,7 @@ export default function FounderBonusIndex() {
                                 </div>
                                 
                                 {founderBonusData.payout_status === 'pending' && (
-                                    <div className="text-center bg-black/5 rounded-[30px]  p-3 backdrop-blur-sm">
+                                    <div className="text-center bg-black/5 rounded-[30px]   p-3 backdrop-blur-sm">
                                         <p className="fading text-lg font-bold opacity-90">
                                             💡 Your bonus will be processed on {' '}
                                             {founderBonusData.estimated_payout_date ? 
@@ -170,7 +173,7 @@ export default function FounderBonusIndex() {
                                 )}
                                 
                                 {founderBonusData.payout_status === 'rejected' && founderBonusData.rejection_reason && (
-                                    <div className="text-center bg-red-500/20 rounded-[30px]  p-3 backdrop-blur-sm">
+                                    <div className="text-center bg-red-500/20 rounded-[30px]   p-3 backdrop-blur-sm">
                                         <p className="text-xs font-semibold mb-1">❌ Payout Rejected</p>
                                         <p className="text-lg font-bold opacity-90">{founderBonusData.rejection_reason}</p>
                                     </div>
@@ -180,7 +183,7 @@ export default function FounderBonusIndex() {
                     )|| ''}
 
                     {auth && auth?.user && auth?.user?.role == 1 && userInRace && userProgress && (
-                        <div className=" pinkbg rounded-[30px]  md:rounded-[30px]  shadow-2xl p-6 md:p-8 mb-12 text-white relative overflow-hidden">
+                        <div className=" pinkbg rounded-[30px]   md:rounded-[30px]   shadow-[4px_4px_0px_0px_#FF007F]xl p-6 md:p-8 mb-12 text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
                             <div className="relative">
@@ -196,7 +199,7 @@ export default function FounderBonusIndex() {
                             }
                         </p>
                                     </div>
-                                    <div className="mt-3 text-right bg-white/10 rounded-[30px]   p-3 md:p-2 backdrop-blur-sm flex items-center">
+                                    <div className="mt-3 text-right bg-white/10 rounded-[30px]    p-3 md:p-2 backdrop-blur-sm flex items-center">
                                         <p className="text-lg opacity-90 me-2">⏰ Time Left : </p>
                                         <div className='flex items-center'>
                                             <p className="text-3xl font-bold">
@@ -208,7 +211,7 @@ export default function FounderBonusIndex() {
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                                    <div className="bg-black/5 fading rounded-[30px]   p-4 backdrop-blur-sm">
+                                    <div className="bg-black/5 fading rounded-[30px]    p-4 backdrop-blur-sm">
                                         <div className="flex items-center mb-2">
                                             <BiDollarCircle className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Current Earnings</p>
@@ -222,7 +225,7 @@ export default function FounderBonusIndex() {
                                         </p>
                                     </div>
                                     
-                                    <div className="bg-black/5 fading rounded-[30px]   p-4 backdrop-blur-sm">
+                                    <div className="bg-black/5 fading rounded-[30px]    p-4 backdrop-blur-sm">
                                         <div className="flex items-center mb-2">
                                             <FaChartLine className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Progress to Goal</p>
@@ -248,7 +251,7 @@ export default function FounderBonusIndex() {
                                         </p>
                                     </div>
                                     
-                                    <div className="bg-black/5 fading rounded-[30px]   p-4 backdrop-blur-sm">
+                                    <div className="bg-black/5 fading rounded-[30px]    p-4 backdrop-blur-sm">
                                         <div className="flex items-center mb-2">
                                             <FaCrown className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Status</p>
@@ -266,7 +269,7 @@ export default function FounderBonusIndex() {
                                 </div>
                                 
                                 {!userProgress?.is_qualified && (
-                                    <div className="mt-6 bg-white/10 rounded-[30px]   p-4 backdrop-blur-sm">
+                                    <div className="mt-6 bg-white/10 rounded-[30px]    p-4 backdrop-blur-sm">
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-lg font-bold mb-1">💡 Quick Tips to Boost Your Earnings:</p>
@@ -288,7 +291,7 @@ export default function FounderBonusIndex() {
                     {/* Program Stats */}
                     <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                         {/* 5px 5px 0 0 rgba(0,0,0,1) */}
-                        <div className="bg-white fading rounded-[30px]  shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
+                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Total Creators Racing</p>
@@ -301,7 +304,7 @@ export default function FounderBonusIndex() {
                             <p className="text-normal text-gray-500 mt-2">Joined this month</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]  shadow-[5px_5px_0_0_var(--mint)] !border-2 border-[var(--mint)] p-6">
+                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--mint)] !border-2 border-[var(--mint)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Available Seats</p>
@@ -314,7 +317,7 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">Out of {maxSeats} total</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]  shadow-[5px_5px_0_0_var(--pink)] !border-2 border-[var(--pink)] p-6">
+                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--pink)] !border-2 border-[var(--pink)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Qualification Target</p>
@@ -327,7 +330,7 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">In first 30 days</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]  shadow-[5px_5px_0_0_var(--black)] !border-2 border-[var(--black)] p-6">
+                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--black)] !border-2 border-[var(--black)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Bonus Rate</p>
@@ -357,7 +360,7 @@ export default function FounderBonusIndex() {
 
                         <div className="py-6 overflow-auto">
 
-                            <table className='w-full table-auto border-collapse border border-gray-200 shadow-sm rounded-[30px]  overflow-hidden bg-gray-100'>
+                            <table className='w-full table-auto border-collapse border border-gray-200 shadow-sm rounded-[30px]   overflow-hidden bg-gray-100'>
                                 <thead>
                                     <tr>
                                         <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Creator</th>
@@ -413,13 +416,13 @@ export default function FounderBonusIndex() {
                         </div>
                     </div>
 
-                    <div className="bg-whites rounded-[30px]  mt-16 mb-8">
+                    <div className="bg-whites rounded-[30px]   mt-16 mb-8">
                         <div className="flex items-center mb-4">
                             <FaInfoCircle className="w-5 h-5 text-blue-500 mr-2" />
                             <h2 className="text-xl font-bold text-gray-900">How the Founder Program Works</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="text-center bg-white fading p-6 rounded-[30px] ">
+                            <div className="text-center bg-white fading p-6 rounded-[30px]  ">
                                 <div className="p-4 bg-yellow-100 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                                     <FaCrown className="w-8 h-8 text-yellow-600" />
                                 </div>
@@ -428,7 +431,7 @@ export default function FounderBonusIndex() {
                                     New creators must earn £{minEarnings.toLocaleString()}+ in their first {qualificationDays} days to qualify for Founder status.
                                 </p>
                             </div>
-                            <div className="text-center bg-white fading p-6 rounded-[30px] ">
+                            <div className="text-center bg-white fading p-6 rounded-[30px]  ">
                                 <div className="p-4 bg-green-100 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                                     <FaGift className="w-8 h-8 text-green-600" />
                                 </div>
@@ -437,7 +440,7 @@ export default function FounderBonusIndex() {
                                     Qualified Founders earn {bonusPercentage}% extra on monthly earnings between £500-£10,000.
                                 </p>
                             </div>
-                            <div className="text-center bg-white fading p-6 rounded-[30px] ">
+                            <div className="text-center bg-white fading p-6 rounded-[30px]  ">
                                 <div className="p-4 bg-blue-100 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                                     <FaChartLine className="w-8 h-8 text-blue-600" />
                                 </div>

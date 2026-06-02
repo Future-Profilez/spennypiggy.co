@@ -266,6 +266,7 @@ class TipPaymentMailToUser implements ShouldQueue
                 'id' => $this->tipPayment->id,
                 'uuid' => $this->tipPayment->uuid,
                 'amount_subtotal' => $this->tipPayment->amount,
+                'total_paid' => $this->tipPayment->total_paid,
                 'currency' => $this->tipPayment->currency,
                 'session_id' => $this->tipPayment->session_id,
                 'user_id' => $this->tipPayment->user_id,
@@ -280,7 +281,7 @@ class TipPaymentMailToUser implements ShouldQueue
                 'tip_goal' => $this->tipPayment->tipGoal,
                 // Additional fields for compatibility with existing template
                 'creator' => $this->tipPayment->creator,  // For tip-granted template compatibility
-                'amount' => $this->tipPayment->amount     // For tip-granted template compatibility
+                'amount' => $this->tipPayment->total_paid ?? $this->tipPayment->amount     // For tip-granted template compatibility
             ];
 
             // Use the existing email service

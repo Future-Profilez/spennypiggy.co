@@ -25,7 +25,8 @@ class PaymentSuccessMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Your Payment was Successful')
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject('Your Payment was Successful')
             ->markdown('email.user-subscription4');
     }
 }

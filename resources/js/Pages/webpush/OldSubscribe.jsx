@@ -1,5 +1,5 @@
 import { usePage } from "@inertiajs/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isSupported, WebPushClient } from '@magicbell/webpush';
 import toast from "react-hot-toast";
 import { RiNotificationBadgeFill } from "react-icons/ri";
@@ -11,13 +11,24 @@ export default function OldSubscribe() {
    const [subscribing, setSubscribing] = useState(false);
    const { auth } = usePage().props;
    const [client, setClient] = useState(null);
+   const openPromptTimeoutRef = useRef(null);
 
    useEffect(() => {
       const isSubscribed = localStorage.getItem('isSubscribed');
-      if(window && window.matchMedia('(display-mode: standalone)').matches && auth?.user?.email && isSubscribed !== "true"){
-      // if( auth?.user?.email && isSubscribed !== "true"){
-         setOpen(true);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+      if (isStandalone && auth?.user?.email && isSubscribed !== "true") {
+         // Delay push prompt so it doesn't clash with other onboarding popups (e.g., currency selector).
+         openPromptTimeoutRef.current = setTimeout(() => {
+            setOpen(true);
+         }, 60000);
       }
+
+      return () => {
+         if (openPromptTimeoutRef.current) {
+            clearTimeout(openPromptTimeoutRef.current);
+         }
+      };
    }, [auth?.user?.email]);
 
    const ReceivePushNotification  = () =>{
@@ -27,17 +38,21 @@ export default function OldSubscribe() {
       });
    }
 
-    const subscribe = async () => {
+   const subscribe = async () => {
       setSubscribing(true);
+      if (!window.isSecureContext || !("Notification" in window) || !(await isSupported())) {
+         toast.error("Push notifications are not supported on this device/browser.");
+         setSubscribing(false);
+         return;
+      }
+
       const pushClient = new WebPushClient({
             apiKey: '515ceed31a4ba4c745b165a12e3a523dc9e93db4',
             userEmail: auth && auth.user && auth.user.email,
             serviceWorkerPath: '/service-worker.js',
       });
-      setSubscribing(true);
       if (pushClient) {
          try {
-            const authToken = await pushClient.getAuthToken();
             const data = await pushClient.subscribe();
             const subscribed = await pushClient.isSubscribed();
             toast.success(subscribed ? "You have been subscribed for push notifications." : "Unfortunately, you are not subscribed for push notifications.");
@@ -46,7 +61,7 @@ export default function OldSubscribe() {
             ReceivePushNotification();
             if(subscribed){
                setTimeout(() => {
-                  axios.get(`/test-push?email=${auth && auth.user && auth.user.email}&title=🎉 You're in! Let's get started.&content=Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!`).then((resp) => {
+                  axios.get(`/test-push?email=${auth && auth.user && auth.user.email}&title=🎉 You're in! Let's get started.&content=Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.`).then((resp) => {
                   }).catch((error) => {
                     console.error("error", error);
                   });
@@ -55,8 +70,6 @@ export default function OldSubscribe() {
          } catch (error) {
             toast.error("Unable to subscribe for push notifications. Please try again after some time.", error);
             console.error("Subscription failed:", error);
-            localStorage.setItem('isSubscribed', "true");
-            setOpen(false);
          }
       }
       setSubscribing(false);
@@ -65,10 +78,10 @@ export default function OldSubscribe() {
     return (
         <>
          {open &&
-         <div className=" w-screen h-screen flex justify-center items-center z-[6000] bg-[#0009] fixed top-0 left-0">
-               <div id="toast-interactive" className="relative w-full max-w-xs p-4 text-gray-500 bg-white rounded-[30px]  shadow" role="alert">
+         <div className="w-screen h-screen flex justify-center items-center z-[1000005] bg-[#0009] fixed top-0 left-0 pointer-events-auto">
+               <div id="toast-interactive" className="relative w-full max-w-xs p-4 text-gray-500 bg-white rounded-[30px]   shadow" role="alert">
                   <div className="block">
-                     <div className=" mx-auto block items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-[30px]   mb-4">
+                     <div className=" mx-auto block items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-[30px]    mb-4">
                            <RiNotificationBadgeFill />
                      </div>
                      <div className="ml-3 text-sm font-normal text-center">
@@ -79,20 +92,19 @@ export default function OldSubscribe() {
                               <button
                                  onClick={() => {
                                     if (!subscribing) {
-                                       setSubscribing(true);
                                        subscribe();
                                     }
                                  }}
                                  disabled={subscribing}
                                  className={`inline-flex justify-center w-full px-4 py-1.5 font-medium text-center text-white ${
                                     subscribing ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                                 } rounded-[30px]  `}
+                                 } rounded-[30px]   `}
                               >
                                  {subscribing ? "Processing" : "Allow"}
                               </button>
                               </div>
                               {/* <div>
-                                 <button onClick={unsub} className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-[30px]   hover:bg-gray-100">Deny</button>
+                                 <button onClick={unsub} className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-[30px]    hover:bg-gray-100">Deny</button>
                               </div> */}
                            </div>
                      </div>
