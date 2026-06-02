@@ -160,7 +160,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
 
         {type === 'refund' ? (
           <div className="mt-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Refund Reason</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Refund Reason*</div>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -171,7 +171,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
         ) : null}
 
         <div className="mt-4">
-          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Message</div>
+          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Message*</div>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
