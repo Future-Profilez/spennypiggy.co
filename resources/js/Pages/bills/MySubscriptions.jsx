@@ -22,6 +22,24 @@ export default function MySubscriptions(props) {
 
     const [subscriptionTab, setSubscriptionTab] = useState("bills");
 
+    const activeBillSubscriptions = data.bill_subscriptions.filter(
+        (item) => item?.end !== 1,
+    ).length;
+
+    const activeMembershipSubscriptions = data.membership_subscriptions.filter(
+        (item) => item?.end !== 1,
+    ).length;
+
+    const modalPlan = selectedSubscription
+        ? subscriptionTab === "bills"
+            ? selectedSubscription?.bill?.name
+            : selectedSubscription?.membership?.level
+        : "";
+
+    const modalAmount = selectedSubscription
+        ? Number(selectedSubscription.amount || 0).toLocaleString()
+        : "0";
+
     const openCancelModal = (subscription) => {
         setSelectedSubscription(subscription);
 
@@ -52,9 +70,7 @@ export default function MySubscriptions(props) {
                 ),
 
                 membership_subscriptions: prev.membership_subscriptions.map(
-                    (item) =>
-                        item.id === selectedSubscription.id
-                            ? {
+                    (item) => item.id === selectedSubscription.id ? {
                                   ...item,
                                   end: 1,
                               }
@@ -67,38 +83,6 @@ export default function MySubscriptions(props) {
             console.log(error);
         }
     };
-
-    <div className="flex items-center gap-3 mb-6">
-        <button
-            onClick={() => setSubscriptionTab("bills")}
-            className={`
-            px-5 py-3 rounded-[30px] 
-            text-sm font-bold transition-all duration-300
-            ${
-                subscriptionTab === "bills"
-                    ? "bg-blue-300 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black"
-                    : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
-            }
-        `}
-        >
-            💳 Bill Subscriptions
-        </button>
-
-        <button
-            onClick={() => setSubscriptionTab("memberships")}
-            className={`
-            px-5 py-3 rounded-[30px] 
-            text-sm font-bold transition-all duration-300
-            ${
-                subscriptionTab === "memberships"
-                    ? "bg-yellow-300 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black"
-                    : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
-            }
-        `}
-        >
-            👑 Membership Subscriptions
-        </button>
-    </div>;
 
     useEffect(() => {
         axios
@@ -138,43 +122,47 @@ export default function MySubscriptions(props) {
 
                         <div className="mb-8">
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-yellow-300 flex items-center justify-center text-3xl border-[3px] border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="w-14 h-14 bg-yellow-300 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     📦
                                 </div>
 
                                 <div>
-                                    <h1 className="text-3xl md:text-4xl font-GillSans uppercase text-black">
+                                    <h1 className="text-2xl md:text-3xl font-GillSans uppercase text-black">
                                         My Subscriptions
                                     </h1>
-
-                                    <p className="text-gray-600 text-sm mt-1">
-                                        Track memberships and creator
-                                        subscriptions
-                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         {/* STATS */}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
-                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <p className="text-gray-600 text-sm">
-                                    Active Subscriptions
+                                    Active Bill Subscriptions
                                 </p>
 
-                                <h2 className="text-4xl md:text-5xl font-black text-black mt-4">
-                                    {data?.stats?.total_active_subscriptions ||
-                                        0}
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
+                                    {activeBillSubscriptions}
                                 </h2>
                             </div>
 
-                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                                <p className="text-gray-600 text-sm">
+                                    Active Membership Subscriptions
+                                </p>
+
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
+                                    {activeMembershipSubscriptions}
+                                </h2>
+                            </div>
+
+                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <p className="text-gray-600 font-bold uppercase text-sm">
                                     Monthly Spend
                                 </p>
 
-                                <h2 className="text-4xl md:text-5xl font-black text-black mt-4">
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
                                     £
                                     {Number(
                                         data?.stats?.monthly_spend || 0,
@@ -182,12 +170,12 @@ export default function MySubscriptions(props) {
                                 </h2>
                             </div>
 
-                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all p-6">
+                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <p className="text-gray-600 font-bold uppercase text-sm">
                                     Yearly Spend
                                 </p>
 
-                                <h2 className="text-4xl md:text-5xl font-black text-black mt-4">
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
                                     £
                                     {Number(
                                         data?.stats?.yearly_spend || 0,
@@ -232,8 +220,8 @@ export default function MySubscriptions(props) {
 
                         {/* TABLE */}
 
-                        <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-all overflow-hidden">
-                            <div className="p-6 border-b-[3px] border-black">
+                        <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                            <div className="p-6 border-b-2 border-black">
                                 <h2 className="text-xl md:text-2xl font-GillSans uppercase text-black">
                                     {subscriptionTab === "bills"
                                         ? "Bill Subscriptions"
@@ -296,10 +284,7 @@ export default function MySubscriptions(props) {
                                                               ?.level;
 
                                                 return (
-                                                    <tr
-                                                        key={index}
-                                                        className="hover:bg-white/[0.05] transition-all duration-300"
-                                                    >
+                                                    <tr key={index}>
                                                         {/* CREATOR */}
 
                                                         <td className="px-6 py-5">
@@ -315,7 +300,7 @@ export default function MySubscriptions(props) {
                                                         {/* PLAN */}
 
                                                         <td className="px-6 py-5">
-                                                            <p className="text-black font-semibold">
+                                                            <p className="text-black font-semibold uppercase">
                                                                 {plan}
                                                             </p>
                                                         </td>
@@ -418,7 +403,7 @@ export default function MySubscriptions(props) {
                                                             className={`
                                                             w-24 h-24 rounded-3xl
                                                             flex items-center justify-center
-                                                            text-5xl mb-6 border
+                                                            text-4xl mb-6 border
                                                             ${
                                                                 subscriptionTab ===
                                                                 "bills"
@@ -475,9 +460,10 @@ export default function MySubscriptions(props) {
                     <div
                         className="
                         w-full max-w-md
-                        rounded-3xl
-                        bg-slate-900
-                        border border-white/10
+                        rounded-[30px]
+                        bg-white
+                        border-2 border-black
+                        shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                         p-8
                         "
                     >
@@ -485,9 +471,9 @@ export default function MySubscriptions(props) {
                             <div
                                 className="
                                 w-24 h-24 mx-auto
-                                rounded-3xl
+                                rounded-[30px]
                                 bg-red-500/10
-                                border border-red-500/20
+                                border-2 border-red-500/30
                                 flex items-center justify-center
                                 text-5xl mb-6
                                 "
@@ -505,20 +491,40 @@ export default function MySubscriptions(props) {
 
                             <p
                                 className="
-                                text-gray-600 leading-relaxed
+                                text-gray-600 leading-relaxed text-sm
                                 "
                             >
                                 Your subscription will remain active until the
                                 current billing period ends.
                             </p>
 
+                            <div className="mt-6 rounded-[20px] border-2 border-black bg-yellow-50 p-5 text-left text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]">
+                                <p className="uppercase tracking-[0.24em] text-xs text-gray-500 font-bold">
+                                    Selected Subscription
+                                </p>
+                                <p className="mt-3 font-black text-black text-lg">
+                                    {modalPlan || "Unknown plan"}
+                                </p>
+                                <p className="mt-2 text-gray-700 font-semibold">
+                                    Amount: £{modalAmount}
+                                </p>
+                                {selectedSubscription?.recurring_type && (
+                                    <p className="mt-1 text-gray-600 text-xs uppercase tracking-wider">
+                                        Type: {selectedSubscription.recurring_type}
+                                    </p>
+                                )}
+                            </div>
+
                             <div className="flex gap-3 mt-8">
                                 <button
                                     onClick={() => setCancelModal(false)}
                                     className="
-                                    flex-1 py-3 rounded-[30px] 
-                                    bg-white/5 border border-white/10
+                                    flex-1 py-3 rounded-[30px]
+                                    bg-white border-2 border-black
                                     text-black font-bold
+                                    shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]
+                                    hover:bg-gray-50 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1
+                                    transition-all duration-300
                                     "
                                 >
                                     Keep Subscription
@@ -527,10 +533,13 @@ export default function MySubscriptions(props) {
                                 <button
                                     onClick={confirmCancelSubscription}
                                     className="
-                                    flex-1 py-3 rounded-[30px] 
+                                    flex-1 py-3 rounded-[30px]
                                     bg-gradient-to-r
                                     from-red-500 to-pink-500
-                                    text-black font-bold
+                                    text-white font-bold border-2 border-red-700
+                                    shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]
+                                    hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1
+                                    transition-all duration-300
                                     "
                                 >
                                     Confirm Cancel

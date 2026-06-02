@@ -23,9 +23,24 @@ class EventServiceProvider extends ServiceProvider
     /**
      * Register any events for your application.
      */
-    public function boot(): void
+    public function boot()
     {
-        //
+        // Register observers only for specific models
+        $modelsToObserve = [
+            \App\Models\WishItem::class,
+            \App\Models\Membership::class,
+            \App\Models\Post::class,
+            \App\Models\Task::class,
+            \App\Models\Shop::class,
+            \App\Models\Bills::class,
+            \App\Models\PiggyPot::class,
+            \App\Models\TipGoal::class,
+            \App\Models\User::class,
+        ];
+
+        foreach ($modelsToObserve as $model) {
+            $model::observe(\App\Observers\ActivityObserver::class);
+        }
     }
 
     /**

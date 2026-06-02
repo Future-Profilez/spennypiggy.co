@@ -13,11 +13,14 @@ use App\Models\User;
 use App\Services\MagicBellService;
 use App\Services\SupportTicketRefundService;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+use Stripe\Exception\ApiErrorException;
 
 class SupportTicketController extends Controller
 {
@@ -125,7 +128,7 @@ class SupportTicketController extends Controller
             Mail::to($creator->email)
                 ->bcc($adminRecipients)
                 ->send(new SupportTicketCreatedMail($ticket, $request->message));
-                
+
             app(MagicBellService::class)->sendNotification(
                 'New Support Request',
                 'You have a new support request from @' . $supporter->username . '. Please respond within 48 hours.',
@@ -136,7 +139,7 @@ class SupportTicketController extends Controller
         if ($supporter->email) {
             Mail::to($supporter->email)
                 ->send(new SupportTicketConfirmationMail($ticket));
-                
+
             app(MagicBellService::class)->sendNotification(
                 'Support Request Received',
                 'Your support request has been successfully sent to @' . $creator->username . '.',
@@ -185,7 +188,7 @@ class SupportTicketController extends Controller
 
         $transaction = null;
         if ($ticket->source && $ticket->source_id) {
-            $sourceModelClass = match($ticket->source) {
+            $sourceModelClass = match ($ticket->source) {
                 'stripe_payment_items' => \App\Models\StripePaymentItems::class,
                 'membership_payments' => \App\Models\MembershipPayment::class,
                 'bill_payments' => \App\Models\BillPayment::class,
@@ -204,7 +207,7 @@ class SupportTicketController extends Controller
             } elseif ($ticket->source === 'financial_transactions') {
                 $ft = \App\Models\FinancialTransaction::with('source')->find($ticket->source_id);
             }
-            
+
             if ($ft) {
                 $transaction = [
                     'amount' => $ft->gross_amount,
@@ -253,7 +256,7 @@ class SupportTicketController extends Controller
             throw new AuthorizationException('Unauthorized');
         }
 
-        $sourceModelClass = match($request->source) {
+        $sourceModelClass = match ($request->source) {
             'stripe_payment_items' => \App\Models\StripePaymentItems::class,
             'membership_payments' => \App\Models\MembershipPayment::class,
             'bill_payments' => \App\Models\BillPayment::class,
@@ -465,7 +468,7 @@ class SupportTicketController extends Controller
         }
 
         $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
-        
+
         if ($ticket->creator_id !== $user->id && $ticket->supporter_id !== $user->id) {
             abort(403, 'Unauthorized');
         }
@@ -535,7 +538,7 @@ class SupportTicketController extends Controller
             if ($ticket->status === 'awaiting_creator') {
                 $ticket->status = 'awaiting_supporter';
             }
-            
+
             // Notify Supporter
             $supporterEmail = $ticket->supporter ? $ticket->supporter->email : $ticket->guest_email;
             if ($supporterEmail) {
@@ -554,7 +557,7 @@ class SupportTicketController extends Controller
                 $ticket->reminder_24h_sent_at = null;
                 $ticket->reminder_6h_sent_at = null;
             }
-            
+
             // Notify Creator
             $creator = User::find($ticket->creator_id);
             if ($creator && $creator->email) {
@@ -577,61 +580,85 @@ class SupportTicketController extends Controller
             'message' => 'nullable|string|max:2000',
         ]);
 
-        $user = Auth::user();
-        if (!$user) {
-            throw new AuthorizationException('Unauthorized');
-        }
+        try {
 
-        $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
-        if ($ticket->creator_id !== $user->id) {
-            throw new AuthorizationException('Unauthorized');
-        }
+            $user = Auth::user();
 
-        if ($ticket->type !== 'refund') {
-            return response()->json(['status' => false, 'message' => 'Not a refund ticket.'], 422);
-        }
+            if (!$user) {
+                throw new AuthorizationException('Unauthorized');
+            }
 
-        $creator = User::findOrFail($ticket->creator_id);
-        $refundService->initiateRefund($ticket, $creator, 'creator');
+            $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
 
-        if ($request->message) {
-            SupportTicketMessage::create([
-                'ticket_id' => $ticket->id,
-                'sender_role' => 'creator',
-                'sender_user_id' => $user->id,
-                'message' => $request->message,
-                'attachments' => null,
+            if ($ticket->creator_id !== $user->id) {
+                throw new AuthorizationException('Unauthorized');
+            }
+
+            if ($ticket->type !== 'refund') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Not a refund ticket.'
+                ], 422);
+            }
+
+            $creator = User::findOrFail($ticket->creator_id);
+
+            $refundService->initiateRefund(
+                $ticket,
+                $creator,
+                'creator'
+            );
+
+            if ($request->message) {
+                SupportTicketMessage::create([
+                    'ticket_id' => $ticket->id,
+                    'sender_role' => 'creator',
+                    'sender_user_id' => $user->id,
+                    'message' => $request->message,
+                    'attachments' => null,
+                ]);
+            }
+
+            $ticket->status = 'refund_initiated';
+            $ticket->resolved_at = now();
+            $ticket->last_message_at = now();
+            $ticket->last_creator_message_at = now();
+            $ticket->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Refund initiated successfully.'
             ]);
+        } catch (ApiErrorException $e) {
+
+            Log::error('Stripe Refund Error', [
+                'ticket_uuid' => $uuid,
+                'creator_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Stripe refund failed: ' . $e->getMessage(),
+            ], 422);
+        } catch (Exception $e) {
+
+            Log::error('Refund Approval Error', [
+                'ticket_uuid' => $uuid,
+                'creator_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong while processing the refund.'
+            ], 500);
         }
-
-        $ticket->status = 'refund_initiated';
-        $ticket->resolved_at = now();
-        $ticket->last_message_at = now();
-        $ticket->last_creator_message_at = now();
-        $ticket->save();
-
-        // Notify Supporter
-        $supporterEmail = $ticket->supporter ? $ticket->supporter->email : $ticket->guest_email;
-        if ($supporterEmail) {
-            Mail::to($supporterEmail)->send(new SupportTicketRefundStatusMail($ticket, 'approved', 'supporter'));
-            \App\Helpers::sendNotification(
-                'Refund Approved',
-                'Your refund request (Ticket #' . explode('-', $ticket->uuid)[0] . ') has been approved and initiated.',
-                $supporterEmail
-            );
-        }
-
-        // Notify Creator
-        if ($creator->email) {
-            Mail::to($creator->email)->send(new SupportTicketRefundStatusMail($ticket, 'approved', 'creator'));
-            \App\Helpers::sendNotification(
-                'Refund Approved',
-                'You have approved the refund for Ticket #' . explode('-', $ticket->uuid)[0] . '.',
-                $creator->email
-            );
-        }
-
-        return response()->json(['status' => true]);
     }
 
     public function creatorRejectRefund(Request $request, string $uuid)

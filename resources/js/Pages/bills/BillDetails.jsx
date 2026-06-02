@@ -84,44 +84,46 @@ export default function BillDetails(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                <div className="min-h-screen bg-gray-200">
                     <div className="max-w-[1500px] mx-auto px-4 py-8">
                         {/* PAGE HEADER */}
                         <div className="mb-8">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                                 <div className="flex items-center gap-5">
-                                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-5xl shadow-lg shadow-cyan-500/30">
+                                    <div className="w-16 h-16 rounded-[20px] bg-cyan-400 border-2 border-black flex items-center justify-center text-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         💳
                                     </div>
 
                                     <div>
-                                        <h1 className="text-5xl font-black text-white tracking-tight">
+                                        <h1 className="text-3xl md:text-4xl font-black text-black tracking-tight">
                                             {bill?.name}
                                         </h1>
 
-                                        <p className="text-slate-400 mt-2 text-base">
+                                        <p className="text-gray-600 mt-2 text-sm">
                                             Full creator bill analytics and
                                             supporter insights
                                         </p>
 
-                                        <div className="flex items-center gap-3 mt-4">
+                                        <div className="flex flex-wrap items-center gap-3 mt-4">
                                             <Link
                                                 href="/billing-dashboard"
                                                 className="
                                                 inline-flex items-center gap-2
-                                                px-5 py-3 mt-4 rounded-[30px] 
-                                                bg-white/5 border border-white/10
-                                                text-white font-semibold
-                                                hover:bg-white/10 transition-all
+                                                px-5 py-2 rounded-[30px]
+                                                bg-white border-2 border-black
+                                                text-black font-bold
+                                                shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]
+                                                hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1
+                                                transition-all duration-300
                                             "
                                             >
                                                 ← Back to Dashboard
                                             </Link>
-                                            <span className="px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-bold capitalize">
+                                            <span className="px-3 py-2 rounded-[15px] bg-cyan-300 border-2 border-black text-black text-xs font-bold uppercase">
                                                 {bill?.period}
                                             </span>
 
-                                            <span className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold">
+                                            <span className="px-3 py-2 rounded-[15px] bg-emerald-300 border-2 border-black text-black text-xs font-bold uppercase">
                                                 Active Bill
                                             </span>
                                         </div>
@@ -132,81 +134,81 @@ export default function BillDetails(props) {
 
                         {/* ANALYTICS CARDS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-                            <div className="rounded-3xl bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
-                                <p className="text-slate-400 uppercase text-xs tracking-widest">
+                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Total Buyers
                                 </p>
 
-                                <h2 className="text-5xl font-black text-white mt-4">
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
                                     {bill?.total_buyers || 0}
                                 </h2>
 
-                                <p className="text-emerald-400 mt-3 text-sm font-semibold">
+                                <p className="text-emerald-600 mt-3 text-xs font-bold uppercase">
                                     Active Supporters
                                 </p>
                             </div>
 
-                            <div className="rounded-3xl bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
-                                <p className="text-slate-400 uppercase text-xs tracking-widest">
+                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Total Revenue
                                 </p>
 
-                                <h2 className="text-5xl font-black bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent mt-4">
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
                                     {displayCurrency}
                                     {Number(
                                         bill?.total_revenue || 0,
                                     ).toLocaleString()}
                                 </h2>
 
-                                <p className="text-pink-400 mt-3 text-sm font-semibold">
+                                <p className="text-pink-600 mt-3 text-xs font-bold uppercase">
                                     Lifetime Earnings
                                 </p>
                             </div>
 
-                            <div className="rounded-3xl bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
-                                <p className="text-slate-400 uppercase text-xs tracking-widest">
+                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Monthly Revenue
                                 </p>
 
-                                <h2 className="text-5xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mt-4">
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
                                     {displayCurrency}
                                     {Number(
                                         bill?.monthly_revenue || 0,
                                     ).toLocaleString()}
                                 </h2>
 
-                                <p className="text-cyan-400 mt-3 text-sm font-semibold">
+                                <p className="text-cyan-600 mt-3 text-xs font-bold uppercase">
                                     Current Month
                                 </p>
                             </div>
 
-                            <div className="rounded-3xl bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
-                                <p className="text-slate-400 uppercase text-xs tracking-widest">
+                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Estimated Next Month
                                 </p>
 
-                                <h2 className="text-5xl font-black bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent mt-4">
+                                <h2 className="text-3xl md:text-4xl font-black text-black mt-4">
                                     {displayCurrency}
                                     {Number(
                                         bill?.estimated_next_month || 0,
                                     ).toLocaleString()}
                                 </h2>
 
-                                <p className="text-emerald-400 mt-3 text-sm font-semibold">
+                                <p className="text-emerald-600 mt-3 text-xs font-bold uppercase">
                                     Recurring Projection
                                 </p>
                             </div>
                         </div>
 
                         {/* SUPPORTERS TABLE */}
-                        <div className="rounded-[32px] bg-white/5 border border-white/10 overflow-hidden backdrop-blur-sm">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 p-6 border-b border-white/10">
+                        <div className="rounded-[30px] bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 p-6 ">
                                 <div>
-                                    <h2 className="text-3xl font-black text-white">
+                                    <h2 className="text-2xl md:text-3xl font-black text-black">
                                         All Supporters
                                     </h2>
 
-                                    <p className="text-slate-400 mt-2 text-sm">
+                                    <p className="text-gray-600 mt-2 text-sm">
                                         All users who purchased this creator
                                         bill
                                     </p>
@@ -216,49 +218,47 @@ export default function BillDetails(props) {
                                     <input
                                         type="text"
                                         placeholder="Search supporter..."
-                                        className="h-[56px] rounded-[30px]  bg-[#0f172a] border border-white/10 px-5 text-white min-w-[320px] focus:outline-none"
+                                        className="h-[48px] rounded-[30px] bg-white border-2 border-black px-5 text-black min-w-[280px] focus:outline-none font-semibold placeholder-gray-400"
                                     />
                                 </div>
                             </div>
 
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="bg-white/10 border-b border-white/10">
+                                    <thead className="bg-gray-100 ">
                                         <tr>
-                                            <th className="text-left px-6 py-5 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                            <th className="text-left px-6 py-4 text-xs font-bold text-black uppercase tracking-wider">
                                                 Supporter
                                             </th>
 
-                                            <th className="text-left px-6 py-5 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                            <th className="text-left px-6 py-4 text-xs font-bold text-black uppercase tracking-wider">
                                                 Amount
                                             </th>
 
-                                            <th className="text-left px-6 py-5 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                            <th className="text-left px-6 py-4 text-xs font-bold text-black uppercase tracking-wider">
                                                 Type
                                             </th>
 
-                                            <th className="text-left px-6 py-5 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                            <th className="text-left px-6 py-4 text-xs font-bold text-black uppercase tracking-wider">
                                                 Date
                                             </th>
 
-                                            <th className="text-left px-6 py-5 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                            <th className="text-left px-6 py-4 text-xs font-bold text-black uppercase tracking-wider">
                                                 Status
                                             </th>
                                         </tr>
                                     </thead>
 
-                                    <tbody className="divide-y divide-white/10">
+                                    <tbody className="divide-y-2 ">
                                         {supporters.length > 0 ? (
                                             supporters.map(
                                                 (supporter, index) => (
                                                     <tr
                                                         key={index}
-                                                        className="hover:bg-white/5 transition-all"
+                                                        className=""
                                                     >
                                                         <td className="px-6 py-5">
                                                             <div className="flex items-center gap-4">
-                                                                
-
                                                                 <div>
                                                                     <Avatar user={supporter.user} />
                                                                 </div>
@@ -266,10 +266,8 @@ export default function BillDetails(props) {
                                                         </td>
 
                                                         <td className="px-6 py-5">
-                                                            <h3 className="text-2xl font-black text-pink-400">
-                                                                {
-                                                                    displayCurrency
-                                                                }
+                                                            <h3 className="text-lg font-black text-emerald-500">
+                                                                {displayCurrency}
                                                                 {Number(
                                                                     supporter.amount,
                                                                 ).toLocaleString()}
@@ -277,14 +275,14 @@ export default function BillDetails(props) {
                                                         </td>
 
                                                         <td className="px-6 py-5">
-                                                            <span className="px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-bold capitalize">
+                                                            <span className="px-3 py-2 rounded-[15px] bg-cyan-300 border-2 border-black text-black text-xs font-bold uppercase">
                                                                 {supporter.recurring_type ||
                                                                     "one-time"}
                                                             </span>
                                                         </td>
 
                                                         <td className="px-6 py-5">
-                                                            <p className="text-white font-semibold">
+                                                            <p className="text-black font-semibold text-sm">
                                                                 {new Date(
                                                                     supporter.created_at,
                                                                 ).toLocaleDateString()}
@@ -292,8 +290,8 @@ export default function BillDetails(props) {
                                                         </td>
 
                                                         <td className="px-6 py-5">
-                                                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold">
-                                                                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                                            <span className="inline-flex items-center gap-2 px-3 py-2 rounded-[15px] bg-emerald-300 border-2 border-black text-black text-xs font-bold uppercase">
+                                                                <span className="w-2 h-2 rounded-full bg-black"></span>
                                                                 Paid
                                                             </span>
                                                         </td>
@@ -307,15 +305,15 @@ export default function BillDetails(props) {
                                                     className="px-6 py-16 text-center"
                                                 >
                                                     <div className="flex flex-col items-center">
-                                                        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl mb-4">
+                                                        <div className="w-16 h-16 rounded-[20px] bg-gray-200 border-2 border-black flex items-center justify-center text-3xl mb-4">
                                                             💳
                                                         </div>
 
-                                                        <h3 className="text-2xl font-bold text-white">
+                                                        <h3 className="text-xl font-black text-black">
                                                             No Supporters Yet
                                                         </h3>
 
-                                                        <p className="text-slate-400 mt-2">
+                                                        <p className="text-gray-600 mt-2 text-sm">
                                                             This bill has not
                                                             received any
                                                             payments yet.

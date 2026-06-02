@@ -115,8 +115,7 @@ export default function MembershipLists({ username }) {
 
         const fetch = (signal) => {
             setLoading(true);
-            axios
-                .get(`/gifter-${type}/${username}`, { signal })
+            axios.get(`/gifter-${type}/${username}`, { signal })
                 .then((resp) => {
                     if (type == "memberships") {
                         setsubs(resp.data.membership || []);

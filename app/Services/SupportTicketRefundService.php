@@ -26,7 +26,11 @@ class SupportTicketRefundService
         }
 
         if (!$paymentIntentId) {
-            throw new \RuntimeException('No payment intent found for this ticket.');
+            throw new \RuntimeException(
+                'Unable to locate payment information for refund. '
+                    . 'Source: ' . $ticket->source
+                    . ', Source ID: ' . $ticket->source_id
+            );
         }
 
         \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
@@ -85,7 +89,6 @@ class SupportTicketRefundService
             case 'membership_payments':
             case 'MembershipPayment':
                 $p = MembershipPayment::with('membership.user')->findOrFail($ticket->source_id);
-                $paymentIntentId = $p->stripe_id;
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->membership?->user?->account_id ?? $connectedAccountId;
                 break;
@@ -109,16 +112,52 @@ class SupportTicketRefundService
         }
 
         if (!$paymentIntentId && $sessionId) {
+
+            \Log::info('Refund Debug Before Session Fetch', [
+                'ticket_uuid' => $ticket->uuid,
+                'source' => $ticket->source,
+                'source_id' => $ticket->source_id,
+                'session_id' => $sessionId,
+                'connected_account' => $connectedAccountId,
+            ]);
+
             $client = new StripeClient(config('services.stripe.secret'));
             $options = [];
             if ($connectedAccountId) {
                 $options['stripe_account'] = $connectedAccountId;
             }
             $session = $client->checkout->sessions->retrieve($sessionId, [], $options);
+            \Log::info('Refund Debug Session Response', [
+                'session_id' => $sessionId,
+                'payment_intent' => $session?->payment_intent,
+                'subscription' => $session?->subscription,
+                'mode' => $session?->mode,
+            ]);
             $paymentIntentId = $session?->payment_intent;
+
+            if (!$paymentIntentId && !empty($session?->subscription)) {
+
+                $subscription = $client->subscriptions->retrieve(
+                    $session->subscription,
+                    [],
+                    $options
+                );
+
+                $invoiceId = $subscription->latest_invoice;
+
+                if ($invoiceId) {
+                    $invoice = $client->invoices->retrieve(
+                        $invoiceId,
+                        [],
+                        $options
+                    );
+
+                    $paymentIntentId =
+                        $invoice->payment_intent;
+                }
+            }
         }
 
         return [$paymentIntentId, $sessionId, $connectedAccountId];
     }
 }
-
