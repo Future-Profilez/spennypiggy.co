@@ -85,7 +85,6 @@ class SupportTicketRefundService
             case 'membership_payments':
             case 'MembershipPayment':
                 $p = MembershipPayment::with('membership.user')->findOrFail($ticket->source_id);
-                $paymentIntentId = $p->stripe_id;
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->membership?->user?->account_id ?? $connectedAccountId;
                 break;
@@ -121,4 +120,3 @@ class SupportTicketRefundService
         return [$paymentIntentId, $sessionId, $connectedAccountId];
     }
 }
-
