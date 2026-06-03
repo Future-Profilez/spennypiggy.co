@@ -107,7 +107,7 @@ export default function Hero({auth}) {
           <div className="containerbox relative w-full">
             <div className="welcome px-4" >
                 <div className="welcomeLeft mx-auto w-full text-center">
-                    <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-wide text-4xl sm:text-6xl md:text-7xl xl:text-[80px] max-w-6xl mx-auto text-center leading-[0.85] md:leading-[0.8]">
+                    <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-wide text-4xl sm:text-6xl md:text-7xl xl:text-[86px] max-w-6xl mx-auto text-center leading-[0.85] md:leading-[0.8]">
                       The everything 
                       <div className='block mt-2 md:mt-2 text-4xl md:text-7xl xl:text-[80px]'>
                         <span className="text-gradient-wishlists text-pink drop-shadow-[0_0_50px_rgba(249,79,150,0.5)] animate-pulse">
@@ -118,7 +118,7 @@ export default function Hero({auth}) {
                     
                     <div className="flex items-center justify-center mt-4 md:mt-12 mb-6 md:mb-8">
                       <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
-                      <h3 className="text-center text-[16px] md:text-xl uppercase text-yellow-400 font-gulfs tracking-[0.2em] px-4">
+                      <h3 className="text-center text-[18px] md:text-2xl  lg:text-3xl uppercase text-yellow-400 font-gulfs tracking-[0.2em] px-4">
                           Built for Creators
                       </h3>
                       <div className="h-[1px] w-24 bg-gradient-to-l from-transparent via-yellow-400/50 to-transparent"></div>
@@ -164,7 +164,7 @@ export default function Hero({auth}) {
                   </div>
 
                       <div className="m-auto max-w-[660px] flex justify-center items-center">
-                        <p className='uppercase px-6 text-center mt-4 text-gray-400 font-poppins text-[16px] xl:text-[18px] tracking-wider'>*3 days Free trial and then requires a monthly £8.99 + VAT payment to cover stripe fees and compliance costs. </p>
+                        <p className='uppercase px-6 text-center mt-4 text-gray-400 font-poppins text-[11px] xl:text-[13px] tracking-wider'>*3 days Free trial and then requires a monthly £8.99 + VAT payment to cover stripe fees and compliance costs. </p>
                       </div>
                   
 
