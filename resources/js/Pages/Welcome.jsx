@@ -21,6 +21,7 @@ const NotForBusiness = lazy(() => import("./home/NotForBusiness"));
 const FAQ = lazy(() => import("./home/FAQ"));
 const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
 const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
+const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
 const FounderProgramAnnouncement = lazy(() => import("./home/FounderProgramAnnouncement"));
 const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
 const TrendingCreators = lazy(() => import('./home/TrendingCreators'));
@@ -84,6 +85,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
             <Hero auth={auth} />
             
             <Suspense fallback={<div className="h-20" />}>
+                <EarnMoreAnnouncement founderBonus={founderBonus} />
                 <PaidTasksAnnouncement />
                 <ReferEarnAnnouncement />
                 <FounderProgramAnnouncement founderBonus={founderBonus} />

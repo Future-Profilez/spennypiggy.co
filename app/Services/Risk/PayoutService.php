@@ -313,8 +313,7 @@ class PayoutService
             } else {
                 $netPayout = $netBeforeBalance;
             }
-            
-            // Check for minimum payout threshold
+
             $isBelowThreshold = false;
             if ($netPayout > 0 && $netPayout < self::MINIMUM_PAYOUT_MINOR) {
                 $isBelowThreshold = true;
@@ -479,7 +478,7 @@ class PayoutService
                             'status' => 'in_transit',
                             'arrival_date' => \Carbon\Carbon::createFromTimestamp($payout->arrival_date),
                             'metadata' => [
-                                'stripe_payout' => $payout->toArray()
+                                'stripe_payout' => $payout->toArray(),
                             ]
                         ]);
 

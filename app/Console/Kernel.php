@@ -121,11 +121,23 @@ class Kernel extends ConsoleKernel
                  ->weeklyOn(5, '10:00')
                  ->withoutOverlapping();
 
+        $schedule->command('bonus:process-fast-start')
+                 ->dailyAt('09:15')
+                 ->withoutOverlapping();
+
+        $schedule->command('bonus:reconcile-fast-start')
+                 ->dailyAt('09:30')
+                 ->withoutOverlapping();
+
         // Platform Diagnostics — runs daily, emails alert on failure/warning
         $schedule->command('diagnostics:run')
                  ->daily()
                  ->withoutOverlapping(10)
                  ->runInBackground();
+
+        $schedule->command('crm:sync-creator-stages')
+                 ->everyThirtyMinutes()
+                 ->withoutOverlapping();
     }
 
     /**

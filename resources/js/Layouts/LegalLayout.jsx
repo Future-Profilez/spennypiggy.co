@@ -29,10 +29,11 @@ export default function LegalLayout({ children, activePage }) {
         { name: 'Paid Tasks Terms', href: '/paid-tasks-terms', component: 'PaidTasksTerms', icon: ClipboardList },
         { name: 'Return Policy', href: '/return-policy', component: 'ReturnPolicy', icon: RotateCcw },
         { name: 'US Addendum', href: '/us-addendum', component: 'UsAddendum', icon: ShieldCheck },
+        { name: 'Fast Payout Terms', href: '/fast-start-bonus-terms', component: 'FastStartBonusTerms', icon: FileText },
     ];
 
     return (
-        <div className="min-h-screend bg-[#FDFCFD] flex flex-col md:flex-row font-poppins">
+        <div className="min-h-screen bg-[#FDFCFD] flex flex-col md:flex-row font-poppins overflow-hidden">
             {/* Mobile Header */}
             <div className="md:hidden bg-white border-b border-gray-100 p-4  z-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -118,9 +119,9 @@ export default function LegalLayout({ children, activePage }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 bg-white md:bg-[#FDFCFD] min-h-screen">
+            <main className="flex-1 bg-white md:bg-[#FDFCFD] md:max-h-screen md:overflow-auto">
                 <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-8 md:py-12">
-                    <div className="bg-white md:shadow-sm md:border md:border-gray-100 md:rounded-[40px] min-h-[80vh]">
+                    <div className="bg-white lg:shadow-sm lg:border lg:border-gray-100 lg:rounded-[40px] min-h-[80vh]">
                         {children}
                     </div>
                 </div>
