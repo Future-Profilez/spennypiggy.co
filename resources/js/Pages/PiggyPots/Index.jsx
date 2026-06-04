@@ -180,7 +180,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                 <form onSubmit={handleSubmit} className="space-y-5">
                                     <div>
                                         <label className="block text-sm font-bold text-gray-900 mb-1">
-                                            Goal Title
+                                            Goal Title*
                                         </label>
                                         <input
                                             type="text"
@@ -218,7 +218,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div>
                                             <label className="block text-sm font-bold text-gray-900 mb-1">
-                                                Target Amount ({data.currency})
+                                                Target Amount ({data.currency})*
                                             </label>
                                             <input
                                                 type="number"
@@ -307,7 +307,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
 
                                     <div className="pt-2 border-t-2 border-gray-200 mt-6">
                                         <label className="block text-sm font-bold text-gray-900 mb-2">
-                                            Digital Reward / Exclusive Item
+                                            Digital Reward / Exclusive Item*
                                         </label>
                                         <p className="text-xs text-gray-500 mb-3">
                                             Supporters will automatically receive this file after they contribute to your pot.

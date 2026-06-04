@@ -181,7 +181,7 @@ class StripeWebhookController extends Controller
         try {
             switch ($type) {
             // --- Identity Verification Events ---
-            case 'identity.verification_session.requires_input':
+            // case 'identity.verification_session.requires_input':
             case 'identity.verification_session.verified':
                 $this->processIdentityVerification($event);
                 break;
@@ -223,8 +223,8 @@ class StripeWebhookController extends Controller
                 $this->handleChargeDisputeCreated($data);
                 break;
 
-            case 'charge.dispute.updated':
-            case 'charge.dispute.funds_withdrawn':
+            // case 'charge.dispute.updated':
+            // case 'charge.dispute.funds_withdrawn':
             case 'charge.dispute.funds_reinstated':
                 $this->handleChargeDisputeUpdated($data);
                 break;
@@ -274,8 +274,8 @@ class StripeWebhookController extends Controller
                 $this->processMandatorySubscription($event);
                 break;
 
-            case 'customer.subscription.trial_will_end':
-            case 'customer.subscription.created':
+            // case 'customer.subscription.trial_will_end':
+            // case 'customer.subscription.created':
             case 'customer.updated':
                 $this->processMandatorySubscription($event);
                 break;
@@ -288,10 +288,10 @@ class StripeWebhookController extends Controller
             case 'account.updated':
                 $this->handleAccountUpdated($data);
                 break;
-            case 'payout.created':
-            case 'payout.paid':
-            case 'payout.failed':
-            case 'payout.in_transit':
+            // case 'payout.created':
+            // case 'payout.paid':
+            // case 'payout.failed':
+            // case 'payout.in_transit':
             case 'payout.canceled':
                 $this->handlePayoutEvent($data, $type, $event);
                 break;
@@ -456,8 +456,7 @@ class StripeWebhookController extends Controller
             // Check if this is the first payment after trial
             $isFirstPayment = false;
             if ($subs) {
-                $isFirstPayment = !empty($subs->current_start_trial_date) &&
-                    empty($subs->current_start_subscription_date);
+                $isFirstPayment = !empty($subs->current_start_trial_date) && empty($subs->current_start_subscription_date);
             } else {
                 // No record exists, create first one
                 $isFirstPayment = true;
