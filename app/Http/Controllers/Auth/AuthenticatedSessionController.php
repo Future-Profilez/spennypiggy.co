@@ -1115,26 +1115,32 @@ class AuthenticatedSessionController extends Controller
         $isEligible = false;
         $daysLeft = 0;
         $minEarnings = \App\Models\FounderBonus::getMinFirst30dEarnings();
+        $windowStart = null;
+        $windowEnd = null;
+        $qualificationDays = (int) config('founder_bonus.qualification.qualification_period_days', 30);
 
         if ($user) {
-            $createdAt = $user->created_at;
-            $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
+            $startAt = $user->stripe_connected_at ?: null;
+            if ($startAt) {
+                $windowStart = $startAt->copy();
+                $windowEnd = $startAt->copy()->addDays($qualificationDays);
 
-            if (!$user->is_founder && now()->lessThan($thirtyDaysAfterCreation)) {
-                $isEligible = true;
-                $daysLeft = max(0, now()->diffInDays($thirtyDaysAfterCreation, false));
-            } else if (!$user->is_founder) {
-                $cutoffDate = now()->subDays(60);
-                if ($createdAt->greaterThanOrEqualTo($cutoffDate)) {
+                if (!$user->is_founder && now()->lessThan($windowEnd)) {
                     $isEligible = true;
-                    $daysLeft = 0;
+                    $daysLeft = max(0, now()->diffInDays($windowEnd, false));
+                } else if (!$user->is_founder) {
+                    $cutoffDate = now()->subDays(60);
+                    if ($startAt->greaterThanOrEqualTo($cutoffDate)) {
+                        $isEligible = true;
+                        $daysLeft = 0;
+                    }
                 }
-            }
 
-            $endDate = $thirtyDaysAfterCreation->isFuture() ? now() : $thirtyDaysAfterCreation;
-            $financialService = app(\App\Services\FinancialService::class);
-            $summary = $financialService->getSummary($user, $createdAt, $endDate, 'GBP');
-            $first30DayEarnings = (float) ($summary['gross_income'] ?? 0);
+                $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
+                $financialService = app(\App\Services\FinancialService::class);
+                $summary = $financialService->getSummary($user, $startAt, $endDate, 'GBP');
+                $first30DayEarnings = (float) ($summary['gross_income'] ?? 0);
+            }
         }
 
         return [
@@ -1142,6 +1148,9 @@ class AuthenticatedSessionController extends Controller
             'isEligible' => $isEligible,
             'daysLeft' => $daysLeft,
             'minEarnings' => $minEarnings,
+            'qualificationDays' => $qualificationDays,
+            'windowStart' => $windowStart ? $windowStart->toDateString() : null,
+            'windowEnd' => $windowEnd ? $windowEnd->toDateString() : null,
         ];
     }
 }

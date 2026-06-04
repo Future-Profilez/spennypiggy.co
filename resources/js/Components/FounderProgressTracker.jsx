@@ -21,7 +21,7 @@ export default function FounderProgressTracker({
         return null;
     }
 
-    const { first30DayEarnings, daysLeft, minEarnings } = founderData;
+    const { first30DayEarnings, daysLeft, minEarnings, windowEnd } = founderData;
 
     const progressPercentage = Math.min(
         100,
@@ -48,7 +48,9 @@ export default function FounderProgressTracker({
                     <div className="flex items-center gap-2">
                         <div className="text-black rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-bold">
                             <FaClock className="mr-2 inline-block h-3 w-3" />
-                            {daysLeft} days left
+                            {hasReachedGoal
+                                ? (daysLeft > 0 ? `Winner decided in ${daysLeft} days` : "Winner being decided")
+                                : `${daysLeft} days left`}
                         </div>
                         <Link
                             href="/founder/bonus"
@@ -105,7 +107,11 @@ export default function FounderProgressTracker({
 
                 <div className="mt-3">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold">
-                        <span>{daysLeft} days left</span>
+                        <span>
+                            {hasReachedGoal
+                                ? (daysLeft > 0 ? `Winner decided in ${daysLeft} days` : "Winner being decided")
+                                : `${daysLeft} days left`}
+                        </span>
                         <span>{formatMultiPrice(remaining, "GBP")} to go</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-white/25">
@@ -141,8 +147,10 @@ export default function FounderProgressTracker({
                 <div className="flex items-center gap-4">
                     <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 border border-white/30">
                         <FaClock className="text-pink-200" />
-                        <span className="font-bold">Time Left :</span>
-                        <span className="font-bold text-lg">{daysLeft} Days</span>
+                        <span className="font-bold">{hasReachedGoal ? "Winner Decides :" : "Time Left :"}</span>
+                        <span className="font-bold text-lg">
+                            {daysLeft > 0 ? `${daysLeft} Days` : "Pending"}
+                        </span>
                     </div>
                     
                     <Link href="/founder/bonus" className="bg-white text-pink-600 hover:bg-pink-50 px-4 py-2 rounded-full font-bold text-sm shadow-md transition-all">
