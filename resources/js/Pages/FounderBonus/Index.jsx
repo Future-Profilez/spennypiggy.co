@@ -315,7 +315,7 @@ export default function FounderBonusIndex() {
                     {/* Program Stats */}
                     <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                         {/* 5px 5px 0 0 rgba(0,0,0,1) */}
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Total Creators Racing</p>
@@ -328,7 +328,7 @@ export default function FounderBonusIndex() {
                             <p className="text-normal text-gray-500 mt-2">Joined this month</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--mint)] !border-2 border-[var(--mint)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--mint)] !border-2 border-[var(--mint)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Available Seats</p>
@@ -341,7 +341,7 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">Out of {maxSeats} total</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--pink)] !border-2 border-[var(--pink)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--pink)] !border-2 border-[var(--pink)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Qualification Target</p>
@@ -354,7 +354,7 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">In first 30 days</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--black)] !border-2 border-[var(--black)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--black)] !border-2 border-[var(--black)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Bonus Rate</p>

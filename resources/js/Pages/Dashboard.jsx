@@ -197,18 +197,9 @@ export default function Dashboard(props) {
 
     const shouldShowFounderBannerClient = useMemo(() => {
         if (!IsloggedIn || auth?.user?.role !== 1) return false;
-        const createdAt = auth?.user?.created_at || user?.created_at;
-        if (!createdAt) return false;
-        const createdTs = new Date(createdAt).getTime();
-        if (Number.isNaN(createdTs)) return false;
-        const diffDays = (Date.now() - createdTs) / (1000 * 60 * 60 * 24);
-        return diffDays <= 40;
-    }, [
-        IsloggedIn,
-        auth?.user?.role,
-        auth?.user?.created_at,
-        user?.created_at,
-    ]);
+        if (auth?.user?.is_founder) return false;
+        return !props.founderData?.isEligible;
+    }, [IsloggedIn, auth?.user?.role, auth?.user?.is_founder, props.founderData?.isEligible]);
 
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -678,7 +669,7 @@ export default function Dashboard(props) {
                         ) : (
                             ""
                         )}
-                        {shouldShowFounderBannerClient && !props.founderData?.isEligible ? (
+                        {shouldShowFounderBannerClient ? (
                             <OfferAnnouncement variant="default" />
                         ) : (
                             ""
