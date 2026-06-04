@@ -1112,6 +1112,33 @@ class MembershipController extends Controller
             ->sum('amount');
         $all_time = $payments->sum('amount');
 
+        $membershipStats = $payments
+            ->groupBy('membership_id')
+            ->map(function ($membershipPayments) {
+
+                $membership = $membershipPayments->first()->membership;
+
+                return [
+                    'membership_id' => $membership->id,
+                    'membership_uuid' => $membership->uuid,
+                    'membership_title' => ucfirst($membership->level ?? 'Membership'),
+
+                    'total_members' => $membershipPayments
+                        ->pluck('user_id')
+                        ->filter()
+                        ->unique()
+                        ->count(),
+
+                    'total_revenue' => round(
+                        $membershipPayments->sum('amount'),
+                        2
+                    ),
+
+                    'price' => $membership->price ?? 0,
+                ];
+            })
+            ->values();
+
         $recentPayments = $payments->map(function ($payment) {
             return [
                 'id' => $payment->id,
@@ -1120,13 +1147,16 @@ class MembershipController extends Controller
                 'status' => $payment->status,
                 'created_at' => $payment->created_at->format('d M Y h:i A'),
                 'membership' => [
+                    'id' => $payment->membership->id,
                     'title' => ucfirst($payment->membership->level ?? 'Membership'),
                     'price' => $payment->membership->price ?? 0,
                     'type' => $payment->recurring_type ?? 'monthly',
                     'thumbnail' => $payment->membership->perma_link ?? null,
                     'uuid' => $payment->membership->uuid ?? null,
                 ],
+
                 'user' => [
+                    'id' => $payment->user->id ?? null,
                     'name' => $payment->user->name ?? 'Guest',
                     'username' => $payment->user->username ?? '',
                     'email' => $payment->user->email ?? '',
@@ -1142,6 +1172,7 @@ class MembershipController extends Controller
                 'members' => $count,
                 'per_month' => round($per_month, 2),
                 'all_time' => round($all_time, 2),
+                'membership_stats' => $membershipStats,
                 'payments' => $recentPayments
             ]
         ]);
@@ -1744,11 +1775,11 @@ class MembershipController extends Controller
                         $payment->stripe_id
                     );
 
-                    Log::info('MembershipController: Retrieved subscription for cancellation', [
-                        'subscription_id' => $subscription->id,
-                        'current_status' => $subscription->status,
-                        'cancel_at_period_end' => $subscription->cancel_at_period_end
-                    ]);
+                Log::info('MembershipController: Retrieved subscription for cancellation', [
+                    'subscription_id' => $subscription->id,
+                    'current_status' => $subscription->status,
+                    'cancel_at_period_end' => $subscription->cancel_at_period_end
+                ]);
                 $subscription->cancel_at_period_end = true;
                 $subscription->save();
             }
