@@ -27,10 +27,17 @@ class PiggyPotPaymentController extends Controller
 {
     public function contributeToPiggyPot(Request $request, $piggy_pot_uuid)
     {
-        $request->validate([
+        $rules = [
             'digital_waiver' => ['required', 'accepted'],
             'amount' => ['required', 'numeric', 'min:1'],
-        ]);
+        ];
+
+        if (!Auth::check()) {
+            $rules['name'] = ['required', 'string', 'max:255'];
+            $rules['email'] = ['required', 'email', 'max:255'];
+        }
+
+        $request->validate($rules);
 
         $user = Auth::user();
 
@@ -43,7 +50,7 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        if ($user->id === $piggyPot->user_id) {
+        if ($user && $user->id === $piggyPot->user_id) {
             return response()->json([
                 'status' => false,
                 'msg' => 'You cannot contribute to your own Piggy Pot.'
@@ -227,7 +234,7 @@ class PiggyPotPaymentController extends Controller
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
             'payment_intent_data' => $paymentIntentData,
-            'customer_email' => $user->email ?? $request->email,
+            'customer_email' => $user?->email ?? $request->email,
             'success_url' => route('piggy-pot.handle', ['uuid' => $pay->uuid, 'status' => "success"]) . '?redirect=' . urlencode($redirectUrl),
             'cancel_url' => route('piggy-pot.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]) . '?redirect=' . urlencode($redirectUrl),
         ];

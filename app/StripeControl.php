@@ -1172,6 +1172,50 @@ class StripeControl
         }
     }
 
+    public static function updateTransferMinor(string $transferId, string $currency = 'usd', array $metadata = [], ?string $description = null)
+    {
+        $client = self::getClientForCurrency($currency);
+
+        try {
+            $payload = [];
+            if (!empty($description)) {
+                $payload['description'] = $description;
+            }
+            if (!empty($metadata)) {
+                $payload['metadata'] = $metadata;
+            }
+            if (empty($payload)) {
+                return $client->transfers->retrieve($transferId);
+            }
+
+            return $client->transfers->update($transferId, $payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    public static function updatePayoutMetadata(string $payoutId, string $connectedAccountId, string $currency = 'usd', array $metadata = [])
+    {
+        $client = self::getClientForCurrency($currency);
+
+        try {
+            if (empty($metadata)) {
+                return $client->payouts->retrieve($payoutId, [], ['stripe_account' => $connectedAccountId]);
+            }
+
+            return $client->payouts->update($payoutId, ['metadata' => $metadata], ['stripe_account' => $connectedAccountId]);
+        } catch (Exception $e) {
+            Log::error("Stripe Payout Update Error: " . $e->getMessage());
+            throw new Exception("Stripe Payout Update Error: " . $e->getMessage());
+        }
+    }
+
     /**
      * List transfers for an account
      *

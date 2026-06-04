@@ -21,6 +21,7 @@ class CrmCreator extends Model
         'instagram_handle',
         'tiktok_handle',
         'youtube_handle',
+        'twitch_handle',
         'website',
         'current_platform',
         'creator_category',
@@ -56,6 +57,11 @@ class CrmCreator extends Model
     public function assignedTeamMember()
     {
         return $this->belongsTo(Admin::class, 'assigned_team_member_id');
+    }
+
+    public function suggestedUser()
+    {
+        return $this->belongsTo(User::class, 'social_match_suggested_user_id');
     }
 
     public function stageHistory()

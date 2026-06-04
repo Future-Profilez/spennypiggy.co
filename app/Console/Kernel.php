@@ -5,6 +5,7 @@ namespace App\Console;
 use App\Jobs\SendMailSubscriptions;
 use App\Jobs\CalculateFirstThirtyDayEarnings;
 use App\Jobs\CheckFounderQualifications;
+use App\Jobs\ProcessFounderMonthlyBonuses;
 use App\Jobs\ProcessFounderPayouts;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -102,6 +103,10 @@ class Kernel extends ConsoleKernel
                  ->monthlyOn(7, '10:00')
                  ->withoutOverlapping(30);
 
+        $schedule->job(new ProcessFounderMonthlyBonuses)
+                 ->monthlyOn(7, '10:05')
+                 ->withoutOverlapping(30);
+
         // Risk Engine: Enforce Manual Payouts (Every 10 Minutes)
         $schedule->command('payout:enforce-manual')
                  ->everyTenMinutes()
@@ -136,6 +141,10 @@ class Kernel extends ConsoleKernel
                  ->runInBackground();
 
         $schedule->command('crm:sync-creator-stages')
+                 ->everyThirtyMinutes()
+                 ->withoutOverlapping();
+
+        $schedule->command('crm:scan-prospect-user-matches')
                  ->everyThirtyMinutes()
                  ->withoutOverlapping();
     }

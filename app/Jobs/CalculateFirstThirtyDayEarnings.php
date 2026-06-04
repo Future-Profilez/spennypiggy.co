@@ -31,12 +31,16 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
     {
         Log::info('Starting daily first 30-day earnings calculation');
 
-        // Get creators who are exactly 30 days old today and not already founders
-        $thirtyDaysAgo = now()->subDays(30)->startOfDay();
+        $qualificationDays = FounderBonus::getQualificationDays();
+        // Get creators whose Stripe connection is exactly N days old today and not already founders
+        $thirtyDaysAgo = now()->subDays($qualificationDays)->startOfDay();
         $thirtyDaysAgoEnd = $thirtyDaysAgo->copy()->endOfDay();
 
         $candidateCreators = User::where('is_founder', false)
-            ->whereBetween('created_at', [$thirtyDaysAgo, $thirtyDaysAgoEnd])
+            ->whereNotNull('stripe_connected_at')
+            ->whereBetween('stripe_connected_at', [$thirtyDaysAgo, $thirtyDaysAgoEnd])
+            ->where('stripe_details_submitted', 1)
+            ->whereNotNull('account_id')
             ->whereDoesntHave('founderBonus')
             ->get();
 
@@ -79,14 +83,19 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
      */
     private function calculateFirst30DayEarnings(User $creator): float
     {
-        $createdAt = $creator->created_at;
-        $thirtyDaysLater = $createdAt->copy()->addDays(30);
+        if (!$creator->stripe_connected_at) {
+            return 0.0;
+        }
+
+        $qualificationDays = FounderBonus::getQualificationDays();
+        $startAt = $creator->stripe_connected_at;
+        $thirtyDaysLater = $startAt->copy()->addDays($qualificationDays);
 
         // Sum all deliverable transaction amounts for the creator in their first 30 days
         $transactions = \App\Models\FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
-            ->whereBetween('transaction_date', [$createdAt, $thirtyDaysLater])
+            ->whereBetween('transaction_date', [$startAt, $thirtyDaysLater])
             ->get();
 
         $earnings = 0;

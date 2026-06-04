@@ -39,6 +39,10 @@ use App\Services\StripeMetadataService;
 use App\Services\Risk\RiskService;
 use App\Models\CreatorMetric;
 use App\Services\Risk\ReservePolicy;
+use App\Mail\FounderBonusPayoutStatusUpdated;
+use App\Models\FounderBonus;
+use App\Models\FounderBonusMonthly;
+use Illuminate\Support\Facades\Schema;
 
 class StripeWebhookController extends Controller
 {
@@ -3567,6 +3571,7 @@ class StripeWebhookController extends Controller
             // Update local PayoutRecord if it exists
             $record = \App\Models\PayoutRecord::where('stripe_payout_id', $payout->id)->first();
             if ($record) {
+                $prevStatus = (string) ($record->status ?? '');
                 $status = match ($payout->status) {
                     'paid' => 'paid',
                     'failed' => 'failed',
@@ -3583,6 +3588,58 @@ class StripeWebhookController extends Controller
                 ]);
 
                 Log::info("Payout Record updated via webhook: {$payout->id} status: {$status}");
+
+                if ($prevStatus !== $status && in_array($status, ['paid', 'failed'], true)) {
+                    $record->loadMissing('creator');
+                    $creator = $record->creator;
+                    $bonusType = (string) (($record->metadata['bonus_type'] ?? null) ?? '');
+                    $isFounder = in_array($bonusType, ['founder_qualification', 'founder_monthly'], true);
+
+                    if ($creator && $isFounder) {
+                        $label = $bonusType === 'founder_monthly' ? 'Founder Monthly Bonus' : 'Founder Bonus';
+                        $periodLabel = $bonusType === 'founder_monthly'
+                            ? (string) (($record->metadata['founder_month'] ?? null) ?? '')
+                            : null;
+
+                        $amount = ((int) $record->amount_minor) / 100;
+                        $currency = (string) ($record->currency ?? 'gbp');
+                        $arrivalDate = $record->arrival_date ? $record->arrival_date->toDateString() : null;
+                        $failureMessage = (string) (($record->failure_message ?? null) ?? '');
+
+                        try {
+                            Mail::to($creator->email)->send(new FounderBonusPayoutStatusUpdated(
+                                $creator,
+                                $label,
+                                (float) $amount,
+                                (string) $currency,
+                                (string) $status,
+                                $arrivalDate,
+                                $periodLabel ?: null,
+                                $failureMessage ?: null
+                            ));
+                        } catch (\Throwable $e) {
+                            Log::error('Founder payout status email failed', [
+                                'creator_id' => $creator->id,
+                                'stripe_payout_id' => $payout->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+
+                        try {
+                            $pushTitle = $status === 'paid' ? "{$label} paid" : "{$label} payout failed";
+                            $pushBody = $status === 'paid'
+                                ? "Your {$label} payout has been completed. Check your Payout History for details."
+                                : "Your {$label} payout failed. Please check your Payout History for the reason.";
+                            Helpers::sendNotification($pushTitle, $pushBody, $creator->email);
+                        } catch (\Throwable $e) {
+                            Log::error('Founder payout status push failed', [
+                                'creator_id' => $creator->id,
+                                'stripe_payout_id' => $payout->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+                }
             }
 
             $bonusRow = \App\Models\FastStartBonusPayout::where('stripe_payout_id', $payout->id)->first();
@@ -3599,6 +3656,30 @@ class StripeWebhookController extends Controller
                     $bonusRow->paid_at = now();
                 }
                 $bonusRow->save();
+            }
+
+            if ($payout->status === 'paid') {
+                try {
+                    if (Schema::hasTable('founder_bonuses')) {
+                        FounderBonus::where('stripe_payout_id', $payout->id)->where('payout_status', '!=', 'paid')->update([
+                            'payout_status' => 'paid',
+                            'paid_date' => now(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('FounderBonus payout sync failed', ['stripe_payout_id' => $payout->id, 'error' => $e->getMessage()]);
+                }
+
+                try {
+                    if (Schema::hasTable('founder_bonus')) {
+                        FounderBonusMonthly::where('stripe_payout_id', $payout->id)->where('payout_status', '!=', 'paid')->update([
+                            'payout_status' => 'paid',
+                            'payout_date' => now(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('FounderBonusMonthly payout sync failed', ['stripe_payout_id' => $payout->id, 'error' => $e->getMessage()]);
+                }
             }
 
             // Check if payout was initiated by our platform (using local records or metadata)

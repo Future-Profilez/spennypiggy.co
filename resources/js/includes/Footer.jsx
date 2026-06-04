@@ -47,7 +47,6 @@ export default function Footer(props) {
 
                 <div className="containerbox mx-auto relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start mb-8">
-                        {/* Brand Section - Left Side */}
                         <div className="space-y-2">
                             <div className="space-y-8">
                                 <Link href="/" className="inline-block transform hover:scale-105 transition-transform duration-300">
@@ -93,15 +92,12 @@ export default function Footer(props) {
                                 />
                             </div>
                         </div>
-
-                        {/* Navigation Columns - Right Side Balanced */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 sm:col-span-2">
                             <div className="">
                                 <h3 className="font-gulfs text-[#924DFF] text-2xl md:text-3xl tracking-wide md:tracking-widest uppercase transform origin-left">Help</h3>
                                 <ul className="space-y-3 font-poppins text-normal pt-4">
                                     <li><a target="_blank" href="https://spennypiggy.co" className="livechat text-gray-400 hover:text-white transition-colors  duration-300 block">Live Chat</a></li>
                                     <li><a target="_blank" href="https://intercom.help/spenny-piggy" className="text-gray-400 hover:text-white transition-colors  duration-300 block">FAQ's</a></li>
-                                    <li><Link href={route("promotion-terms")} className="text-gray-400 hover:text-white transition-colors  duration-300 block">Promotion Terms</Link></li>
                                     <li><Link href={route("pride.landing")} className="text-[#FF007F] hover:text-pink-300 font-bold transition-colors duration-300 block flex items-center gap-2">Pride Campaign 🏳️‍🌈</Link></li>
                                     <li>
                                         <button 
@@ -132,6 +128,7 @@ export default function Footer(props) {
                                         { name: "MoR Agreement", route: "mor-agreement" },
                                         { name: "Payments", route: "reserves-and-payments-policy" },
                                         { name: "Paid Tasks", route: "paid-tasks-terms" },
+                                        { name: "Promotion Terms", route: "promotion-terms" },
                                         { name: "Return Policy", route: "return-policy" },
                                         { name: "US Addendum", route: "us-addendum" },
                                         { name: "Fast Payout", route: "fast-start-bonus-terms" }
@@ -159,8 +156,7 @@ export default function Footer(props) {
                         </div>
                     </div>
 
-                    {/* Contact Bar - High Impact */}
-                    <div className="py-8 md:py-16 ">
+                    <div className="py-8 md:py-8 ">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:text-center md:px-8">
                             <div className="space-y-1">
                                 <p className="text-[#924DFF] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.15em]">Call the Piggy</p>
@@ -178,14 +174,11 @@ export default function Footer(props) {
                     </div>
 
                     {/* Bottom Section */}
-                    <div className="flex flex-col lg:flex-row justify-between items-center gap-10">
-                        <div className="max-w-3xl">
-                            <p className="text-sm text-gray-500 font-poppins leading-relaxed">
+                    <div className=" items-center">
+                            <p className="text-sm text-center text-gray-500 font-poppins leading-relaxed">
                                 All trademarks, logos and brand names are the property of their respective owners. All company, product and service names used in this website are for identification purposes only. Use of these names, trademarks and brands does not imply endorsement.
                             </p>
-                        </div>
-                        <div className="flex flex-col items-center lg:items-end gap-2">
-                            <p className="text-xl font-gulfs text-white tracking-wider uppercase">Spenny Piggy</p>
+                        <div className="flex flex-col items-center mt-3">
                             <p className="text-sm text-gray-400 font-poppins">
                                 {window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co' ? (
                                     <>Copyright © {date && date.getFullYear()} Spenny Piggy. All rights reserved.</>

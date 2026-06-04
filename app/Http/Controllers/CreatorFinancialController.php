@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorMetric;
+use App\Models\FounderBonus;
+use App\Models\FounderBonusMonthly;
 use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
 use App\Models\UkTaxSetting;
@@ -419,6 +421,9 @@ class CreatorFinancialController extends Controller
             $currency = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
 
             $rates = \App\Models\Currency::rates();
+            if ($rates instanceof \Illuminate\Support\Collection) {
+                $rates = $rates->toArray();
+            }
             $convert = function (float $amount, string $from, string $to) use ($rates): float {
                 $from = strtoupper($from ?: 'GBP');
                 $to = strtoupper($to ?: 'GBP');
@@ -465,17 +470,136 @@ class CreatorFinancialController extends Controller
             }
         }
 
+        $founderBonus = null;
+        $founderQualification = FounderBonus::where('creator_id', $user->id)->latest('qualification_date')->first();
+        if ($founderQualification || $user->is_founder) {
+            $currency = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
+            $rates = \App\Models\Currency::rates();
+            if ($rates instanceof \Illuminate\Support\Collection) {
+                $rates = $rates->toArray();
+            }
+            $convert = function (float $amount, string $from, string $to) use ($rates): float {
+                $from = strtoupper($from ?: 'GBP');
+                $to = strtoupper($to ?: 'GBP');
+                if ($from === $to) return $amount;
+                if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+                return ($amount / $rates[$from]) * $rates[$to];
+            };
+
+            $qualifiedAt = $founderQualification?->qualification_date ? Carbon::parse($founderQualification->qualification_date) : null;
+            $programEnd = $qualifiedAt ? $qualifiedAt->copy()->addMonthsNoOverflow(12)->endOfDay() : null;
+            $isPaused = !empty($user->payout_paused_at);
+
+            $monthStart = now()->startOfMonth();
+            $monthEnd = now()->endOfMonth();
+            $calcStart = $monthStart;
+            if ($qualifiedAt && $qualifiedAt->gt($calcStart)) {
+                $calcStart = $qualifiedAt->copy()->startOfDay();
+            }
+            $calcEnd = min(now(), $monthEnd);
+
+            $earnings = 0.0;
+            if ($calcStart->lte($calcEnd) && (!$programEnd || now()->lte($programEnd))) {
+                $txs = FinancialTransaction::query()
+                    ->where('user_id', $user->id)
+                    ->where('type', 'income')
+                    ->where('status', 'completed')
+                    ->whereBetween('transaction_date', [$calcStart, $calcEnd])
+                    ->get(['net_amount', 'currency']);
+
+                foreach ($txs as $tx) {
+                    $from = strtoupper((string) ($tx->currency ?? 'GBP'));
+                    $net = (float) ($tx->net_amount ?? 0);
+                    $earnings += $convert($net, $from, $currency);
+                }
+            }
+
+            $minMonthly = (float) FounderBonus::getMinMonthlyEarnings();
+            $maxMonthly = (float) FounderBonus::getMaxMonthlyEarnings();
+            $bonusPercentage = (float) FounderBonus::getBonusPercentage();
+            $maxBonus = (float) FounderBonus::getMaxBonusPerMonth();
+
+            $minMonthlyInCurrency = $convert($minMonthly, 'GBP', $currency);
+            $maxMonthlyInCurrency = $convert($maxMonthly, 'GBP', $currency);
+            $maxBonusInCurrency = $convert($maxBonus, 'GBP', $currency);
+
+            $bonusSoFar = 0.0;
+            if ($earnings >= $minMonthlyInCurrency) {
+                $earningsForBonus = min($earnings, $maxMonthlyInCurrency);
+                $bonusSoFar = round(min($earningsForBonus * $bonusPercentage, $maxBonusInCurrency), 2);
+            }
+
+            $monthsLeft = null;
+            if ($qualifiedAt) {
+                $endMonth = $qualifiedAt->copy()->addMonthsNoOverflow(12)->startOfMonth();
+                $monthsLeft = now()->startOfMonth()->lt($endMonth) ? now()->startOfMonth()->diffInMonths($endMonth) : 0;
+            }
+
+            $lastMonthKey = now()->subMonthNoOverflow()->format('Y-m');
+            $lastRow = null;
+            if (\Illuminate\Support\Facades\Schema::hasTable('founder_bonus')) {
+                $lastRow = FounderBonusMonthly::where('creator_id', $user->id)->where('month', $lastMonthKey)->first();
+            }
+            $lastPayoutRecord = null;
+            if ($lastRow && !empty($lastRow->payout_record_uuid)) {
+                $lastPayoutRecord = \App\Models\PayoutRecord::where('uuid', $lastRow->payout_record_uuid)->first();
+            }
+            $qualificationPayoutRecord = null;
+            if ($founderQualification && !empty($founderQualification->payout_record_uuid)) {
+                $qualificationPayoutRecord = \App\Models\PayoutRecord::where('uuid', $founderQualification->payout_record_uuid)->first();
+            }
+
+            $status = 'active';
+            if ($isPaused) {
+                $status = 'payout_paused';
+            } elseif ($programEnd && now()->gt($programEnd)) {
+                $status = 'ended';
+            }
+
+            $founderBonus = [
+                'status' => $status,
+                'currency' => $currency,
+                'qualified_at' => $qualifiedAt ? $qualifiedAt->toDateString() : null,
+                'program_end' => $programEnd ? $programEnd->toDateString() : null,
+                'month_start' => $monthStart->toDateString(),
+                'month_end' => $monthEnd->toDateString(),
+                'earnings_so_far' => $earnings,
+                'bonus_so_far' => $bonusSoFar,
+                'bonus_percentage' => $bonusPercentage,
+                'min_monthly_earnings' => $minMonthlyInCurrency,
+                'max_monthly_earnings' => $maxMonthlyInCurrency,
+                'max_bonus_per_month' => $maxBonusInCurrency,
+                'months_left' => $monthsLeft,
+                'last_month' => $lastRow ? [
+                    'month' => $lastRow->month,
+                    'monthly_earnings' => (float) $convert((float) $lastRow->monthly_earnings, 'GBP', $currency),
+                    'bonus_amount' => (float) $convert((float) $lastRow->bonus_amount, 'GBP', $currency),
+                    'payout_status' => $lastPayoutRecord?->status ?? $lastRow->payout_status,
+                    'payout_date' => $lastPayoutRecord?->arrival_date?->toDateString() ?? ($lastRow->payout_date ? Carbon::parse($lastRow->payout_date)->toDateString() : null),
+                    'stripe_payout_id' => $lastPayoutRecord?->stripe_payout_id ?? $lastRow->stripe_payout_id ?? null,
+                ] : null,
+                'qualification_payout' => $founderQualification ? [
+                    'status' => $qualificationPayoutRecord?->status ?? $founderQualification->payout_status,
+                    'estimated_payout_date' => $qualificationPayoutRecord?->arrival_date?->toDateString() ?? $founderQualification->estimated_payout_date?->toDateString(),
+                    'bonus_amount' => (float) $convert((float) $founderQualification->bonus_amount, 'GBP', $currency),
+                    'stripe_payout_id' => $qualificationPayoutRecord?->stripe_payout_id ?? $founderQualification->stripe_payout_id ?? null,
+                ] : null,
+            ];
+        }
+
         // Payout History
         $payoutHistory = \App\Models\PayoutRecord::where('creator_id', $user->uuid)
             ->latest()
             ->get()
             ->map(function ($p) {
                 $bonusMinor = (int) ($p->metadata['fast_start_bonus_applied_minor'] ?? 0);
+                $founderBonusMinor = (int) ($p->metadata['founder_bonus_amount_minor'] ?? 0);
                 return [
                     'uuid' => $p->uuid,
                     'date' => $p->created_at->format('d M Y'),
                     'amount' => $p->amount_minor / 100,
                     'fast_start_bonus' => $bonusMinor / 100,
+                    'founder_bonus' => $founderBonusMinor / 100,
                     'bonus_type' => $p->metadata['bonus_type'] ?? null,
                     'currency' => $p->currency,
                     'status' => $p->status,
@@ -538,6 +662,7 @@ class CreatorFinancialController extends Controller
             ],
             'payout_history' => $payoutHistory,
             'fast_start_bonus' => $fastStartBonus,
+            'founder_bonus' => $founderBonus,
         ]);
     }
 

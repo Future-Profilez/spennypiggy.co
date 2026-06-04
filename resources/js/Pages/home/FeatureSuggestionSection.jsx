@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import FeatureSuggestionModal from '@/Components/FeatureSuggestionModal';
 import { FaLightbulb, FaRocket, FaStar, FaMagic, FaPlus } from 'react-icons/fa';
+import FadeIn from '@/Components/animations/FadeIn';
 
 export default function FeatureSuggestionSection({ auth }) {
     const [showModal, setShowModal] = useState(false);
@@ -21,6 +22,7 @@ export default function FeatureSuggestionSection({ auth }) {
 
             <div className="containerbox relative z-10 px-4 mx-auto text-center">
                 <div className="max-w-4xl mx-auto">
+                    <FadeIn y={20} scale={0.9} duration={0.5}>
                     <div className="fading flex justify-center mb-10">
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
@@ -29,16 +31,22 @@ export default function FeatureSuggestionSection({ auth }) {
                             </div>
                         </div>
                     </div>
+                    </FadeIn>
                     
+                    <FadeIn y={30} delay={0.1} duration={0.6}>
                     <h2 className="fading text-4xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase tracking-wide leading-[1.1]">
                         Have a <span className="text-yellow-400">Brilliant</span> Idea?
                     </h2>
+                    </FadeIn>
                     
+                    <FadeIn y={20} delay={0.2}>
                     <p className="fading text-gray-100 text-lg md:text-xl font-poppins mb-12 leading-relaxed max-w-2xl mx-auto opacity-90">
                         We're constantly building and improving Spenny Piggy for our community. 
                         Is there a feature you'd love to see? Let us know and help shape the future of the platform!
                     </p>
+                    </FadeIn>
                     
+                    <FadeIn y={15} delay={0.3}>
                     <div className="fading">
                         <button 
                             onClick={() => setShowModal(true)}
@@ -51,6 +59,7 @@ export default function FeatureSuggestionSection({ auth }) {
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         </button>
                     </div>
+                    </FadeIn>
                 </div>
             </div>
 

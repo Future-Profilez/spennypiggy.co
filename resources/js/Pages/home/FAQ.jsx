@@ -1,5 +1,7 @@
 import { Disclosure, Transition } from '@headlessui/react';
 import { ChevronUpIcon } from '@heroicons/react/20/solid';
+import FadeIn from '@/Components/animations/FadeIn';
+import StaggerItem from '@/Components/animations/StaggerItem';
 
 export default function FAQ() {
   const faqs =[
@@ -31,14 +33,17 @@ export default function FAQ() {
       </div>
 
       <div className='containerbox relative  ' >
+          <FadeIn y={30} duration={0.6}>
           <h2 className='fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
             Frequently Asked <span className="text-gradient-wishlist">Questions</span>
           </h2>
+          </FadeIn>
           <div className='max-w-4xl mx-auto' >
               <div className='flex flex-col gap-6' >
                   {faqs && faqs.map((f, i)=>{
                     return (
-                      <Disclosure key={i} defaultOpen={i === 0}>
+                      <StaggerItem key={i} index={i} stagger={0.1}>
+                      <Disclosure defaultOpen={i === 0}>
                         {({ open }) => (
                           <div className={`fading bg-gray-900 border-2 border-[#FF007F] rounded-[30px]    shadow-[4px_4px_0px_0px_rgba(236,72,153,1)] overflow-hidden`}>
                             <Disclosure.Button className={`flex w-full justify-between px-6 py-6 text-left text-xl font-gulfs uppercase focus:outline-none tracking-wide ${open ? 'text-yellow-400' : 'text-white'}`}>
@@ -64,6 +69,7 @@ export default function FAQ() {
                           </div>
                         )}
                       </Disclosure>
+                      </StaggerItem>
                     )
                   })}
               </div>

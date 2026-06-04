@@ -2,6 +2,8 @@ import PREMIUMMEMBERSHIP from '../../../assets/img/PREMIUMMEMBERSHIP.png'
 import { LazyLoadImage } from 'react-lazy-load-image-component'
 import LiveBar from '@/includes/LiveBar'
 import support from '../../../assets/new/Support.png'
+import FadeIn from '@/Components/animations/FadeIn'
+import StaggerItem from '@/Components/animations/StaggerItem'
 
 import {
   FaGamepad,
@@ -82,10 +84,14 @@ export default function Membership() {
         </div>
 
        <div className='container relative  px-4 mx-auto' >
+        <FadeIn y={30} duration={0.6}>
         <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-tight">
             Premium <span className="text-gradient-wishlist">Membership</span>
         </h2>
+        </FadeIn>
+        <FadeIn y={20} delay={0.15}>
         <p className='fading max-w-4xl text-gray-300 m-auto text-center text-lg md:text-xl font-poppins leading-relaxed mb-12' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Access premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
+        </FadeIn>
       </div>
 
         <div className='relative p-0 md:p-4  ' >
@@ -93,6 +99,7 @@ export default function Membership() {
             <LiveBar reps={20} color={`yellowbg`} classes={''} text={"  Coming Soon      "} />
          </div>
 
+              <FadeIn y={40} delay={0.2} scale={0.95}>
               <div className='membership-image py-2 px-4 mx-auto flex justify-center max-w-4xl mt-3 relative  ' >
                 <div className="rounded-[30px]   overflow-hidden border-2 border-[#FF007F]/30 shadow-[0_0_50px_rgba(236,72,153,0.3)] ">
                     <LazyLoadImage
@@ -102,6 +109,7 @@ export default function Membership() {
                     />
                 </div>
               </div>
+              </FadeIn>
         </div>
       </section>
       <section id='features' className="bg-black relative py-24 px-4 text-center">
@@ -112,19 +120,23 @@ export default function Membership() {
         </div>
 
         <div className=" relative  ">
+          <FadeIn y={20} scale={0.9} duration={0.5}>
           <div className="flex justify-center mb-6">
             <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain animate-bounce" />
           </div>
+          </FadeIn>
 
+          <FadeIn y={30} delay={0.1} duration={0.6}>
           <h2 className="text-2xl md:text-3xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-none tracking-[2px] max-w-6xl mx-auto drop-shadow-[4px 4px 0px 0px rgb(255 0 127)]xl">
               <span className="fading block mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">Supporting Creators!</span>
               <span className="fading block mb-2 text-gradient-wishlist animate-pulse drop-shadow-none">Empowering Gifters!</span>
               <span className="fading block text-yellow-400 drop-shadow-[4px_4px_0_rgba(0,0,0,1)]" style={{WebkitTextStroke: '1px #000'}}>Made for Everyone!</span>
           </h2>
+          </FadeIn>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto">
             {supportData.map((item, index) => (
-              <div key={index} className="group flex flex-col items-center text-center mb-6">
+              <StaggerItem key={index} index={index} x={index % 2 === 0 ? 60 : -60} y={20} rotate={index % 2 === 0 ? 2 : -2} stagger={0.08} duration={0.6} className="group flex flex-col items-center text-center mb-6">
               <div 
                   className="relative w-full max-w-[280px] aspect-[4/3] bg-gray-900/60 backdrop-blur-md rounded-[30px]  flex items-center justify-center border transition-all duration-500 overflow-hidden shadow-lg group-hover:-translate-y-2"
                   style={{
@@ -154,7 +166,7 @@ export default function Membership() {
               <p className="fading text-base text-gray-300 leading-relaxed max-w-[18rem] font-poppins font-medium group-hover:text-white transition-colors duration-300">
                 {item.description}
               </p>
-            </div>
+            </StaggerItem>
             ))}
           </div>
         </div>

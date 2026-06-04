@@ -105,12 +105,15 @@ class LinkUserToCrmCreator implements ShouldQueue
             'x_handle' => $social->twitter,
             'instagram_handle' => $social->instagram,
             'youtube_handle' => $social->youtube,
+            'twitch_handle' => $social->twitch,
         ];
 
         $normalized = [];
         foreach ($candidates as $key => $value) {
             if ($value) {
-                $normalized[$key] = mb_strtolower(trim($value));
+                $handle = $this->normalizeHandle($value);
+                $urlish = $this->normalizeUrlOrHandle($value);
+                $normalized[$key] = $handle ?: $urlish;
             }
         }
 
@@ -125,7 +128,7 @@ class LinkUserToCrmCreator implements ShouldQueue
 
         $query->where(function ($q) use ($normalized) {
             foreach ($normalized as $col => $value) {
-                $q->orWhereRaw('LOWER(TRIM(' . $col . ')) = ?', [$value]);
+                $q->orWhereRaw('LOWER(COALESCE(' . $col . ",'')) LIKE ?", ['%' . $value . '%']);
             }
         });
 
@@ -138,5 +141,89 @@ class LinkUserToCrmCreator implements ShouldQueue
         $match->social_match_suggested_user_id = $user->id;
         $match->save();
     }
-}
 
+    private function normalizeHandle($value): ?string
+    {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+
+        $v = strtolower($raw);
+        $v = trim($v);
+        $v = ltrim($v, '@');
+        $v = rtrim($v, '/');
+
+        $urlish = $v;
+        if (!str_contains($urlish, '://') && (str_contains($urlish, '.') && str_contains($urlish, '/'))) {
+            $urlish = 'https://' . $urlish;
+        }
+
+        $host = null;
+        $path = null;
+        if (str_contains($urlish, '://')) {
+            $parts = parse_url($urlish);
+            $host = strtolower((string) ($parts['host'] ?? ''));
+            $path = (string) ($parts['path'] ?? '');
+        }
+
+        if ($host) {
+            $host = preg_replace('/^www\./', '', $host);
+            $segments = array_values(array_filter(explode('/', trim($path ?? '', '/'))));
+
+            $first = $segments[0] ?? null;
+            if ($first !== null) {
+                $first = ltrim($first, '@');
+            }
+
+            if (in_array($host, ['twitter.com', 'x.com'], true)) {
+                return $first ?: null;
+            }
+            if ($host === 'instagram.com') {
+                return $first ?: null;
+            }
+            if ($host === 'tiktok.com') {
+                foreach ($segments as $seg) {
+                    if (str_starts_with($seg, '@')) {
+                        return ltrim($seg, '@') ?: null;
+                    }
+                }
+                return $first ?: null;
+            }
+            if ($host === 'twitch.tv') {
+                return $first ?: null;
+            }
+            if (in_array($host, ['youtube.com', 'm.youtube.com', 'www.youtube.com', 'youtu.be'], true)) {
+                if (str_starts_with((string) ($segments[0] ?? ''), '@')) {
+                    return ltrim((string) $segments[0], '@') ?: null;
+                }
+                if (($segments[0] ?? null) === 'channel' && isset($segments[1])) {
+                    return trim((string) $segments[1]) ?: null;
+                }
+                if (($segments[0] ?? null) === 'c' && isset($segments[1])) {
+                    return trim((string) $segments[1]) ?: null;
+                }
+                return $first ?: null;
+            }
+        }
+
+        $v = preg_replace('/^https?:\/\//', '', $v);
+        $v = preg_replace('/^www\./', '', $v);
+        $v = trim($v, " \t\n\r\0\x0B/");
+        $v = ltrim($v, '@');
+        return $v === '' ? null : $v;
+    }
+
+    private function normalizeUrlOrHandle($value): ?string
+    {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+        $v = strtolower($raw);
+        $v = preg_replace('/^https?:\/\//', '', $v);
+        $v = preg_replace('/^www\./', '', $v);
+        $v = rtrim($v, '/');
+        return $v === '' ? null : $v;
+    }
+}

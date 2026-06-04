@@ -33,20 +33,20 @@ export default function FounderProgressTracker({
 
     if (variant === "mini") {
         return (
-            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-gradient-to-r from-[#ff007f] to-[#ff3d8b] p-4 md:p-6 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-yellow-300 p-4 md:p-6 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                        <p className="flex items-center gap-2 text-lg font-black uppercase tracking-wider">
+                        <p className="text-black font-gulfs font-light flex items-center gap-2 text-lg md:text-2xl font-black uppercase tracking-widest uppercase">
                              Founder Race <span>🚀</span>
                         </p>
-                        <p className="mt-1 text-normal font-semibold text-white/90">
+                        <p className="mt-1 text-normal font-semibold text-gray-700">
                             {formatMultiPrice(first30DayEarnings, "GBP")} earned •{" "}
                             {formatMultiPrice(remaining, "GBP")} to badge
                         </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-bold">
+                        <div className="text-black rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-bold">
                             <FaClock className="mr-2 inline-block h-3 w-3" />
                             {daysLeft} days left
                         </div>
@@ -61,18 +61,18 @@ export default function FounderProgressTracker({
 
                 <div className="mt-4">
                     <div className="mb-2 flex items-center justify-between text-xs font-bold">
-                        <span className="flex items-center gap-2">
+                        <span className="text-black flex items-center gap-2">
                             <FaChartLine className="h-3 w-3" /> Progress
                         </span>
-                        <span>{progressPercentage}%</span>
+                        <span className="text-black">{progressPercentage}%</span>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full border border-white/20 bg-black/20">
+                    <div className="border-black text-black h-3 overflow-hidden rounded-full border border-white/20 bg-black/20">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500"
+                            className=" h-full rounded-full bg-gradient-to-r from-pink-300 to-pink-500"
                             style={{ width: `${progressPercentage}%` }}
                         ></div>
                     </div>
-                    <p className="mt-2 text-xs font-semibold text-white/90">
+                    <p className="text-black mt-2 text-xs font-semibold">
                         {hasReachedGoal ? "Goal hit — nice!" : "Keep going — you’re close!"}
                     </p>
                 </div>

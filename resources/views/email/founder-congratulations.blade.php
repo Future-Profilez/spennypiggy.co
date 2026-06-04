@@ -68,7 +68,7 @@
                         </tr>
                         <tr>
                             <td style="padding: 5px 0; font-size: 14px; color: #4D4D4D;">
-                                💰 <strong>Monthly Bonus:</strong> Earn 10% extra on your monthly earnings (£100-£1000 range)
+                                💰 <strong>Monthly Bonus:</strong> Earn 10% extra when you earn £2,500+ in a month (capped monthly)
                             </td>
                         </tr>
                         <tr>

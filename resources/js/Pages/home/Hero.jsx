@@ -3,6 +3,7 @@ const transparentPixel = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0
 import TrustBox from './TrustBox';
 import { useState, useEffect, useRef } from 'react';
 import { RocketIcon, HouseIcon } from "@animateicons/react/lucide";
+import FadeIn from '@/Components/animations/FadeIn';
 
 export default function Hero({auth}) {
   
@@ -107,27 +108,34 @@ export default function Hero({auth}) {
           <div className="containerbox relative w-full">
             <div className="welcome px-4" >
                 <div className="welcomeLeft mx-auto w-full text-center">
-                    <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-wide text-4xl sm:text-6xl md:text-7xl xl:text-[86px] max-w-6xl mx-auto text-center leading-[0.85] md:leading-[0.8]">
-                      The everything 
-                      <div className='block mt-2 md:mt-2 text-4xl md:text-7xl xl:text-[80px]'>
-                        <span className="text-gradient-wishlists text-pink drop-shadow-[0_0_50px_rgba(249,79,150,0.5)] animate-pulse">
-                            wishlist
-                        </span> 
-                      </div>
-                    </h2>
+                    <FadeIn y={30} duration={0.7}>
+                        <h2 className="fading shadow-none uppercase text-white font-gulfs tracking-wide text-4xl sm:text-6xl md:text-7xl xl:text-[86px] max-w-6xl mx-auto text-center leading-[0.85] md:leading-[0.8]">
+                          The everything 
+                          <div className='block mt-2 md:mt-2 text-4xl md:text-7xl xl:text-[80px]'>
+                            <span className="text-gradient-wishlists text-pink drop-shadow-[0_0_50px_rgba(249,79,150,0.5)] animate-pulse">
+                                wishlist
+                            </span> 
+                          </div>
+                        </h2>
+                    </FadeIn>
                     
-                    <div className="flex items-center justify-center mt-4 md:mt-12 mb-6 md:mb-8">
-                      <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
-                      <h3 className="text-center text-[18px] md:text-2xl  lg:text-3xl uppercase text-yellow-400 font-gulfs tracking-[0.2em] px-4">
-                          Built for Creators
-                      </h3>
-                      <div className="h-[1px] w-24 bg-gradient-to-l from-transparent via-yellow-400/50 to-transparent"></div>
-                    </div>
+                    <FadeIn delay={0.15} y={20}>
+                        <div className="flex items-center justify-center mt-4 md:mt-12 mb-6 md:mb-8">
+                          <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
+                          <h3 className="text-center text-[18px] md:text-2xl  lg:text-3xl uppercase text-yellow-400 font-gulfs tracking-[0.2em] px-4">
+                              Built for Creators
+                          </h3>
+                          <div className="h-[1px] w-24 bg-gradient-to-l from-transparent via-yellow-400/50 to-transparent"></div>
+                        </div>
+                    </FadeIn>
 
-                    <h3 className="text-center text-lg md:text-2xl text-gray-400 font-poppins font-light mb-16 max-w-3xl mx-auto leading-relaxed opacity-100">
-                      Get paid with secure, trackable income — with built-in 
-                      <span className="text-white font-semibold"> protection against disputes and chargebacks.</span>
-                    </h3>
+                    <FadeIn delay={0.3} y={20}>
+                        <h3 className="text-center text-lg md:text-2xl text-gray-400 font-poppins font-light mb-16 max-w-3xl mx-auto leading-relaxed opacity-100">
+                          Get paid with secure, trackable income — with built-in 
+                          <span className="text-white font-semibold"> protection against disputes and chargebacks.</span>
+                        </h3>
+                    </FadeIn>
+                    <FadeIn delay={0.45} y={15}>
                     <div className="pt-4 wishlistbtn wishlistbtnFixed mx-auto relative inline-block">
                       
                       
@@ -159,9 +167,12 @@ export default function Hero({auth}) {
                       ">It's Free 🎉</span>
                     
                     </div>
+                    </FadeIn>
+                    <FadeIn delay={0.55} y={10}>
                     <div className=" flex justify-center">
                       <TrustBox />
                   </div>
+                    </FadeIn>
 
                       <div className="m-auto max-w-[660px] flex justify-center items-center">
                         <p className='uppercase px-6 text-center mt-4 text-gray-400 font-poppins text-[11px] xl:text-[13px] tracking-wider'>*3 days Free trial and then requires a monthly £8.99 + VAT payment to cover stripe fees and compliance costs. </p>

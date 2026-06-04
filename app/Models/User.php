@@ -767,7 +767,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     {
         // Check if user has been active for at least 30 days
         $thirtyDaysAgo = now()->subDays(30);
-        return $this->created_at <= $thirtyDaysAgo && !$this->is_founder;
+        return $this->stripe_connected_at !== null && $this->stripe_connected_at <= $thirtyDaysAgo && !$this->is_founder;
     }
 
     /* =========================

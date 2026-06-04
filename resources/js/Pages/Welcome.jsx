@@ -3,6 +3,7 @@ import { useEffect, lazy, Suspense } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
+import StackedCard from '@/Components/animations/StackedCard';
 import fun1 from "../../assets/new/Fun1.png";
 import fun2 from "../../assets/new/Fun2.png";
 import fun3 from "../../assets/new/Fun3.png";
@@ -64,23 +65,22 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
 
         <Guest auth={auth.user} user={auth.user}>
             <LiveBar reps={15} classes={'blackbg barouter'} 
-            livebartest={[
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!"
-                ]
-            }
+                livebartest={[
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!"
+                ]}
              />
             <Hero auth={auth} />
             
@@ -96,7 +96,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 {topEarners && topEarners.length > 0 ? <TopEarners creators={topEarners} periodLabel={topEarnersLabel} /> : ''}
 
                 <PaymentSlider/>
-
                 <FunPart 
                     classes={`border-top-0`}
                     img={fun1} reverse={true}
@@ -104,7 +103,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                     textbg={`bg-[#EFEA7B]`} textcolor='text-black'
                     heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
                 />
-
                 <FunPart 
                     classes={`border-top-0`}
                     img={fun2} reverse={false}
@@ -117,9 +115,8 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                     img={fun3} reverse={true}
                     mainbg={`bg-[#EFEA7B]`} eclasses={``}
                     textbg={`bg-[#EFEA7B]`} textcolor='text-black'
-                    heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
+                    heading={`Build your profile shop! the creative way to sell anything that probably doesn't have a place on shopify...`}
                 />
-
                 <Membership />
                 <NotForBusiness />
                 <WhyLove />
@@ -127,7 +124,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 <FeatureSuggestionSection auth={auth} />
                 <FAQ />
                 <JoinUs />
-                
                 <LiveBar
                     reps={15}
                     classes={"py-3 bg-[#E6EA7B]"}

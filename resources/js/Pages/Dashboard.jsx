@@ -683,6 +683,9 @@ export default function Dashboard(props) {
                         ) : (
                             ""
                         )}
+                        
+                        {IsloggedIn && <ReferralBanner />}
+
                         <div className="wishbanner relative ">
                             <div className="relative border-b-4 border-black rounded-[30px]  overflow-hidden">
                                 {user?.is_founder ? (
@@ -768,7 +771,6 @@ export default function Dashboard(props) {
                                         </Suspense>
                                     )} */}
 
-                                {IsloggedIn && <ReferralBanner />}
                                 {IsloggedIn && <CreatorRiskBanner />}
 
                                 <div className="userManageRt mt-4 mb-10">

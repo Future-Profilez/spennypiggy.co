@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class ProcessFastStartBonusPayouts extends Command
 {
-    protected $signature = 'bonus:process-fast-start {--dry-run} {--limit=0}';
+    protected $signature = 'bonus:process-fast-start {--dry-run} {--limit=0} {--creator=}';
 
     protected $description = 'Pay Fast Start bonus as a one-time payout after the 30-day window ends';
 
@@ -25,6 +25,7 @@ class ProcessFastStartBonusPayouts extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
         $limit = (int) $this->option('limit');
+        $creatorFilter = trim((string) $this->option('creator'));
 
         $now = now();
 
@@ -33,6 +34,13 @@ class ProcessFastStartBonusPayouts extends Command
             ->where('stripe_details_submitted', 1)
             ->whereNotNull('account_id')
             ->orderBy('id');
+
+        if ($creatorFilter !== '') {
+            $query->where(function ($q) use ($creatorFilter) {
+                $q->where('uuid', $creatorFilter)
+                    ->orWhere('username', $creatorFilter);
+            });
+        }
 
         if ($limit > 0) {
             $query->limit($limit);
@@ -75,13 +83,7 @@ class ProcessFastStartBonusPayouts extends Command
                 ->where('type', 'income')
                 ->whereBetween('transaction_date', [$windowStart, $windowEnd])
                 ->get(['net_amount', 'currency', 'status']);
-
-            $unsettledCount = FinancialTransaction::query()
-                ->where('user_id', $creator->id)
-                ->where('type', 'income')
-                ->whereIn('status', ['review_hold', 'disputed', 'pending'])
-                ->whereBetween('transaction_date', [$windowStart, $windowEnd])
-                ->count();
+            $unsettledCount = 0;
 
             $earningsMinor = 0;
             foreach ($txs as $tx) {
@@ -97,7 +99,7 @@ class ProcessFastStartBonusPayouts extends Command
             $bonusMinor = (int) round($earningsMinor * 0.05);
 
             if ($dryRun) {
-                $this->line($creator->uuid . ' eligible_at=' . $eligibleAt->toDateTimeString() . ' unsettled=' . $unsettledCount . ' earnings=' . $earningsMinor . ' bonus=' . $bonusMinor . ' ' . $currency);
+                $this->line($creator->uuid . ' eligible_at=' . $eligibleAt->toDateTimeString() . ' earnings=' . $earningsMinor . ' bonus=' . $bonusMinor . ' ' . $currency);
                 $processed++;
                 continue;
             }
@@ -113,7 +115,7 @@ class ProcessFastStartBonusPayouts extends Command
             $payoutRow->earnings_minor = $earningsMinor;
             $payoutRow->bonus_minor = $bonusMinor;
             $payoutRow->currency = $currency;
-            $payoutRow->status = ($now->lt($eligibleAt) || $unsettledCount > 0) ? 'pending_settlement' : 'ready';
+            $payoutRow->status = $now->lt($eligibleAt) ? 'pending_settlement' : 'ready';
             $payoutRow->save();
 
             if ($payoutRow->status !== 'ready') {
@@ -135,7 +137,7 @@ class ProcessFastStartBonusPayouts extends Command
                 continue;
             }
 
-            DB::transaction(function () use ($creator, $windowStart, $windowEnd, $earningsMinor, $bonusMinor, $currency) {
+            DB::transaction(function () use ($creator, $windowStart, $windowEnd, $eligibleAt, $earningsMinor, $bonusMinor, $currency) {
                 $payoutRow = FastStartBonusPayout::where('creator_uuid', $creator->uuid)->lockForUpdate()->first();
                 if (!$payoutRow) {
                     $payoutRow = new FastStartBonusPayout(['creator_uuid' => $creator->uuid]);
@@ -149,16 +151,31 @@ class ProcessFastStartBonusPayouts extends Command
                 $payoutRow->status = 'processing';
                 $payoutRow->save();
 
+                $metadataBase = [
+                    'bonus_type' => 'fast_start',
+                    'reason' => 'fast_start_bonus',
+                    'source' => 'bonus:process-fast-start',
+                    'bonus_payout_id' => (string) $payoutRow->id,
+                    'creator_id' => (string) $creator->uuid,
+                    'creator_username' => (string) $creator->username,
+                    'creator_email' => (string) $creator->email,
+                    'window_start' => $windowStart->toISOString(),
+                    'window_end' => $windowEnd->toISOString(),
+                    'eligible_at' => $eligibleAt->toISOString(),
+                    'earnings_minor' => (string) $earningsMinor,
+                    'bonus_minor' => (string) $bonusMinor,
+                    'currency' => strtolower($currency),
+                    'env' => (string) config('app.env'),
+                ];
+
+                $transferDescription = 'Fast Start Bonus' . (!empty($creator->username) ? (' - ' . $creator->username) : '');
+
                 $transfer = \App\StripeControl::transferToConnectedAccountMinor(
                     $creator->account_id,
                     $bonusMinor,
                     strtolower($currency),
-                    [
-                        'creator_id' => (string) $creator->uuid,
-                        'reason' => 'fast_start_bonus',
-                        'bonus_payout_id' => (string) $payoutRow->id,
-                    ],
-                    'Fast Start Bonus'
+                    $metadataBase,
+                    $transferDescription
                 );
 
                 $payoutRow->stripe_transfer_id = $transfer->id ?? null;
@@ -170,17 +187,20 @@ class ProcessFastStartBonusPayouts extends Command
                     'amount' => (int) $bonusMinor,
                     'currency' => strtolower($currency),
                     'method' => 'standard',
-                    'metadata' => [
-                        'creator_id' => (string) $creator->uuid,
-                        'reason' => 'fast_start_bonus',
-                        'bonus_payout_id' => (string) $payoutRow->id,
-                        'transfer_id' => (string) ($transfer->id ?? null),
-                    ],
+                    'metadata' => array_merge($metadataBase, [
+                        'transfer_id' => (string) ($transfer->id ?? ''),
+                    ]),
                 ], $creator->account_id);
 
                 $payoutRow->stripe_payout_id = $payout->id ?? null;
                 $payoutRow->status = $payout->status ?? 'pending';
                 $payoutRow->save();
+
+                if (!empty($transfer->id) && !empty($payout->id)) {
+                    \App\StripeControl::updateTransferMinor((string) $transfer->id, strtolower($currency), array_merge($metadataBase, [
+                        'stripe_payout_id' => (string) $payout->id,
+                    ]), $transferDescription);
+                }
 
                 PayoutRecord::create([
                     'creator_id' => $creator->uuid,

@@ -87,6 +87,7 @@
         "cross-spawn": "^7.0.6",
         "date-fns": "^4.2.1",
         "force": "^0.0.3",
+        "framer-motion": "^12.40.0",
         "html2canvas": "^1.4.1",
         "lucide-react": "^0.544.0",
         "react": "^18.3.1",

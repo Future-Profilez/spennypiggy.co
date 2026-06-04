@@ -1,5 +1,7 @@
 import { Link } from "@inertiajs/react";
 import { FaCrown, FaTrophy, FaGift, FaArrowRight, FaStar } from 'react-icons/fa';
+import FadeIn from '@/Components/animations/FadeIn';
+import StaggerItem from '@/Components/animations/StaggerItem';
 
 export default function FounderProgramAnnouncement({ founderBonus }) {
     // Default values in case founderBonus is not provided
@@ -15,95 +17,104 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
     return (
         <>
-            <section className="bg-[#050505] py-24 md:py-32 px-4 relative overflow-hidden">
-                {/* Creative Animated Background */}
-                <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
-                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-yellow-500/10 rounded-full mix-blend-screen blur-[100px] animate-pulse"></div>
-                    <div className="absolute top-[40%] right-[-10%] w-[30%] h-[30%] bg-pink-500/10 rounded-full mix-blend-screen blur-[100px] animate-pulse" style={{animationDelay: '1.5s'}}></div>
-                    <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] bg-purple-500/10 rounded-full mix-blend-screen blur-[120px] animate-pulse" style={{animationDelay: '3s'}}></div>
-                    
-                    {/* Floating particles */}
-                    <div className="absolute top-[20%] left-[15%] text-yellow-400/30 animate-bounce"><FaStar size={12} /></div>
-                    <div className="absolute top-[30%] right-[20%] text-pink-400/30 animate-bounce" style={{animationDelay: '1s'}}><FaStar size={16} /></div>
-                    <div className="absolute bottom-[25%] left-[30%] text-purple-400/30 animate-bounce" style={{animationDelay: '2s'}}><FaStar size={10} /></div>
+            <section className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative overflow-x-hidden overflow-y-visible">
+                {/* Background decorative elements */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                    <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
+                    <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-green-500 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
                 </div>
 
                 <div className="max-w-7xl mx-auto relative z-10">
-                    {/* Header Area */}
-                    <div className="text-center mb-20">
-                        <div className="fading inline-flex items-center gap-2 px-6 py-2 rounded-full bg-yellow-400/10 border border-yellow-400/20 mb-8 backdrop-blur-md">
-                            <FaCrown className="text-yellow-400 text-sm animate-pulse" />
-                            <span className="text-yellow-400 text-xs font-bold tracking-widest uppercase">New Program Launch</span>
+                    <div className="text-center mb-8 md:mb-16">
+                        <FadeIn y={20} duration={0.5}>
+                        <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+                            <span className="bg-yellow-400 text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
+                                👑 NEW PROGRAM LAUNCH 👑
+                            </span>
                         </div>
-
-                        <h2 className="fading text-5xl md:text-7xl lg:text-[80px] font-gulfs text-white mb-8 leading-[1.1] uppercase tracking-wide">
-                            Join the <br className="md:hidden" />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 drop-shadow-[0_0_30px_rgba(250,204,21,0.4)]">
-                                Founder
-                            </span> Program!
+                        </FadeIn>
+                        
+                        <FadeIn x={-80} y={0} delay={0.1} duration={0.7}>
+                        <h2 className="uppercase fading text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-[4px_4px_0px_0px_#FF007F]">
+                            JOIN THE <br className="md:hidden" />
+                            <span className="uppercase text-yellow-400 tracking-[2px] animate-pulse">
+                                FOUNDER
+                            </span> PROGRAM!
                         </h2>
-
-                        <p className="fading text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto font-light leading-relaxed">
+                        </FadeIn>
+                        
+                        
+                        <p className="fading text-sm md:text-lg text-gray-400 mt-4 uppercase tracking-widest font-bold">
                             Earn <span className="text-yellow-400 font-bold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days and automatically qualify for a <span className="text-[#FF007F] font-bold">{config.bonusPercentage}% monthly bonus</span>.
                         </p>
-                        
-                        <p className="fading text-sm md:text-base text-gray-500 mt-6 uppercase tracking-[0.2em] font-medium">
-                            Join our exclusive founder community. Limited to the first <span className="text-green-400 font-bold">{config.maxFounderSeats}</span> creators!
+                        <p className="fading text-sm md:text-lg text-gray-400 mt-1 uppercase tracking-widest font-bold">
+                            Join our exclusive founder community. Limited to the first <span className="text-green-400">{config.maxFounderSeats}</span> creators!
                         </p>
                     </div>
 
-                    {/* Creative Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 px-2 md:px-4 mt-12 md:mt-24">
+                    {/* Cards Grid - Staggered Layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4 mt-12 md:mt-16 items-stretch">
                         
-                        {/* Card 1 */}
-                        <div className="fading group relative bg-[#0d0d0d] rounded-[2.5rem] p-8 md:p-10 border border-white/5 hover:border-white/10 transition-all duration-500 hover:-translate-y-4">
-                            <div className="absolute inset-0 bg-gradient-to-b from-yellow-500/0 to-yellow-500/0 group-hover:from-yellow-500/10 group-hover:to-transparent rounded-[2.5rem] transition-all duration-500 pointer-events-none"></div>
-                            
-                            <div className="relative w-20 h-20 mx-auto bg-yellow-400 rounded-full flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(250,204,21,0.3)] group-hover:shadow-[0_0_50px_rgba(250,204,21,0.5)] group-hover:scale-110 transition-all duration-500">
-                                <FaTrophy className="text-black text-3xl" />
+                        {/* Card 1: Monthly Bonus */}
+                        <StaggerItem index={0} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[30px] p-6 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15] flex flex-col h-full">
+                            <div className="absolute -top-6 -right-6 bg-yellow-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
+                                <FaTrophy />
                             </div>
-                            
-                            <h3 className="text-white text-xl md:text-2xl font-bold text-center mb-4 group-hover:text-yellow-400 transition-colors duration-300">{config.bonusPercentage}% Monthly Bonus</h3>
-                            <p className="text-gray-400 text-center leading-relaxed text-sm md:text-base">
+                            <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">{config.bonusPercentage}% Monthly<br/><span className="text-yellow-400">Bonus</span></h3>
+                            <p className="fading text-gray-400 text-lg mb-6 leading-snug flex-grow">
                                 Boost your earnings with a permanent {config.bonusPercentage}% monthly bonus on all revenue. Every tip, membership, and sale automatically triggers an extra payout.
                             </p>
-                        </div>
-
-                        {/* Card 2 - Elevated for dynamic layout */}
-                        <div className="fading group relative bg-[#0d0d0d] rounded-[2.5rem] p-8 md:p-10 border border-white/5 hover:border-white/10 transition-all duration-500 hover:-translate-y-4 md:-translate-y-12">
-                            <div className="absolute inset-0 bg-gradient-to-b from-purple-500/0 to-purple-500/0 group-hover:from-purple-500/10 group-hover:to-transparent rounded-[2.5rem] transition-all duration-500 pointer-events-none"></div>
-                            
-                            <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(168,85,247,0.3)] group-hover:shadow-[0_0_50px_rgba(168,85,247,0.5)] group-hover:scale-110 transition-all duration-500">
-                                <FaCrown className="text-white text-3xl" />
+                            <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-yellow-400 animate-pulse"></div>
+                                <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">Extra Payouts</span>
                             </div>
-                            
-                            <h3 className="text-white text-xl md:text-2xl font-bold text-center mb-4 group-hover:text-purple-400 transition-colors duration-300">Founder Status</h3>
-                            <p className="text-gray-400 text-center leading-relaxed text-sm md:text-base">
+                        </div>
+                        </StaggerItem>
+
+                        {/* Card 2: Founder Status (Staggered Down) */}
+                        <StaggerItem index={1} x={-80} y={0} rotate={1} stagger={0.15} duration={0.6}>
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] md:mt-12 flex flex-col h-full">
+                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
+                                <FaCrown />
+                            </div>
+                            <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Founder<br/><span className="text-[#FF007F]">Status</span></h3>
+                            <p className="fading text-gray-400 text-lg mb-6 leading-snug flex-grow">
                                 Gain exclusive recognition with a unique founder badge, priority search ranking, and VIP support. Establish your authority as a leading creator.
                             </p>
-                        </div>
-
-                        {/* Card 3 */}
-                        <div className="fading group relative bg-[#0d0d0d] rounded-[2.5rem] p-8 md:p-10 border border-white/5 hover:border-white/10 transition-all duration-500 hover:-translate-y-4">
-                            <div className="absolute inset-0 bg-gradient-to-b from-green-500/0 to-green-500/0 group-hover:from-green-500/10 group-hover:to-transparent rounded-[2.5rem] transition-all duration-500 pointer-events-none"></div>
-                            
-                            <div className="relative w-20 h-20 mx-auto bg-green-400 rounded-full flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(74,222,128,0.3)] group-hover:shadow-[0_0_50px_rgba(74,222,128,0.5)] group-hover:scale-110 transition-all duration-500">
-                                <FaGift className="text-black text-3xl" />
+                            <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#FF007F] animate-pulse"></div>
+                                <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">VIP Perks</span>
                             </div>
-                            
-                            <h3 className="text-white text-xl md:text-2xl font-bold text-center mb-4 group-hover:text-green-400 transition-colors duration-300">Priority Access</h3>
-                            <p className="text-gray-400 text-center leading-relaxed text-sm md:text-base">
-                                Earn {config.currencySymbol}{config.minMonthlyEarnings.toLocaleString()} in your first 30 days to automatically unlock lifetime bonuses. Act fast—only {config.maxFounderSeats} seats available.
-                            </p>
                         </div>
+                        </StaggerItem>
+
+                        {/* Card 3: Priority Qualification */}
+                        <StaggerItem index={2} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-green-400 rounded-[30px] p-6 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#4ADE80] md:shadow-[8px_8px_0px_0px_#4ADE80] flex flex-col h-full md:col-span-3 lg:col-span-1">
+                            <div className="absolute -top-6 -right-6 bg-green-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
+                                <FaGift />
+                            </div>
+                            <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Priority<br/><span className="text-green-400">Access</span></h3>
+                            <p className="fading text-gray-400 text-lg mb-6 leading-snug flex-grow">
+                                Earn {config.currencySymbol}{config.minMonthlyEarnings.toLocaleString()} in your first 30 days to automatically unlock lifetime bonuses and rewards. Act fast—only {config.maxFounderSeats} seats available.
+                            </p>
+                            <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-green-400 animate-pulse"></div>
+                                <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">Limited Seats</span>
+                            </div>
+                        </div>
+                        </StaggerItem>
 
                     </div>
 
-                    {/* CTA Button */}
-                    <div className="mt-16 md:mt-24 text-center">
-                        <Link href="/founder/bonus" className="fading inline-flex items-center gap-3 bg-white text-black font-bold uppercase tracking-wider text-sm md:text-base py-4 px-10 rounded-full hover:bg-yellow-400 hover:scale-105 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(250,204,21,0.4)] group">
+                    {/* Brutalist CTA Button */}
+                    <div className="mt-16 md:mt-24 text-center relative z-10">
+                        <Link href="/founder/bonus" 
+                            className="relative inline-flex items-center gap-4 bg-yellow-400 text-black font-black text-base md:text-lg py-4 px-10 md:px-12 rounded-full shadow-[6px_6px_0px_0px_#FF007F] border-2 border-yellow-400 hover:shadow-[0px_0px_0px_0px_#FF007F] hover:translate-y-[6px] hover:translate-x-[6px] transition-all duration-300 uppercase tracking-wide group">
                             <span>Learn More About Founder Bonus</span>
-                            <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                            <FaArrowRight className="text-xl md:text-2xl group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
                 </div>

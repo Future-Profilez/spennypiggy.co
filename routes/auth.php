@@ -996,6 +996,7 @@ Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('us
 
 // Founder routes - must come before profile route to prevent interception
 Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
+Route::get('/founder/winners/all-time', [FounderBonusController::class, 'getAllTimeWinners'])->name('founder.winners.all-time');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
     Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');

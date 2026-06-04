@@ -4,6 +4,7 @@ import "swiper/css/pagination";
 import { Pagination } from "swiper/modules";
 import faq from "../../../assets/new/faqhand.png";
 import { Swiper, SwiperSlide } from "swiper/react";
+import FadeIn from '@/Components/animations/FadeIn';
 
 
 export default function HappyCreators() {
@@ -56,10 +57,13 @@ export default function HappyCreators() {
             </div>
 
             <div className="containerbox relative ">
+                <FadeIn y={30} duration={0.6}>
                 <h2 className="fading text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
                     Happy <span className="text-gradient-wishlist">Creators</span>
                 </h2>
+                </FadeIn>
 
+                <FadeIn y={20} delay={0.15}>
                 <div className="creatorslider">
                         <Swiper
                             spaceBetween={20}
@@ -88,8 +92,9 @@ export default function HappyCreators() {
                                         </div>
                                     </SwiperSlide>
                                 ))}
-                        </Swiper>
+                    </Swiper>
                     </div>
+                </FadeIn>
                 </div>
                 <div  className="containerbox relative lg:!mb-[-140px] z-1">
                     <div className="hidden lg:block relative bottom-[60px] left-0 pointer-events-none">

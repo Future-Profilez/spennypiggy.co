@@ -13,6 +13,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
+use App\Helpers;
 
 class CheckFounderQualifications implements ShouldQueue
 {
@@ -51,11 +53,15 @@ class CheckFounderQualifications implements ShouldQueue
         $startOfLastMonth = $lastMonth->startOfMonth();
         $endOfLastMonth = $lastMonth->endOfMonth();
 
-        // Find creators who joined 30+ days ago and haven't been qualified yet
-        $thirtyDaysAgo = now()->subDays(30);
+        $qualificationDays = FounderBonus::getQualificationDays();
+        // Find creators who connected Stripe N+ days ago and haven't been qualified yet
+        $thirtyDaysAgo = now()->subDays($qualificationDays);
         
-        $candidateCreators = User::where('role', 'creator')
-            ->where('created_at', '<=', $thirtyDaysAgo)
+        $candidateCreators = User::where('role', 1)
+            ->whereNotNull('stripe_connected_at')
+            ->where('stripe_connected_at', '<=', $thirtyDaysAgo)
+            ->where('stripe_details_submitted', 1)
+            ->whereNotNull('account_id')
             ->whereDoesntHave('founderBonus')
             ->get();
 
@@ -92,14 +98,19 @@ class CheckFounderQualifications implements ShouldQueue
      */
     private function calculateFirst30DayEarnings(User $creator): float
     {
-        $createdAt = $creator->created_at;
-        $thirtyDaysLater = $createdAt->copy()->addDays(30);
+        if (!$creator->stripe_connected_at) {
+            return 0.0;
+        }
+
+        $qualificationDays = FounderBonus::getQualificationDays();
+        $startAt = $creator->stripe_connected_at;
+        $thirtyDaysLater = $startAt->copy()->addDays($qualificationDays);
 
         // Sum all deliverable transaction_amount amounts for the creator in their first 30 days
         $transactions = \App\Models\FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
-            ->whereBetween('transaction_date', [$createdAt, $thirtyDaysLater])
+            ->whereBetween('transaction_date', [$startAt, $thirtyDaysLater])
             ->get();
 
         $earnings = 0;
@@ -125,6 +136,10 @@ class CheckFounderQualifications implements ShouldQueue
     private function qualifyAsFounder(User $creator, float $first30DayEarnings): void
     {
         DB::transaction(function () use ($creator, $first30DayEarnings) {
+            if (Schema::hasColumn('users', 'is_founder')) {
+                $creator->update(['is_founder' => true]);
+            }
+
             // Calculate bonus amount (10% of first 30 days earnings)
             $bonusAmount = FounderBonus::calculateBonusAmount($first30DayEarnings);
             
@@ -148,6 +163,16 @@ class CheckFounderQualifications implements ShouldQueue
                 }
             } catch (\Exception $e) {
                 Log::error("Failed to send founder congratulations email to {$creator->email}: " . $e->getMessage());
+            }
+
+            try {
+                Helpers::sendNotification(
+                    "You're a SpennyPiggy Founder",
+                    'Congrats! You qualified for the Founder Program. Open Founder dashboard to see your benefits and bonus tracking.',
+                    $creator->email
+                );
+            } catch (\Throwable $e) {
+                Log::error("Failed to send founder qualification push to {$creator->email}: " . $e->getMessage());
             }
         });
     }

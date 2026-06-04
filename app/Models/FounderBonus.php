@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,6 +20,9 @@ class FounderBonus extends Model
         'estimated_payout_date',
         'payout_status',
         'paid_date',
+        'stripe_transfer_id',
+        'stripe_payout_id',
+        'payout_record_uuid',
     ];
 
     protected $casts = [
@@ -86,7 +90,7 @@ class FounderBonus extends Model
      */
     public static function getQualificationDays()
     {
-        return config('founder_bonus.qualification.qualification_days', 30);
+        return config('founder_bonus.qualification.qualification_period_days', 30);
     }
 
     /**
@@ -95,6 +99,39 @@ class FounderBonus extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'creator_id');
+    }
+
+    public static function calculateCompletedNetEarnings(User $creator, Carbon $start, Carbon $end, string $currency = 'GBP'): float
+    {
+        $currency = strtoupper($currency ?: 'GBP');
+        $rates = Currency::rates();
+        if ($rates instanceof \Illuminate\Support\Collection) {
+            $rates = $rates->toArray();
+        }
+
+        $convert = function (float $amount, string $from, string $to) use ($rates): float {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) return $amount;
+            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            return ($amount / $rates[$from]) * $rates[$to];
+        };
+
+        $txs = FinancialTransaction::query()
+            ->where('user_id', $creator->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
+            ->whereBetween('transaction_date', [$start, $end])
+            ->get(['net_amount', 'currency']);
+
+        $total = 0.0;
+        foreach ($txs as $tx) {
+            $from = strtoupper((string) ($tx->currency ?? 'GBP'));
+            $net = (float) ($tx->net_amount ?? 0);
+            $total += $convert($net, $from, $currency);
+        }
+
+        return $total;
     }
 
     /**
@@ -185,36 +222,36 @@ class FounderBonus extends Model
             ->where('name', 'NOT LIKE', '%test%')
             ->where('name', 'NOT LIKE', '%dummy%')
             ->where('role', 1) // Only include creators (role 1), not gifters (role 0)
-            ->where('created_at', '>=', $cutoffDate)
+            ->whereNotNull('stripe_connected_at')
+            ->where('stripe_connected_at', '>=', $cutoffDate)
             ->whereNotIn('id', $existingFounderIds)
             ->get();
 
         $leaderboard = [];
         $minEarnings = self::getMinFirst30dEarnings();
+        $qualificationDays = self::getQualificationDays();
 
         foreach ($creators as $creator) {
-            $joinDate = $creator->created_at;
-            $thirtyDaysLater = $joinDate->copy()->addDays(30);
+            $joinDate = $creator->stripe_connected_at;
+            if (!$joinDate) {
+                continue;
+            }
+            $thirtyDaysLater = $joinDate->copy()->addDays($qualificationDays);
             $calculationEndDate = min($thirtyDaysLater, now());
-            
-            $financialService = app(\App\Services\FinancialService::class);
-            $summary = $financialService->getSummary($creator, $joinDate, $calculationEndDate, 'GBP');
-            $earnings = (float) ($summary['gross_income'] ?? 0);
+
+            $earnings = (float) self::calculateCompletedNetEarnings($creator, $joinDate, $calculationEndDate, 'GBP');
                 
             $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
             $isQualified = $earnings >= $minEarnings && $daysRemaining <= 0;
             
-            // Include all creators who are still within their qualification period OR have already qualified
-            // This shows all recently joined creators who can potentially qualify for the month-end draw
-            if ($daysRemaining > 0 || $isQualified) {
-                $leaderboard[] = [
-                    'creator' => $creator,
-                    'current_earnings' => (float) $earnings,
-                    'days_remaining' => $daysRemaining > 0 ? $daysRemaining : 0,
-                    'is_qualified' => $isQualified,
-                    'qualification_progress' => min(100, ($earnings / $minEarnings) * 100),
-                ];
-            }
+            
+            $leaderboard[] = [
+                'creator' => $creator,
+                'current_earnings' => (float) $earnings,
+                'days_remaining' => $daysRemaining > 0 ? $daysRemaining : 0,
+                'is_qualified' => $isQualified,
+                'qualification_progress' => min(100, ($earnings / $minEarnings) * 100),
+            ];
         }
 
         // Sort by qualification progress (highest first), then by earnings

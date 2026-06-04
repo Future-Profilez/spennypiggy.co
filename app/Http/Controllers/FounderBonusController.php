@@ -18,6 +18,60 @@ class FounderBonusController extends Controller
         
         // Get current month's leaderboard data
         $leaderboard = FounderBonus::getCurrentMonthLeaderboard(50);
+
+        $lastMonth = now()->subMonthNoOverflow();
+        $previousMonthStart = $lastMonth->copy()->startOfMonth()->toDateString();
+        $previousMonthEnd = $lastMonth->copy()->endOfMonth()->toDateString();
+
+        $previousMonthQualifiedCount = FounderBonus::whereBetween('qualification_date', [$previousMonthStart, $previousMonthEnd])->count();
+        $previousMonthTotalBonusAmount = (float) FounderBonus::whereBetween('qualification_date', [$previousMonthStart, $previousMonthEnd])->sum('bonus_amount');
+
+        $previousMonthBonuses = FounderBonus::with('creator')
+            ->whereBetween('qualification_date', [$previousMonthStart, $previousMonthEnd])
+            ->orderByDesc('first_30d_earnings')
+            ->limit(50)
+            ->get();
+
+        $previousMonthTop = $previousMonthBonuses->first();
+
+        $previousMonthStats = [
+            'month' => $lastMonth->format('F Y'),
+            'qualified_count' => (int) $previousMonthQualifiedCount,
+            'total_bonus_amount' => (float) $previousMonthTotalBonusAmount,
+            'top_earnings' => (float) ($previousMonthTop?->first_30d_earnings ?? 0),
+            'top_bonus_amount' => (float) ($previousMonthTop?->bonus_amount ?? 0),
+            'top_creator' => $previousMonthTop?->creator ? [
+                'id' => $previousMonthTop->creator->id,
+                'name' => $previousMonthTop->creator->name,
+                'username' => $previousMonthTop->creator->username,
+                'avatar_url' => $previousMonthTop->creator->avatar_url ?? null,
+                'profile_status_lock' => $previousMonthTop->creator->profile_status_lock ?? null,
+                'role' => $previousMonthTop->creator->role ?? null,
+            ] : null,
+        ];
+
+        $recentWinners = FounderBonus::with('creator')
+            ->where('qualification_date', '>=', now()->subDays(7)->toDateString())
+            ->orderByDesc('qualification_date')
+            ->limit(10)
+            ->get()
+            ->map(function ($bonus) {
+                return [
+                    'id' => $bonus->id,
+                    'qualification_date' => $bonus->qualification_date,
+                    'first_30d_earnings' => (float) $bonus->first_30d_earnings,
+                    'bonus_amount' => (float) $bonus->bonus_amount,
+                    'payout_status' => $bonus->payout_status,
+                    'creator' => $bonus->creator ? [
+                        'id' => $bonus->creator->id,
+                        'name' => $bonus->creator->name,
+                        'username' => $bonus->creator->username,
+                        'avatar_url' => $bonus->creator->avatar_url ?? null,
+                        'profile_status_lock' => $bonus->creator->profile_status_lock ?? null,
+                        'role' => $bonus->creator->role ?? null,
+                    ] : null,
+                ];
+            });
         
         // Get program statistics
         $totalFounders = FounderBonus::getTotalFounderCount();
@@ -50,9 +104,10 @@ class FounderBonusController extends Controller
                 }
             } else {
                 // Check if user is within their 30-day qualification window
-                $joinDate = $user->created_at;
-                $thirtyDaysLater = $joinDate->copy()->addDays(30);
-                $isWithin30Days = now()->lessThan($thirtyDaysLater);
+                $qualificationDays = FounderBonus::getQualificationDays();
+                $joinDate = $user->stripe_connected_at;
+                $thirtyDaysLater = $joinDate ? $joinDate->copy()->addDays($qualificationDays) : null;
+                $isWithin30Days = $thirtyDaysLater ? now()->lessThan($thirtyDaysLater) : false;
                 
                 if ($isWithin30Days) {
                     $userInRace = true;
@@ -65,7 +120,7 @@ class FounderBonusController extends Controller
                         // User not in top 50, calculate their progress
                         $earnings = $this->calculateFirst30DayEarnings($user->id);
                             
-                        $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
+                        $daysRemaining = $thirtyDaysLater && $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
                         
                         $userProgress = [
                             'creator' => $user,
@@ -84,15 +139,66 @@ class FounderBonusController extends Controller
             'userInRace' => $userInRace,
             'userProgress' => $userProgress,
             'founderBonusData' => $founderBonusData,
+            'previousMonthStats' => $previousMonthStats,
+            'previousMonthWinners' => $previousMonthBonuses->map(function ($bonus) {
+                return [
+                    'id' => $bonus->id,
+                    'qualification_date' => $bonus->qualification_date,
+                    'first_30d_earnings' => (float) $bonus->first_30d_earnings,
+                    'bonus_amount' => (float) $bonus->bonus_amount,
+                    'payout_status' => $bonus->payout_status,
+                    'creator' => $bonus->creator ? [
+                        'id' => $bonus->creator->id,
+                        'name' => $bonus->creator->name,
+                        'username' => $bonus->creator->username,
+                        'avatar_url' => $bonus->creator->avatar_url ?? null,
+                        'profile_status_lock' => $bonus->creator->profile_status_lock ?? null,
+                        'role' => $bonus->creator->role ?? null,
+                    ] : null,
+                ];
+            }),
+            'recentWinners' => $recentWinners,
             'programStats' => [
                 'totalFounders' => $totalFounders,
                 'availableSeats' => $availableSeats,
                 'maxSeats' => $maxSeats,
                 'minEarnings' => $minEarnings,
                 'bonusPercentage' => $bonusPercentage * 100,
-                'qualificationDays' => 30,
+                'qualificationDays' => FounderBonus::getQualificationDays(),
                 'currentMonth' => now()->format('F Y'),
             ]
+        ]);
+    }
+
+    public function getAllTimeWinners(Request $request)
+    {
+        $limit = (int) $request->query('limit', 10);
+        $limit = max(1, min(100, $limit));
+
+        $winners = FounderBonus::with('creator')
+            ->orderByDesc('first_30d_earnings')
+            ->limit($limit)
+            ->get()
+            ->map(function ($bonus) {
+                return [
+                    'id' => $bonus->id,
+                    'qualification_date' => $bonus->qualification_date,
+                    'first_30d_earnings' => (float) $bonus->first_30d_earnings,
+                    'bonus_amount' => (float) $bonus->bonus_amount,
+                    'payout_status' => $bonus->payout_status,
+                    'creator' => $bonus->creator ? [
+                        'id' => $bonus->creator->id,
+                        'name' => $bonus->creator->name,
+                        'username' => $bonus->creator->username,
+                        'avatar_url' => $bonus->creator->avatar_url ?? null,
+                        'profile_status_lock' => $bonus->creator->profile_status_lock ?? null,
+                        'role' => $bonus->creator->role ?? null,
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'winners' => $winners,
         ]);
     }
 
@@ -111,7 +217,11 @@ class FounderBonusController extends Controller
         $daysActive = 0;
         
         if ($user && !$user->is_founder) {
-            $accountAge = now()->diffInDays($user->created_at);
+            if (!$user->stripe_connected_at) {
+                $accountAge = 0;
+            } else {
+                $accountAge = now()->diffInDays($user->stripe_connected_at);
+            }
             $daysActive = min($accountAge, $qualificationDays);
             
             if ($accountAge >= $qualificationDays) {
@@ -153,14 +263,12 @@ class FounderBonusController extends Controller
     {
         $user = User::find($userId);
         if (!$user) return 0;
+        if (!$user->stripe_connected_at) return 0;
 
         $qualificationDays = FounderBonus::getQualificationDays();
-        $startDate = $user->created_at;
-        $endDate = $user->created_at->copy()->addDays($qualificationDays);
-
-        $financialService = app(\App\Services\FinancialService::class);
-        $summary = $financialService->getSummary($user, $startDate, $endDate, 'GBP');
-        return (float) ($summary['gross_income'] ?? 0);
+        $startDate = $user->stripe_connected_at;
+        $endDate = $user->stripe_connected_at->copy()->addDays($qualificationDays);
+        return (float) FounderBonus::calculateCompletedNetEarnings($user, $startDate, $endDate, 'GBP');
     }
 
     /**
@@ -170,13 +278,11 @@ class FounderBonusController extends Controller
     {
         $user = User::find($userId);
         if (!$user) return 0;
+        if (!$user->stripe_connected_at) return 0;
 
-        $startDate = $user->created_at;
-        $endDate = min($user->created_at->copy()->addDays(FounderBonus::getQualificationDays()), now());
-
-        $financialService = app(\App\Services\FinancialService::class);
-        $summary = $financialService->getSummary($user, $startDate, $endDate, 'GBP');
-        return (float) ($summary['gross_income'] ?? 0);
+        $startDate = $user->stripe_connected_at;
+        $endDate = min($user->stripe_connected_at->copy()->addDays(FounderBonus::getQualificationDays()), now());
+        return (float) FounderBonus::calculateCompletedNetEarnings($user, $startDate, $endDate, 'GBP');
     }
 
     /**
@@ -193,7 +299,7 @@ class FounderBonusController extends Controller
         $userPosition = null;
         $userInRace = false;
         
-        if ($user && $user->created_at->isCurrentMonth()) {
+        if ($user && $user->stripe_connected_at && $user->stripe_connected_at->isCurrentMonth()) {
             $userInRace = true;
             $userEntry = collect($leaderboard)->firstWhere('creator.id', $user->id);
             if ($userEntry) {
@@ -232,9 +338,11 @@ class FounderBonusController extends Controller
                 $qualifiedCount = 0;
                 $errors = [];
                 
+                $qualificationDays = FounderBonus::getQualificationDays();
                 // Get all users who are not already founders
                 $eligibleUsers = User::where('is_founder', false)
-                    ->whereNotNull('created_at')
+                    ->whereNotNull('stripe_connected_at')
+                    ->where('stripe_connected_at', '<=', now()->subDays($qualificationDays))
                     ->get();
 
                 foreach ($eligibleUsers as $user) {
@@ -300,8 +408,10 @@ class FounderBonusController extends Controller
             $errors = [];
             
             // Get all users who are not already founders
+            $qualificationDays = FounderBonus::getQualificationDays();
             $eligibleUsers = User::where('is_founder', false)
-                ->whereNotNull('created_at')
+                ->whereNotNull('stripe_connected_at')
+                ->where('stripe_connected_at', '<=', now()->subDays($qualificationDays))
                 ->get();
 
             foreach ($eligibleUsers as $user) {
