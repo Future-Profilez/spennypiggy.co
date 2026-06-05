@@ -94,20 +94,14 @@ class SyncSubscriptionStatus extends Command
             ->get();
 
         foreach ($expiredTrials as $trial) {
-
             // Double-check from Stripe if active subscription still exists
             $user = User::find($trial->user_id);
-
             $hasActiveSubscription = false;
 
             if ($user && $user->stripe_id) {
                 try {
                     $stripeSubscription = $this->userProfileService->syncUserSubscription($user);
-
-                    if (
-                        $stripeSubscription &&
-                        in_array($stripeSubscription->status, ['active', 'trialing'])
-                    ) {
+                    if ($stripeSubscription && in_array($stripeSubscription->status, ['active', 'trialing'])) {
                         $hasActiveSubscription = true;
                     }
                 } catch (\Exception $e) {

@@ -180,124 +180,124 @@ class StripeWebhookController extends Controller
 
         try {
             switch ($type) {
-            // --- Identity Verification Events ---
-            // case 'identity.verification_session.requires_input':
-            case 'identity.verification_session.verified':
-                $this->processIdentityVerification($event);
-                break;
+                // --- Identity Verification Events ---
+                // case 'identity.verification_session.requires_input':
+                case 'identity.verification_session.verified':
+                    $this->processIdentityVerification($event);
+                    break;
 
-            // --- Payment & Subscription Events ---
-            case 'checkout.session.completed':
-                $this->handleCheckoutSessionCompleted($data, $metadata);
-                $this->handleSupportPaymentDeliverableReady($data, $metadata);
-                break;
+                // --- Payment & Subscription Events ---
+                case 'checkout.session.completed':
+                    $this->handleCheckoutSessionCompleted($data, $metadata);
+                    $this->handleSupportPaymentDeliverableReady($data, $metadata);
+                    break;
 
-            case 'checkout.session.async_payment_succeeded':
-                $this->handleAsyncPaymentSucceeded($data);
-                break;
+                case 'checkout.session.async_payment_succeeded':
+                    $this->handleAsyncPaymentSucceeded($data);
+                    break;
 
-            case 'checkout.session.async_payment_failed':
-                $this->handleAsyncPaymentFailed($data);
-                break;
+                case 'checkout.session.async_payment_failed':
+                    $this->handleAsyncPaymentFailed($data);
+                    break;
 
-            case 'invoice.paid':
-                // Handles Wish/Bill/Membership subscriptions
-                $this->handleInvoicePaid($data);
-                // Handles MonthlyCharge (Platform Subscription)
-                $this->processMandatorySubscription($event);
-                break;
+                case 'invoice.paid':
+                    // Handles Wish/Bill/Membership subscriptions
+                    $this->handleInvoicePaid($data);
+                    // Handles MonthlyCharge (Platform Subscription)
+                    $this->processMandatorySubscription($event);
+                    break;
 
-            case 'invoice.payment_succeeded':
-                // Handles Wish renewals
-                $this->handleInvoicePaymentSucceeded($data, $metadata);
-                $this->handleSupportPaymentDeliverableReady($data, $metadata);
-                // Handles MonthlyCharge (Platform Subscription)
-                $this->processMandatorySubscription($event);
-                break;
+                case 'invoice.payment_succeeded':
+                    // Handles Wish renewals
+                    $this->handleInvoicePaymentSucceeded($data, $metadata);
+                    $this->handleSupportPaymentDeliverableReady($data, $metadata);
+                    // Handles MonthlyCharge (Platform Subscription)
+                    $this->processMandatorySubscription($event);
+                    break;
 
-            case 'invoice.payment_failed':
-                $this->processMandatorySubscription($event);
-                break;
+                case 'invoice.payment_failed':
+                    $this->processMandatorySubscription($event);
+                    break;
 
-            case 'charge.dispute.created':
-                $this->handleChargeDisputeCreated($data);
-                break;
+                case 'charge.dispute.created':
+                    $this->handleChargeDisputeCreated($data);
+                    break;
 
-            // case 'charge.dispute.updated':
-            // case 'charge.dispute.funds_withdrawn':
-            case 'charge.dispute.funds_reinstated':
-                $this->handleChargeDisputeUpdated($data);
-                break;
+                // case 'charge.dispute.updated':
+                // case 'charge.dispute.funds_withdrawn':
+                case 'charge.dispute.funds_reinstated':
+                    $this->handleChargeDisputeUpdated($data);
+                    break;
 
-            case 'charge.dispute.closed':
-                $this->handleChargeDisputeClosed($data);
-                break;
+                case 'charge.dispute.closed':
+                    $this->handleChargeDisputeClosed($data);
+                    break;
 
-            case 'charge.refunded':
-                $this->handleChargeRefunded($data);
-                break;
+                case 'charge.refunded':
+                    $this->handleChargeRefunded($data);
+                    break;
 
-            case 'payment_intent.succeeded':
-                $this->handlePaymentIntentSucceeded($data, $event->account ?? null);
-                break;
+                case 'payment_intent.succeeded':
+                    $this->handlePaymentIntentSucceeded($data, $event->account ?? null);
+                    break;
 
-            case 'payment_intent.payment_failed':
-                $this->handlePaymentIntentFailed($data);
-                break;
+                case 'payment_intent.payment_failed':
+                    $this->handlePaymentIntentFailed($data);
+                    break;
 
-            case 'early_fraud_warning.created':
-                $this->handleEarlyFraudWarningCreated($data);
-                break;
+                case 'early_fraud_warning.created':
+                    $this->handleEarlyFraudWarningCreated($data);
+                    break;
 
-            case 'customer.subscription.updated':
-                // Handle Wish/Bill/Membership updates based on metadata
-                $productType = $metadata->type ?? null;
-                if ($productType) {
-                    switch ($productType) {
-                        case 'bill':
-                            $this->handleBillSubscriptionUpdate($data, $metadata);
-                            break;
-                        case 'membership':
-                            $this->handleMembershipSubscriptionUpdate($data, $metadata);
-                            break;
-                        case 'wish':
-                            $this->handleWishSubscriptionUpdate($data, $metadata);
-                            break;
+                case 'customer.subscription.updated':
+                    // Handle Wish/Bill/Membership updates based on metadata
+                    $productType = $metadata->type ?? null;
+                    if ($productType) {
+                        switch ($productType) {
+                            case 'bill':
+                                $this->handleBillSubscriptionUpdate($data, $metadata);
+                                break;
+                            case 'membership':
+                                $this->handleMembershipSubscriptionUpdate($data, $metadata);
+                                break;
+                            case 'wish':
+                                $this->handleWishSubscriptionUpdate($data, $metadata);
+                                break;
+                        }
                     }
-                }
-                // Handle MonthlyCharge updates (Platform Subscription)
-                $this->processMandatorySubscription($event);
-                break;
+                    // Handle MonthlyCharge updates (Platform Subscription)
+                    $this->processMandatorySubscription($event);
+                    break;
 
-            case 'customer.subscription.deleted':
-                $this->customerSubscriptionDeleted($data);
-                $this->processMandatorySubscription($event);
-                break;
+                case 'customer.subscription.deleted':
+                    $this->customerSubscriptionDeleted($data);
+                    $this->processMandatorySubscription($event);
+                    break;
 
-            // case 'customer.subscription.trial_will_end':
-            // case 'customer.subscription.created':
-            case 'customer.updated':
-                $this->processMandatorySubscription($event);
-                break;
+                // case 'customer.subscription.trial_will_end':
+                // case 'customer.subscription.created':
+                case 'customer.updated':
+                    $this->processMandatorySubscription($event);
+                    break;
 
-            case 'review.closed':
-                $this->handleReviewClosed($data);
-                break;
+                case 'review.closed':
+                    $this->handleReviewClosed($data);
+                    break;
 
-            // --- Connect Account / Payout Risk Monitoring ---
-            case 'account.updated':
-                $this->handleAccountUpdated($data);
-                break;
-            // case 'payout.created':
-            // case 'payout.paid':
-            // case 'payout.failed':
-            // case 'payout.in_transit':
-            case 'payout.canceled':
-                $this->handlePayoutEvent($data, $type, $event);
-                break;
+                // --- Connect Account / Payout Risk Monitoring ---
+                case 'account.updated':
+                    $this->handleAccountUpdated($data);
+                    break;
+                // case 'payout.created':
+                // case 'payout.paid':
+                // case 'payout.failed':
+                // case 'payout.in_transit':
+                case 'payout.canceled':
+                    $this->handlePayoutEvent($data, $type, $event);
+                    break;
 
-            default:
-                Log::info("Unhandled event type: " . $type);
+                default:
+                    Log::info("Unhandled event type: " . $type);
             }
         } catch (\Throwable $e) {
             if ($webhookStatus) {
@@ -368,11 +368,11 @@ class StripeWebhookController extends Controller
             // Fetch subscription from Stripe FIRST to get customer info (expand customer)
             // Only if it looks like a subscription ID (starts with sub_)
             if (strpos($subscriptionId, 'sub_') !== 0) {
-                 // If it's not a subscription object ID, we might need to look it up differently?
-                 // But $object->subscription usually holds the ID.
-                 if (!isset($object->subscription) && $object->object !== 'subscription') {
-                     return;
-                 }
+                // If it's not a subscription object ID, we might need to look it up differently?
+                // But $object->subscription usually holds the ID.
+                if (!isset($object->subscription) && $object->object !== 'subscription') {
+                    return;
+                }
             }
 
             // If event object IS subscription, use it. If invoice, use subscription ID.
@@ -380,9 +380,9 @@ class StripeWebhookController extends Controller
                 $subscription = $object;
                 // We need customer details, might need to fetch if not expanded
                 if (is_string($subscription->customer)) {
-                     $customer = $stripe->customers->retrieve($subscription->customer);
+                    $customer = $stripe->customers->retrieve($subscription->customer);
                 } else {
-                     $customer = $subscription->customer;
+                    $customer = $subscription->customer;
                 }
             } else {
                 $subscription = $stripe->subscriptions->retrieve($subscriptionId, [
@@ -397,7 +397,8 @@ class StripeWebhookController extends Controller
 
         // Latest DB row for this subscription
         $subs = MonthlyCharge::where('stripe_id', $subscriptionId)
-            ->latest()
+            ->whereIn('status', ['trialing', 'active', 'paid'])
+            ->orderByDesc('updated_at')
             ->first();
 
         // If no DB record and not a creation event, we might want to skip or create?
@@ -410,14 +411,18 @@ class StripeWebhookController extends Controller
         /* ================= Handle different event types ================= */
 
         // TRIAL STARTED
-        if (
-            $eventType === 'customer.subscription.trial_will_end' ||
-            ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')
-        ) {
+        if ($eventType === 'customer.subscription.trial_will_end' || ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')) {
             // Check duplicate
-            if ($subs && $subs->status === 'trialing') {
+            $trialExists = MonthlyCharge::where('stripe_id', $subscriptionId)
+                ->whereNotNull('current_start_trial_date')
+                ->exists();
+
+            if ($trialExists) {
                 return;
             }
+            // if ($subs && $subs->status === 'trialing') {
+            //     return;
+            // }
 
             // Create new record for trial
             MonthlyCharge::create([
@@ -456,7 +461,11 @@ class StripeWebhookController extends Controller
             // Check if this is the first payment after trial
             $isFirstPayment = false;
             if ($subs) {
-                $isFirstPayment = !empty($subs->current_start_trial_date) && empty($subs->current_start_subscription_date);
+                $trialRecord = MonthlyCharge::where('stripe_id', $subscriptionId)
+                    ->whereNotNull('current_start_trial_date')
+                    ->orderBy('created_at')
+                    ->first();
+                $isFirstPayment = $trialRecord && empty($trialRecord->current_start_subscription_date);
             } else {
                 // No record exists, create first one
                 $isFirstPayment = true;
@@ -512,10 +521,9 @@ class StripeWebhookController extends Controller
                 }
             }
 
-            // Check if this billing period already exists
             $exists = MonthlyCharge::where('stripe_id', $subscriptionId)
-                ->where('current_start_subscription_date', $stripeStart->toDateString())
-                ->where('current_end_subscription_date', $stripeEnd->toDateString())
+                ->whereDate('current_start_subscription_date', $stripeStart)
+                ->whereDate('current_end_subscription_date', $stripeEnd)
                 ->exists();
 
             if (!$exists) {
@@ -656,21 +664,21 @@ class StripeWebhookController extends Controller
 
         // Handle Manual Capture (review.closed)
         if ($eventType === 'review.closed') {
-             $review = $object;
-             if ($review->reason === 'approved') {
-                 $paymentIntentId = $review->payment_intent;
-                 if ($paymentIntentId) {
-                     try {
-                         $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
-                         if ($paymentIntent->status === 'requires_capture') {
-                             $stripe->paymentIntents->capture($paymentIntentId);
-                             Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
-                         }
-                     } catch (\Exception $e) {
-                         Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
-                     }
-                 }
-             }
+            $review = $object;
+            if ($review->reason === 'approved') {
+                $paymentIntentId = $review->payment_intent;
+                if ($paymentIntentId) {
+                    try {
+                        $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
+                        if ($paymentIntent->status === 'requires_capture') {
+                            $stripe->paymentIntents->capture($paymentIntentId);
+                            Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
+                    }
+                }
+            }
         }
     }
 
@@ -752,8 +760,7 @@ class StripeWebhookController extends Controller
         }
 
         if ($user) {
-            $docType = data_get($session, 'verified_outputs.document.type')
-                ?: data_get($session, 'last_verification_report.document.type');
+            $docType = data_get($session, 'verified_outputs.document.type') ?: data_get($session, 'last_verification_report.document.type');
 
             if ($docType && strtolower($docType) !== 'passport') {
                 $error = [
@@ -998,8 +1005,8 @@ class StripeWebhookController extends Controller
             // Sync to FinancialTransactions
             try {
                 $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($pay->currency);
-                
-                $gross = (float) $pay->total_paid; 
+
+                $gross = (float) $pay->total_paid;
                 $platformFee = (float) $pay->tax;
                 $stripeFee = 0;
                 $vatAmt = (float) $pay->vat_amount;
@@ -1010,7 +1017,8 @@ class StripeWebhookController extends Controller
                         if (isset($intentObj->application_fee_amount)) {
                             $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
                         }
-                    } catch (\Exception $e) {}
+                    } catch (\Exception $e) {
+                    }
                 }
 
                 $reserveAmountMajor = 0;
@@ -1038,8 +1046,8 @@ class StripeWebhookController extends Controller
                         'stripe_fee'    => $stripeFee,
                         'vat_amount'    => $vatAmt,
                         'net_amount'    => (float) $pay->amount,
-                        'reserve_amount'=> $reserveAmountMajor,
-                        'reserve_status'=> $reserveStatus,
+                        'reserve_amount' => $reserveAmountMajor,
+                        'reserve_status' => $reserveStatus,
                         'currency'      => strtoupper($pay->currency ?? 'GBP'),
                         'status'        => 'completed',
                         'description'   => 'Piggy Pot Contribution',
@@ -3167,14 +3175,14 @@ class StripeWebhookController extends Controller
                         $payment = $existing;
                     } else {
 
-                    $payment = \App\Models\Payment::create([
-                        'stripe_payment_intent_id' => $paymentIntentId,
-                        'creator_id' => $creatorId,
-                        'amount' => $netMinor, // Amount in minor units for Risk Ledger (Net amount)
-                        'currency' => strtoupper($paymentIntent->currency),
-                        'reserve_amount_minor' => 0,
-                        'status' => 'succeeded',
-                    ]);
+                        $payment = \App\Models\Payment::create([
+                            'stripe_payment_intent_id' => $paymentIntentId,
+                            'creator_id' => $creatorId,
+                            'amount' => $netMinor, // Amount in minor units for Risk Ledger (Net amount)
+                            'currency' => strtoupper($paymentIntent->currency),
+                            'reserve_amount_minor' => 0,
+                            'status' => 'succeeded',
+                        ]);
                     }
                     Log::info("Risk Ledger: Auto-created missing Payment record", ['id' => $payment->id, 'creator_id' => $creatorId]);
                 } catch (\Exception $e) {
@@ -3321,7 +3329,6 @@ class StripeWebhookController extends Controller
             }
 
             Log::info("Early Fraud Warning recorded", ['efw_id' => $efw->id, 'pi' => $paymentIntentId]);
-
         } catch (\Exception $e) {
             Log::error("Failed to handle EFW: " . $e->getMessage());
         }
@@ -3499,7 +3506,6 @@ class StripeWebhookController extends Controller
 
                 // 11. Clear user caches
                 $this->userProfileService->clearUserCaches($shopPayment->shop->user->username, $shopPayment->shop->user->id);
-
             } catch (\Exception $e) {
                 Log::error("StripeWebhookController: Error processing shop payment: " . $e->getMessage(), [
                     'session_id' => $session->id,
@@ -3602,7 +3608,7 @@ class StripeWebhookController extends Controller
 
             // Check if payout was initiated by our platform (using local records or metadata)
             $isPlatformPayout = \App\Models\PayoutRecord::where('stripe_payout_id', $payout->id)->exists() ||
-                               (isset($payout->metadata) && (isset($payout->metadata->payout_run_id) || isset($payout->metadata->reason)));
+                (isset($payout->metadata) && (isset($payout->metadata->payout_run_id) || isset($payout->metadata->reason)));
 
             if (!$isPlatformPayout && $payout->status !== 'canceled' && $payout->status !== 'failed') {
                 $accountId = $event->account ?? null;
@@ -3730,7 +3736,7 @@ class StripeWebhookController extends Controller
     private function syncSourcePaymentStatusesByPaymentIntent(string $paymentIntentId, string $newStatus): void
     {
         try {
-            $sourceStatus = match($newStatus) {
+            $sourceStatus = match ($newStatus) {
                 'succeeded' => 'paid',
                 'disputed' => 'disputed',
                 'refunded' => 'refunded',
@@ -3783,7 +3789,7 @@ class StripeWebhookController extends Controller
     private function syncFinancialTransactionsByPaymentIntent(string $paymentIntentId, string $newStatus): void
     {
         try {
-            $ftStatus = match($newStatus) {
+            $ftStatus = match ($newStatus) {
                 'succeeded' => 'completed',
                 'disputed'  => 'disputed',
                 'refunded'  => 'refunded',
@@ -3794,10 +3800,10 @@ class StripeWebhookController extends Controller
 
             $sourceModels = [
                 [\App\Models\TaskPurchase::class,       'payment_intent_id', 'stripe_session_id'],
-                [\App\Models\PiggyPotContribution::class,'payment_intent_id', 'session_id'],
+                [\App\Models\PiggyPotContribution::class, 'payment_intent_id', 'session_id'],
                 [\App\Models\TipGoalsPayment::class,    'session_id',        'session_id'], // Uses session_id for both
                 [\App\Models\ShopPayment::class,        'session_id',        'session_id'],
-                [\App\Models\StripePaymentDetail::class,'stripe_payment_intent_id', 'session_id'],
+                [\App\Models\StripePaymentDetail::class, 'stripe_payment_intent_id', 'session_id'],
                 [\App\Models\MembershipPayment::class,  'session_id',        'session_id'],
                 [\App\Models\BillPayment::class,        'session_id',        'session_id'],
             ];
