@@ -5,7 +5,9 @@ namespace App;
 use App\Jobs\SendReferralQualifiedEmailJob;
 use App\Models\CreatorReferral;
 use App\Models\Currency;
+use App\Models\Payment;
 use App\Models\RiskIdentity;
+use App\Models\User;
 use App\Models\UserPayment;
 use App\Services\Risk\EffectiveLimitsService;
 use Illuminate\Support\Facades\Auth;
@@ -37,14 +39,75 @@ class Helpers
         }
 
         $blockedWords = [
-            'sex', 'sexual', 'fuck', 'fucking', 'blowjob', 'handjob', 'anal', 'cum', 'orgasm', 'masturbation',
-            'nude', 'nudity', 'porn', 'fetish', 'dick', 'cock', 'pussy', 'cunt', 'tits', 'boobs', 'nipples',
-            'asshole', 'must pay', 'forced', 'you owe', 'debt', 'punishment', 'humiliate', 'degrade',
-            'control you', 'own you', 'submit', 'meet me', 'address', 'phone number', 'bank details',
-            'doxx', 'threaten', 'escort', 'prostitution', 'sexual service', 'private session',
-            'paypal me', 'cashapp', 'venmo', 'crypto only', 'off platform', 'drugs', 'cocaine',
-            'heroin', 'meth', 'weapons', 'fraud', 'scam', 'fake id',
-            'paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'goddess', 'master', 'mistress',
+            'sex',
+            'sexual',
+            'fuck',
+            'fucking',
+            'blowjob',
+            'handjob',
+            'anal',
+            'cum',
+            'orgasm',
+            'masturbation',
+            'nude',
+            'nudity',
+            'porn',
+            'fetish',
+            'dick',
+            'cock',
+            'pussy',
+            'cunt',
+            'tits',
+            'boobs',
+            'nipples',
+            'asshole',
+            'must pay',
+            'forced',
+            'you owe',
+            'debt',
+            'punishment',
+            'humiliate',
+            'degrade',
+            'control you',
+            'own you',
+            'submit',
+            'meet me',
+            'address',
+            'phone number',
+            'bank details',
+            'doxx',
+            'threaten',
+            'escort',
+            'prostitution',
+            'sexual service',
+            'private session',
+            'paypal me',
+            'cashapp',
+            'venmo',
+            'crypto only',
+            'off platform',
+            'drugs',
+            'cocaine',
+            'heroin',
+            'meth',
+            'weapons',
+            'fraud',
+            'scam',
+            'fake id',
+            'paypig',
+            'findom',
+            'worship',
+            'unlock',
+            'unblock',
+            'receive',
+            'tax',
+            'fee',
+            'session',
+            'deposit',
+            'tribute',
+            'goddess',
+            'master',
+            'mistress',
         ];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
 
@@ -134,7 +197,7 @@ class Helpers
      * @param int   $referredCreatorId  Creator who received payment
      * @param float $amount             GMV amount (ignored now)
      */
-    public static function addGmv(int $referredCreatorId, float $amount = 0, string $fromCurrency = 'gbp'): void
+    public static function addGmv(int|string $referredCreatorId): void
     {
         self::recalculateGmv($referredCreatorId);
     }
@@ -147,57 +210,42 @@ class Helpers
     public static function recalculateGmv($referredCreatorId): void
     {
         try {
-            $user = \App\Models\User::where('id', $referredCreatorId)->orWhere('uuid', $referredCreatorId)->first();
+
+            $user = User::where('id', $referredCreatorId)->orWhere('uuid', $referredCreatorId)->first();
+
             if (!$user) {
                 return;
             }
 
-            // Always fetch referral
-            /** @var \App\Models\CreatorReferral|null $referral */
-            $referral = \App\Models\CreatorReferral::with('referrer', 'referred')
-                ->where('referred_creator_id', $user->id)
-                ->first();
+            $referral = CreatorReferral::with('referrer', 'referred')->where('referred_creator_id', $user->id)->first();
 
             if (!$referral) {
                 return;
             }
 
-            // Calculate total GMV from payments table
-            $payments = \App\Models\Payment::where('creator_id', $user->uuid)
-                ->whereIn('status', ['succeeded', 'completed'])
-                ->get();
-
-            $totalGmvGbp = 0.0;
-            foreach ($payments as $payment) {
-                $amountMajor = $payment->amount / 100;
-                if (strtolower($payment->currency) === 'gbp') {
-                    $totalGmvGbp += $amountMajor;
-                } else {
-                    $totalGmvGbp += self::priceFormat($payment->currency, $amountMajor, 'gbp');
-                }
+            // Stop once qualified
+            if ($referral->status === 'QUALIFIED' || $referral->lifetime_gmv >= 1000) {
+                return;
             }
+
+            $payments = Payment::where('creator_id', $user->uuid)->whereIn('status', ['succeeded', 'completed'])->get();
+
+            $totalGmvGbp = $payments->sum(function ($payment) {
+                $amount = $payment->amount / 100;
+                return strtolower($payment->currency) === 'gbp' ? $amount : self::priceFormat($payment->currency, $amount, 'gbp');
+            });
 
             $referral->lifetime_gmv = $totalGmvGbp;
 
-            if ($referral->status === 'IN_PROGRESS' && $referral->lifetime_gmv >= 1000) {
+            if ($referral->status === 'IN_PROGRESS' && $totalGmvGbp >= 1000) {
                 $referral->status = 'QUALIFIED';
                 $referral->qualified_at = now();
 
-                // 📧 Existing email job
                 \App\Jobs\SendReferralQualifiedEmailJob::dispatch($referral);
 
                 $referredCreatorName = $referral->referred->name;
 
-                // 🔔 PWA Notification
-                $title = '🎉 Referral Goal Achieved!';
-                $content = "Your referred creator ({$referredCreatorName}) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
-                $email = $referral->referrer->email;
-
-                self::sendNotification($title, $content, $email);
-            } elseif ($referral->status === 'QUALIFIED' && $referral->lifetime_gmv < 1000) {
-                // Revoke qualification if GMV drops below 1000 (e.g. due to refund/dispute)
-                $referral->status = 'IN_PROGRESS';
-                $referral->qualified_at = null;
+                self::sendNotification('🎉 Referral Goal Achieved!', "Your referred creator ({$referredCreatorName}) has reached £1,000 GMV. £50 has been unlocked in your wallet.", $referral->referrer->email);
             }
 
             $referral->save();
@@ -209,6 +257,7 @@ class Helpers
                 'status'              => $referral->status,
             ]);
         } catch (\Throwable $e) {
+
             Log::error('CreatorReferralHelper::recalculateGmv failed', [
                 'referred_creator_id' => $referredCreatorId,
                 'error'               => $e->getMessage(),
@@ -325,7 +374,7 @@ class Helpers
         // Reserve is calculated on the Listed Price (Creator's Net Share)
         $reserveAmount = 0;
         if ($reserveRate > 0) {
-             $reserveAmount = round(($listedPrice * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
+            $reserveAmount = round(($listedPrice * $reserveRate) / 100, $precision, PHP_ROUND_HALF_UP);
         }
 
         // Net to creator = what lands in their connected account after Stripe + platform fees
@@ -514,7 +563,9 @@ class Helpers
                 try {
                     // 1. Force reload ALL relationships with trashed items just in case
                     $shopPayment->load([
-                        'shop' => function($q) { $q->withTrashed(); },
+                        'shop' => function ($q) {
+                            $q->withTrashed();
+                        },
                         'shop.user',
                         'user'
                     ]);

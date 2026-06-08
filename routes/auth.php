@@ -712,6 +712,10 @@ Route::middleware('auth')->group(function () {
 
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
 
+            Route::post('/mandatory-cancel', [StripeController::class, 'cancelMandatorySubscription'])->name('mandatory.cancel');
+
+            Route::post('/mandatory-resume', [StripeController::class, 'resumeMandatorySubscription'])->name('mandatory.resume');
+
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
 
             Route::get('/activate-subscription', function () {

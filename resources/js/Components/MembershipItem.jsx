@@ -21,7 +21,11 @@ const rewards_lists = [
     { title: "Weekly Video call", value: "weekly_video_call" },
 ];
 
-export default function MembershipItem({ item, IsloggedIn, showAllBenefits = false }) {
+export default function MembershipItem({
+    item,
+    IsloggedIn,
+    showAllBenefits = false,
+}) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
         usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
@@ -81,7 +85,8 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
         }
 
         const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+            (priceWithVat + stripeFixedFee + adminFee) /
+            (1 - totalDeductionRate);
         if (!isZeroDecimal) {
             return Math.ceil(totalSupporterPays * 100) / 100;
         }
@@ -118,13 +123,17 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
     const isCreator = auth?.user?.id === item?.user_id;
     const theme = tierThemes[item?.level?.toLowerCase()] || tierThemes.default;
     const shouldShowAllBenefits = showAllBenefits || isExpanded;
-    const visibleRewards = shouldShowAllBenefits ? rewards : rewards.slice(0, 2);
+    const visibleRewards = shouldShowAllBenefits
+        ? rewards
+        : rewards.slice(0, 2);
     const remainingBenefits = Math.max((rewards?.length || 0) - 2, 0);
 
     return (
-        <div className={`${item?.status == 0 ? "inactive-item" : ""} h-full group/card`}>
+        <div
+            className={`${item?.status == 0 ? "inactive-item" : ""} h-full group/card`}
+        >
             <div className="relative flex flex-col h-full bg-white rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 overflow-hidden">
-                <div className="p-6 relative bg-[#fdfbf7]">
+                <div className="pt-16 px-6 pb-6 relative bg-[#fdfbf7]">
                     {item?.is_suspended == 1 && (
                         <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-lg z-10 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help">
                             Suspended
@@ -135,11 +144,27 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                             )}
                         </div>
                     )}
-                    {IsloggedIn && item?.approved == 0 && item?.is_suspended != 1 && (
-                        <div className="absolute top-3 left-3 bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-lg z-10 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)]">
-                            Pending Approval
-                        </div>
-                    )}
+                    {IsloggedIn &&
+                        item?.approved == 0 &&
+                        item?.is_suspended != 1 && (
+                            <div className="absolute top-3 left-3 z-20 group/approval">
+                                <div className="bg-yellow-400 text-black text-xs font-bold px-4 py-1.5 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-help">
+                                    Pending Approval
+                                </div>
+
+                                {item?.edited_reason && (
+                                    <div className="absolute top-full left-0 mt-2 w-64 bg-black text-white text-[11px] leading-relaxed p-3 rounded-xl shadow-lg opacity-0 invisible group-hover/approval:opacity-100 group-hover/approval:visible transition-all duration-200">
+                                        <div className="font-bold text-yellow-300 mb-1">
+                                            Edit Reason
+                                        </div>
+
+                                        <p className="font-medium break-words">
+                                            {item.edited_reason}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex flex-col">
                             <span
@@ -168,7 +193,8 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                                       calculateTotalSupporterPays(
                                           item?.price,
                                           item?.currency,
-                                          item?.user?.vat_amount_percentage || 0,
+                                          item?.user?.vat_amount_percentage ||
+                                              0,
                                       ),
                                       item?.currency,
                                   )}
@@ -226,7 +252,10 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                         <ul className="space-y-3">
                             {rewards && rewards.length > 0 ? (
                                 visibleRewards.map((r, i) => (
-                                    <li key={`reward-${i}`} className="flex items-start gap-3">
+                                    <li
+                                        key={`reward-${i}`}
+                                        className="flex items-start gap-3"
+                                    >
                                         <div className="mt-0.5 shrink-0 text-[#FF007F]">
                                             <svg
                                                 width="18"
@@ -252,18 +281,21 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                                 </li>
                             )}
                         </ul>
-                        {!showAllBenefits && remainingBenefits > 0 && !isExpanded && (
-                            <div className="mt-4">
-                                <div className="border-t-[2px] border-dashed border-black/30 mb-3"></div>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsExpanded(true)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-700 hover:text-[#FF007F] transition-colors"
-                                >
-                                    + {remainingBenefits} more benefits (View all)
-                                </button>
-                            </div>
-                        )}
+                        {!showAllBenefits &&
+                            remainingBenefits > 0 &&
+                            !isExpanded && (
+                                <div className="mt-4">
+                                    <div className="border-t-[2px] border-dashed border-black/30 mb-3"></div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsExpanded(true)}
+                                        className="text-xs font-black uppercase tracking-wider text-gray-700 hover:text-[#FF007F] transition-colors"
+                                    >
+                                        + {remainingBenefits} more benefits
+                                        (View all)
+                                    </button>
+                                </div>
+                            )}
                     </div>
 
                     <div className="mt-8">
@@ -276,7 +308,9 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                             <Link
                                 method="get"
                                 as="button"
-                                href={route("membership.checkout", { uuid: item?.uuid })}
+                                href={route("membership.checkout", {
+                                    uuid: item?.uuid,
+                                })}
                                 className={`w-full py-3.5 ${theme.bg} ${theme.text} border-[3px] border-black font-black uppercase text-xs tracking-widest rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2`}
                             >
                                 Join Tier
@@ -299,7 +333,9 @@ export default function MembershipItem({ item, IsloggedIn, showAllBenefits = fal
                         {item.user && (
                             <div className="mt-4 text-center">
                                 <Link
-                                    href={route("user.show", { username: item.user.username })}
+                                    href={route("user.show", {
+                                        username: item.user.username,
+                                    })}
                                     className="text-[10px] font-bold uppercase text-gray-400 hover:text-[#FF007F] transition-colors tracking-widest"
                                 >
                                     @{item.user.username}
