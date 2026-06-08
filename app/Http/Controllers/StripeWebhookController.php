@@ -293,9 +293,9 @@ class StripeWebhookController extends Controller
                 $this->handleAccountUpdated($data);
                 break;
             // case 'payout.created':
-            // case 'payout.paid':
-            // case 'payout.failed':
-            // case 'payout.in_transit':
+            case 'payout.paid':
+            case 'payout.failed':
+            case 'payout.in_transit':
             case 'payout.canceled':
                 $this->handlePayoutEvent($data, $type, $event);
                 break;
@@ -3567,6 +3567,24 @@ class StripeWebhookController extends Controller
     private function handlePayoutEvent($payout, $eventType, $event)
     {
         try {
+            // Reserve-release payouts (issued by the reserve:release command) do not create a
+            // PayoutRecord. If one fails/cancels at the bank, revert the linked reserves back to
+            // 'held' so the next reserve:release run retries them. The mass update intentionally
+            // bypasses the never-un-release model guard — this is the one legitimate
+            // released → held transition. Idempotent: reserve_payout_id is cleared, so a
+            // duplicate event matches zero rows.
+            $payoutReason = $payout->metadata->reason ?? null;
+            if ($payoutReason === 'reserve_release' && in_array($payout->status, ['failed', 'canceled'], true)) {
+                $reverted = \App\Models\FinancialTransaction::where('reserve_payout_id', $payout->id)
+                    ->where('reserve_status', 'released')
+                    ->update([
+                        'reserve_status' => 'held',
+                        'reserve_released_at' => null,
+                        'reserve_payout_id' => null,
+                    ]);
+                Log::warning("reserve:release payout {$payout->id} {$payout->status} — reverted {$reverted} reserve(s) to held for retry.");
+            }
+
             // Update local PayoutRecord if it exists
             $record = \App\Models\PayoutRecord::where('stripe_payout_id', $payout->id)->first();
             if ($record) {
@@ -3587,6 +3605,17 @@ class StripeWebhookController extends Controller
                 ]);
 
                 Log::info("Payout Record updated via webhook: {$payout->id} status: {$status}");
+
+                // Weekly payout-run payout that failed/canceled at the bank → requeue the
+                // creator's payments so the next run retries automatically. Bonus payouts are
+                // excluded (they have their own reconciliation). prevStatus guard makes this
+                // idempotent against duplicate Stripe events.
+                if ($prevStatus !== $status
+                    && in_array($status, ['failed', 'canceled'], true)
+                    && empty($record->metadata['bonus_type'])
+                ) {
+                    $this->requeueFailedRunPayout($record);
+                }
 
                 if ($prevStatus !== $status && in_array($status, ['paid', 'failed'], true)) {
                     $record->loadMissing('creator');
@@ -3708,6 +3737,93 @@ class StripeWebhookController extends Controller
             }
         } catch (\Exception $e) {
             Log::error("Error handling {$eventType} for risk monitoring: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * A weekly payout-run payout failed/canceled at the bank. The money never left
+     * the creator's Stripe balance, but the payments were marked as paid out — so they
+     * would never be retried. Requeue them (clear payout_run_id on Payments and the
+     * canonical FinancialTransaction ledger), revert the negative-balance change this run
+     * applied, move the creator into the run's skipped list, and notify creator + admin.
+     */
+    private function requeueFailedRunPayout(\App\Models\PayoutRecord $record): void
+    {
+        try {
+            $runId = $record->payout_run_id;
+            $creatorId = $record->creator_id; // user uuid
+            if (!$runId || !$creatorId) {
+                return;
+            }
+
+            $run = \App\Models\PayoutRun::find($runId);
+            if (!$run) {
+                return;
+            }
+
+            $creator = User::where('uuid', $creatorId)->first();
+
+            DB::transaction(function () use ($runId, $creatorId, $creator, $run) {
+                // Requeue base payments + refund/dispute adjustments tied to this run.
+                \App\Models\Payment::where('creator_id', $creatorId)
+                    ->where('payout_run_id', $runId)
+                    ->update(['payout_run_id' => null]);
+                \App\Models\Payment::where('creator_id', $creatorId)
+                    ->where('adjustment_payout_run_id', $runId)
+                    ->update(['adjustment_payout_run_id' => null]);
+
+                // Un-stamp the canonical ledger so the "paid out" badge reverts and reserves
+                // stay correctly attributed.
+                if ($creator) {
+                    \App\Models\FinancialTransaction::where('user_id', $creator->id)
+                        ->where('payout_run_id', $runId)
+                        ->update(['payout_run_id' => null]);
+                }
+
+                // Revert the negative-balance delta this run applied for the creator; the next
+                // run recomputes it fresh from the requeued payments.
+                $cdata = $run->totals['payouts'][$creatorId] ?? null;
+                if ($cdata && isset($cdata['negative_balance_before'])) {
+                    CreatorMetric::where('creator_id', $creatorId)->update([
+                        'negative_balance_minor' => (int) $cdata['negative_balance_before'],
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                // Move the creator from processed → skipped in the run totals for reporting.
+                $totals = $run->totals;
+                if (isset($totals['payouts'][$creatorId])) {
+                    $moved = $totals['payouts'][$creatorId];
+                    $moved['failure_reason'] = 'Stripe payout failed at bank — requeued for next run';
+                    $moved['requeued_at'] = now()->toDateTimeString();
+                    $totals['skipped_payouts'][$creatorId] = $moved;
+                    unset($totals['payouts'][$creatorId]);
+                    $run->totals = $totals;
+                    $run->save();
+                }
+            });
+
+            if ($creator) {
+                Helpers::sendNotification(
+                    'Payout failed',
+                    'Your recent payout could not be completed due to a bank issue. It will be retried automatically in the next payout run — please verify your bank details.',
+                    $creator->email
+                );
+            }
+
+            $adminEmail = config('services.payout_notifications.weekly_job_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new \App\Mail\CommandFailed(
+                    '[' . strtoupper(app()->environment()) . '] Payout failed & requeued',
+                    "Payout {$record->stripe_payout_id} for creator {$creatorId} failed ("
+                        . ($record->failure_message ?: 'unknown reason')
+                        . "). Payments requeued for the next payout run."
+                ));
+            }
+
+            Log::warning("Payout failed & requeued: run {$runId}, creator {$creatorId}, payout {$record->stripe_payout_id}.");
+        } catch (\Throwable $e) {
+            Log::error('Failed to requeue failed payout: ' . $e->getMessage());
         }
     }
 

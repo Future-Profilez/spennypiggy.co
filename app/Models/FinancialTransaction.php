@@ -25,6 +25,9 @@ class FinancialTransaction extends Model
         'net_amount',
         'reserve_amount',
         'reserve_status',
+        'payout_run_id',
+        'reserve_released_at',
+        'reserve_payout_id',
         'currency',
         'status',
         'description',
@@ -33,6 +36,7 @@ class FinancialTransaction extends Model
 
     protected $casts = [
         'transaction_date' => 'datetime',
+        'reserve_released_at' => 'datetime',
         'gross_amount' => 'decimal:2',
         'platform_fee' => 'decimal:2',
         'stripe_fee' => 'decimal:2',
@@ -47,6 +51,21 @@ class FinancialTransaction extends Model
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
+            }
+        });
+
+        // Money-ledger invariant: once a reserve is 'released' (paid back to the creator),
+        // it can never be reverted to 'held'. This protects against SyncFinancialTransactions
+        // (updateOrCreate) clobbering an already-released reserve, which would otherwise let the
+        // reserve:release command pay the same reserve a second time.
+        static::updating(function ($model) {
+            if (
+                $model->isDirty('reserve_status')
+                && $model->getOriginal('reserve_status') === 'released'
+                && $model->reserve_status !== 'released'
+            ) {
+                $model->reserve_status = 'released';
+                $model->reserve_released_at = $model->getOriginal('reserve_released_at');
             }
         });
     }

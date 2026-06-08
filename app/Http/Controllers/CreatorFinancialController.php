@@ -299,6 +299,8 @@ class CreatorFinancialController extends Controller
                 return $tx;
             });
 
+        $this->applyPayoutBadges($income);
+
         $expensesQuery = \App\Models\CreatorExpense::where('user_id', $user->id)
             ->orderBy('expense_date', 'desc')
             ->orderBy('id', 'desc');
@@ -795,6 +797,8 @@ class CreatorFinancialController extends Controller
                 return $tx;
             });
 
+        $this->applyPayoutBadges($income);
+
         // Expenses (Filtered by Tax Year)
         $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$dates['start'], $dates['end']])
@@ -1082,5 +1086,33 @@ class CreatorFinancialController extends Controller
             'profile' => $profile,
             'user' => $user
         ]);
+    }
+
+    /**
+     * Tag each income transaction with a payout badge:
+     *   - 'paid_out'  : already included in an executed payout run (FT.payout_run_id set).
+     *   - 'this_week' : eligible for the upcoming weekly run (succeeded, past the 7-day hold,
+     *                   fulfilled — i.e. not grayed out).
+     * Expenses and non-income rows get no badge.
+     */
+    private function applyPayoutBadges($income): void
+    {
+        $payoutCutoff = now()->subDays(7);
+
+        $income->each(function ($tx) use ($payoutCutoff) {
+            $tx->payout_badge = null;
+
+            if (!empty($tx->payout_run_id)) {
+                $tx->payout_badge = 'paid_out';
+            } elseif (
+                ($tx->type ?? null) === 'income'
+                && ($tx->status ?? null) === 'completed'
+                && empty($tx->is_grayed_out)
+                && $tx->transaction_date
+                && \Carbon\Carbon::parse($tx->transaction_date)->lte($payoutCutoff)
+            ) {
+                $tx->payout_badge = 'this_week';
+            }
+        });
     }
 }

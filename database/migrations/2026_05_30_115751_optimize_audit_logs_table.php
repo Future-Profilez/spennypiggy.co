@@ -92,12 +92,18 @@ class OptimizeAuditLogsTable extends Migration
             return $result[0]->count > 0;
         }
 
-        // For SQLite (fallback - try to catch exception)
+        // For SQLite — inspect the table's index list (the old code called a method on the
+        // string table name and fatally errored).
         try {
-            $table->indexExists($indexName);
-            return true;
+            foreach (DB::select("PRAGMA index_list('{$table}')") as $index) {
+                if (($index->name ?? null) === $indexName) {
+                    return true;
+                }
+            }
         } catch (\Exception $e) {
-            return false;
+            // fall through
         }
+
+        return false;
     }
 }

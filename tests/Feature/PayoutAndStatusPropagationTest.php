@@ -310,39 +310,62 @@ class PayoutAndStatusPropagationTest extends TestCase
     }
 
     // =========================================================================
-    // 3. RESERVE RELEASE — UUID payout_run_id handling
+    // 3. RESERVE RELEASE — per-transaction 30-day rolling window (FT-based)
     // =========================================================================
 
-    public function test_reserve_release_works_with_uuid_payout_run_ids(): void
+    public function test_held_reserve_is_due_30_days_after_its_transaction_date(): void
     {
-        Carbon::setTestNow('2026-06-15 12:00:00'); // 45 days after run
+        Carbon::setTestNow('2026-06-15 12:00:00'); // 45 days after the transaction
 
-        // Create a past payout run with reserves
-        $run = PayoutRun::create([
-            'run_date' => '2026-05-01',
-            'status' => 'executed',
-            'totals' => [
-                'payouts' => [
-                    $this->creatorUuid => [
-                        'reserve_amount' => 500,
-                        'reserve_release_date' => '2026-05-31', // 30 days after run
-                    ],
-                ],
-            ],
+        // A held reserve on a transaction 45 days ago — past its own 30-day window.
+        $ft = FinancialTransaction::create([
+            'user_id' => $this->creator->id,
+            'type' => 'income',
+            'status' => 'completed',
+            'source_type' => TipGoalsPayment::class,
+            'source_id' => 999999, // no fulfillment gate for tips
+            'gross_amount' => 50.00,
+            'net_amount' => 50.00,
+            'reserve_amount' => 5.00,
+            'reserve_status' => 'held',
+            'currency' => 'GBP',
+            'transaction_date' => '2026-05-01 12:00:00',
         ]);
-
-        // UUID should be a string, not an integer
-        $this->assertIsString($run->id);
 
         $payoutService = app(PayoutService::class);
         $reserves = $payoutService->getHeldReserves($this->creatorUuid);
 
-        // The reserve should be in the breakdown (it's past release date)
-        // getDueReserveReleases should find it since release date <= now
-        $releaseData = $payoutService->releaseReserves();
+        // getHeldReserves reads FT-level reserves; release date = transaction_date + 30 days.
+        $this->assertGreaterThanOrEqual(5.0, $reserves['total_held']);
+        $match = collect($reserves['breakdown'])->firstWhere('financial_transaction_id', $ft->id);
+        $this->assertNotNull($match);
+        $this->assertEquals('2026-05-31', $match['release_date']);
+        $this->assertEquals(0, $match['days_remaining']); // past due → eligible for reserve:release
+    }
 
-        $this->assertGreaterThanOrEqual(1, $releaseData['due_creator_count']);
-        $this->assertGreaterThanOrEqual(500, $releaseData['due_total']);
+    public function test_released_reserve_cannot_be_reverted_to_held_by_resync(): void
+    {
+        // Money-ledger invariant: once released, a re-sync (model save) must not un-release.
+        $ft = FinancialTransaction::create([
+            'user_id' => $this->creator->id,
+            'type' => 'income',
+            'status' => 'completed',
+            'source_type' => TipGoalsPayment::class,
+            'source_id' => 999998,
+            'gross_amount' => 50.00,
+            'net_amount' => 50.00,
+            'reserve_amount' => 5.00,
+            'reserve_status' => 'released',
+            'reserve_released_at' => now(),
+            'currency' => 'GBP',
+            'transaction_date' => '2026-05-01 12:00:00',
+        ]);
+
+        // Attempt to flip it back to held via a normal model save (as SyncFinancialTransactions does).
+        $ft->reserve_status = 'held';
+        $ft->save();
+
+        $this->assertEquals('released', $ft->fresh()->reserve_status);
     }
 
     // =========================================================================

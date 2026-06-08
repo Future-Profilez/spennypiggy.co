@@ -126,6 +126,11 @@ class Kernel extends ConsoleKernel
                  ->weeklyOn(5, '10:00')
                  ->withoutOverlapping();
 
+        // Risk Engine: Release held reserves 30 days after each transaction (daily)
+        $schedule->command('reserve:release')
+                 ->dailyAt('10:30')
+                 ->withoutOverlapping();
+
         $schedule->command('bonus:process-fast-start')
                  ->dailyAt('09:15')
                  ->withoutOverlapping();

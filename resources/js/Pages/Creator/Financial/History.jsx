@@ -184,6 +184,16 @@ const TransactionRow = ({ tx, formatCurrency }) => {
                 <div className="inline-block mt-1.5 px-1.5 py-0.5 bg-gray-100 border-[1.5px] border-black rounded text-[8px] text-gray-600 font-black uppercase tracking-widest">
                     {tx.label || tx.source_type?.split('\\').pop().replace('Payment', '').replace('Purchase', '') || 'Manual'}
                 </div>
+                {tx.payout_badge === 'this_week' && (
+                    <div className="inline-block mt-1.5 ml-1.5 px-2 py-0.5 bg-[#FFE951] border-[1.5px] border-black rounded text-[8px] text-black font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        In this week's payout
+                    </div>
+                )}
+                {tx.payout_badge === 'paid_out' && (
+                    <div className="inline-block mt-1.5 ml-1.5 px-2 py-0.5 bg-[#90FFB1] border-[1.5px] border-black rounded text-[8px] text-black font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        Paid out
+                    </div>
+                )}
             </td>
             <td className="px-6 py-4 text-xs border-r-[2px] border-black text-center">
                 {tx.reserve_amount > 0 ? (

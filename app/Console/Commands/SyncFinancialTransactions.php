@@ -286,7 +286,11 @@ class SyncFinancialTransactions extends Command
             
             if ($paymentLog->reserve_amount_minor > 0) {
                 $data['reserve_amount'] = $paymentLog->reserve_amount_minor / 100;
-                $data['reserve_status'] = $paymentLog->payout_run_id ? 'released' : 'held';
+                // A reserve stays 'held' until 30 days after its transaction_date, when the
+                // reserve:release command releases it. It must NOT be flipped to 'released'
+                // just because the base earning was paid out (payout_run_id set) — that emptied
+                // the held-reserve view prematurely. (The model guards against un-releasing.)
+                $data['reserve_status'] = 'held';
             }
         }
 
@@ -391,18 +395,19 @@ class SyncFinancialTransactions extends Command
             $effectivePercent = (int) ($metric?->reserve_percent ?? 0);
         }
 
+        // A reserve recorded at transaction time is a HISTORICAL FACT — never zero it on
+        // re-sync just because the creator's CURRENT effective reserve % has dropped to 0
+        // (onboarding ended / risk cleared). Doing so erased the reserve from old transactions.
+        $recordedAmount = (float) ($riskData['reserve_amount'] ?? 0);
+        if ($recordedAmount > 0) {
+            return [
+                'amount' => $recordedAmount,
+                'status' => $reserveStatus,
+            ];
+        }
+
         if ($effectivePercent > 0) {
             $calculatedAmount = round($netAmount * $effectivePercent / 100, 2);
-            if (isset($riskData['reserve_amount']) && $riskData['reserve_amount'] > 0) {
-                $recordedAmount = (float) $riskData['reserve_amount'];
-                $diff = abs($recordedAmount - $calculatedAmount);
-                if ($diff <= 0.02) {
-                    return [
-                        'amount' => $recordedAmount,
-                        'status' => $reserveStatus,
-                    ];
-                }
-            }
             return [
                 'amount' => $calculatedAmount,
                 'status' => $reserveStatus,

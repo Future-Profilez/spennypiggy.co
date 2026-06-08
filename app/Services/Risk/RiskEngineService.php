@@ -175,7 +175,9 @@ class RiskEngineService
                 'creator_exists' => (bool)$creator,
                 'creator_created_at' => $creator ? $creator->created_at : null,
             ]);
-            if ($creator && $newCreatorAgeDays > 0 && $creator->created_at->diffInDays(now()) < $newCreatorAgeDays) {
+            // "New creator" is measured from Stripe connection (when earnings start), not account creation.
+            $newCreatorAnchor = $creator ? ($creator->stripe_connected_at ?: $creator->created_at) : null;
+            if ($creator && $newCreatorAgeDays > 0 && $newCreatorAnchor && $newCreatorAnchor->diffInDays(now()) < $newCreatorAgeDays) {
                 // Calculate creator's total volume today (all payers)
                 // This query might be heavy if not indexed on creator_id + created_at
                 $dailyVolume = Payment::where('creator_id', $creatorId)

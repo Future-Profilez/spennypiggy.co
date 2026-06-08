@@ -931,6 +931,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     </p>
                                 </div>
                             </div>
+                            
                             <>
                                 {auth?.user?.identity_status == 1 ? (
                                     <span className="text-green-600">

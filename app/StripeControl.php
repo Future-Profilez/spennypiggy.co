@@ -1063,7 +1063,9 @@ class StripeControl
     /**
      * Create a payout to a connected account's bank account
      *
-     * @param array $payload Payout payload
+     * @param array $payload Payout payload. Pass an 'idempotency_key' to guard against
+     *                       duplicate payouts on network retries / re-runs — it is pulled
+     *                       out of the payload and sent as a Stripe request option.
      * @param string $connectedAccountId
      * @return \Stripe\Payout
      * @throws Exception
@@ -1073,11 +1075,17 @@ class StripeControl
         $currency = $payload['currency'] ?? 'GBP';
         $client = self::getClientForCurrency($currency);
 
+        // Pull idempotency_key out of the payload — it is a request option, not a param.
+        $idempotencyKey = $payload['idempotency_key'] ?? null;
+        unset($payload['idempotency_key']);
+
+        $options = ['stripe_account' => $connectedAccountId];
+        if ($idempotencyKey) {
+            $options['idempotency_key'] = (string) $idempotencyKey;
+        }
+
         try {
-            return $client->payouts->create(
-                $payload,
-                ['stripe_account' => $connectedAccountId]
-            );
+            return $client->payouts->create($payload, $options);
         } catch (Exception $e) {
             Log::error("Stripe Payout Error: " . $e->getMessage());
             throw new Exception("Stripe Payout Error: " . $e->getMessage());

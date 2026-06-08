@@ -32,7 +32,10 @@ export default function FastStartBonusTerms(props) {
                         </p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">2. Overview</h2>
-                        <p className="mb-4 text-gray-700 leading-relaxed">Eligible creators will receive an additional bonus equal to 5% of qualifying creator earnings generated during their first 30 days following creator account approval. The Fast Start Bonus is applied automatically and paid alongside eligible weekly creator payouts.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Eligible creators will receive an additional bonus equal to 5% of qualifying creator earnings generated during their first 30 days following creator account approval.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">The Fast Start Bonus is calculated automatically following the creator&apos;s initial 30-day qualification period.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Before any Fast Start Bonus payment is made, Spenny Piggy will review qualifying earnings and verify eligibility, including any refunds, disputes, chargebacks, payment reversals, fraud reviews, compliance reviews, or other adjustments that may affect qualification.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Subject to these Terms, the Fast Start Bonus will normally be paid automatically with the creator&apos;s next eligible payout following completion of the review process, which will generally occur approximately seven (7) days following the end of the creator&apos;s Fast Start Bonus Period.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">3. Eligibility</h2>
                         <p className="mb-4 text-gray-700 leading-relaxed">Creators must complete onboarding, complete identity verification, maintain an approved creator account, maintain a valid payout account, comply with platform rules, and operate only one creator account. Multiple creator accounts are prohibited and may result in forfeiture of bonuses and account suspension.</p>
@@ -44,58 +47,97 @@ export default function FastStartBonusTerms(props) {
                         <p className="mb-4 text-gray-700 leading-relaxed">Only qualifying creator earnings generated through completed supporter transactions qualify. Referral bonuses, Fast Start Bonus payments, Founder's Bonus payments, promotional credits, manual account credits, refunds, chargebacks, reversed transactions, fraudulent transactions, artificial transactions, self-funded transactions, and non-genuine transactions do not qualify.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">6. Payment of Fast Start Bonus</h2>
-                        <p className="mb-4 text-gray-700 leading-relaxed">The Fast Start Bonus is calculated automatically and added to weekly creator payouts.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">The Fast Start Bonus is not paid immediately upon qualification.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Following the conclusion of the creator&apos;s Fast Start Bonus Period, Spenny Piggy will review qualifying earnings and verify eligibility before any Fast Start Bonus payment is processed.</p>
+                        <p className="mb-2 font-bold text-gray-900">During this review process, Spenny Piggy may assess:</p>
                         <ul className="list-disc pl-6 mb-4 text-gray-700 leading-relaxed">
-                            <li>Example: £100 earnings = £105 payout</li>
-                            <li>Example: £1,000 earnings = £1,050 payout</li>
-                            <li>Example: £2,500 earnings = £2,625 payout</li>
+                            <li>Refund activity</li>
+                            <li>Chargebacks</li>
+                            <li>Payment disputes</li>
+                            <li>Payment reversals</li>
+                            <li>Fraud prevention checks</li>
+                            <li>Compliance reviews</li>
+                            <li>Artificial transactions</li>
+                            <li>Self-funded transactions</li>
+                            <li>Platform policy violations</li>
+                            <li>Any other activity affecting eligibility or qualifying earnings</li>
                         </ul>
-                        <p className="mb-4 text-gray-700 leading-relaxed">The Fast Start Bonus is applied automatically and requires no action from the creator.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Where refunds, disputes, chargebacks, reversals, fraud concerns, compliance issues, or other adjustments affect qualifying earnings, Spenny Piggy may recalculate, reduce, adjust, delay, withhold, recover, reverse, or cancel any Fast Start Bonus payment.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Following completion of the review process, the Fast Start Bonus will normally be paid automatically with the creator&apos;s next eligible payout, which will generally occur approximately seven (7) days following the end of the creator&apos;s Fast Start Bonus Period.</p>
+                        <p className="mb-2 font-bold text-gray-900">Examples:</p>
+                        <ul className="list-disc pl-6 mb-4 text-gray-700 leading-relaxed">
+                            <li>£100 earnings = £5 Fast Start Bonus</li>
+                            <li>£1,000 earnings = £50 Fast Start Bonus</li>
+                            <li>£2,500 earnings = £125 Fast Start Bonus</li>
+                        </ul>
+                        <p className="mb-4 text-gray-700 leading-relaxed">The Fast Start Bonus is paid automatically and requires no action from the creator.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">7. Relationship to the Founder's Bonus Programme</h2>
                         <p className="mb-4 text-gray-700 leading-relaxed">The Fast Start Bonus Programme and Founder's Bonus Programme are separate promotions. Creators who generate at least £2,500 in qualifying creator earnings during their first 30 days may become eligible for the Founder's Bonus Programme, subject to creator verification requirements, the Founder's Bonus Terms & Conditions, and founder place availability.</p>
                         <p className="mb-4 text-gray-700 leading-relaxed">Achieving £2,500 in qualifying creator earnings does not trigger an immediate Founder's Bonus payment. The £2,500 threshold is a qualification requirement only.</p>
                         
-                        <p className="mb-2 font-bold text-gray-900">Month 1:</p>
+                        <p className="mb-2 font-bold text-gray-900">Example Timeline</p>
+                        <p className="mb-2 font-bold text-gray-900">Month 1 (Days 1–30)</p>
                         <ul className="list-disc pl-6 mb-4 text-gray-700 leading-relaxed">
-                            <li>Creator earns £2,500+ and receives Fast Start Bonus payments.</li>
-                            <li>Creator qualifies for the Founder's Bonus Programme.</li>
+                            <li>Creator earns qualifying creator earnings.</li>
+                            <li>Creator receives normal creator payouts in accordance with the platform payout schedule.</li>
+                            <li>If the creator generates at least £2,500 in qualifying creator earnings during this period, they become eligible for the Fast Start Bonus Programme and the Founder's Bonus Programme (subject to founder place availability and all eligibility requirements).</li>
                         </ul>
 
-                        <p className="mb-2 font-bold text-gray-900">Month 2:</p>
+                        <p className="mb-2 font-bold text-gray-900">Following Day 30</p>
                         <ul className="list-disc pl-6 mb-4 text-gray-700 leading-relaxed">
-                            <li>Creator earns normally.</li>
-                            <li>Spenny Piggy records qualifying earnings for bonus calculation purposes.</li>
+                            <li>Spenny Piggy reviews qualifying earnings.</li>
+                            <li>Refunds, disputes, chargebacks, payment reversals, fraud reviews, compliance reviews, and other adjustments are assessed.</li>
                         </ul>
 
-                        <p className="mb-2 font-bold text-gray-900">Month 3:</p>
+                        <p className="mb-2 font-bold text-gray-900">Next Eligible Payout (normally approximately Day 37)</p>
                         <ul className="list-disc pl-6 mb-4 text-gray-700 leading-relaxed">
-                            <li>Spenny Piggy calculates the creator's qualifying earnings from the previous monthly bonus period.</li>
-                            <li>Founder's Bonus equals 10% of qualifying earnings from that monthly bonus period.</li>
-                            <li>The bonus payment is processed separately.</li>
+                            <li>Fast Start Bonus is automatically calculated and paid.</li>
+                            <li>Example: £2,500 qualifying earnings = £125 Fast Start Bonus payment.</li>
                         </ul>
-                        <p className="mb-4 text-gray-700 leading-relaxed">Founder's Bonus payments are generally processed within 30 days following the end of the applicable monthly bonus period and may be paid separately from standard creator payouts.</p>
-                        <p className="mb-4 text-gray-700 leading-relaxed">Founder places are allocated on a first-qualified, first-confirmed basis. Once all founder places have been allocated, the Founder's Bonus Programme closes to new participants.</p>
-                        <p className="mb-4 text-gray-700 leading-relaxed">The closure of the Founder's Bonus Programme does not affect the Fast Start Bonus Programme, which may continue indefinitely unless amended, suspended, withdrawn, or terminated by Spenny Piggy.</p>
+
+                        <p className="mb-2 font-bold text-gray-900">Month 2</p>
+                        <ul className="list-disc pl-6 mb-4 text-gray-700 leading-relaxed">
+                            <li>Creator continues earning normally.</li>
+                            <li>If the creator qualified for the Founder's Bonus Programme, monthly qualifying earnings begin being tracked for Founder&apos;s Bonus purposes.</li>
+                        </ul>
+
+                        <p className="mb-2 font-bold text-gray-900">Month 3</p>
+                        <ul className="list-disc pl-6 mb-4 text-gray-700 leading-relaxed">
+                            <li>Spenny Piggy calculates the Founder&apos;s Bonus based on qualifying earnings generated during the previous monthly bonus period.</li>
+                            <li>Founder&apos;s Bonus payments are processed separately in accordance with the Founder&apos;s Bonus Terms & Conditions.</li>
+                        </ul>
+
+                        <p className="mb-4 text-gray-700 leading-relaxed">Fast Start Bonus payments and Founder's Bonus payments are separate incentives and operate under separate payment schedules.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Founder places are allocated on a first-qualified, first-confirmed basis. Once all founder places have been allocated, the Founder's Bonus Programme closes to new participants. The closure of the Founder's Bonus Programme does not affect the Fast Start Bonus Programme.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">8. Abuse Prevention</h2>
-                        <p className="mb-4 text-gray-700 leading-relaxed">Spenny Piggy reserves the right to withhold, cancel, recover, reverse, or refuse bonuses where fraud, duplicate accounts, identity verification circumvention, artificial transactions, self-funding, earnings manipulation, referral abuse, bad-faith conduct, or policy breaches are suspected.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Spenny Piggy reserves the right to withhold, cancel, recover, reverse, reduce, adjust, delay, or refuse bonus payments where fraud, duplicate accounts, identity verification circumvention, artificial transactions, self-funding, earnings manipulation, referral abuse, bad-faith conduct, policy breaches, or other misuse is suspected.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">9. Changes, Suspension or Withdrawal</h2>
-                        <p className="mb-4 text-gray-700 leading-relaxed">Spenny Piggy reserves the right to modify, suspend, replace, withdraw, or terminate the Fast Start Bonus Programme at any time.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Spenny Piggy reserves the right to modify, suspend, replace, withdraw, amend, or terminate the Fast Start Bonus Programme at any time.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">10. Limitation of Liability</h2>
-                        <p className="mb-4 text-gray-700 leading-relaxed">To the fullest extent permitted by law, Spenny Piggy shall not be liable for indirect, incidental, consequential, special, punitive, or economic loss arising from participation in the programme.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">To the fullest extent permitted by law, Spenny Piggy shall not be liable for any indirect, incidental, consequential, special, punitive, economic, or business losses arising from participation in the programme.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">11. General</h2>
-                        <p className="mb-4 text-gray-700 leading-relaxed">Participation in the programme does not create an employment, partnership, agency, or joint venture relationship. Spenny Piggy may update these terms from time to time.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Participation in the programme does not create any employment, partnership, agency, joint venture, or similar relationship.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">Spenny Piggy may update these Terms & Conditions from time to time and continued participation constitutes acceptance of any updated version.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">All decisions regarding qualification, eligibility, bonus calculations, and bonus payments shall be final.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">12. Contact</h2>
-                        <p className="mb-4 text-gray-700 leading-relaxed">For questions relating to the Fast Start Bonus Programme contact support@spennypiggy.co or write to:</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">support@spennypiggy.co</p>
                         <p className="mb-4 text-gray-700 leading-relaxed">
-                            Social Vortex Ltd, 55 Colmore Row, Birmingham, England, B3 2AA, United Kingdom<br />
-                            or<br />
-                            Social Vortex Inc., 1111B S Governors Ave STE 7527, Dover, Delaware 19904, United States.
+                            Social Vortex Ltd<br />
+                            55 Colmore Row<br />
+                            Birmingham<br />
+                            England<br />
+                            B3 2AA<br />
+                            and/or<br />
+                            Social Vortex Inc.<br />
+                            1111B S Governors Ave STE 7527<br />
+                            Dover, Delaware 19904<br />
+                            United States
                         </p>
                     </div>
                 </div>

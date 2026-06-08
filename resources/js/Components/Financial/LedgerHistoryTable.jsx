@@ -89,13 +89,23 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                         </div> */}
                                         {/* {tx.item_type && ( */}
                                             <div className={`whitespace-nowrap text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest border ${
-                                                ['digital', 'instant'].includes(tx.item_type) 
-                                                    ? 'bg-green-50 border-green-200 text-green-600' 
+                                                ['digital', 'instant'].includes(tx.item_type)
+                                                    ? 'bg-green-50 border-green-200 text-green-600'
                                                     : 'bg-blue-50 border-blue-200 text-blue-600'
                                             }`}>
                                                 {tx.item_type} {tx.label || tx.source_type?.split('\\').pop().replace('Payment', '').replace('Purchase', '') || 'Manual'}
                                             </div>
                                         {/* // )} */}
+                                        {tx.payout_badge === 'this_week' && (
+                                            <div className="whitespace-nowrap text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest border bg-yellow-50 border-yellow-300 text-yellow-700">
+                                                In this week's payout
+                                            </div>
+                                        )}
+                                        {tx.payout_badge === 'paid_out' && (
+                                            <div className="whitespace-nowrap text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest border bg-green-50 border-green-300 text-green-700">
+                                                Paid out
+                                            </div>
+                                        )}
                                     </div>
                                 </td>
                                 <td className={`px-6 py-4 text-sm text-right border border-gray-200 min-w-[180px]`}>
