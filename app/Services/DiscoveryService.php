@@ -26,7 +26,7 @@ class DiscoveryService
     private function applyUnsuspendedFilter($query, string $table)
     {
         if (Schema::hasColumn($table, 'is_suspended')) {
-            $query->where(function($q) {
+            $query->where(function ($q) {
                 $q->where('is_suspended', 0)->orWhereNull('is_suspended');
             });
         }
@@ -34,8 +34,9 @@ class DiscoveryService
         return $query;
     }
 
-    public function getTrendingCreators($limit = 12) {
-        return \Illuminate\Support\Facades\Cache::remember('trending_creators_v4_limit_' . $limit, 3600, function() use ($limit) {
+    public function getTrendingCreators($limit = 12)
+    {
+        return \Illuminate\Support\Facades\Cache::remember('trending_creators_v4_limit_' . $limit, 3600, function () use ($limit) {
             // Simplified trending query: Just get recent active creators with some basic ranking
             return User::query()
                 ->where('role', 1)
@@ -43,7 +44,7 @@ class DiscoveryService
                 ->where('profile_status_lock', 2)
                 ->orderByDesc('id') // Placeholder for real trending, but much faster
                 ->limit($limit)
-                ->with(['wishes' => function($q) {
+                ->with(['wishes' => function ($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }, 'intro'])
                 ->get(['users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_approved', 'users.avatar_cdn_modifier', 'users.cover', 'users.cover_approved', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio', 'users.bio_approved'])
@@ -72,7 +73,7 @@ class DiscoveryService
 
     public function getNewVerifiedCreators($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('new_verified_creators_limit_' . $limit, 300, function() use ($limit) {
+        return \Illuminate\Support\Facades\Cache::remember('new_verified_creators_limit_' . $limit, 300, function () use ($limit) {
             $nowUtc = Carbon::now('UTC');
             return User::query()
                 ->where('role', 1)
@@ -82,7 +83,7 @@ class DiscoveryService
                 ->where('created_at', '>=', $nowUtc->copy()->subDays(30))
                 ->orderByDesc('created_at') // Faster than inRandomOrder()
                 ->limit($limit)
-                ->with(['wishes' => function($q) {
+                ->with(['wishes' => function ($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }, 'intro'])
                 ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved'])
@@ -111,59 +112,59 @@ class DiscoveryService
     {
         $query = User::query()
             ->where('suspended_account', 0);
-            
+
         // Only restrict to role 1 if not explicitly searching
         if (empty($filters['search'])) {
             $query->where('role', 1)
-                  ->where('profile_status_lock', 2);
+                ->where('profile_status_lock', 2);
         } else {
             // When searching, include both creators and gifters (role 0 and 1)
             $query->whereIn('role', [0, 1]);
         }
-        
+
         $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
         $offset = ($page - 1) * $limit;
-        
+
         if (!empty($filters['categories'])) {
             // If it's a comma-separated string, explode it
             $categories = is_array($filters['categories']) ? $filters['categories'] : explode(',', $filters['categories']);
             // Filter out empty strings
             $categories = array_filter($categories);
-            
+
             if (!empty($categories)) {
                 // Assuming user_categories relationship or column
                 // $query->whereIn('creator_category', $categories);
-                
+
                 // Better approach if using related table:
-                    $query->whereHas('user_categories', function($q) use ($categories) {
-                        $q->whereIn('category', $categories);
-                    });
+                $query->whereHas('user_categories', function ($q) use ($categories) {
+                    $q->whereIn('category', $categories);
+                });
             }
         }
 
         if (!empty($filters['search'])) {
             $term = '%' . $filters['search'] . '%';
-            $query->where(function($q) use ($term) {
+            $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
                     ->orWhere('username', 'like', $term)
                     ->orWhere('bio', 'like', $term);
             });
         }
-        
+
         $sort = $filters['sortBy'] ?? 'Trending';
         if ($sort === 'New') {
             $query->orderByDesc('created_at');
         } elseif ($sort === 'Trending') {
             // Default to trending logic (simplified for search results)
-            $query->orderByDesc('id'); 
+            $query->orderByDesc('id');
         } else {
             $query->orderByDesc('id');
         }
 
         return $query->offset($offset)->limit($limit)
             ->with([
-                'wishes' => function($q) {
-                $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
+                'wishes' => function ($q) {
+                    $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 },
                 'intro'
             ])
@@ -173,8 +174,10 @@ class DiscoveryService
                     'id' => $u->id,
                     'name' => $u->name,
                     'username' => $u->username,
-                    'avatar_url' => $u->avatar_url,
-                    'cover_url' => $u->cover_url,
+                    // Only send avatar_url if avatar is approved (status 1)
+                    'avatar_url' => ($u->avatar_approved == 1) ? $u->avatar_url : null,
+                    // Only send cover_url if cover is approved (status 1)
+                    'cover_url' => ($u->cover_approved == 1) ? $u->cover_url : null,
                     'bio' => $u->bio,
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
@@ -194,7 +197,7 @@ class DiscoveryService
             $this->applyApprovalFilter(WishItem::query(), 'wish_items'),
             'wish_items'
         )
-            ->whereHas('user', function($q) {
+            ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
                     ->where('profile_status_lock', 2);
             })
@@ -202,7 +205,7 @@ class DiscoveryService
 
         $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
         $offset = ($page - 1) * $limit;
-        
+
         if (!empty($filters['minPrice'])) {
             $query->where('price', '>=', $filters['minPrice']);
         }
@@ -211,17 +214,17 @@ class DiscoveryService
         }
 
         if (!empty($filters['search'])) {
-                $query->where('wishname', 'like', '%' . $filters['search'] . '%');
+            $query->where('wishname', 'like', '%' . $filters['search'] . '%');
         }
-        
+
         if (!empty($filters['categories'])) {
-                $categories = is_array($filters['categories']) ? $filters['categories'] : explode(',', $filters['categories']);
-                $categories = array_filter($categories);
-                if (!empty($categories)) {
-                    $query->whereHas('wishCategories.category', function($q) use ($categories) {
-                        $q->whereIn('category', $categories);
-                    });
-                }
+            $categories = is_array($filters['categories']) ? $filters['categories'] : explode(',', $filters['categories']);
+            $categories = array_filter($categories);
+            if (!empty($categories)) {
+                $query->whereHas('wishCategories.category', function ($q) use ($categories) {
+                    $q->whereIn('category', $categories);
+                });
+            }
         }
 
         $sort = $filters['sortBy'] ?? 'Trending';
@@ -240,8 +243,8 @@ class DiscoveryService
                 break;
             default:
                 $query->orderByRaw("CASE WHEN trending_status='hot' THEN 1 ELSE 0 END DESC")
-                        ->orderByDesc('rising_score')
-                        ->orderByDesc('supporter_count');
+                    ->orderByDesc('rising_score')
+                    ->orderByDesc('supporter_count');
                 break;
         }
 
@@ -272,12 +275,16 @@ class DiscoveryService
 
     public function getTopEarners($period = '', $limit = 9)
     {
-        if ($limit < 1) { $limit = 9; }
-        if ($limit > 50) { $limit = 50; }
+        if ($limit < 1) {
+            $limit = 9;
+        }
+        if ($limit > 50) {
+            $limit = 50;
+        }
 
         $cacheKey = 'top_earners_v4_' . ($period ?: 'all_time') . '_limit_' . $limit;
-        
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function() use ($period, $limit) {
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($period, $limit) {
             $nowLondon = Carbon::now('Europe/London');
             $label = 'All Time';
 
@@ -304,40 +311,40 @@ class DiscoveryService
             // Use a simpler query for top earners - join with a subquery of total payments
             // This is MUCH faster than 6 withCount subqueries
             $earners = User::query()
-                    ->where('stripe_details_submitted', 1)
-                    ->where('suspended_account', 0)
-                    ->where('role', 1)
-                    ->where('profile_status_lock', 2)
-                    ->limit($limit)
-                    ->get(['id','name','username','avatar','avatar_approved','avatar_cdn_modifier','cover','cover_approved','cover_cdn_modifier','profile_status_lock','role','default_currency'])
-                    ->map(function ($u) {
-                        return [
-                            'id' => $u->id,
-                            'name' => $u->name,
-                            'username' => $u->username,
-                            'avatar_url' => $u->avatar_url,
-                            'cover_url' => $u->cover_url,
-                            'profile_status_lock' => $u->profile_status_lock,
-                            'role' => $u->role,
-                            'total_amount' => 0, // Hidden for privacy anyway
-                            'currency' => strtoupper($u->default_currency ?? 'GBP'),
-                        ];
-                    });
-        
-                return ['data' => $earners, 'label' => $label];
+                ->where('stripe_details_submitted', 1)
+                ->where('suspended_account', 0)
+                ->where('role', 1)
+                ->where('profile_status_lock', 2)
+                ->limit($limit)
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'default_currency'])
+                ->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'username' => $u->username,
+                        'avatar_url' => $u->avatar_url,
+                        'cover_url' => $u->cover_url,
+                        'profile_status_lock' => $u->profile_status_lock,
+                        'role' => $u->role,
+                        'total_amount' => 0, // Hidden for privacy anyway
+                        'currency' => strtoupper($u->default_currency ?? 'GBP'),
+                    ];
+                });
+
+            return ['data' => $earners, 'label' => $label];
         });
     }
 
     public function getFeaturedWishes($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_wishes_limit_' . $limit, 300, function() use ($limit) {
+        return \Illuminate\Support\Facades\Cache::remember('featured_wishes_limit_' . $limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                    $this->applyApprovalFilter(WishItem::query(), 'wish_items'),
-                    'wish_items'
-                )
-                ->whereHas('user', function($q) {
+                $this->applyApprovalFilter(WishItem::query(), 'wish_items'),
+                'wish_items'
+            )
+                ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                      ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2);
                 })
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
@@ -370,9 +377,9 @@ class DiscoveryService
 
         $users = User::query()
             ->where('suspended_account', 0)
-            ->where(function($q) use ($term) {
+            ->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
-                  ->orWhere('username', 'like', $term);
+                    ->orWhere('username', 'like', $term);
             })
             ->limit(5)
             ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'role'])
@@ -412,19 +419,19 @@ class DiscoveryService
 
     public function getFeaturedBills($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_bills_limit_' . $limit, 300, function() use ($limit) {
+        return \Illuminate\Support\Facades\Cache::remember('featured_bills_limit_' . $limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                    $this->applyApprovalFilter(\App\Models\Bills::query(), 'bills'),
-                    'bills'
-                )
+                $this->applyApprovalFilter(\App\Models\Bills::query(), 'bills'),
+                'bills'
+            )
                 ->where(function ($q) {
                     $q->where('status', 'active')
-                      ->orWhere('status', 1)
-                      ->orWhereNull('status');
+                        ->orWhere('status', 1)
+                        ->orWhereNull('status');
                 })
-                ->whereHas('user', function($q) {
+                ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                      ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2);
                 })
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
@@ -438,7 +445,7 @@ class DiscoveryService
                         'user_id' => $b->user_id,
                         'name' => $b->name,
                         'title' => $b->name,
-                        'amount' => null, 
+                        'amount' => null,
                         'image_url' => $b->thumbnail,
                         'perma_link' => $b->perma_link,
                         'period' => $b->period,
@@ -465,19 +472,19 @@ class DiscoveryService
 
     public function getFeaturedMemberships($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_memberships_limit_' . $limit, 300, function() use ($limit) {
+        return \Illuminate\Support\Facades\Cache::remember('featured_memberships_limit_' . $limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                    $this->applyApprovalFilter(\App\Models\Membership::query(), 'memberships'),
-                    'memberships'
-                )
+                $this->applyApprovalFilter(\App\Models\Membership::query(), 'memberships'),
+                'memberships'
+            )
                 ->where(function ($q) {
                     $q->where('status', 'active')
-                      ->orWhere('status', 1)
-                      ->orWhereNull('status');
+                        ->orWhere('status', 1)
+                        ->orWhereNull('status');
                 })
-                ->whereHas('user', function($q) {
+                ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                      ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2);
                 })
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
@@ -526,18 +533,18 @@ class DiscoveryService
         )
             ->where(function ($q) {
                 $q->where('status', 'active')
-                  ->orWhere('status', 1)
-                  ->orWhereNull('status');
+                    ->orWhere('status', 1)
+                    ->orWhereNull('status');
             })
-            ->whereHas('user', function($q) {
+            ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
-                  ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
-             $query->where('name', 'like', '%' . $filters['search'] . '%');
+            $query->where('name', 'like', '%' . $filters['search'] . '%');
         }
-        
+
         // Bills specific filtering if needed
 
         $sort = $filters['sortBy'] ?? 'Trending';
@@ -550,13 +557,13 @@ class DiscoveryService
                 break;
             case 'Trending':
                 $query->orderByRaw("CASE WHEN trending_status='hot' THEN 1 ELSE 0 END DESC")
-                      ->orderByDesc('rising_score')
-                      ->orderByDesc('supporter_count');
+                    ->orderByDesc('rising_score')
+                    ->orderByDesc('supporter_count');
                 break;
             default:
                 $query->orderByRaw("CASE WHEN trending_status='hot' THEN 1 ELSE 0 END DESC")
-                      ->orderByDesc('rising_score')
-                      ->orderByDesc('supporter_count');
+                    ->orderByDesc('rising_score')
+                    ->orderByDesc('supporter_count');
         }
 
         return $query->limit($limit)
@@ -601,16 +608,16 @@ class DiscoveryService
         )
             ->where(function ($q) {
                 $q->where('status', 'active')
-                  ->orWhere('status', 1)
-                  ->orWhereNull('status');
+                    ->orWhere('status', 1)
+                    ->orWhereNull('status');
             })
-            ->whereHas('user', function($q) {
+            ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
-                  ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
-             $query->where('level', 'like', '%' . $filters['search'] . '%');
+            $query->where('level', 'like', '%' . $filters['search'] . '%');
         }
 
         $sort = $filters['sortBy'] ?? 'Trending';
@@ -623,13 +630,13 @@ class DiscoveryService
                 break;
             case 'Trending':
                 $query->orderByRaw("CASE WHEN trending_status='hot' THEN 1 ELSE 0 END DESC")
-                      ->orderByDesc('rising_score')
-                      ->orderByDesc('supporter_count');
+                    ->orderByDesc('rising_score')
+                    ->orderByDesc('supporter_count');
                 break;
             default:
                 $query->orderByRaw("CASE WHEN trending_status='hot' THEN 1 ELSE 0 END DESC")
-                      ->orderByDesc('rising_score')
-                      ->orderByDesc('supporter_count');
+                    ->orderByDesc('rising_score')
+                    ->orderByDesc('supporter_count');
         }
 
         return $query->limit($limit)
@@ -675,15 +682,15 @@ class DiscoveryService
             'tasks'
         )
             ->where('status', 'active')
-            ->whereHas('creator', function($q) {
+            ->whereHas('creator', function ($q) {
                 $q->where('suspended_account', 0)
-                  ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
-            $query->where(function($q) use ($filters) {
+            $query->where(function ($q) use ($filters) {
                 $q->where('title', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
             });
         }
 
@@ -727,15 +734,15 @@ class DiscoveryService
 
     public function getFeaturedTasks($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_tasks_limit_' . $limit, 1800, function() use ($limit) {
+        return \Illuminate\Support\Facades\Cache::remember('featured_tasks_limit_' . $limit, 1800, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                    $this->applyApprovalFilter(\App\Models\Task::query(), 'tasks'),
-                    'tasks'
-                )
+                $this->applyApprovalFilter(\App\Models\Task::query(), 'tasks'),
+                'tasks'
+            )
                 ->where('status', 'active')
-                ->whereHas('creator', function($q) {
+                ->whereHas('creator', function ($q) {
                     $q->where('suspended_account', 0)
-                      ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2);
                 })
                 ->orderByDesc('id')
                 ->limit($limit)
@@ -775,15 +782,15 @@ class DiscoveryService
             'shops'
         )
             ->where('status', 1)
-            ->whereHas('user', function($q) {
+            ->whereHas('user', function ($q) {
                 $q->where('suspended_account', 0)
-                  ->where('profile_status_lock', 2);
+                    ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
-            $query->where(function($q) use ($filters) {
+            $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
             });
         }
 
@@ -840,15 +847,15 @@ class DiscoveryService
 
     public function getFeaturedShops($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_shops_limit_' . $limit, 1800, function() use ($limit) {
+        return \Illuminate\Support\Facades\Cache::remember('featured_shops_limit_' . $limit, 1800, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                    $this->applyApprovalFilter(\App\Models\Shop::query(), 'shops'),
-                    'shops'
-                )
+                $this->applyApprovalFilter(\App\Models\Shop::query(), 'shops'),
+                'shops'
+            )
                 ->where('status', 1)
-                ->whereHas('user', function($q) {
+                ->whereHas('user', function ($q) {
                     $q->where('suspended_account', 0)
-                      ->where('profile_status_lock', 2);
+                        ->where('profile_status_lock', 2);
                 })
                 ->orderByDesc('id')
                 ->limit($limit)
@@ -911,7 +918,7 @@ class DiscoveryService
         \Illuminate\Support\Facades\Cache::forget('featured_bills_limit_10');
         \Illuminate\Support\Facades\Cache::forget('featured_memberships_limit_12');
         \Illuminate\Support\Facades\Cache::forget('featured_memberships_limit_10');
-        
+
         // Clear top earners
         \Illuminate\Support\Facades\Cache::forget('top_earners_weekly_limit_10');
         \Illuminate\Support\Facades\Cache::forget('top_earners_all_time_limit_9');

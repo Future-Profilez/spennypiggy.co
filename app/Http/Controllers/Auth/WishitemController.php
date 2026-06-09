@@ -808,7 +808,6 @@ class WishitemController extends Controller
         return response()->json($result);
     }
 
-
     public function discover_all_creators($order, $gender)
     {
         $page = request()->get('page', 1);
@@ -892,8 +891,6 @@ class WishitemController extends Controller
             "per_page"      => $intros['per_page'],
         ]);
     }
-
-
 
     public function all_creators_categories()
     {
@@ -1771,141 +1768,6 @@ class WishitemController extends Controller
         }
     }
 
-    // public function handleRyeProductPayment(Request $request)
-    // {
-    //     Log::info('Rye Product Payment Request', ['request' => $request->all()]);
-    //     try {
-    //         // Fetch order details with creator relation
-    //         $orderDetails = RyeCart::with('creator', 'user')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
-
-    //         if (!$orderDetails) {
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'message' => 'Order details not found.',
-    //             ], 404);
-    //         }
-
-    //         $currency = 'usd'; // Assuming USD as currency
-    //         $totalAmount = 0;
-    //         $lineItems = [];
-
-    //         // Decode cart data if stored as JSON
-    //         $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
-    //         $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
-    //         // dd($cartLines);
-    //         // Check if cartLines is not empty
-    //         if (empty($cartLines)) {
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'message' => 'Cart is empty.',
-    //             ], 422);
-    //         }
-
-    //         // Loop through each cart line and build the Stripe line items
-    //         foreach ($cartLines as $cartLine) {
-    //             $quantity = data_get($cartLine, 'quantity', 1);
-    //             $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
-    //             $productId = data_get($cartLine, 'product.id', '');
-
-    //             if (!$productId || $unitPrice <= 0) {
-    //                 return response()->json([
-    //                     'status' => false,
-    //                     'message' => 'Invalid product details in cart.',
-    //                 ], 422);
-    //             }
-
-    //             // Add to total amount
-    //             $totalAmount += ($unitPrice * $quantity);
-
-    //             // Prepare Stripe line items
-    //             $lineItems[] = [
-    //                 'quantity' => $quantity,
-    //                 'price_data' => [
-    //                     'currency' => $currency,
-    //                     'unit_amount' => $unitPrice,
-    //                     'product_data' => [
-    //                         'name' => data_get($cartLine, 'product.title', 'Product'),
-    //                     ],
-    //                 ],
-    //             ];
-    //         }
-
-    //         // Ensure creator has a Stripe account
-    //         if (empty($orderDetails->creator->account_id)) {
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'message' => 'Stripe account details are missing.',
-    //             ], 422);
-    //         }
-
-    //         // Initialize Stripe
-
-    //         $ryeProductPayment = new RyeProductPayment();
-    //         $ryeProductPayment->user_id = Auth::id();
-    //         $ryeProductPayment->currency = $currency;
-    //         $ryeProductPayment->amount = $totalAmount / 100;
-    //         $ryeProductPayment->payment_method = 'card';
-    //         $ryeProductPayment->customer_email = $orderDetails->user->email;
-    //         $ryeProductPayment->save();
-
-    //         Session::put('cartData', $orderDetails);
-
-    //         $now = Carbon::now()->format('h:i A d-m-Y');
-    //         $emailSubject = "Payment Process Failed - $now";
-    //         $message = "An error occurred while processing the payment: " . $ryeProductPayment;
-    //         Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-    //             // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-    //             ->cc('naveen@internetbusinesssolutionsindia.com')
-    //             // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-    //             ->send(new CommandFailed($emailSubject, $message));
-    //         // Log::error("Error in createCheckout: " . $th->getMessage());
-
-    //         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
-
-    //         $now = Carbon::now()->format('h:i A d-m-Y');
-    //         $emailSubject = "Payment Process Failed - $now";
-    //         $message = "An error occurred while processing the payment: " . json_encode($sessionCreate);
-    //         Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-    //             // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-    //             ->cc('naveen@internetbusinesssolutionsindia.com')
-    //             // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-    //             ->send(new CommandFailed($emailSubject, $message));
-    //         // Log::error("Error in createCheckout: " . $th->getMessage());
-    //         // Log::info('Stripe session create', ['session' => $sessionCreate]);
-
-    //         RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
-
-    //         Log::info('Stripe session create', ['session' => $sessionCreate]);
-
-    //         Log::info('Stripe session url', ['url' => $sessionCreate->url]);
-    //         return response()->json([
-    //             'status' => true,
-    //             'url' => $sessionCreate->url,
-    //         ]);
-    //     // } catch (\Stripe\Exception\ApiErrorException $e) {
-    //     //     Log::info('Stripe API Error', ['error' => $e->getMessage()]);
-    //     //     return response()->json([
-    //     //         'status' => false,
-    //     //         'message' => 'Stripe API error: ' . $e->getMessage(),
-    //     //     ], 500);
-    //     } catch (Exception $e) {
-    //         $now = Carbon::now()->format('h:i A d-m-Y');
-    //         $emailSubject = "Payment Process Failed - $now";
-    //         $message = "An error occurred while processing the payment: " . $e->getMessage();
-    //         Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-    //             // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-    //             ->cc('naveen@internetbusinesssolutionsindia.com')
-    //             // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-    //             ->send(new CommandFailed($emailSubject, $message));
-    //         Log::info('Stripe Payment Error', ['error' => $e->getMessage()]);
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Something went wrong: ' . $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
     /**
      * Rye handle rye product payment success
      *
@@ -2207,47 +2069,6 @@ class WishitemController extends Controller
         Log::info("Handling ShopifyProductUpdated", $payload);
         return response()->json(['message' => 'Shopify product updated processed']);
     }
-
-    /**
-     * Rye Update order status in the database based on payment success
-     */
-    // private function updateOrderStatus(array $data, string $status): void
-    // {
-    //     if (isset($data['order']['id'])) {
-    //         $orderId = $data['order']['id'];
-
-    //         ProductOrderDetail::where('order_id', $orderId)
-    //             ->update(['payment_status' => $status]);
-
-    //         Log::info("Order ID {$orderId} updated to status: {$status}");
-    //     } else {
-    //         Log::warning('Payment success event received but missing order ID', $data);
-    //     }
-    // }
-
-    /**
-     * Rye Store new order details in the database
-     */
-    // private function createNewOrder(array $data): void
-    // {
-    //     if (!isset($data['order'])) {
-    //         Log::warning('Order created event missing order details', $data);
-    //         return;
-    //     }
-
-    //     $order = $data['order'];
-
-    //     ProductOrderDetail::create([
-    //         'user_id' => $order['user_id'] ?? null,
-    //         'creater_id' => $order['creator_id'] ?? null,
-    //         'cart_id' => $order['cart_id'] ?? null,
-    //         'order_id' => $order['id'],
-    //         'details' => json_encode($order),
-    //         'payment_status' => 'pending', // Default status until payment is confirmed
-    //     ]);
-
-    //     Log::info("New order stored with ID: {$order['id']}");
-    // }
 
     /**
      *

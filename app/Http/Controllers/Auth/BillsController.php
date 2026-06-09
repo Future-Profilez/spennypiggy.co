@@ -1725,43 +1725,43 @@ class BillsController extends Controller
         ]);
     }
 
-    private function getMonthlyData($billIds)
-    {
-        $months = [];
-        $currentDate = Carbon::now();
+    // private function getMonthlyData($billIds)
+    // {
+    //     $months = [];
+    //     $currentDate = Carbon::now();
 
-        for ($i = 11; $i >= 0; $i--) {
-            $month = $currentDate->copy()->subMonths($i);
-            $monthName = $month->format('M Y');
+    //     for ($i = 11; $i >= 0; $i--) {
+    //         $month = $currentDate->copy()->subMonths($i);
+    //         $monthName = $month->format('M Y');
 
-            $monthlyTotal = BillPayment::whereIn('bills_id', $billIds)
-                ->where('status', 'paid')
-                ->whereYear('created_at', $month->year)
-                ->whereMonth('created_at', $month->month)
-                ->sum('amount');
+    //         $monthlyTotal = BillPayment::whereIn('bills_id', $billIds)
+    //             ->where('status', 'paid')
+    //             ->whereYear('created_at', $month->year)
+    //             ->whereMonth('created_at', $month->month)
+    //             ->sum('amount');
 
-            $months[] = [
-                'month' => $monthName,
-                'amount' => round($monthlyTotal, 2),
-            ];
-        }
+    //         $months[] = [
+    //             'month' => $monthName,
+    //             'amount' => round($monthlyTotal, 2),
+    //         ];
+    //     }
 
-        return $months;
-    }
+    //     return $months;
+    // }
 
-    private function getCurrencySymbol($currency)
-    {
-        $symbols = [
-            'GBP' => '£',
-            'USD' => '$',
-            'EUR' => '€',
-            'JPY' => '¥',
-            'CAD' => 'C$',
-            'AUD' => 'A$',
-            'CNY' => '¥',
-            'INR' => '₹',
-        ];
+    // private function getCurrencySymbol($currency)
+    // {
+    //     $symbols = [
+    //         'GBP' => '£',
+    //         'USD' => '$',
+    //         'EUR' => '€',
+    //         'JPY' => '¥',
+    //         'CAD' => 'C$',
+    //         'AUD' => 'A$',
+    //         'CNY' => '¥',
+    //         'INR' => '₹',
+    //     ];
 
-        return $symbols[strtoupper($currency)] ?? '£';
-    }
+    //     return $symbols[strtoupper($currency)] ?? '£';
+    // }
 }
