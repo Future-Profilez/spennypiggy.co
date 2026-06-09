@@ -36,6 +36,7 @@ class LeaderBoardController extends Controller
             default => 600,
         };
     }
+
     public function wishtenderWishers($type = null)
     {
         if (Auth::user() && Auth::user()->suspended_account == 1) {
@@ -111,7 +112,6 @@ class LeaderBoardController extends Controller
             "stars" => $paginator->perPage() ?? null,
         ]);
     }
-
 
     public function calc($type)
     {
@@ -305,7 +305,6 @@ class LeaderBoardController extends Controller
 
         return $users;
     }
-
 
     public function firstThreeWisher($type = null)
     {
@@ -505,7 +504,6 @@ class LeaderBoardController extends Controller
         }
     }
 
-
     public function recentGifters()
     {
         try {
@@ -673,9 +671,6 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
-
-
-
 
     public function largestGifts($type = null)
     {
@@ -865,6 +860,7 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
+
     public function topGiftersAllTime()
     {
         try {
@@ -988,8 +984,6 @@ class LeaderBoardController extends Controller
         }
     }
 
-
-
     public function top10UniqueBiggestGifters()
     {
         try {
@@ -1094,7 +1088,6 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
-
 
     /**
      * Enhanced leaderboard that supports both monetary and non-monetary metrics
