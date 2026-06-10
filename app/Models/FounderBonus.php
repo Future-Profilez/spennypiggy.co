@@ -19,6 +19,7 @@ class FounderBonus extends Model
         'bonus_amount',
         'estimated_payout_date',
         'payout_status',
+        'payout_rejection_reason',
         'paid_date',
         'stripe_transfer_id',
         'stripe_payout_id',
@@ -36,6 +37,7 @@ class FounderBonus extends Model
     // Payout status constants
     const STATUS_PENDING = 'pending';
     const STATUS_PAID = 'paid';
+    const STATUS_REJECTED = 'rejected';
 
     /**
      * Get minimum first 30 days earnings from config

@@ -102,10 +102,10 @@ class LinkUserToCrmCreator implements ShouldQueue
         }
 
         $candidates = [
-            'x_handle' => $social->twitter,
-            'instagram_handle' => $social->instagram,
-            'youtube_handle' => $social->youtube,
-            'twitch_handle' => $social->twitch,
+            'twitter'   => $social->twitter,
+            'instagram' => $social->instagram,
+            'youtube'   => $social->youtube,
+            'twitch'    => $social->twitch,
         ];
 
         $normalized = [];
@@ -123,12 +123,15 @@ class LinkUserToCrmCreator implements ShouldQueue
 
         $query = CrmCreator::query()
             ->whereNull('user_id')
-            ->where('crm_stage', 'prospect')
             ->whereNull('social_match_suggested_at');
 
-        $query->where(function ($q) use ($normalized) {
+        $query->where(function ($q) use ($normalized, $user) {
             foreach ($normalized as $col => $value) {
                 $q->orWhereRaw('LOWER(COALESCE(' . $col . ",'')) LIKE ?", ['%' . $value . '%']);
+            }
+            // Also match by username
+            if ($user->username) {
+                $q->orWhereRaw("LOWER(COALESCE(username,'')) = ?", [strtolower((string) $user->username)]);
             }
         });
 

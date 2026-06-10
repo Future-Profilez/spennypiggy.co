@@ -88,6 +88,7 @@ class ProcessFastStartBonusPayouts extends Command
             $earningsMinor = 0;
             foreach ($txs as $tx) {
                 if (($tx->status ?? null) !== 'completed') {
+                    $unsettledCount++;
                     continue;
                 }
                 $from = strtoupper((string) ($tx->currency ?? 'GBP'));
@@ -137,45 +138,59 @@ class ProcessFastStartBonusPayouts extends Command
                 continue;
             }
 
-            DB::transaction(function () use ($creator, $windowStart, $windowEnd, $eligibleAt, $earningsMinor, $bonusMinor, $currency) {
-                $payoutRow = FastStartBonusPayout::where('creator_uuid', $creator->uuid)->lockForUpdate()->first();
-                if (!$payoutRow) {
-                    $payoutRow = new FastStartBonusPayout(['creator_uuid' => $creator->uuid]);
+            // Claim the row in its own small transaction so a concurrent run can't double-process
+            $payoutRow = DB::transaction(function () use ($creator, $windowStart, $windowEnd, $earningsMinor, $bonusMinor, $currency) {
+                $row = FastStartBonusPayout::where('creator_uuid', $creator->uuid)->lockForUpdate()->first();
+                if (!$row) {
+                    $row = new FastStartBonusPayout(['creator_uuid' => $creator->uuid]);
+                } elseif (in_array($row->status, ['pending', 'in_transit', 'paid', 'processing'], true)) {
+                    return null;
                 }
-                $payoutRow->stripe_account_id = $creator->account_id;
-                $payoutRow->window_start = $windowStart;
-                $payoutRow->window_end = $windowEnd;
-                $payoutRow->earnings_minor = $earningsMinor;
-                $payoutRow->bonus_minor = $bonusMinor;
-                $payoutRow->currency = $currency;
-                $payoutRow->status = 'processing';
-                $payoutRow->save();
+                $row->stripe_account_id = $creator->account_id;
+                $row->window_start = $windowStart;
+                $row->window_end = $windowEnd;
+                $row->earnings_minor = $earningsMinor;
+                $row->bonus_minor = $bonusMinor;
+                $row->currency = $currency;
+                $row->status = 'processing';
+                $row->save();
 
-                $metadataBase = [
-                    'bonus_type' => 'fast_start',
-                    'reason' => 'fast_start_bonus',
-                    'source' => 'bonus:process-fast-start',
-                    'bonus_payout_id' => (string) $payoutRow->id,
-                    'creator_id' => (string) $creator->uuid,
-                    'creator_username' => (string) $creator->username,
-                    'creator_email' => (string) $creator->email,
-                    'window_start' => $windowStart->toISOString(),
-                    'window_end' => $windowEnd->toISOString(),
-                    'eligible_at' => $eligibleAt->toISOString(),
-                    'earnings_minor' => (string) $earningsMinor,
-                    'bonus_minor' => (string) $bonusMinor,
-                    'currency' => strtolower($currency),
-                    'env' => (string) config('app.env'),
-                ];
+                return $row;
+            });
 
-                $transferDescription = 'Fast Start Bonus' . (!empty($creator->username) ? (' - ' . $creator->username) : '');
+            if (!$payoutRow) {
+                $skipped++;
+                continue;
+            }
 
+            $metadataBase = [
+                'bonus_type' => 'fast_start',
+                'reason' => 'fast_start_bonus',
+                'source' => 'bonus:process-fast-start',
+                'bonus_payout_id' => (string) $payoutRow->id,
+                'creator_id' => (string) $creator->uuid,
+                'creator_username' => (string) $creator->username,
+                'creator_email' => (string) $creator->email,
+                'window_start' => $windowStart->toISOString(),
+                'window_end' => $windowEnd->toISOString(),
+                'eligible_at' => $eligibleAt->toISOString(),
+                'earnings_minor' => (string) $earningsMinor,
+                'bonus_minor' => (string) $bonusMinor,
+                'currency' => strtolower($currency),
+                'env' => (string) config('app.env'),
+            ];
+
+            $transferDescription = 'Fast Start Bonus' . (!empty($creator->username) ? (' - ' . $creator->username) : '');
+
+            // Stripe calls happen OUTSIDE any DB transaction; idempotency keys make a re-run safe
+            try {
                 $transfer = \App\StripeControl::transferToConnectedAccountMinor(
                     $creator->account_id,
                     $bonusMinor,
                     strtolower($currency),
                     $metadataBase,
-                    $transferDescription
+                    $transferDescription,
+                    'fast_start_transfer_' . $creator->uuid . '_' . $payoutRow->id
                 );
 
                 $payoutRow->stripe_transfer_id = $transfer->id ?? null;
@@ -190,17 +205,33 @@ class ProcessFastStartBonusPayouts extends Command
                     'metadata' => array_merge($metadataBase, [
                         'transfer_id' => (string) ($transfer->id ?? ''),
                     ]),
+                    'idempotency_key' => 'fast_start_payout_' . $creator->uuid . '_' . $payoutRow->id,
                 ], $creator->account_id);
+            } catch (\Exception $e) {
+                $payoutRow->status = 'failed';
+                $payoutRow->save();
+                Log::error('Fast Start bonus payout failed', [
+                    'creator_uuid' => $creator->uuid,
+                    'bonus_minor' => $bonusMinor,
+                    'currency' => $currency,
+                    'error' => $e->getMessage(),
+                ]);
+                $this->error($creator->uuid . ' payout failed: ' . $e->getMessage());
+                $skipped++;
+                continue;
+            }
 
+            if (!empty($transfer->id) && !empty($payout->id)) {
+                \App\StripeControl::updateTransferMinor((string) $transfer->id, strtolower($currency), array_merge($metadataBase, [
+                    'stripe_payout_id' => (string) $payout->id,
+                ]), $transferDescription);
+            }
+
+            // Money has moved — commit the marks immediately in their own small transaction
+            DB::transaction(function () use ($creator, $payoutRow, $windowStart, $windowEnd, $earningsMinor, $bonusMinor, $currency, $transfer, $payout) {
                 $payoutRow->stripe_payout_id = $payout->id ?? null;
                 $payoutRow->status = $payout->status ?? 'pending';
                 $payoutRow->save();
-
-                if (!empty($transfer->id) && !empty($payout->id)) {
-                    \App\StripeControl::updateTransferMinor((string) $transfer->id, strtolower($currency), array_merge($metadataBase, [
-                        'stripe_payout_id' => (string) $payout->id,
-                    ]), $transferDescription);
-                }
 
                 PayoutRecord::create([
                     'creator_id' => $creator->uuid,
@@ -236,15 +267,15 @@ class ProcessFastStartBonusPayouts extends Command
                         'window_end' => $windowEnd->toISOString(),
                     ],
                 ]);
-
-                Log::info('Fast Start bonus payout created', [
-                    'creator_uuid' => $creator->uuid,
-                    'bonus_minor' => $bonusMinor,
-                    'currency' => $currency,
-                    'stripe_payout_id' => $payout->id ?? null,
-                    'stripe_transfer_id' => $transfer->id ?? null,
-                ]);
             });
+
+            Log::info('Fast Start bonus payout created', [
+                'creator_uuid' => $creator->uuid,
+                'bonus_minor' => $bonusMinor,
+                'currency' => $currency,
+                'stripe_payout_id' => $payout->id ?? null,
+                'stripe_transfer_id' => $transfer->id ?? null,
+            ]);
 
             $processed++;
         }

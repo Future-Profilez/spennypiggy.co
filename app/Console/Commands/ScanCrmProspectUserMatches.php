@@ -67,10 +67,10 @@ class ScanCrmProspectUserMatches extends Command
         $email = trim(strtolower((string) $creator->email));
         $bio = trim(strtolower((string) $creator->notes));
 
-        $x = $this->normalizeHandle($creator->x_handle);
-        $ig = $this->normalizeHandle($creator->instagram_handle);
-        $yt = $this->normalizeHandle($creator->youtube_handle);
-        $tw = $this->normalizeHandle($creator->twitch_handle);
+        $x = $this->normalizeHandle($creator->twitter);
+        $ig = $this->normalizeHandle($creator->instagram);
+        $yt = $this->normalizeHandle($creator->youtube);
+        $tw = $this->normalizeHandle($creator->twitch);
         $web = $this->normalizeUrlOrHandle($creator->website);
 
         $query = User::query()

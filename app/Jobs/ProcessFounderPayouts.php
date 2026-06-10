@@ -107,53 +107,53 @@ class ProcessFounderPayouts implements ShouldQueue
 
         $notify = null;
 
-        DB::transaction(function () use ($bonus, $currency, $amountMinor, &$notify) {
+        $metadataBase = [
+            'bonus_type' => 'founder_qualification',
+            'reason' => 'founder_bonus',
+            'source' => 'job:process-founder-payouts',
+            'founder_bonus_id' => (string) $bonus->id,
+            'creator_id' => (string) $bonus->creator->uuid,
+            'creator_username' => (string) $bonus->creator->username,
+            'creator_email' => (string) $bonus->creator->email,
+            'qualification_date' => (string) $bonus->qualification_date?->toDateString(),
+            'estimated_payout_date' => (string) $bonus->estimated_payout_date?->toDateString(),
+            'amount_minor' => (string) $amountMinor,
+            'currency' => strtolower($currency),
+            'env' => (string) config('app.env'),
+        ];
+
+        $transferDescription = 'Founder Bonus' . (!empty($bonus->creator->username) ? (' - ' . $bonus->creator->username) : '');
+
+        // Stripe calls happen OUTSIDE any DB transaction; idempotency keys keyed to the
+        // bonus id make a concurrent or retried run return the same transfer/payout
+        // instead of moving money twice.
+        $transfer = StripeControl::transferToConnectedAccountMinor(
+            $bonus->creator->account_id,
+            $amountMinor,
+            strtolower($currency),
+            $metadataBase,
+            $transferDescription,
+            'founder_transfer_' . $bonus->id
+        );
+
+        StripeControl::ensureManualPayoutSchedule($bonus->creator->account_id, strtolower($currency));
+
+        $payout = StripeControl::createPayout([
+            'amount' => (int) $amountMinor,
+            'currency' => strtolower($currency),
+            'method' => 'standard',
+            'metadata' => array_merge($metadataBase, [
+                'transfer_id' => (string) ($transfer->id ?? ''),
+            ]),
+            'idempotency_key' => 'founder_payout_' . $bonus->id,
+        ], $bonus->creator->account_id);
+
+        // Money has moved — commit the marks immediately in their own small transaction.
+        DB::transaction(function () use ($bonus, $currency, $amountMinor, $transfer, $payout, &$notify) {
             $locked = FounderBonus::whereKey($bonus->id)->lockForUpdate()->with('creator')->first();
             if (!$locked || !empty($locked->payout_record_uuid) || !empty($locked->stripe_payout_id)) {
-                return;
+                return; // another run already recorded this payout (same Stripe objects via idempotency)
             }
-            if (empty($locked->creator?->account_id) || (int) ($locked->creator?->stripe_details_submitted ?? 0) !== 1) {
-                return;
-            }
-            if (!empty($locked->creator?->payout_paused_at)) {
-                return;
-            }
-
-            $metadataBase = [
-                'bonus_type' => 'founder_qualification',
-                'reason' => 'founder_bonus',
-                'source' => 'job:process-founder-payouts',
-                'founder_bonus_id' => (string) $locked->id,
-                'creator_id' => (string) $locked->creator->uuid,
-                'creator_username' => (string) $locked->creator->username,
-                'creator_email' => (string) $locked->creator->email,
-                'qualification_date' => (string) $locked->qualification_date?->toDateString(),
-                'estimated_payout_date' => (string) $locked->estimated_payout_date?->toDateString(),
-                'amount_minor' => (string) $amountMinor,
-                'currency' => strtolower($currency),
-                'env' => (string) config('app.env'),
-            ];
-
-            $transferDescription = 'Founder Bonus' . (!empty($locked->creator->username) ? (' - ' . $locked->creator->username) : '');
-
-            $transfer = StripeControl::transferToConnectedAccountMinor(
-                $locked->creator->account_id,
-                $amountMinor,
-                strtolower($currency),
-                $metadataBase,
-                $transferDescription
-            );
-
-            StripeControl::ensureManualPayoutSchedule($locked->creator->account_id, strtolower($currency));
-
-            $payout = StripeControl::createPayout([
-                'amount' => (int) $amountMinor,
-                'currency' => strtolower($currency),
-                'method' => 'standard',
-                'metadata' => array_merge($metadataBase, [
-                    'transfer_id' => (string) ($transfer->id ?? ''),
-                ]),
-            ], $locked->creator->account_id);
 
             $payoutRecord = PayoutRecord::create([
                 'creator_id' => $locked->creator->uuid,

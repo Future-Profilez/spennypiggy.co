@@ -288,7 +288,6 @@ class StripeWebhookController extends Controller
                     $this->handleReviewClosed($data);
                     break;
 
-<<<<<<< HEAD
             // --- Connect Account / Payout Risk Monitoring ---
             case 'account.updated':
                 $this->handleAccountUpdated($data);
@@ -300,19 +299,6 @@ class StripeWebhookController extends Controller
             case 'payout.canceled':
                 $this->handlePayoutEvent($data, $type, $event);
                 break;
-=======
-                // --- Connect Account / Payout Risk Monitoring ---
-                case 'account.updated':
-                    $this->handleAccountUpdated($data);
-                    break;
-                // case 'payout.created':
-                // case 'payout.paid':
-                // case 'payout.failed':
-                // case 'payout.in_transit':
-                case 'payout.canceled':
-                    $this->handlePayoutEvent($data, $type, $event);
-                    break;
->>>>>>> 0604cbafaa719d730b75810ad4c2ace5ba10a18c
 
                 default:
                     Log::info("Unhandled event type: " . $type);

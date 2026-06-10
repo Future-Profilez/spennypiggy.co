@@ -9,7 +9,7 @@ import userphoto from '../../../assets/siteicon.png';
 import Avatar from '@/includes/Avatar';
 
 export default function FounderBonusIndex() {
-    const { auth, leaderboard, userInRace, userProgress, founderBonusData, programStats, previousMonthStats, previousMonthWinners, recentWinners } = usePage().props;
+    const { auth, leaderboard, userInRace, userProgress, userMissed, founderBonusData, programStats, previousMonthStats, previousMonthWinners, recentWinners } = usePage().props;
     const [allTimeWinners, setAllTimeWinners] = useState([]);
     const [allTimeLoading, setAllTimeLoading] = useState(false);
     
@@ -311,6 +311,53 @@ export default function FounderBonusIndex() {
                             </div>
                         </div>
                     ) || ''}
+
+                    {auth && auth?.user && auth?.user?.role == 1 && !userInRace && !founderBonusData && userMissed && (
+                        <div className="bg-gray-900 rounded-[30px] p-6 md:p-8 mb-12 text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+                            <div className="relative">
+                                <div className="md:flex items-center justify-between mb-4">
+                                    <div>
+                                        <h2 className="text-2xl md:text-3xl font-bold mb-2">⏰ This round has ended</h2>
+                                        <p className="text-lg opacity-90">
+                                            {userMissed.reason === 'seats_full'
+                                                ? 'You hit the earnings goal, but all Founder seats were taken this time.'
+                                                : 'Your 30-day Founder window has ended and the earnings goal wasn\'t reached this time.'}
+                                        </p>
+                                    </div>
+                                    <div className="mt-3 md:mt-0 text-right bg-white/10 rounded-[30px] p-3 backdrop-blur-sm">
+                                        <p className="text-sm opacity-75">Window ended</p>
+                                        <p className="text-xl font-bold">{userMissed.window_ended_at}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4">
+                                    <div className="bg-white/10 rounded-[30px] p-4 backdrop-blur-sm">
+                                        <p className="text-normal opacity-90 mb-1">Your first 30 days</p>
+                                        <p className="text-2xl font-bold">{formatMultiPrice(userMissed.final_earnings, 'GBP')}</p>
+                                        <p className="text-xs opacity-75 mt-1">Goal: {formatMultiPrice(userMissed.min_earnings, 'GBP')}</p>
+                                    </div>
+                                    <div className="bg-white/10 rounded-[30px] p-4 backdrop-blur-sm">
+                                        <p className="text-normal opacity-90 mb-2">You reached</p>
+                                        <div className="flex items-center">
+                                            <div className="flex-1 bg-white/30 rounded-full h-3 mr-3">
+                                                <div
+                                                    className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full"
+                                                    style={{ width: `${Math.min(userMissed.qualification_progress, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="text-lg font-bold">{Math.round(userMissed.qualification_progress)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/10 rounded-[30px] p-4 backdrop-blur-sm">
+                                    <p className="text-lg font-bold mb-1">💜 Don't worry — more bonus opportunities are coming!</p>
+                                    <p className="text-sm opacity-90">Stay updated and keep building your audience. New bonus programs and rewards launch regularly on SpennyPiggy.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Program Stats */}
                     <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">

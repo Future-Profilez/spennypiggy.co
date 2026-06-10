@@ -136,17 +136,15 @@ class ReleaseReserves extends Command
                     ],
                 ], $creator->account_id);
 
-                // Mark every released FinancialTransaction in one transaction, immediately after
-                // the payout is accepted. reserve_payout_id links them to the Stripe payout so a
-                // later payout.failed webhook can revert them to 'held'.
-                DB::transaction(function () use ($fts, $payout) {
-                    foreach ($fts as $ft) {
-                        $ft->reserve_status = 'released';
-                        $ft->reserve_released_at = now();
-                        $ft->reserve_payout_id = $payout->id;
-                        $ft->save();
-                    }
-                });
+                // Mark every released FinancialTransaction atomically (single mass update —
+                // no per-row save that could fail partway after Stripe already paid out).
+                // reserve_payout_id links them to the Stripe payout so a later payout.failed
+                // webhook can revert them to 'held'.
+                FinancialTransaction::whereIn('id', $ftIds)->update([
+                    'reserve_status' => 'released',
+                    'reserve_released_at' => now(),
+                    'reserve_payout_id' => $payout->id,
+                ]);
 
                 $currencySymbol = \App\Helpers::getCurrency($currency);
                 \App\Helpers::sendNotification(

@@ -439,17 +439,26 @@ class OptimizedProfileController extends Controller
                     $isEligible = true;
                     $daysLeft = max(0, now()->diffInDays($windowEnd, false));
                 } else if (!$user->is_founder) {
-                    $cutoffDate = now()->subDays(60);
-                    if ($startAt->greaterThanOrEqualTo($cutoffDate)) {
-                        $isEligible = true;
-                        $daysLeft = 0;
+                    if ($user->founder_missed_at) {
+                        // Window ended without qualifying — keep the tracker visible
+                        // (as a "missed" banner) for 14 days after the outcome
+                        if ($user->founder_missed_at->gt(now()->subDays(14))) {
+                            $isEligible = true;
+                            $daysLeft = 0;
+                        }
+                    } else {
+                        $cutoffDate = now()->subDays(60);
+                        if ($startAt->greaterThanOrEqualTo($cutoffDate)) {
+                            $isEligible = true;
+                            $daysLeft = 0;
+                        }
                     }
                 }
             
                 $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
-                $financialService = app(\App\Services\FinancialService::class);
-                $summary = $financialService->getSummary($user, $startAt, $endDate, 'GBP');
-                $first30DayEarnings = (float) ($summary['gross_income'] ?? 0);
+                // Same net-earnings formula the qualification job uses, so the tracker
+                // shows the number that actually decides qualification
+                $first30DayEarnings = (float) \App\Models\FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
             }
         }
 
@@ -461,6 +470,8 @@ class OptimizedProfileController extends Controller
             'qualificationDays' => $qualificationDays,
             'windowStart' => $windowStart ? $windowStart->toDateString() : null,
             'windowEnd' => $windowEnd ? $windowEnd->toDateString() : null,
+            'missed' => (bool) ($user && !$user->is_founder && $user->founder_missed_at),
+            'missedAt' => $user?->founder_missed_at?->toDateString(),
         ];
     }
 }

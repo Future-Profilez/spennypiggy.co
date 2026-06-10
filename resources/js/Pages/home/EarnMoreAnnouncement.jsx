@@ -2,6 +2,8 @@ import { Link } from "@inertiajs/react";
 import { FaBolt, FaCrown, FaUserFriends, FaCheck, FaArrowRight } from "react-icons/fa";
 import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
+import TiltCard from '@/Components/animations/TiltCard';
+import Magnetic from '@/Components/animations/Magnetic';
 
 export default function EarnMoreAnnouncement({ founderBonus }) {
     const spotsRemaining = founderBonus?.founderSpotsRemaining;
@@ -25,13 +27,13 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                         </div>
                     </FadeIn>
                     <FadeIn x={60} y={0} delay={0.1} duration={0.7}>
-                        <h2 className="uppercase text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-black mb-4 leading-none">
+                        <h2 className="uppercase text-3xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-black mb-4 leading-none">
                             Earn More With <br />
                             <span className="text-[#FF007F] tracking-[2px]">Spenny Piggy</span>
                         </h2>
                     </FadeIn>
                     <FadeIn y={20} delay={0.2}>
-                        <p className="text-lg md:text-2xl text-black/80 max-w-3xl mx-auto font-medium leading-relaxed">
+                        <p className="text-base md:text-2xl text-black/80 max-w-3xl mx-auto font-medium leading-relaxed">
                             More rewards. More bonuses. More reasons to join.
                         </p>
                     </FadeIn>
@@ -39,7 +41,8 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
                     <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                    <div className="bg-white border-4 border-black rounded-[30px] p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
+                    <TiltCard max={8} className="rounded-[30px] h-full">
+                    <div className="bg-white border-4 border-black rounded-[30px] p-6 relative group h-full shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
                         <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl shadow-lg wiggle transform rotate-6">
                             <FaBolt />
                         </div>
@@ -53,10 +56,12 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Available to every creator</li>
                         </ul>
                     </div>
+                    </TiltCard>
                     </StaggerItem>
 
                     <StaggerItem index={1} x={80} y={0} rotate={-1} stagger={0.15} duration={0.6}>
-                    <div className="bg-white border-4 border-black rounded-[30px] p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
+                    <TiltCard max={8} className="rounded-[30px] h-full">
+                    <div className="bg-white border-4 border-black rounded-[30px] p-6 relative group h-full shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
                         <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl shadow-lg wiggle transform -rotate-6">
                             <FaCrown />
                         </div>
@@ -75,10 +80,12 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             </div>
                         ) : null}
                     </div>
+                    </TiltCard>
                     </StaggerItem>
 
                     <StaggerItem index={2} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                    <div className="bg-white border-4 border-black rounded-[30px] p-6 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
+                    <TiltCard max={8} className="rounded-[30px] h-full">
+                    <div className="bg-white border-4 border-black rounded-[30px] p-6 relative group h-full shadow-[4px_4px_0px_0px_#000] md:shadow-[8px_8px_0px_0px_#000]">
                         <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl shadow-lg wiggle transform rotate-12">
                             <FaUserFriends />
                         </div>
@@ -92,6 +99,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Earn while helping others grow</li>
                         </ul>
                     </div>
+                    </TiltCard>
                     </StaggerItem>
                 </div>
 
@@ -104,13 +112,15 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                         We&#39;ll Pay You To Get Spoiled.
                     </div>
                     <div className="mt-8">
+                        <Magnetic strength={0.3}>
                         <Link
                             href="/register"
-                            className="relative inline-flex items-center gap-3 bg-black text-white font-black text-md md:text-lg py-3 px-6 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:scale-105 transition-all duration-300 uppercase tracking-wide group"
+                            className="relative inline-flex items-center gap-3 bg-black text-white font-black text-base md:text-lg py-3 px-7 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:scale-105 transition-all duration-300 uppercase tracking-wide group"
                         >
                             <span>Start Free Creator Trial</span>
                             <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                         </Link>
+                        </Magnetic>
                     </div>
                 </div>
                 </FadeIn>

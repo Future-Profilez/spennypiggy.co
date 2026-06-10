@@ -84,6 +84,7 @@ class FounderBonusController extends Controller
         $userInRace = false;
         $userProgress = null;
         $founderBonusData = null;
+        $userMissed = null;
         
         if ($user) {
             // Check if user is already a founder
@@ -98,7 +99,7 @@ class FounderBonusController extends Controller
                         'estimated_payout_date' => $founderBonus->estimated_payout_date,
                         'paid_date' => $founderBonus->paid_date,
                         'payout_status' => $founderBonus->payout_status,
-                        'rejection_reason' => $founderBonus->rejection_reason,
+                        'rejection_reason' => $founderBonus->payout_rejection_reason,
                         'formatted_paid_date' => $founderBonus->formatted_paid_date,
                     ];
                 }
@@ -111,7 +112,7 @@ class FounderBonusController extends Controller
                 
                 if ($isWithin30Days) {
                     $userInRace = true;
-                    
+
                     // Find user in leaderboard
                     $userEntry = collect($leaderboard)->firstWhere('creator.id', $user->id);
                     if ($userEntry) {
@@ -119,9 +120,9 @@ class FounderBonusController extends Controller
                     } else {
                         // User not in top 50, calculate their progress
                         $earnings = $this->calculateFirst30DayEarnings($user->id);
-                            
+
                         $daysRemaining = $thirtyDaysLater && $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
-                        
+
                         $userProgress = [
                             'creator' => $user,
                             'current_earnings' => $earnings,
@@ -130,6 +131,18 @@ class FounderBonusController extends Controller
                             'qualification_progress' => min(100, ($earnings / $minEarnings) * 100),
                         ];
                     }
+                } elseif ($thirtyDaysLater && $user->founder_missed_at) {
+                    // Window over without qualifying (outcome recorded by the daily
+                    // qualification job) — show the missed state instead of silently
+                    // dropping all founder UI
+                    $finalEarnings = $this->calculateFirst30DayEarnings($user->id);
+                    $userMissed = [
+                        'window_ended_at' => $thirtyDaysLater->toDateString(),
+                        'final_earnings' => $finalEarnings,
+                        'min_earnings' => $minEarnings,
+                        'qualification_progress' => $minEarnings > 0 ? min(100, ($finalEarnings / $minEarnings) * 100) : 0,
+                        'reason' => $finalEarnings >= $minEarnings ? 'seats_full' : 'earnings_below_threshold',
+                    ];
                 }
             }
         }
@@ -138,6 +151,7 @@ class FounderBonusController extends Controller
             'leaderboard' => $leaderboard,
             'userInRace' => $userInRace,
             'userProgress' => $userProgress,
+            'userMissed' => $userMissed,
             'founderBonusData' => $founderBonusData,
             'previousMonthStats' => $previousMonthStats,
             'previousMonthWinners' => $previousMonthBonuses->map(function ($bonus) {
@@ -372,7 +386,7 @@ class FounderBonusController extends Controller
                             // Send congratulations email if enabled
                             if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
                                 try {
-                                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
+                                    \App\EmailService::sendMarketingEmail($user, new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
                                 } catch (\Exception $e) {
                                     $errors[] = "Failed to send email to {$user->email}: " . $e->getMessage();
                                 }
@@ -441,7 +455,7 @@ class FounderBonusController extends Controller
                         // Send congratulations email if enabled
                         if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
                             try {
-                                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
+                                \App\EmailService::sendMarketingEmail($user, new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
                             } catch (\Exception $e) {
                                 $errors[] = "Failed to send email to {$user->email}: " . $e->getMessage();
                             }
@@ -477,62 +491,35 @@ class FounderBonusController extends Controller
     public function settlePayouts()
     {
         try {
-            // Get all pending founder bonuses
-            $pendingBonuses = FounderBonus::with('creator')
-                ->where('payout_status', FounderBonus::STATUS_PENDING)
+            $duePendingCount = FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)
                 ->where('bonus_amount', '>', 0)
-                ->get();
+                ->where('estimated_payout_date', '<=', now()->toDateString())
+                ->count();
 
-            if ($pendingBonuses->isEmpty()) {
+            if ($duePendingCount === 0) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'No pending payouts to process',
+                    'message' => 'No due pending payouts to process',
                     'processed_count' => 0,
-                    'total_amount' => 0,
                 ]);
             }
 
-            $processedCount = 0;
-            $totalAmount = 0;
-            $errors = [];
-            $successfulPayouts = [];
+            // Run the real payout job synchronously — it issues Stripe transfer + payout
+            // (idempotent) and creates the PayoutRecord that the creator's finance page shows.
+            (new \App\Jobs\ProcessFounderPayouts())->handle();
 
-            foreach ($pendingBonuses as $bonus) {
-                try {
-                    $creator = $bonus->creator;
-                    
-                    // Check if creator has a connected Stripe account
-                    if (empty($creator->account_id)) {
-                        $errors[] = "Creator {$creator->username} (ID: {$creator->id}) does not have a connected Stripe account";
-                        continue;
-                    }
-
-                    // Mark bonus as paid without Stripe transfer (Direct Charge refactor)
-                    $bonus->markAsPaid();
-                    
-                    $processedCount++;
-                    $totalAmount += $bonus->bonus_amount;
-                    
-                    $successfulPayouts[] = [
-                        'creator_id' => $creator->id,
-                        'creator_username' => $creator->username,
-                        'bonus_amount' => $bonus->bonus_amount,
-                        'stripe_transfer_id' => 'manual_payout_direct_charge',
-                    ];
-
-                } catch (\Exception $e) {
-                    $errors[] = "Failed to process payout for creator {$creator->username} (ID: {$creator->id}): " . $e->getMessage();
-                }
-            }
+            $stillPending = FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)
+                ->where('bonus_amount', '>', 0)
+                ->where('estimated_payout_date', '<=', now()->toDateString())
+                ->whereNull('stripe_payout_id')
+                ->count();
 
             return response()->json([
                 'success' => true,
-                'message' => "Successfully processed {$processedCount} payouts",
-                'processed_count' => $processedCount,
-                'total_amount' => $totalAmount,
-                'total_pending' => $pendingBonuses->count(),
-                'successful_payouts' => $successfulPayouts,
-                'errors' => $errors,
+                'message' => 'Founder payout run completed',
+                'due_before' => $duePendingCount,
+                'still_unpaid' => $stillPending,
+                'processed_count' => $duePendingCount - $stillPending,
             ]);
 
         } catch (\Exception $e) {

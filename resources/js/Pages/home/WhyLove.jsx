@@ -1,6 +1,8 @@
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
+import TiltCard from '@/Components/animations/TiltCard';
+import WatermarkStrip from '@/Components/animations/WatermarkStrip';
 // import image1 from "../../../assets/fea/1.png";
 // import image2 from "../../../assets/fea/2.png";
 // import image3 from "../../../assets/fea/3.png";
@@ -44,7 +46,8 @@ export default function WhyLove() {
 
     return (
         <>
-            <section className="bg-black py-24 relative ">
+            <section className="bg-black py-14 md:py-24 relative overflow-hidden">
+                <WatermarkStrip text="Brands" from={150} to={-350} opacity={0.18} className="top-4" />
                  {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-pink-600/40 rounded-full mix-blend-screen filter blur-[100px] animate-float"></div>
@@ -54,12 +57,12 @@ export default function WhyLove() {
 
                 <div className="container relative px-4 mx-auto">
                     <FadeIn y={30} duration={0.6}>
-                    <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-none drop-shadow-lg">
+                    <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-none drop-shadow-lg">
                         Add Gifts From <span className="text-gradient-wishlist drop-shadow-none">Any Brand</span>
                     </h2>
                     </FadeIn>
                     <FadeIn y={20} delay={0.15}>
-                    <p className="fading text-gray-300 text-lg md:text-xl max-w-3xl mx-auto font-poppins leading-relaxed mb-12 text-center">
+                    <p className="fading text-gray-300 text-base md:text-xl max-w-3xl mx-auto font-poppins leading-relaxed mb-8 md:mb-12 text-center">
                         With Spenny Piggy, you can seamlessly add gifts from any
                         brand to your Wishlist, offering your supporters a diverse
                         range of options to choose from. All you need is a link! You
@@ -70,13 +73,15 @@ export default function WhyLove() {
 
                     <div className="flex flex-wrap justify-center gap-3 md:gap-8 max-w-[1000px] m-auto">
                       {brandLogos.map((brand, index) => (
-                         <StaggerItem key={index} index={index} stagger={0.05} y={20} className="fading group relative w-24 h-24 sm:w-28 sm:h-28 rounded-[30px]    bg-white backdrop-blur-sm p-6 flex items-center justify-center transition-all duration-300 hover:-translate-y-2 border border-gray-800 hover:border-[#FF007F] shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+                         <StaggerItem key={index} index={index} stagger={0.05} y={20}>
+                         <TiltCard max={18} scale={1.1} className="fading group relative w-24 h-24 sm:w-28 sm:h-28 rounded-[30px]    bg-white backdrop-blur-sm p-6 flex items-center justify-center transition-colors duration-300 border border-gray-800 hover:border-[#FF007F] shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-[30px]    opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                            <img
                              src={brand.src}
                              alt={brand.name}
-                             className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110"
+                             className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
                            />
+                         </TiltCard>
                        </StaggerItem>
                       ))}
                     </div>

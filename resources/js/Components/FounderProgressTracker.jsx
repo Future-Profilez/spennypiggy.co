@@ -27,9 +27,39 @@ export default function FounderProgressTracker({
         100,
         Math.round((first30DayEarnings / minEarnings) * 100)
     );
-    
+
     const remaining = Math.max(0, minEarnings - first30DayEarnings);
     const hasReachedGoal = first30DayEarnings >= minEarnings;
+
+    // Window ended without qualifying — show the missed outcome (for ~14 days)
+    // instead of a stale race tracker
+    if (founderData.missed) {
+        return (
+            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-gray-900 p-4 md:p-6 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                        <p className="font-gulfs font-light flex items-center gap-2 text-lg md:text-2xl font-black uppercase tracking-widest">
+                            Founder Race Ended <span>⏰</span>
+                        </p>
+                        <p className="mt-1 text-normal font-semibold text-gray-300">
+                            {hasReachedGoal
+                                ? "You hit the goal, but all Founder seats were taken this time."
+                                : `You reached ${formatMultiPrice(first30DayEarnings, "GBP")} of the ${formatMultiPrice(minEarnings, "GBP")} goal — you missed it this time.`}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-400">
+                            💜 Stay updated — more bonus opportunities are coming!
+                        </p>
+                    </div>
+                    <Link
+                        href="/founder/bonus"
+                        className="self-start sm:self-center rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#ff007f] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5"
+                    >
+                        View
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     if (variant === "mini") {
         return (

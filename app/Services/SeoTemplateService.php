@@ -201,11 +201,11 @@ class SeoTemplateService
 
         // Add social media links if available
         $sameAs = [];
-        if (isset($creator->twitter_handle) && $creator->twitter_handle) {
-            $sameAs[] = 'https://twitter.com/' . $creator->twitter_handle;
+        if (isset($creator->twitter) && $creator->twitter) {
+            $sameAs[] = 'https://twitter.com/' . $creator->twitter;
         }
-        if (isset($creator->instagram_handle) && $creator->instagram_handle) {
-            $sameAs[] = 'https://instagram.com/' . $creator->instagram_handle;
+        if (isset($creator->instagram) && $creator->instagram) {
+            $sameAs[] = 'https://instagram.com/' . $creator->instagram;
         }
         
         if (!empty($sameAs)) {

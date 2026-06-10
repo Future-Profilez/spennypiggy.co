@@ -93,14 +93,16 @@ class Kernel extends ConsoleKernel
                  ->daily()
                  ->withoutOverlapping(10);
 
-        // Monthly job to check founder qualifications (6th of each month)
+        // Daily job to check founder qualifications — creators learn the outcome
+        // (qualified or missed) within a day of their 30-day window ending
         $schedule->job(new CheckFounderQualifications)
-                 ->monthlyOn(6, '09:00')
+                 ->dailyAt('09:00')
                  ->withoutOverlapping(30);
 
-        // Monthly job to process founder payouts (7th of each month)
+        // Daily job to process founder payouts (only picks bonuses whose
+        // estimated_payout_date has arrived, so cadence is safe)
         $schedule->job(new ProcessFounderPayouts)
-                 ->monthlyOn(7, '10:00')
+                 ->dailyAt('10:00')
                  ->withoutOverlapping(30);
 
         $schedule->job(new ProcessFounderMonthlyBonuses)

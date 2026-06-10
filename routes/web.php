@@ -480,11 +480,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/email-preferences/thankyou', [App\Http\Controllers\EmailPreferenceController::class, 'updatePreferencesFromThankyou'])->name('email.preferences.thankyou');
     });
 
-    // One-click unsubscribe route (no authentication required)
-    Route::get('/unsubscribe/{user}', [App\Http\Controllers\EmailPreferenceController::class, 'unsubscribe'])
-        ->name('email.unsubscribe')
-        ->middleware('signed');
 });
+
+// One-click unsubscribe route (no authentication required — must stay outside the auth group
+// so logged-out users clicking the email link aren't bounced to login)
+Route::get('/unsubscribe/{user}', [App\Http\Controllers\EmailPreferenceController::class, 'unsubscribe'])
+    ->name('email.unsubscribe')
+    ->middleware('signed');
 
 // Select Default Currency
 Route::get('/currency/{c}', function (Request $request, $c) {
@@ -857,7 +859,6 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     Route::get('/founder/bonuses', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'index'])->name('admin.founder/bonuses.index');
     Route::get('/founder/bonuses/data', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'getBonuses'])->name('admin.founder/bonuses.data');
     Route::post('/founder/bonuses/{bonus}/reject', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'rejectPayout'])->name('admin.founder/bonuses.reject');
-    Route::post('/founder/bonuses/{bonus}/approve', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'approvePayout'])->name('admin.founder/bonuses.approve');
     Route::get('/founder/bonus-settings', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'getSettings'])->name('admin.founder/bonus-settings.get');
     Route::post('/founder/bonus-settings', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'updateSettings'])->name('admin.founder/bonus-settings.update');
     Route::get('/founder/bonus-settings-page', function () {

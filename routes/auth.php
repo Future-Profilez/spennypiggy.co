@@ -1012,8 +1012,11 @@ Route::get('/founder/winners/all-time', [FounderBonusController::class, 'getAllT
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
     Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
-    Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
-    Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
+    // Manual triggers — admin only (these mutate founder status / move money)
+    Route::middleware('admin')->group(function () {
+        Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
+        Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
+    });
 });
 
 // Paid Tasks Routes (Phase 1) - Prefixed to avoid username collisions

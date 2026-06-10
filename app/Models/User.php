@@ -78,6 +78,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'identity_admin_status' => 'integer',
         'identity_admin_reviewed_at' => 'datetime',
         'stripe_connected_at' => 'datetime',
+        'founder_missed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
         'creator_email_receipt_acknowledged_at' => 'datetime',
         'marketing_emails_enabled' => 'boolean',

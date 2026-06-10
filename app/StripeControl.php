@@ -1151,7 +1151,7 @@ class StripeControl
         }
     }
 
-    public static function transferToConnectedAccountMinor(string $destinationAccountId, int $amountMinor, string $currency = 'usd', array $metadata = [], ?string $description = null)
+    public static function transferToConnectedAccountMinor(string $destinationAccountId, int $amountMinor, string $currency = 'usd', array $metadata = [], ?string $description = null, ?string $idempotencyKey = null)
     {
         $client = self::getClientForCurrency($currency);
 
@@ -1168,7 +1168,12 @@ class StripeControl
                 $payload['metadata'] = $metadata;
             }
 
-            return $client->transfers->create($payload);
+            $options = [];
+            if ($idempotencyKey) {
+                $options['idempotency_key'] = $idempotencyKey;
+            }
+
+            return $client->transfers->create($payload, $options);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
