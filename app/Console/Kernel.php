@@ -5,6 +5,7 @@ namespace App\Console;
 use App\Jobs\SendMailSubscriptions;
 use App\Jobs\CalculateFirstThirtyDayEarnings;
 use App\Jobs\CheckFounderQualifications;
+use App\Jobs\ProcessFounderMonthlyBonuses;
 use App\Jobs\ProcessFounderPayouts;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -92,14 +93,20 @@ class Kernel extends ConsoleKernel
                  ->daily()
                  ->withoutOverlapping(10);
 
-        // Monthly job to check founder qualifications (6th of each month)
+        // Daily job to check founder qualifications — creators learn the outcome
+        // (qualified or missed) within a day of their 30-day window ending
         $schedule->job(new CheckFounderQualifications)
-                 ->monthlyOn(6, '09:00')
+                 ->dailyAt('09:00')
                  ->withoutOverlapping(30);
 
-        // Monthly job to process founder payouts (7th of each month)
+        // Daily job to process founder payouts (only picks bonuses whose
+        // estimated_payout_date has arrived, so cadence is safe)
         $schedule->job(new ProcessFounderPayouts)
-                 ->monthlyOn(7, '10:00')
+                 ->dailyAt('10:00')
+                 ->withoutOverlapping(30);
+
+        $schedule->job(new ProcessFounderMonthlyBonuses)
+                 ->monthlyOn(7, '10:05')
                  ->withoutOverlapping(30);
 
         // Risk Engine: Enforce Manual Payouts (Every 10 Minutes)
@@ -121,6 +128,11 @@ class Kernel extends ConsoleKernel
                  ->weeklyOn(5, '10:00')
                  ->withoutOverlapping();
 
+        // Risk Engine: Release held reserves 30 days after each transaction (daily)
+        $schedule->command('reserve:release')
+                 ->dailyAt('10:30')
+                 ->withoutOverlapping();
+
         $schedule->command('bonus:process-fast-start')
                  ->dailyAt('09:15')
                  ->withoutOverlapping();
@@ -136,6 +148,10 @@ class Kernel extends ConsoleKernel
                  ->runInBackground();
 
         $schedule->command('crm:sync-creator-stages')
+                 ->everyThirtyMinutes()
+                 ->withoutOverlapping();
+
+        $schedule->command('crm:scan-prospect-user-matches')
                  ->everyThirtyMinutes()
                  ->withoutOverlapping();
     }

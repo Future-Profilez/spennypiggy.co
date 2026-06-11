@@ -200,7 +200,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             } elseif ($normalizedType === 'new') {
                 $filters['sortBy'] = 'New';
                 $filters['type'] = 'new';
-            } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships'])) {
+            } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships', 'tasks'])) {
                 $filters['contentType'] = ucfirst($normalizedType);
             }
         } else {
@@ -219,7 +219,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
 
         // Check contentType from filters (which includes route params) or query params
         $activeContentType = $filters['contentType'] ?? ($request->input('contentType') ?? null);
-        $hasContentTypeParam = $activeContentType && in_array($activeContentType, ['Creators', 'Wishes', 'Bills', 'Memberships']);
+        $hasContentTypeParam = $activeContentType && in_array($activeContentType, ['Creators', 'Wishes', 'Bills', 'Memberships', 'Tasks']);
 
         // Grid view when searching or selecting a specific content type
         $isSearch = $hasSearchParam || $hasTypeParam || $hasContentTypeParam;
@@ -235,6 +235,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         $topEarnersData = [];
         $featuredBills = [];
         $featuredMemberships = [];
+        $featuredTasks = [];
 
         if ($isSearch) {
             // Fetch all types unless specific contentType is set
@@ -256,6 +257,9 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             if ($ctype === 'Memberships' || $ctype === 'All') {
                 $searchResults['memberships'] = $discoveryService->getSearchMemberships($filters);
             }
+            if ($ctype === 'Tasks' || $ctype === 'All') {
+                $searchResults['tasks'] = $discoveryService->getSearchTasks($filters);
+            }
         } else {
             // Section data (top 10) - ONLY fetch when not searching to save resources
             $limit = 10;
@@ -276,6 +280,8 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             $featuredBills = $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
 
             $featuredMemberships = $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
+
+            $featuredTasks = $discoveryService->getFeaturedTasks($limit);
         }
 
         return [
@@ -285,6 +291,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             'topEarnersData' => $topEarnersData,
             'featuredBills' => $featuredBills,
             'featuredMemberships' => $featuredMemberships,
+            'featuredTasks' => $featuredTasks,
             'filters' => $filters,
             'searchResults' => $searchResults
         ];
@@ -351,6 +358,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         'topEarners' => $data['topEarnersData'],
         'featuredBills' => $data['featuredBills'],
         'featuredMemberships' => $data['featuredMemberships'],
+        'featuredTasks' => $data['featuredTasks'],
         'filters' => $data['filters'],
         'searchResults' => $data['searchResults'],
     ]);
@@ -1048,11 +1056,15 @@ Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('us
 
 // Founder routes - must come before profile route to prevent interception
 Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
+Route::get('/founder/winners/all-time', [FounderBonusController::class, 'getAllTimeWinners'])->name('founder.winners.all-time');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
     Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
-    Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
-    Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
+    // Manual triggers — admin only (these mutate founder status / move money)
+    Route::middleware('admin')->group(function () {
+        Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
+        Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
+    });
 });
 
 // Paid Tasks Routes (Phase 1) - Prefixed to avoid username collisions

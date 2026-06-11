@@ -7,28 +7,33 @@ import tiktok from "../../assets/new/tiktok.png";
 import x from "../../assets/new/x.png";
 import bottomImg from "../../assets/new/joinBottomImage.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
+import FadeIn from '@/Components/animations/FadeIn';
+import StaggerItem from '@/Components/animations/StaggerItem';
 
 export default function JoinUs() {
     return (
         <>
             <section className="w-full px-4 pb-16 pt-6 bg-black flex flex-col items-center">
+                <FadeIn y={20}>
                 <p className="uppercase pt-3 md:pt-5 text-center text-white text-CeraGR">
                     Built for creators of all platforms{" "}
                 </p>
+                </FadeIn>
 
                 <div className="flex flex-wrap justify-center mt-4 mb-20 text-white items-center creators-platforms">
                     {[tiktok, x, youtube, instagram, twitch].map((src, idx) => (
-                        <div key={idx} className="px-4 py-2">
+                        <StaggerItem key={idx} index={idx} stagger={0.08} y={20} className="px-4 py-2">
                             <LazyLoadImage
                                 alt="image"
                                 className=""
                                 src={src}
                                 width={190}
                             />
-                        </div>
+                        </StaggerItem>
                     ))}
                 </div>
 
+                <FadeIn y={40} scale={0.95} duration={0.7}>
                 <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-[30px]    pt-6 sm:p-10 text-center shadow-lg">
                     <h2
                         
@@ -57,6 +62,7 @@ export default function JoinUs() {
                         </Link>
                     </div>
                 </div>
+                </FadeIn>
             </section>
             <div className="bg-black w-full hidden md:flex justify-end  sm:mr-16">
                 <img

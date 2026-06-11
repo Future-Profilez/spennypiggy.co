@@ -9,7 +9,9 @@ import userphoto from '../../../assets/siteicon.png';
 import Avatar from '@/includes/Avatar';
 
 export default function FounderBonusIndex() {
-    const { auth, leaderboard, userInRace, userProgress, founderBonusData, programStats } = usePage().props;
+    const { auth, leaderboard, userInRace, userProgress, userMissed, founderBonusData, programStats, previousMonthStats, previousMonthWinners, recentWinners } = usePage().props;
+    const [allTimeWinners, setAllTimeWinners] = useState([]);
+    const [allTimeLoading, setAllTimeLoading] = useState(false);
     
     const qualificationDays = programStats?.qualificationDays || 30;
     const minEarnings = programStats?.minEarnings || 2500;
@@ -22,6 +24,28 @@ export default function FounderBonusIndex() {
     
     const user = auth?.user;
     const { formatMultiPrice } = PriceFormat();
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            setAllTimeLoading(true);
+            try {
+                const res = await fetch('/founder/winners/all-time?limit=10');
+                const data = await res.json();
+                if (!cancelled) {
+                    setAllTimeWinners(data?.winners || []);
+                }
+            } catch (e) {
+                if (!cancelled) setAllTimeWinners([]);
+            } finally {
+                if (!cancelled) setAllTimeLoading(false);
+            }
+        };
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const getRankIcon = (position) => {
         if (position === 1) return <FaTrophy className="w-5 h-5 text-yellow-500" />;
@@ -288,10 +312,57 @@ export default function FounderBonusIndex() {
                         </div>
                     ) || ''}
 
+                    {auth && auth?.user && auth?.user?.role == 1 && !userInRace && !founderBonusData && userMissed && (
+                        <div className="bg-gray-900 rounded-[30px] p-6 md:p-8 mb-12 text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+                            <div className="relative">
+                                <div className="md:flex items-center justify-between mb-4">
+                                    <div>
+                                        <h2 className="text-2xl md:text-3xl font-bold mb-2">⏰ This round has ended</h2>
+                                        <p className="text-lg opacity-90">
+                                            {userMissed.reason === 'seats_full'
+                                                ? 'You hit the earnings goal, but all Founder seats were taken this time.'
+                                                : 'Your 30-day Founder window has ended and the earnings goal wasn\'t reached this time.'}
+                                        </p>
+                                    </div>
+                                    <div className="mt-3 md:mt-0 text-right bg-white/10 rounded-[30px] p-3 backdrop-blur-sm">
+                                        <p className="text-sm opacity-75">Window ended</p>
+                                        <p className="text-xl font-bold">{userMissed.window_ended_at}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4">
+                                    <div className="bg-white/10 rounded-[30px] p-4 backdrop-blur-sm">
+                                        <p className="text-normal opacity-90 mb-1">Your first 30 days</p>
+                                        <p className="text-2xl font-bold">{formatMultiPrice(userMissed.final_earnings, 'GBP')}</p>
+                                        <p className="text-xs opacity-75 mt-1">Goal: {formatMultiPrice(userMissed.min_earnings, 'GBP')}</p>
+                                    </div>
+                                    <div className="bg-white/10 rounded-[30px] p-4 backdrop-blur-sm">
+                                        <p className="text-normal opacity-90 mb-2">You reached</p>
+                                        <div className="flex items-center">
+                                            <div className="flex-1 bg-white/30 rounded-full h-3 mr-3">
+                                                <div
+                                                    className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full"
+                                                    style={{ width: `${Math.min(userMissed.qualification_progress, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="text-lg font-bold">{Math.round(userMissed.qualification_progress)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/10 rounded-[30px] p-4 backdrop-blur-sm">
+                                    <p className="text-lg font-bold mb-1">💜 Don't worry — more bonus opportunities are coming!</p>
+                                    <p className="text-sm opacity-90">Stay updated and keep building your audience. New bonus programs and rewards launch regularly on SpennyPiggy.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Program Stats */}
                     <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                         {/* 5px 5px 0 0 rgba(0,0,0,1) */}
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Total Creators Racing</p>
@@ -304,7 +375,7 @@ export default function FounderBonusIndex() {
                             <p className="text-normal text-gray-500 mt-2">Joined this month</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--mint)] !border-2 border-[var(--mint)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--mint)] !border-2 border-[var(--mint)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Available Seats</p>
@@ -317,7 +388,7 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">Out of {maxSeats} total</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--pink)] !border-2 border-[var(--pink)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--pink)] !border-2 border-[var(--pink)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Qualification Target</p>
@@ -330,7 +401,7 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">In first 30 days</p>
                         </div>
 
-                        <div className="bg-white fading rounded-[30px]   shadow-[5px_5px_0_0_var(--black)] !border-2 border-[var(--black)] p-6">
+                        <div className="bg-white rounded-[30px]   shadow-[5px_5px_0_0_var(--black)] !border-2 border-[var(--black)] p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Bonus Rate</p>
@@ -343,18 +414,200 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">Monthly earnings bonus</p>
                         </div>
                     </div>
+
+                    {(previousMonthStats || (recentWinners && recentWinners.length) || (previousMonthWinners && previousMonthWinners.length)) ? (
+                        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            <div className="bg-white rounded-[30px] shadow-sm border border-gray-200 p-6">
+                                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                                    Previous Month Summary {previousMonthStats?.month ? `(${previousMonthStats.month})` : ''}
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="rounded-[20px] border border-gray-200 p-4">
+                                        <div className="text-[11px] font-black uppercase tracking-widest text-gray-500">Qualified</div>
+                                        <div className="text-2xl font-bold text-gray-900">{previousMonthStats?.qualified_count || 0}</div>
+                                    </div>
+                                    <div className="rounded-[20px] border border-gray-200 p-4">
+                                        <div className="text-[11px] font-black uppercase tracking-widest text-gray-500">Total Bonus</div>
+                                        <div className="text-2xl font-bold text-gray-900">{formatMultiPrice(previousMonthStats?.total_bonus_amount || 0, 'GBP')}</div>
+                                    </div>
+                                    <div className="rounded-[20px] border border-gray-200 p-4">
+                                        <div className="text-[11px] font-black uppercase tracking-widest text-gray-500">Top Earnings</div>
+                                        <div className="text-2xl font-bold text-gray-900">{formatMultiPrice(previousMonthStats?.top_earnings || 0, 'GBP')}</div>
+                                    </div>
+                                </div>
+
+                                {previousMonthStats?.top_creator ? (
+                                    <div className="mt-5 rounded-[20px] border border-gray-200 p-4 bg-gray-50">
+                                        <div className="text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Top Winner</div>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar
+                                                    profile_status_lock={previousMonthStats?.top_creator?.profile_status_lock}
+                                                    role={previousMonthStats?.top_creator?.role}
+                                                    src={previousMonthStats?.top_creator?.avatar_url || userphoto}
+                                                    name={previousMonthStats?.top_creator?.name}
+                                                    username={previousMonthStats?.top_creator?.username}
+                                                />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-sm font-bold text-gray-900">{formatMultiPrice(previousMonthStats?.top_bonus_amount || 0, 'GBP')}</div>
+                                                <div className="text-xs text-gray-500">bonus</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
+
+                                {previousMonthWinners && previousMonthWinners.length ? (
+                                    <div className="mt-5">
+                                        <div className="text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">
+                                            Winners List
+                                        </div>
+                                        <div className="overflow-auto">
+                                            <table className="w-full table-auto border-collapse border border-gray-200 rounded-[20px] overflow-hidden bg-gray-50">
+                                                <thead>
+                                                    <tr>
+                                                        <th className="border px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-600">Creator</th>
+                                                        <th className="border px-4 py-3 text-right text-xs font-black uppercase tracking-widest text-gray-600">Earnings</th>
+                                                        <th className="border px-4 py-3 text-right text-xs font-black uppercase tracking-widest text-gray-600">Bonus</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {previousMonthWinners.map((w) => (
+                                                        <tr key={w.id} className="hover:bg-white">
+                                                            <td className="border px-4 py-3">
+                                                                {w.creator ? (
+                                                                    <Avatar
+                                                                        profile_status_lock={w.creator.profile_status_lock}
+                                                                        role={w.creator.role}
+                                                                        src={w.creator.avatar_url || userphoto}
+                                                                        name={w.creator.name}
+                                                                        username={w.creator.username}
+                                                                    />
+                                                                ) : (
+                                                                    <span className="text-gray-500">—</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="border px-4 py-3 text-right text-sm font-bold text-gray-900">
+                                                                {formatMultiPrice(w.first_30d_earnings || 0, 'GBP')}
+                                                            </td>
+                                                            <td className="border px-4 py-3 text-right text-sm font-bold text-gray-900">
+                                                                {formatMultiPrice(w.bonus_amount || 0, 'GBP')}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {previousMonthStats?.qualified_count > (previousMonthWinners?.length || 0) ? (
+                                            <div className="text-xs text-gray-500 mt-2">
+                                                Showing top {previousMonthWinners.length}. Total winners: {previousMonthStats.qualified_count}.
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            <div className="bg-white rounded-[30px] shadow-sm border border-gray-200 p-6">
+                                <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Winners (Last 7 Days)</h2>
+                                {recentWinners && recentWinners.length ? (
+                                    <div className="overflow-auto">
+                                        <table className="w-full table-auto border-collapse border border-gray-200 rounded-[20px] overflow-hidden bg-gray-50">
+                                            <thead>
+                                                <tr>
+                                                    <th className="border px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-600">Creator</th>
+                                                    <th className="border px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-600">Qualified</th>
+                                                    <th className="border px-4 py-3 text-right text-xs font-black uppercase tracking-widest text-gray-600">Bonus</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {recentWinners.map((w) => (
+                                                    <tr key={w.id} className="hover:bg-white">
+                                                        <td className="border px-4 py-3">
+                                                            {w.creator ? (
+                                                                <Avatar
+                                                                    profile_status_lock={w.creator.profile_status_lock}
+                                                                    role={w.creator.role}
+                                                                    src={w.creator.avatar_url || userphoto}
+                                                                    name={w.creator.name}
+                                                                    username={w.creator.username}
+                                                                />
+                                                            ) : (
+                                                                <span className="text-gray-500">—</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="border px-4 py-3 text-sm font-bold text-gray-800">
+                                                            {w.qualification_date ? new Date(w.qualification_date).toLocaleDateString('en-GB') : '—'}
+                                                        </td>
+                                                        <td className="border px-4 py-3 text-right text-sm font-bold text-gray-900">
+                                                            {formatMultiPrice(w.bonus_amount || 0, 'GBP')}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-500">No winners qualified in the last 7 days.</div>
+                                )}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <div className="bg-white rounded-[30px] shadow-sm border border-gray-200 p-6 mb-8">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">All-time Winners</h2>
+                        {allTimeLoading ? (
+                            <div className="text-sm text-gray-500">Loading…</div>
+                        ) : allTimeWinners && allTimeWinners.length ? (
+                            <div className="overflow-auto">
+                                <table className="w-full table-auto border-collapse border border-gray-200 rounded-[20px] overflow-hidden bg-gray-50">
+                                    <thead>
+                                        <tr>
+                                            <th className="border px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-600">Creator</th>
+                                            <th className="border px-4 py-3 text-right text-xs font-black uppercase tracking-widest text-gray-600">Earnings</th>
+                                            <th className="border px-4 py-3 text-right text-xs font-black uppercase tracking-widest text-gray-600">Bonus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {allTimeWinners.map((w) => (
+                                            <tr key={w.id} className="hover:bg-white">
+                                                <td className="border px-4 py-3">
+                                                    {w.creator ? (
+                                                        <Avatar
+                                                            profile_status_lock={w.creator.profile_status_lock}
+                                                            role={w.creator.role}
+                                                            src={w.creator.avatar_url || userphoto}
+                                                            name={w.creator.name}
+                                                            username={w.creator.username}
+                                                        />
+                                                    ) : (
+                                                        <span className="text-gray-500">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="border px-4 py-3 text-right text-sm font-bold text-gray-900">
+                                                    {formatMultiPrice(w.first_30d_earnings || 0, 'GBP')}
+                                                </td>
+                                                <td className="border px-4 py-3 text-right text-sm font-bold text-gray-900">
+                                                    {formatMultiPrice(w.bonus_amount || 0, 'GBP')}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-sm text-gray-500">No winners yet.</div>
+                        )}
+                    </div>
                     
 
                     <div className="mt-16 mb-8">
                         <div>
-                            <h2 className="fading text-xl md:text-3xl font-gulfs uppercase font-bold flex items-center">
-                                {/* {currentMonth} {currentYear} */}
-
-                                {new Date().toLocaleDateString('en-GB', { year: 'numeric' })} &nbsp;
+                            <h2 className="fading text-xl md:text-3xl font-gulfs uppercase  flex items-center">
+                                {new Date().toLocaleDateString('en-GB', { year: 'numeric' })}&nbsp;
                                 Leaderboard
                             </h2>
                             <p className="fading text-gray-600 mt-1">
-                                New creators racing for Founder status
+                                Last 60 days participants (in-window and completed)
                             </p>
                         </div>
 
@@ -384,9 +637,11 @@ export default function FounderBonusIndex() {
                                                 {formatMultiPrice(entry.current_earnings, 'GBP')}
                                             </td>
                                             <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900"> 
-                                                {entry.days_remaining > 0 
+                                                {entry.days_remaining > 0
                                                     ? `${entry.days_remaining} days remaining`
-                                                    : 'Challenge period complete'
+                                                    : entry.is_qualified
+                                                        ? 'Qualified (window complete)'
+                                                        : 'Competition ended'
                                                 }
                                             </td>
                                             <td className="border-r border-gray-200 p-3"> 
@@ -398,6 +653,12 @@ export default function FounderBonusIndex() {
                                                         ></div>
                                                     </div>
                                                     <span className="text-sm text-gray-500">{Math.round(entry.progress ?? entry.qualification_progress ?? 0)}%</span>
+                                                    {entry.days_remaining <= 0 && !entry.is_qualified ? (
+                                                        <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-gray-500">ENDED</span>
+                                                    ) : null}
+                                                    {entry.is_qualified ? (
+                                                        <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-green-600">WINNER</span>
+                                                    ) : null}
                                                 </div>
                                             </td>
                                             {/* <td className="py-4 px-6">

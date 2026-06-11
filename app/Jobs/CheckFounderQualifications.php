@@ -13,6 +13,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
+use App\Helpers;
 
 class CheckFounderQualifications implements ShouldQueue
 {
@@ -32,59 +34,96 @@ class CheckFounderQualifications implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::info('Starting monthly founder qualification check (1st of month)');
+        Log::info('Starting founder qualification check');
 
-        // Check if we have available founder seats
+        // Check if we have available founder seats. Even with no seats left we keep
+        // going — creators whose window just ended still need their "missed" outcome
+        // recorded instead of everything silently disappearing.
         $currentFounderCount = FounderBonus::getTotalFounderCount();
         $maxSeats = FounderBonus::getMaxFounderSeats();
-        $availableSeats = $maxSeats - $currentFounderCount;
-
-        if ($availableSeats <= 0) {
-            Log::info('No available founder seats remaining');
-            return;
-        }
+        $availableSeats = max(0, $maxSeats - $currentFounderCount);
 
         Log::info("Available founder seats: {$availableSeats}");
 
-        // Get creators who completed their first 30 days in the previous month and are not already qualified
-        $lastMonth = now()->subMonth();
-        $startOfLastMonth = $lastMonth->startOfMonth();
-        $endOfLastMonth = $lastMonth->endOfMonth();
+        $qualificationDays = FounderBonus::getQualificationDays();
+        // Find creators who connected Stripe N+ days ago and haven't been qualified
+        // yet, and whose missed outcome hasn't been recorded either
+        $thirtyDaysAgo = now()->subDays($qualificationDays);
 
-        // Find creators who joined 30+ days ago and haven't been qualified yet
-        $thirtyDaysAgo = now()->subDays(30);
-        
-        $candidateCreators = User::where('role', 'creator')
-            ->where('created_at', '<=', $thirtyDaysAgo)
+        $candidateCreators = User::where('role', 1)
+            ->whereNotNull('stripe_connected_at')
+            ->where('stripe_connected_at', '<=', $thirtyDaysAgo)
+            ->where('stripe_details_submitted', 1)
+            ->whereNotNull('account_id')
             ->whereDoesntHave('founderBonus')
+            ->when(Schema::hasColumn('users', 'founder_missed_at'), function ($q) {
+                $q->whereNull('founder_missed_at');
+            })
             ->get();
 
         Log::info("Found {$candidateCreators->count()} creators eligible for qualification check");
 
         $newFounders = 0;
+        $missed = 0;
+        $minEarnings = FounderBonus::getMinFirst30dEarnings();
 
         foreach ($candidateCreators as $creator) {
-            if ($newFounders >= $availableSeats) {
-                Log::info('All available founder seats have been filled');
-                break;
-            }
-
             // Calculate first 30-day earnings
             $first30DayEarnings = $this->calculateFirst30DayEarnings($creator);
-            $minEarnings = FounderBonus::getMinFirst30dEarnings();
 
             Log::info("Creator {$creator->name} (ID: {$creator->id}) earned £{$first30DayEarnings} in first 30 days");
 
-            if (FounderBonus::checkFounderQualification($creator->id, $first30DayEarnings)) {
+            $meetsEarnings = $first30DayEarnings >= $minEarnings;
+
+            if ($meetsEarnings && $newFounders < $availableSeats && FounderBonus::checkFounderQualification($creator->id, $first30DayEarnings)) {
                 // Qualify as founder
                 $this->qualifyAsFounder($creator, $first30DayEarnings);
                 $newFounders++;
-                
+
                 Log::info("New founder qualified: {$creator->name} (ID: {$creator->id}) with £{$first30DayEarnings} in first 30 days");
+                continue;
             }
+
+            // Window is over and they didn't make it — record the missed outcome once
+            // and tell them, instead of leaving them with no information.
+            $this->markAsMissed($creator, $meetsEarnings ? 'seats_full' : 'earnings_below_threshold');
+            $missed++;
         }
 
-        Log::info("Monthly founder qualification check completed. New founders: {$newFounders}");
+        Log::info("Founder qualification check completed. New founders: {$newFounders}, missed: {$missed}");
+    }
+
+    /**
+     * Record (once) that a creator's 30-day founder window ended without qualifying,
+     * and send them a one-time notification.
+     */
+    private function markAsMissed(User $creator, string $reason): void
+    {
+        if (!Schema::hasColumn('users', 'founder_missed_at')) {
+            return;
+        }
+
+        // Atomic claim: only the run that flips NULL → now() sends the notification,
+        // so an overlapping run can never notify twice.
+        $claimed = User::whereKey($creator->id)
+            ->whereNull('founder_missed_at')
+            ->update(['founder_missed_at' => now()]);
+
+        if ($claimed === 0) {
+            return;
+        }
+
+        $message = $reason === 'seats_full'
+            ? 'You hit the earnings goal, but all Founder seats were taken this time. Stay updated — more bonus opportunities are coming.'
+            : 'Your first 30 days have ended and the Founder earnings goal wasn\'t reached this time. Stay updated for more bonus opportunities.';
+
+        try {
+            Helpers::sendNotification('Founder Program update', $message, $creator->email);
+        } catch (\Throwable $e) {
+            Log::error("Failed to send founder missed notification to {$creator->email}: " . $e->getMessage());
+        }
+
+        Log::info("Founder window missed recorded for creator {$creator->id} ({$reason})");
     }
 
     /**
@@ -92,31 +131,18 @@ class CheckFounderQualifications implements ShouldQueue
      */
     private function calculateFirst30DayEarnings(User $creator): float
     {
-        $createdAt = $creator->created_at;
-        $thirtyDaysLater = $createdAt->copy()->addDays(30);
-
-        // Sum all deliverable transaction_amount amounts for the creator in their first 30 days
-        $transactions = \App\Models\FinancialTransaction::where('user_id', $creator->id)
-            ->where('type', 'income')
-            ->where('status', 'completed')
-            ->whereBetween('transaction_date', [$createdAt, $thirtyDaysLater])
-            ->get();
-
-        $earnings = 0;
-        foreach ($transactions as $tx) {
-            $currency = strtoupper($tx->currency ?? 'GBP');
-            $net = (float) ($tx->net_amount ?? 0);
-            $vat = (float) ($tx->vat_amount ?? 0);
-            $gross = $net + $vat;
-            
-            if ($currency === 'GBP') {
-                $earnings += $gross;
-            } else {
-                $earnings += \App\Helpers::priceFormat($currency, $gross, 'GBP');
-            }
+        if (!$creator->stripe_connected_at) {
+            return 0.0;
         }
 
-        return (float) $earnings;
+        $qualificationDays = FounderBonus::getQualificationDays();
+        $startAt = $creator->stripe_connected_at;
+        $thirtyDaysLater = $startAt->copy()->addDays($qualificationDays);
+
+        // Single source of truth — the same net-earnings formula the founder page
+        // and monthly bonus use, so the number a creator sees is the number that
+        // decides their qualification.
+        return (float) FounderBonus::calculateCompletedNetEarnings($creator, $startAt, $thirtyDaysLater, 'GBP');
     }
 
     /**
@@ -125,6 +151,10 @@ class CheckFounderQualifications implements ShouldQueue
     private function qualifyAsFounder(User $creator, float $first30DayEarnings): void
     {
         DB::transaction(function () use ($creator, $first30DayEarnings) {
+            if (Schema::hasColumn('users', 'is_founder')) {
+                $creator->update(['is_founder' => true]);
+            }
+
             // Calculate bonus amount (10% of first 30 days earnings)
             $bonusAmount = FounderBonus::calculateBonusAmount($first30DayEarnings);
             
@@ -144,10 +174,20 @@ class CheckFounderQualifications implements ShouldQueue
             // Send congratulations email
             try {
                 if (config('founder_bonus.features.email_notifications', true)) {
-                    Mail::to($creator->email)->send(new FounderCongratulations($creator, $first30DayEarnings));
+                    \App\EmailService::sendMarketingEmail($creator, new FounderCongratulations($creator, $first30DayEarnings));
                 }
             } catch (\Exception $e) {
                 Log::error("Failed to send founder congratulations email to {$creator->email}: " . $e->getMessage());
+            }
+
+            try {
+                Helpers::sendNotification(
+                    "You're a SpennyPiggy Founder",
+                    'Congrats! You qualified for the Founder Program. Open Founder dashboard to see your benefits and bonus tracking.',
+                    $creator->email
+                );
+            } catch (\Throwable $e) {
+                Log::error("Failed to send founder qualification push to {$creator->email}: " . $e->getMessage());
             }
         });
     }

@@ -470,29 +470,41 @@ class OptimizedProfileController extends Controller
         $isEligible = false;
         $daysLeft = 0;
         $minEarnings = \App\Models\FounderBonus::getMinFirst30dEarnings();
+        $windowStart = null;
+        $windowEnd = null;
+        $qualificationDays = (int) config('founder_bonus.qualification.qualification_period_days', 30);
 
         if ($user) {
-            $createdAt = $user->created_at;
-            $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
+            $startAt = $user->stripe_connected_at ?: null;
+            if ($startAt) {
+                $windowStart = $startAt->copy();
+                $windowEnd = $startAt->copy()->addDays($qualificationDays);
             
-            // Check if user is eligible (in the race)
-            if (!$user->is_founder && now()->lessThan($thirtyDaysAfterCreation)) {
-                $isEligible = true;
-                $daysLeft = max(0, now()->diffInDays($thirtyDaysAfterCreation, false));
-            } else if (!$user->is_founder) {
-                // Also check if they joined within 60 days, as they might be on the leaderboard
-                // waiting for month-end processing
-                $cutoffDate = now()->subDays(60);
-                if ($createdAt->greaterThanOrEqualTo($cutoffDate)) {
+                if (!$user->is_founder && now()->lessThan($windowEnd)) {
                     $isEligible = true;
-                    $daysLeft = 0; // Qualification period over, waiting for results
+                    $daysLeft = max(0, now()->diffInDays($windowEnd, false));
+                } else if (!$user->is_founder) {
+                    if ($user->founder_missed_at) {
+                        // Window ended without qualifying — keep the tracker visible
+                        // (as a "missed" banner) for 14 days after the outcome
+                        if ($user->founder_missed_at->gt(now()->subDays(14))) {
+                            $isEligible = true;
+                            $daysLeft = 0;
+                        }
+                    } else {
+                        $cutoffDate = now()->subDays(60);
+                        if ($startAt->greaterThanOrEqualTo($cutoffDate)) {
+                            $isEligible = true;
+                            $daysLeft = 0;
+                        }
+                    }
                 }
-            }
             
-            $endDate = $thirtyDaysAfterCreation->isFuture() ? now() : $thirtyDaysAfterCreation;
-            $financialService = app(\App\Services\FinancialService::class);
-            $summary = $financialService->getSummary($user, $createdAt, $endDate, 'GBP');
-            $first30DayEarnings = (float) ($summary['gross_income'] ?? 0);
+                $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
+                // Same net-earnings formula the qualification job uses, so the tracker
+                // shows the number that actually decides qualification
+                $first30DayEarnings = (float) \App\Models\FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
+            }
         }
 
         return [
@@ -500,6 +512,11 @@ class OptimizedProfileController extends Controller
             'isEligible' => $isEligible,
             'daysLeft' => $daysLeft,
             'minEarnings' => $minEarnings,
+            'qualificationDays' => $qualificationDays,
+            'windowStart' => $windowStart ? $windowStart->toDateString() : null,
+            'windowEnd' => $windowEnd ? $windowEnd->toDateString() : null,
+            'missed' => (bool) ($user && !$user->is_founder && $user->founder_missed_at),
+            'missedAt' => $user?->founder_missed_at?->toDateString(),
         ];
     }
 }

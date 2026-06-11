@@ -1,11 +1,38 @@
 import { Link, Head } from "@inertiajs/react";
-import { useEffect, lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
+import StackedCard from '@/Components/animations/StackedCard';
+import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
 import fun1 from "../../assets/new/Fun1.png";
 import fun2 from "../../assets/new/Fun2.png";
 import fun3 from "../../assets/new/Fun3.png";
+
+// The three "fun" panels render as a sticky 3D stacking-card scroll scene.
+const FUN_CARDS = [
+    {
+        img: fun1,
+        reverse: true,
+        bg: 'bg-[#EFEA7B]',
+        textcolor: 'text-black',
+        heading: 'Effortlessly add your dream items, share your page, and get going in minutes!',
+    },
+    {
+        img: fun2,
+        reverse: false,
+        bg: 'bg-[#FF007F]',
+        textcolor: '',
+        heading: 'Let your fans spoil you with gifts from any online store!',
+    },
+    {
+        img: fun3,
+        reverse: true,
+        bg: 'bg-[#EFEA7B]',
+        textcolor: 'text-black',
+        heading: "Build your profile shop! the creative way to sell anything that probably doesn't have a place on shopify...",
+    },
+];
 
 // Lazy load components that are "below the fold"
 const ComingNext = lazy(() => import("./home/ComingNext"));
@@ -30,8 +57,22 @@ const TopEarners = lazy(() => import('./home/TopEarners'));
 const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'));
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
 
-    useEffect(()=>{},[]);
-
+    // Warm the fun-card images in the browser cache during idle time so the
+    // stacked cards never show an empty image side when scrolled into view.
+    useEffect(() => {
+        const preload = () => {
+            FUN_CARDS.forEach(({ img }) => {
+                const image = new Image();
+                image.src = img;
+            });
+        };
+        if ('requestIdleCallback' in window) {
+            const id = window.requestIdleCallback(preload, { timeout: 3000 });
+            return () => window.cancelIdleCallback(id);
+        }
+        const id = setTimeout(preload, 1500);
+        return () => clearTimeout(id);
+    }, []);
 
     // https://ucarecdn.com/b8140316-a9b0-4833-af41-3bc5841a0ce6/-/preview/900x300/-/text_align/center/center/-/font/11/000000/-/text/80px90p/100p,100p/spennypiggy.co~sNAVEENFP/-/text_align/center/center/-/font/19/000000/-/text/100px100p/100p,100p/NAVEEN/-/overlay/50ee2983-6aa8-4f34-9ee4-f28b2930d82b/30px30p/20p,50p/
 
@@ -63,24 +104,24 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         </Head>
 
         <Guest auth={auth.user} user={auth.user}>
-            <LiveBar reps={15} classes={'blackbg barouter'} 
-            livebartest={[
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!",
-                "🤑 Keep 100% of what you earn!",
-                "⚡️Fast & Easy Payment's through 🍎 Pay!"
-                ]
-            }
+            <ScrollProgressBar />
+            <LiveBar reps={15} classes={'blackbg barouter'}
+                livebartest={[
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!",
+                    "🤑 Keep 100% of what you earn!",
+                    "⚡️Fast & Easy Payment's through 🍎 Pay!"
+                ]}
              />
             <Hero auth={auth} />
             
@@ -96,30 +137,25 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 {topEarners && topEarners.length > 0 ? <TopEarners creators={topEarners} periodLabel={topEarnersLabel} /> : ''}
 
                 <PaymentSlider/>
-
-                <FunPart 
-                    classes={`border-top-0`}
-                    img={fun1} reverse={true}
-                    mainbg={`bg-[#EFEA7B]`} eclasses={``}
-                    textbg={`bg-[#EFEA7B]`} textcolor='text-black'
-                    heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
-                />
-
-                <FunPart 
-                    classes={`border-top-0`}
-                    img={fun2} reverse={false}
-                    mainbg={`bg-[#FF007F]`} eclasses={``}
-                    textbg={`bg-[#FF007F]`}
-                    heading={`Let your fans spoil you with gifts from any online store!`}
-                />
-                <FunPart 
-                    classes={`border-top-0`}
-                    img={fun3} reverse={true}
-                    mainbg={`bg-[#EFEA7B]`} eclasses={``}
-                    textbg={`bg-[#EFEA7B]`} textcolor='text-black'
-                    heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
-                />
-
+                <div className="bg-black md:pb-[12vh]">
+                    {FUN_CARDS.map((card, i) => (
+                        <StackedCard
+                            key={i}
+                            index={i}
+                            totalCards={FUN_CARDS.length}
+                            topOffset="12vh"
+                            className="mb-6 md:mb-0"
+                        >
+                            <FunPart
+                                classes={`border-top-0 md:rounded-[40px] overflow-hidden md:mx-8 md:border-4 md:border-black md:shadow-[0_-20px_60px_rgba(0,0,0,0.7)]`}
+                                img={card.img} reverse={card.reverse}
+                                mainbg={card.bg} eclasses={``}
+                                textbg={card.bg} textcolor={card.textcolor || undefined}
+                                heading={card.heading}
+                            />
+                        </StackedCard>
+                    ))}
+                </div>
                 <Membership />
                 <NotForBusiness />
                 <WhyLove />
@@ -127,7 +163,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 <FeatureSuggestionSection auth={auth} />
                 <FAQ />
                 <JoinUs />
-                
                 <LiveBar
                     reps={15}
                     classes={"py-3 bg-[#E6EA7B]"}

@@ -2,6 +2,8 @@ import howitworks1 from "../../../assets/new/howitworks1.png";
 import howitworks2 from "../../../assets/new/howitworks2.png";
 import howitworks3 from "../../../assets/new/howitworks3.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
+import FadeIn from '@/Components/animations/FadeIn';
+import StaggerItem from '@/Components/animations/StaggerItem';
 
 export default function NotForBusiness() {
     const data = [
@@ -26,7 +28,7 @@ export default function NotForBusiness() {
     ];
 
     return (
-        <section className="bg-black py-16 md:py-24 relative ">
+        <section className="bg-black py-16 md:py-24 relative overflow-x-hidden">
              {/* Decorative Background Elements */}
              <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-1/4 left-0 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
@@ -34,14 +36,16 @@ export default function NotForBusiness() {
             </div>
 
             <div className="containerbox relative  ">
+                <FadeIn y={30} duration={0.6}>
                 <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-tight">
                     How It <span className="text-gradient-wishlist">Works</span>
                 </h2>
+                </FadeIn>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">
                     <div className="hidden md:block absolute top-[100px] left-[16%] right-[16%] h-1 bg-gradient-to-r from-pink-500 via-yellow-500  to-pink-500  z-0"></div>
                     {data.map((item, index) => (
-                        <div key={index} className="mb-6 flex flex-col items-center text-center relative group">
+                        <StaggerItem key={index} index={index} x={index % 2 === 0 ? -60 : 60} y={20} rotate={index % 2 === 0 ? -2 : 2} stagger={0.2} duration={0.7} className="mb-6 flex flex-col items-center text-center relative group">
                             {/* Step Number Badge */}
                             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-1 transition-transform duration-300 group-hover:-translate-y-2">
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-yellow-500 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] border-2 border-black text-white font-gulfs text-xl">
@@ -67,7 +71,7 @@ export default function NotForBusiness() {
                             <p className="fading text-gray-400 font-poppins text-sm lg:text-base leading-relaxed max-w-xs mx-auto whitespace-pre-line group-hover:text-gray-300 transition-colors">
                                 {item.description}
                             </p>
-                        </div>
+                        </StaggerItem>
                     ))}
                 </div>
             </div>

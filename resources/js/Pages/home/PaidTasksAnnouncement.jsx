@@ -1,13 +1,14 @@
 import { Link, usePage } from "@inertiajs/react";
 import { FaBolt, FaMagic, FaShieldAlt, FaRocket } from 'react-icons/fa';
+import FadeIn from '@/Components/animations/FadeIn';
+import StaggerItem from '@/Components/animations/StaggerItem';
 
 export default function PaidTasksAnnouncement() {
     const { auth } = usePage().props;
     const isCreator = auth && auth.user && auth.user.role === 1;
-
     return (
         <>
-            <div className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative">
+            <div className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative overflow-x-hidden">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
                     <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
@@ -16,30 +17,37 @@ export default function PaidTasksAnnouncement() {
 
                 <div className="max-w-7xl mx-auto relative z-10">
                     <div className="text-center mb-8 md:mb-16">
-                        <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-                            <span className="bg-yellow-400 text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
-                                ✨ New Feature ✨
-                            </span>
-                        </div>
+                        <FadeIn y={20} duration={0.5}>
+                            <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+                                <span className="bg-yellow-400 text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
+                                    ✨ New Feature ✨
+                                </span>
+                            </div>
+                        </FadeIn>
                         
-                        <h2 className="uppercase fading text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-[4px_4px_0px_0px_#FF007F]xl">
-                            Get Paid for Requests <br/>
-                            <span className="uppercase text-gradient-wishlist tracking-[2px] animate-pulse">
-                                On Your Terms 
-                            </span> 💸
-                        </h2>
+                        <FadeIn x={-80} y={0} delay={0.1} duration={0.7}>
+                            <h2 className="uppercase fading text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-[4px_4px_0px_0px_#FF007F]xl">
+                                Get Paid for Requests <br/>
+                                <span className="uppercase text-gradient-wishlist tracking-[2px] animate-pulse">
+                                    On Your Terms 
+                                </span> 💸
+                            </h2>
+                        </FadeIn>
                         
-                        <p className="fading text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto font-medium leading-relaxed">
-                            Supporters pay before requesting a task. You approve, set the rules, and deliver on your own time.
-                            Late delivery? Refunds follow your terms — enforced automatically.
-                        </p>
+                        <FadeIn y={20} delay={0.2}>
+                            <p className="fading text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto font-medium leading-relaxed">
+                                Supporters pay before requesting a task. You approve, set the rules, and deliver on your own time.
+                                Late delivery? Refunds follow your terms — enforced automatically.
+                            </p>
+                        </FadeIn>
                     </div>
 
                     {/* Cards Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
                         
                         {/* Card 1: Instant */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F]">
+                        <StaggerItem index={0} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
+                        <div className="h-full bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F]">
                             <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
@@ -53,9 +61,11 @@ export default function PaidTasksAnnouncement() {
                                 <span className="text-sm font-bold text-gray-300 uppercase">Passive income mode </span>
                             </div>
                         </div>
+                        </StaggerItem>
 
                         {/* Card 2: Custom */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300  shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15]">
+                        <StaggerItem index={1} x={-80} y={0} rotate={1} stagger={0.15} duration={0.6}>
+                        <div className="h-full bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300  shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15]">
                             <div className="absolute -top-6 -right-6 bg-yellow-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
                                 <FaMagic />
                             </div>
@@ -72,9 +82,11 @@ export default function PaidTasksAnnouncement() {
                                 </span>
                             </div>
                         </div>
+                        </StaggerItem>
 
                         {/* Card 3: Safe */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-purple-500 rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#A855F7] md:shadow-[8px_8px_0px_0px_#A855F7]">
+                        <StaggerItem index={2} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
+                        <div className="h-full bg-gray-900 border-2 mb-2 md:mb-0 border-purple-500 rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#A855F7] md:shadow-[8px_8px_0px_0px_#A855F7]">
                             <div className="absolute -top-6 -right-6 bg-purple-500 text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
                                 <FaShieldAlt />
                             </div>
@@ -96,6 +108,7 @@ If a task isn’t delivered on time, refunds are handled according to your terms
                                 </span>
                             </div>
                         </div>
+                        </StaggerItem>
 
                     </div>
 

@@ -21,34 +21,66 @@ export default function FounderProgressTracker({
         return null;
     }
 
-    const { first30DayEarnings, daysLeft, minEarnings } = founderData;
+    const { first30DayEarnings, daysLeft, minEarnings, windowEnd } = founderData;
 
     const progressPercentage = Math.min(
         100,
         Math.round((first30DayEarnings / minEarnings) * 100)
     );
-    
+
     const remaining = Math.max(0, minEarnings - first30DayEarnings);
     const hasReachedGoal = first30DayEarnings >= minEarnings;
 
-    if (variant === "mini") {
+    // Window ended without qualifying — show the missed outcome (for ~14 days)
+    // instead of a stale race tracker
+    if (founderData.missed) {
         return (
-            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-gradient-to-r from-[#ff007f] to-[#ff3d8b] p-4 md:p-6 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-gray-900 p-4 md:p-6 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                        <p className="flex items-center gap-2 text-lg font-black uppercase tracking-wider">
+                        <p className="font-gulfs font-light flex items-center gap-2 text-lg md:text-2xl font-black uppercase tracking-widest">
+                            Founder Race Ended <span>⏰</span>
+                        </p>
+                        <p className="mt-1 text-normal font-semibold text-gray-300">
+                            {hasReachedGoal
+                                ? "You hit the goal, but all Founder seats were taken this time."
+                                : `You reached ${formatMultiPrice(first30DayEarnings, "GBP")} of the ${formatMultiPrice(minEarnings, "GBP")} goal — you missed it this time.`}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-400">
+                            💜 Stay updated — more bonus opportunities are coming!
+                        </p>
+                    </div>
+                    <Link
+                        href="/founder/bonus"
+                        className="self-start sm:self-center rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#ff007f] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5"
+                    >
+                        View
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (variant === "mini") {
+        return (
+            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-yellow-300 p-4 md:p-6 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                        <p className="text-black font-gulfs font-light flex items-center gap-2 text-lg md:text-2xl font-black uppercase tracking-widest uppercase">
                              Founder Race <span>🚀</span>
                         </p>
-                        <p className="mt-1 text-normal font-semibold text-white/90">
+                        <p className="mt-1 text-normal font-semibold text-gray-700">
                             {formatMultiPrice(first30DayEarnings, "GBP")} earned •{" "}
                             {formatMultiPrice(remaining, "GBP")} to badge
                         </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-bold">
+                        <div className="text-black rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-bold">
                             <FaClock className="mr-2 inline-block h-3 w-3" />
-                            {daysLeft} days left
+                            {hasReachedGoal
+                                ? (daysLeft > 0 ? `Winner decided in ${daysLeft} days` : "Winner being decided")
+                                : `${daysLeft} days left`}
                         </div>
                         <Link
                             href="/founder/bonus"
@@ -61,18 +93,18 @@ export default function FounderProgressTracker({
 
                 <div className="mt-4">
                     <div className="mb-2 flex items-center justify-between text-xs font-bold">
-                        <span className="flex items-center gap-2">
+                        <span className="text-black flex items-center gap-2">
                             <FaChartLine className="h-3 w-3" /> Progress
                         </span>
-                        <span>{progressPercentage}%</span>
+                        <span className="text-black">{progressPercentage}%</span>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full border border-white/20 bg-black/20">
+                    <div className="border-black text-black h-3 overflow-hidden rounded-full border border-white/20 bg-black/20">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500"
+                            className=" h-full rounded-full bg-gradient-to-r from-pink-300 to-pink-500"
                             style={{ width: `${progressPercentage}%` }}
                         ></div>
                     </div>
-                    <p className="mt-2 text-xs font-semibold text-white/90">
+                    <p className="text-black mt-2 text-xs font-semibold">
                         {hasReachedGoal ? "Goal hit — nice!" : "Keep going — you’re close!"}
                     </p>
                 </div>
@@ -105,7 +137,11 @@ export default function FounderProgressTracker({
 
                 <div className="mt-3">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold">
-                        <span>{daysLeft} days left</span>
+                        <span>
+                            {hasReachedGoal
+                                ? (daysLeft > 0 ? `Winner decided in ${daysLeft} days` : "Winner being decided")
+                                : `${daysLeft} days left`}
+                        </span>
                         <span>{formatMultiPrice(remaining, "GBP")} to go</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-white/25">
@@ -141,8 +177,10 @@ export default function FounderProgressTracker({
                 <div className="flex items-center gap-4">
                     <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 border border-white/30">
                         <FaClock className="text-pink-200" />
-                        <span className="font-bold">Time Left :</span>
-                        <span className="font-bold text-lg">{daysLeft} Days</span>
+                        <span className="font-bold">{hasReachedGoal ? "Winner Decides :" : "Time Left :"}</span>
+                        <span className="font-bold text-lg">
+                            {daysLeft > 0 ? `${daysLeft} Days` : "Pending"}
+                        </span>
                     </div>
                     
                     <Link href="/founder/bonus" className="bg-white text-pink-600 hover:bg-pink-50 px-4 py-2 rounded-full font-bold text-sm shadow-md transition-all">

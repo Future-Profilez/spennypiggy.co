@@ -2,7 +2,6 @@ import React, { Children } from "./react-polyfill.js";
 import { route } from 'ziggy-js';
 import "./bootstrap";
 
-// Make route function available globally
 window.route = route;
 
 import "../css/fonts-optimized.css";
@@ -10,12 +9,9 @@ import "../css/theme.css";
 import "../css/core-web-vitals.css";
 import "../css/index.css";
 import "../css/home.css";
-// Load app.css last so its styles win in the cascade
 import "../css/app.css";
-// Include confetti animations styles
 import "../css/confetti.css";
 import 'react-lazy-load-image-component/src/effects/blur.css';
-
 import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 

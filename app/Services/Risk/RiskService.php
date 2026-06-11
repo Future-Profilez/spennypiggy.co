@@ -309,7 +309,9 @@ class RiskService
         
         $isNewCreator = false;
         if ($metric->creator) {
-            $isNewCreator = $metric->creator->created_at->diffInDays(now()) < $newCreatorAgeDays;
+            // "New creator" is measured from Stripe connection (when earnings start), not account creation.
+            $anchor = $metric->creator->stripe_connected_at ?: $metric->creator->created_at;
+            $isNewCreator = $anchor && $anchor->diffInDays(now()) < $newCreatorAgeDays;
         }
 
         if ($isNewCreator) {

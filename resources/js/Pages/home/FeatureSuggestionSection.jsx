@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import FeatureSuggestionModal from '@/Components/FeatureSuggestionModal';
 import { FaLightbulb, FaRocket, FaStar, FaMagic, FaPlus } from 'react-icons/fa';
+import FadeIn from '@/Components/animations/FadeIn';
+import ScrollX from '@/Components/animations/ScrollX';
+import WatermarkStrip from '@/Components/animations/WatermarkStrip';
+import Magnetic from '@/Components/animations/Magnetic';
 
 export default function FeatureSuggestionSection({ auth }) {
     const [showModal, setShowModal] = useState(false);
 
     return (
-        <section className="bg-[var(--pink)] py-24 md:py-32 relative overflow-hidden border-t border-white/5">
+        <section className="bg-[var(--pink)] py-16 md:py-32 relative overflow-hidden border-t border-white/5">
             {/* Background decorative elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-900/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
                 <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-yellow-500/5 rounded-full filter blur-[100px]"></div>
-                
+
                 {/* Floating particles */}
                 <div className="absolute top-1/4 left-10 w-1 h-1 bg-white/20 rounded-full animate-ping"></div>
                 <div className="absolute top-3/4 left-1/4 w-1.5 h-1.5 bg-purple-500/20 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
@@ -19,45 +23,62 @@ export default function FeatureSuggestionSection({ auth }) {
                 <div className="absolute top-10 right-1/3 w-2 h-2 bg-[#FF007F]/10 rounded-full animate-ping" style={{ animationDuration: '4s' }}></div>
             </div>
 
+            {/* Giant outlined idea strip — scrubs sideways with scroll */}
+            <WatermarkStrip text="Ideas" from={-300} to={150} opacity={0.28} className="bottom-4" />
+
             <div className="containerbox relative z-10 px-4 mx-auto text-center">
                 <div className="max-w-4xl mx-auto">
-                    <div className="fading flex justify-center mb-10">
+                    <FadeIn y={20} scale={0.9} duration={0.5}>
+                    <div className="fading flex justify-center mb-6 md:mb-10">
+                        {/* Bulb tile spins gently as the page scrolls */}
+                        <ScrollX from={0} to={0} rotate={18}>
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
-                            <div className="relative w-24 h-24 bg-[#0d0d0d] border border-white/10 rounded-[30px]  flex items-center justify-center shadow-[4px 4px 0px 0px rgb(255 0 127)]xl transform transition-transform duration-700 group-hover:scale-110">
-                                <FaLightbulb className="text-[#EFEA7B] text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
+                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border border-white/10 rounded-[20px] md:rounded-[30px]  flex items-center justify-center shadow-[4px 4px 0px 0px rgb(255 0 127)]xl transform transition-transform duration-700 group-hover:scale-110">
+                                <FaLightbulb className="text-[#EFEA7B] text-3xl md:text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
                             </div>
                         </div>
+                        </ScrollX>
                     </div>
-                    
-                    <h2 className="fading text-4xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase tracking-wide leading-[1.1]">
-                        Have a <span className="text-yellow-400">Brilliant</span> Idea?
+                    </FadeIn>
+
+                    {/* Whole heading glides sideways with the scroll */}
+                    <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase tracking-wide leading-[1.1]">
+                        <ScrollX as="span" from={-100} to={50} className="inline-block">
+                            Have a <span className="text-yellow-400">Brilliant</span> Idea?
+                        </ScrollX>
                     </h2>
-                    
-                    <p className="fading text-gray-100 text-lg md:text-xl font-poppins mb-12 leading-relaxed max-w-2xl mx-auto opacity-90">
-                        We're constantly building and improving Spenny Piggy for our community. 
+
+                    <FadeIn y={20} delay={0.2}>
+                    <p className="fading text-gray-100 text-base md:text-xl font-poppins mb-8 md:mb-12 leading-relaxed max-w-2xl mx-auto opacity-90">
+                        We're constantly building and improving Spenny Piggy for our community.
                         Is there a feature you'd love to see? Let us know and help shape the future of the platform!
                     </p>
-                    
+                    </FadeIn>
+
+                    <FadeIn y={15} delay={0.3}>
                     <div className="fading">
-                        <button 
+                        <Magnetic strength={0.3}>
+                        <button
                             onClick={() => setShowModal(true)}
-                            className="group relative inline-flex items-center gap-6 bg-white text-black font-gulfs uppercase text-lg md:text-xl py-4 px-10 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 hover:-rotate-1 transition-all duration-500 overflow-hidden"
+                            className="group relative inline-flex items-center gap-3 md:gap-6 bg-white text-black font-gulfs uppercase text-base md:text-xl py-3 px-7 md:py-4 md:px-10 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 hover:-rotate-1 transition-all duration-500 overflow-hidden"
                         >
                             <span className="relative z-10">Suggest a Feature</span>
                             <FaRocket className="relative z-10 text-xl group-hover:translate-x-3 group-hover:-translate-y-3 transition-transform duration-500" />
-                            
+
                             {/* Hover Gradient Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         </button>
+                        </Magnetic>
                     </div>
+                    </FadeIn>
                 </div>
             </div>
 
-            <FeatureSuggestionModal 
-                show={showModal} 
-                onClose={() => setShowModal(false)} 
-                auth={auth} 
+            <FeatureSuggestionModal
+                show={showModal}
+                onClose={() => setShowModal(false)}
+                auth={auth}
             />
         </section>
     );

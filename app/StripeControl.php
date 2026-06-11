@@ -1063,7 +1063,9 @@ class StripeControl
     /**
      * Create a payout to a connected account's bank account
      *
-     * @param array $payload Payout payload
+     * @param array $payload Payout payload. Pass an 'idempotency_key' to guard against
+     *                       duplicate payouts on network retries / re-runs — it is pulled
+     *                       out of the payload and sent as a Stripe request option.
      * @param string $connectedAccountId
      * @return \Stripe\Payout
      * @throws Exception
@@ -1073,11 +1075,17 @@ class StripeControl
         $currency = $payload['currency'] ?? 'GBP';
         $client = self::getClientForCurrency($currency);
 
+        // Pull idempotency_key out of the payload — it is a request option, not a param.
+        $idempotencyKey = $payload['idempotency_key'] ?? null;
+        unset($payload['idempotency_key']);
+
+        $options = ['stripe_account' => $connectedAccountId];
+        if ($idempotencyKey) {
+            $options['idempotency_key'] = (string) $idempotencyKey;
+        }
+
         try {
-            return $client->payouts->create(
-                $payload,
-                ['stripe_account' => $connectedAccountId]
-            );
+            return $client->payouts->create($payload, $options);
         } catch (Exception $e) {
             Log::error("Stripe Payout Error: " . $e->getMessage());
             throw new Exception("Stripe Payout Error: " . $e->getMessage());
@@ -1143,7 +1151,7 @@ class StripeControl
         }
     }
 
-    public static function transferToConnectedAccountMinor(string $destinationAccountId, int $amountMinor, string $currency = 'usd', array $metadata = [], ?string $description = null)
+    public static function transferToConnectedAccountMinor(string $destinationAccountId, int $amountMinor, string $currency = 'usd', array $metadata = [], ?string $description = null, ?string $idempotencyKey = null)
     {
         $client = self::getClientForCurrency($currency);
 
@@ -1160,7 +1168,12 @@ class StripeControl
                 $payload['metadata'] = $metadata;
             }
 
-            return $client->transfers->create($payload);
+            $options = [];
+            if ($idempotencyKey) {
+                $options['idempotency_key'] = $idempotencyKey;
+            }
+
+            return $client->transfers->create($payload, $options);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
@@ -1169,6 +1182,50 @@ class StripeControl
             throw new Exception("Stripe API Connection: " . $e->getMessage());
         } catch (ApiErrorException $e) {
             throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    public static function updateTransferMinor(string $transferId, string $currency = 'usd', array $metadata = [], ?string $description = null)
+    {
+        $client = self::getClientForCurrency($currency);
+
+        try {
+            $payload = [];
+            if (!empty($description)) {
+                $payload['description'] = $description;
+            }
+            if (!empty($metadata)) {
+                $payload['metadata'] = $metadata;
+            }
+            if (empty($payload)) {
+                return $client->transfers->retrieve($transferId);
+            }
+
+            return $client->transfers->update($transferId, $payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    public static function updatePayoutMetadata(string $payoutId, string $connectedAccountId, string $currency = 'usd', array $metadata = [])
+    {
+        $client = self::getClientForCurrency($currency);
+
+        try {
+            if (empty($metadata)) {
+                return $client->payouts->retrieve($payoutId, [], ['stripe_account' => $connectedAccountId]);
+            }
+
+            return $client->payouts->update($payoutId, ['metadata' => $metadata], ['stripe_account' => $connectedAccountId]);
+        } catch (Exception $e) {
+            Log::error("Stripe Payout Update Error: " . $e->getMessage());
+            throw new Exception("Stripe Payout Update Error: " . $e->getMessage());
         }
     }
 
