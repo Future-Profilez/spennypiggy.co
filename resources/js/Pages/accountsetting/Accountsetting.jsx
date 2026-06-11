@@ -68,6 +68,7 @@ export default function Accountsetting(props) {
         site_subscription,
         subscription_history,
         subscription_status,
+        monthly_charges,
     } = usePage().props;
 
     const [emailPopupAction, setEmailPopupAction] = useState(null);
@@ -382,6 +383,7 @@ export default function Accountsetting(props) {
                                     subscription_status={subscription_status}
                                     user={auth?.user}
                                     site_subscription={site_subscription}
+                                    monthly_charges={monthly_charges}
                                 >
                                     <SubscriptionHistory
                                         subscriptionHistory={

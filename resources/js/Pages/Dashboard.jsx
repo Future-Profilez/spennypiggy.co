@@ -129,6 +129,7 @@ export default function Dashboard(props) {
         migration_status,
         has_stripe_account,
         founderData,
+        monthly_charges,
     } = props;
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -930,6 +931,9 @@ export default function Dashboard(props) {
                                                                             }
                                                                             card_capabilities={
                                                                                 card_capabilities
+                                                                            }
+                                                                            monthly_charges={
+                                                                                monthly_charges
                                                                             }
                                                                         />
                                                                     ) : (

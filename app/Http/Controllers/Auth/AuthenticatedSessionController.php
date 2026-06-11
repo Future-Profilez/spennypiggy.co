@@ -30,6 +30,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Models\FounderBonus;
 use App\Models\Deliverable;
+use App\Models\MonthlyCharge;
 use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
 use App\StripeControl;
@@ -264,7 +265,7 @@ class AuthenticatedSessionController extends Controller
                 return ['__page' => 'NotFound'];
             }
 
-            $user = $profileData['user'];
+            $user = Auth::user();
             $isOwner = Auth::check() && (string) Auth::id() === (string) $user->id;
 
             if ($user->suspended_account == 1) {
@@ -274,6 +275,50 @@ class AuthenticatedSessionController extends Controller
             $pageData = $this->getCachedPageSpecificData($user->id, $page, $isOwner, $forceRefresh);
 
             $this->setSeoMetaTags($user, $username);
+
+            $now = Carbon::now();
+            $subscription = MonthlyCharge::where('user_id', $user->id)
+                ->where(function ($query) use ($now) {
+                    $query->where(function ($q) use ($now) {
+                        $q->whereDate('current_start_subscription_date', '<=', $now)
+                            ->whereDate('current_end_subscription_date', '>=', $now);
+                    })->orWhere(function ($q) use ($now) {
+                        $q->whereDate('current_start_trial_date', '<=', $now)
+                            ->whereDate('current_end_trial_date', '>=', $now);
+                    });
+                })
+                ->latest()
+                ->first();
+
+            if (!$subscription) {
+                $subscription = MonthlyCharge::where('user_id', $user->id)
+                    ->latest()
+                    ->first();
+            }
+
+            $monthlyCharges = null;
+            if ($subscription) {
+                $fmt = function ($date) {
+                    try {
+                        return $date ? Carbon::parse($date)->format('d F Y') : null;
+                    } catch (\Throwable $e) {
+                        return null;
+                    }
+                };
+
+                $monthlyCharges = [
+                    'id' => $subscription->id,
+                    'uuid' => $subscription->uuid,
+                    'status' => $subscription->status ?? 'pending',
+                    'amount' => (float) ($subscription->amount ?? 0),
+                    'currency' => $subscription->currency ?? 'GBP',
+                    'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
+                    'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
+                    'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
+                    'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
+                    'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+                ];
+            }
 
             $sociallinks = null;
             $userIntro = null;
@@ -308,29 +353,30 @@ class AuthenticatedSessionController extends Controller
                     ->exists();
             }
 
-                return [
-                    '__page' => 'Dashboard',
-                    'username' => $username,
-                    'user' => $user,
-                    'itemid' => request()->query('item') ?? false,
-                    'card_capabilities' => $cardCapabilities,
-                    'has_stripe_account' => !empty($user->account_id),
-                    'isNeedToUpgrade' => $isNeedToUpgrade,
-                    'stripe_requirements' => $stripeRequirements,
-                    'migration_status' => $migrationStatus,
-                    'sociallinks' => $sociallinks,
-                    'slinks' => $sociallinks,
-                    'intro' => $userIntro,
-                    'supporters' => $profileData['supporters'],
-                    'wish_categories' => $page === 'wishes' ? $this->getCategoriesWithItems($user) : [],
-                    'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories : [],
-                    'selectedCategory' => request()->query('category') ?? false,
-                    'page' => $page,
-                    'is_blocked' => $isBlocked,
-                    ...$pageData,
-                    'first30DayEarnings' => $founderData['first30DayEarnings'],
-                    'founderData' => $founderData,
-                ];
+            return [
+                '__page' => 'Dashboard',
+                'username' => $username,
+                'user' => $user,
+                'itemid' => request()->query('item') ?? false,
+                'card_capabilities' => $cardCapabilities,
+                'has_stripe_account' => !empty($user->account_id),
+                'isNeedToUpgrade' => $isNeedToUpgrade,
+                'stripe_requirements' => $stripeRequirements,
+                'migration_status' => $migrationStatus,
+                'sociallinks' => $sociallinks,
+                'slinks' => $sociallinks,
+                'intro' => $userIntro,
+                'supporters' => $profileData['supporters'],
+                'wish_categories' => $page === 'wishes' ? $this->getCategoriesWithItems($user) : [],
+                'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories : [],
+                'selectedCategory' => request()->query('category') ?? false,
+                'page' => $page,
+                'is_blocked' => $isBlocked,
+                'monthly_charges' => $monthlyCharges,
+                ...$pageData,
+                'first30DayEarnings' => $founderData['first30DayEarnings'],
+                'founderData' => $founderData,
+            ];
         };
         $data = $getData();
 
@@ -425,7 +471,7 @@ class AuthenticatedSessionController extends Controller
     {
         $callback = function () use ($user) {
             $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
-            
+
             $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
                 $q->where('user_id', $user->id);
                 // For both public and owner, only show categories with approved items

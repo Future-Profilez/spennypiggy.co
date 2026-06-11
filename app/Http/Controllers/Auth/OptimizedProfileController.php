@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
+use Carbon\Carbon;
+use App\Models\MonthlyCharge;
 
 class OptimizedProfileController extends Controller
 {
@@ -66,6 +68,49 @@ class OptimizedProfileController extends Controller
             if ($daysSinceCreation <= 30) {
                 $shouldShowFounderBanner = true;
             }
+        }
+
+        // Prepare monthly_charges data (latest relevant MonthlyCharge)
+        $now = Carbon::now();
+        $subscription = MonthlyCharge::where('user_id', $user->id)
+            ->where(function ($query) use ($now) {
+                $query->where(function ($q) use ($now) {
+                    $q->whereDate('current_start_subscription_date', '<=', $now)
+                        ->whereDate('current_end_subscription_date', '>=', $now);
+                })->orWhere(function ($q) use ($now) {
+                    $q->whereDate('current_start_trial_date', '<=', $now)
+                        ->whereDate('current_end_trial_date', '>=', $now);
+                });
+            })
+            ->latest()
+            ->first();
+
+        if (!$subscription) {
+            $subscription = MonthlyCharge::where('user_id', $user->id)->latest()->first();
+        }
+
+        $monthly_charges = null;
+        if ($subscription) {
+            $fmt = function ($date) {
+                try {
+                    return $date ? Carbon::parse($date)->format('d F Y') : null;
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            };
+
+            $monthly_charges = [
+                'id' => $subscription->id,
+                'uuid' => $subscription->uuid,
+                'status' => $subscription->status ?? 'pending',
+                'amount' => (float)($subscription->amount ?? 0),
+                'currency' => $subscription->currency ?? 'GBP',
+                'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
+                'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
+                'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
+                'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
+                'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+            ];
         }
 
         return Inertia::render('Dashboard', [

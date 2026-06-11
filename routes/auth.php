@@ -601,6 +601,20 @@ Route::middleware('auth')->group(function () {
                         'auto_tweet' => $auto_tweet,
                         'site_subscription' => $site_subscription,
                         'subscription_history' => $subscription_history,
+                        'monthly_charges' => $subscription ? [
+                            'id' => $subscription->id,
+                            'uuid' => $subscription->uuid,
+                            'user_id' => $subscription->user_id,
+                            'status' => $subscription->status,
+                            'amount' => (float)($subscription->amount ?? 0),
+                            'currency' => $subscription->currency ?? 'GBP',
+                            'current_start_trial_date' => $subscription->current_start_trial_date ? \Carbon\Carbon::parse($subscription->current_start_trial_date)->format('d F Y') : null,
+                            'current_end_trial_date' => $subscription->current_end_trial_date ? \Carbon\Carbon::parse($subscription->current_end_trial_date)->format('d F Y') : null,
+                            'current_start_subscription_date' => $subscription->current_start_subscription_date ? \Carbon\Carbon::parse($subscription->current_start_subscription_date)->format('d F Y') : null,
+                            'current_end_subscription_date' => $subscription->current_end_subscription_date ? \Carbon\Carbon::parse($subscription->current_end_subscription_date)->format('d F Y') : null,
+                            'upcoming_payment' => $subscription->upcoming_payment ? \Carbon\Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+                            'created_at' => $subscription->created_at ? \Carbon\Carbon::parse($subscription->created_at)->format('d F Y') : null,
+                        ] : null,
                         'pwa_notification_details' => $pwaNotificationDetails ?? null,
                         'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                         'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
