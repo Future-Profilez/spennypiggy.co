@@ -1,31 +1,100 @@
 import LoaderButton from '@/Components/LoaderButton';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { Toaster, toast } from "react-hot-toast";
 
 export default function ActivateSubscription(props) {
 
     const { auth, user } = props;
+    const page = usePage();
+
+    const subscriptionStatus = auth?.user?.subscription_status ?? user?.subscription_status;
+    const username = auth?.user?.username ?? user?.username;
+    const finalMonthlyCharges = props.monthly_charges || page.props?.monthly_charges || null;
+    const hasMonthlyChargeRecord = !!finalMonthlyCharges;
+    const isFirstTime = !hasMonthlyChargeRecord;
+
+    const isActive = subscriptionStatus === 1;
+    const isTrial = subscriptionStatus === 2;
+    const isExpired = subscriptionStatus === 0;
+    const isInactive = subscriptionStatus === 3;
+    const isResumeFlow = hasMonthlyChargeRecord && !isActive && !isTrial;
 
     const [loading, setLoading] = useState(false);
 
-    const checkTerms = () => {
-      setLoading(true);
-      window.location.href = route("mandatory.checkout");
-    }
+    const buttonAction = () => {
+        if (isActive || isTrial) {
+            window.location.href = route('user.show', { username });
+            return;
+        }
+
+        setLoading(true);
+        window.location.href = route('mandatory.checkout');
+    };
+
+    const heroTitle = isActive
+        ? 'Your subscription is active'
+        : isTrial
+            ? 'Your free trial is active'
+            : isFirstTime
+                ? 'Start your 3-day free trial'
+                : 'Resume your creator subscription';
+
+    const heroDescription = isActive
+        ? 'Your creator tools are already active. Manage your plan and payments from your dashboard.'
+        : isTrial
+            ? 'Your 3-day free trial is running. Enjoy creator tools today and check payment details anytime.'
+            : isFirstTime
+                ? 'Start now with a free trial, then pay £8.99 + VAT / month after the trial ends.'
+                : 'Your creator plan has ended. Resume now to keep accepting support and keep creator features active.';
+
+    const buttonLabel = isActive
+        ? 'Go to Dashboard'
+        : isTrial
+            ? 'Continue Trial'
+            : isFirstTime
+                ? 'Start free trial'
+                : 'Resume Subscription';
+
+    const features = isActive
+        ? [
+            'Your subscription is active and accepting support',
+            'Manage your creator tools and billing in one place',
+            'Cancel anytime after activation',
+        ]
+        : isTrial
+            ? [
+                'Your free trial is active right now',
+                'No charge until trial ends',
+                'Subscription renews at £8.99 + VAT / month after trial',
+            ]
+            : [
+                'Resume creator tools and keep accepting support',
+                'Your plan renews at £8.99 + VAT / month',
+                'No free trial is available if you already used it',
+                'Cancel anytime after activation',
+            ];
+
+    const orderTag = isResumeFlow
+        ? 'Resume your plan to continue creator earnings'
+        : 'Includes 3-day free trial';
+    const dueTodayText = '£0.00';
+    const dueTodayLabel = 'Due Today';
+    const billingCopy = isResumeFlow
+        ? 'Your subscription will resume at £8.99 + VAT per month.'
+        : 'No charge today. Trial ends before your first payment.';
 
     return (
         <Authenticated auth={auth?.user} user={user}>
-            <Head title={"Activate Subscription"} />
+            <Head title={heroTitle} />
             <div className="bg-[#A2E4B8] min-h-screen py-12 ">
               <div className="containerbox mx-auto">
                 <div className="text-center mb-10">
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs text-black uppercase tracking-wider mb-2">
-                        Activate <span className="text-[#FF007F]">Subscription</span>
+                        {heroTitle}
                     </h2>
                     <p className="text-gray-800 text-lg font-medium">
-                        Unlock creator tools and start receiving support.
+                        {heroDescription}
                     </p>
                 </div>
 
@@ -48,31 +117,34 @@ export default function ActivateSubscription(props) {
                                         The Creator Plan
                                     </h3>
                                     <p className="text-gray-700 text-lg leading-relaxed font-medium">
-                                        Start your journey with a <span className="text-[#FF007F] font-bold">3-day free trial</span>. 
-                                        After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.
+                                        {isActive && 'Your creator plan is active. Use the dashboard to manage payments, content, and billing settings.'}
+                                        {isTrial && (
+                                            <>Start your journey with a <span className="text-[#FF007F] font-bold">3-day free trial</span>. After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.</>
+                                        )}
+                                        {isFirstTime && (
+                                            <>Start your journey with a <span className="text-[#FF007F] font-bold">3-day free trial</span>. After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.</>
+                                        )}
+                                        {isResumeFlow && (
+                                            <>Resume your creator subscription at <span className="text-black font-bold">£8.99 + VAT / month</span>. Free trial is not available again if you have already used it.</>
+                                        )}
                                     </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="p-5 rounded-[20px] bg-[#f3f4f6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Trial Period</p>
-                                        <p className="text-black font-black text-xl">3 DAYS FREE</p>
-                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">Cancel anytime</p>
+                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Plan Price</p>
+                                        <p className="text-black font-black text-xl">£8.99 + VAT</p>
+                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">Monthly recurring rate</p>
                                     </div>
                                     <div className="p-5 rounded-[20px] bg-[#f3f4f6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Renewal Price</p>
-                                        <p className="text-black font-black text-xl">£8.99 + VAT</p>
-                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">Secure Billing</p>
+                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Status</p>
+                                        <p className="text-black font-black text-xl">{isActive ? 'Active' : isTrial ? 'Trial' : isFirstTime ? 'New' : 'Expired'}</p>
+                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">{isFirstTime ? 'Free trial available' : isResumeFlow ? 'Resume your subscription' : '3-day free trial'}</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    {[
-                                        'Unlock all creator tools and features',
-                                        'Start receiving payments immediately',
-                                        '3-day trial period — no charge today',
-                                        'Full control — cancel anytime'
-                                    ].map((t) => (
+                                    {features.map((t) => (
                                         <div key={t} className="flex items-center gap-3">
                                             <div className="w-6 h-6 rounded-full bg-[#05EFB8] border-2 border-black flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,33 +166,38 @@ export default function ActivateSubscription(props) {
                                             <span className="text-gray-600 font-bold">+ VAT / month</span>
                                         </div>
                                         <div className="mt-2 inline-block px-3 py-1 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-tighter">
-                                            Includes 3-day free trial
+                                            {orderTag}
                                         </div>
                                     </div>
 
                                     <div className="space-y-4 ">
                                         <div className="flex justify-between font-bold text-gray-700">
-                                            <span>Due Today</span>
-                                            <span className="text-[#FF007F]">£0.00</span>
+                                            <span>{dueTodayLabel}</span>
+                                            <span className="text-[#FF007F]">{dueTodayText}</span>
                                         </div>
                                         <div className="flex justify-between font-bold text-gray-700">
                                             <span>Monthly Total</span>
                                             <span className="text-black">£10.79</span>
                                         </div>
                                     </div>
+                                    <p className="mt-4 text-sm text-gray-700 font-medium">
+                                        {billingCopy}
+                                    </p>
 
                                     <div className="mt-8">
                                         <LoaderButton 
-                                            onClick={checkTerms} 
+                                            onClick={buttonAction} 
                                             disabled={loading} 
                                             className={`w-full !rounded-[20px] bg-[#FF007F] hover:bg-pink-600 text-white font-black py-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-lg ${loading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                                         >
-                                            {loading ? "Redirecting..." : "Activate Now"}
+                                            {loading ? 'Redirecting...' : buttonLabel}
                                         </LoaderButton>
                                     </div>
 
                                     <p className="mt-6 text-[11px] text-gray-600 font-medium leading-relaxed text-center">
-                                        By clicking "Activate Now", you agree to SpennyPiggy's Terms of Service and recurring billing after your 3-day free trial ends.
+                                        {isResumeFlow
+                                            ? 'By clicking "Resume Subscription", you agree to SpennyPiggy recurring billing at £8.99 + VAT per month.'
+                                            : 'By clicking "Continue Trial", you agree to SpennyPiggy Terms of Service. No charge until your 3-day free trial ends.'}
                                     </p>
                                 </div>
                             </div>

@@ -609,6 +609,20 @@ Route::middleware('auth')->group(function () {
                         'auto_tweet' => $auto_tweet,
                         'site_subscription' => $site_subscription,
                         'subscription_history' => $subscription_history,
+                        'monthly_charges' => $subscription ? [
+                            'id' => $subscription->id,
+                            'uuid' => $subscription->uuid,
+                            'user_id' => $subscription->user_id,
+                            'status' => $subscription->status,
+                            'amount' => (float)($subscription->amount ?? 0),
+                            'currency' => $subscription->currency ?? 'GBP',
+                            'current_start_trial_date' => $subscription->current_start_trial_date ? \Carbon\Carbon::parse($subscription->current_start_trial_date)->format('d F Y') : null,
+                            'current_end_trial_date' => $subscription->current_end_trial_date ? \Carbon\Carbon::parse($subscription->current_end_trial_date)->format('d F Y') : null,
+                            'current_start_subscription_date' => $subscription->current_start_subscription_date ? \Carbon\Carbon::parse($subscription->current_start_subscription_date)->format('d F Y') : null,
+                            'current_end_subscription_date' => $subscription->current_end_subscription_date ? \Carbon\Carbon::parse($subscription->current_end_subscription_date)->format('d F Y') : null,
+                            'upcoming_payment' => $subscription->upcoming_payment ? \Carbon\Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+                            'created_at' => $subscription->created_at ? \Carbon\Carbon::parse($subscription->created_at)->format('d F Y') : null,
+                        ] : null,
                         'pwa_notification_details' => $pwaNotificationDetails ?? null,
                         'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                         'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
@@ -719,7 +733,41 @@ Route::middleware('auth')->group(function () {
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
 
             Route::get('/activate-subscription', function () {
-                return Inertia::render('Profile/ActivateSubscription');
+                $monthlyCharges = null;
+                $user = Auth::user();
+
+                if ($user) {
+                    $subscription = MonthlyCharge::where('user_id', $user->id)
+                        ->latest()
+                        ->first();
+
+                    if ($subscription) {
+                        $fmt = function ($date) {
+                            try {
+                                return $date ? Carbon::parse($date)->format('d F Y') : null;
+                            } catch (\Throwable $e) {
+                                return null;
+                            }
+                        };
+
+                        $monthlyCharges = [
+                            'id' => $subscription->id,
+                            'uuid' => $subscription->uuid,
+                            'status' => $subscription->status ?? 'pending',
+                            'amount' => (float) ($subscription->amount ?? 0),
+                            'currency' => $subscription->currency ?? 'GBP',
+                            'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
+                            'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
+                            'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
+                            'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
+                            'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+                        ];
+                    }
+                }
+
+                return Inertia::render('Profile/ActivateSubscription', [
+                    'monthly_charges' => $monthlyCharges,
+                ]);
             })->name('activate-subscription');
 
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
