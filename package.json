@@ -13,6 +13,7 @@
         "clear": "php artisan cache:clear && php artisan optimize:clear && php artisan config:clear && php artisan route:clear",
         "build:critical": "./scripts/build-with-critical-css.sh && npm run sw:build",
         "build:production": "npm run build && npm run sw:build",
+        "push": "git add . && git commit -m 'merge changes' && git push",
         "sw:build": "node scripts/build-sw.js",
         "sw:dev": "workbox generateSW workbox-config.js",
         "critical:generate": "php artisan css:critical",
