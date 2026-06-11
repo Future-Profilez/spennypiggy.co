@@ -725,7 +725,41 @@ Route::middleware('auth')->group(function () {
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
 
             Route::get('/activate-subscription', function () {
-                return Inertia::render('Profile/ActivateSubscription');
+                $monthlyCharges = null;
+                $user = Auth::user();
+
+                if ($user) {
+                    $subscription = MonthlyCharge::where('user_id', $user->id)
+                        ->latest()
+                        ->first();
+
+                    if ($subscription) {
+                        $fmt = function ($date) {
+                            try {
+                                return $date ? Carbon::parse($date)->format('d F Y') : null;
+                            } catch (\Throwable $e) {
+                                return null;
+                            }
+                        };
+
+                        $monthlyCharges = [
+                            'id' => $subscription->id,
+                            'uuid' => $subscription->uuid,
+                            'status' => $subscription->status ?? 'pending',
+                            'amount' => (float) ($subscription->amount ?? 0),
+                            'currency' => $subscription->currency ?? 'GBP',
+                            'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
+                            'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
+                            'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
+                            'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
+                            'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+                        ];
+                    }
+                }
+
+                return Inertia::render('Profile/ActivateSubscription', [
+                    'monthly_charges' => $monthlyCharges,
+                ]);
             })->name('activate-subscription');
 
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');

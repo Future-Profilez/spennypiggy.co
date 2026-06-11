@@ -1,20 +1,24 @@
 import LoaderButton from '@/Components/LoaderButton';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function ActivateSubscription(props) {
 
     const { auth, user } = props;
+    const page = usePage();
 
     const subscriptionStatus = auth?.user?.subscription_status ?? user?.subscription_status;
     const username = auth?.user?.username ?? user?.username;
+    const finalMonthlyCharges = props.monthly_charges || page.props?.monthly_charges || null;
+    const hasMonthlyChargeRecord = !!finalMonthlyCharges;
+    const isFirstTime = !hasMonthlyChargeRecord;
 
     const isActive = subscriptionStatus === 1;
     const isTrial = subscriptionStatus === 2;
     const isExpired = subscriptionStatus === 0;
     const isInactive = subscriptionStatus === 3;
-    const isResumeFlow = isExpired || isInactive;
+    const isResumeFlow = hasMonthlyChargeRecord && !isActive && !isTrial;
 
     const [loading, setLoading] = useState(false);
 
@@ -32,19 +36,25 @@ export default function ActivateSubscription(props) {
         ? 'Your subscription is active'
         : isTrial
             ? 'Your free trial is active'
-            : 'Resume your creator subscription';
+            : isFirstTime
+                ? 'Start your 3-day free trial'
+                : 'Resume your creator subscription';
 
     const heroDescription = isActive
         ? 'Your creator tools are already active. Manage your plan and payments from your dashboard.'
         : isTrial
             ? 'Your 3-day free trial is running. Enjoy creator tools today and check payment details anytime.'
-            : 'Your creator plan has ended. Resume now to keep accepting support and keep creator features active.';
+            : isFirstTime
+                ? 'Start now with a free trial, then pay £8.99 + VAT / month after the trial ends.'
+                : 'Your creator plan has ended. Resume now to keep accepting support and keep creator features active.';
 
     const buttonLabel = isActive
         ? 'Go to Dashboard'
         : isTrial
             ? 'Continue Trial'
-            : 'Resume Subscription';
+            : isFirstTime
+                ? 'Start free trial'
+                : 'Resume Subscription';
 
     const features = isActive
         ? [
@@ -65,9 +75,11 @@ export default function ActivateSubscription(props) {
                 'Cancel anytime after activation',
             ];
 
-    const orderTag = isResumeFlow ? 'Resume your plan to continue creator earnings' : 'Includes 3-day free trial';
-    const dueTodayText = isTrial ? '£0.00' : '£0.00';
-    const dueTodayLabel = isResumeFlow ? 'Due Today' : 'Due Today';
+    const orderTag = isResumeFlow
+        ? 'Resume your plan to continue creator earnings'
+        : 'Includes 3-day free trial';
+    const dueTodayText = '£0.00';
+    const dueTodayLabel = 'Due Today';
     const billingCopy = isResumeFlow
         ? 'Your subscription will resume at £8.99 + VAT per month.'
         : 'No charge today. Trial ends before your first payment.';
@@ -109,6 +121,9 @@ export default function ActivateSubscription(props) {
                                         {isTrial && (
                                             <>Start your journey with a <span className="text-[#FF007F] font-bold">3-day free trial</span>. After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.</>
                                         )}
+                                        {isFirstTime && (
+                                            <>Start your journey with a <span className="text-[#FF007F] font-bold">3-day free trial</span>. After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.</>
+                                        )}
                                         {isResumeFlow && (
                                             <>Resume your creator subscription at <span className="text-black font-bold">£8.99 + VAT / month</span>. Free trial is not available again if you have already used it.</>
                                         )}
@@ -123,8 +138,8 @@ export default function ActivateSubscription(props) {
                                     </div>
                                     <div className="p-5 rounded-[20px] bg-[#f3f4f6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Status</p>
-                                        <p className="text-black font-black text-xl">{isActive ? 'Active' : isTrial ? 'Trial' : 'Expired'}</p>
-                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">{isResumeFlow ? 'Resume your subscription' : '3-day free trial'}</p>
+                                        <p className="text-black font-black text-xl">{isActive ? 'Active' : isTrial ? 'Trial' : isFirstTime ? 'New' : 'Expired'}</p>
+                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">{isFirstTime ? 'Free trial available' : isResumeFlow ? 'Resume your subscription' : '3-day free trial'}</p>
                                     </div>
                                 </div>
 

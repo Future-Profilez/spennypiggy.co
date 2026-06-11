@@ -99,6 +99,14 @@ export default function SiteSubscription({
     const canActivate =
         isExpiredOrInactive || isEnabled || (isActive && isCancelled);
 
+    const ctaLabel = (() => {
+        if (isActive && !isCancelled) return "Subscription Active";
+        if (isActive && isCancelled) return "Renew Subscription";
+        if (!hasMonthlyChargeRecord && !isActive && !isTrial) return "Start Free Trial";
+        if (hasMonthlyChargeRecord && !isActive && !isTrial) return "Resume Subscription";
+        return "Start Free Trial";
+    })();
+
     const SUBSCRIPTIONBOX = () => {
         // If creator already took a trial and it has ended, show subscription details
         if (hasTrialEnded && hasPaidSubscriptionRecord) {
@@ -269,7 +277,7 @@ export default function SiteSubscription({
                                 : "cursor-not-allowed opacity-50 pointer-events-none"
                         }`}
                     >
-                        Continue Subscription
+                        {ctaLabel}
                     </Link>
                 </>
             );
@@ -298,13 +306,7 @@ export default function SiteSubscription({
                             : "cursor-not-allowed opacity-50 pointer-events-none"
                     }`}
                 >
-                    {isActive && !isCancelled
-                        ? "Subscription Active"
-                        : isActive && isCancelled
-                          ? "Renew Subscription"
-                          : creatorUser?.profile_status_lock == 1
-                            ? "Restart Subscription Again"
-                            : "Start Free Trial"}
+                    {ctaLabel}
                 </Link>
             </>
         );
