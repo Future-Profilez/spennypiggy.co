@@ -265,7 +265,7 @@ class AuthenticatedSessionController extends Controller
                 return ['__page' => 'NotFound'];
             }
 
-            $user = Auth::user();
+            $user = $profileData['user'];
             $isOwner = Auth::check() && (string) Auth::id() === (string) $user->id;
 
             if ($user->suspended_account == 1) {

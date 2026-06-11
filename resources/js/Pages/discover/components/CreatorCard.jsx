@@ -5,6 +5,7 @@ import { trackSearchClick } from "@/includes/Analytics";
 import { RiFireLine  } from 'react-icons/ri';
 
 export default function CreatorCard({auth, item}) {
+    console.log("   CreatorCard item:", item);
    return (
        <Link href={route('user.show', item.username)} onClick={() => trackSearchClick(item.id, item.username)} 
        className="relative bg-white rounded-[25px] md:rounded-[30px]  overflow-hidden flex flex-col items-center text-left group cursor-pointer block border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] bg-[#fdfbf7]">
