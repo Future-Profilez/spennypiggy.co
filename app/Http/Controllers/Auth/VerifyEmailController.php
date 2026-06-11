@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\LinkUserToCrmCreator;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Auth\Events\Verified;
@@ -23,6 +24,8 @@ class VerifyEmailController extends Controller
 
         if ($request->user()->markEmailAsVerified()) {
             event(new Verified($request->user()));
+            // Email is now confirmed — retry CRM prospect linking (email match is gated on verification).
+            LinkUserToCrmCreator::dispatch($request->user()->id);
         }
 
         return redirect()->intended(route('user.show', ['username' => $request->user()->username]) . '?verified=1');
@@ -36,6 +39,9 @@ class VerifyEmailController extends Controller
 
             $user->email_verified_at = Carbon::now();
             $user->save();
+
+            // Email is now confirmed — retry CRM prospect linking (email match is gated on verification).
+            LinkUserToCrmCreator::dispatch($user->id);
 
             return redirect()->route('user.show', [$user->username])
                 ->with("success", "Email verified successfully");

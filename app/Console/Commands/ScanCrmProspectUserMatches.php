@@ -89,24 +89,26 @@ class ScanCrmProspectUserMatches extends Command
                     $q->orWhereRaw("LOWER(COALESCE(bio,'')) LIKE ?", ['%' . $bio . '%']);
                 }
 
-                if ($x) {
+                // Social handles use exact, normalized equality (strip surrounding @). Substring (LIKE %x%)
+                // matching let a user spoof a prospect by setting a partially-overlapping handle.
+                if ($x && mb_strlen($x) >= 3) {
                     $q->orWhereHas('social_links', function ($sq) use ($x) {
-                        $sq->whereRaw("LOWER(COALESCE(twitter,'')) LIKE ?", ['%' . $x . '%']);
+                        $sq->whereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(twitter,'')))) = ?", [$x]);
                     });
                 }
-                if ($ig) {
+                if ($ig && mb_strlen($ig) >= 3) {
                     $q->orWhereHas('social_links', function ($sq) use ($ig) {
-                        $sq->whereRaw("LOWER(COALESCE(instagram,'')) LIKE ?", ['%' . $ig . '%']);
+                        $sq->whereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(instagram,'')))) = ?", [$ig]);
                     });
                 }
-                if ($yt) {
+                if ($yt && mb_strlen($yt) >= 3) {
                     $q->orWhereHas('social_links', function ($sq) use ($yt) {
-                        $sq->whereRaw("LOWER(COALESCE(youtube,'')) LIKE ?", ['%' . $yt . '%']);
+                        $sq->whereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(youtube,'')))) = ?", [$yt]);
                     });
                 }
-                if ($tw) {
+                if ($tw && mb_strlen($tw) >= 3) {
                     $q->orWhereHas('social_links', function ($sq) use ($tw) {
-                        $sq->whereRaw("LOWER(COALESCE(twitch,'')) LIKE ?", ['%' . $tw . '%']);
+                        $sq->whereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(twitch,'')))) = ?", [$tw]);
                     });
                 }
                 if ($web) {

@@ -39,7 +39,11 @@ class LinkUserToCrmCreator implements ShouldQueue
         $matched = null;
         $triggerSource = null;
 
-        if ($user->email) {
+        // Email-based linking only after the user has PROVEN ownership of the email (verified).
+        // Otherwise anyone could register with a known prospect's email and hijack that CRM record
+        // (consume it, steal CSM attribution, flip the stage to signed_up). The job is re-dispatched
+        // from the email-verification handlers, so this match runs once the address is confirmed.
+        if ($user->email && $user->email_verified_at) {
             $matched = CrmCreator::query()
                 ->whereNull('user_id')
                 ->whereNotNull('email')
@@ -108,16 +112,28 @@ class LinkUserToCrmCreator implements ShouldQueue
             'twitch'    => $social->twitch,
         ];
 
+        // Minimum handle length — a 1-2 char handle would (with substring matching) collide with countless
+        // prospects. Combined with exact equality below, this stops a user spoofing a prospect's handle.
+        $minHandleLength = 3;
+
         $normalized = [];
         foreach ($candidates as $key => $value) {
             if ($value) {
                 $handle = $this->normalizeHandle($value);
                 $urlish = $this->normalizeUrlOrHandle($value);
-                $normalized[$key] = $handle ?: $urlish;
+                $candidate = $handle ?: $urlish;
+                if ($candidate && mb_strlen($candidate) >= $minHandleLength) {
+                    // $key is a hardcoded column name (twitter/instagram/youtube/twitch) — safe to interpolate.
+                    $normalized[$key] = $candidate;
+                }
             }
         }
 
-        if (count($normalized) === 0) {
+        $usernameMatch = $user->username && mb_strlen((string) $user->username) >= $minHandleLength
+            ? strtolower((string) $user->username)
+            : null;
+
+        if (count($normalized) === 0 && $usernameMatch === null) {
             return;
         }
 
@@ -125,13 +141,14 @@ class LinkUserToCrmCreator implements ShouldQueue
             ->whereNull('user_id')
             ->whereNull('social_match_suggested_at');
 
-        $query->where(function ($q) use ($normalized, $user) {
+        $query->where(function ($q) use ($normalized, $usernameMatch) {
             foreach ($normalized as $col => $value) {
-                $q->orWhereRaw('LOWER(COALESCE(' . $col . ",'')) LIKE ?", ['%' . $value . '%']);
+                // Exact, normalized equality (strip surrounding @ and whitespace). Substring (LIKE %x%)
+                // matching previously let any user claim a prospect by setting a partial-overlapping handle.
+                $q->orWhereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(" . $col . ",'')))) = ?", [$value]);
             }
-            // Also match by username
-            if ($user->username) {
-                $q->orWhereRaw("LOWER(COALESCE(username,'')) = ?", [strtolower((string) $user->username)]);
+            if ($usernameMatch !== null) {
+                $q->orWhereRaw("LOWER(COALESCE(username,'')) = ?", [$usernameMatch]);
             }
         });
 

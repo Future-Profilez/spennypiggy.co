@@ -150,7 +150,8 @@ class SeoMeta
      */
     public static function addJsonLd($data): void
     {
-        static::addTag('script', ['type' => 'application/ld+json'], json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        // JSON_HEX_* flags encode < > & ' " as \uXXXX so a value can never break out of the <script> element (XSS).
+        static::addTag('script', ['type' => 'application/ld+json'], json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT));
     }
 
     public static function setPaginationLinks($prevUrl = null, $nextUrl = null): void
@@ -203,7 +204,7 @@ class SeoMeta
         
         foreach (static::$tags as $tag => $sub) {
             if ($tag == 'title') {
-                $html .= "<title inertia>$sub</title>" . PHP_EOL;
+                $html .= "<title inertia>" . htmlspecialchars((string) $sub, ENT_QUOTES, 'UTF-8') . "</title>" . PHP_EOL;
                 continue;
             }
 
@@ -211,22 +212,29 @@ class SeoMeta
                 foreach ($sub as $item) {
                     $props = is_array($item) && isset($item['props']) ? $item['props'] : $item;
                     $content = is_array($item) && isset($item['content']) ? $item['content'] : null;
-                    
+
                     $attr = '';
                     $html .= "<$tag ";
-                    
+
                     if (is_array($props)) {
                         foreach ($props as $prop => $value) {
-                            $attr .= "$prop=\"$value\" ";
+                            // Escape attribute values so a value containing a quote can't inject new attributes/tags (XSS).
+                            $safeValue = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+                            $attr .= "$prop=\"$safeValue\" ";
                         }
                     } else {
                         $attr = $props;
                     }
 
                     $html .= "$attr";
-                    
+
                     if ($content !== null) {
-                        $html .= ">$content</$tag>" . PHP_EOL;
+                        // JSON-LD <script> content is already safely encoded by addJsonLd() (JSON_HEX_* flags).
+                        // Any non-script body is HTML-escaped to prevent injection.
+                        $safeContent = $tag === 'script'
+                            ? $content
+                            : htmlspecialchars((string) $content, ENT_QUOTES, 'UTF-8');
+                        $html .= ">$safeContent</$tag>" . PHP_EOL;
                     } else {
                         $html .= " />" . PHP_EOL;
                     }
