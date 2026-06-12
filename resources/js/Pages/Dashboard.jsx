@@ -662,7 +662,7 @@ export default function Dashboard(props) {
                 <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
                     <div className="containerbox relative z-10">
                         <VersionUpdate />
-                        {props.founderData?.isEligible && (IsloggedIn || auth?.user?.role === 1) ? (
+                        {props.founderData?.isEligible && (IsloggedIn && auth?.user?.role === 1) ? (
                             <FounderProgressTracker
                                 founderData={props.founderData}
                                 variant="mini"
