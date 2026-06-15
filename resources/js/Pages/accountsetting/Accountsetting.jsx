@@ -72,9 +72,12 @@ export default function Accountsetting(props) {
     } = usePage().props;
 
     const [emailPopupAction, setEmailPopupAction] = useState(null);
-    const [emailEnabled, setSetEnabled] = useState(
-        auth && auth.user && auth.user.notification_send == 1 ? true : false,
-    );
+    const [emailEnabled, setSetEnabled] = useState(false);
+
+    useEffect(() => {
+        setSetEnabled(auth?.user?.notification_send == 1);
+    }, [auth?.user?.notification_send]);
+
     const [showEarning, setShowEarning] = useState(
         auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false,
     );
@@ -109,7 +112,8 @@ export default function Accountsetting(props) {
     };
 
     const switchNotification = () => {
-        setSetEnabled(!emailEnabled);
+        const previousValue = emailEnabled;
+        setSetEnabled(!previousValue);
         axios
             .post(route("notification-switch"))
             .then((resp) => {
@@ -117,7 +121,9 @@ export default function Accountsetting(props) {
             })
             .catch((_err) => {
                 console.error("error", _err);
-                setSetEnabled(!emailEnabled); // Revert on error
+                // revert back
+                setSetEnabled(previousValue);
+                errorAlert("Unable to update notification settings");
             });
     };
 
@@ -289,10 +295,19 @@ export default function Accountsetting(props) {
                                 value.toLowerCase() === "linked"
                                     ? "text-green-600 bg-green-50 border-green-500"
                                     : "text-gray-600 bg-gray-50 border-[#FF007F]"
-                            }`} > {value} </span>
-                    )} 
-                    {action ? ( action ) : (
-                        <ChevronRightIcon size={18} className="text-gray-300 group-hover:text-[#FF007F] absolute md:static !text-xl top-[30px] right-4" />
+                            }`}
+                        >
+                            {" "}
+                            {value}{" "}
+                        </span>
+                    )}
+                    {action ? (
+                        action
+                    ) : (
+                        <ChevronRightIcon
+                            size={18}
+                            className="text-gray-300 group-hover:text-[#FF007F] absolute md:static !text-xl top-[30px] right-4"
+                        />
                     )}
                 </div>
             </div>
@@ -788,7 +803,14 @@ export default function Accountsetting(props) {
                     <div className="text-center text-xs text-gray-400 mt-10 pb-10">
                         {auth?.user?.created_at && (
                             <div className="mb-2">
-                                Joined on {new Date(auth.user.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                Joined on{" "}
+                                {new Date(
+                                    auth.user.created_at,
+                                ).toLocaleDateString("en-US", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                })}
                             </div>
                         )}
                         Version 2.0.0 • Spenny Piggy ©{" "}
