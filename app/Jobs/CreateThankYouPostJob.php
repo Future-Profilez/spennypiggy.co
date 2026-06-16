@@ -50,17 +50,9 @@ class CreateThankYouPostJob implements ShouldQueue
             // Use simple template content (no expensive OpenAI calls)
             $templates = [
                 [
-                    'title' => '💝 Amazing Support Received!',
-                    'content' => "Just received incredible support of {$currency} {$amount} from {$displaySupporterName}! This means the world to me and helps me keep creating content you love. Thank you for being part of this journey! 🙏 #Grateful #Community"
+                    'title' => '🎉 Welcome to the Squad!',
+                    'content' => "WELCOME TO THE SQUAD! {$displaySupporterName} just grabbed Supporter access — you're in. Fresh posts incoming 🎉"
                 ],
-                [
-                    'title' => '🎉 Thank You for Your Kindness!',
-                    'content' => "Wow! {$displaySupporterName} just brightened my day with {$currency} {$amount} support! Your generosity fuels my passion for creating. Every contribution makes a huge difference! ✨ #ThankYou #SupportCreator"
-                ],
-                [
-                    'title' => '🙌 Incredible Generosity!',
-                    'content' => "I'm absolutely touched by {$displaySupporterName}'s support of {$currency} {$amount}! This amazing generosity helps me continue doing what I love. Thank you for believing in my work! 💖 #Appreciation #CreatorSupport"
-                ]
             ];
             
             // Pick a random template for variety

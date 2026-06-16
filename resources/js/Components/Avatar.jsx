@@ -47,7 +47,7 @@ export default function Avatar({ user, name }) {
                                     : "bg-blue-500/10 text-blue-400 border-blue-500/20"
                             }`}
                         >
-                            {u.role == 1 ? "Creator" : "Gifter"}
+                            {u.role == 1 ? "Creator" : "Supporter"}
                         </span>
                     </div>
                 )}

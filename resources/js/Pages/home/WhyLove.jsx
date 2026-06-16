@@ -66,7 +66,7 @@ export default function WhyLove() {
                         With Spenny Piggy, you can seamlessly add gifts from any
                         brand to your Wishlist, offering your supporters a diverse
                         range of options to choose from. All you need is a link! You
-                        can add items from our Gift Store showcasing our partner
+                        can add items from our Oink Store showcasing our partner
                         brands, or any other online store on Shopify or Amazon.
                     </p>
                     </FadeIn>

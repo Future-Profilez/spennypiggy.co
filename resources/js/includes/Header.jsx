@@ -209,7 +209,7 @@ export default function Header({ classMagicword }) {
                                 href={"/giftstore"}
                             >
                                 <span className="flex items-center text-xl !font-light tracking-wider uppercase text-white font-gulfs">
-                                    Gift Store
+                                    Oink Store
                                 </span>
                             </Link>
                         </div>
@@ -217,7 +217,7 @@ export default function Header({ classMagicword }) {
                         <div className="spennylogo">
                             <Link href={route("home")}>
                                 <img
-                                    alt="Spenny Piggy - Financial Gifts, Exclusive Content & Memberships"
+                                    alt="Spenny Piggy - Exclusive Content, Memberships & Creator Support"
                                     height={60}
                                     width={210}
                                     src={spennypiggy}
@@ -564,7 +564,7 @@ export default function Header({ classMagicword }) {
                                     href="/giftstore"
                                     onClick={toggleClass}
                                     icon={HeartIcon}
-                                    label="Gift Store"
+                                    label="Oink Store"
                                     activeColor="hover:bg-[#b892ff]"
                                 />
                                 {auth?.user?.role == 1 && (

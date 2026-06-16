@@ -80,7 +80,7 @@
                     @if($isManual)
                         <strong style="color:#FF007F;">FINAL NOTICE:</strong> Our admin team has reviewed this order and noted it is significantly delayed. Please fulfill this order immediately or it may be subject to a manual refund by our support team.
                     @else
-                        It has been some time since this order was placed. Please update the shipping status for your gifter to keep them informed! ✨
+                        It has been some time since this order was placed. Please update the shipping status for your fan to keep them informed! ✨
                     @endif
                 </td>
             </tr>

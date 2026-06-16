@@ -376,11 +376,17 @@ export default function Dashboard(props) {
         }, []);
         useEffect(() => {
             if (showAdd) {
-                document.body.classList.add("overflow-hidden");
+                document.body.style.overflow = "hidden";
+                document.documentElement.style.overflow = "hidden";
             } else {
-                document.body.classList.remove("overflow-hidden");
+                document.body.style.overflow = "";
+                document.documentElement.style.overflow = "";
                 setWishOptions(false);
             }
+            return () => {
+                document.body.style.overflow = "";
+                document.documentElement.style.overflow = "";
+            };
         }, [showAdd]);
 
         const [wishOptions, setWishOptions] = useState(false);
@@ -401,7 +407,7 @@ export default function Dashboard(props) {
                             </b>
                         </div>
                         {showAdd ? createPortal((
-                            <div onClick={() => setShowAdd(false)} className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[2147483646] flex justify-center items-center top-0 left-0 w-full h-full">
+                            <div onClick={() => setShowAdd(false)} className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex justify-center items-center top-0 left-0 w-full h-full">
                                 <div onClick={(e) => e.stopPropagation()} className="w-full md:max-w-[520px] lg:max-w-[560px] px-6 py-4">
                                     <Suspense fallback={"Loading.."}>
                                         <div className="relative bg-[#FFF6EC] border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px]  md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
@@ -547,9 +553,10 @@ export default function Dashboard(props) {
                                                                     ?.role ===
                                                                     1 && (
                                                                     <div
-                                                                        onClick={
-                                                                            openCreateModal
-                                                                        }
+                                                                        onClick={() => {
+                                                                            setShowAdd(false);
+                                                                            openCreateModal();
+                                                                        }}
                                                                         className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                     >
                                                                         <div className=" flex items-center">

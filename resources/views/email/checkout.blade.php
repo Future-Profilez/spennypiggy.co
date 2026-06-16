@@ -84,7 +84,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
                            line-height:20px;padding:0 0 22px 0;text-align:center;">
-                    Go to <a href="https://spennypiggy.co" style="color:#8C52FF;text-decoration:none;font-weight:600;">Spenny Piggy</a> to see your granted wish, message your gifter, and share your gift. ✨
+                    Go to <a href="https://spennypiggy.co" style="color:#8C52FF;text-decoration:none;font-weight:600;">Spenny Piggy</a> to see your unlocked content and message your fan. ✨
                 </td>
             </tr>
 

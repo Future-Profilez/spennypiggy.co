@@ -35,7 +35,7 @@ export default function ReviewHolds({ holds, auth }) {
                                 <thead className="bg-slate-800/50 text-xs uppercase text-gray-400">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold">Date</th>
-                                        <th className="px-6 py-4 font-semibold">Gifter</th>
+                                        <th className="px-6 py-4 font-semibold">Supporter</th>
                                         <th className="px-6 py-4 font-semibold">Amount</th>
                                         <th className="px-6 py-4 font-semibold">Status</th>
                                     </tr>

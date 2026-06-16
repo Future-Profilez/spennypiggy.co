@@ -28,7 +28,7 @@ export default function TipInner({classes, idd}) {
   const { data, setData } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
-    message: 'Just a small token of appreciation 💖',
+    message: 'Unlock my supporter-only posts 💖',
     anonymous: 0,
     amount: amount,
     digital_waiver: false,
@@ -64,6 +64,7 @@ export default function TipInner({classes, idd}) {
 
   const [loading, setLoading] = useState(false);
   const [showStepUp, setShowStepUp] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [stepUpUi, setStepUpUi] = useState(null);
   const [stepUpContext, setStepUpContext] = useState(null);
   const [otpCode, setOtpCode] = useState("");
@@ -369,7 +370,7 @@ export default function TipInner({classes, idd}) {
         <div className={`${classes} p-2 md:p-4 box-inner`}>
             <div className='legleft'  dangerouslySetInnerHTML={{ __html: leftleg }} />
             <div className='legright'  dangerouslySetInnerHTML={{ __html: rightleg }} />
-            <h2 className='p-3 text-[#FF007F] !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pr-5'>Support Me</h2>
+            <h2 className='p-3 text-[#FF007F] !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pr-5'>Become a Supporter</h2>
             <div className='border-t border-gray-200 p-3 pt-3' >
 
               
@@ -414,7 +415,7 @@ export default function TipInner({classes, idd}) {
 
               {amount > 0 ? <>
                 <div className="mb-3"> 
-                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Just a small token of appreciation 💖'}
+                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Unlock my supporter-only posts 💖'}
                   onChange={(e) => setData('message', e.target.value)}
                   placeholder="Write a short note." />
                 </div>
@@ -477,11 +478,11 @@ export default function TipInner({classes, idd}) {
                 </div>
               )}
 
-              <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={send} className={`items-center px-4  shadow-[4px_4px_0px_0px_#FF007F]lack
+              <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={() => setShowConfirm(true)} className={`items-center px-4  shadow-[4px_4px_0px_0px_#FF007F]lack
                 rounded-[30px]   btn-pink md justify-center btn-shadow !font-normal
                 ease-in-out duration-150 flex button text-center w-full
                   mx-auto  ${(amount > 0 && data.agree && data.digital_waiver && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
-                > {loading ? "Processing..." : 'Support Me'} </button>
+                > {loading ? "Processing..." : 'Become a Supporter'} </button>
 
               <div className='securestripe text-center mt-3' >
                 🔒 Secured via <b>Stripe</b>
@@ -564,6 +565,42 @@ export default function TipInner({classes, idd}) {
                         </div>
                     )}
 
+        </div>
+      </Popup>
+
+      <Popup
+        size="md"
+        action={showConfirm}
+        space="p-0"
+        modalclass="pinkmodal"
+        classes="hidden"
+      >
+        <div className="!rounded-none p-6">
+          <h2 className="text-xl font-bold mb-3 text-center">You're becoming a Supporter</h2>
+          <p className="text-gray-700 mb-3">
+            {user?.name || 'This creator'} is offering Supporter access in return for this payment. As a Supporter you'll get access to their supporter-only posts.
+          </p>
+          <p className="text-gray-900 font-semibold mb-3">
+            One-time payment — 30 days of Supporter access. Does not auto-renew.
+          </p>
+          <p className="text-gray-600 text-sm mb-6">
+            You're purchasing access to this creator's content, not making a gift. Platform terms apply to fulfilment and refunds.
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              className="w-full main-button b"
+            > Cancel
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={(e) => { setShowConfirm(false); send(e); }}
+              className={`w-full main-button p ${loading ? 'disabled' : ''}`}
+            > {loading ? 'Processing...' : 'Become a Supporter'}
+            </button>
+          </div>
         </div>
       </Popup>
   </>

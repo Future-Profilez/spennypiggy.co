@@ -104,7 +104,7 @@
                         <tr>
                             <td align="center" style="padding:16px 20px;font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#666666;line-height:20px;text-align:center;">
                                 📦 <strong style="color:#1A1A1A;">New Order to Fulfill!</strong><br><br>
-                                Please make sure to process and ship this physical order. Once shipped, update the status in your dashboard so the gifter receives their tracking details.
+                                Please make sure to process and ship this physical order. Once shipped, update the status in your dashboard so the fan receives their tracking details.
                             </td>
                         </tr>
                     </table>
@@ -118,7 +118,7 @@
                         <tr>
                             <td align="center" style="padding:16px 20px;font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#666666;line-height:20px;text-align:center;">
                                 📥 <strong style="color:#1A1A1A;">Digital Item Delivered!</strong><br><br>
-                                The gifter has been sent an email containing the secure link to access the digital content for this item.
+                                The fan has been sent an email containing the secure link to access the digital content for this item.
                             </td>
                         </tr>
                     </table>
@@ -131,7 +131,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
                            line-height:20px;padding:0 0 22px 0;text-align:center;">
-                    Go to <a href="{{ env('APP_URL') . '/history' }}" style="color:#FF007F;text-decoration:none;font-weight:600;">Spenny Piggy</a> to see your granted items and message your gifter. ✨
+                    Go to <a href="{{ env('APP_URL') . '/history' }}" style="color:#FF007F;text-decoration:none;font-weight:600;">Spenny Piggy</a> to see your granted items and message your fan. ✨
                 </td>
             </tr>
 

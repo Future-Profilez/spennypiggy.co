@@ -242,7 +242,7 @@ export default function Ticket({ ticket, transaction, messages, email, post_url 
 
                       {transaction?.message && (
                         <div>
-                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Gifter's Note</div>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Supporter's Note</div>
                           <div className="text-sm font-bold text-black bg-purple-100 p-3 rounded-[15px] border-2 border-black">
                             {transaction.message}
                           </div>

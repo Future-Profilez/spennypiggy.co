@@ -90,7 +90,7 @@ function ResolveModal({ purchase, onClose, onDone }) {
                         className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all"
                     >
                         <XCircle size={18} />
-                        Refund<br/><span className="text-xs font-normal">Gifter wins</span>
+                        Refund<br/><span className="text-xs font-normal">Supporter wins</span>
                     </button>
                     <button
                         onClick={() => resolve('release')}

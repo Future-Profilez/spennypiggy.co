@@ -84,7 +84,7 @@ export default function Thankyou(props) {
                       </Link>
                     :
                     <Link className='button lg mt-4' href={route("register")}>
-                      Create a Gifter account
+                      Create a Supporter account
                     </Link>
                   }
                 </div>

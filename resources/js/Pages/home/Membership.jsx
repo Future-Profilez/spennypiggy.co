@@ -140,7 +140,7 @@ export default function Membership() {
 
           <h2 className="text-3xl md:text-3xl lg:text-5xl font-gulfs text-white text-center mb-10 md:mb-16 uppercase leading-none tracking-[2px] max-w-6xl mx-auto drop-shadow-[4px 4px 0px 0px rgb(255 0 127)]xl">
               <span className="fading block mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"><WordReveal text="Supporting Creators!" stagger={0.08} /></span>
-              <span className="fading block mb-2 animate-pulse drop-shadow-none"><WordReveal text="Empowering Gifters!" delay={0.2} stagger={0.08} wordClassName="text-gradient-wishlist" /></span>
+              <span className="fading block mb-2 animate-pulse drop-shadow-none"><WordReveal text="Empowering Supporters!" delay={0.2} stagger={0.08} wordClassName="text-gradient-wishlist" /></span>
               <span className="fading block text-yellow-400 drop-shadow-[4px_4px_0_rgba(0,0,0,1)]" style={{WebkitTextStroke: '1px #000'}}><WordReveal text="Made for Everyone!" delay={0.4} stagger={0.08} /></span>
           </h2>
           

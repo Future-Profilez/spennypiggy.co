@@ -252,7 +252,7 @@ export default function AddBills(props) {
                                     <div className="singlewishbox rounded ">
                                         <strong className="mb-2 text-left block ">
                                             {" "}
-                                            Allows gifter to purchase this item
+                                            Allows fans to purchase this item
                                             on a recurring basis.{" "}
                                         </strong>
                                         <div className="repeatpurchase mt-2 text-left">
@@ -408,7 +408,7 @@ export default function AddBills(props) {
                 className="p w-full min-h-[54px]"
                 spinnerclass="fill-red-600"
             >
-                {loading ? "Processing" : "Add Bills"}
+                {loading ? "Processing" : "Add Recurring Content"}
             </LoaderButton>
 
             {subscriberOnlyPostsCount === 0 && (

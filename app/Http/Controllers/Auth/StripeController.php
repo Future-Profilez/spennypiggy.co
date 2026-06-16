@@ -4202,7 +4202,7 @@ class StripeController extends Controller
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $product = StripeControl::createProduct([
-            'name' => 'Gifter Card Verification',
+            'name' => 'Supporter Card Verification',
             'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
             "default_price_data" => ["currency" => $currency, "unit_amount_decimal" => $price * $multiplier],
         ], true);
