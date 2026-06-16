@@ -31,8 +31,9 @@ class SitemapController extends Controller
             '/mor-agreement',
             '/us-addendum',
             '/copyright-policy',
+            '/content-payment-policy',
+            '/how-spenny-piggy-works',
             '/leaderboard',
-            '/how-it-works',
             '/discover',
             '/creator-supporter-contract',
             '/founder-program',
@@ -124,7 +125,7 @@ class SitemapController extends Controller
             ['url' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
             ['url' => '/discover', 'priority' => '0.9', 'changefreq' => 'daily'],
             ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
-            ['url' => '/how-it-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/how-spenny-piggy-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/terms-and-conditions', 'priority' => '0.5', 'changefreq' => 'monthly'],
         ];
 

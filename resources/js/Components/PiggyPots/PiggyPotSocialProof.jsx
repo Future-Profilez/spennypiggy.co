@@ -15,7 +15,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-4">
                 <h3 className="font-gulfs text-2xl md:text-2xl text-black uppercase tracking-wide">COMMUNITY ACTIVITY</h3>
                 <div className="flex gap-2">
-                    <button onClick={() => setActiveTab('top')} className={`px-4 py-2 rounded-full border-[3px] border-black font-black text-xs md:text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${activeTab === 'top' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}>TOP PIGGIES</button>
+                    <button onClick={() => setActiveTab('top')} className={`px-4 py-2 rounded-full border-[3px] border-black font-black text-xs md:text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${activeTab === 'top' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}>TOP SUPPORTERS</button>
                     <button onClick={() => setActiveTab('feed')} className={`px-4 py-2 rounded-full border-[3px] border-black font-black text-xs md:text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${activeTab === 'feed' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}>RECENT</button>
                 </div>
             </div>
@@ -44,8 +44,8 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                             <div className="absolute -bottom-2 -right-2 bg-[#FFD700] border-[2px] border-black text-[10px] md:text-xs font-black px-1.5 py-0.5 rounded-full z-10 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">#{idx + 1}</div>
                                         </div>
                                         <div className="font-black text-black mt-3 w-full text-center truncate">{item.name}</div>
-                                        <div className="font-black text-[#e85d9a] mt-1 text-base md:text-lg">
-                                            {currencySymbol}{parseFloat(item.total || item.amount).toFixed(2)}
+                                        <div className="font-black text-[#e85d9a] mt-1 text-xs md:text-sm uppercase tracking-widest">
+                                            {(item.purchases ?? 0)} {(item.purchases === 1 ? 'unlock' : 'unlocks')}
                                         </div>
                                     </>
                                 );
@@ -87,9 +87,9 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm md:text-lg font-black text-gray-800 leading-snug">
-                                            <span className="font-black text-black break-words">{item.name}</span> contributed{' '}
+                                            <span className="font-black text-black break-words">{item.name}</span>{' '}
                                             <span className="font-black text-pink-500 whitespace-nowrap">
-                                                {item.currency === 'GBP' ? '£' : '$'}{parseFloat(item.amount).toFixed(2)}
+                                                unlocked content
                                             </span>
                                         </p>
                                         {item.message && (
@@ -121,7 +121,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                         {activeList.length === 0 && (
                             <div className="w-full bg-gray-50 rounded-[24px] border-[3px] border-dashed border-gray-400 p-8 flex flex-col items-center justify-center">
                                 <div className="text-4xl mb-2 opacity-50">🐷</div>
-                                <div className="font-bold text-gray-400 text-sm text-center">No recent contributions yet.</div>
+                                <div className="font-bold text-gray-400 text-sm text-center">No recent unlocks yet.</div>
                             </div>
                         )}
                     </div>

@@ -19,6 +19,7 @@ export default function LegalLayout({ children, activePage }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const navItems = [
+        { name: 'How Spenny Piggy Works', href: '/how-spenny-piggy-works', component: 'HowSpennyPiggyWorks', icon: Wallet },
         { name: 'Terms of Service', href: '/terms-and-conditions', component: 'TermsOfService', icon: FileText },
         { name: 'Copyright & IP Policy', href: '/copyright-policy', component: 'CopyrightPolicy', icon: FileText },
         { name: 'Creator Agreement', href: '/creator-agreement', component: 'CreatorAgreement', icon: ShieldCheck },
@@ -30,6 +31,7 @@ export default function LegalLayout({ children, activePage }) {
         { name: 'Return Policy', href: '/return-policy', component: 'ReturnPolicy', icon: RotateCcw },
         { name: 'US Addendum', href: '/us-addendum', component: 'UsAddendum', icon: ShieldCheck },
         { name: 'Fast Payout Terms', href: '/fast-start-bonus-terms', component: 'FastStartBonusTerms', icon: FileText },
+        { name: 'Content & Payment Policy', href: '/content-payment-policy', component: 'ContentPaymentFramework', icon: ShieldCheck },
     ];
 
     return (
@@ -120,8 +122,8 @@ export default function LegalLayout({ children, activePage }) {
 
             {/* Main Content */}
             <main className="flex-1 bg-white md:bg-[#FDFCFD] md:max-h-screen md:overflow-auto">
-                <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-8 md:py-12">
-                    <div className="bg-white lg:shadow-sm lg:border lg:border-gray-100 lg:rounded-[40px] min-h-[80vh]">
+                <div className="">
+                    <div className="min-h-[80vh]">
                         {children}
                     </div>
                 </div>

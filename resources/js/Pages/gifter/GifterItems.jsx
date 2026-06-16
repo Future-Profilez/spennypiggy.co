@@ -113,9 +113,8 @@ export default function GifterItems(props) {
                         {s == "2" ? (
                             <p className=" ">
                                 <span className="text-capitalize">{uname}</span>{" "}
-                                has graciously contributed an amount of {amount}{" "}
-                                towards one of <b>{owner}</b>'s wish{" "}
-                                {<b>{wishname}</b>}.
+                                unlocked <b>{owner}</b>'s exclusive content{" "}
+                                {<b>{wishname}</b>} for {amount}.
                                 {/* <span className='text-small text-time text-capitalize' >14hrs ago</span>  */}
                             </p>
                         ) : (

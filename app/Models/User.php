@@ -78,6 +78,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'identity_admin_status' => 'integer',
         'identity_admin_reviewed_at' => 'datetime',
         'stripe_connected_at' => 'datetime',
+        'content_posting_paused_at' => 'datetime',
         'founder_missed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
         'creator_email_receipt_acknowledged_at' => 'datetime',
@@ -759,6 +760,17 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function createdDeliverables()
     {
         return $this->hasMany(Deliverable::class, 'creator_id');
+    }
+
+    /**
+     * Stripe compliance: true when this creator's content memberships are paused for
+     * failing the min-3-posts/30-day cadence. Recurring subscriptions are paused in
+     * Stripe; for Lifetime (one-time) members, content access should be gated on this
+     * flag so a non-posting creator stops delivering new content.
+     */
+    public function isContentPostingPaused(): bool
+    {
+        return $this->content_posting_paused_at !== null;
     }
 
     /**

@@ -1,30 +1,46 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <img style="max-width: 200px; margin:20px 0;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img">
-    </td>
-</tr>
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; text-align: center;">
+    <td align="center" style="padding:32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
+
+            {{-- Receipt emoji badge --}}
             <tr>
-                <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
-                    <span style="color:#FF007F; font-weight: bold;">
-                        Thank you for supporting {{ $pay->creator?->name ?? 'this creator' }}'s Piggy Pot!
-                    </span><br><br>
-                    <span style="color:#141414;">
-                        Your generous contribution of {{ $symbol }}{{ number_format((float) ($pay->total_paid ?? 0), 2) }} has made their day brighter 🎁✨
-                    </span>
+                <td align="center" style="padding:0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                🧾
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+
+            {{-- Heading --}}
             <tr>
-                <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    Go to <a href="https://spennypiggy.co/">Spenny Piggy</a> and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more!
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Thank You for Your Support!
                 </td>
             </tr>
+
+            {{-- Subline --}}
             <tr>
-                <td style="padding: 0 0 18px 0;">
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    You supported <strong style="color:#1A1A1A;">{{ $pay->creator?->name ?? 'this creator' }}</strong>'s Piggy Pot.
+                    Your generous contribution of <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format((float) ($pay->total_paid ?? 0), 2) }}</strong> has made their day brighter 🎁✨
+                </td>
+            </tr>
+
+            {{-- Receipt details card --}}
+            <tr>
+                <td style="padding:0 0 16px 0;">
                     @php
                         $creatorUsername = $pay->creator?->username ?? null;
                         $base = url('/history');
@@ -41,40 +57,94 @@
                         $receiptId = $pay->uuid ?? null;
                         $paymentIntentId = $pay->payment_intent_id ?? null;
                     @endphp
-                    <div style="padding: 14px; background: #f8f8f8; border: 1px solid #eeeeee; border-radius: 12px; text-align: left;">
-                        <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
-                            Receipt Details
-                        </div>
-                        <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
-                            <div><b>Seller (Creator):</b> {{ ucwords($pay->creator?->name ?? 'Creator') }}</div>
-                            <div><b>Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
-                            @if(!empty($receiptId))
-                                <div><b>Receipt ID:</b> {{ $receiptId }}</div>
-                            @endif
-                            @if(!empty($paymentIntentId))
-                                <div><b>Payment Intent:</b> {{ $paymentIntentId }}</div>
-                            @endif
-                            @if(!empty($pay->id))
-                                <div><b>Internal ID:</b> {{ $pay->id }}</div>
-                            @endif
-                        </div>
-                    </div>
-                    <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
-                        Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
-                        <br />
-                        Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
-                    </div>
-                    <div style="margin-top: 14px; text-align: center;">
-                        <a href="{{ $contactUrl }}"
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                            Contact Creator
-                        </a>
-                        <div style="height: 10px; line-height: 10px;">&nbsp;</div>
-                        <a href="{{ $refundUrl }}"
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                            Request Refund
-                        </a>
-                    </div>
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:13px;color:#1A1A1A;padding:0 0 10px 0;">
+                                    🧾 Receipt Details
+                                </div>
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:4px 0;">Seller (Creator)</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:4px 0;">{{ ucwords($pay->creator?->name ?? 'Creator') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:4px 0;">Order ID</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:4px 0;word-break:break-all;">{{ $orderId ?: 'N/A' }}</td>
+                                    </tr>
+                                    @if(!empty($receiptId))
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:4px 0;">Receipt ID</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:4px 0;word-break:break-all;">{{ $receiptId }}</td>
+                                    </tr>
+                                    @endif
+                                    @if(!empty($paymentIntentId))
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:4px 0;">Payment Intent</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:4px 0;word-break:break-all;">{{ $paymentIntentId }}</td>
+                                    </tr>
+                                    @endif
+                                    @if(!empty($pay->id))
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:4px 0;">Internal ID</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:4px 0;word-break:break-all;">{{ $pay->id }}</td>
+                                    </tr>
+                                    @endif
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Compliance note --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:12px;color:#999999;
+                           line-height:18px;padding:0 0 20px 0;text-align:center;">
+                    Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
+                    <br />
+                    Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
+                </td>
+            </tr>
+
+            {{-- Contact / Refund buttons --}}
+            <tr>
+                <td align="center" style="padding:0 0 10px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $contactUrl }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    Contact Creator →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" style="padding:0 0 22px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#4a5568"
+                                style="background-color:#4a5568;border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $refundUrl }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    Request Refund
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
 
@@ -94,41 +164,76 @@
 
             @if(!empty($rewardUrl) || !empty($rewardText))
             <tr>
-                <td style="padding: 0 0 18px 0;">
-                    @include('email.digital-content-notice')
-                </td>
-            </tr>
-            @endif
+                <td style="padding:0 0 18px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:13px;color:#FF007F;text-transform:uppercase;text-align:center;padding:0 0 12px 0;">🎁 Exclusive Reward</div>
 
-            @if(!empty($rewardUrl) || !empty($rewardText))
-            <tr>
-                <td style="padding: 0 0 18px 0; text-align: left;">
-                    <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: left;">
-                        <div style="font-family: Arial; font-weight: 900; font-size: 13px; color:#FF007F; text-transform:uppercase; margin-bottom:8px;">Exclusive Reward</div>
-                        @if(!empty($rewardText))
-                            <div style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px; font-weight: 700;">{{ $rewardText }}</div>
-                        @endif
-                        @if(!empty($rewardUrl))
-                            <a href="{{ $rewardUrl }}" style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold;" target="_blank">🎁 Access Reward</a>
-                        @endif
-                    </div>
+                                @include('email.digital-content-notice')
+
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="margin:12px 0 0 0;">
+                                    <tr>
+                                        <td bgcolor="#ffffff" style="background-color:#ffffff;border-radius:12px;border-left:4px solid #8C52FF;padding:14px 16px;text-align:center;">
+                                            @if(!empty($rewardText))
+                                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 12px 0;">{{ $rewardText }}</div>
+                                            @endif
+                                            @if(!empty($rewardUrl))
+                                                <a href="{{ $rewardUrl }}" style="display:inline-block;padding:10px 24px;background-color:#8C52FF;color:#ffffff;text-decoration:none;border-radius:50px;font-family:'Outfit',Arial,sans-serif;font-size:14px;font-weight:700;" target="_blank">🎁 Access Reward</a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
             @endif
 
             @if(!empty($thankYouUrl))
             <tr>
-                <td style="padding:0 0 12px 0; text-align: center;">
-                    <a href="{{ $thankYouUrl }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;" target="_blank">Open Thank You Page</a>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $thankYouUrl }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;" target="_blank">
+                                    Open Thank You Page →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
             @endif
 
+            {{-- View profile button --}}
             <tr>
-                <td style="padding:0 0 10px 0; text-align: center;">
-                    <a href="{{ env('APP_URL') . '/' . ($pay->creator?->username ?? '') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View Creator Profile</a>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#4a5568"
+                                style="background-color:#4a5568;border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ env('APP_URL') . '/' . ($pay->creator?->username ?? '') }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    View Creator Profile
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+
         </table>
     </td>
 </tr>

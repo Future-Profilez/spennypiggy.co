@@ -416,8 +416,8 @@ export default function Stripe(props) {
                             Connect Your Stripe Account
                         </h1>
                         <p className="text-black text-lg font-CeraGR max-w-2xl mx-auto mb-4 ">
-                            Set up secure payments to start receiving gifts and
-                            donations from your fans
+                            Set up secure payments to start selling your content
+                            to supporters
                         </p>
                     </div>
 
@@ -657,10 +657,9 @@ export default function Stripe(props) {
                                 violations. I also confirm
                                 that I will create and post
                                 exclusive content in
-                                exchange for receiving
-                                gifts, donations,
-                                subscriptions, memberships
-                                and bill payments. I also
+                                exchange for content
+                                purchases, subscriptions
+                                and memberships. I also
                                 confirm that nothing on the
                                 above prohibited list will
                                 be added to my profile.

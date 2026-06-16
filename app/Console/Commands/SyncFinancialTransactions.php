@@ -106,7 +106,7 @@ class SyncFinancialTransactions extends Command
 
                 $riskData = $this->getPaymentRiskData($payment->stripe_session_id, 'pending', $payment->stripe_payment_intent_id);
                 $status = $riskData['status'];
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, \App\Models\RyeProductPayment::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -217,7 +217,7 @@ class SyncFinancialTransactions extends Command
                 $stripeFee = 0;
                 $gross = $amount + $vat + $platformFee + $stripeFee;
 
-                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at);
+                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at, StripePaymentItems::class, $paymentItem->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -286,6 +286,10 @@ class SyncFinancialTransactions extends Command
             
             if ($paymentLog->reserve_amount_minor > 0) {
                 $data['reserve_amount'] = $paymentLog->reserve_amount_minor / 100;
+                // The currency the recorded reserve is expressed in. Some checkout paths store this
+                // GBP-normalised (Payment.currency = 'gbp') while others store it native; the fallback
+                // in determineReserve converts from here into the creator's currency.
+                $data['reserve_currency'] = strtoupper((string) ($paymentLog->currency ?: 'GBP'));
                 // A reserve stays 'held' until 30 days after its transaction_date, when the
                 // reserve:release command releases it. It must NOT be flipped to 'released'
                 // just because the base earning was paid out (payout_run_id set) — that emptied
@@ -378,7 +382,7 @@ class SyncFinancialTransactions extends Command
      *   3. Otherwise → no reserve.
      * Reserve is always calculated from creator net amount, never from gross/total.
      */
-    private function determineReserve(float $netAmount, array $riskData, $creator, \Carbon\Carbon $paymentDate): array
+    private function determineReserve(float $netAmount, array $riskData, $creator, \Carbon\Carbon $paymentDate, ?string $sourceType = null, $sourceId = null): array
     {
         if ($netAmount <= 0) {
             return ['amount' => 0, 'status' => 'none'];
@@ -395,17 +399,15 @@ class SyncFinancialTransactions extends Command
             $effectivePercent = (int) ($metric?->reserve_percent ?? 0);
         }
 
-        // A reserve recorded at transaction time is a HISTORICAL FACT — never zero it on
-        // re-sync just because the creator's CURRENT effective reserve % has dropped to 0
-        // (onboarding ended / risk cleared). Doing so erased the reserve from old transactions.
-        $recordedAmount = (float) ($riskData['reserve_amount'] ?? 0);
-        if ($recordedAmount > 0) {
-            return [
-                'amount' => $recordedAmount,
-                'status' => $reserveStatus,
-            ];
-        }
-
+        // Reserve is canonically (creator NET × effective%-as-of-payment-date), expressed in the
+        // transaction's OWN currency so it matches FT.net_amount. Compute it FRESH first:
+        //  - getEffectiveReservePercent uses $paymentDate, so the onboarding 10% window is
+        //    reconstructed correctly on any later re-sync (no need to freeze the old value).
+        //  - net_amount is per-source/native, so each item-FT gets its own correctly-based reserve.
+        // The recorded Payment.reserve_amount_minor is NOT trusted here: it is GBP-normalized on
+        // some checkout paths (CheckoutController) but native on others, and a single multi-item
+        // checkout session shares ONE Payment row across many item-FTs — both produced wrong
+        // magnitudes and a "random" reserve % when divided by the native net_amount.
         if ($effectivePercent > 0) {
             $calculatedAmount = round($netAmount * $effectivePercent / 100, 2);
             return [
@@ -414,7 +416,60 @@ class SyncFinancialTransactions extends Command
             ];
         }
 
+        // Fallback (payment-date percent is 0, e.g. the risk reserve % was later reduced, yet a reserve
+        // was taken at payment time): PREFER the existing FinancialTransaction's own reserve. It was
+        // written per-item in the creator's currency when the reserve was first taken, so it avoids both
+        // the GBP-normalisation AND the multi-item-session sharing of the recorded Payment value (one
+        // Payment row backs every item-FT of a multi-item checkout, so its reserve is the session total).
+        if ($sourceType && $sourceId !== null) {
+            $existingReserve = FinancialTransaction::where('source_type', $sourceType)
+                ->where('source_id', $sourceId)
+                ->value('reserve_amount');
+            if ($existingReserve !== null && (float) $existingReserve > 0) {
+                return [
+                    'amount' => round((float) $existingReserve, 2),
+                    'status' => $reserveStatus,
+                ];
+            }
+        }
+
+        // Last resort (first-ever sync, no FT row yet): preserve the recorded Payment reserve as a
+        // HISTORICAL FACT, converted from its currency into the creator's currency. The recorded value
+        // lives in the Payment row's currency, which on some checkout paths is GBP-normalised while the
+        // FT (and the actual charge, always in the creator's currency) is native.
+        $recordedAmount = (float) ($riskData['reserve_amount'] ?? 0);
+        if ($recordedAmount > 0) {
+            $recordedCurrency = strtoupper((string) ($riskData['reserve_currency'] ?? 'GBP'));
+            $targetCurrency = strtoupper((string) ($creator->default_currency ?? 'GBP'));
+            $converted = $this->convertCurrency($recordedAmount, $recordedCurrency, $targetCurrency);
+            return [
+                'amount' => round($converted, 2),
+                'status' => $reserveStatus,
+            ];
+        }
+
         return ['amount' => 0, 'status' => 'none'];
+    }
+
+    /**
+     * Convert a major-unit amount between currencies using the platform FX rates
+     * (rates are relative to GBP, matching ReleaseReserves / getHeldReserves).
+     */
+    private function convertCurrency(float $amount, string $from, string $to): float
+    {
+        $from = strtoupper($from ?: 'GBP');
+        $to = strtoupper($to ?: 'GBP');
+        if ($from === $to) {
+            return $amount;
+        }
+        $rates = \App\Models\Currency::rates();
+        if ($rates instanceof \Illuminate\Support\Collection) {
+            $rates = $rates->toArray();
+        }
+        if (!isset($rates[$from]) || !isset($rates[$to])) {
+            return $amount;
+        }
+        return ($amount / $rates[$from]) * $rates[$to];
     }
 
     private function calculateVatIfMissing($amount, $currentVat, $creator)
@@ -468,7 +523,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->status === 'paid') {
                     $status = 'completed';
                 }
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, MembershipPayment::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -540,7 +595,7 @@ class SyncFinancialTransactions extends Command
                     $status = 'completed';
                 }
                 $taskCreator = $purchase->creator;
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $taskCreator, $purchase->created_at);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $taskCreator, $purchase->created_at, TaskPurchase::class, $purchase->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -624,7 +679,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->status === 'paid') {
                     $status = 'completed';
                 }
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, BillPayment::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -712,7 +767,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $item->payment->payment_status === 'paid') {
                     $status = 'completed';
                 }
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $item->created_at);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $item->created_at, StripePaymentItems::class, $item->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -794,7 +849,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->payment_status === 'paid') {
                     $status = 'completed';
                 }
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, ShopPayment::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -869,7 +924,7 @@ class SyncFinancialTransactions extends Command
                 if ($status === 'pending' && $payment->status === 'paid') {
                     $status = 'completed';
                 }
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, TipGoalsPayment::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -950,7 +1005,7 @@ class SyncFinancialTransactions extends Command
 
                 $riskData = $this->getPaymentRiskData($payment->session_id, $defaultStatus, $payment->payment_intent_id);
                 $status = (string) ($riskData['status'] ?? $defaultStatus);
-                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at);
+                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at, \App\Models\PiggyPotContribution::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [

@@ -131,7 +131,9 @@ export default function Footer(props) {
                                         { name: "Promotion Terms", route: "promotion-terms" },
                                         { name: "Return Policy", route: "return-policy" },
                                         { name: "US Addendum", route: "us-addendum" },
-                                        { name: "Fast Payout", route: "fast-start-bonus-terms" }
+                                        { name: "Fast Payout", route: "fast-start-bonus-terms" },
+                                        { name: "Content & Payments", route: "content-payment-policy" },
+                                        { name: "How It Works", route: "how-spenny-piggy-works" }
                                     ].map((item, index) => (
                                         <div key={index}>
                                             {item.external ? (

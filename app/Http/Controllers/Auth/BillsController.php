@@ -54,15 +54,25 @@ class BillsController extends Controller
         ]);
 
         $validator = Validator::make($request->all(), [
-            "name" => ["required", "string"],
-            "price" => ["required", "numeric", "min:0"],
+            "name" => ["required", "string", new \App\Rules\NoBrandOrExpenseName],
+            "price" => [
+                "required",
+                "numeric",
+                function ($attribute, $value, $fail) {
+                    // Stripe compliance: content membership £4.99–£100/mo (GBP equivalent)
+                    $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 100);
+                    if ($err) {
+                        $fail($err);
+                    }
+                },
+            ],
             'period' => ['required', 'string']
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 "status" => false,
-                "msg" => "Validation failed",
+                "msg" => $validator->errors()->first(),
                 "errors" => $validator->errors(),
             ]);
         }
@@ -107,7 +117,7 @@ class BillsController extends Controller
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $productPayload = [
-            "name"  => "Bill: {$bill->name} (Total value including all fees)",
+            "name"  => "Content membership (incl. all fees)",
             "images" => [$bill->perma_link],
             "default_price_data"    => [
                 "currency"  => $currency,
@@ -156,14 +166,23 @@ class BillsController extends Controller
         Log::info("from start request->period: $request->period");
 
         $validator = Validator::make($request->all(), [
-            "name" => ["required", "string"],
-            "price" => ["required", "numeric", "min:0"],
+            "name" => ["required", "string", new \App\Rules\NoBrandOrExpenseName],
+            "price" => [
+                "required",
+                "numeric",
+                function ($attribute, $value, $fail) {
+                    $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 100);
+                    if ($err) {
+                        $fail($err);
+                    }
+                },
+            ],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 "status" => false,
-                "msg" => "Validation failed",
+                "msg" => $validator->errors()->first(),
                 "errors" => $validator->errors(),
             ]);
         }
@@ -239,7 +258,7 @@ class BillsController extends Controller
             if (!$stripeProduct) {
                 // Recreate the product if it's missing from Stripe
                 $productPayload = [
-                    "name"  => "Bill: {$bill->name} (Total value including all fees)",
+                    "name"  => "Content membership (incl. all fees)",
                     "images" => [$bill->perma_link],
                     "default_price_data"    => [
                         "currency"  => $currency,
@@ -284,7 +303,7 @@ class BillsController extends Controller
                 Log::info(json_encode($newPrice));
 
                 $product = $stripe->products->update($bill->product_id, [
-                    'name' => "Bill: {$bill->name} (Total value including all fees)",
+                    'name' => "Content membership (incl. all fees)",
                     'images' => [$bill->perma_link],
                     'default_price' => $newPrice->id,
                     'url' => env('APP_URL') . '/' . $user->username,
@@ -312,7 +331,7 @@ class BillsController extends Controller
             } else {
                 // Only name or metadata might have changed
                 $stripe->products->update($bill->product_id, [
-                    'name' => "Bill: {$bill->name} (Total value including all fees)",
+                    'name' => "Content membership (incl. all fees)",
                     'images' => [$bill->perma_link],
                     'metadata' => [
                         'bill_name' => $bill->name,
@@ -401,6 +420,12 @@ class BillsController extends Controller
      */
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
+        // Stripe compliance: content memberships require an account (tracked, renewed, cancelled).
+        // Guest checkout is only allowed for Piggy Pot and Wishes.
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Please log in or create an account to subscribe — memberships need an account so they can be tracked, renewed and cancelled.');
+        }
+
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
             $user = Auth::user();
@@ -510,6 +535,14 @@ class BillsController extends Controller
         }
 
         if ($request->isMethod("POST")) {
+            // Stripe compliance: content memberships require an account so the supporter
+            // can track, renew and cancel the subscription (guest checkout is only allowed
+            // for one-off Piggy Pot and Wishes purchases).
+            if (!Auth::check()) {
+                return redirect()->guest(route('login'))
+                    ->with('error', 'Please create an account or log in to subscribe — content memberships need an account so you can manage, renew or cancel them.');
+            }
+
             // Unified Risk Enforcement
             $riskData = $this->enforceRiskChecks(
                 $request,
@@ -664,8 +697,8 @@ class BillsController extends Controller
                         'price_data' => [
                             'currency' => $chargeCurrency,
                             'product_data' => [
-                                'name' => "Total value of item including all fees",
-                                'description' => "Recurring Bill from {$bill->user->name}",
+                                'name' => "Content membership",
+                                'description' => "Content membership · @{$bill->user->username}",
                             ],
                             'unit_amount' => round($finalTotalAmount * $multiplier),
                             'recurring' => [
@@ -681,7 +714,7 @@ class BillsController extends Controller
                     'payment_method_types' => ['card'],
                     'line_items' => $lineItems, // Total amount determined by line items
                     'subscription_data' => [
-                        'description' => "Recurring Bill for {$bill->user->username} (Total value including all fees)",
+                        'description' => "Content membership · @{$bill->user->username}",
                         'metadata' => Helpers::buildStripeMetadata('bill', $sub, [
                             'bill_id' => (string) $bill->id,
                             'recurring_for' => $reccure,
@@ -918,7 +951,7 @@ class BillsController extends Controller
                             'net_amount' => $creatorAmount,
                             'currency' => strtoupper($bill_pay->currency ?? 'GBP'),
                             'status' => 'completed',
-                            'description' => 'Bill Payment: ' . ($bill_pay->bill->name ?? 'Bill'),
+                            'description' => 'Recurring content: ' . ($bill_pay->bill->name ?? 'Subscription'),
                             'transaction_date' => $bill_pay->created_at,
                         ]
                     );

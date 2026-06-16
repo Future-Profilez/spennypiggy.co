@@ -384,7 +384,7 @@ export default function AllPayments(props) {
                                         No Payments Yet
                                     </h3>
                                     <p className="text-slate-400 text-xs">
-                                        When customers pay your bills,
+                                        When customers subscribe to your content,
                                         transactions will appear here
                                     </p>
                                 </div>

@@ -1,44 +1,52 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-         <td align="center" style="padding:10px 10px 20px 10px;"><a href="{{ env('APP_URL') . '/' }}"><img alt="image"
-                     width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none"></a></td>
-     </tr>
-     <tr>
-         <td align="center" style="padding:10px 10px 20px 10px;">
-             <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 420px; width: 100%; text-align: center;">
-                 <tr>
-                     <td
-                         style=" font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                         <span style="color: #8C52FF">Payment </span>{{ $sub->status }} on <br> Spenny Piggy 🎁
-                     </td>
-                 </tr>
-                 <tr>
-                     <td style="line-height:20px;height:20px;"></td>
-                 </tr>
- 
-                 <tr>
-                     <td style=" padding: 0 0 25px 0; text-align: center;"><img
-                             style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
-                 </tr>
-                 <tr>
-                     <td
-                         style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         Hello {{ ucwords($sub->guest_name) }}! <br><br>
-                         Your payment for subscription of wish item {{ $sub->wish_item->wishname }} is in {{ $sub->status }} status on
-                         Spenny Piggy.
-                     </td>
-                 </tr>
-                 <br>
-                 {{-- <tr>
-                     <td
-                         style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                         <b>Cancel :~ <a href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
-                                 Click Here</a></b>
-                     </td>
-                 </tr> --}}
-             </table>
-         </td>
-     </tr>
+    <td align="center" style="padding:32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
+
+            {{-- Status emoji badge --}}
+            <tr>
+                <td align="center" style="padding:0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                ⚠️
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Heading --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Payment <span style="color:#8C52FF;">{{ $sub->status }}</span>
+                </td>
+            </tr>
+
+            {{-- Subline --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    Hello <strong style="color:#1A1A1A;">{{ ucwords($sub->guest_name) }}</strong>!<br><br>
+                    Your payment for subscription of wish item <strong style="color:#8C52FF;">{{ $sub->wish_item->wishname }}</strong> is in <strong style="color:#1A1A1A;">{{ $sub->status }}</strong> status on Spenny Piggy.
+                </td>
+            </tr>
+
+            {{-- <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    <strong>Cancel :~ <a href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
+                            Click Here</a></strong>
+                </td>
+            </tr> --}}
+
+        </table>
+    </td>
+</tr>
 @endsection

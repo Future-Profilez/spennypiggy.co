@@ -73,7 +73,7 @@ class ReconcileFastStartBonusPayouts extends Command
                 $expectedEarningsMinor += (int) round($convert($net, $from, $currency) * 100);
             }
 
-            $expectedBonusMinor = (int) round($expectedEarningsMinor * 0.05);
+            $expectedBonusMinor = (int) round($expectedEarningsMinor * FastStartBonusPayout::resolveRate($expectedEarningsMinor));
             $alreadyPaidBonusMinor = (int) ($row->bonus_minor ?? 0);
 
             $clawbackMinor = max(0, $alreadyPaidBonusMinor - $expectedBonusMinor);

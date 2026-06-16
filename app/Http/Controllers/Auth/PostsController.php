@@ -46,7 +46,16 @@ class PostsController extends Controller
         $blockedWord = Helpers::checkBlockData($request);
         if ($blockedWord !== false) {
             return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
-        } else {
+        }
+
+        // Stripe compliance: PG-13 / adult-content moderation seam (media classifier wired later).
+        $moderation = app(\App\Services\ModerationService::class)
+            ->classify(trim(($request->title ?? '') . ' ' . ($request->content ?? '')), $request->image ?? null);
+        if ($moderation['flagged']) {
+            return redirect()->back()->with("error", $moderation['reason'] ?? 'This content did not pass moderation.');
+        }
+
+        {
             Post::create([
                 'user_id' => Auth::id(),
                 'type' => $request->type,

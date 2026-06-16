@@ -175,12 +175,12 @@ export default function AddMembership({updateState, item, text, classes}) {
     };
     const AddItem = () => {
       return <div className="flex items-center !w-full">
-          <div className="p-1 !rounded-[30px]  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+          <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]" >
               <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
           </div>
           <div className="pl-3 text-left">
-              <h2 className="text-lg font-normal font-GillSans uppercase">Add Membership Tier</h2>
-              <p className="text-sm font-poppins">Let fans support you monthly</p>
+              <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Membership</h2>
+              <p className="text-sm font-poppins">Offer a monthly content membership.</p>
           </div>
       </div>
     }
@@ -358,7 +358,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                       {step === 3 && (
                           <div className="w-full">
                               <label className="block text-left mb-2 text-lg font-semibold text-gray-800">Choose Membership Rewards</label>
-                              <p className="text-left text-sm text-gray-500 mb-4">Select the perks your fans will receive with this tier.</p>
+                              <p className="text-left text-sm text-gray-500 mb-4">Select the perks your fans will receive with this tier. You must include at least one on-platform content benefit (Monthly or Weekly Content Bundle).</p>
                               
                               <div className="flex memberships-lists flex-wrap gap-3 mb-6">
                                 {membershipBenifits && membershipBenifits.map((m, i)=>{

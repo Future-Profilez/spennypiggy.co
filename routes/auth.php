@@ -813,6 +813,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/export/csv', [\App\Http\Controllers\CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
             Route::get('/statement', [\App\Http\Controllers\CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
             Route::get('/certificate', [\App\Http\Controllers\CreatorFinancialController::class, 'certificate'])->name('certificate');
+            Route::get('/fast-start-bonus', [\App\Http\Controllers\CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
 
             // Expenses
             Route::get('/expenses', [\App\Http\Controllers\CreatorExpenseController::class, 'index'])->name('expenses.index');
@@ -973,8 +974,9 @@ Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->n
 // Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
+// Legacy /how-it-works → canonical /how-spenny-piggy-works (preserve old URL + SEO)
 Route::get('/how-it-works', function () {
-    return Inertia::render('howitworks/Works');
+    return redirect()->route('how-spenny-piggy-works', [], 301);
 })->name("how-it-works");
 
 Route::controller(\App\Http\Controllers\StaticPageController::class)->group(function () {
@@ -989,6 +991,8 @@ Route::controller(\App\Http\Controllers\StaticPageController::class)->group(func
     Route::get('/us-addendum', 'usAddendum')->name("us-addendum");
     Route::get('/copyright-policy', 'copyrightPolicy')->name("copyright-policy");
     Route::get('/fast-start-bonus-terms', 'fastStartBonusTerms')->name("fast-start-bonus-terms");
+    Route::get('/content-payment-policy', 'contentPaymentFramework')->name("content-payment-policy");
+    Route::get('/how-spenny-piggy-works', 'howSpennyPiggyWorks')->name("how-spenny-piggy-works");
     Route::post('/accept-terms', 'acceptTerms')->name("accept-terms")->middleware('auth');
 });
 

@@ -147,8 +147,18 @@ class FounderBonusController extends Controller
             }
         }
 
+        $qualDays = FounderBonus::getQualificationDays();
+        $enrichedLeaderboard = collect($leaderboard)->map(function ($entry, $idx) use ($qualDays) {
+            $daysElapsed = $qualDays - ($entry['days_remaining'] ?? 0);
+            return array_merge($entry, [
+                'rank'         => $idx + 1,
+                'progress_pct' => round($entry['qualification_progress'] ?? 0, 1),
+                'days_elapsed' => max(0, $daysElapsed),
+            ]);
+        })->values()->all();
+
         return Inertia::render('FounderBonus/Index', [
-            'leaderboard' => $leaderboard,
+            'leaderboard' => $enrichedLeaderboard,
             'userInRace' => $userInRace,
             'userProgress' => $userProgress,
             'userMissed' => $userMissed,
@@ -323,8 +333,19 @@ class FounderBonusController extends Controller
             }
         }
 
+        // Enrich leaderboard with rank and progress_pct
+        $enrichedLeaderboard = collect($leaderboard)->map(function ($entry, $idx) {
+            $qualDays = FounderBonus::getQualificationDays();
+            $daysElapsed = $qualDays - ($entry['days_remaining'] ?? 0);
+            return array_merge($entry, [
+                'rank'         => $idx + 1,
+                'progress_pct' => round($entry['qualification_progress'] ?? 0, 1),
+                'days_elapsed' => max(0, $daysElapsed),
+            ]);
+        })->values()->all();
+
         return response()->json([
-            'leaderboard' => $leaderboard,
+            'leaderboard' => $enrichedLeaderboard,
             'userInRace' => $userInRace,
             'userPosition' => $userPosition,
             'totalCreators' => count($leaderboard),

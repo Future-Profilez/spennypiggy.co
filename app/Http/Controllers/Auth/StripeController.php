@@ -476,6 +476,7 @@ class StripeController extends Controller
                         $user->stripe_connected_at = now();
                     }
                     $user->save();
+                    $this->applyContentDescriptorToAccount($user);
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
                     return redirect(route("user.show", $user->username))->with("success", "Stripe already connected!");
                 }
@@ -754,6 +755,7 @@ class StripeController extends Controller
                     $user->stripe_connected_at = now();
                 }
                 $user->save();
+                $this->applyContentDescriptorToAccount($user);
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
                 return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");
             }
@@ -767,6 +769,38 @@ class StripeController extends Controller
             return Inertia::location($link->url);
         } catch (Exception $e) {
             return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
+        }
+    }
+
+    /**
+     * Merchant-of-record: set the connected account's default statement descriptor to
+     * "<USERNAME> CONTENT" and its public business name to the creator. This covers
+     * recurring (subscription) charges, whose descriptor can't be set per-charge.
+     * Best-effort — never blocks the onboarding flow.
+     */
+    private function applyContentDescriptorToAccount(User $user): void
+    {
+        if (empty($user->account_id) || empty($user->username)) {
+            return;
+        }
+
+        try {
+            StripeControl::updateAccount($user->account_id, [
+                'settings' => [
+                    'payments' => [
+                        'statement_descriptor' => StripeControl::buildContentDescriptor($user->username),
+                    ],
+                ],
+                'business_profile' => [
+                    'name' => $user->name ?: $user->username,
+                ],
+            ]);
+        } catch (Exception $e) {
+            Log::warning('Failed to set content statement descriptor on connected account', [
+                'user_id' => $user->id,
+                'account_id' => $user->account_id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -3250,6 +3284,11 @@ class StripeController extends Controller
                 return response()->json(['status' => false, 'msg' => $msgErr]);
             }
 
+            // Stripe compliance: content unlock pricing £4.99–£500 (GBP equivalent)
+            if ($priceErr = Helpers::priceWithinLimits($request->amount, $request->currency ?? $creator->default_currency ?? 'GBP', 4.99, 500)) {
+                return response()->json(['status' => false, 'msg' => $priceErr]);
+            }
+
             $this->ensureTurnstileVerified($request);
 
             $sourceCurrency = strtoupper($request->currency ?? $creator->default_currency ?? 'GBP');
@@ -3315,8 +3354,8 @@ class StripeController extends Controller
                     'price_data' => [
                         'currency' => $sourceCurrency,
                         'product_data' => [
-                            'name' => "Total value of item including all fees",
-                            'description' => "Support payment to {$creator->name} to help them create more content.",
+                            'name' => "Exclusive content",
+                            'description' => "Exclusive content from {$creator->name}.",
                         ],
                         'unit_amount' => $unitAmount,
                     ]
@@ -3335,7 +3374,7 @@ class StripeController extends Controller
 
             // Direct Charges Implementation
             $paymentIntentData = [
-                'description' => "Spenny Piggy - Support payment to {$creator->name} (Total value including all fees)",
+                'description' => "Exclusive content from {$creator->name}",
                 "metadata" => Helpers::buildStripeMetadata('support_payment', $pay, [
                     'item_amount' => (string) $unitAmount,
                     'certificate' => 'true',

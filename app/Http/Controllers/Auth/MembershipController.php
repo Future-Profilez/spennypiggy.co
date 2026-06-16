@@ -53,6 +53,32 @@ class MembershipController extends Controller
         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
     }
 
+    /**
+     * On-platform content benefits that satisfy the "verifiable content deliverable"
+     * rule. Off-platform perks (Telegram, X, Insta, DM, video call) alone are not enough.
+     */
+    private const ON_PLATFORM_CONTENT_REWARDS = [
+        'monthly_content_bundle',
+        'weekly_content_bundle',
+    ];
+
+    /**
+     * Stripe compliance: a membership tier must offer at least one on-platform
+     * content deliverable. Accepts the rewards value as an array or JSON string.
+     */
+    public static function hasOnPlatformContent($rewards): bool
+    {
+        if (is_string($rewards)) {
+            $decoded = json_decode($rewards, true);
+            $rewards = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', $rewards)));
+        }
+        if (!is_array($rewards)) {
+            return false;
+        }
+        $normalized = array_map(fn ($r) => trim((string) $r), $rewards);
+        return count(array_intersect($normalized, self::ON_PLATFORM_CONTENT_REWARDS)) > 0;
+    }
+
     public function membershipLevelSave(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -63,7 +89,13 @@ class MembershipController extends Controller
             "month_price" => [
                 "required",
                 "numeric",
-                "min:0"
+                function ($attribute, $value, $fail) {
+                    // Stripe compliance: content membership £4.99–£100/mo (GBP equivalent)
+                    $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 100);
+                    if ($err) {
+                        $fail($err);
+                    }
+                },
             ],
             "rewards" => [
                 "required"
@@ -74,8 +106,17 @@ class MembershipController extends Controller
 
             return response()->json([
                 "status" => false,
-                "msg" => "Validation failed",
+                "msg" => $validator->errors()->first(),
                 "errors" => $validator->errors(),
+            ]);
+        }
+
+        // Stripe compliance: a tier must include at least one on-platform content
+        // deliverable so every membership has a verifiable content benefit.
+        if (!self::hasOnPlatformContent($request->rewards)) {
+            return response()->json([
+                "status" => false,
+                "msg" => "Select at least one on-platform content benefit (e.g. Monthly or Weekly Content Bundle).",
             ]);
         }
 
@@ -123,7 +164,7 @@ class MembershipController extends Controller
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $productPayload = [
-            "name"  => "Membership: {$mem->level} (Total value including all fees)",
+            "name"  => "Content membership ($mem->level)",
             "images" => [$mem->perma_link],
             "default_price_data"    =>  [
                 "currency"  => $currency,
@@ -188,13 +229,23 @@ class MembershipController extends Controller
                 "month_price" => [
                     "required",
                     "numeric",
-                    "min:0"
+                    function ($attribute, $value, $fail) {
+                        $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 100);
+                        if ($err) {
+                            $fail($err);
+                        }
+                    },
                 ],
                 "rewards" => [
                     "required"
                 ],
             ]
         );
+
+        // Stripe compliance: a tier must include at least one on-platform content benefit.
+        if (!self::hasOnPlatformContent($request->rewards)) {
+            return redirect()->back()->with("error", "Select at least one on-platform content benefit (e.g. Monthly or Weekly Content Bundle).");
+        }
 
         $blockedWord = Helpers::checkBlockData($request);
         if ($blockedWord !== false) {
@@ -256,7 +307,7 @@ class MembershipController extends Controller
                 if (!$stripeProduct) {
                     // Recreate the product if it's missing from Stripe
                     $productPayload = [
-                        "name"  => "Membership: {$newLevel} (Total value including all fees)",
+                        "name"  => "Content membership ($newLevel)",
                         "images" => [$mem->perma_link],
                         "default_price_data"    =>  [
                             "currency"  => $currency,
@@ -324,7 +375,7 @@ class MembershipController extends Controller
                     }
 
                     $product = $stripe->products->update($mem->product_id, [
-                        "name" => "Membership: {$newLevel} (Total value including all fees)",
+                        "name" => "Content membership ($newLevel)",
                         "images" => [$mem->perma_link],
                         "url" => env('APP_URL') . '/' . $user->username . '/memberships',
                         'metadata' => [
@@ -416,6 +467,12 @@ class MembershipController extends Controller
      */
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
+        // Stripe compliance: content memberships require an account (tracked, renewed, cancelled).
+        // Guest checkout is only allowed for Piggy Pot and Wishes.
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Please log in or create an account to join — memberships need an account so they can be tracked, renewed and cancelled.');
+        }
+
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         $user = Auth::user();
         if ($checkGifterStatus === true) {
@@ -506,6 +563,14 @@ class MembershipController extends Controller
         $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
+            // Stripe compliance: content memberships require an account so the supporter
+            // can track, renew and cancel the subscription (guest checkout is only allowed
+            // for one-off Piggy Pot and Wishes purchases).
+            if (!Auth::check()) {
+                return redirect()->guest(route('login'))
+                    ->with('error', 'Please create an account or log in to join — content memberships need an account so you can manage, renew or cancel them.');
+            }
+
             // Unified Risk Enforcement
             $riskData = $this->enforceRiskChecks(
                 $request,
@@ -648,7 +713,7 @@ class MembershipController extends Controller
                         Log::info("Product not found for membership checkout, recreating: " . $membership->product_id);
 
                         $productPayload = [
-                            "name"  => "Membership: {$membership->level} (Total value including all fees)",
+                            "name"  => "Content membership ($membership->level)",
                             "images" => [$membership->perma_link],
                             "url"   =>  env('APP_URL') . '/' . $membership->user->username,
                             'metadata' => [
@@ -711,8 +776,8 @@ class MembershipController extends Controller
                         'price_data' => [
                             'currency' => $chargeCurrency,
                             'product_data' => [
-                                'name' => "Total value of item including all fees",
-                                'description' => "{$membership->level} membership from {$membership->user->name}",
+                                'name' => "Content membership",
+                                'description' => "Content membership ({$membership->level}) · @{$membership->user->username}",
                             ],
                             'unit_amount' => round($finalTotalAmount * $multiplier),
                         ]
@@ -763,7 +828,7 @@ class MembershipController extends Controller
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
                     $paymentIntentData = [
-                        'description' => "Lifetime Membership for {$membership->user->username} (Total value including all fees)",
+                        'description' => "Content membership (Lifetime) · @{$membership->user->username}",
                         'metadata' => Helpers::buildStripeMetadata('membership', $sub, [
                             'membership_level' => $membership->level,
                             'item_amount' => (string) round($membership->price * $multiplier),
@@ -783,7 +848,7 @@ class MembershipController extends Controller
                 } else {
                     $payload['mode'] = 'subscription';
                     $payload['subscription_data'] = [
-                        'description' => "Monthly Membership for {$membership->user->username} (Total value including all fees)",
+                        'description' => "Content membership · @{$membership->user->username}",
                         'metadata' => Helpers::buildStripeMetadata('membership', $sub, [
                             'membership_level' => $membership->level,
                             'item_amount' => (string) round($membership->price * $multiplier),

@@ -197,10 +197,18 @@ export default function Dashboard(props) {
     }, [stripe_requirements]);
 
     const shouldShowFounderBannerClient = useMemo(() => {
+        // Only logged-in creators (role 1), never gifters
         if (!IsloggedIn || auth?.user?.role !== 1) return false;
+        // Already a founder — no need to pitch them
         if (auth?.user?.is_founder) return false;
+        // Hide if Stripe connected more than 45 days ago (window opportunity is over)
+        const stripeConnectedAt = auth?.user?.stripe_connected_at;
+        if (stripeConnectedAt) {
+            const daysSinceConnected = (Date.now() - new Date(stripeConnectedAt).getTime()) / 86400000;
+            if (daysSinceConnected > 45) return false;
+        }
         return !props.founderData?.isEligible;
-    }, [IsloggedIn, auth?.user?.role, auth?.user?.is_founder, props.founderData?.isEligible]);
+    }, [IsloggedIn, auth?.user?.role, auth?.user?.is_founder, auth?.user?.stripe_connected_at, props.founderData?.isEligible]);
 
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -392,14 +400,29 @@ export default function Dashboard(props) {
                                 +
                             </b>
                         </div>
-                        {showAdd ? (
-                            <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
-                                <div className="w-full md:max-w-[600px] lg:max-w-[900px] px-6 !overflow-hidden">
+                        {showAdd ? createPortal((
+                            <div onClick={() => setShowAdd(false)} className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[2147483646] flex justify-center items-center top-0 left-0 w-full h-full">
+                                <div onClick={(e) => e.stopPropagation()} className="w-full md:max-w-[520px] lg:max-w-[560px] px-6 py-4">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px]  md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
-                                            <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-2 text-center m-auto ">
-                                                Fund your Lifestyle
-                                            </h2>
+                                        <div className="relative bg-[#FFF6EC] border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px]  md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAdd(false)}
+                                                aria-label="Close"
+                                                className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF007F] hover:text-white font-black text-2xl leading-none pb-1 transition-colors z-20"
+                                            >
+                                                ×
+                                            </button>
+                                            <div className="text-center mb-5 max-w-[480px] mx-auto">
+                                                <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] rounded-[22px] px-6 py-3 mb-3 -rotate-1">
+                                                    <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-[2.1rem] !leading-none m-0 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
+                                                        🐷 Turn Content Into Cash 💰
+                                                    </h2>
+                                                </div>
+                                                <p className="text-[#3d2b1f] font-bold text-sm md:text-base leading-snug">
+                                                    Sell content, rewards, memberships, and exclusive experiences.
+                                                </p>
+                                            </div>
 
                                             {AuthUserStripeConnected !== 1 ? (
                                                 <p className="!mb-2 text-center">
@@ -410,7 +433,7 @@ export default function Dashboard(props) {
                                             ) : (
                                                 ""
                                             )}
-                                            <div className="!max-h-[56vh] !min-h-[56vh] p-2 md:p-4 !pt-2 overflow-auto">
+                                            <div className="!max-h-[56vh] !min-h-[56vh] px-3 md:px-4 !pt-2 !pb-8 overflow-auto">
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
@@ -470,44 +493,24 @@ export default function Dashboard(props) {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <div
-                                                            className={`${
-                                                                AuthUserStripeConnected ==
-                                                                1
-                                                                    ? "block"
-                                                                    : "disabled"
-                                                            }`}
-                                                        >
-                                                            <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-1">
+                                                        <div className={`${AuthUserStripeConnected == 1 ? "block":"disabled"}`} >
+                                                            <div className="w-full grid grid-cols-1 lg:grid-cols-1 gap-x-4 gap-y-1">
                                                                 <div
-                                                                    onClick={() =>
-                                                                        setWishOptions(
-                                                                            true,
-                                                                        )
-                                                                    }
-                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
-                                                                >
+                                                                    onClick={() => setWishOptions( true,)}
+                                                                    className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" >
                                                                     <div className=" flex items-center">
-                                                                        <div className="p-1 !rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                        <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                             <FaRegHeart
                                                                                 color="#FF007F"
                                                                                 size="1.6rem"
                                                                             />
                                                                         </div>
                                                                         <div className="pl-4 text-left">
-                                                                            <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
-                                                                                Add
-                                                                                Wish
+                                                                            <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                Sell exclusive content
                                                                             </h2>
                                                                             <p className="text-sm font-bold text-gray-700">
-                                                                                Let
-                                                                                fans
-                                                                                fund
-                                                                                your
-                                                                                lifestyle
-                                                                                for
-                                                                                a
-                                                                                reward.
+                                                                                Offer a one-off piece of exclusive content.
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -517,28 +520,23 @@ export default function Dashboard(props) {
                                                                     ?.role ===
                                                                     1 && (
                                                                     <Link
-                                                                        className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                        className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                         href="/task/create"
                                                                     >
                                                                         <div className=" flex items-center">
-                                                                            <div className="p-1 rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                            <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                 <BiTask
                                                                                     color="#FF007F"
                                                                                     size="1.6rem"
                                                                                 />
                                                                             </div>
                                                                             <div className="pl-4 text-left">
-                                                                                <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
+                                                                                <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
                                                                                     Create
                                                                                     Task
                                                                                 </h2>
                                                                                 <p className="text-sm font-bold text-gray-700">
-                                                                                    Offer
-                                                                                    something
-                                                                                    unique
-                                                                                    to
-                                                                                    your
-                                                                                    supporters.
+                                                                                    Sell a personalised service or shoutout.
                                                                                 </p>
                                                                             </div>
                                                                         </div>
@@ -552,27 +550,20 @@ export default function Dashboard(props) {
                                                                         onClick={
                                                                             openCreateModal
                                                                         }
-                                                                        className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                        className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                     >
                                                                         <div className=" flex items-center">
-                                                                            <div className="p-1 rounded-[30px]  bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                            <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                 <span className="text-2xl">
                                                                                     🐷
                                                                                 </span>
                                                                             </div>
                                                                             <div className="pl-4 text-left">
-                                                                                <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
-                                                                                    Create
-                                                                                    Piggy
-                                                                                    Pot
+                                                                                <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                    Content goal
                                                                                 </h2>
                                                                                 <p className="text-sm font-bold text-gray-700">
-                                                                                    Set
-                                                                                    fundraising
-                                                                                    goals
-                                                                                    for
-                                                                                    your
-                                                                                    supporters.
+                                                                                    Sell content toward a visible goal.
                                                                                 </p>
                                                                             </div>
                                                                         </div>
@@ -580,10 +571,10 @@ export default function Dashboard(props) {
                                                                 )}
 
                                                                 <AddItem
-                                                                    classes="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                    classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                     product_type="digital_products"
                                                                 />
-                                                                <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] " />
+                                                                <AddPost classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
                                                                 {/* <AddGift
                                                                     text="Add Gift "
                                                                     classes="font-bold py-3 px-3 mb-2 text-center"
@@ -595,8 +586,8 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                <AddMembership classes=" font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  !w-full" />
-                                                                <AddBills classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] " />
+                                                                <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
                                                             </div>
                                                         </div>
                                                     </>
@@ -621,7 +612,7 @@ export default function Dashboard(props) {
                                     </Suspense>
                                 </div>
                             </div>
-                        ) : (
+                        ), document.body) : (
                             ""
                         )}
                     </>
@@ -1990,15 +1981,7 @@ export default function Dashboard(props) {
                                                                                     Bills
                                                                                 </h3>
                                                                                 <p className="text-gray-600 font-bold mb-6">
-                                                                                    Split
-                                                                                    bills
-                                                                                    with
-                                                                                    your
-                                                                                    fans
-                                                                                    and
-                                                                                    let
-                                                                                    them
-                                                                                    contribute.
+                                                                                    Offer a content membership your fans can subscribe to.
                                                                                 </p>
                                                                                 <button
                                                                                     onClick={() =>

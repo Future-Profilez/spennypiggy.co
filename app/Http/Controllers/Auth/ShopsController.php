@@ -85,7 +85,14 @@ class ShopsController extends Controller
                 ],
                 "price" => [
                     "sometimes",
-                    'numeric'
+                    'numeric',
+                    function ($attribute, $value, $fail) {
+                        // Stripe compliance: products priced £4.99–£10,000 (GBP equivalent)
+                        $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 10000);
+                        if ($err) {
+                            $fail($err);
+                        }
+                    },
                 ],
                 'image' => [
                     'required',
@@ -208,6 +215,23 @@ class ShopsController extends Controller
 
         $shop->refresh();
 
+        // SFW gate: scan the product image; hold (un-approve) if it fails moderation.
+        if (!empty($shop->image)) {
+            \App\Jobs\CheckMediaModeration::dispatch(
+                \App\Models\Shop::class,
+                $shop->id,
+                $shop->image,
+                ['approved' => 0]
+            );
+        }
+
+        // Stripe compliance: high-value listings (>£2,500 GBP-equiv) get an enhanced review
+        // before going live (held un-approved until an admin clears them).
+        if (!empty($shop->price) && Helpers::priceFormat(strtoupper($shop->currency ?? 'GBP'), (float) $shop->price, 'GBP') > 2500) {
+            $shop->approved = 0;
+            $shop->save();
+        }
+
         if (!empty($request->category)) {
             $categories = json_decode($request->category);
             $cat = UserShopCategories::whereIn('uuid', $categories)->get();
@@ -294,6 +318,14 @@ class ShopsController extends Controller
         }
 
         $old_price = $shop->price;
+
+        if ($request->filled('price')) {
+            // Stripe compliance: products priced £4.99–£10,000 (GBP equivalent)
+            $priceError = Helpers::priceWithinLimits($request->price, $shop->currency ?? ($user->default_currency ?? 'gbp'), 4.99, 10000);
+            if ($priceError) {
+                return response()->json(['status' => false, 'msg' => $priceError]);
+            }
+        }
 
         if (Helpers::checkBlockData($request) == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
@@ -451,6 +483,13 @@ class ShopsController extends Controller
                 if (!empty($logs)) {
                     $logs->status = 'updated';
                     $logs->save();
+                }
+
+                // Stripe compliance: high-value listings (>£2,500 GBP-equiv) require an
+                // enhanced review on every edit (held un-approved until an admin clears them).
+                if (!empty($shop->price) && Helpers::priceFormat(strtoupper($shop->currency ?? 'GBP'), (float) $shop->price, 'GBP') > 2500) {
+                    $shop->approved = 0;
+                    $shop->save();
                 }
 
                 // Clear user caches
@@ -656,6 +695,16 @@ class ShopsController extends Controller
 
     public function buyShopItem(Request $request, $shop_id)
     {
+        // Stripe compliance: product orders require an account so the order can be
+        // tracked and delivered (guest checkout is only allowed for Piggy Pot and Wishes).
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'requires_login' => true,
+                'message' => 'Please create an account or log in to purchase — orders need an account so they can be tracked and delivered.',
+            ]);
+        }
+
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
             return response()->json([
@@ -1136,8 +1185,11 @@ class ShopsController extends Controller
                             'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
                             'anonymous' => $stripeid->anonymous ?? false,
                             'message' => $stripeid->message,
-                            'status' => $stripeid->shop->type == 'physical' ? 'pending' : 'delivered',
-                            'delivered_at' => $stripeid->shop->type == 'physical' ? null : now(),
+                            // Stripe compliance: high-value orders (>£2,500) are held for an
+                            // enhanced review (admin confirms delivery before payout clears).
+                            'needs_admin_review' => Helpers::priceFormat(strtoupper($stripeid->currency ?? 'GBP'), (float) $stripeid->amount, 'GBP') > 2500,
+                            'status' => ($stripeid->shop->type == 'physical' || Helpers::priceFormat(strtoupper($stripeid->currency ?? 'GBP'), (float) $stripeid->amount, 'GBP') > 2500) ? 'pending' : 'delivered',
+                            'delivered_at' => ($stripeid->shop->type == 'physical' || Helpers::priceFormat(strtoupper($stripeid->currency ?? 'GBP'), (float) $stripeid->amount, 'GBP') > 2500) ? null : now(),
                             'metadata' => json_encode([
                                 'shop_item_id' => $stripeid->shop->id,
                                 'shop_item_name' => $stripeid->shop->name,

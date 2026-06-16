@@ -130,9 +130,16 @@ class ReleaseReserves extends Command
                     'method' => 'standard',
                     'idempotency_key' => $idempotencyKey,
                     'metadata' => [
-                        'reason' => 'reserve_release',
-                        'creator_id' => (string) $creator->uuid,
-                        'reserve_count' => (string) $fts->count(),
+                        'reason'               => 'reserve_release',
+                        'payout_type'          => 'reserve_release',
+                        'creator_id'           => (string) $creator->uuid,
+                        'creator_username'     => (string) ($creator->username ?? ''),
+                        'creator_email'        => (string) ($creator->email ?? ''),
+                        'reserve_count'        => (string) $fts->count(),
+                        'reserve_amount_minor' => (string) $amountMinor,
+                        'currency'             => $currency,
+                        'reserve_window_days'  => '30',
+                        'env'                  => (string) config('app.env'),
                     ],
                 ], $creator->account_id);
 

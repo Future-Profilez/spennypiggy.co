@@ -9,6 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // FK cascade rebuilding relies on MySQL information_schema and DDL semantics.
+        // SQLite (used by the test suite) handles FKs differently and lacks
+        // information_schema, so this migration is a no-op on non-MySQL drivers.
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // ── 1. Fix existing FK constraints that are missing onDelete ──────────
 
         // creator_referrals: RESTRICT → CASCADE
@@ -91,6 +98,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Revert creator_referrals and creator_referral_payouts to plain FKs
         if ($this->fkHasCascade('creator_referrals', 'creator_referrals_referrer_creator_id_foreign')) {
             Schema::table('creator_referrals', function (Blueprint $table) {

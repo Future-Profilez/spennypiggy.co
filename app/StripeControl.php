@@ -554,6 +554,29 @@ class StripeControl
     }
 
     /**
+     * Update a connected account.
+     *
+     * @param string $account_id Connected account ID
+     * @param array $payload Fields to update
+     * @return Throwable|\Stripe\Account
+     */
+    public static function updateAccount($account_id, array $payload)
+    {
+        self::setClient();
+        try {
+            return self::$client->accounts->update($account_id, $payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Create Account Link
      *
      * @param array $payload Account Link Payload
@@ -598,6 +621,34 @@ class StripeControl
     }
 
     /**
+     * Build a merchant-of-record statement descriptor for a creator.
+     *
+     * Produces "<USERNAME> CONTENT" within Stripe's 22-char limit, always preserving the
+     * " CONTENT" marker so the charge reads as a content purchase, never a person-to-person
+     * transfer or a platform/gift charge. Strips characters Stripe disallows.
+     *
+     * @param string $username Creator username (or display name)
+     * @return string
+     */
+    public static function buildContentDescriptor($username): string
+    {
+        $marker = ' CONTENT';
+        // Stripe disallows < > \ ' " * in descriptors; keep alnum, space, underscore, dot, hyphen.
+        $clean = preg_replace('/[^A-Za-z0-9 _.\-]/', '', (string) $username);
+        $clean = trim(strtoupper($clean));
+
+        $maxName = 22 - strlen($marker); // reserve room for the marker
+        if (strlen($clean) > $maxName) {
+            $clean = rtrim(substr($clean, 0, $maxName));
+        }
+        if ($clean === '') {
+            $clean = 'CREATOR';
+        }
+
+        return substr($clean . $marker, 0, 22);
+    }
+
+    /**
      * Create Payment Intent
      *
      * @param array $payload Payment Payload
@@ -615,14 +666,9 @@ class StripeControl
         }
 
         if ($creatorUsername) {
-            // Stripe statement descriptor rules: max 22 characters
-            $descriptor = "SP*" . strtoupper($creatorUsername);
-            $descriptor = substr($descriptor, 0, 22);
-            
-            // For card payments, statement_descriptor_suffix is preferred if a prefix is set.
-            // However, statement_descriptor is often accepted as a full override for some payment methods.
-            // We'll set both to be safe, or just statement_descriptor if it's a full override.
-            $payload['statement_descriptor'] = $descriptor;
+            // Merchant-of-record: descriptor reads as a content purchase in the creator's name
+            // (e.g. "JUSTJACK99 CONTENT"), never a platform/gift marker.
+            $payload['statement_descriptor'] = self::buildContentDescriptor($creatorUsername);
         }
         
         try {
@@ -664,21 +710,20 @@ class StripeControl
         }
 
         if ($creatorUsername) {
-            // Stripe statement descriptor rules: max 22 characters
-            $descriptor = "SP*" . strtoupper($creatorUsername);
-            $descriptor = substr($descriptor, 0, 22);
-            
+            $descriptor = self::buildContentDescriptor($creatorUsername);
+
             // For one-time payments (mode: payment)
             if (isset($payload['mode']) && $payload['mode'] === 'payment') {
                 if (!isset($payload['payment_intent_data'])) {
                     $payload['payment_intent_data'] = [];
                 }
                 $payload['payment_intent_data']['statement_descriptor'] = $descriptor;
-            } 
+            }
             // For subscriptions (mode: subscription)
             elseif (isset($payload['mode']) && $payload['mode'] === 'subscription') {
-                // Note: subscription_data does not support statement_descriptor in the Checkout Session API.
-                // For subscriptions, Stripe uses the descriptor defined on the Product or the Account.
+                // subscription_data does not support statement_descriptor in the Checkout Session API.
+                // Recurring charges fall back to the connected account's default descriptor, which we set
+                // to the same "USERNAME CONTENT" value at Connect onboarding (see StripeController).
             }
         }
 
@@ -975,6 +1020,60 @@ class StripeControl
             }
 
             return self::$client->subscriptions->cancel($sub_id, [], $options);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Pause a subscription's billing (no new invoices) — used when a creator falls below
+     * the min posting cadence. Reversible via resumeSubscription(). behavior 'void' means
+     * invoices during the pause are voided rather than collected later.
+     *
+     * @param string $sub_id Stripe subscription ID
+     * @param string|null $connectedAccountId Creator's connected account
+     * @return Throwable|\Stripe\Subscription
+     */
+    public static function pauseSubscription($sub_id, $connectedAccountId = null)
+    {
+        self::setClient();
+        try {
+            $options = $connectedAccountId ? ['stripe_account' => $connectedAccountId] : [];
+            return self::$client->subscriptions->update($sub_id, [
+                'pause_collection' => ['behavior' => 'void'],
+            ], $options);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Resume a paused subscription's billing (creator met the posting cadence again).
+     *
+     * @param string $sub_id Stripe subscription ID
+     * @param string|null $connectedAccountId Creator's connected account
+     * @return Throwable|\Stripe\Subscription
+     */
+    public static function resumeSubscription($sub_id, $connectedAccountId = null)
+    {
+        self::setClient();
+        try {
+            $options = $connectedAccountId ? ['stripe_account' => $connectedAccountId] : [];
+            return self::$client->subscriptions->update($sub_id, [
+                'pause_collection' => '',
+            ], $options);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {

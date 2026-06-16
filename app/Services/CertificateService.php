@@ -248,18 +248,18 @@ class CertificateService
         $creatorName = $tipPayment->creator->name ?? 'Creator';
         $supporterName = $tipPayment->user->name ?? ($tipPayment->guest_name ?? 'Supporter');
         
-        $certificate = "🎯 SPENNY PIGGY - SUPPORTER ACCESS CERTIFICATE 🎯\n\n";
+        $certificate = "SPENNY PIGGY - SUPPORTER CONFIRMATION\n\n";
         $certificate .= "═══════════════════════════════════════════════════════════════\n\n";
-        
-        $certificate .= "This certificate validates your support payment and grants access to:\n\n";
-        
-        $certificate .= "✨ CREATOR SUPPORTED: {$creatorName}\n";
+
+        $certificate .= "This confirms your content purchase and supporter access:\n\n";
+
+        $certificate .= "✨ CREATOR: {$creatorName}\n";
         $certificate .= "💖 SUPPORTER: {$supporterName}\n";
-        $certificate .= "💰 SUPPORT AMOUNT: " . strtoupper($tipPayment->currency) . " " . number_format($tipPayment->amount, 2) . "\n\n";
-        
-        // Add tip jar info if available
+        $certificate .= "💰 AMOUNT: " . strtoupper($tipPayment->currency) . " " . number_format($tipPayment->amount, 2) . "\n\n";
+
+        // Goal shown as context only — never the item purchased
         if ($tipPayment->tipGoal) {
-            $certificate .= "🏆 TIP JAR: '{$tipPayment->tipGoal->name}'\n";
+            $certificate .= "🏆 SUPPORT GOAL: '{$tipPayment->tipGoal->name}'\n";
         }
         
         $certificate .= "\n═══════════════════════════════════════════════════════════════\n\n";
@@ -461,12 +461,12 @@ class CertificateService
         $buyerName = $deliverable->customer_name ?? ($deliverable->gifter->name ?? 'Purchaser');
         $metadata = json_decode($deliverable->metadata, true) ?? [];
         
-        $certificate = "SPENNY PIGGY - BILL PAYMENT CERTIFICATE\n\n";
+        $certificate = "SPENNY PIGGY - PURCHASE CONFIRMATION\n\n";
         $certificate .= "================================================================\n\n";
-        
-        $certificate .= "This certificate validates the authentic payment of:\n\n";
-        
-        $certificate .= "BILL: '{$billName}'\n";
+
+        $certificate .= "This confirms your purchase of a content membership:\n\n";
+
+        $certificate .= "CONTENT MEMBERSHIP (goal: '{$billName}')\n";
         $certificate .= "CREATED BY: {$creatorName}\n";
         $certificate .= "PAID BY: {$buyerName}\n\n";
         
@@ -506,9 +506,9 @@ class CertificateService
                 $certificate .= "- Content Access URL: {$deliverable->deliverable_url}\n";
             }
         } else {
-            $certificate .= "BILL PAYMENT CONFIRMATION:\n";
+            $certificate .= "CONTENT MEMBERSHIP CONFIRMATION:\n";
             $certificate .= "- Payment successfully processed\n";
-            $certificate .= "- Access granted to bill creator's content\n";
+            $certificate .= "- Access granted to the creator's content\n";
             if (!empty($deliverable->deliverable_url)) {
                 $certificate .= "- Creator Profile: {$deliverable->deliverable_url}\n";
             }

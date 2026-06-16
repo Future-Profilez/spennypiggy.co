@@ -1367,7 +1367,7 @@ class LeaderBoardController extends Controller
         $labelForSource = function (?string $sourceType) {
             $base = class_basename((string) $sourceType);
             return match ($base) {
-                'StripePaymentItems' => ['title' => 'wish gifts', 'tag' => 'single_wish'],
+                'StripePaymentItems' => ['title' => 'exclusive content', 'tag' => 'single_wish'],
                 'ShopPayment' => ['title' => 'shop items', 'tag' => 'shops'],
                 'TipGoalsPayment' => ['title' => 'piggy bank', 'tag' => 'tip_goal'],
                 'MembershipPayment' => ['title' => 'memberships', 'tag' => 'memberships'],

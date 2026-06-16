@@ -71,7 +71,8 @@ class WishitemController extends Controller
                 "required",
                 "string",
                 "min:4",
-                "max:255"
+                "max:255",
+                new \App\Rules\NoBrandOrExpenseName,
             ],
             "price" => [
                 "required",
@@ -154,7 +155,7 @@ class WishitemController extends Controller
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                 $productPayload = [
-                    'name' => 'Total value of item including all fees',
+                    'name' => 'Exclusive content',
                     'images' => [$wish->perma_link],
                     'default_price_data' => [
                         'currency' => strtolower($currency),
@@ -214,12 +215,19 @@ class WishitemController extends Controller
                 "required",
                 "string",
                 "min:4",
-                "max:255"
+                "max:255",
+                new \App\Rules\NoBrandOrExpenseName,
             ],
             "price" => [
                 "required",
                 "numeric",
-                "min:0"
+                function ($attribute, $value, $fail) {
+                    // Stripe compliance: min £4.99, max £500 (GBP equivalent) for content unlocks
+                    $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
+                    if ($err) {
+                        $fail($err);
+                    }
+                },
             ],
             "item_url" => [
                 "nullable"
@@ -232,7 +240,7 @@ class WishitemController extends Controller
                 "nullable"
             ],
             "content_file" => [
-                "nullable",
+                "required", // Stripe compliance: every wish must deliver a real content file
                 "string" // Uploadcare UUID
             ],
             "content_file_name" => [
@@ -268,7 +276,8 @@ class WishitemController extends Controller
                 "nullable"
             ]
         ], [
-            'subscription_period.required_if'   =>  'Please select subscription period'
+            'subscription_period.required_if'   =>  'Please select subscription period',
+            'content_file.required'             =>  'Please attach the exclusive content file the supporter will receive.',
         ]);
 
         // return response()->json([
@@ -345,7 +354,7 @@ class WishitemController extends Controller
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                 $productPayload = [
-                    'name' => 'Total value of item including all fees',
+                    'name' => 'Exclusive content',
                     'images' => [$wish->perma_link],
                     'default_price_data' => [
                         'currency' => strtolower($currency),
@@ -408,6 +417,19 @@ class WishitemController extends Controller
         $blockedWord = Helpers::checkBlockData($request);
         if ($blockedWord !== false) {
             return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
+        }
+
+        // Stripe compliance: keep price within £4.99–£500 and never strip the content file
+        $effectivePrice = !empty($request->price) ? $request->price : $wish->price;
+        $priceErr = Helpers::priceWithinLimits($effectivePrice, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
+        if ($priceErr) {
+            return redirect()->back()->with('error', $priceErr);
+        }
+        $effectiveContent = ($request->content_file && $request->content_file !== $wish->content_file)
+            ? $request->content_file
+            : $wish->content_file;
+        if (empty($effectiveContent)) {
+            return redirect()->back()->with('error', 'Please attach the exclusive content file the supporter will receive.');
         }
 
         $old_price = $wish->price;
@@ -490,7 +512,7 @@ class WishitemController extends Controller
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
-                    "name"  =>  "Total value of item including all fees",
+                    "name"  =>  "Exclusive content",
                     "images" => [$wish->perma_link],
                     "default_price_data"    =>  [
                         "currency"  =>  $user->default_currency,
@@ -565,7 +587,7 @@ class WishitemController extends Controller
 
                             // Update product details
                             $productUpdatePayload = [
-                                'name' => "Total value of item including all fees",
+                                'name' => "Exclusive content",
                                 'images' => [$wish->perma_link],
                                 'default_price' => $newPrice->id,
                                 'metadata' => [
@@ -1058,7 +1080,7 @@ class WishitemController extends Controller
 
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripeProduct = $stripe->products->create([
-                    'name'               => 'Total value of item including all fees',
+                    'name'               => 'Exclusive content',
                     'images'             => [$wishitem->perma_link],
                     "default_price_data" => [
                         "currency"           => "gbp",
@@ -1674,7 +1696,7 @@ class WishitemController extends Controller
                     'price_data' => [
                         'currency' => $chargeCurrency,
                         'product_data' => [
-                            'name' => "Total value of item including all fees",
+                            'name' => "Exclusive content",
                         ],
                         'unit_amount' => round($finalTotalAmount * $multiplier),
                     ]

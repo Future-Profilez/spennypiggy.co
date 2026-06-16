@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, Fragment } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -11,6 +11,7 @@ import { XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,AreaChart,Area } 
 
 export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], fast_start_bonus = null, founder_bonus = null, active_tab = 'overview' }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [expandedPayout, setExpandedPayout] = useState(null);
     const [showReserveDetails, setShowReserveDetails] = useState(false);
     const [reserveDetails, setReserveDetails] = useState(null);
     const [reserveLoading, setReserveLoading] = useState(false);
@@ -82,6 +83,81 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
         return d.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
     })();
 
+    // Days until the next Friday payout (0 = today).
+    const daysToPayout = (() => {
+        if (!payout_cycle?.next_payout_at) return null;
+        const ms = new Date(payout_cycle.next_payout_at).getTime() - Date.now();
+        return Math.max(0, Math.ceil(ms / 86400000));
+    })();
+
+    // Soonest reserve to be released (per-transaction 30-day rolling window). Emphasis = countdown.
+    const nextReserveRelease = (() => {
+        const list = Array.isArray(reserve_breakdown) ? reserve_breakdown : [];
+        const held = list.filter(r => (r?.reserve_status ?? 'held') !== 'released' && Number(r?.amount ?? 0) > 0);
+        if (!held.length) return null;
+        return held.reduce((best, r) => {
+            const days = Math.max(0, Number(r?.days_remaining ?? 9999));
+            return (best === null || days < best.days) ? { days, date: r?.release_date ?? null } : best;
+        }, null);
+    })();
+
+    const plural = (n) => (Number(n) === 1 ? '' : 's');
+
+    // Single source of truth for the creator's money lifecycle, in flow order.
+    const moneyRows = (() => {
+        const rows = [
+            {
+                key: 'available',
+                label: 'Available for Friday payout',
+                amount: summary?.payoutable_balance,
+                hint: daysToPayout === null
+                    ? 'Sent automatically every Friday'
+                    : daysToPayout === 0
+                        ? 'Sending today'
+                        : `Sends in ${daysToPayout} day${plural(daysToPayout)}${nextPayoutLabel ? ` · ${nextPayoutLabel}` : ''}`,
+                dot: 'bg-green-500',
+                primary: true,
+            },
+            {
+                key: 'clearing',
+                label: 'Clearing (7-day hold)',
+                amount: summary?.clearing_balance,
+                hint: 'Becomes available after the standard 7-day safety hold',
+                dot: 'bg-blue-500',
+            },
+            {
+                key: 'reserve',
+                label: 'Reserve held',
+                amount: summary?.held_reserves,
+                hint: nextReserveRelease === null
+                    ? 'Nothing held right now'
+                    : nextReserveRelease.days === 0
+                        ? 'Next reserve frees today'
+                        : `Next frees in ${nextReserveRelease.days} day${plural(nextReserveRelease.days)}${nextReserveRelease.date ? ` · ${nextReserveRelease.date}` : ''}`,
+                dot: 'bg-cyan-500',
+                onClick: openReserveDetails,
+            },
+            {
+                key: 'pending',
+                label: 'Pending delivery',
+                amount: summary?.pending_balance,
+                hint: 'Releases into your balance once you fulfil the order or task',
+                dot: 'bg-yellow-500',
+            },
+        ];
+        const riskAmount = Number(summary?.review_holds || 0) + Number(summary?.disputes || 0);
+        if (riskAmount > 0) {
+            rows.push({
+                key: 'risk',
+                label: 'Under review / disputed',
+                amount: riskAmount,
+                hint: 'On hold while we resolve a review or dispute — released if cleared',
+                dot: 'bg-orange-500',
+            });
+        }
+        return rows;
+    })();
+
     return (
         <AuthenticatedLayout auth={auth} user={auth.user}>
             <Head title="Financial Dashboard" />
@@ -141,6 +217,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 };
                                                 return map[statusKey] || (statusKey ? { label: statusKey.replaceAll('_', ' ').toUpperCase(), cls: 'bg-gray-100 text-gray-600 border border-gray-200' } : null);
                                             })();
+                                            const isReleased = (r.reserve_status === 'released');
+                                            const relDays = r.days_remaining === null || r.days_remaining === undefined ? null : Math.max(0, Number(r.days_remaining));
                                             return (
                                                 <tr key={`${r.financial_transaction_id || r.payout_run_id || idx}-${idx}`} className="hover:bg-gray-100 transition-colors">
                                                     <td className="px-4 py-3 text-[14px] text-gray-600 whitespace-nowrap">
@@ -167,8 +245,20 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                             {r.label || (r.source_type === 'payout_run' ? 'Payout Run' : '')}
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-3 text-[13px] text-gray-700 font-bold whitespace-nowrap">
-                                                        {r.release_date || '—'}
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        {isReleased ? (
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[13px] font-bold text-green-600">Released</span>
+                                                                {r.release_date ? <span className="text-[11px] text-gray-400 font-medium">{r.release_date}</span> : null}
+                                                            </div>
+                                                        ) : relDays !== null ? (
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[14px] font-bold text-cyan-600">{relDays === 0 ? 'Frees today' : `in ${relDays} day${relDays === 1 ? '' : 's'}`}</span>
+                                                                {r.release_date ? <span className="text-[11px] text-gray-400 font-medium">{r.release_date}</span> : null}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[13px] text-gray-700 font-bold">{r.release_date || '—'}</span>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
                                                         <div className="text-gray-900 font-bold">{formatCurrency((Number(r.amount || 0) / 100), (r.currency || displayCurrency))}</div>
@@ -267,16 +357,48 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                             </div>
                         ) : null}
 
-                        <div className="bg-white flex gap-6 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-200 relative overflow-hidden group hover:border-[#FF007F]/30 transition-colors shadow-sm mt-8">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <WalletIcon size={90} className="text-[#FF007F]" />
-                            </div>
-                            <div className="relative z-10 w-full">
-                                <div className="text-[16px] uppercase text-gray-500 font-bold mb-1">Available for Friday Payout</div>
-                                <div className="text-3xl md:text-4xl font-bold text-gray-900">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
-                                <div className="text-[15px] text-gray-500 mt-2 font-bold">
-                                    Includes cleared payments (7-day delay) and any reserve releases. Excludes reserves, pending completion, disputes and refunds.
+                        {/* Money Status — one clear view of where every pound sits and when it moves. */}
+                        <div className="bg-white p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-200 relative overflow-hidden shadow-sm mt-8">
+                            <div className="flex items-center justify-between gap-3 mb-1">
+                                <div className="text-[16px] uppercase text-gray-500 font-bold flex items-center gap-2">
+                                    <WalletIcon size={18} className="text-[#FF007F]" /> Money Status
                                 </div>
+                                <Link href={route('financial.dashboard', { tab: 'payouts' })} className="text-[13px] font-bold text-[#FF007F] hover:underline whitespace-nowrap">
+                                    Payout history →
+                                </Link>
+                            </div>
+                            <p className="text-[13px] text-gray-400 font-bold mb-4">Earned → Clearing → Reserve → Available → Paid out. Here's where yours is right now.</p>
+
+                            <div className="divide-y divide-gray-100 border border-gray-100 rounded-[20px] overflow-hidden">
+                                {moneyRows.map((row) => {
+                                    const Cmp = row.onClick ? 'button' : 'div';
+                                    return (
+                                        <Cmp
+                                            key={row.key}
+                                            type={row.onClick ? 'button' : undefined}
+                                            onClick={row.onClick}
+                                            className={`w-full text-left flex items-center justify-between gap-4 px-4 py-3.5 transition-colors ${row.onClick ? 'hover:bg-gray-50 cursor-pointer' : ''} ${row.primary ? 'bg-green-50/50' : ''}`}
+                                        >
+                                            <div className="flex items-start gap-3 min-w-0">
+                                                <span className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${row.dot}`} />
+                                                <div className="min-w-0">
+                                                    <div className={`font-bold leading-tight ${row.primary ? 'text-gray-900 text-[15px]' : 'text-gray-800 text-[14px]'}`}>
+                                                        {row.label}
+                                                        {row.onClick ? <span className="text-[12px] text-[#FF007F] font-bold ml-2">View →</span> : null}
+                                                    </div>
+                                                    <div className="text-[12px] text-gray-500 font-bold mt-0.5">{row.hint}</div>
+                                                </div>
+                                            </div>
+                                            <div className={`font-bold whitespace-nowrap ${row.primary ? 'text-2xl md:text-3xl text-green-600' : 'text-lg text-gray-900'}`}>
+                                                {formatCurrency(row.amount, displayCurrency)}
+                                            </div>
+                                        </Cmp>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="text-[12px] text-gray-400 font-bold mt-3 flex items-center gap-1.5">
+                                <ShieldCheckIcon size={15} className="text-green-600" /> You keep 100%. Reserves are returned automatically 30 days after each sale.
                             </div>
                         </div>
 
@@ -286,7 +408,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                 { label: `Gross Earnings (${tax_year})`, value: summary.gross_income, icon: <WalletIcon size={80} />, trend: <TrendingUpIcon size={14} className="text-green-600" />, sub: 'Total sent to you by supporters.' },
                                 { label: 'Net Earnings', value: summary.profit, icon: <CircleCheckIcon size={80} className="text-green-500" />, color: 'text-green-600', sub: 'What you keep after expenses.' },
                                 { label: 'Expenses', value: summary.expenses, icon: <TrendingDownIcon size={80} className="text-red-500" />, color: 'text-red-600', sub: 'Optional costs you track.' },
-                                { label: 'Est. Tax', value: tax_estimate, icon: <Calculator size={80} className="text-yellow-600" />, color: 'text-yellow-600', sub: `Set aside ${formatCurrency(tax_estimate/12, displayCurrency)}/mo.` },
+                                { label: 'Est. Tax', value: tax_estimate, icon: <Calculator size={80} className="text-yellow-600" />, color: 'text-yellow-600', sub: `Set aside ${formatCurrency((tax_estimate || 0) / 12, displayCurrency)}/mo.` },
                             ].map((stat, idx) => (
                                 <div key={idx} className="bg-white p-5 md:p-6 rounded-[25px] md:rounded-[30px]  border border-gray-200 relative overflow-hidden group hover:border-gray-300 transition-colors shadow-sm flex flex-col justify-between">
                                     <div>
@@ -445,6 +567,16 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                             </div>
                                                         </div>
                                                     ) : null}
+
+                                                    <div className="flex justify-end mt-2">
+                                                        <Link
+                                                            href={route('financial.fast-start-bonus')}
+                                                            className="inline-flex items-center gap-1.5 text-[12px] font-black uppercase tracking-widest text-[#FF007F] hover:text-[#cc005e] transition-colors"
+                                                        >
+                                                            View Full Details
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -645,12 +777,16 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 <WalletIcon className="text-green-600" size={20} />
                                                 Payout History
                                             </h2>
+                                            <span className="text-[12px] font-bold text-gray-400 tabular-nums">
+                                                {payout_history.length} payout{payout_history.length !== 1 ? 's' : ''}
+                                            </span>
                                         </div>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left">
                                                 <thead className="bg-gray-50">
-                                                    <tr className="text-gray-500 text-[13px] uppercase font-bold tracking-widest">
+                                                    <tr className="text-gray-500 text-[12px] uppercase font-bold tracking-widest">
                                                         <th className="px-6 py-4">Requested On</th>
+                                                        <th className="px-6 py-4">Type</th>
                                                         <th className="px-6 py-4">Amount</th>
                                                         <th className="px-6 py-4">Expected Arrival</th>
                                                         <th className="px-6 py-4 text-right">Status</th>
@@ -658,45 +794,101 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200">
                                                     {payout_history.length > 0 ? (
-                                                        payout_history.map((p) => (
-                                                            <tr key={p.uuid} className="hover:bg-gray-50 transition-colors">
-                                                                <td className="px-6 py-4 text-[14px] text-gray-900 font-medium">{p.date}</td>
-                                                                <td className="px-6 py-4 text-sm font-bold text-gray-900">
-                                                                    <div className="flex flex-col">
-                                                                        <span>{formatCurrency(p.amount, p.currency)}</span>
-                                                                        {p.bonus_type === 'fast_start' ? (
-                                                                            <span className="text-[11px] font-bold text-[#FF007F] uppercase tracking-wider">
-                                                                                Fast Start Bonus Payout: {formatCurrency(p.fast_start_bonus, p.currency)}
-                                                                            </span>
-                                                                        ) : String(p.bonus_type || '').startsWith('founder') ? (
-                                                                            <span className="text-[11px] font-bold text-gray-900 uppercase tracking-wider">
-                                                                                Founder Bonus Payout: {formatCurrency(p.founder_bonus, p.currency)}
-                                                                            </span>
-                                                                        ) : null}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-[14px] text-gray-600">
-                                                                    {p.status === 'failed' ? (
-                                                                        <span className="text-red-600 font-bold text-[11px] italic">{p.failure_reason || 'Declined by Stripe'}</span>
-                                                                    ) : (
-                                                                        p.arrival_date || 'Processing…'
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-sm text-right">
-                                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                                                        p.status === 'paid' ? 'bg-green-100 text-green-700' : 
-                                                                        p.status === 'in_transit' ? 'bg-blue-100 text-blue-700' : 
-                                                                        p.status === 'failed' ? 'bg-red-100 text-red-700' : 
-                                                                        'bg-yellow-100 text-yellow-700'
-                                                                    }`}>
-                                                                        {p.status === 'in_transit' ? 'In Bank Soon' : p.status?.replace('_', ' ')}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        ))
+                                                        payout_history.map((p) => {
+                                                            const typeStyles = {
+                                                                fast_start: 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/20',
+                                                                founder: 'bg-purple-100 text-purple-700 border-purple-200',
+                                                                weekly: 'bg-gray-100 text-gray-600 border-gray-200',
+                                                            };
+                                                            const hasBonus = (p.fast_start_bonus > 0 || p.founder_bonus > 0);
+                                                            const bonusAmt = p.type_key === 'fast_start' ? p.fast_start_bonus : p.founder_bonus;
+                                                            const isOpen = expandedPayout === p.uuid;
+                                                            const isFail = p.status === 'failed' || p.status === 'skipped';
+                                                            return (
+                                                                <Fragment key={p.uuid}>
+                                                                <tr className="hover:bg-gray-50 transition-colors align-top">
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="text-[14px] text-gray-900 font-bold leading-tight">{p.date}</div>
+                                                                        <div className="text-[11px] text-gray-400 font-medium mt-0.5">{p.time}</div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${typeStyles[p.type_key] || typeStyles.weekly}`}>
+                                                                            {p.type_label}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="text-[15px] font-bold text-gray-900 tabular-nums">{formatCurrency(p.amount, p.currency)}</div>
+                                                                        {hasBonus && (
+                                                                            <div className="text-[11px] font-bold text-[#FF007F] uppercase tracking-wider mt-0.5">
+                                                                                Bonus: {formatCurrency(bonusAmt, p.currency)}
+                                                                            </div>
+                                                                        )}
+                                                                        {p.reference && (
+                                                                            <div className="text-[10px] text-gray-400 font-mono mt-1 truncate max-w-[140px]" title={p.reference}>
+                                                                                {p.reference}
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-[14px] text-gray-600">
+                                                                        {isFail ? (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setExpandedPayout(isOpen ? null : p.uuid)}
+                                                                                className="text-left text-red-600 font-bold text-[12px] hover:underline"
+                                                                            >
+                                                                                {p.failure_reason || 'Payout failed'}
+                                                                                <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
+                                                                                    {isOpen ? 'Hide details ▲' : 'Show details ▼'}
+                                                                                </span>
+                                                                            </button>
+                                                                        ) : p.status === 'paid' ? (
+                                                                            <span className="text-green-700 font-bold">{p.arrival_date || 'Delivered'}</span>
+                                                                        ) : p.status === 'scheduled' ? (
+                                                                            <span className="text-gray-600">{p.arrival_date ? `Est. ${p.arrival_date}` : 'To be scheduled'}</span>
+                                                                        ) : (
+                                                                            <span>{p.arrival_date || 'Processing…'}</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-sm text-right">
+                                                                        <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                                                            p.status === 'paid' ? 'bg-green-100 text-green-700' :
+                                                                            p.status === 'in_transit' ? 'bg-blue-100 text-blue-700' :
+                                                                            isFail ? 'bg-red-100 text-red-700' :
+                                                                            p.status === 'scheduled' ? 'bg-purple-100 text-purple-700' :
+                                                                            'bg-yellow-100 text-yellow-700'
+                                                                        }`}>
+                                                                            {p.status === 'in_transit' ? 'In Bank Soon' : p.status?.replace('_', ' ')}
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                                {isFail && isOpen && (
+                                                                    <tr className="bg-red-50/50">
+                                                                        <td colSpan="5" className="px-6 py-4">
+                                                                            <div className="rounded-xl border border-red-200 bg-white p-4">
+                                                                                <div className="text-[11px] font-black uppercase tracking-widest text-red-500 mb-1">Failure Detail</div>
+                                                                                <p className="text-[13px] text-gray-700 break-words">{p.failure_detail || 'No additional detail provided by Stripe.'}</p>
+                                                                                {p.failure_code && (
+                                                                                    <div className="text-[11px] text-gray-400 font-mono mt-2">Code: {p.failure_code}</div>
+                                                                                )}
+                                                                                <p className="text-[12px] text-gray-500 mt-3">
+                                                                                    Need help? Contact <a href="mailto:support@spennypiggy.co" className="text-[#FF007F] font-bold underline">support@spennypiggy.co</a>.
+                                                                                </p>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+                                                                </Fragment>
+                                                            );
+                                                        })
                                                     ) : (
                                                         <tr>
-                                                            <td colSpan="4" className="px-6 py-8 text-center text-gray-400 text-sm">No payouts have been processed yet.</td>
+                                                            <td colSpan="5" className="px-6 py-10 text-center">
+                                                                <div className="flex flex-col items-center gap-2">
+                                                                    <WalletIcon className="text-gray-300" size={32} />
+                                                                    <span className="text-gray-400 text-sm font-medium">No payouts have been processed yet.</span>
+                                                                    <span className="text-gray-300 text-[12px]">Payouts are sent every Friday.</span>
+                                                                </div>
+                                                            </td>
                                                         </tr>
                                                     )}
                                                 </tbody>
@@ -734,7 +926,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                             <div className="flex items-start gap-4">
                                                 <div className="bg-yellow-500/10 p-3 rounded-[30px] "><CalculatorIcon size={24} className="text-yellow-600" /></div>
                                                 <div>
-                                                    <p className="text-gray-700 text-normal leading-relaxed">{summary.expenses > (summary.gross_income * 0.3) ? "Your expenses are quite high." : "Your profit margins look healthy."}</p>
+                                                    <p className="text-gray-700 text-normal leading-relaxed">{(summary?.expenses ?? 0) > ((summary?.gross_income ?? 0) * 0.3) ? "Your expenses are quite high." : "Your profit margins look healthy."}</p>
                                                     <Link href={route('financial.expenses.index')} className="text-[#FF007F] text-[10px] font-bold uppercase mt-2 inline-block hover:underline">Review Expenses</Link>
                                                 </div>
                                             </div>
@@ -774,9 +966,9 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                                 <tr key={s.supporter_id} className="hover:bg-gray-50 transition-colors">
                                                                     <td className="px-6 py-4 text-sm flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                                                                            {s.supporter.avatar_url ? <img src={s.supporter.avatar_url} className="w-full h-full object-cover" /> : <span className="text-normal font-bold text-gray-400">{s.supporter.name[0]}</span>}
+                                                                            {s.supporter?.avatar_url ? <img src={s.supporter.avatar_url} className="w-full h-full object-cover" /> : <span className="text-normal font-bold text-gray-400">{s.supporter?.name?.[0] ?? '?'}</span>}
                                                                         </div>
-                                                                        <div><div className="text-gray-900 font-medium">{s.supporter.name}</div><div className="text-[14px] text-gray-500">@{s.supporter.username}</div></div>
+                                                                        <div><div className="text-gray-900 font-medium">{s.supporter?.name ?? 'Guest'}</div><div className="text-[14px] text-gray-500">@{s.supporter?.username ?? 'guest'}</div></div>
                                                                     </td>
                                                                     <td className="px-6 py-4 text-sm text-right font-bold text-gray-900">{formatCurrency(s.total_spent)}</td>
                                                                 </tr>

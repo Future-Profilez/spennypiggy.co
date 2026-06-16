@@ -18,6 +18,7 @@ export default function TermsUpdatePopup() {
         { key: 'ReturnPolicy', name: 'Return Policy', href: '/return-policy' },
         { key: 'UsAddendum', name: 'US Addendum', href: '/us-addendum' },
         { key: 'FastStartBonusTerms', name: 'Fast Payout Terms', href: '/fast-start-bonus-terms' },
+        { key: 'ContentPaymentFramework', name: 'Content & Payment Framework', href: '/content-payment-policy' },
     ];
 
     // Default to showing Terms of Service if no specific docs are selected but an update is triggered

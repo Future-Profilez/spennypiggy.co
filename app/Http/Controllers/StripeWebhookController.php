@@ -1054,12 +1054,57 @@ class StripeWebhookController extends Controller
                         'reserve_status' => $reserveStatus,
                         'currency'      => strtoupper($pay->currency ?? 'GBP'),
                         'status'        => 'completed',
-                        'description'   => 'Piggy Pot Contribution',
+                        'description'   => 'Content purchase: ' . ($pay->piggyPot?->title ?? 'Content'),
                         'transaction_date' => $pay->created_at,
                     ]
                 );
             } catch (\Throwable $e) {
                 Log::error('Failed to sync PiggyPotContribution to FinancialTransaction via Webhook: ' . $e->getMessage());
+            }
+
+            // Stripe compliance: store a content deliverable + fulfilment status.
+            try {
+                $pot = $pay->piggyPot ?? \App\Models\PiggyPot::find($pay->piggy_pot_id);
+                $contentUrl = null;
+                if (!empty($pot?->content_file)) {
+                    $contentUrl = $pot->content_file;
+                    if (!str_starts_with($contentUrl, 'http')) {
+                        $contentUrl = 'https://ucarecdn.com/' . trim($contentUrl, '/') . '/';
+                    }
+                }
+
+                \App\Models\Deliverable::firstOrCreate(
+                    ['product_type' => 'piggy_pot', 'item_id' => $pay->id],
+                    [
+                        'uuid'               => (string) \Illuminate\Support\Str::uuid(),
+                        'product_id'         => 'piggy_pot_' . ($pot?->id ?? 'unknown'),
+                        'creator_id'         => $pay->creator_id,
+                        'gifter_id'          => $pay->user_id,
+                        'payment_intent_id'  => $session->payment_intent,
+                        'session_id'         => $session->id,
+                        'deliverable_type'   => !empty($pot?->content_file) ? 'digital_file' : 'content_file',
+                        'transaction_amount' => $pay->amount,
+                        'deliverable_url'    => $contentUrl,
+                        'customer_email'     => $pay->user?->email ?? $pay->guest_email,
+                        'customer_name'      => $pay->is_anonymous ? 'Anonymous' : ($pay->user?->name ?? $pay->guest_name),
+                        'payment_status'     => $pay->status,
+                        'payment_currency'   => $pay->currency,
+                        'anonymous'          => (bool) $pay->is_anonymous,
+                        'message'            => $pay->message,
+                        'status'             => !empty($contentUrl) ? 'delivered' : 'pending',
+                        'delivered_at'       => !empty($contentUrl) ? now() : null,
+                        'metadata'           => [
+                            'product_type'  => 'piggy_pot',
+                            'content_id'    => $pot?->id,
+                            'content_title' => $pot?->title,
+                            'goal_target'   => $pot?->target_amount,
+                            'amount'        => $pay->amount,
+                            'currency'      => $pay->currency,
+                        ],
+                    ]
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to create PiggyPot deliverable via Webhook: ' . $e->getMessage());
             }
 
             // Clear the cache for the creator's piggy pots
@@ -1085,8 +1130,8 @@ class StripeWebhookController extends Controller
             $sendSupporter = empty($pay->supporter_notified_at);
 
             if ($sendCreator && $pay->creator?->email) {
-                $title = "🐷 New Piggy Pot Contribution!";
-                $content = "{$supporterName} contributed {$symbol}" . number_format((float) $pay->amount, 2) . " to {$pay->piggyPot?->title}.";
+                $title = "🐷 New content purchase!";
+                $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}" . number_format((float) $pay->amount, 2) . ".";
                 \App\Helpers::sendNotification($title, $content, $pay->creator->email);
                 $pay->creator_notified_at = now();
             }
@@ -1094,9 +1139,9 @@ class StripeWebhookController extends Controller
             $supporterEmail = $pay->user?->email ?: $pay->guest_email;
             if ($sendSupporter && $supporterEmail) {
                 $title = "✅ Payment Successful!";
-                $content = "Your contribution of {$symbol}" . number_format((float) $pay->total_paid, 2) . " was added to {$pay->creator?->name}'s Piggy Pot.";
+                $content = "Your purchase of {$symbol}" . number_format((float) $pay->total_paid, 2) . " from {$pay->creator?->name} is complete.";
                 if (!empty($pay->piggyPot?->content_file)) {
-                    $content .= " Exclusive reward unlocked.";
+                    $content .= " Exclusive content unlocked.";
                 }
                 \App\Helpers::sendNotification($title, $content, $supporterEmail);
                 $pay->supporter_notified_at = now();
@@ -3690,6 +3735,53 @@ class StripeWebhookController extends Controller
                     $bonusRow->paid_at = now();
                 }
                 $bonusRow->save();
+
+                if (in_array($bonusStatus, ['paid', 'failed'], true)) {
+                    $fsbCreator = \App\Models\User::where('uuid', $bonusRow->creator_uuid)->first();
+                    if ($fsbCreator) {
+                        $fsbAmount = round(($bonusRow->bonus_minor ?? 0) / 100, 2);
+                        $fsbCurrency = strtoupper($bonusRow->currency ?? 'GBP');
+                        $arrivalDate = isset($payout->arrival_date)
+                            ? \Carbon\Carbon::createFromTimestamp($payout->arrival_date)->format('D, d M Y')
+                            : null;
+                        $failureReason = $payout->failure_message ?? null;
+
+                        try {
+                            $pushTitle = $bonusStatus === 'paid'
+                                ? '🎉 Fast Start Bonus Paid!'
+                                : '⚠️ Fast Start Bonus payout failed';
+                            $pushBody = $bonusStatus === 'paid'
+                                ? "Your {$fsbCurrency} {$fsbAmount} Fast Start Bonus has landed in your account!"
+                                : "Your Fast Start Bonus payout failed. We'll look into this.";
+                            Helpers::sendNotification($pushTitle, $pushBody, $fsbCreator->email);
+                        } catch (\Throwable $e) {
+                            Log::warning('Fast Start bonus push notification failed', [
+                                'creator_uuid' => $bonusRow->creator_uuid,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+
+                        if (config('fast_start_bonus.notifications.email')) {
+                            try {
+                                \Illuminate\Support\Facades\Mail::to($fsbCreator->email)->send(
+                                    new \App\Mail\FastStartBonusPayoutStatusUpdated(
+                                        $fsbCreator,
+                                        $fsbAmount,
+                                        $fsbCurrency,
+                                        $bonusStatus,
+                                        $arrivalDate,
+                                        $failureReason
+                                    )
+                                );
+                            } catch (\Throwable $e) {
+                                Log::warning('Fast Start bonus status email failed', [
+                                    'creator_uuid' => $bonusRow->creator_uuid,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        }
+                    }
+                }
             }
 
             if ($payout->status === 'paid') {
@@ -3713,6 +3805,39 @@ class StripeWebhookController extends Controller
                     }
                 } catch (\Throwable $e) {
                     Log::error('FounderBonusMonthly payout sync failed', ['stripe_payout_id' => $payout->id, 'error' => $e->getMessage()]);
+                }
+            }
+
+            // Founder payout failed/canceled at the bank: clear the Stripe ids on the
+            // bonus row and revert it to pending, so the next founder payout run retries
+            // it. Without this the stripe_payout_id guard would skip it forever.
+            if (in_array($payout->status, ['failed', 'canceled'], true)) {
+                try {
+                    if (Schema::hasTable('founder_bonuses')) {
+                        $revert = ['payout_status' => FounderBonus::STATUS_PENDING, 'paid_date' => null];
+                        if (Schema::hasColumn('founder_bonuses', 'stripe_payout_id')) $revert['stripe_payout_id'] = null;
+                        if (Schema::hasColumn('founder_bonuses', 'stripe_transfer_id')) $revert['stripe_transfer_id'] = null;
+                        if (Schema::hasColumn('founder_bonuses', 'payout_record_uuid')) $revert['payout_record_uuid'] = null;
+                        FounderBonus::where('stripe_payout_id', $payout->id)
+                            ->where('payout_status', '!=', 'paid')
+                            ->update($revert);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('FounderBonus payout failure revert failed', ['stripe_payout_id' => $payout->id, 'error' => $e->getMessage()]);
+                }
+
+                try {
+                    if (Schema::hasTable('founder_bonus')) {
+                        $revertM = ['payout_status' => 'pending', 'payout_date' => null];
+                        if (Schema::hasColumn('founder_bonus', 'stripe_payout_id')) $revertM['stripe_payout_id'] = null;
+                        if (Schema::hasColumn('founder_bonus', 'stripe_transfer_id')) $revertM['stripe_transfer_id'] = null;
+                        if (Schema::hasColumn('founder_bonus', 'payout_record_uuid')) $revertM['payout_record_uuid'] = null;
+                        FounderBonusMonthly::where('stripe_payout_id', $payout->id)
+                            ->where('payout_status', '!=', 'paid')
+                            ->update($revertM);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('FounderBonusMonthly payout failure revert failed', ['stripe_payout_id' => $payout->id, 'error' => $e->getMessage()]);
                 }
             }
 

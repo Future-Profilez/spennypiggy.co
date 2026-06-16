@@ -18,4 +18,10 @@ class Setting extends Model
             return $setting ? $setting->value : $default;
         });
     }
+
+    public static function setValue($key, $value): void
+    {
+        self::updateOrCreate(['key' => $key], ['value' => $value]);
+        \Illuminate\Support\Facades\Cache::forget("setting_{$key}");
+    }
 }

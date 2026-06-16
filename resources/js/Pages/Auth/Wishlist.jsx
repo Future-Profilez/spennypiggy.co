@@ -421,7 +421,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             action={close}
             space="4"
             size="lg"
-            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px]   p-3 mb-2 text-center"}`}
+            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] mb-4 text-center"}`}
             text={customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">
@@ -454,9 +454,10 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         </div>
                                     )}
                                 <p className="p-4 mb-4 text-normal text-yellow-800 rounded-[20px]   border border-yellow-500 bg-yellow-50">
-                                    When adding items please ensure they are
-                                    specific i.e Holiday Clothes or New Gym
-                                    Equipment. Items that are non specific will
+                                    Describe the content the supporter receives
+                                    (e.g. "Exclusive photo set"). Do not list
+                                    personal items, gifts, expenses, or
+                                    brand/third-party service names — these will
                                     be rejected and removed. Our AI blocks adult
                                     content but any overly suggestive images
                                     will also be rejected. Please reach out to
@@ -465,13 +466,13 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
                                 <div className="mb-4">
                                     <label className="mb-2 text-left block font-semibold text-gray-700">
-                                        Wish Name
+                                        Content Title
                                     </label>
                                     <input
                                         id="wishname"
                                         name="wishname"
                                         type="text"
-                                        placeholder="Eg. Buy me a coffee"
+                                        placeholder="Eg. Exclusive photo set"
                                         value={data.wishname}
                                         className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm px-4 py-3"
                                         autoComplete="name"

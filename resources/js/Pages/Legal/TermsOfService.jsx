@@ -299,11 +299,13 @@ export default function TermsOfService(props) {
 <div className="ml-6 mb-2 text-gray-700">(iv) non-consensual or exploitative content.</div>
 <p className="mb-4 text-gray-700 leading-relaxed">5.3.3 Content that is suggestive but not explicit may be permitted at our discretion, provided it complies with all applicable rules.</p>
 
-<p className="mb-4 text-gray-700 leading-relaxed">5.4 Abuse, harassment and harmful conduct</p>
+<p className="mb-4 text-gray-700 leading-relaxed">5.4 Abuse, Harassment, Hateful and Violent Content</p>
 <p className="mb-4 text-gray-700 leading-relaxed">5.4.1 You must not:</p>
 <div className="ml-6 mb-2 text-gray-700">(i) harass, threaten, or abuse other users;</div>
 <div className="ml-6 mb-2 text-gray-700">(ii) engage in stalking or intimidation;</div>
-<div className="ml-6 mb-2 text-gray-700">(iii) promote hate speech or discrimination.</div>
+<div className="ml-6 mb-2 text-gray-700">(iii) promote hate speech or discrimination;</div>
+<div className="ml-6 mb-2 text-gray-700">(iv) upload, publish, or monetise hateful or violent content, including content that promotes, incites, celebrates, or threatens violence, or that attacks or demeans any person or group on the basis of a protected characteristic (including race, ethnicity, national origin, religion, disability, age, sex, gender identity, or sexual orientation).</div>
+<p className="mb-4 text-gray-700 leading-relaxed">5.4.2 Such content may not be sold, listed, unlocked, offered as a reward or membership benefit, or associated with any payment on the Platform.</p>
 
 <p className="mb-4 text-gray-700 leading-relaxed">5.5 Platform abuse and circumvention</p>
 <p className="mb-4 text-gray-700 leading-relaxed">5.5.1 You must not:</p>

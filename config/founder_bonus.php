@@ -47,6 +47,10 @@ return [
         
         // Maximum bonus amount per month (in GBP)
         'max_bonus_per_month' => env('FOUNDER_MAX_BONUS_PER_MONTH', 1000.00),
+
+        // Extra multiplier on the qualification bonus for referred creators (added to 1.0).
+        // e.g. 0.01 = +1% bonus on top of the standard 10%.
+        'referral_multiplier' => env('FOUNDER_REFERRAL_MULTIPLIER', 0.01),
     ],
 
     /*

@@ -140,9 +140,9 @@ class StaticPageSeoMiddleware
                 'title' => 'Spenny Piggy Gift Store — Buy Gifts for Your Favorite Creators',
                 'description' => 'Browse the Spenny Piggy Gift Store to send physical or digital gifts to your favorite creators. Safe, secure, and completely private delivery directly to them.',
             ],
-            'how-it-works' => [
-                'title' => 'How Spenny Piggy Works — For Creators & Supporters',
-                'description' => 'Learn how Spenny Piggy connects creators and supporters. See how easy it is to set up a profile, offer memberships, complete paid tasks, and process secure payments.',
+            'how-spenny-piggy-works' => [
+                'title' => 'How Spenny Piggy Works — Payments & Content',
+                'description' => 'How Spenny Piggy works: every payment buys creator content or a content membership. A plain-English payments and content policy for supporters and payment partners.',
             ],
             'discover' => [
                 'title' => 'Discover Creators on Spenny Piggy 🐷',

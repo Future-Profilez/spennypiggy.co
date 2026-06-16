@@ -58,7 +58,7 @@ export default function TopSupporters({grid = false}) {
       <div className="rank-stats pl-2">
         <div className="text-right">
           <p className="toppercentage income font-semibold">
-            {supporter.gift_count} {supporter.gift_count === 1 ? 'gift' : 'gifts'}
+            {supporter.gift_count} {supporter.gift_count === 1 ? 'support' : 'supports'}
           </p>
           {/* 
           <p className="text-xs text-gray-500" title={`Support types: ${supporter.support_types?.join(', ')}`}>
@@ -96,7 +96,7 @@ export default function TopSupporters({grid = false}) {
       <h2 className="font-GillSans text-left text-2xl uppercase text-gray-900" title="Ranked by number of support transactions">
         🏆 Top Supporters
       </h2>
-      <p className='text-gray-500 mb-3'>Most active supporters by gift count</p>
+      <p className='text-gray-500 mb-3'>Most active supporters by support count</p>
     
       {data && data.length ? (
         <>

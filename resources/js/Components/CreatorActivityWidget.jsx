@@ -4,6 +4,8 @@ import { Link, usePage } from '@inertiajs/react';
 const CreatorActivityWidget = (props) => {
     const pge = usePage().props;
     const { activityStatus, className = "" } = props;
+    // Posting cadence comes from the fetched activity status (dashboard) or an explicit prop.
+    const postingCadence = props.postingCadence ?? activityStatus?.postingCadence;
     if (!activityStatus || activityStatus.status === 'not_creator') {
         return null;
     }
@@ -125,6 +127,38 @@ const CreatorActivityWidget = (props) => {
                     <p className="text-normal opacity-90">
                         <strong>Note:</strong> Once you add the required content, payments will resume automatically within a few minutes.
                     </p>
+                </div>
+            )}
+
+            {postingCadence && (
+                <div className="mt-4 pt-4 ">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-gulfs uppercase">Content membership posting</p>
+                            <p className="text-sm opacity-80 mt-1">
+                                {postingCadence.member_posts}/{postingCadence.required} member posts in the last {postingCadence.window_days} days
+                            </p>
+                        </div>
+                        {(() => {
+                            const map = {
+                                paused: ['bg-red-100 text-red-800 border-red-300', '⛔ Paused'],
+                                active: ['bg-green-100 text-green-800 border-green-400', '✅ Active'],
+                                grace: ['bg-blue-100 text-blue-800 border-blue-300', '🆕 Grace'],
+                                at_risk: ['bg-yellow-100 text-yellow-800 border-yellow-300', `⚠️ Post ${postingCadence.posts_needed} more`],
+                            };
+                            const [cls, label] = map[postingCadence.status] || map.at_risk;
+                            return (
+                                <span className={`whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-full border ${cls}`}>
+                                    {label}
+                                </span>
+                            );
+                        })()}
+                    </div>
+                    {postingCadence.paused && (
+                        <p className="text-sm text-red-700 mt-2">
+                            Your content memberships are paused. Post {postingCadence.posts_needed} more member {postingCadence.posts_needed === 1 ? 'post' : 'posts'} to resume payments.
+                        </p>
+                    )}
                 </div>
             )}
         </div>

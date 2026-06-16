@@ -2058,7 +2058,21 @@ class ProfileController extends Controller
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
-        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets) {
+        // Gated-post access is the "reward" for recurring/support types: count each
+        // creator's approved posts per access module so the UI can show what was unlocked.
+        $creatorIds = $rows->pluck('user_id')->filter()->unique()->values();
+        $gatedPostCounts = collect();
+        if ($creatorIds->isNotEmpty()) {
+            $gatedPostCounts = \App\Models\Post::whereIn('user_id', $creatorIds)
+                ->whereIn('for_module', ['membership', 'subscription', 'support'])
+                ->where('approved', 1)
+                ->selectRaw('user_id, for_module, COUNT(*) as c')
+                ->groupBy('user_id', 'for_module')
+                ->get()
+                ->groupBy('user_id');
+        }
+
+        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts) {
             $from = strtoupper($tx->currency ?? 'GBP');
             $baseAmount = $tab === 'sent' ? (float) ($tx->gross_amount ?? 0) : (float) ($tx->net_amount ?? 0);
             $displayAmount = $from === $displayCurrency ? $baseAmount : ($convert($from, $baseAmount, $displayCurrency) ?? $baseAmount);
@@ -2133,59 +2147,138 @@ class ProfileController extends Controller
                 }
             }
 
-            // Benefits & Deliverable info for History (Thankyou page like)
-            $deliverable = $tx->source->deliverable ?? null;
-            $benefits = null;
+            // Normalized item + reward contract for the history UI.
+            // Every paid item exposes the same shape so the frontend renders one card.
+            $cdn = function ($v) {
+                if (empty($v)) return null;
+                return \Illuminate\Support\Str::startsWith($v, ['http://', 'https://'])
+                    ? $v
+                    : 'https://ucarecdn.com/' . $v . '/';
+            };
+
+            $src = $tx->source;
+            $deliverable = $src->deliverable ?? null;
+            $certificateUrl = $deliverable->certificate_url ?? null;
+            $creatorUsername = $tx->user->username ?? null;
+
+            $itemTitle = null;
+            $openPage = null;
             $askQuestion = null;
             $answer = null;
-            $wishContent = null;
-            $certificateUrl = $deliverable->certificate_url ?? null;
-            $isInstant = false;
-            
-            if ($base === 'ShopPayment' && $tx->source) {
-                $askQuestion = $tx->source->shop->ask_question ?? null;
-                $answer = $tx->source->answer ?? null;
-                $isInstant = ($tx->source->shop->type ?? 'digital') !== 'physical';
-                
-                if ($isInstant) {
-                    $benefits = $tx->source->shop->success_page_value ?? null;
-                    if ($tx->source->shop->reward_file ?? null) {
-                        $contentUrl = $tx->source->shop->reward_file;
-                        if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
-                            $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
-                        }
-                        $wishContent = [
-                            'type' => $tx->source->shop->reward_file_type ?? null,
-                            'name' => 'Digital Content',
-                            'url'  => $contentUrl
+            $paymentId = null;
+            $reward = [
+                'description' => null,
+                'media'       => null,
+                'file_url'    => null,
+                'perks'       => [],
+                'access'      => null,
+                'is_instant'  => true,
+            ];
+
+            if ($base === 'StripePaymentItems' && $src) {
+                $wish = $src->wish;
+                $itemTitle = $wish?->wishname;
+                $openPage = 'wishes';
+                if ($wish) {
+                    if ($wish->content_file) {
+                        $reward['media'] = [
+                            'type' => $wish->content_file_type ?? 'image',
+                            'name' => $wish->content_file_name ?: 'Exclusive content',
+                            'url'  => $cdn($wish->content_file),
+                        ];
+                    }
+                    $reward['file_url'] = $cdn($wish->reward ?? null);
+                }
+            } elseif ($base === 'ShopPayment' && $src) {
+                $shop = $src->shop;
+                $itemTitle = $shop->name ?? null;
+                $openPage = 'shop';
+                $askQuestion = $shop->ask_question ?? null;
+                $answer = $src->answer ?? null;
+                $paymentId = $src->uuid;
+                $reward['is_instant'] = ($shop->type ?? 'digital') !== 'physical';
+                if ($reward['is_instant']) {
+                    $reward['description'] = $shop->success_page_value ?? null;
+                    if ($shop->reward_file ?? null) {
+                        $reward['media'] = [
+                            'type' => $shop->reward_file_type ?? null,
+                            'name' => 'Digital content',
+                            'url'  => $cdn($shop->reward_file),
                         ];
                     }
                 }
-            } elseif ($base === 'TaskPurchase' && $tx->source) {
-                $isInstant = ($tx->source->task->type ?? 'timed') === 'instant';
-                if ($isInstant && ($tx->source->task->deliverable_content ?? null)) {
-                    $contentUrl = $tx->source->task->deliverable_content;
-                    if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
-                        $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
-                    }
-                    $wishContent = [
-                        'type' => $tx->source->task->deliverable_content_type ?? 'image',
-                        'name' => 'Task Content',
-                        'url'  => $contentUrl
+            } elseif ($base === 'TaskPurchase' && $src) {
+                $task = $src->task;
+                $itemTitle = $task->title ?? null;
+                $openPage = 'tasks';
+                $reward['is_instant'] = ($task->type ?? 'timed') === 'instant';
+                $reward['description'] = $task->deliverable_note ?? null;
+                if ($reward['is_instant'] && ($task->deliverable_content ?? null)) {
+                    $reward['media'] = [
+                        'type' => $task->deliverable_content_type ?? 'image',
+                        'name' => 'Task content',
+                        'url'  => $cdn($task->deliverable_content),
                     ];
                 }
-            } elseif ($base === 'StripePaymentItems' && $tx->source) {
-                if ($tx->source->wish && $tx->source->wish->content_file) {
-                    $contentUrl = $tx->source->wish->content_file;
-                    if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
-                        $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
-                    }
-                    $wishContent = [
-                        'type' => $tx->source->wish->content_file_type ?? 'image',
-                        'name' => 'Exclusive Content',
-                        'url'  => $contentUrl
-                    ];
+            } elseif ($base === 'MembershipPayment' && $src) {
+                $membership = $src->membership;
+                $itemTitle = ($membership?->level) ? 'Level ' . ucfirst($membership->level) : null;
+                $openPage = 'memberships';
+                $rawRewards = $membership?->rewards;
+                if (is_string($rawRewards)) {
+                    $decoded = json_decode($rawRewards, true);
+                    $rawRewards = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', $rawRewards)));
                 }
+                if (is_array($rawRewards)) {
+                    $reward['perks'] = array_values(array_filter(array_map(
+                        fn ($r) => ucwords(str_replace('_', ' ', trim((string) $r))),
+                        $rawRewards
+                    )));
+                }
+                if ($membership && $membership->thumbnail) {
+                    $reward['media'] = ['type' => 'image', 'name' => 'Membership', 'url' => $cdn($membership->thumbnail)];
+                }
+            } elseif ($base === 'BillPayment' && $src) {
+                $bill = $src->bill;
+                $itemTitle = $bill->name ?? null;
+                $openPage = 'bills';
+                if ($bill && $bill->content_file) {
+                    $reward['media'] = ['type' => null, 'name' => 'Subscription content', 'url' => $cdn($bill->content_file)];
+                }
+            } elseif ($base === 'PiggyPotContribution' && $src) {
+                $pot = $src->piggyPot;
+                $itemTitle = $pot->title ?? null;
+                $openPage = 'piggy-pots';
+                if ($pot) {
+                    $reward['description'] = $pot->content_description ?? null;
+                    if ($pot->content_file) {
+                        $reward['media'] = ['type' => $pot->content_file_type ?? null, 'name' => 'Exclusive content', 'url' => $cdn($pot->content_file)];
+                    }
+                }
+            } elseif ($base === 'TipGoalsPayment' && $src) {
+                $tip = $src->tipGoal;
+                $itemTitle = $tip?->name;
+                $openPage = 'tips';
+                $reward['description'] = $tip?->description;
+            }
+
+            $openLink = ($creatorUsername && $openPage) ? '/' . $creatorUsername . '?page=' . $openPage : null;
+
+            // Content-access reward: members-only / subscriber / supporter-only posts.
+            $accessSpec = match ($type) {
+                'gift_membership' => ['module' => 'membership',   'label' => 'Members-only posts'],
+                'gift_bill'       => ['module' => 'subscription', 'label' => 'Subscriber posts'],
+                'gift_tip'        => ['module' => 'support',      'label' => 'Supporter-only posts'],
+                default           => null,
+            };
+            if ($accessSpec && $creatorUsername) {
+                $byCreator = $gatedPostCounts->get($tx->user_id);
+                $countRow = $byCreator ? $byCreator->firstWhere('for_module', $accessSpec['module']) : null;
+                $reward['access'] = [
+                    'label' => $accessSpec['label'],
+                    'count' => $countRow ? (int) $countRow->c : 0,
+                    'url'   => '/' . $creatorUsername,
+                ];
             }
 
             $event = [
@@ -2227,13 +2320,14 @@ class ProfileController extends Controller
                     'username' => $tx->user->username,
                     'avatar' => $tx->user->avatar_url,
                 ] : null,
-                'benefits' => $benefits,
+                'item_title' => $itemTitle,
+                'open_link' => $openLink,
+                'reward' => $reward,
                 'ask_question' => $askQuestion,
                 'answer' => $answer,
-                'wish_content' => $wishContent,
                 'certificate_url' => $certificateUrl,
-                'is_instant' => $isInstant,
-                'payment_id' => ($base === 'ShopPayment' && $tx->source) ? $tx->source->uuid : null,
+                'payment_id' => $paymentId,
+                'vat_amount' => (float) ($tx->vat_amount ?? 0),
             ];
 
             // Load reactions and replies

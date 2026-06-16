@@ -279,7 +279,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                                         Shop Items
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Add digital goods to fund your lifestyle.
+                                        Add digital content to sell to your supporters.
                                     </p>
                                 </div>
                             </div>
@@ -299,7 +299,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                                         Add wish bills and memberships
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Additional ways to fund your lifestyle.
+                                        Additional ways to sell your content.
                                     </p>
                                 </div>
                             </div>

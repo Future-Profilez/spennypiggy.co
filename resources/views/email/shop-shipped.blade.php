@@ -1,75 +1,112 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <a href="{{ env('APP_URL') . '/' }}">
-            <img alt="Spenny Piggy" width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none">
-        </a>
-    </td>
-</tr>
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 420px; width: 100%; text-align: center;">
-            <tr>
-                <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
-                    Your <span style="color: #FF007F">Order</span> has been <br> Shipped! 🚚
-                </td>
-            </tr>
-            <tr>
-                <td style="line-height:20px;height:20px;"></td>
-            </tr>
+    <td align="center" style="padding: 32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width: 440px; width: 100%;">
 
+            {{-- Shipped emoji badge --}}
             <tr>
-                <td style=" padding: 0 0 25px 0; text-align: center;">
-                    <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Shipped">
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                    Great news! <br>
-                    {{ ucwords($creator->name) }} has shipped your shop item: <br>
-                    <span style="color: #FF007F">{{ $deliverable->metadata_json->shop_item_name ?? 'Shop Item' }}</span>
-                </td>
-            </tr>
-
-            <tr>
-                <td style="padding: 10px 0;">
-                    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f9f9f9; border-radius: 12px; padding: 15px; border: 1px solid #eeeeee; text-align: left;">
+                <td align="center" style="padding: 0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
                         <tr>
-                            <td style="font-family: Arial; font-size: 12px; color: #888888; text-transform: uppercase; padding-bottom: 5px;">Courier</td>
-                        </tr>
-                        <tr>
-                            <td style="font-family: Arial; font-size: 15px; font-weight: bold; color: #333333; padding-bottom: 10px;">{{ $deliverable->courier_name ?? 'Standard Shipping' }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-family: Arial; font-size: 12px; color: #888888; text-transform: uppercase; padding-bottom: 5px;">Tracking ID</td>
-                        </tr>
-                        <tr>
-                            <td style="font-family: Arial; font-size: 16px; font-weight: bold; color: #FF007F;">{{ $deliverable->tracking_id }}</td>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                📦
+                            </td>
                         </tr>
                     </table>
                 </td>
             </tr>
 
+            {{-- Heading --}}
             <tr>
-                <td style="padding: 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    You can track your order status anytime in your purchases dashboard.
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Your Order Has Been Shipped!
                 </td>
             </tr>
+
+            {{-- Subline --}}
             <tr>
-                <td style="padding: 0 0 20px 0;">
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    Great news! <strong style="color:#1A1A1A;">{{ ucwords($creator->name) }}</strong> has shipped your shop item
+                    <strong style="color:#8C52FF;">{{ $deliverable->metadata_json->shop_item_name ?? 'Shop Item' }}</strong> 🚚
+                </td>
+            </tr>
+
+            {{-- Details card --}}
+            <tr>
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">
+                                            🚚 Courier
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">
+                                            {{ $deliverable->courier_name ?? 'Standard Shipping' }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            🔍 Tracking ID
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#FF007F;font-weight:700;padding:8px 0 4px 0;word-break:break-all;">
+                                            {{ $deliverable->tracking_id }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Digital content notice --}}
+            <tr>
+                <td style="padding:0 0 18px 0;">
                     @include('email.digital-content-notice')
                 </td>
             </tr>
-            
-            <tr style="line-height: 10px; height: 10px;"><td></td></tr>
+
+            {{-- Helper text --}}
             <tr>
-                <td style="padding:0 0 10px 0; text-align: center;">
-                    <a href="{{ env('APP_URL') . '/shop?type=purchases' }}"
-                        style="border-radius:30px; padding:13px 30px; width: 210px; text-decoration:none; border:none; background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer; display: inline-block;">View My Purchases</a>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    You can track your order status anytime in your purchases dashboard. ✨
                 </td>
             </tr>
-            <tr style="line-height: 10px; height: 10px;"><td></td></tr>
+
+            {{-- Gradient CTA button --}}
+            <tr>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ env('APP_URL') . '/shop?type=purchases' }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    View My Purchases →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
         </table>
     </td>
 </tr>

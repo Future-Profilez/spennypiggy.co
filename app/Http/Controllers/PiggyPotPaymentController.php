@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\PiggyPot;
 use App\Models\PiggyPotContribution;
+use App\Models\Deliverable;
+use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Payment;
 use App\Models\FinancialTransaction;
@@ -50,10 +52,19 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
+        // Stripe compliance: content unlock pricing £4.99–£500 (GBP equivalent)
+        $priceError = Helpers::priceWithinLimits($request->amount, $piggyPot->currency ?? 'gbp', 4.99, 500);
+        if ($priceError) {
+            return response()->json([
+                'status' => false,
+                'msg' => $priceError,
+            ]);
+        }
+
         if ($user && $user->id === $piggyPot->user_id) {
             return response()->json([
                 'status' => false,
-                'msg' => 'You cannot contribute to your own Piggy Pot.'
+                'msg' => 'You cannot purchase your own content.'
             ]);
         }
 
@@ -71,6 +82,15 @@ class PiggyPotPaymentController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => "Piggy Pot not found."
+            ]);
+        }
+
+        // Stripe compliance: content unlock priced £4.99–£500 (GBP equivalent)
+        $priceErr = Helpers::priceWithinLimits($request->amount, $piggyPot->currency ?? 'gbp', 4.99, 500);
+        if ($priceErr) {
+            return response()->json([
+                'status' => false,
+                'msg' => $priceErr,
             ]);
         }
 
@@ -206,8 +226,8 @@ class PiggyPotPaymentController extends Controller
                 'price_data' => [
                     'currency' => $sourceCurrency,
                     'product_data' => [
-                        'name' => "Contribution to " . $piggyPot->title,
-                        'description' => "Support payment to {$creator->name} for their goal.",
+                        'name' => "Exclusive content",
+                        'description' => "Exclusive content from {$creator->name}.",
                     ],
                     'unit_amount' => $unitAmount,
                 ]
@@ -215,7 +235,7 @@ class PiggyPotPaymentController extends Controller
         ];
 
         $paymentIntentData = [
-            'description' => "Spenny Piggy - Piggy Pot Contribution to {$creator->name}",
+            'description' => "SpennyPiggy content from {$creator->name}",
             "metadata" => Helpers::buildStripeMetadata('piggy_pot', $pay, [
                 'item_amount' => (string) $unitAmount,
                 'creator_net_amount' => (string) $creatorNet,
@@ -374,12 +394,61 @@ class PiggyPotPaymentController extends Controller
                             'reserve_status' => $reserveStatus,
                             'currency'      => strtoupper($pay->currency ?? 'GBP'),
                             'status'        => 'completed',
-                            'description'   => 'Piggy Pot Contribution',
+                            'description'   => 'Content purchase: ' . ($pay->piggyPot?->title ?? 'Content'),
                             'transaction_date' => $pay->created_at,
                         ]
                     );
                 } catch (\Throwable $e) {
                     Log::error('Failed to sync PiggyPotContribution to FinancialTransaction: ' . $e->getMessage());
+                }
+
+                // Stripe compliance: every payment stores a content/service deliverable
+                // with a fulfilment/delivery status. The content_file is the product.
+                try {
+                    $pot = $pay->piggyPot;
+                    $contentUrl = null;
+                    if (!empty($pot?->content_file)) {
+                        $contentUrl = $pot->content_file;
+                        if (!str_starts_with($contentUrl, 'http')) {
+                            $contentUrl = 'https://ucarecdn.com/' . trim($contentUrl, '/') . '/';
+                        }
+                    }
+
+                    Deliverable::firstOrCreate(
+                        [
+                            'product_type' => 'piggy_pot',
+                            'item_id'      => $pay->id,
+                        ],
+                        [
+                            'uuid'               => (string) Str::uuid(),
+                            'product_id'         => 'piggy_pot_' . ($pot?->id ?? 'unknown'),
+                            'creator_id'         => $pay->creator_id,
+                            'gifter_id'          => $pay->user_id,
+                            'payment_intent_id'  => $session->payment_intent,
+                            'session_id'         => $session->id,
+                            'deliverable_type'   => !empty($pot?->content_file) ? 'digital_file' : 'content_file',
+                            'transaction_amount' => $pay->amount,
+                            'deliverable_url'    => $contentUrl,
+                            'customer_email'     => $pay->user?->email ?? $pay->guest_email,
+                            'customer_name'      => $pay->is_anonymous ? 'Anonymous' : ($pay->user?->name ?? $pay->guest_name),
+                            'payment_status'     => $pay->status,
+                            'payment_currency'   => $pay->currency,
+                            'anonymous'          => (bool) $pay->is_anonymous,
+                            'message'            => $pay->message,
+                            'status'             => !empty($contentUrl) ? 'delivered' : 'pending',
+                            'delivered_at'       => !empty($contentUrl) ? now() : null,
+                            'metadata'           => [
+                                'product_type'      => 'piggy_pot',
+                                'content_id'        => $pot?->id,
+                                'content_title'     => $pot?->title,
+                                'goal_target'       => $pot?->target_amount,
+                                'amount'            => $pay->amount,
+                                'currency'          => $pay->currency,
+                            ],
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('Failed to create PiggyPot deliverable: ' . $e->getMessage());
                 }
 
                 // Clear the cache for the creator's piggy pots
@@ -403,8 +472,8 @@ class PiggyPotPaymentController extends Controller
                 $sendSupporter = empty($pay->supporter_notified_at);
 
                 if ($sendCreator && $pay->creator?->email) {
-                    $title = "🐷 New Piggy Pot Contribution!";
-                    $content = "{$supporterName} contributed {$symbol}" . number_format((float) $pay->amount, 2) . " to {$pay->piggyPot?->title}.";
+                    $title = "🐷 New content purchase!";
+                    $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}" . number_format((float) $pay->amount, 2) . ".";
                     Helpers::sendNotification($title, $content, $pay->creator->email);
                     $pay->creator_notified_at = now();
                 }
@@ -412,9 +481,9 @@ class PiggyPotPaymentController extends Controller
                 $supporterEmail = $pay->user?->email ?: $pay->guest_email;
                 if ($sendSupporter && $supporterEmail) {
                     $title = "✅ Payment Successful!";
-                    $content = "Your contribution of {$symbol}" . number_format((float) $pay->total_paid, 2) . " was added to {$pay->creator?->name}'s Piggy Pot.";
+                    $content = "Your purchase of {$symbol}" . number_format((float) $pay->total_paid, 2) . " from {$pay->creator?->name} is complete.";
                     if (!empty($pay->piggyPot?->content_file)) {
-                        $content .= " Exclusive reward unlocked.";
+                        $content .= " Exclusive content unlocked.";
                     }
                     Helpers::sendNotification($title, $content, $supporterEmail);
                     $pay->supporter_notified_at = now();
@@ -443,7 +512,7 @@ class PiggyPotPaymentController extends Controller
                     }
                     $thankYouParams['wish_content'] = [
                         'type' => null,
-                        'name' => $pay->piggyPot?->content_description ?: 'Exclusive Reward',
+                        'name' => $pay->piggyPot?->content_description ?: 'Exclusive content',
                         'url' => $contentUrl,
                     ];
                 } elseif (!empty($pay->piggyPot?->content_description)) {

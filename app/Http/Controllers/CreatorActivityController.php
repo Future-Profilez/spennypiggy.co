@@ -50,6 +50,7 @@ class CreatorActivityController extends Controller
 
         return Inertia::render('Creator/ActivityStatus', [
             'activityStatus' => $activityStatus,
+            'postingCadence' => app(\App\Services\PostingCadenceService::class)->statusFor($user),
             'contentBreakdown' => $contentBreakdown,
             'blockedPayments' => $blockedPayments,
             'activityTimeline' => $activityTimeline,
@@ -571,6 +572,7 @@ class CreatorActivityController extends Controller
     {
         $user = Auth::user();
         $activityStatus = $this->activityService->validateCreatorActivity($user);
+        $activityStatus['postingCadence'] = app(\App\Services\PostingCadenceService::class)->statusFor($user);
 
         return response()->json($activityStatus);
     }

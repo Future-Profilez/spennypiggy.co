@@ -1,111 +1,177 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-    <td align="center" style="padding:10px 10px 20px 10px;"><a href="{{ env('APP_URL') . '/' }}"><img alt=""
-                width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none"></a></td>
-</tr>
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0"
-            style="max-width: 400px; width: 100%; text-align: center;">
-            <tr>
-                <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                    🎉 Congratulations, <span style="color: #8C52FF">{{ ucwords($creator->name) }}</span>! 🐷
-                </td>
-            </tr>
-            <tr>
-                <td style="line-height:20px;height:20px;"></td>
-            </tr>
-            <tr>
-                <td style="padding: 0 0 25px 0; text-align: center;">
-                    <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Founder Achievement">
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                    You're now officially a <strong style="color:#8C52FF;">SpennyPiggy Founder!</strong><br><br>
-                    Your exceptional performance has earned you a place among our most successful creators.
-                </td>
-            </tr>
+    <td align="center" style="padding:32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
 
-            <!-- Achievement Highlight -->
+            {{-- Emoji badge --}}
             <tr>
-                <td style="padding: 20px; background: linear-gradient(135deg, #8C52FF 0%, #FF007F 100%); border-radius: 10px; margin: 20px 0;">
-                    <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <td align="center" style="padding:0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
                         <tr>
-                            <td style="color: white; font-weight: bold; font-size: 18px; text-align: center; padding-bottom: 10px;">
-                                Your First 30-Day Achievement
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="color: white; font-weight: bold; font-size: 32px; text-align: center; padding-bottom: 10px;">
-                                £{{ number_format($first30DayEarnings, 2) }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="color: white; font-size: 14px; text-align: center;">
-                                You've earned this incredible amount in your first 30 days on the platform!
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                🏆
                             </td>
                         </tr>
                     </table>
                 </td>
             </tr>
 
+            {{-- Heading --}}
             <tr>
-                <td style="padding: 20px 0 15px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    We're thrilled to welcome you to our exclusive Founder Program.
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Congratulations, <span style="color:#8C52FF;">{{ ucwords($creator->name) }}</span>! 🐷
                 </td>
             </tr>
 
-            <!-- Benefits Section -->
+            {{-- Subline --}}
             <tr>
-                <td style="padding: 20px; background: #FBF0F5; border-radius: 10px; margin: 20px 0;">
-                    <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 20px 0;text-align:center;">
+                    You're now officially a <strong style="color:#8C52FF;">SpennyPiggy Founder!</strong> Your exceptional performance has earned you a place among our most successful creators.
+                </td>
+            </tr>
+
+            {{-- Achievement image --}}
+            <tr>
+                <td align="center" style="padding:0 0 24px 0;text-align:center;">
+                    <img style="max-width:180px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Founder Achievement">
+                </td>
+            </tr>
+
+            {{-- Achievement card --}}
+            <tr>
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
                         <tr>
-                            <td style="font-weight: bold; font-size: 16px; color: #8C52FF; text-align: center; padding-bottom: 15px;">
-                                🌟 Your Founder Benefits
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 5px 0; font-size: 14px; color: #4D4D4D;">
-                                💰 <strong>Monthly Bonus:</strong> Earn 10% extra when you earn £2,500+ in a month (capped monthly)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 5px 0; font-size: 14px; color: #4D4D4D;">
-                                👑 <strong>Founder Badge:</strong> Special recognition on your profile
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 5px 0; font-size: 14px; color: #4D4D4D;">
-                                🎯 <strong>Priority Support:</strong> Direct access to our team
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 5px 0; font-size: 14px; color: #4D4D4D;">
-                                📊 <strong>Advanced Analytics:</strong> Detailed insights into your performance
+                            <td style="padding:20px 22px;">
+
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">
+                                            🚀 First 30-day achievement
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">
+                                            Founder
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                {{-- Divider --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td height="1" bgcolor="#FFD6E8" style="height:1px;line-height:1px;font-size:1px;background-color:#FFD6E8;padding:0;">&nbsp;</td>
+                                    </tr>
+                                </table>
+
+                                {{-- Amount --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#666666;font-weight:600;padding:12px 0 0 0;">
+                                            💰 Earned in 30 days
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:24px;color:#FF007F;font-weight:800;padding:12px 0 0 0;">
+                                            £{{ number_format($first30DayEarnings, 2) }}
+                                        </td>
+                                    </tr>
+                                </table>
+
                             </td>
                         </tr>
                     </table>
                 </td>
             </tr>
 
-            <tr style="line-height: 20px; height: 20px;"><td></td></tr>
-
+            {{-- Welcome text --}}
             <tr>
-                <td style="padding:0 0 20px 0; text-align: center;">
-                    <a href="{{ config('app.url') }}/founder/bonus" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View Your Founder Dashboard</a>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    We're thrilled to welcome you to our exclusive Founder Program. 🌟
                 </td>
             </tr>
 
+            {{-- Benefits card --}}
             <tr>
-                <td style="padding: 20px 0 15px 0; font-weight: bold; font-size: 16px; color: #141414; text-align: center;">
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:15px;color:#8C52FF;text-align:center;padding:0 0 14px 0;">
+                                            🌟 Your Founder Benefits
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;line-height:20px;color:#666666;padding:6px 0;text-align:left;">
+                                            💰 <strong style="color:#1A1A1A;">Monthly Bonus:</strong> Earn 10% extra when you earn £2,500+ in a month (capped monthly)
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;line-height:20px;color:#666666;padding:6px 0;text-align:left;">
+                                            👑 <strong style="color:#1A1A1A;">Founder Badge:</strong> Special recognition on your profile
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;line-height:20px;color:#666666;padding:6px 0;text-align:left;">
+                                            🎯 <strong style="color:#1A1A1A;">Priority Support:</strong> Direct access to our team
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;line-height:20px;color:#666666;padding:6px 0;text-align:left;">
+                                            📊 <strong style="color:#1A1A1A;">Advanced Analytics:</strong> Detailed insights into your performance
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Gradient CTA button --}}
+            <tr>
+                <td align="center" style="padding:0 0 24px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ config('app.url') }}/founder/bonus"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    View Your Founder Dashboard →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- What happens next --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:16px;color:#1A1A1A;
+                           line-height:22px;padding:0 0 10px 0;text-align:center;">
                     What happens next?
                 </td>
             </tr>
-
             <tr>
-                <td style="padding: 0 0 15px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: left;">
+                <td align="left"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#666666;
+                           line-height:22px;padding:0 0 22px 0;text-align:left;">
                     • Your founder badge will appear on your profile within 24 hours<br>
                     • Monthly bonuses will be calculated automatically on the 7th of each month<br>
                     • Payouts are processed via Stripe to your connected account<br>
@@ -113,25 +179,15 @@
                 </td>
             </tr>
 
+            {{-- Closing --}}
             <tr>
-                <td style="padding: 20px 0 15px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    Keep up the amazing work! We're excited to see what you'll achieve as a SpennyPiggy Founder.
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 8px 0;text-align:center;">
+                    Keep up the amazing work! We're excited to see what you'll achieve as a SpennyPiggy Founder. ✨
                 </td>
             </tr>
 
-            <tr>
-                <td style="padding: 20px 0 15px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    Best regards,<br><strong>The SpennyPiggy Team</strong>
-                </td>
-            </tr>
-
-            <tr>
-                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 12px; line-height: 18px; color: #666666; text-align: center;">
-                    Questions? Reply to this email or contact us at <a href="mailto:support@spennypiggy.co" style="color:#FF007F; text-decoration:none;">support@spennypiggy.co</a>
-                </td>
-            </tr>
-
-            <tr style="line-height: 10px; height: 10px;"><td></td></tr>
         </table>
     </td>
 </tr>

@@ -1,33 +1,66 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <a href="{{ env('APP_URL') . '/' }}">
-            <img width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none" alt="Spenny Piggy Logo">
-        </a>
-    </td>
-</tr>
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; text-align: center;">
+    <td align="center" style="padding: 32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width: 440px; width: 100%;">
+
+            {{-- Emoji badge --}}
             <tr>
-                <td style="font-family: Arial, sans-serif; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 18px 0; text-align: center;">
-                    Refund <span style="color:#8C52FF">{{ ucfirst($status) }}</span>
+                <td align="center" style="padding: 0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                ↩️
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+
+            {{-- Heading --}}
             <tr>
-                <td style="padding: 0 0 22px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    The refund request for Ticket #{{ strtoupper(explode('-', $ticket->uuid)[0]) }} has been {{ $status }}.
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Refund {{ ucfirst($status) }}
+                </td>
+            </tr>
+
+            {{-- Subline --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    The refund request for Ticket <strong style="color:#8C52FF;">#{{ strtoupper(explode('-', $ticket->uuid)[0]) }}</strong> has been {{ $status }}.
                     @if($status === 'approved' && $forRole === 'supporter')
                         The refund has been initiated to your original payment method. It may take 5-10 business days to appear on your statement.
                     @endif
                 </td>
             </tr>
+
+            {{-- Gradient CTA button --}}
             <tr>
-                <td style="padding:0 0 10px 0; text-align: center;">
-                    <a href="{{ $supportUrl }}" style="display:inline-block; border-radius:30px;padding:13px 30px;text-decoration:none;border:3px solid #000;background-color:#FF007F;font-family: Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;cursor:pointer;">View Details</a>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $supportUrl }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    View Details →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+
         </table>
     </td>
 </tr>

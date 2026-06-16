@@ -162,7 +162,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                     {/* Left: Image */}
                     <div className="w-full   relative">
                         <div className="absolute -top-3 -left-3 bg-[#FFD700] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 flex items-center gap-1 uppercase tracking-wide">
-                            🎯 GOAL
+                            🎯 CONTENT GOAL
                         </div>
                         <div className="w-full h-52 md:h-56  bg-[#0d1b2a] rounded-[20px] border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]">
                             <img src={featuredPot.cover_media || "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/"} alt={featuredPot.title} className="w-full h-full object-cover opacity-90" />
@@ -175,7 +175,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                         <p className="text-sm md:text-base text-gray-500 mb-3 line-clamp-1">{featuredPot.description}</p>  
                         <div className="flex justify-between items-end mb-2">
                             <div className="font-bold text-gray-500 text-xs md:text-sm uppercase tracking-widest">Target: {currencySymbol}{targetAmount.toFixed(2)}</div>
-                            <div className="font-black text-[#e85d9a] text-sm md:text-lg uppercase tracking-widest">Raised: {currencySymbol}{raisedAmount.toFixed(2)}</div>
+                            <div className="font-black text-[#e85d9a] text-sm md:text-lg uppercase tracking-widest">Progress: {currencySymbol}{raisedAmount.toFixed(2)}</div>
                         </div>
                         <div className="flex justify-between items-center mb-2 gap-3">
                             <div className="font-bold text-gray-500 text-xs md:text-sm uppercase tracking-widest">
@@ -197,7 +197,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                             isCreator ? (
                                 <div className="animate-fade-in space-y-4 rounded-[30px] border-[3px] border-black p-6 bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <p className="text-gray-700 text-base font-bold">
-                                        You are the creator of this Piggy Pot. Creators cannot contribute to their own pot.
+                                        You are the creator of this content. Creators cannot purchase their own content.
                                     </p>
                                     <p className="text-sm text-gray-500">
                                         To update pot details, use the edit page below.
@@ -257,7 +257,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                         disabled={isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount}
                                         className={`w-full py-2 md:py-4 rounded-[30px]  border-[3px] border-black font-black text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(isComplete || remainingAmount <= 0 || !amount || parseFloat(amount) < 1 || parseFloat(amount) > remainingAmount) ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
                                     >
-                                        {isComplete ? 'GOAL COMPLETED' : 'Add To Pot'}
+                                        {isComplete ? 'GOAL COMPLETED' : 'Unlock Content'}
                                     </button>
                                 </div>
                             )
@@ -330,7 +330,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                 </div>
                                 
                                 <div className="flex justify-between items-center font-black text-lg">
-                                    <span>Contribution Amount:</span>
+                                    <span>Purchase Amount:</span>
                                     <span className="text-[#e85d9a]">{global_currency || 'GBP'} {amount}</span>
                                 </div>
 
@@ -344,7 +344,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                     disabled={loading || !data.digital_waiver}
                                     className={`w-full py-1 md:py-4 rounded-full border-[3px] border-black font-black text-normal uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${(!data.digital_waiver || loading) ? 'bg-pink-300 text-white cursor-not-allowed' : 'bg-[#e85d9a] text-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none'}`}
                                 >
-                                    {loading ? 'Processing...' : 'ADD TO POT'}
+                                    {loading ? 'Processing...' : 'UNLOCK CONTENT'}
                                 </button>
                                 <div className="mt-2 text-center text-xs font-bold text-gray-500">
                                     🔒 Secured via Stripe

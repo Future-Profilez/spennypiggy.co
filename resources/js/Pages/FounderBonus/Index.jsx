@@ -613,9 +613,42 @@ export default function FounderBonusIndex() {
 
                         <div className="py-6 overflow-auto">
 
+                            {/* Your Position sticky card */}
+                            {userInRace && userProgress && (() => {
+                                const pos = leaderboard?.findIndex(e => e?.creator?.id === user?.id);
+                                const rank = pos >= 0 ? pos + 1 : null;
+                                const pct = Math.round(userProgress.progress_pct ?? userProgress.qualification_progress ?? 0);
+                                return (
+                                    <div className="sticky top-0 z-10 mb-4 bg-gradient-to-r from-[#8C52FF] to-[#FF007F] text-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-lg">
+                                        <div className="flex items-center gap-3">
+                                            {rank ? <span className="text-2xl font-black">#{rank}</span> : null}
+                                            <div>
+                                                <div className="text-sm font-semibold opacity-90">Your Position</div>
+                                                <div className="text-xs opacity-75">{userProgress.days_remaining} days remaining</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="text-right">
+                                                <div className="text-lg font-bold">{formatMultiPrice(userProgress.current_earnings, 'GBP')}</div>
+                                                <div className="text-xs opacity-80">{pct}% of target</div>
+                                            </div>
+                                            <div className="w-16 h-16 relative">
+                                                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                                                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="3" />
+                                                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="white" strokeWidth="3"
+                                                        strokeDasharray={`${pct} ${100 - pct}`} strokeLinecap="round" />
+                                                </svg>
+                                                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold rotate-0">{pct}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
                             <table className='w-full table-auto border-collapse border border-gray-200 shadow-sm rounded-[30px]   overflow-hidden bg-gray-100'>
                                 <thead>
                                     <tr>
+                                        <th className='border pinkbg text-white !py-[15px] !px-[15px] w-10 text-center'>#</th>
                                         <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Creator</th>
                                         <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Earnings</th>
                                         <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Progress</th>
@@ -623,54 +656,60 @@ export default function FounderBonusIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {leaderboard && leaderboard.map((entry, index) => (
-                                        <tr key={entry?.creator?.id} className={` hover:bg-gray-50 transition-colors ${entry?.creator?.id === user?.id ? 'bg-indigo-100' : ''}`}>
-                                            <td className="border-r border-gray-200 p-3 flex items-center">
-                                                {/* {getRankIcon(index + 1)} */}
+                                    {leaderboard && leaderboard.map((entry, index) => {
+                                        const rank = entry.rank ?? (index + 1);
+                                        const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+                                        const progressPct = Math.min(entry.progress_pct ?? entry.qualification_progress ?? 0, 100);
+                                        const isMe = entry?.creator?.id === user?.id;
+                                        return (
+                                        <tr key={entry?.creator?.id} className={`hover:bg-gray-50 transition-colors ${isMe ? 'bg-indigo-50 ring-1 ring-inset ring-indigo-300' : ''}`}>
+                                            <td className="border-r border-gray-200 p-3 text-center font-bold text-lg">
+                                                {medals[rank] || <span className="text-gray-400 text-sm">{rank}</span>}
+                                            </td>
+                                            <td className="border-r border-gray-200 p-3 flex items-center gap-2">
                                                 <Avatar profile_status_lock={entry?.creator?.profile_status_lock} role={entry?.creator?.role}
                                                     src={entry?.creator?.avatar_url || userphoto}
                                                     name={entry?.creator?.name}
                                                     username={entry?.creator?.username}
                                                 />
+                                                {isMe && <span className="text-xs font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded">You</span>}
                                             </td>
-                                            <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900"> 
+                                            <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900">
                                                 {formatMultiPrice(entry.current_earnings, 'GBP')}
                                             </td>
-                                            <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900"> 
+                                            <td className="border-r border-gray-200 p-3 text-sm font-medium text-gray-700">
                                                 {entry.days_remaining > 0
-                                                    ? `${entry.days_remaining} days remaining`
+                                                    ? `${entry.days_remaining}d remaining`
                                                     : entry.is_qualified
-                                                        ? 'Qualified (window complete)'
-                                                        : 'Competition ended'
+                                                        ? '✅ Qualified'
+                                                        : 'Ended'
                                                 }
                                             </td>
-                                            <td className="border-r border-gray-200 p-3"> 
-                                                <div className="flex items-center">
-                                                    <div className="w-32 bg-gray-200 rounded-full h-3 mr-3">
+                                            <td className="border-r border-gray-200 p-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 bg-gray-200 rounded-full h-3">
                                                         <div
-                                                            className="bg-indigo-500 h-3 rounded-full"
-                                                            style={{ width: `${Math.min(entry.progress ?? entry.qualification_progress ?? 0, 100)}%` }}
-                                                        ></div>
+                                                            className="h-3 rounded-full transition-all duration-700"
+                                                            style={{
+                                                                width: `${progressPct}%`,
+                                                                background: progressPct >= 100
+                                                                    ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                                                                    : 'linear-gradient(90deg, #8C52FF, #FF007F)',
+                                                            }}
+                                                        />
                                                     </div>
-                                                    <span className="text-sm text-gray-500">{Math.round(entry.progress ?? entry.qualification_progress ?? 0)}%</span>
-                                                    {entry.days_remaining <= 0 && !entry.is_qualified ? (
-                                                        <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-gray-500">ENDED</span>
-                                                    ) : null}
-                                                    {entry.is_qualified ? (
-                                                        <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-green-600">WINNER</span>
-                                                    ) : null}
+                                                    <span className="text-sm font-semibold text-gray-600 w-10 shrink-0">{Math.round(progressPct)}%</span>
+                                                    {entry.is_qualified && (
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-green-600">WINNER</span>
+                                                    )}
+                                                    {entry.days_remaining <= 0 && !entry.is_qualified && (
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">ENDED</span>
+                                                    )}
                                                 </div>
                                             </td>
-                                            {/* <td className="py-4 px-6">
-                                                {entry.is_qualified && (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                        <FaCrown className="w-5 h-5 mr-1" />
-                                                        Qualified
-                                                    </span>
-                                                )}
-                                            </td> */}
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                            

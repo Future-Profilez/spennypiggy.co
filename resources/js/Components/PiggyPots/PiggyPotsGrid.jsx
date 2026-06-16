@@ -104,8 +104,8 @@ export default function PiggyPotsGrid({
                         No Active Piggy Pots
                     </h3>
                     <p className="text-gray-600 font-bold mb-6">
-                        Create a Piggy Pot to let your fans fund your next big
-                        goal or purchase.
+                        Create a content goal to sell exclusive content toward a
+                        visible progress goal.
                     </p>
                     <button
                         onClick={() =>

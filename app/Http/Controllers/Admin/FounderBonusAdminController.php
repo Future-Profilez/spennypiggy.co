@@ -18,11 +18,23 @@ class FounderBonusAdminController extends Controller
      */
     public function index()
     {
+        $maxSeats = FounderBonus::getMaxFounderSeats();
+        $totalFounders = User::where('is_founder', true)->count();
+        $seatsUsed = FounderBonus::whereMonth('qualification_date', now()->month)
+            ->whereYear('qualification_date', now()->year)
+            ->count();
+
         $stats = [
-            'total_founders' => User::where('is_founder', true)->count(),
-            'pending_payouts' => FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)->count(),
-            'total_bonuses_paid' => FounderBonus::where('payout_status', FounderBonus::STATUS_PAID)->sum('bonus_amount'),
-            'rejected_payouts' => FounderBonus::where('payout_status', FounderBonus::STATUS_REJECTED)->count(),
+            'total_founders'       => $totalFounders,
+            'seats_used_this_month'=> $seatsUsed,
+            'seats_remaining'      => max(0, $maxSeats - $seatsUsed),
+            'max_seats'            => $maxSeats,
+            'pending_payouts'      => FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)->count(),
+            'total_bonuses_paid'   => (float) FounderBonus::where('payout_status', FounderBonus::STATUS_PAID)->sum('bonus_amount'),
+            'rejected_payouts'     => FounderBonus::where('payout_status', FounderBonus::STATUS_REJECTED)->count(),
+            'referral_bonus_count' => FounderBonus::where('referral_multiplier', '>', 1.0)->count(),
+            'bonus_percentage'     => round(FounderBonus::getBonusPercentage() * 100, 1),
+            'min_earnings'         => FounderBonus::getMinFirst30dEarnings(),
         ];
 
         $recentBonuses = FounderBonus::with('creator')
@@ -32,10 +44,11 @@ class FounderBonusAdminController extends Controller
             ->map(function ($bonus) {
                 return [
                     'id' => $bonus->id,
-                    'creator_name' => $bonus->creator->name,
-                    'creator_email' => $bonus->creator->email,
+                    'creator_name' => $bonus->creator?->name,
+                    'creator_email' => $bonus->creator?->email,
                     'month' => $bonus->month,
                     'bonus_amount' => $bonus->bonus_amount,
+                    'referral_multiplier' => $bonus->referral_multiplier ?? 1.0,
                     'payout_status' => $bonus->payout_status,
                     'paid_date' => $bonus->paid_date,
                     'created_at' => $bonus->created_at,

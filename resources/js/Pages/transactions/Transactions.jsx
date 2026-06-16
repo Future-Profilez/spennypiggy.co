@@ -10,7 +10,7 @@ import Modal from '@/Components/Modal';
 import Popup from '@/Components/Popup';
 import SupportModal from './SupportModal';
 import { router } from '@inertiajs/react';
-import { ChevronLeft, Calendar, FileText, ExternalLink, Filter } from 'lucide-react';
+import { ChevronLeft, Calendar, FileText, ExternalLink, Filter, Unlock } from 'lucide-react';
 
 export default function Transactions(props) {
   const { auth, initial, display_currency, spend_summary } = props || {};
@@ -86,15 +86,30 @@ export default function Transactions(props) {
     }
   };
 
+  // Per-type accent — gives each monetisation type its own colour identity
+  // (gradient strip, soft chip bg, status dot) without leaving the brand.
+  const typeStyle = (t) => {
+    switch (t) {
+      case 'gift_wish':       return { grad: 'from-pink-400 to-pink-600',     soft: 'bg-pink-50' };
+      case 'gift_membership': return { grad: 'from-violet-400 to-violet-600', soft: 'bg-violet-50' };
+      case 'gift_bill':       return { grad: 'from-sky-400 to-sky-600',       soft: 'bg-sky-50' };
+      case 'gift_tip':        return { grad: 'from-rose-400 to-rose-600',     soft: 'bg-rose-50' };
+      case 'piggy_pot':       return { grad: 'from-amber-400 to-amber-600',   soft: 'bg-amber-50' };
+      case 'gift_shop':       return { grad: 'from-teal-400 to-teal-600',     soft: 'bg-teal-50' };
+      case 'gift_task':       return { grad: 'from-indigo-400 to-indigo-600', soft: 'bg-indigo-50' };
+      default:                return { grad: 'from-gray-400 to-gray-600',     soft: 'bg-gray-50' };
+    }
+  };
+
   const titleFor = (e) => {
     switch (e.type) {
-      case 'gift_wish': return e.category === 'received' ? 'Wish funded' : 'You funded a wish';
-      case 'gift_membership': return e.category === 'received' ? 'Membership payment' : 'You supported a membership';
-      case 'gift_bill': return e.category === 'received' ? 'Bill payment' : 'You supported a bill';
+      case 'gift_wish': return e.category === 'received' ? 'Content purchased' : 'You purchased content';
+      case 'gift_membership': return e.category === 'received' ? 'Membership payment' : 'You subscribed to a membership';
+      case 'gift_bill': return e.category === 'received' ? 'Subscription payment' : 'You subscribed to content';
       case 'gift_tip': return e.category === 'received' ? 'Support payment' : 'You sent support';
-      case 'piggy_pot': return e.category === 'received' ? 'Piggy Pot contribution' : 'You contributed to Piggy Pot';
+      case 'piggy_pot': return e.category === 'received' ? 'Content purchase' : 'You unlocked content';
       case 'gift_shop': return e.category === 'received' ? 'Shop order' : 'You purchased from the shop';
-      case 'gift_task': return e.category === 'received' ? 'Task purchase' : 'You funded a task';
+      case 'gift_task': return e.category === 'received' ? 'Task purchase' : 'You purchased a task';
       default: return 'Transaction';
     }
   };
@@ -109,12 +124,7 @@ export default function Transactions(props) {
       e?.creator?.name || '',
       e?.gifter?.username || '',
       e?.gifter?.name || '',
-      e?.wish?.name || '',
-      e?.shop?.name || '',
-      e?.task?.title || '',
-      e?.bill?.name || '',
-      e?.membership?.level || '',
-      e?.piggy_pot?.title || ''
+      e?.item_title || ''
     ].join(' ').toLowerCase();
     return hay.includes(q);
   });
@@ -226,7 +236,7 @@ export default function Transactions(props) {
             setData(prev => ({
               ...prev,
               events: prev.events.map(ev => 
-                ev.payment_id === paymentId ? { ...ev, answer: answer } : ev
+                ev.payment_id && ev.payment_id === paymentId ? { ...ev, answer: answer } : ev
               )
             }));
             alert(res.data.msg || res.data.message || 'Answer submitted successfully.');
@@ -245,10 +255,12 @@ export default function Transactions(props) {
   };
 
   const rewardChip = (e) => {
-    if (e.access) return e.access;
-    if (e?.wish?.reward_file) return 'Reward file';
-    if (e?.piggy_pot?.content_file) return 'Exclusive Reward';
-    if (e?.piggy_pot?.content_description) return 'Reward unlocked';
+    const r = e.reward || {};
+    if (r.access) return r.access.label;
+    if (r.media) return 'Content unlocked';
+    if (r.file_url) return 'Reward file';
+    if (r.perks?.length) return `${r.perks.length} benefit${r.perks.length > 1 ? 's' : ''}`;
+    if (r.description) return 'Reward unlocked';
     return null;
   };
 
@@ -276,9 +288,115 @@ export default function Transactions(props) {
     );
   };
 
+  const linkify = (text) => {
+    if (text == null) return null;
+    const s = String(text);
+    return s.startsWith('http')
+      ? <a href={s} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline break-all">{s}</a>
+      : s;
+  };
+
+  // The visual anchor of every card: a framed window showing exactly what the
+  // supporter received (or, for the creator view, what they delivered) — media,
+  // membership perks, a downloadable file, a certificate, or a pending stamp.
+  const DeliveryPanel = ({ e, icon }) => {
+    const r = e.reward || {};
+    const hasMedia = !!r.media;
+    const hasPerks = !!(r.perks && r.perks.length);
+    const hasFile = !!r.file_url;
+    const hasCert = !!e.certificate_url;
+    const hasDesc = !!r.description;
+    const hasAccess = !!r.access;
+    const hasPrimary = hasMedia || hasPerks || hasDesc || hasAccess;
+    const pending = r.is_instant === false && !hasMedia && !hasFile;
+    const mediaType = String(r.media?.type || '');
+    const ts = typeStyle(e.type);
+    const softBtn = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 shadow-sm hover:shadow-md';
+
+    return (
+      <div className="relative flex flex-col rounded-[20px] border border-black/5 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${pending ? 'text-amber-600' : 'text-emerald-600'}`}>
+            <span className={`h-2 w-2 rounded-full ${pending ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+            {pending ? 'Awaiting delivery' : (e.category === 'received' ? 'You delivered' : 'You received')}
+          </span>
+          <span className={`h-7 w-7 rounded-xl bg-gradient-to-br ${ts.grad} text-white text-sm flex items-center justify-center shadow-sm`}>{icon}</span>
+        </div>
+
+        <div className="flex-1 px-4 pb-4 flex flex-col gap-3 min-h-[150px] justify-center">
+          {hasMedia ? (
+            <div className="group/media">
+              {mediaType.includes('video') ? (
+                <video controls controlsList="nodownload" className="w-full max-h-[230px] object-contain rounded-[20px] bg-black shadow-sm">
+                  <source src={r.media.url} type={r.media.type} />
+                </video>
+              ) : mediaType.includes('audio') ? (
+                <audio controls controlsList="nodownload" className="w-full">
+                  <source src={r.media.url} type={r.media.type} />
+                </audio>
+              ) : (mediaType.includes('pdf') || mediaType.includes('zip')) ? (
+                <a href={r.media.url} target="_blank" rel="noopener noreferrer" className={`${softBtn} bg-gray-900 text-white`}><FileText size={14} /> Open content</a>
+              ) : (
+                <a href={r.media.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-[20px] border border-black/5 bg-white shadow-sm">
+                  <img src={r.media.url} alt={r.media.name || 'Content'} className="w-full max-h-[230px] object-contain transition-transform duration-500 group-hover/media:scale-[1.04]" onError={(ev) => { ev.target.style.display = 'none'; ev.target.parentElement.innerHTML = '<span class="p-6 block text-center text-sm font-semibold text-gray-400">View content</span>'; }} />
+                </a>
+              )}
+              {r.media.name ? (
+                <p className="mt-2 text-center text-[11px] text-gray-400 font-medium truncate px-2">{r.media.name}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {hasPerks ? (
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {r.perks.map((p, idx) => (
+                <span key={`perk-${idx}`} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold ${ts.soft} text-gray-700 ring-1 ring-black/5`}>{p}</span>
+              ))}
+            </div>
+          ) : null}
+
+          {hasAccess ? (
+            <Link href={r.access.url} className={`group/acc flex items-center gap-3 px-3.5 py-3 rounded-[16px] ${ts.soft} ring-1 ring-black/5 hover:ring-black/20 transition-all`}>
+              <span className={`h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br ${ts.grad} text-white flex items-center justify-center shadow-sm`}><Unlock size={16} /></span>
+              <span className="min-w-0 text-left">
+                <span className="block text-sm font-bold text-gray-800 truncate">{r.access.label}</span>
+                <span className="block text-[11px] font-medium text-gray-500">{r.access.count > 0 ? `${r.access.count} post${r.access.count > 1 ? 's' : ''} unlocked` : 'Access unlocked'}</span>
+              </span>
+              <span className="ml-auto text-gray-400 group-hover/acc:text-gray-700 transition-colors"><ExternalLink size={15} /></span>
+            </Link>
+          ) : null}
+
+          {hasDesc ? (
+            <p className="text-sm text-gray-600 leading-relaxed break-words text-center">{linkify(r.description)}</p>
+          ) : null}
+
+          {!hasPrimary ? (
+            <div className="flex flex-col items-center gap-2.5 text-center py-2">
+              <span className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${ts.grad} text-white text-2xl flex items-center justify-center shadow-md`}>{icon}</span>
+              <span className="text-xs font-semibold text-gray-400">
+                {pending ? 'Delivered after fulfilment' : ((hasFile || hasCert) ? 'Reward ready' : 'Support recorded')}
+              </span>
+            </div>
+          ) : null}
+
+          {(hasFile || hasCert) ? (
+            <div className="flex flex-wrap gap-2 justify-center">
+              {hasFile ? (
+                <a href={r.file_url} target="_blank" rel="noopener noreferrer" className={`${softBtn} bg-gray-900 text-white`}><FileText size={14} /> Download</a>
+              ) : null}
+              {hasCert ? (
+                <a href={e.certificate_url} target="_blank" rel="noopener noreferrer" className={`${softBtn} bg-gradient-to-r from-[#FF2D8B] to-[#FF6FB0] text-white`}>Certificate</a>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
   const toCSV = () => {
     const rows = [
-      ['Type', 'Category', 'Title', 'Counterparty', 'Access', 'Amount', 'Currency', 'Status', 'Date']
+      ['Type', 'Category', 'Title', 'Item', 'Counterparty', 'Reward', 'Amount', 'Currency', 'Status', 'Date']
     ];
     filtered.forEach(e => {
       const title = titleFor(e);
@@ -290,6 +408,7 @@ export default function Transactions(props) {
         e.type,
         e.category,
         title,
+        e.item_title || '',
         cp,
         rewardChip(e) || '',
         amt.toFixed(displayDigits),
@@ -310,79 +429,81 @@ export default function Transactions(props) {
 
   return (
     <Authenticated auth={auth.user} user={auth.user}>
-      <div className="bg-[#A2E4B8] min-h-screen py-8 md:py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="bg-gradient-to-b from-[#E4F8EC] via-[#BCEDCB] to-[#A2E4B8] min-h-screen py-8 md:py-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className=" mb-8 mx-auto w-full">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
               <div>
-                <h1 className="font-bold text-2xl md:text-3xl font-black text-black uppercase">Support History</h1>
-                <p className="text-gray-700 font-bold mt-2">Your complete history — received and sent — with rewards and access.</p>
+                <h1 className="font-black text-3xl md:text-4xl text-gray-900 tracking-tight">Support History</h1>
+                <p className="text-gray-700 font-medium mt-2">Every purchase — and exactly what was delivered with it.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-green-100 rounded-[25px] md:rounded-[30px]  p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Received</p>
+              <div className="bg-white rounded-[30px] p-5 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)] hover:shadow-[0_16px_36px_-16px_rgba(0,0,0,0.3)] transition-shadow">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.15em]">Lifetime Received</p>
+                </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.received).length > 0 ? (
                     Object.entries(lifetimeStats.received).map(([cur, amt]) => (
-                      <span key={cur} className="text-black font-black text-2xl md:text-3xl">
+                      <span key={cur} className="text-gray-900 font-black text-2xl md:text-3xl tracking-tight">
                         {formatMoney(amt)}
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-400 font-black text-2xl md:text-3xl">—</span>
+                    <span className="text-gray-300 font-black text-2xl md:text-3xl">—</span>
                   )}
                 </div>
               </div>
-              <div className="bg-blue-100 rounded-[25px] md:rounded-[30px]  p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Sent</p>
+              <div className="bg-white rounded-[30px] p-5 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)] hover:shadow-[0_16px_36px_-16px_rgba(0,0,0,0.3)] transition-shadow">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#FF2D8B]" />
+                  <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.15em]">Lifetime Sent</p>
+                </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.sent).length > 0 ? (
                     Object.entries(lifetimeStats.sent).map(([cur, amt]) => (
-                      <span key={cur} className="text-black font-black text-2xl md:text-3xl">
+                      <span key={cur} className="text-gray-900 font-black text-2xl md:text-3xl tracking-tight">
                         {formatMoney(amt)}
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-400 font-black text-2xl md:text-3xl">—</span>
+                    <span className="text-gray-300 font-black text-2xl md:text-3xl">—</span>
                   )}
                 </div>
               </div>
             </div>
 
             {spend_summary && (
-              <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <p className="text-black text-sm font-black uppercase tracking-widest mb-4">Your Spend (Security Limits)</p>
+              <div className="mt-6 p-6 rounded-[30px] bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)]">
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.15em] mb-4">Your Spend (Security Limits)</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
-                    <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 1 hour</p>
-                    <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_1h)}</p>
-                    <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_1h)}</p>
-                  </div>
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
-                    <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 24 hours</p>
-                    <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_24h)}</p>
-                    <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_24h)}</p>
-                  </div>
-                  <div className="p-4 rounded-[20px] md:!rounded-[30px]  bg-gray-50 border-2 border-black">
-                    <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 7 days</p>
-                    <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_7d)}</p>
-                    <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_7d)}</p>
-                  </div>
+                  {[
+                    { label: 'Last 1 hour', spend: spend_summary.spend_1h, limit: spend_summary.limit_1h },
+                    { label: 'Last 24 hours', spend: spend_summary.spend_24h, limit: spend_summary.limit_24h },
+                    { label: 'Last 7 days', spend: spend_summary.spend_7d, limit: spend_summary.limit_7d },
+                  ].map((s) => (
+                    <div key={s.label} className="p-4 rounded-[20px] bg-gray-50 ring-1 ring-black/5">
+                      <p className="text-gray-500 font-semibold text-xs mb-1">{s.label}</p>
+                      <p className="text-gray-900 font-black text-xl tracking-tight">{formatMoney(s.spend)}</p>
+                      <p className="text-gray-400 font-medium text-xs mt-1">Limit {formatMoney(s.limit)}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
             
             {auth?.user?.role === 1 && (
-              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px]  bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
-                  <FaTwitter size={20} className="text-black" />
-                  <span className="font-black text-black text-sm uppercase tracking-widest">Creator Feature: Announce on X</span>
+              <div className="mt-6 p-5 rounded-[30px] bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)] ring-1 ring-[#1DA1F2]/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="h-7 w-7 rounded-lg bg-[#1DA1F2] text-white flex items-center justify-center"><FaTwitter size={15} /></span>
+                  <span className="font-bold text-gray-900 text-sm">Announce on X</span>
                 </div>
-                <p className="text-gray-800 font-bold text-sm leading-relaxed">
-                  Easily share your received gifts and support on your X (Twitter) profile! Use the bird icon on any transaction to post a pre-formatted announcement. 
-                  <span className="block mt-2 text-gray-600">Note: Requires <Link href="/account" className="text-[#FF007F] hover:text-pink-800 underline transition-colors">Auto Tweet</Link> to be enabled in your settings.</span>
+                <p className="text-gray-600 font-medium text-sm leading-relaxed">
+                  Share received support on your X profile — tap the bird icon on any card for a pre-written post.
+                  <span className="block mt-1 text-gray-400">Requires <Link href="/account" className="text-[#FF2D8B] hover:underline font-semibold">Auto Tweet</Link> enabled in settings.</span>
                 </p>
               </div>
             )}
@@ -442,18 +563,31 @@ export default function Transactions(props) {
               onClose={() => setSupportModalState({ show: false, event: null, type: 'contact' })}
             />
 
-            <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search by user, wish, shop, membership level, task…"
-                  className="flex-1 w-full bg-white border-[3px] border-black rounded-full px-4 py-3 text-black font-bold placeholder-gray-500 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:ring-0 focus:outline-none"
-                />
-                <button onClick={toCSV} className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-white border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">Export CSV</button>
+            <div className="mt-6 p-6 rounded-[30px] bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)]">
+              <div className="flex flex-col sm:flex-row items-center gap-3 mb-5">
+                <div className="relative flex-1 w-full">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Filter size={16} /></span>
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by user, wish, shop, membership, task…"
+                    className="w-full bg-gray-50 ring-1 ring-black/5 rounded-[20px] pl-11 pr-4 py-3 text-gray-900 font-medium placeholder-gray-400 focus:ring-2 focus:ring-[#FF2D8B]/40 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+                <button onClick={toCSV} className="w-full sm:w-auto px-6 py-3 rounded-[20px] text-sm font-bold bg-gray-900 text-white hover:bg-gray-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">Export CSV</button>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="inline-flex p-1 mb-4 rounded-[20px] bg-gray-100">
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'received', label: 'Received' },
+                  { key: 'sent', label: 'Sent' },
+                ].map(d => (
+                  <button key={d.key} onClick={() => setDirection(d.key)} className={`px-5 py-2 rounded-[16px] text-xs font-bold transition-all ${direction === d.key ? 'bg-white text-[#FF2D8B] shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>{d.label}</button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
                 {[
                   { key: 'all', label: 'All' },
                   { key: 'gift_wish', label: 'Wishes' },
@@ -464,17 +598,15 @@ export default function Transactions(props) {
                   { key: 'gift_shop', label: 'Shop' },
                   { key: 'gift_task', label: 'Tasks' },
                 ].map(f => (
-                  <button key={f.key} onClick={() => setFilter(f.key)} className={`px-5 py-2 rounded-[15px] md:rounded-[20px] 
-                    text-sm font-black uppercase tracking-widest border-[3px] border-black transition-all
-                    ${filter === f.key ? 'bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' 
-                    : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'}`}>{f.label}</button>
+                  <button key={f.key} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-[20px] text-sm font-semibold transition-all
+                    ${filter === f.key ? 'bg-gradient-to-r from-[#FF2D8B] to-[#FF6FB0] text-white shadow-md' : 'bg-gray-50 text-gray-600 ring-1 ring-black/5 hover:bg-gray-100'}`}>{f.label}</button>
                 ))}
               </div>
               {Object.keys(currencyTotals).length ? (
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {Object.entries(currencyTotals).map(([cur, amt]) => (
-                    <span key={cur} className="px-4 py-2 rounded-lg bg-gray-100 border-2 border-black text-black font-black text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                      {cur.toUpperCase()}: {formatMoney(amt)}
+                    <span key={cur} className="px-4 py-2 rounded-[20px] bg-gray-50 ring-1 ring-black/5 text-gray-700 font-bold text-xs">
+                      {cur.toUpperCase()} · {formatMoney(amt)}
                     </span>
                   ))}
                 </div>
@@ -486,284 +618,168 @@ export default function Transactions(props) {
         {loading && !data.events?.length ? (
           <LoadingScreen />
         ) : filtered.length ? (
-          <div className="space-y-4 max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="space-y-5 max-w-5xl mx-auto px-4 sm:px-6">
             {filtered.map((e, i) => {
               const icon = iconFor(e.type);
+              const ts = typeStyle(e.type);
               const cp = e.category === 'sent'
                 ? (e?.creator?.username ? `To @${e.creator.username}` : (e?.creator?.name ? `To ${e.creator.name}` : 'To creator'))
                 : (e?.gifter?.username ? `From @${e.gifter.username}` : (e?.gifter?.name ? `From ${e.gifter.name}` : 'From supporter'));
               const avatar = e.category === 'sent' ? (e?.creator?.avatar || '') : (e?.gifter?.avatar || '');
               return (
-                <FadeIn key={`tx-${i}`}>
-                  <div className="rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 md:px-6 md:py-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 w-full md:w-auto">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-[#FF007F] text-black' : 'bg-white text-black'}`}>
+                <FadeIn key={e.uuid || `tx-${i}`}>
+                  <div className="group relative bg-white rounded-[30px] shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)] hover:shadow-[0_24px_48px_-18px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                    <div className={`h-1.5 w-full bg-gradient-to-r ${ts.grad}`} />
+                    <div className="p-4 md:p-5 grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] gap-4 md:gap-5">
+
+                      {/* The hero: what was delivered */}
+                      <DeliveryPanel e={e} icon={icon} />
+
+                      <div className="flex flex-col gap-3 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${ts.soft} text-gray-700 ring-1 ring-black/5`}>
                               {titleFor(e)}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-gray-200 text-black">
-                                {e.category === 'sent' ? 'SENT' : 'RECEIVED'}
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ring-1 ring-black/5 ${e.category === 'sent' ? 'bg-pink-50 text-[#FF2D8B]' : 'bg-emerald-50 text-emerald-600'}`}>
+                              {e.category === 'sent' ? 'Sent' : 'Received'}
                             </span>
                             {e?.status ? (
-                              <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
-                                e.status === 'completed'
-                                  ? 'bg-green-300 text-black'
-                                  : (e.status === 'initiated' || e.status === 'pending')
-                                    ? 'bg-yellow-300 text-black'
-                                    : 'bg-red-300 text-black'
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                e.status === 'completed' ? 'bg-emerald-50 text-emerald-600'
+                                  : (e.status === 'initiated' || e.status === 'pending') ? 'bg-amber-50 text-amber-600'
+                                  : 'bg-red-50 text-red-600'
                               }`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${
+                                  e.status === 'completed' ? 'bg-emerald-500'
+                                    : (e.status === 'initiated' || e.status === 'pending') ? 'bg-amber-500'
+                                    : 'bg-red-500'
+                                }`} />
                                 {String(e.status).replaceAll('_', ' ')}
                               </span>
                             ) : null}
                             {isNew(e.created_at) ? (
-                              <span className="px-2 py-0.5 rounded-md bg-yellow-300 border-2 border-black text-[9px] font-black text-black uppercase tracking-widest animate-pulse shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">New</span>
+                              <span className="px-2.5 py-1 rounded-full bg-yellow-300 text-gray-900 text-[10px] font-bold animate-pulse">New</span>
                             ) : null}
                           </div>
-                          <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                            <div className="flex items-center gap-2">
-                              <img src={avatar || defaultAvatar} alt="" className="h-8 w-8 rounded-full border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" />
-                              <p className="text-black font-black text-xs uppercase tracking-widest truncate max-w-[150px] sm:max-w-none">
-                                {e.category === 'sent'
-                                  ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-[#FF007F] hover:text-pink-800 underline transition-colors">@{e.creator.username}</Link> : cp)
-                                  : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="text-[#FF007F] hover:text-pink-800 underline transition-colors">@{e.gifter.username}</Link> : cp)
-                                }
-                              </p>
+                          <div className="text-right shrink-0">
+                            <div className={`${e?.status === 'completed' ? 'text-gray-900' : 'text-gray-400'} font-black text-xl md:text-2xl leading-none tracking-tight`}>
+                              {amountFor(e)}
                             </div>
-                            <span className="hidden sm:inline text-black font-black">•</span>
-                            <p className="text-gray-500 font-bold text-xs uppercase tracking-widest">
-                              {e.created_at}
+                            {Number(e?.vat_amount || 0) > 0 ? (
+                              <div className="text-[10px] text-gray-400 font-semibold mt-1">VAT {formatMoney(Number(e.vat_amount || 0))}</div>
+                            ) : null}
+                            {e?.status && e.status !== 'completed' ? (
+                              <div className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide mt-1">Not in totals</div>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {e.item_title ? (
+                          <div className="min-w-0">
+                            {e.open_link ? (
+                              e.open_link.startsWith('http') ? (
+                                <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-gray-900 hover:text-[#FF2D8B] font-bold text-lg truncate max-w-full transition-colors">“{e.item_title}” <ExternalLink size={14} className="shrink-0 opacity-50" /></a>
+                              ) : (
+                                <Link href={e.open_link} className="inline-flex items-center gap-1 text-gray-900 hover:text-[#FF2D8B] font-bold text-lg truncate max-w-full transition-colors">“{e.item_title}” <ExternalLink size={14} className="shrink-0 opacity-50" /></Link>
+                              )
+                            ) : (
+                              <span className="text-gray-900 font-bold text-lg truncate block">“{e.item_title}”</span>
+                            )}
+                          </div>
+                        ) : null}
+
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <img src={avatar || defaultAvatar} alt="" className="h-8 w-8 rounded-full ring-2 ring-white object-cover shadow-sm shrink-0" />
+                            <p className="text-gray-700 font-semibold text-sm truncate">
+                              {e.category === 'sent'
+                                ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="hover:text-[#FF2D8B] transition-colors">To @{e.creator.username}</Link> : cp)
+                                : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="hover:text-[#FF2D8B] transition-colors">From @{e.gifter.username}</Link> : cp)}
                             </p>
                           </div>
-
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {rewardChip(e) ? (
-                              <span className="px-3 py-1.5 rounded-full bg-white border-2 border-black text-[10px] text-black uppercase tracking-widest font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                {rewardChip(e)}
-                              </span>
-                            ) : null}
-                            {e?.wish?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.wish.name}”</Link>
-                            ) : null}
-                            {e?.membership?.level && e.open_link ? (
-                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">Level “{e.membership.level}”</Link>
-                            ) : null}
-                            {e?.bill?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.bill.name}”</Link>
-                            ) : null}
-                            {e?.shop?.name && e.open_link ? (
-                              <div className="text-sm truncate block max-w-full italic">
-                                {e.open_link.startsWith('http') ? (
-                                  <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.shop.name}”</a>
-                                ) : (
-                                  <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.shop.name}”</Link>
-                                )}
-                              </div>
-                            ) : null}
-                            {e?.piggy_pot?.title ? (
-                              <div className="text-sm truncate block max-w-full italic">
-                                  <Link href={`/${e.creator?.username}?page=piggy-pots`} className="text-[#FF007F] hover:text-pink-800 font-bold underline">“{e.piggy_pot.title}”</Link>
-                              </div>
-                            ) : null}
-                            {e?.task?.title && e.open_link ? (
-                              <Link href={e.open_link} className="text-[#FF007F] hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.task.title}”</Link>
-                            ) : null}
-                          </div>
-
-                          {(e.benefits || e.wish_content || e.ask_question || e.certificate_url || e?.task?.reward_file || e?.wish?.reward_file || e?.task?.reward_note) && (
-                            <div className="mt-4 flex flex-col gap-3">
-                              {e.benefits && (
-                                <div className="p-3 bg-pink-50 rounded-[20px] border border-pink-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                  <p className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">Benefits Included</p>
-                                  <div className="text-sm font-semibold text-gray-700 break-words">
-                                    {String(e.benefits).startsWith('http') ? (
-                                      <a href={e.benefits} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">{e.benefits}</a>
-                                    ) : e.benefits}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {e.wish_content && (
-                                <div className="mt-2">
-                                  {String(e.wish_content.type || '').includes('video') ? (
-                                    <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border-2 border-black bg-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                      <source src={e.wish_content.url} type={e.wish_content.type} />
-                                    </video>
-                                  ) : String(e.wish_content.type || '').includes('audio') ? (
-                                    <audio controls controlsList="nodownload" className="w-full">
-                                      <source src={e.wish_content.url} type={e.wish_content.type} />
-                                    </audio>
-                                  ) : String(e.wish_content.type || '').includes('pdf') || String(e.wish_content.type || '').includes('zip') ? (
-                                    <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="text-[#FF007F] font-bold hover:underline text-[13px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                      Open Content
-                                    </a>
-                                  ) : (
-                                    <a href={e.wish_content.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-[20px] border-2 border-black bg-gray-50 hover:opacity-90 transition-opacity shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                      <img src={e.wish_content.url} alt={e.wish_content.name || 'Exclusive Content'} className="w-full max-h-[250px] object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="p-4 block text-center text-sm font-bold text-gray-500">View Content</span>'; }} />
-                                    </a>
-                                  )}
-                                  {e.wish_content.name && (
-                                    <div className="mt-2 text-center text-xs text-gray-500 font-bold truncate px-2">
-                                      {e.wish_content.name}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {e.ask_question && e.payment_id && (
-                                <div className="p-4 bg-white border-2 border-pink-200 rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                  <p className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">Question From Creator</p>
-                                  <p className="text-sm font-semibold mb-3 text-black">{e.ask_question}</p>
-                                  {e.answer || submittedShopAnswers.has(e.payment_id) ? (
-                                    <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm font-semibold border-2 border-green-200">
-                                      Your answer has been submitted.
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col gap-2">
-                                      <textarea
-                                        value={shopAnswerDrafts[e.payment_id] || ''}
-                                        onChange={(ev) => setShopAnswerDrafts(prev => ({ ...prev, [e.payment_id]: ev.target.value }))}
-                                        placeholder="Type your answer here..."
-                                        className="w-full border-2 border-black rounded-[15px] p-3 text-sm focus:ring-pink-500 focus:border-[#FF007F] font-bold"
-                                        rows="3"
-                                      ></textarea>
-                                      <button
-                                        onClick={() => submitShopAnswer(e.payment_id)}
-                                        disabled={submittingShopAnswers.has(e.payment_id) || !(shopAnswerDrafts[e.payment_id]?.trim())}
-                                        className="bg-[#FF007F] text-black border-2 border-black font-black py-2 px-4 rounded-full hover:translate-x-[-1px] hover:translate-y-[-1px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 text-[10px] uppercase tracking-widest w-fit transition-all"
-                                      >
-                                        {submittingShopAnswers.has(e.payment_id) ? "Submitting..." : "Submit Answer"}
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              <div className="flex flex-wrap gap-2">
-                                {e?.task?.reward_file ? (
-                                  <a href={e.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
-                                ) : null}
-                                {e?.wish?.reward_file ? (
-                                  <a href={e.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
-                                ) : null}
-                                {e.certificate_url ? (
-                                  <a href={e.certificate_url} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Certificate</a>
-                                ) : null}
-                              </div>
-                              {e?.task?.reward_note ? (
-                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">Note: {e.task.reward_note}</p>
-                              ) : null}
-                            </div>
-                          )}
+                          <span className="text-gray-300">·</span>
+                          <p className="text-gray-400 font-medium text-xs">{e.created_at}</p>
                         </div>
-                      </div>
 
-                      <div className="flex items-center md:justify-end gap-4   ">
-                      
-                        <div className="text-right">
-                          <div className={`${e?.status === 'completed' ? 'text-green-600' : 'text-gray-500'} font-black text-xl md:text-2xl`}>
-                            {amountFor(e)}
+                        {e.ask_question && e.payment_id ? (
+                          <div className="p-4 bg-pink-50/60 ring-1 ring-[#FF2D8B]/10 rounded-[20px]">
+                            <p className="text-[#FF2D8B] font-bold text-[11px] uppercase tracking-wide mb-2">Question from creator</p>
+                            <p className="text-sm font-medium mb-3 text-gray-800">{e.ask_question}</p>
+                            {e.answer || submittedShopAnswers.has(e.payment_id) ? (
+                              <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-3 py-2 rounded-[16px] text-sm font-semibold"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Answer submitted.</div>
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                <textarea
+                                  value={shopAnswerDrafts[e.payment_id] || ''}
+                                  onChange={(ev) => setShopAnswerDrafts(prev => ({ ...prev, [e.payment_id]: ev.target.value }))}
+                                  placeholder="Type your answer here..."
+                                  className="w-full bg-white ring-1 ring-black/10 rounded-[16px] p-3 text-sm focus:ring-2 focus:ring-[#FF2D8B]/40 outline-none font-medium transition-all"
+                                  rows="3"
+                                ></textarea>
+                                <button
+                                  onClick={() => submitShopAnswer(e.payment_id)}
+                                  disabled={submittingShopAnswers.has(e.payment_id) || !(shopAnswerDrafts[e.payment_id]?.trim())}
+                                  className="bg-gradient-to-r from-[#FF2D8B] to-[#FF6FB0] text-white font-bold py-2 px-4 rounded-[16px] hover:-translate-y-0.5 shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:translate-y-0 text-xs w-fit transition-all"
+                                >
+                                  {submittingShopAnswers.has(e.payment_id) ? 'Submitting...' : 'Submit answer'}
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          {e?.status && e.status !== 'completed' ? (
-                            <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest mt-1">
-                              Not included in totals
-                            </div>
-                          ) : null}
-                          {Number(e?.vat_amount || 0) > 0 ? (
-                            <div className="text-xs text-gray-600 font-black uppercase mt-1">
-                              VAT: {formatMoney(Number(e.vat_amount || 0))}
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="pt-0">
-                      <ReactionsAndReply 
-                        ev={e} 
-                        viewer={auth?.user} 
-                        creator={e.category === 'sent' ? e.creator?.username : auth?.user?.username}
-                        gifter={e.category === 'received' ? e.gifter?.username : auth?.user?.username}
-                        canAct={!!(auth?.user && (e.category === 'sent' ? e.creator?.username : e.gifter?.username))}
-                      />
-                    </div>
-                      <div className="pt-4 flex items-center gap-3">
+                        ) : null}
+
+                        <ReactionsAndReply
+                          ev={e}
+                          viewer={auth?.user}
+                          creator={e.category === 'sent' ? e.creator?.username : auth?.user?.username}
+                          gifter={e.category === 'received' ? e.gifter?.username : auth?.user?.username}
+                          canAct={!!(auth?.user && (e.category === 'sent' ? e.creator?.username : e.gifter?.username))}
+                        />
+
+                        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-black/5 mt-auto">
                           {auth?.user?.role === 1 && (
-                            <button
-                              onClick={() => handleTwitterClick(e)}
-                              className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
-                              title="Share on X" >
-                              <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
+                            <button onClick={() => handleTwitterClick(e)} className="p-2 rounded-full bg-[#1DA1F2] text-white hover:bg-[#1a91da] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group" title="Share on X">
+                              <FaTwitter size={15} className="group-hover:scale-110 transition-transform" />
                             </button>
                           )}
-                          {e.category === 'sent' && e?.creator?.username ? (
-                            <div className="flex flex-col gap-2">
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => openSupportModal(e, 'contact')}
-                                  className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
-                                >
-                                  Contact Creator
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => openSupportModal(e, 'refund')}
-                                  className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
-                                >
-                                  Request Refund
-                                </button>
-                              </div>
-                              {e.support_tickets && e.support_tickets.length > 0 && (
-                                <div className="mt-2 flex flex-col gap-2">
-                                  {e.support_tickets.map(ticket => (
-                                    <Link
-                                      key={ticket.uuid}
-                                      href={route('support.tickets.show', ticket.uuid)}
-                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all w-max"
-                                    >
-                                      <span>View {ticket.type} Ticket</span>
-                                      <span className={`px-2 py-0.5 rounded-full border border-black ${
-                                        ticket.status === 'resolved' || ticket.status === 'refunded' ? 'bg-green-300' :
-                                        ticket.status === 'rejected' ? 'bg-gray-300' : 'bg-yellow-300'
-                                      }`}>
-                                        {ticket.status.replaceAll('_', ' ')}
-                                      </span>
-                                    </Link>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                          {storyUrlFor(e) ? (
+                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-[16px] text-xs font-semibold bg-gradient-to-r from-[#FF2D8B] to-[#FF6FB0] text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">View Story</Link>
                           ) : null}
                           {e.category === 'received' && e.uuid && !String(e.uuid).startsWith('exp-') && (
-                            <a 
-                                href={route('financial.evidence-pack', { uuid: e.uuid })} 
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-100 border-2 border-black text-[#FF007F] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1"
-                            >
-                                <FileText size={12} />
-                                Evidence Pack
+                            <a href={route('financial.evidence-pack', { uuid: e.uuid })} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-[16px] text-xs font-semibold bg-pink-50 text-[#FF2D8B] hover:bg-pink-100 hover:-translate-y-0.5 transition-all inline-flex items-center gap-1.5">
+                              <FileText size={13} /> Evidence Pack
                             </a>
                           )}
-                          {e.open_link ? (
-                            e.open_link.startsWith('http') ? (
-                              <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</a>
-                            ) : (
-                              <Link href={e.open_link} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</Link>
-                            )
-                          ) : null}
-                          {storyUrlFor(e) ? (
-                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
+                          {e.category === 'sent' && e?.creator?.username ? (
+                            <>
+                              <button type="button" onClick={() => openSupportModal(e, 'contact')} className="px-4 py-2 rounded-[16px] text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 hover:-translate-y-0.5 transition-all">Contact Creator</button>
+                              <button type="button" onClick={() => openSupportModal(e, 'refund')} className="px-4 py-2 rounded-[16px] text-xs font-semibold bg-amber-100 text-amber-700 hover:bg-amber-200 hover:-translate-y-0.5 transition-all">Request Refund</button>
+                            </>
                           ) : null}
                         </div>
+
+                        {e.category === 'sent' && e.support_tickets && e.support_tickets.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {e.support_tickets.map(ticket => (
+                              <Link key={ticket.uuid} href={route('support.tickets.show', ticket.uuid)} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[16px] text-xs font-semibold bg-gray-50 text-gray-700 ring-1 ring-black/5 hover:bg-gray-100 hover:-translate-y-0.5 transition-all w-max">
+                                <span>View {ticket.type} ticket</span>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${ticket.status === 'resolved' || ticket.status === 'refunded' ? 'bg-emerald-50 text-emerald-600' : ticket.status === 'rejected' ? 'bg-gray-100 text-gray-500' : 'bg-amber-50 text-amber-600'}`}>
+                                  {ticket.status.replaceAll('_', ' ')}
+                                </span>
+                              </Link>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 </FadeIn>
               );
             })}
             {data?.has_more ? (
               <div className="text-center mt-8">
-                <button onClick={() => fetchFeed(data?.next_before || null, true)} className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">Load More</button>
+                <button onClick={() => fetchFeed(data?.next_before || null, true)} className="px-7 py-3 rounded-[20px] text-sm font-bold bg-white text-gray-800 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.3)] hover:shadow-[0_16px_36px_-16px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all">Load more</button>
               </div>
             ) : null}
 

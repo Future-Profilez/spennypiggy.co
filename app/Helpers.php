@@ -167,6 +167,64 @@ class Helpers
     }
 
     /**
+     * Stripe compliance — the payment-facing item field (checkout line item, receipt line,
+     * bank statement descriptor) must describe CONTENT, never the creator's goal/expense/wish/
+     * brand or any gift/donation wording. The card headline (goal/expense/wish) is NOT validated
+     * here — only the item text the buyer sees as "what they are purchasing".
+     *
+     * Use this to guard the line-item / receipt text, NOT the listing title field.
+     *
+     * @param  string|null  $text The payment-facing item text
+     * @return string|null  Error message if a disallowed token is present, else null
+     */
+    public static function validateItemField(?string $text): ?string
+    {
+        if ($text === null || $text === '') {
+            return null;
+        }
+
+        // Words that signal the item is being sold as a gift/expense/wish rather than content.
+        $disallowed = [
+            'gift', 'donation', 'donate', 'contribution', 'contribute', 'tribute',
+            'bill', 'rent', 'mortgage', 'wish',
+        ];
+
+        foreach ($disallowed as $word) {
+            if (preg_match("/\b" . preg_quote($word, '/') . "\b/i", $text)) {
+                return "The item field must describe content, not '{$word}'.";
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Stripe compliance — per-feature price limits, evaluated in GBP-equivalent.
+     * Minimum £4.99 applies to every paid feature; per-feature maximums:
+     * £500 (Wish/Piggy Pot) · £100/mo (Bills/Memberships) · £10,000 (Tasks/Sell Something).
+     *
+     * @param  float|int|string $value    Price in the listing's own currency
+     * @param  string|null      $currency Listing currency (defaults to GBP)
+     * @param  float            $minGbp   Minimum allowed, GBP equivalent
+     * @param  float|null       $maxGbp   Maximum allowed, GBP equivalent (null = no max)
+     * @return string|null  Error message if out of range, else null
+     */
+    public static function priceWithinLimits($value, ?string $currency, float $minGbp = 4.99, ?float $maxGbp = null): ?string
+    {
+        $currency = strtoupper($currency ?: 'GBP');
+        $priceGBP = self::priceFormat($currency, (float) $value, 'GBP');
+
+        if ($priceGBP < $minGbp) {
+            return 'Price must be at least £' . rtrim(rtrim(number_format($minGbp, 2), '0'), '.') . ' (GBP equivalent).';
+        }
+        if ($maxGbp !== null && $priceGBP > $maxGbp) {
+            return 'Price cannot exceed £' . number_format($maxGbp, 0) . ' (GBP equivalent).';
+        }
+
+        return null;
+    }
+
+    /**
      * Validate a supporter-facing free-text message (word limit + blocked words/emojis).
      *
      * @param  string|null  $text
@@ -969,10 +1027,16 @@ class Helpers
 
                     // Essential Bill Information
                     'bill_id' => (string) ($paymentModel->bills_id ?? $bill->id ?? ''),
-                    'bill_name' => $bill ? substr($bill->name, 0, 100) : 'Bill Payment',
+                    'content_id' => (string) ($paymentModel->bills_id ?? $bill->id ?? ''),
+                    // Internal audit label only — bill/expense wording must never reach
+                    // payment-facing text (descriptor, receipt, line item).
+                    'goal_label' => $bill ? substr($bill->name, 0, 100) : '',
                     'subscription_type' => $paymentModel->recurring_type ?? 'one_time',
-                    'deliverable_type' => $bill && !empty($bill->content_file) ? 'digital_content' : 'bill_receipt',
+                    'deliverable_type' => $bill && !empty($bill->content_file) ? 'digital_content' : 'recurring_content',
                     'has_content' => $bill && !empty($bill->content_file) ? '1' : '0',
+                    'fulfilment_status' => 'pending',
+                    'delivery_status' => 'pending',
+                    'transaction_description' => 'Recurring content subscription: ' . ($bill ? substr($bill->name, 0, 80) : 'subscription'),
                 ]);
                 break;
 
@@ -1070,6 +1134,66 @@ class Helpers
                     'trial_period_days' => '3',
                     'subscription_description' => 'Mandatory monthly subscription for platform access',
                     'transaction_description' => 'Monthly platform access subscription for ' . ($subscriber ? $subscriber->name : 'user'),
+                ]);
+                break;
+
+            case 'product_purchase':
+            case 'rye_product_purchase':
+                $buyer = $paymentModel->user ?? null;
+
+                $baseMetadata = array_merge($commonFields, [
+                    'type'                    => 'product_purchase',
+                    'purpose'                 => 'Marketplace Product Purchase',
+                    'payment_category'        => 'product_purchase',
+                    'product_type'            => 'rye_product',
+
+                    'buyer_id'                => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name'              => $buyer ? $buyer->name : ($paymentModel->customer_email ?? 'Anonymous'),
+                    'buyer_email'             => $buyer ? $buyer->email : ($paymentModel->customer_email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_username'          => $buyer ? ($buyer->username ?? 'guest') : 'guest',
+
+                    'payment_amount'          => (string) ($paymentModel->amount ?? ''),
+                    'total_paid'              => (string) ($paymentModel->total_paid ?? ''),
+                    'currency'                => (string) ($paymentModel->currency ?? 'GBP'),
+                    'anonymous'               => (string) ($paymentModel->anonymous ?? '0'),
+                    'message'                 => $paymentModel->message ? substr($paymentModel->message, 0, 200) : '',
+                    'transaction_description' => 'Marketplace product purchase by ' . ($buyer ? $buyer->name : 'buyer'),
+                ]);
+                break;
+
+            case 'piggy_pot':
+            case 'piggy_pot_contribution':
+                $contributor = $paymentModel->user ?? null;
+                $pot         = $paymentModel->piggyPot ?? null;
+                $creator     = $paymentModel->creator ?? $pot?->user ?? null;
+
+                $baseMetadata = array_merge($commonFields, [
+                    'type'                    => 'piggy_pot_contribution',
+                    'purpose'                 => 'Content Purchase',
+                    'payment_category'        => 'piggy_pot',
+                    'product_type'            => 'piggy_pot',
+
+                    'buyer_id'                => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name'              => $contributor ? $contributor->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_email'             => $contributor ? $contributor->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_username'          => $contributor ? ($contributor->username ?? 'guest') : 'guest',
+
+                    'creator_id'              => (string) ($paymentModel->creator_id ?? $pot?->user_id ?? ''),
+                    'creator_name'            => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username'        => $creator ? ($creator->username ?? '') : '',
+
+                    'piggy_pot_id'            => (string) ($paymentModel->piggy_pot_id ?? $pot?->id ?? ''),
+                    'content_id'              => (string) ($paymentModel->piggy_pot_id ?? $pot?->id ?? ''),
+                    'piggy_pot_title'         => $pot ? substr($pot->title ?? 'Content', 0, 100) : 'Content',
+                    'deliverable_type'        => $pot && !empty($pot->content_file) ? 'digital_content' : 'content',
+                    'has_content'             => $pot && !empty($pot->content_file) ? '1' : '0',
+                    'fulfilment_status'       => 'pending',
+                    'delivery_status'         => 'pending',
+                    // Progress goal is descriptive context only — never payment-facing text.
+                    'goal_label'              => $pot ? substr($pot->title ?? '', 0, 100) : '',
+                    'goal_target'             => (string) ($pot->target_amount ?? ''),
+                    'message'                 => $paymentModel->message ? substr($paymentModel->message, 0, 200) : '',
+                    'transaction_description' => 'Content purchase from ' . ($creator ? $creator->name : 'creator'),
                 ]);
                 break;
 

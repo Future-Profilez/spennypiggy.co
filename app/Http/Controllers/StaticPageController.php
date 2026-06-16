@@ -62,6 +62,16 @@ class StaticPageController extends Controller
         return Inertia::render('Legal/FastStartBonusTerms');
     }
 
+    public function contentPaymentFramework()
+    {
+        return Inertia::render('Legal/ContentPaymentFramework');
+    }
+
+    public function howSpennyPiggyWorks()
+    {
+        return Inertia::render('howitworks/HowSpennyPiggyWorks');
+    }
+
     public function acceptTerms(Request $request)
     {
         $user = $request->user();

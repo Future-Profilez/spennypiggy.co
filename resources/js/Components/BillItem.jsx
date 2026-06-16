@@ -127,7 +127,7 @@ function BillItem(props) {
                         )}
                     </div>
                 ) : IsloggedIn && itm && itm.approved === 0 ? (
-                    <div className="approvalmessge membership m-3 rounded-[30px]  p-3 py-2 mb-2">
+                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-[20px]  p-3 py-2 mb-2 !text-white">
                         Bill item waiting for approval. Currently only you can see
                         this bill.
                     </div>
@@ -220,13 +220,13 @@ function BillItem(props) {
                         </h5>
                     </div>
                     <p className="text-xs mt-3 text-center font-bold text-gray-800">
-                        Pay bill and gain access to member only posts
+                        {periodDisplay} content membership · min. 3 posts/month
                     </p>
                     <div className="flex justify-center mt-5 mb-2">
                         {IsloggedIn ? (
                             <AddBills
                                 classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
-                                text="Update Bill"
+                                text="Manage subscription"
                                 item={itm}
                                 isEdit={true}
                             />
@@ -237,7 +237,7 @@ function BillItem(props) {
                                 href={route("bill.checkout", { uuid: itm.uuid })}
                                 className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                             >
-                                Pay Bill
+                                Subscribe
                             </Link>
                         )}
                     </div>

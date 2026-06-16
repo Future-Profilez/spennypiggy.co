@@ -436,13 +436,12 @@ class PayoutService
                 // For Direct Charges, funds are already in the connected account.
                 // We only need to trigger a payout from their Stripe balance to their bank account.
 
-                $currency = strtolower((string) ($creator->default_currency ?? 'gbp'));
-                if (!empty($paymentIds)) {
-                    $paymentCurrency = Payment::whereIn('id', $paymentIds)->orderByDesc('created_at')->value('currency');
-                    if (!empty($paymentCurrency)) {
-                        $currency = strtolower((string) $paymentCurrency);
-                    }
-                }
+                // Payout currency MUST match the basis the amount was computed in. calculatePayouts
+                // converts every eligible FT into the creator's default currency and returns
+                // $netPayout in THAT currency (preview['currency'] === creatorCurrency). Using the
+                // last payment's currency here would label a default-currency amount as a different
+                // currency (e.g. £10 sent as "10 USD") — wrong money out. Always use the preview basis.
+                $currency = strtolower((string) ($data['currency'] ?? $creator->default_currency ?? 'gbp'));
 
                 try {
                     // Always trigger actual bank payout from connected account balance.
@@ -456,8 +455,17 @@ class PayoutService
                         // same Stripe payout instead of creating a second one.
                         'idempotency_key' => 'payout_run_' . $run->id . '_' . $creatorId,
                         'metadata' => [
-                            'payout_run_id' => (string) $run->id,
-                            'creator_id' => (string) $creatorId,
+                            'reason'           => 'weekly_earnings_payout',
+                            'payout_type'      => 'weekly_run',
+                            'payout_run_id'    => (string) $run->id,
+                            'run_date'         => (string) ($run->run_date ?? ''),
+                            'creator_id'       => (string) $creatorId,
+                            'creator_username' => (string) ($creator->username ?? ''),
+                            'creator_email'    => (string) ($creator->email ?? ''),
+                            'payment_count'    => (string) count($paymentIds),
+                            'net_payout_minor' => (string) $netPayout,
+                            'currency'         => $currency,
+                            'env'              => (string) config('app.env'),
                         ],
                     ], $creator->account_id);
 

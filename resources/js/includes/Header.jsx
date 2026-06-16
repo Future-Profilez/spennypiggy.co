@@ -580,7 +580,7 @@ export default function Header({ classMagicword }) {
                                 )}
 
                                 <NavLinkWithIcon
-                                    href={route("how-it-works")}
+                                    href={route("how-spenny-piggy-works")}
                                     onClick={toggleClass}
                                     icon={SettingsIcon}
                                     label="How it works"

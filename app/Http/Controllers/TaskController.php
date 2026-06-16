@@ -152,6 +152,17 @@ class TaskController extends Controller
 
         $task->save();
 
+        // SFW gate: AI-scan the task media; keep it unapproved if it fails moderation.
+        $mediaUuid = $request->media_file['uuid'] ?? null;
+        if (!empty($mediaUuid)) {
+            \App\Jobs\CheckMediaModeration::dispatch(
+                Task::class,
+                $task->id,
+                $mediaUuid,
+                ['is_approved' => false]
+            );
+        }
+
         // Clear user caches
         $user = Auth::user();
         app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
@@ -352,6 +363,12 @@ class TaskController extends Controller
 
     public function purchase(Request $request, $uuid)
     {
+        // Stripe compliance: paid tasks require an account (order tracked until delivery).
+        // Guest checkout is only allowed for Piggy Pot and Wishes.
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Please log in or create an account to purchase — your order needs an account so it can be tracked through to delivery.');
+        }
+
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
             $user = Auth::user();

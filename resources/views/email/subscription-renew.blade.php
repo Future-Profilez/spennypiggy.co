@@ -30,69 +30,176 @@ $messages = [
 ];
 
 $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'was updated', 'body' => 'Your subscription status has changed.'];
+
+$badgeEmoji = [
+    'renew' => '🔄',
+    'failed' => '⚠️',
+    'cancelled' => '🛑',
+    'trial' => '⏳',
+    'start' => '🎉',
+][$type] ?? '🔄';
 @endphp
 
+<tr>
+    <td align="center" style="padding:32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
 
-<tr>
-    <td align="center" style="padding: 10px;">
-        <a href="{{ env('APP_URL') }}/">
-            <img src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" alt="Spenny Piggy" width="130" style="border: none;" />
-        </a>
-    </td>
-</tr>
+            {{-- Status emoji badge --}}
+            <tr>
+                <td align="center" style="padding:0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                {{ $badgeEmoji }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
 
-<tr>
-    <td align="center" style="padding: 10px 0;">
-        <p style="font-size: 18px; color: #111; margin: 5px 0;"><strong>Your Spenny Piggy Subscription Details</strong></p>
-    </td>
-</tr>
+            {{-- Heading --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 6px 0;text-align:center;">
+                    Hello {{ ucwords($array['name'] ?? 'there') }}!
+                </td>
+            </tr>
 
-<tr>
-    <td align="center" style="padding: 20px 0;">
-        <p style="font-size: 18px; color: #000; margin: 0;"><strong>Hello {{ ucwords($array['name'] ?? 'there') }}!</strong></p>
-        <p style="font-size: 16px; color: #333; margin-top: 10px;">{{ $status['desc'] }}</p>
-    </td>
-</tr>
+            {{-- Subline --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    <strong style="color:#8C52FF;">{{ $status['desc'] }}</strong>
+                </td>
+            </tr>
 
-@if($type == 'renew' && isset($array['trial_end']))
-<tr>
-    <td style="padding: 10px 20px; font-size: 14px; color: #555; text-align: center;">
-        🎉 Your subscription was renewed on <strong>{{ \Carbon\Carbon::parse($array['renew_on'])->format('F j, Y') }}</strong>.<br>
-        Amount charged: <strong>{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}. </strong>.
-         <p style="font-size: 16px; color: #333; margin-top: 10px;">Thank you for continuing your journey with Spenny Piggy! 🐷 Your subscription keeps all your premium features active without interruption.</p>
-         
-         @include('email.digital-content-notice')
-     </td>
- </tr>
-@endif
- 
-@if($type == 'trial' && isset($array['trial_end']))
-<tr>
-    <td style="padding: 10px 20px; font-size: 14px; color: #555; text-align: center;">
-        Your trial ends on <strong>{{ \Carbon\Carbon::parse($array['trial_end'])->format('F j, Y') }}</strong>.<br>
-        After that, you’ll be charged <strong>{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}</strong> automatically using your default payment method.
-    </td>
-</tr>
-<tr>
-    <td style="padding: 10px 20px; font-size: 14px; color: #666; text-align: center;">
-        To avoid charges, cancel your subscription before the trial ends.
-    </td>
-</tr>
-@endif
+            @if($type == 'renew' && isset($array['trial_end']))
+            <tr>
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">📅 Renewed On</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">{{ \Carbon\Carbon::parse($array['renew_on'])->format('F j, Y') }}</td>
+                                    </tr>
+                                </table>
 
-@if(!in_array($type, ['renew', 'trial']))
-<tr>
-    <td style="padding: 10px 20px; font-size: 14px; color: #555; text-align: center;">
-        {{ $status['body'] }}
-    </td>
-</tr>
-@endif
+                                {{-- Divider --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td height="1" bgcolor="#FFD6E8" style="height:1px;line-height:1px;font-size:1px;background-color:#FFD6E8;padding:0;">&nbsp;</td>
+                                    </tr>
+                                </table>
 
-<tr>
-    <td align="center" style="padding: 25px 10px;">
-        <a href="{{ env('APP_URL') }}" style="display: inline-block; background: #8C52FF; color: #fff; padding: 12px 24px; border-radius: 6px; font-weight: bold; text-decoration: none;">
-            Manage My Subscription
-        </a>
+                                {{-- Amount --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#666666;font-weight:600;padding:12px 0 0 0;">💰 Amount Charged</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:24px;color:#FF007F;font-weight:800;padding:12px 0 0 0;">{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 18px 0;text-align:center;">
+                    Thank you for continuing your journey with Spenny Piggy! 🐷 Your subscription keeps all your premium features active without interruption.
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:0 0 22px 0;">
+                    @include('email.digital-content-notice')
+                </td>
+            </tr>
+            @endif
+
+            @if($type == 'trial' && isset($array['trial_end']))
+            <tr>
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">⏳ Trial Ends</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">{{ \Carbon\Carbon::parse($array['trial_end'])->format('F j, Y') }}</td>
+                                    </tr>
+                                </table>
+
+                                {{-- Divider --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td height="1" bgcolor="#FFD6E8" style="height:1px;line-height:1px;font-size:1px;background-color:#FFD6E8;padding:0;">&nbsp;</td>
+                                    </tr>
+                                </table>
+
+                                {{-- Amount --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#666666;font-weight:600;padding:12px 0 0 0;">💰 Then Charged</td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:24px;color:#FF007F;font-weight:800;padding:12px 0 0 0;">{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    To avoid charges, cancel your subscription before the trial ends.
+                </td>
+            </tr>
+            @endif
+
+            @if(!in_array($type, ['renew', 'trial']))
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    {{ $status['body'] }}
+                </td>
+            </tr>
+            @endif
+
+            {{-- Gradient CTA button --}}
+            <tr>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ env('APP_URL') }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    Manage My Subscription →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+        </table>
     </td>
 </tr>
 @endsection

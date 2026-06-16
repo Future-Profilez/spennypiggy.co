@@ -352,7 +352,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </button>
                 </div>
                 <p className="text-gray-500 mb-3">
-                    Complete these steps and let your fans fund your lifestyle.
+                    Complete these steps and start selling your content to supporters.
                 </p>
                 <CustomProgressBar now={filledSteps} max={6} />
 

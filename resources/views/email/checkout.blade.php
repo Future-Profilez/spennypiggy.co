@@ -1,73 +1,114 @@
 @extends('email.default-2')
 @section('content')
+<tr>
+    <td align="center" style="padding:32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
 
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;"><a href="{{ env('APP_URL') . '/' }}"><img alt="image"
-                width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none"></a></td>
-</tr>
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; margin: 0 auto; text-align: center;">
+            {{-- Gift emoji badge --}}
             <tr>
-                <td style="font-family: Arial, sans-serif; font-weight: bold; font-size: 24px; color: #000000; line-height: 32px; padding: 0 0 25px 0; text-align: center;" align="center">
-                    New <span style="color: #8C52FF">Wish Granted</span> on <br> Spenny Piggy 🎁
+                <td align="center" style="padding:0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                🎁
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+
+            {{-- Heading --}}
             <tr>
-                <td style="line-height:20px;height:20px;"></td>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    New Wish Granted!
+                </td>
             </tr>
-            <tr>
-                <td style=" padding: 0 0 25px 0; text-align: center;"><img src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" style="max-width: 200px;" alt="img"></td>
-            </tr>
+
+            {{-- Subline --}}
             <tr>
                 @if ($data->wish_item_id == null)
-                <td
-                    style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                    <span style="color:#FF007F; font-weight: bold;">Lucky you!</span><br><br>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    <strong style="color:#FF007F;">Lucky you!</strong><br><br>
                     @if ($data->payment->anonymous == 0)
-                    <strong>
-                        {{
-                            $anon == false ? ucwords($data->cart?->user?->name ?? $data->payment?->user?->name ?? 'Someone') : ucwords($anonname)
-                        }}
-                    </strong> just granted you a surprise gift on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                    <strong style="color:#1A1A1A;">{{
+                        $anon == false ? ucwords($data->cart?->user?->name ?? $data->payment?->user?->name ?? 'Someone') : ucwords($anonname)
+                    }}</strong> just granted you a surprise gift on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @else
-                    An <strong>anonymous user</strong> just granted you a surprise gift on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                    An <strong style="color:#1A1A1A;">anonymous user</strong> just granted you a surprise gift on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @endif
                 </td>
                 @else
-                <td
-                    style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                    <span style="color:#FF007F; font-weight: bold;">Lucky you!</span><br><br>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    <strong style="color:#FF007F;">Lucky you!</strong><br><br>
                     @if ($data->payment->anonymous == 0)
-                    <strong>{{ $anon == false ? ucwords($data->cart->user->name) : ucwords($anonname) }}</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                    <strong style="color:#1A1A1A;">{{ $anon == false ? ucwords($data->cart->user->name) : ucwords($anonname) }}</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @else
-                    An <strong>anonymous user</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                    An <strong style="color:#1A1A1A;">anonymous user</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @endif
-
                 </td>
                 @endif
             </tr>
-            <tr>
-                <td
-                    style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                    Go to <a href="https://spennypiggy.co">Spenny Piggy</a> where you can see your granted wish, send a message to
-                    your gifter and share your gift on social media </td>
-            </tr>
+
             @if (!empty($messages))
+            {{-- Message card --}}
             <tr>
-                <td
-                    style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                    <b>Message :~ </b>{{ $messages ?? '' }}
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 6px 0;">
+                                    💬 Message
+                                </div>
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;line-height:20px;">
+                                    {{ $messages ?? '' }}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
             @endif
+
+            {{-- Helper text --}}
             <tr>
-                <td style="padding:0 0 10px 0; text-align: center;">
-                    <a href={{ env('APP_URL') . '/history' }}
-                        style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
-                        your granted wish</a>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    Go to <a href="https://spennypiggy.co" style="color:#8C52FF;text-decoration:none;font-weight:600;">Spenny Piggy</a> to see your granted wish, message your gifter, and share your gift. ✨
                 </td>
             </tr>
+
+            {{-- Gradient CTA button --}}
+            <tr>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href={{ env('APP_URL') . '/history' }}
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    See your granted wish →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
         </table>
     </td>
 </tr>

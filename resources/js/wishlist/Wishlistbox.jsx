@@ -216,6 +216,9 @@ export default function Wishlistbox(props) {
                                 itm.subscription !== "0" ? "el1" : "el2"
                             }`} > {itm.wishname}
                         </h4>
+                        <p className="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wide -mt-1">
+                            Exclusive content · instant download
+                        </p>
                         <h5 className="text-center font-bold font-poppins  text-black my-2 titleprice">
                             {IsloggedIn ? (
                                 <>
@@ -283,7 +286,7 @@ export default function Wishlistbox(props) {
                             py-2 px-4 rounded-xl border-[3px] border-black 
                             shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] 
                             hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] 
-                            transition-all"> Treat Me </button>
+                            transition-all"> Unlock </button>
                         }
                     </div>
 

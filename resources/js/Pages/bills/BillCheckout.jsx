@@ -417,12 +417,12 @@ export default function BillCheckout(props) {
     return (
         <>
             <Authenticated auth={auth.user} user={user}>
-                <Head title={`Join - ${bill?.name} bill`} />
+                <Head title={`Join - content membership`} />
                 <div className={`py-4 md:py-12 px-0 pb-3 lg:px-2 bg-white`}>
                     <div className="max-w-[800px] mx-auto">
                         <div className="cartMain p-6 md:p-8 ">
                             <h2 className="pb-1 wishtitle">
-                                Bill Basket for {bill?.user?.name || " "}
+                                Content membership from {bill?.user?.name || " "}
                                 <Link
                                     className="text-violet-600"
                                     target="_blank"
@@ -432,7 +432,7 @@ export default function BillCheckout(props) {
                                 </Link>
                             </h2>
                             <p className="pb-4">
-                                You are about to pay on {bill.name} bill.
+                                You’re purchasing a content membership (min. 3 posts/month).
                             </p>
 
                             <div className="CartItemBox">
@@ -451,7 +451,10 @@ export default function BillCheckout(props) {
                                         </div>
                                         <div>
                                             <div className="cartProdTitle pl-3">
-                                                {bill.name}
+                                                Content membership
+                                                <div className="text-[11px] font-normal text-gray-500">
+                                                    {bill.name}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

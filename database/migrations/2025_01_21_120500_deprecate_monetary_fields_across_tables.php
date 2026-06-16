@@ -16,6 +16,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'mysql') { return; }
         if (config('database.default') === 'sqlite') {
             return;
         }
@@ -87,6 +88,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'mysql') { return; }
         // Rollback would be complex and potentially destructive
         // For now, we'll leave the deprecated fields as-is
         // In a real production environment, you might want to remove the comments

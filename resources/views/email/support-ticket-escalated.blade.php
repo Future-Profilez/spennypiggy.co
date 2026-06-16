@@ -13,62 +13,105 @@
     $adminUrl = $adminBaseUrl . '/support/tickets';
 @endphp
 <tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <a href="{{ env('APP_URL') . '/' }}">
-            <img width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none" alt="Spenny Piggy Logo">
-        </a>
-    </td>
-</tr>
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; text-align: center;">
-            <tr>
-                <td style="font-family: Arial, sans-serif; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 18px 0; text-align: center;">
-                    Ticket <span style="color:#FF007F">Escalated</span>
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 0 0 22px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    A support ticket has breached the SLA deadline and requires administrative review.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 0 0 18px 0;">
-                    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#ffffff;border:3px solid #000;border-radius:20px;box-shadow:4px 4px 0px 0px rgba(0,0,0,1);">
-                        <tr>
-                            <td style="padding: 20px; text-align: left;">
-                                <div style="font-family: Arial, sans-serif; font-weight: bold; font-size: 12px; color:#666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                                    Ticket ID
-                                </div>
-                                <div style="font-family: Arial, sans-serif; font-weight: bold; font-size: 16px; color:#000; margin-bottom: 16px;">
-                                    #{{ strtoupper(explode('-', $ticket->uuid)[0]) }}
-                                </div>
-                                
-                                <div style="font-family: Arial, sans-serif; font-weight: bold; font-size: 12px; color:#666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                                    Type
-                                </div>
-                                <div style="font-family: Arial, sans-serif; font-weight: bold; font-size: 16px; color:#000; margin-bottom: 16px;">
-                                    {{ strtoupper($ticket->type) }}
-                                </div>
+    <td align="center" style="padding: 32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width: 440px; width: 100%;">
 
-                                <div style="font-family: Arial, sans-serif; font-weight: bold; font-size: 12px; color:#666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                                    Status
-                                </div>
-                                <div style="font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; color:#fff; background:#FF007F; display:inline-block; padding: 6px 12px; border-radius: 8px; border: 2px solid #000; text-transform: uppercase;">
-                                    {{ strtoupper($ticket->status) }}
-                                </div>
+            {{-- Emoji badge --}}
+            <tr>
+                <td align="center" style="padding: 0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                🚩
                             </td>
                         </tr>
                     </table>
                 </td>
             </tr>
+
+            {{-- Heading --}}
             <tr>
-                <td style="padding:10px 0 10px 0; text-align: center;">
-                    <a href="{{ $adminUrl }}" style="display:inline-block; border-radius:30px;padding:13px 30px;text-decoration:none;border:3px solid #000;background-color:#FF007F;font-family: Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;cursor:pointer;">
-                        Open Admin Inbox
-                    </a>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Ticket Escalated
                 </td>
             </tr>
+
+            {{-- Subline --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    A support ticket has breached the <strong style="color:#8C52FF;">SLA deadline</strong> and requires administrative review.
+                </td>
+            </tr>
+
+            {{-- Details card --}}
+            <tr>
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">
+                                            🎫 Ticket ID
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">
+                                            #{{ strtoupper(explode('-', $ticket->uuid)[0]) }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            🏷️ Type
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;">
+                                            {{ strtoupper($ticket->type) }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            📍 Status
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#FF007F;font-weight:700;padding:8px 0 4px 0;">
+                                            {{ strtoupper($ticket->status) }}
+                                        </td>
+                                    </tr>
+                                </table>
+
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Gradient CTA button --}}
+            <tr>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $adminUrl }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    Open Admin Inbox →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
         </table>
     </td>
 </tr>

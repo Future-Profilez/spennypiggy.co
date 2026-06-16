@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\CreatorReferral;
 use App\Models\User;
 use App\Models\FounderBonus;
 use App\Mail\FounderCongratulations;
@@ -155,21 +156,36 @@ class CheckFounderQualifications implements ShouldQueue
                 $creator->update(['is_founder' => true]);
             }
 
-            // Calculate bonus amount (10% of first 30 days earnings)
-            $bonusAmount = FounderBonus::calculateBonusAmount($first30DayEarnings);
-            
+            // Referral multiplier: +1% if the creator was referred by another creator
+            $referralMultiplier = 1.0;
+            $referralBonus = (float) config('founder_bonus.bonus.referral_multiplier', 0.01);
+            $wasReferred = CreatorReferral::where('referred_creator_id', $creator->id)->exists();
+            if ($wasReferred) {
+                $referralMultiplier = 1.0 + $referralBonus;
+            }
+
+            // Calculate bonus amount (10% of first 30 days earnings × referral multiplier)
+            $bonusAmount = round(FounderBonus::calculateBonusAmount($first30DayEarnings) * $referralMultiplier, 2);
+
             // Estimated payout date (7th of next month)
             $estimatedPayoutDate = now()->addMonth()->startOfMonth()->addDays(6); // 7th of next month
 
-            // Create founder bonus record
-            FounderBonus::create([
+            $founderFields = [
                 'creator_id' => $creator->id,
                 'qualification_date' => now()->toDateString(),
                 'first_30d_earnings' => $first30DayEarnings,
                 'bonus_amount' => $bonusAmount,
                 'estimated_payout_date' => $estimatedPayoutDate,
                 'payout_status' => FounderBonus::STATUS_PENDING,
-            ]);
+            ];
+
+            // Store referral multiplier if column exists (migration may not have run in all envs yet)
+            if (Schema::hasColumn('founder_bonuses', 'referral_multiplier')) {
+                $founderFields['referral_multiplier'] = $referralMultiplier;
+            }
+
+            // Create founder bonus record
+            FounderBonus::create($founderFields);
 
             // Send congratulations email
             try {

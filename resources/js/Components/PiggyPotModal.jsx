@@ -93,8 +93,8 @@ export default function PiggyPotModal({
         e.preventDefault();
 
         if (!data.content_file) {
-            setError("content_file", "Digital reward file is required.");
-            errorAlert("Please upload the digital reward file.");
+            setError("content_file", "Content file is required.");
+            errorAlert("Please upload the content file the supporter receives.");
             return;
         }
 
@@ -142,12 +142,12 @@ export default function PiggyPotModal({
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-bold text-gray-900 mb-1">
-                            Goal Title
+                            Content Title
                         </label>
                         <input
                             type="text"
                             className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                            placeholder="e.g. New Streaming Setup"
+                            placeholder="e.g. Exclusive photo set"
                             value={data.title}
                             onChange={(e) => setData("title", e.target.value)}
                             required
@@ -166,7 +166,7 @@ export default function PiggyPotModal({
                         <textarea
                             className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                             rows="3"
-                            placeholder="Tell your supporters why you are raising this goal..."
+                            placeholder="Describe the content supporters will unlock..."
                             value={data.description}
                             onChange={(e) => setData("description", e.target.value)}
                         />
@@ -180,7 +180,7 @@ export default function PiggyPotModal({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-sm font-bold text-gray-900 mb-1">
-                                Target Amount ({data.currency})
+                                Progress Goal ({data.currency}) — optional
                             </label>
                             <input
                                 type="number"
@@ -268,10 +268,10 @@ export default function PiggyPotModal({
 
                     <div className="pt-2 border-t-2 border-gray-200 mt-6">
                         <label className="block text-sm font-bold text-gray-900 mb-2">
-                            Digital Reward / Exclusive Item
+                            Content the supporter receives
                         </label>
                         <p className="text-xs text-gray-500 mb-3">
-                            Supporters will automatically receive this file after they contribute to your pot.
+                            Supporters automatically unlock this content after they purchase.
                         </p>
                         <div className="mb-4">
                             <label className="block text-sm font-bold text-gray-900 mb-1">
@@ -366,7 +366,7 @@ export default function PiggyPotModal({
                                 ></div>
                             </div>
                             <span className="ml-3 font-bold text-gray-900">
-                                Enable Top Piggies Leaderboard
+                                Show most-active supporters
                             </span>
                         </label>
                     </div>

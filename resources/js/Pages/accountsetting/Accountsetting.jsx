@@ -725,7 +725,7 @@ export default function Accountsetting(props) {
                         </Link>
 
                         <Link
-                            href={route("how-it-works")}
+                            href={route("how-spenny-piggy-works")}
                             className="block w-full"
                         >
                             <SettingItem

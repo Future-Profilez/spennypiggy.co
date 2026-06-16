@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers;
+use App\Mail\FastStartBonusPayoutInitiated;
 use App\Models\AuditLog;
 use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
@@ -12,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class ProcessFastStartBonusPayouts extends Command
 {
@@ -19,7 +22,15 @@ class ProcessFastStartBonusPayouts extends Command
 
     protected $description = 'Pay Fast Start bonus as a one-time payout after the 30-day window ends';
 
-    private const SETTLEMENT_BUFFER_DAYS = 7;
+    private function windowDays(): int
+    {
+        return (int) config('fast_start_bonus.bonus.window_days', 30);
+    }
+
+    private function settlementBufferDays(): int
+    {
+        return (int) config('fast_start_bonus.bonus.settlement_buffer_days', 7);
+    }
 
     public function handle(): int
     {
@@ -53,8 +64,8 @@ class ProcessFastStartBonusPayouts extends Command
 
         foreach ($creators as $creator) {
             $windowStart = Carbon::parse($creator->stripe_connected_at);
-            $windowEnd = $windowStart->copy()->addDays(30);
-            $eligibleAt = $windowEnd->copy()->addDays(self::SETTLEMENT_BUFFER_DAYS);
+            $windowEnd = $windowStart->copy()->addDays($this->windowDays());
+            $eligibleAt = $windowEnd->copy()->addDays($this->settlementBufferDays());
 
             if ($now->lt($windowEnd)) {
                 $skipped++;
@@ -97,10 +108,11 @@ class ProcessFastStartBonusPayouts extends Command
                 $earningsMinor += (int) round($converted * 100);
             }
 
-            $bonusMinor = (int) round($earningsMinor * 0.05);
+            $bonusRate = FastStartBonusPayout::resolveRate($earningsMinor);
+            $bonusMinor = (int) round($earningsMinor * $bonusRate);
 
             if ($dryRun) {
-                $this->line($creator->uuid . ' eligible_at=' . $eligibleAt->toDateTimeString() . ' earnings=' . $earningsMinor . ' bonus=' . $bonusMinor . ' ' . $currency);
+                $this->line($creator->uuid . ' eligible_at=' . $eligibleAt->toDateTimeString() . ' earnings=' . $earningsMinor . ' bonus=' . $bonusMinor . ' rate=' . $bonusRate . ' ' . $currency);
                 $processed++;
                 continue;
             }
@@ -176,6 +188,7 @@ class ProcessFastStartBonusPayouts extends Command
                 'eligible_at' => $eligibleAt->toISOString(),
                 'earnings_minor' => (string) $earningsMinor,
                 'bonus_minor' => (string) $bonusMinor,
+                'bonus_rate' => (string) $bonusRate,
                 'currency' => strtolower($currency),
                 'env' => (string) config('app.env'),
             ];
@@ -276,6 +289,36 @@ class ProcessFastStartBonusPayouts extends Command
                 'stripe_payout_id' => $payout->id ?? null,
                 'stripe_transfer_id' => $transfer->id ?? null,
             ]);
+
+            // Push notification + email
+            $bonusFormatted = number_format($bonusMinor / 100, 2);
+            $currencySymbol = strtoupper($currency);
+            $arrivalDate = isset($payout->arrival_date)
+                ? Carbon::createFromTimestamp($payout->arrival_date)->format('D, d M Y')
+                : null;
+
+            Helpers::sendNotification(
+                '🚀 Fast Start Bonus Payout Initiated!',
+                "Your {$currencySymbol} {$bonusFormatted} Fast Start Bonus is on its way!" . ($arrivalDate ? " Expected: {$arrivalDate}." : ''),
+                $creator->email
+            );
+
+            if (config('fast_start_bonus.notifications.email')) {
+                try {
+                    Mail::to($creator->email)->send(new FastStartBonusPayoutInitiated(
+                        $creator,
+                        $bonusMinor / 100,
+                        $currency,
+                        $earningsMinor / 100,
+                        $arrivalDate
+                    ));
+                } catch (\Exception $e) {
+                    Log::warning('Fast Start bonus initiated email failed', [
+                        'creator_uuid' => $creator->uuid,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             $processed++;
         }

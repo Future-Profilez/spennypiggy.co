@@ -1,107 +1,136 @@
 @extends('email.default-2')
 @section('content')
-
 <tr>
-    <td style="padding: 30px 24px 10px 24px; background-color: #ffffff;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0">
+    <td align="center" style="padding: 32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width: 440px; width: 100%;">
+
+            {{-- Emoji badge --}}
             <tr>
-                <td style="padding-bottom: 20px; text-align: center;">
-                    <img src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" alt="Spenny Piggy" width="119" style="border: none;">
+                <td align="center" style="padding: 0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                📬
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+
+            {{-- Heading + subline (status-aware) --}}
+            @if($suggestion->status === 'accepted' || $suggestion->status === 'planned')
+                <tr>
+                    <td align="center"
+                        style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                               line-height:30px;padding:0 0 10px 0;text-align:center;">
+                        🚀 Your idea has been accepted!
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center"
+                        style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                               line-height:22px;padding:0 0 22px 0;text-align:center;">
+                        Hi <strong style="color:#8C52FF;">{{ ucwords($suggestion->name ?? 'there') }}</strong>, great news — your idea is on our roadmap!
+                    </td>
+                </tr>
+            @elseif($suggestion->status === 'under_review')
+                <tr>
+                    <td align="center"
+                        style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                               line-height:30px;padding:0 0 10px 0;text-align:center;">
+                        🔍 Your idea is under review
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center"
+                        style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                               line-height:22px;padding:0 0 22px 0;text-align:center;">
+                        Hi <strong style="color:#8C52FF;">{{ ucwords($suggestion->name ?? 'there') }}</strong>, our team is actively looking into your suggestion.
+                    </td>
+                </tr>
+            @elseif($suggestion->status === 'rejected')
+                <tr>
+                    <td align="center"
+                        style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                               line-height:30px;padding:0 0 10px 0;text-align:center;">
+                        💬 An update on your suggestion
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center"
+                        style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                               line-height:22px;padding:0 0 22px 0;text-align:center;">
+                        Hi <strong style="color:#8C52FF;">{{ ucwords($suggestion->name ?? 'there') }}</strong>, thank you for sharing your idea with us.
+                    </td>
+                </tr>
+            @endif
+
+            {{-- Message body (status-aware) --}}
             <tr>
-                <td style="padding-bottom: 20px; text-align: center;">
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
                     @if($suggestion->status === 'accepted' || $suggestion->status === 'planned')
-                        <h1 style="font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #141414; margin: 0 0 8px 0;">
-                            🚀 Your idea has been accepted!
-                        </h1>
-                        <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin: 0;">
-                            Hi {{ ucwords($suggestion->name ?? 'there') }}, great news — your idea is on our roadmap!
-                        </p>
+                        We loved your feature idea and it is now on our product roadmap. We will be working on bringing it to life — stay tuned for updates!
                     @elseif($suggestion->status === 'under_review')
-                        <h1 style="font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #141414; margin: 0 0 8px 0;">
-                            🔍 Your idea is under review
-                        </h1>
-                        <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin: 0;">
-                            Hi {{ ucwords($suggestion->name ?? 'there') }}, our team is actively looking into your suggestion.
-                        </p>
+                        Our team is actively reviewing your feature suggestion. We will keep you posted as things progress.
                     @elseif($suggestion->status === 'rejected')
-                        <h1 style="font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #141414; margin: 0 0 8px 0;">
-                            💬 An update on your suggestion
-                        </h1>
-                        <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666; margin: 0;">
-                            Hi {{ ucwords($suggestion->name ?? 'there') }}, thank you for sharing your idea with us.
-                        </p>
+                        After careful review, we have decided not to move forward with this suggestion at this time. We truly appreciate your input and encourage you to keep the ideas coming!
                     @endif
                 </td>
             </tr>
-        </table>
-    </td>
-</tr>
 
-{{-- Message body --}}
-<tr>
-    <td style="padding: 0 24px 20px 24px; background-color: #ffffff;">
-        @if($suggestion->status === 'accepted' || $suggestion->status === 'planned')
-            <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; line-height: 1.6; margin: 0;">
-                We loved your feature idea and it is now on our product roadmap. We will be working on bringing it to life — stay tuned for updates!
-            </p>
-        @elseif($suggestion->status === 'under_review')
-            <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; line-height: 1.6; margin: 0;">
-                Our team is actively reviewing your feature suggestion. We will keep you posted as things progress.
-            </p>
-        @elseif($suggestion->status === 'rejected')
-            <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; line-height: 1.6; margin: 0;">
-                After careful review, we have decided not to move forward with this suggestion at this time. We truly appreciate your input and encourage you to keep the ideas coming!
-            </p>
-        @endif
-    </td>
-</tr>
-
-{{-- Original suggestion --}}
-<tr>
-    <td style="padding: 0 24px 20px 24px; background-color: #ffffff;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f9f9f9; border-radius: 10px; border-left: 4px solid #8C52FF;">
+            {{-- Original suggestion card --}}
             <tr>
-                <td style="padding: 16px 20px;">
-                    <p style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; color: #8C52FF; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px 0;">
-                        Your Suggestion
-                    </p>
-                    <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; line-height: 1.6; margin: 0; white-space: pre-wrap;">{{ $suggestion->suggestion }}</p>
+                <td style="padding:0 0 16px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 8px 0;">
+                                    💡 Your Suggestion
+                                </div>
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:600;line-height:22px;white-space:pre-wrap;">{{ $suggestion->suggestion }}</div>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
-        </table>
-    </td>
-</tr>
 
-{{-- Admin notes --}}
-@if($suggestion->admin_notes)
-<tr>
-    <td style="padding: 0 24px 20px 24px; background-color: #ffffff;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #FBF0F5; border-radius: 10px;">
+            {{-- Admin notes card --}}
+            @if($suggestion->admin_notes)
             <tr>
-                <td style="padding: 16px 20px;">
-                    <p style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; color: #FF007F; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px 0;">
-                        Note from our team
-                    </p>
-                    <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; line-height: 1.6; margin: 0;">{{ $suggestion->admin_notes }}</p>
+                <td style="padding:0 0 16px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 8px 0;">
+                                    📝 Note from our team
+                                </div>
+                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:600;line-height:22px;">{{ $suggestion->admin_notes }}</div>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+            @endif
+
+            {{-- Closing --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:8px 0 22px 0;text-align:center;">
+                    Thank you for helping shape the future of Spenny Piggy. We read every suggestion. ✨<br>
+                    <strong style="color:#8C52FF;">— The Spenny Piggy Team</strong>
+                </td>
+            </tr>
+
         </table>
     </td>
 </tr>
-@endif
-
-{{-- Closing --}}
-<tr>
-    <td style="padding: 0 24px 30px 24px; background-color: #ffffff;">
-        <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; line-height: 1.6; margin: 0 0 6px 0;">
-            Thank you for helping shape the future of Spenny Piggy. We read every suggestion.
-        </p>
-        <p style="font-family: Arial, sans-serif; font-size: 15px; color: #333; margin: 0;">
-            — The Spenny Piggy Team
-        </p>
-    </td>
-</tr>
-
 @endsection

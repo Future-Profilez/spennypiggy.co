@@ -63,7 +63,7 @@ export default function SupportStory({ creator, gifter }) {
   const titleFor = (ev) => {
     switch (ev.type) {
       case 'gift_wish':
-        return ev.wish?.name ? `You contributed to “${ev.wish.name}”` : 'You sent a gift';
+        return ev.wish?.name ? `You unlocked “${ev.wish.name}”` : 'You purchased content';
       case 'gift_membership':
         return ev.membership?.level ? `You supported level “${ev.membership.level}”` : 'You supported a membership';
       case 'gift_bill':
@@ -116,10 +116,10 @@ export default function SupportStory({ creator, gifter }) {
 
     if (isGifter) {
       switch (ev.type) {
-        case 'gift_wish': text = `I just contributed to ${creatorHandle}'s wish: "${ev.wish?.name || 'wish'}"! 🎁`; break;
+        case 'gift_wish': text = `I just unlocked ${creatorHandle}'s content: "${ev.wish?.name || 'content'}"! ✨`; break;
         case 'gift_tip': text = `Just sent some support to ${creatorHandle}! 💖`; break;
         case 'gift_membership': text = `I just joined ${creatorHandle}'s membership! 🎟️`; break;
-        case 'gift_task': text = `Just funded a task for ${creatorHandle}: "${ev.task?.title || 'task'}"! 🧩`; break;
+        case 'gift_task': text = `Just purchased a task from ${creatorHandle}: "${ev.task?.title || 'task'}"! 🧩`; break;
         default: text = `I'm supporting ${creatorHandle} on @SpennyPiggy! ✨`;
       }
     } else {

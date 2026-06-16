@@ -46,7 +46,7 @@ class CheckoutToUser extends Mailable
                 'owner_id' => $this->data->owner_id ?? 'null'
             ]);
             
-            $subject = 'Gift Granted on Spenny Piggy!';
+            $subject = 'Your content is ready on Spenny Piggy!';
             
             // For guest checkouts, create a mock owner from the payment data if needed
             if (!isset($this->data->owner) && !isset($this->data->user)) {

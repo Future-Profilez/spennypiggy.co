@@ -17,6 +17,7 @@ class FounderBonus extends Model
         'qualification_date',
         'first_30d_earnings',
         'bonus_amount',
+        'referral_multiplier',
         'estimated_payout_date',
         'payout_status',
         'payout_rejection_reason',
@@ -30,6 +31,7 @@ class FounderBonus extends Model
         'qualification_date' => 'date',
         'first_30d_earnings' => 'decimal:2',
         'bonus_amount' => 'decimal:2',
+        'referral_multiplier' => 'decimal:4',
         'estimated_payout_date' => 'date',
         'paid_date' => 'datetime',
     ];

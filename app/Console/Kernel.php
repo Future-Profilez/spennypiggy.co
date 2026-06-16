@@ -93,6 +93,12 @@ class Kernel extends ConsoleKernel
                  ->daily()
                  ->withoutOverlapping(10);
 
+        // Progress alerts: Fast Start countdown, milestone nudges, Founder proximity/countdown
+        // Runs before qualification check so founders are nudged before status is finalized
+        $schedule->command('bonus:send-progress-alerts')
+                 ->dailyAt('08:30')
+                 ->withoutOverlapping();
+
         // Daily job to check founder qualifications — creators learn the outcome
         // (qualified or missed) within a day of their 30-day window ending
         $schedule->job(new CheckFounderQualifications)
@@ -131,6 +137,11 @@ class Kernel extends ConsoleKernel
         // Risk Engine: Release held reserves 30 days after each transaction (daily)
         $schedule->command('reserve:release')
                  ->dailyAt('10:30')
+                 ->withoutOverlapping();
+
+        // Stripe compliance: pause/resume content memberships on the min-3-posts/30-day cadence
+        $schedule->command('app:enforce-posting-cadence')
+                 ->dailyAt('11:00')
                  ->withoutOverlapping();
 
         $schedule->command('bonus:process-fast-start')

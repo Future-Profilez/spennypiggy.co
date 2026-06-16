@@ -1319,14 +1319,17 @@ class UserProfileService
         $cacheKey = 'user_piggy_pot_top_supporters_' . $userId . '_v' . $token;
         
         $callback = function() use ($userId) {
+            // Rank by activity (number of purchases), never by amount given — Stripe
+            // compliance: the leaderboard must show most-active supporters, not a
+            // donation/spend race.
             $userTotals = \App\Models\PiggyPotContribution::query()
                 ->where('creator_id', $userId)
                 ->where('status', 'paid')
                 ->where('is_anonymous', 0)
                 ->whereNotNull('user_id')
-                ->selectRaw('user_id, SUM(amount) as total')
+                ->selectRaw('user_id, COUNT(*) as purchases')
                 ->groupBy('user_id')
-                ->orderByDesc('total')
+                ->orderByDesc('purchases')
                 ->limit(10)
                 ->get();
 
@@ -1340,7 +1343,7 @@ class UserProfileService
                 $top[] = [
                     'name' => $u ? $u->name : 'User',
                     'username' => $u ? $u->username : null,
-                    'total' => (float) $row->total,
+                    'purchases' => (int) $row->purchases,
                     'avatar' => $u ? $u->avatar_url : null,
                 ];
             }
@@ -1350,9 +1353,9 @@ class UserProfileService
                 ->where('status', 'paid')
                 ->where('is_anonymous', 0)
                 ->whereNull('user_id')
-                ->selectRaw('LOWER(TRIM(COALESCE(guest_email, guest_name))) as guest_key, MAX(guest_name) as guest_name, SUM(amount) as total')
+                ->selectRaw('LOWER(TRIM(COALESCE(guest_email, guest_name))) as guest_key, MAX(guest_name) as guest_name, COUNT(*) as purchases')
                 ->groupBy('guest_key')
-                ->orderByDesc('total')
+                ->orderByDesc('purchases')
                 ->limit(10)
                 ->get();
 
@@ -1360,28 +1363,28 @@ class UserProfileService
                 $top[] = [
                     'name' => $row->guest_name ?: 'Guest',
                     'username' => null,
-                    'total' => (float) $row->total,
+                    'purchases' => (int) $row->purchases,
                     'avatar' => null,
                 ];
             }
 
-            $anonymousTotal = (float) \App\Models\PiggyPotContribution::query()
+            $anonymousCount = (int) \App\Models\PiggyPotContribution::query()
                 ->where('creator_id', $userId)
                 ->where('status', 'paid')
                 ->where('is_anonymous', 1)
-                ->sum('amount');
+                ->count();
 
-            if ($anonymousTotal > 0) {
+            if ($anonymousCount > 0) {
                 $top[] = [
                     'name' => 'Anonymous',
                     'username' => null,
-                    'total' => $anonymousTotal,
+                    'purchases' => $anonymousCount,
                     'avatar' => null,
                 ];
             }
 
             usort($top, function ($a, $b) {
-                return $b['total'] <=> $a['total'];
+                return $b['purchases'] <=> $a['purchases'];
             });
 
             return array_slice($top, 0, 10);

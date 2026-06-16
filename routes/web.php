@@ -715,7 +715,7 @@ Route::withoutMiddleware([])->group(function () {
         $content .= "Allow: /\n";
         $content .= "Allow: /discover\n";
         $content .= "Allow: /leaderboard\n";
-        $content .= "Allow: /how-it-works\n";
+        $content .= "Allow: /how-spenny-piggy-works\n";
         $content .= "\n# Sitemap location\n";
         $content .= "Sitemap: {$siteUrl}/dynamic-sitemap\n";
 
@@ -761,9 +761,10 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
             ['url' => '/discover', 'priority' => '0.9', 'changefreq' => 'daily'],
             ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
-            ['url' => '/how-it-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/how-spenny-piggy-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/terms-and-conditions', 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['url' => '/paid-tasks-terms', 'priority' => '0.5', 'changefreq' => 'monthly'],
+            ['url' => '/content-payment-policy', 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['url' => '/register', 'priority' => '0.6', 'changefreq' => 'weekly'],
             ['url' => '/login', 'priority' => '0.6', 'changefreq' => 'weekly'],
             ['url' => '/creators', 'priority' => '0.7', 'changefreq' => 'weekly'],
@@ -852,6 +853,9 @@ Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('hea
 // Debug routes for wish creation issue
 require __DIR__ . '/debug-wish.php';
 
+// Email template preview / send debug tool
+require __DIR__ . '/debug-emails.php';
+
 // Founder routes are now defined in auth.php
 
 // Admin Founder Bonus Routes
@@ -869,6 +873,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     // Task Purchases Admin
     Route::get('/tasks', [\App\Http\Controllers\Admin\TaskPurchaseController::class, 'index'])->name('admin.tasks.index');
     Route::post('/tasks/{uuid}/resolve', [\App\Http\Controllers\Admin\TaskPurchaseController::class, 'resolve'])->name('admin.tasks.resolve');
+
+    // Policy Change Notifications
+    Route::get('/policy-notifications', [\App\Http\Controllers\Admin\PolicyNotificationController::class, 'index'])->name('admin.policy-notifications.index');
+    Route::post('/policy-notifications/trigger', [\App\Http\Controllers\Admin\PolicyNotificationController::class, 'trigger'])->name('admin.policy-notifications.trigger');
+    Route::post('/policy-notifications/deactivate', [\App\Http\Controllers\Admin\PolicyNotificationController::class, 'deactivate'])->name('admin.policy-notifications.deactivate');
 
 
 

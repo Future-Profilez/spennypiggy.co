@@ -9,82 +9,159 @@
         };
     @endphp
 
-    <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;">
-            <a href="{{ env('APP_URL') . '/' }}">
-                <img width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none" alt="Spenny Piggy Logo">
-            </a>
-        </td>
-    </tr>
-    <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;">
-            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; text-align: center;">
-                <tr>
-                    <td style="font-weight: bold; font-size: 24px; color: {{ $riskColor }}; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        Account Status Update
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 16px; line-height: 24px; color: #141414; text-align: left;">
-                        Hello {{ ucwords($user->name) }},
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0 0 15px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: left;">
-                        {{ $messageBody }}
-                    </td>
-                </tr>
+<tr>
+    <td align="center" style="padding:32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
 
-                <!-- Status Box -->
-                <tr>
-                    <td style="padding: 15px; background-color: #f8f9fa; border-left: 4px solid {{ $riskColor }}; text-align: left;">
-                        <strong style="color: {{ $riskColor }}; font-size: 15px;">Current Status: {{ ucfirst($metric->risk_level) }} Risk</strong><br>
-                        <span style="font-size: 13px; color: #4D4D4D;">
-                            @if($metric->risk_level === 'low')
-                                Your account is in good standing. No additional reserves are being held.
-                            @else
-                                A temporary rolling reserve has been applied to your account to cover potential disputes or refunds.
-                            @endif
-                        </span>
-                    </td>
-                </tr>
+            {{-- Emoji badge --}}
+            <tr>
+                <td align="center" style="padding:0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                📊
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
 
-                <!-- Details Table -->
-                <tr>
-                    <td style="padding: 20px 0 0 0;">
-                        <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                            <tr>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Reserve Rate:</strong></td>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ $metric->reserve_percent }}%</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Payout Delay:</strong></td>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ $metric->payout_delay_days }} Days</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Dispute Rate (30d):</strong></td>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ number_format($metric->dispute_rate_30d * 100, 1) }}%</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Refund Rate (30d):</strong></td>
-                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ number_format($metric->refund_rate_30d * 100, 1) }}%</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
+            {{-- Heading --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Account Status Update
+                </td>
+            </tr>
 
-                <tr>
-                    <td style="padding: 20px 0 15px 0; font-size: 13px; line-height: 20px; color: #999; text-align: left;">
-                        Rolling reserves are released automatically after 90 days if no disputes occur. You can continue to accept payments normally.
-                    </td>
-                </tr>
+            {{-- Body --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 8px 0;text-align:center;">
+                    Hello <strong style="color:#1A1A1A;">{{ ucwords($user->name) }}</strong>,
+                </td>
+            </tr>
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    {{ $messageBody }}
+                </td>
+            </tr>
 
-                <tr>
-                    <td style="padding: 10px 0 20px 0; text-align: center;">
-                        <a href="{{ url('/dashboard') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: {{ $riskColor }}; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View Dashboard</a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
+            {{-- Details card --}}
+            <tr>
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">
+                                            📊 Current Status
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">
+                                            {{ ucfirst($metric->risk_level) }} Risk
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            💰 Reserve Rate
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;">
+                                            {{ $metric->reserve_percent }}%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            ⏳ Payout Delay
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;">
+                                            {{ $metric->payout_delay_days }} Days
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            📉 Dispute Rate (30d)
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;">
+                                            {{ number_format($metric->dispute_rate_30d * 100, 1) }}%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 0 0;">
+                                            🔁 Refund Rate (30d)
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:8px 0 0 0;">
+                                            {{ number_format($metric->refund_rate_30d * 100, 1) }}%
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                {{-- Divider --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td height="1" bgcolor="#FFD6E8" style="height:1px;line-height:1px;font-size:1px;background-color:#FFD6E8;padding:0;">&nbsp;</td>
+                                    </tr>
+                                </table>
+
+                                {{-- Status note --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#666666;line-height:20px;padding:12px 0 0 0;">
+                                            @if($metric->risk_level === 'low')
+                                                Your account is in good standing. No additional reserves are being held.
+                                            @else
+                                                A temporary rolling reserve has been applied to your account to cover potential disputes or refunds.
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Helper text --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    Rolling reserves are released automatically after 90 days if no disputes occur. You can continue to accept payments normally. ✨
+                </td>
+            </tr>
+
+            {{-- Gradient CTA button --}}
+            <tr>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ url('/dashboard') }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    View Dashboard →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+        </table>
+    </td>
+</tr>
 @endsection

@@ -1,52 +1,73 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <a href="{{ env('APP_URL') . '/' }}">
-            <img alt="Spenny Piggy" width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none">
-        </a>
-    </td>
-</tr>
-<tr>
-    <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 420px; width: 100%; text-align: center;">
+    <td align="center" style="padding: 32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width: 440px; width: 100%;">
+
+            {{-- Emoji badge --}}
             <tr>
-                <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
-                    Task <span style="color: #8C52FF">Proof Submitted</span>! 🚀
+                <td align="center" style="padding: 0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                📤
+                            </td>
+                        </tr>
+                    </table>
                 </td>
-            </tr>
-            <tr>
-                <td style="line-height:20px;height:20px;"></td>
             </tr>
 
+            {{-- Heading --}}
             <tr>
-                <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
-                    Good news! <br>
-                    <strong>{{ ucwords($creator->name) }}</strong> has submitted proof for your task <strong>{{ $task->title }}</strong>.
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Task Proof Submitted!
                 </td>
             </tr>
+
+            {{-- Subline --}}
             <tr>
-                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    Good news! <strong style="color:#1A1A1A;">{{ ucwords($creator->name) }}</strong> has submitted proof for your task
+                    <strong style="color:#8C52FF;">{{ $task->title }}</strong>.
+                </td>
+            </tr>
+
+            {{-- Helper text --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
                     Please review the submitted work and either accept it to complete the order or reject it if revisions are needed.
                 </td>
             </tr>
             <tr>
-                <td style="padding: 0 0 20px 0; text-align: center;">
+                <td style="padding: 0 0 22px 0; text-align: center;">
                     @include('email.digital-content-notice')
                 </td>
             </tr>
             @if(isset($proofUrl) && $proofUrl)
             <tr>
-                <td style="padding: 0 0 20px 0; text-align: center;">
-                    <a href="{{ $proofUrl }}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold;">
-                        📥 Download Proof / Content
-                    </a>
+                <td style="padding: 0 0 22px 0; text-align: center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#8C52FF" style="background-color:#8C52FF;border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $proofUrl }}" target="_blank" style="display: inline-block; font-family:'Outfit',Arial,sans-serif; font-weight:700; font-size:14px; color:#ffffff; text-decoration:none; padding:13px 32px; border-radius:50px;-webkit-border-radius:50px;">
+                                    📥 Download Proof / Content
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
             @endif
-            <tr style="line-height: 10px; height: 10px;"><td></td></tr>
             <tr>
-                <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                <td style="padding: 0 0 22px 0; font-family:'Outfit',Arial,sans-serif; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     @php
                         $creatorUsername = $creator->username ?? null;
                         $base = url('/history');
@@ -63,51 +84,70 @@
                         $receiptId = $purchase->uuid ?? null;
                         $paymentIntentId = $purchase->payment_intent_id ?? null;
                     @endphp
-                    <div style="padding: 14px; background: #f8f8f8; border: 1px solid #eeeeee; border-radius: 12px; text-align: left;">
-                        <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
-                            Receipt Details
+                    <div style="padding: 18px 20px; background: #FFF1F7; border-radius: 16px; text-align: left;">
+                        <div style="font-family:'Outfit',Arial,sans-serif; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 10px;">
+                            🧾 Receipt Details
                         </div>
-                        <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
-                            <div><b>Seller (Creator):</b> {{ ucwords($creator->name ?? 'Creator') }}</div>
-                            <div><b>Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
+                        <div style="font-family:'Outfit',Arial,sans-serif; font-weight: normal; font-size: 12px; line-height: 19px; color: #4D4D4D;">
+                            <div><b style="color:#1A1A1A;">Seller (Creator):</b> {{ ucwords($creator->name ?? 'Creator') }}</div>
+                            <div><b style="color:#1A1A1A;">Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
                             @if(!empty($receiptId))
-                                <div><b>Receipt ID:</b> {{ $receiptId }}</div>
+                                <div><b style="color:#1A1A1A;">Receipt ID:</b> {{ $receiptId }}</div>
                             @endif
                             @if(!empty($paymentIntentId))
-                                <div><b>Payment Intent:</b> {{ $paymentIntentId }}</div>
+                                <div><b style="color:#1A1A1A;">Payment Intent:</b> {{ $paymentIntentId }}</div>
                             @endif
                             @if(!empty($purchase->id))
-                                <div><b>Internal ID:</b> {{ $purchase->id }}</div>
+                                <div><b style="color:#1A1A1A;">Internal ID:</b> {{ $purchase->id }}</div>
                             @endif
                         </div>
                     </div>
-                    <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
+                    <div style="margin-top: 14px; font-family:'Outfit',Arial,sans-serif; font-weight: normal; font-size: 12px; line-height: 18px; color: #999999; text-align: center;">
                         Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
                         <br />
                         Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
                     </div>
-                    <div style="margin-top: 14px; text-align: center;">
-                        <a href="{{ $contactUrl }}"
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                            Contact Creator
-                        </a>
-                        <div style="height: 10px; line-height: 10px;">&nbsp;</div>
-                        <a href="{{ $refundUrl }}"
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                            Request Refund
-                        </a>
+                    <div style="margin-top: 18px; text-align: center;">
+                        <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                            <tr>
+                                <td align="center" bgcolor="#FF007F"
+                                    style="background-color:#FF007F;background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);border-radius:50px;-webkit-border-radius:50px;">
+                                    <a href="{{ $contactUrl }}"
+                                        style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;border-radius:50px;-webkit-border-radius:50px;">
+                                        Contact Creator →
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="height: 12px; line-height: 12px;">&nbsp;</div>
+                        <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                            <tr>
+                                <td align="center" bgcolor="#4a5568" style="background-color:#4a5568;border-radius:50px;-webkit-border-radius:50px;">
+                                    <a href="{{ $refundUrl }}"
+                                        style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;border-radius:50px;-webkit-border-radius:50px;">
+                                        Request Refund →
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </td>
             </tr>
             <tr>
-                <td style="padding:0 0 10px 0; text-align: center;">
-                    <a href="{{ env('APP_URL') . '/task/dashboard' }}"
-                        style="display: inline-block; border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #FF007F; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                        Review Proof
-                    </a>
+                <td align="center" style="padding:0 0 12px 0; text-align: center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ env('APP_URL') . '/task/dashboard' }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;border-radius:50px;-webkit-border-radius:50px;">
+                                    Review Proof →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
-            <tr style="line-height: 10px; height: 10px;"><td></td></tr>
 
         </table>
     </td>

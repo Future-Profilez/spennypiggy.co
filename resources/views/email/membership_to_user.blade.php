@@ -1,113 +1,289 @@
 @extends('email.default-2')
 @section('content')
+@php
+    $creatorName = ucwords($mem->membership->user->name ?? 'Creator');
+    $levelName = ucwords(str_replace('_',' ',$mem->membership->level));
+    $creatorUsername = $mem->membership->user->username ?? null;
+    $base = url('/history');
+    $common = http_build_query([
+        'support_open' => '1',
+        'creator_username' => $creatorUsername,
+        'event_type' => 'gift_membership',
+        'source' => 'membership_payments',
+        'source_id' => (string) ($mem->id ?? ''),
+    ]);
+    $contactUrl = $creatorUsername ? ($base . '?' . $common . '&support_type=contact') : $base;
+    $refundUrl = $creatorUsername ? ($base . '?' . $common . '&support_type=refund') : $base;
+    $orderId = $mem->session_id ?? null;
+    $receiptId = $mem->uuid ?? null;
+    $accessUrl = isset($deliverable->uuid)
+       ? route('deliverable.access', $deliverable->uuid)
+       : env('APP_URL') . '/' . $mem->membership->user->username;
+@endphp
 <tr>
-         <td align="center" style="padding:10px 10px 20px 10px;"><a href="{{ env('APP_URL') . '/' }}"><img alt=""
-                     width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none"></a></td>
-     </tr>
-     <tr>
-         <td align="center" style="padding:10px 10px 20px 10px;">
-             <table width="100%" cellspacing="0" cellpadding="0" border="0"
-                 style="max-width: 420px; width: 100%; text-align: center;">
-                 <tr>
-                     <td style=" font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
-                         You have successfully subscribed <span style="color: #8C52FF">{{ ucwords($mem->membership->user->name) }}</span> {{ $mem->membership->level }} Membership of amount {{ $amountWithcurrency }} on Spenny Piggy 🐷🎁!
-                     </td>
-                 </tr>
+    <td align="center" style="padding: 32px 28px 8px 28px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width: 440px; width: 100%;">
 
-                 <tr>
-                     <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                         @php
-                             $creatorUsername = $mem->membership->user->username ?? null;
-                             $base = url('/history');
-                             $common = http_build_query([
-                                 'support_open' => '1',
-                                 'creator_username' => $creatorUsername,
-                                 'event_type' => 'gift_membership',
-                                 'source' => 'membership_payments',
-                                 'source_id' => (string) ($mem->id ?? ''),
-                             ]);
-                             $contactUrl = $creatorUsername ? ($base . '?' . $common . '&support_type=contact') : $base;
-                             $refundUrl = $creatorUsername ? ($base . '?' . $common . '&support_type=refund') : $base;
-                             $orderId = $mem->session_id ?? null;
-                             $receiptId = $mem->uuid ?? null;
-                         @endphp
-                         <div style="padding: 14px; background: #f8f8f8; border: 1px solid #eeeeee; border-radius: 12px; text-align: left;">
-                             <div style="font-family: Arial; font-weight: bold; font-size: 13px; color: #141414; margin-bottom: 8px;">
-                                 Receipt Details
-                             </div>
-                             <div style="font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D;">
-                                 <div><b>Seller (Creator):</b> {{ ucwords($mem->membership->user->name ?? 'Creator') }}</div>
-                                 <div><b>Order ID:</b> {{ $orderId ?: 'N/A' }}</div>
-                                 @if(!empty($receiptId))
-                                     <div><b>Receipt ID:</b> {{ $receiptId }}</div>
-                                 @endif
-                                 @if(!empty($mem->stripe_id))
-                                     <div><b>Stripe ID:</b> {{ $mem->stripe_id }}</div>
-                                 @endif
-                                 @if(!empty($mem->id))
-                                     <div><b>Internal ID:</b> {{ $mem->id }}</div>
-                                 @endif
-                             </div>
-                         </div>
-                         <div style="margin-top: 12px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #4D4D4D; text-align: center;">
-                             Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.
-                             <br />
-                             Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
-                         </div>
-                         <div style="margin-top: 14px; text-align: center;">
-                             <a href="{{ $contactUrl }}"
-                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                                 Contact Creator
-                             </a>
-                             <div style="height: 10px; line-height: 10px;">&nbsp;</div>
-                             <a href="{{ $refundUrl }}"
-                                 style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; display:inline-block; text-decoration:none; border:none;background-color: #FF007F; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                                 Request Refund
-                             </a>
-                         </div>
-                     </td>
-                 </tr>
-     
-                 <tr>
-                     <td style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; color: #4D4D4D; text-align: center; line-height: 18px;">
-                         Go to <a href="{{ env('APP_URL') . '/history' }}">Spenny Piggy</a> to manage your current Memberships.</td>
-                 </tr>
+            {{-- Membership emoji badge --}}
+            <tr>
+                <td align="center" style="padding: 0 0 18px 0;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" valign="middle" bgcolor="#FFE6F2"
+                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
+                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
+                                ⭐
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
 
-                 <tr>
-                     <td style="padding: 20px 0; border-top: 1px solid #eee;">
-                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #FF007F; text-align: center; margin-bottom: 15px;">💎 Welcome to the Inner Circle!</h3>
-                         <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">Your membership is now active. You have unlocked exclusive access to:</p>
-                         
-                         @include('email.digital-content-notice')
-                         
-                         <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: left;">
-                             <p style="font-family: Arial; font-size: 16px; font-weight: bold; color: #333; margin: 0 0 5px 0;">Membership Benefits</p>
-                            <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 10px;">You can now access members-only posts of {{ ucwords($mem->membership->user->name) }}.</p>
-                            <p style="font-family: Arial; font-size: 14px; color: #666; margin-bottom: 5px;"><strong>Your Benefits:</strong></p>
-                            <ul style="font-family: Arial; font-size: 14px; color: #666; margin: 0; padding-left: 20px; line-height: 1.6;">
-                                 <li>Direct Support to {{ ucwords($mem->membership->user->name) }}</li>
-                             </ul>
-                             <div style="text-align: center;">
-                                 @php
-                                     $accessUrl = isset($deliverable->uuid) 
-                                        ? route('deliverable.access', $deliverable->uuid) 
-                                        : env('APP_URL') . '/' . $mem->membership->user->username;
-                                 @endphp
-                                 <a href="{{ $accessUrl }}" 
-                                    style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold;"
-                                    target="_blank">🔓 Access Creator Profile</a>
-                             </div>
-                         </div>
-                     </td>
-                 </tr>
-                 <tr style="line-height: 20px; height: 20px;" ><td></td></tr>
-                 <tr>
-                     <td style="padding:0 0 10px 0; text-align: center; ">
-                         <a href="{{ env('APP_URL') . '/history' }}" style=" border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#FF007F;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;">My Account.</a>
-                     </td>
-                 </tr>
-                 <tr style="line-height: 20px; height: 20px;" ><td></td></tr>
-             </table>
-         </td>
-     </tr>
+            {{-- Heading --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
+                           line-height:30px;padding:0 0 10px 0;text-align:center;">
+                    Membership Confirmed!
+                </td>
+            </tr>
+
+            {{-- Subline --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
+                           line-height:22px;padding:0 0 24px 0;text-align:center;">
+                    You're now subscribed to <strong style="color:#8C52FF;">{{ $creatorName }}</strong>'s
+                    <strong style="color:#1A1A1A;">{{ $levelName }}</strong> Membership on Spenny Piggy 🐷
+                </td>
+            </tr>
+
+            {{-- Details card --}}
+            <tr>
+                <td style="padding:0 0 24px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">
+                                            🛍️ Seller (Creator)
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">
+                                            {{ $creatorName }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            ⭐ Level
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;">
+                                            {{ $levelName }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            🧾 Order ID
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;word-break:break-all;">
+                                            {{ $orderId ?: 'N/A' }}
+                                        </td>
+                                    </tr>
+                                    @if(!empty($receiptId))
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            🔖 Receipt ID
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;word-break:break-all;">
+                                            {{ $receiptId }}
+                                        </td>
+                                    </tr>
+                                    @endif
+                                    @if(!empty($mem->stripe_id))
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            💳 Stripe ID
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;word-break:break-all;">
+                                            {{ $mem->stripe_id }}
+                                        </td>
+                                    </tr>
+                                    @endif
+                                    @if(!empty($mem->id))
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:8px 0 4px 0;">
+                                            #️⃣ Internal ID
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#1A1A1A;font-weight:700;padding:8px 0 4px 0;">
+                                            {{ $mem->id }}
+                                        </td>
+                                    </tr>
+                                    @endif
+                                </table>
+
+                                {{-- Divider --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td height="1" bgcolor="#FFD6E8" style="height:1px;line-height:1px;font-size:1px;background-color:#FFD6E8;padding:0;">&nbsp;</td>
+                                    </tr>
+                                </table>
+
+                                {{-- Amount --}}
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#666666;font-weight:600;padding:12px 0 0 0;">
+                                            💰 Amount
+                                        </td>
+                                        <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:24px;color:#FF007F;font-weight:800;padding:12px 0 0 0;">
+                                            {{ $amountWithcurrency }}
+                                        </td>
+                                    </tr>
+                                </table>
+
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Merchant of Record / refund notice --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:12px;color:#999999;
+                           line-height:18px;padding:0 0 18px 0;text-align:center;">
+                    Delivered instantly. No cancellation rights after access. Final and non-refundable except where required by law.<br>
+                    Spenny Piggy is the technology platform; the Creator is the seller (Merchant of Record).
+                </td>
+            </tr>
+
+            {{-- Contact / Refund buttons --}}
+            <tr>
+                <td align="center" style="padding:0 0 10px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $contactUrl }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    Contact Creator →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" style="padding:0 0 24px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#4a5568"
+                                style="background-color:#4a5568;border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ $refundUrl }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    Request Refund
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Welcome / benefits block --}}
+            <tr>
+                <td style="padding:0 0 18px 0;">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
+                        bgcolor="#FFF1F7"
+                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
+                        <tr>
+                            <td style="padding:20px 22px;">
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
+                                    <tr>
+                                        <td align="center" style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:17px;color:#FF007F;padding:0 0 6px 0;text-align:center;">
+                                            💎 Welcome to the Inner Circle!
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#666666;line-height:20px;padding:0 0 14px 0;text-align:center;">
+                                            Your membership is now active. You have unlocked exclusive access to:
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                @include('email.digital-content-notice')
+
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="margin-top:14px;">
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:15px;color:#1A1A1A;padding:0 0 6px 0;">
+                                            Membership Benefits
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#666666;line-height:20px;padding:0 0 8px 0;">
+                                            You can now access members-only posts of {{ $creatorName }}.<br>
+                                            <strong style="color:#1A1A1A;">Your Benefits:</strong> Direct Support to {{ $creatorName }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="padding:8px 0 0 0;text-align:center;">
+                                            <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                                                <tr>
+                                                    <td align="center" bgcolor="#8C52FF" style="background-color:#8C52FF;border-radius:50px;-webkit-border-radius:50px;">
+                                                        <a href="{{ $accessUrl }}" target="_blank"
+                                                            style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;font-size:14px;color:#ffffff;text-decoration:none;padding:12px 30px;border-radius:50px;-webkit-border-radius:50px;">
+                                                            🔓 Access Creator Profile
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            {{-- Helper text --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
+                           line-height:20px;padding:0 0 22px 0;text-align:center;">
+                    Manage your memberships anytime from your account. ✨
+                </td>
+            </tr>
+
+            {{-- Gradient CTA button --}}
+            <tr>
+                <td align="center" style="padding:0 0 12px 0;text-align:center;">
+                    <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
+                        <tr>
+                            <td align="center" bgcolor="#FF007F"
+                                style="background-color:#FF007F;
+                                       background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
+                                       border-radius:50px;-webkit-border-radius:50px;">
+                                <a href="{{ env('APP_URL') . '/history' }}"
+                                    style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
+                                           font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
+                                           border-radius:50px;-webkit-border-radius:50px;">
+                                    My Account →
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+        </table>
+    </td>
+</tr>
 @endsection

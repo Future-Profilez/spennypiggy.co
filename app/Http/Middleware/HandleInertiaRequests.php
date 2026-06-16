@@ -76,6 +76,7 @@ class HandleInertiaRequests extends Middleware
                 'subscription_status' => $user->subscription_status,
                 'email_verified_at' => $user->email_verified_at,
                 'stripe_details_submitted' => $user->stripe_details_submitted,
+                'stripe_connected_at' => $user->stripe_connected_at,
                 'country' => $user->country,
                 'bio' => $user->bio,
                 'bio_approved' => $user->bio_approved,
@@ -197,8 +198,8 @@ class HandleInertiaRequests extends Middleware
             'transaction_fee_percentage' => config('app.transaction_fee_percentage', 2),
             'turnstileSiteKey' => $this->resolveTurnstileSiteKey($request),
             'intercom' => app(IntercomService::class)->buildSettings($user),
-            'last_terms_update' => Setting::getValue('last_terms_update', '2026-04-23 00:00:00'),
-            'updated_terms_list' => json_decode(Setting::getValue('updated_terms_list', '[]'), true),
+            'last_terms_update' => Setting::where('key', 'last_terms_update')->value('value') ?? '2026-04-23 00:00:00',
+            'updated_terms_list' => json_decode(Setting::where('key', 'updated_terms_list')->value('value') ?? '[]', true),
         ];
     }
 

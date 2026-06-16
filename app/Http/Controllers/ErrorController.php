@@ -63,7 +63,7 @@ class ErrorController extends Controller
 
         // Help links for user assistance
         $helpLinks = [
-            ['title' => 'How It Works', 'url' => '/how-it-works', 'description' => 'Learn how SpennyPiggy works'],
+            ['title' => 'How It Works', 'url' => '/how-spenny-piggy-works', 'description' => 'Learn how SpennyPiggy works'],
             ['title' => 'Discover Creators', 'url' => '/discover', 'description' => 'Find amazing creators to support'],
             ['title' => 'Leaderboard', 'url' => '/leaderboard', 'description' => 'See top creators and supporters'],
             ['title' => 'Help Center', 'url' => 'https://intercom.help/spenny-piggy/en/', 'description' => 'Get help with your account'],

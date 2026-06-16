@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 
-const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, activityTimeline, user }) => {
+const ActivityStatus = ({ activityStatus, postingCadence, contentBreakdown, blockedPayments, activityTimeline, user }) => {
     const [refreshing, setRefreshing] = useState(false);
 
     const pge = usePage().props;
@@ -213,6 +213,59 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                             <p className="text-gray-900 mt-1">Monitor your content activity and payment eligibility</p>
                         </div>
                     </div>
+
+                    {/* Content membership posting cadence */}
+                    {postingCadence && (
+                        <div className="bg-white rounded-[30px] shadow-lg p-6 mb-8">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-1">Content membership posting</h2>
+                                    <p className="text-gray-700">
+                                        <strong>{postingCadence.member_posts}/{postingCadence.required}</strong> member posts in the last {postingCadence.window_days} days
+                                    </p>
+                                </div>
+                                {(() => {
+                                    const map = {
+                                        paused: ['bg-red-100 text-red-800 border-red-300', '⛔ Paused'],
+                                        active: ['bg-green-100 text-green-800 border-green-400', '✅ Active'],
+                                        grace: ['bg-blue-100 text-blue-800 border-blue-300', '🆕 Grace period'],
+                                        at_risk: ['bg-yellow-100 text-yellow-800 border-yellow-300', `⚠️ Post ${postingCadence.posts_needed} more`],
+                                    };
+                                    const [cls, label] = map[postingCadence.status] || map.at_risk;
+                                    return (
+                                        <span className={`whitespace-nowrap text-sm font-bold px-4 py-2 rounded-full border ${cls}`}>{label}</span>
+                                    );
+                                })()}
+                            </div>
+
+                            {postingCadence.paused ? (
+                                <div className="bg-red-50 border border-red-200 rounded-[20px] p-4 mt-4">
+                                    <p className="text-red-800">
+                                        ⛔ <strong>Your content memberships are paused.</strong> Bill & membership subscribers are not being charged.
+                                        Post <strong>{postingCadence.posts_needed}</strong> more member {postingCadence.posts_needed === 1 ? 'post' : 'posts'} (Members / Subscribers visibility) to resume payments automatically.
+                                    </p>
+                                </div>
+                            ) : postingCadence.status === 'at_risk' ? (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-[20px] p-4 mt-4">
+                                    <p className="text-yellow-800">
+                                        ⚠️ Post <strong>{postingCadence.posts_needed}</strong> more member {postingCadence.posts_needed === 1 ? 'post' : 'posts'} within the {postingCadence.window_days}-day window, or your memberships will be paused.
+                                    </p>
+                                </div>
+                            ) : postingCadence.status === 'grace' ? (
+                                <div className="bg-blue-50 border border-blue-200 rounded-[20px] p-4 mt-4">
+                                    <p className="text-blue-800">
+                                        🆕 You're within your onboarding window — memberships won't be paused yet. Aim for at least {postingCadence.required} member posts every {postingCadence.window_days} days.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="bg-green-50 border border-green-200 rounded-[20px] p-4 mt-4">
+                                    <p className="text-green-800">
+                                        ✅ You're meeting the posting requirement. Keep posting at least {postingCadence.required} member posts every {postingCadence.window_days} days to keep memberships active.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Current Status Card */}
                     <div className="bg-white rounded-[30px]    shadow-lg p-6 mb-8">

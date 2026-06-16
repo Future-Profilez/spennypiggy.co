@@ -102,11 +102,11 @@ export default function AddPost({item, text, classes, isEdit, title}) {
     }
     const AddItem = () => {
         return <div className="flex items-center">
-            <div className="p-1 !rounded-[30px]  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+            <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]" >
                 <FaPenNib color="var(--pink)"  size="1.5rem" />
             </div>
             <div className="ps-3 text-start">
-                <h2 className="text-lg font-normal font-GillSans uppercase">Post Something</h2>
+                <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Post Something</h2>
                 <p className="text-sm font-poppins">Add an image, update or blog post</p>
             </div>
         </div>

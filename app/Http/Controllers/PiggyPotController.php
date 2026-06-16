@@ -97,6 +97,16 @@ class PiggyPotController extends Controller
 
         $piggyPot = PiggyPot::create($data);
 
+        // SFW gate: scan the cover image; hold for review if it fails moderation.
+        if (!empty($piggyPot->cover_media)) {
+            \App\Jobs\CheckMediaModeration::dispatch(
+                PiggyPot::class,
+                $piggyPot->id,
+                $piggyPot->cover_media,
+                ['status' => 'moderation_hold']
+            );
+        }
+
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 
         return redirect()->back()->with('success', 'Piggy Pot created successfully');
@@ -136,6 +146,16 @@ class PiggyPotController extends Controller
         }
 
         $piggyPot->update($data);
+
+        // SFW gate: re-scan the cover image on update.
+        if (!empty($piggyPot->cover_media)) {
+            \App\Jobs\CheckMediaModeration::dispatch(
+                PiggyPot::class,
+                $piggyPot->id,
+                $piggyPot->cover_media,
+                ['status' => 'moderation_hold']
+            );
+        }
 
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 

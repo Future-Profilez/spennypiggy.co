@@ -418,7 +418,7 @@ class CreatorFinancialController extends Controller
         $fastStartBonus = null;
         if ($user->stripe_connected_at) {
             $windowStart = Carbon::parse($user->stripe_connected_at);
-            $windowEnd = $windowStart->copy()->addDays(30);
+            $windowEnd = $windowStart->copy()->addDays((int) config('fast_start_bonus.bonus.window_days', 30));
             $now = now();
             $currency = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
 
@@ -449,7 +449,9 @@ class CreatorFinancialController extends Controller
                     $earnings += $convert($net, $from, $currency);
                 }
 
-                $bonus = round($earnings * 0.05, 2);
+                $earningsMinor = (int) round($earnings * 100);
+                $bonusRate = \App\Models\FastStartBonusPayout::resolveRate($earningsMinor);
+                $bonus = round($earnings * $bonusRate, 2);
                 $fastStartBonus = [
                     'status' => 'active',
                     'currency' => $currency,
@@ -458,6 +460,8 @@ class CreatorFinancialController extends Controller
                     'days_remaining' => max(0, $now->diffInDays($windowEnd)),
                     'earnings_so_far' => $earnings,
                     'bonus_so_far' => $bonus,
+                    'bonus_rate' => $bonusRate,
+                    'tiered_enabled' => (bool) config('fast_start_bonus.bonus.enable_tiered'),
                 ];
             } else {
                 $row = FastStartBonusPayout::where('creator_uuid', $user->uuid)->latest()->first();
@@ -596,19 +600,109 @@ class CreatorFinancialController extends Controller
             ->map(function ($p) {
                 $bonusMinor = (int) ($p->metadata['fast_start_bonus_applied_minor'] ?? 0);
                 $founderBonusMinor = (int) ($p->metadata['founder_bonus_amount_minor'] ?? 0);
+                $bonusType = $p->metadata['bonus_type'] ?? null;
+
+                // Resolve a friendly payout "type" for the creator.
+                if ($bonusType === 'fast_start') {
+                    $typeKey = 'fast_start';
+                    $typeLabel = 'Fast Start Bonus';
+                } elseif ($bonusType && str_starts_with((string) $bonusType, 'founder')) {
+                    $typeKey = 'founder';
+                    $typeLabel = $bonusType === 'founder_monthly' ? 'Founder Monthly Bonus' : 'Founder Bonus';
+                } else {
+                    $typeKey = 'weekly';
+                    $typeLabel = 'Weekly Payout';
+                }
+
+                // Humanise common Stripe failure messages; keep the raw text too.
+                $rawFailure = $p->failure_message ?: ($p->metadata['error'] ?? null);
+                $friendlyFailure = null;
+                if (in_array($p->status, ['failed', 'skipped'], true)) {
+                    $code = (string) ($p->failure_code ?? '');
+                    $raw = strtolower((string) $rawFailure);
+                    if ($code === 'insufficient_funds' || str_contains($raw, 'insufficient funds')) {
+                        $friendlyFailure = 'Payout could not be sent due to a temporary balance issue on our side. No action needed — it will retry automatically.';
+                    } elseif ($code === 'account_closed' || str_contains($raw, 'account closed')) {
+                        $friendlyFailure = 'Your bank account appears to be closed. Please update your payout details in Stripe.';
+                    } elseif ($code === 'no_account' || str_contains($raw, 'no account') || str_contains($raw, 'bank account could not be found')) {
+                        $friendlyFailure = 'We couldn\'t find your bank account. Please re-check your payout details in Stripe.';
+                    } elseif ($code === 'debit_not_authorized' || str_contains($raw, 'debit_not_authorized')) {
+                        $friendlyFailure = 'The payout was not authorised by your bank. Please contact your bank or update your details.';
+                    } else {
+                        $friendlyFailure = 'This payout failed. Our team has been notified and will look into it.';
+                    }
+                }
+
+                $ref = $p->stripe_payout_id ?: null;
+
                 return [
                     'uuid' => $p->uuid,
                     'date' => $p->created_at->format('d M Y'),
+                    'time' => $p->created_at->format('H:i'),
                     'amount' => $p->amount_minor / 100,
+                    'base_amount' => max(0, ($p->amount_minor - $bonusMinor - $founderBonusMinor)) / 100,
                     'fast_start_bonus' => $bonusMinor / 100,
                     'founder_bonus' => $founderBonusMinor / 100,
-                    'bonus_type' => $p->metadata['bonus_type'] ?? null,
+                    'bonus_type' => $bonusType,
+                    'type_key' => $typeKey,
+                    'type_label' => $typeLabel,
                     'currency' => $p->currency,
                     'status' => $p->status,
                     'arrival_date' => $p->arrival_date ? $p->arrival_date->format('d M Y') : null,
-                    'failure_reason' => in_array($p->status, ['failed', 'skipped']) ? ($p->failure_message ?: ($p->metadata['error'] ?? 'Declined by Stripe')) : null,
+                    'reference' => $ref,
+                    'failure_reason' => $friendlyFailure,
+                    'failure_detail' => in_array($p->status, ['failed', 'skipped'], true) ? $rawFailure : null,
+                    'failure_code' => $p->failure_code ?? null,
                 ];
             });
+
+        // Surface a qualified-but-not-yet-paid Founder Bonus as a scheduled payout row,
+        // so the creator can see it in Payout History before the payout is issued.
+        // (No PayoutRecord exists until the founder payout job runs on the due date.)
+        if (
+            $founderQualification
+            && in_array((string) $founderQualification->payout_status, [FounderBonus::STATUS_PENDING], true)
+            && empty($founderQualification->payout_record_uuid)
+            && empty($founderQualification->stripe_payout_id)
+        ) {
+            $fc = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
+            $rates = \App\Models\Currency::rates();
+            if ($rates instanceof \Illuminate\Support\Collection) {
+                $rates = $rates->toArray();
+            }
+            $convertGbp = function (float $amount) use ($rates, $fc): float {
+                if ($fc === 'GBP' || !isset($rates['GBP']) || !isset($rates[$fc])) return $amount;
+                return ($amount / $rates['GBP']) * $rates[$fc];
+            };
+            $founderBonusAmt = round($convertGbp((float) ($founderQualification->bonus_amount ?? 0)), 2);
+            $est = $founderQualification->estimated_payout_date
+                ? Carbon::parse($founderQualification->estimated_payout_date)
+                : null;
+
+            $scheduledFounder = [
+                'uuid' => 'founder-scheduled-' . $founderQualification->id,
+                'date' => $founderQualification->qualification_date
+                    ? Carbon::parse($founderQualification->qualification_date)->format('d M Y')
+                    : now()->format('d M Y'),
+                'time' => null,
+                'amount' => $founderBonusAmt,
+                'base_amount' => 0,
+                'fast_start_bonus' => 0,
+                'founder_bonus' => $founderBonusAmt,
+                'bonus_type' => 'founder_qualification',
+                'type_key' => 'founder',
+                'type_label' => 'Founder Bonus',
+                'currency' => strtolower($fc),
+                'status' => 'scheduled',
+                'arrival_date' => $est ? $est->format('d M Y') : null,
+                'reference' => null,
+                'failure_reason' => null,
+                'failure_detail' => null,
+                'failure_code' => null,
+            ];
+
+            $payoutHistory = collect([$scheduledFounder])->concat($payoutHistory)->values();
+        }
 
         // Creator risk level for reserve messaging
         $creatorMetric = CreatorMetric::where('creator_id', $user->uuid)->first();
@@ -665,6 +759,109 @@ class CreatorFinancialController extends Controller
             'payout_history' => $payoutHistory,
             'fast_start_bonus' => $fastStartBonus,
             'founder_bonus' => $founderBonus,
+        ]);
+    }
+
+    public function fastStartBonus(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user->stripe_connected_at) {
+            return Inertia::render('Creator/Financial/FastStartBonus', [
+                'fast_start_bonus' => null,
+            ]);
+        }
+
+        $windowDays = (int) config('fast_start_bonus.bonus.window_days', 30);
+        $settlementBuffer = (int) config('fast_start_bonus.bonus.settlement_buffer_days', 7);
+        $windowStart = Carbon::parse($user->stripe_connected_at);
+        $windowEnd = $windowStart->copy()->addDays($windowDays);
+        $eligibleAt = $windowEnd->copy()->addDays($settlementBuffer);
+        $now = now();
+
+        $currency = strtoupper($user->default_currency ?? 'GBP');
+
+        $rates = \App\Models\Currency::rates();
+        if ($rates instanceof \Illuminate\Support\Collection) {
+            $rates = $rates->toArray();
+        }
+        $convert = function (float $amount, string $from, string $to) use ($rates): float {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) return $amount;
+            if (! isset($rates[$from]) || ! isset($rates[$to])) return $amount;
+            return ($amount / $rates[$from]) * $rates[$to];
+        };
+
+        $row = FastStartBonusPayout::where('creator_uuid', $user->uuid)->latest()->first();
+
+        $windowActive = $now->lt($windowEnd);
+
+        // Compute live earnings (used when window is open or no row yet)
+        $liveEarningsMinor = 0;
+        if ($windowActive || ! $row) {
+            $txs = FinancialTransaction::query()
+                ->where('user_id', $user->id)
+                ->where('type', 'income')
+                ->where('status', 'completed')
+                ->whereBetween('transaction_date', [$windowStart, $windowActive ? $now : $windowEnd])
+                ->get(['net_amount', 'currency']);
+
+            foreach ($txs as $tx) {
+                $from = strtoupper((string) ($tx->currency ?? 'GBP'));
+                $liveEarningsMinor += (int) round($convert((float) $tx->net_amount, $from, $currency) * 100);
+            }
+        }
+
+        $earningsMinor = $row ? (int) $row->earnings_minor : $liveEarningsMinor;
+        $bonusRate = \App\Models\FastStartBonusPayout::resolveRate($earningsMinor);
+        $bonusMinor = (int) round($earningsMinor * $bonusRate);
+
+        // Tiered info for display
+        $tieredRates = config('fast_start_bonus.bonus.tiered_rates', []);
+        $tieredEnabled = (bool) config('fast_start_bonus.bonus.enable_tiered');
+        $tiers = [];
+        if ($tieredEnabled) {
+            foreach ($tieredRates as $idx => $tier) {
+                $nextThreshold = $tieredRates[$idx + 1]['threshold'] ?? null;
+                $tiers[] = [
+                    'threshold_minor' => $tier['threshold'],
+                    'threshold' => $tier['threshold'] / 100,
+                    'next_threshold' => $nextThreshold ? $nextThreshold / 100 : null,
+                    'rate' => $tier['rate'],
+                    'rate_pct' => round($tier['rate'] * 100, 1),
+                    'active' => $earningsMinor >= $tier['threshold'] && (! $nextThreshold || $earningsMinor < $nextThreshold),
+                    'reached' => $earningsMinor >= $tier['threshold'],
+                ];
+            }
+        }
+
+        $data = [
+            'status' => $windowActive ? 'active' : ($row?->status ?? 'pending_settlement'),
+            'currency' => $currency,
+            'window_start' => $windowStart->toDateTimeString(),
+            'window_end' => $windowEnd->toDateTimeString(),
+            'eligible_at' => $eligibleAt->toDateTimeString(),
+            'days_remaining' => $windowActive ? max(0, (int) $now->diffInDays($windowEnd)) : 0,
+            'hours_remaining' => $windowActive ? max(0, (int) $now->diffInHours($windowEnd)) : 0,
+            'window_active' => $windowActive,
+            'earnings_so_far' => $earningsMinor / 100,
+            'bonus_so_far' => $bonusMinor / 100,
+            'bonus_rate' => $bonusRate,
+            'bonus_rate_pct' => round($bonusRate * 100, 1),
+            'tiered_enabled' => $tieredEnabled,
+            'tiers' => $tiers,
+            'stripe_transfer_id' => $row?->stripe_transfer_id,
+            'stripe_payout_id' => $row?->stripe_payout_id,
+            'paid_at' => $row?->paid_at?->toDateTimeString(),
+            'final_earnings' => $row ? ($row->earnings_minor / 100) : null,
+            'final_bonus' => $row ? ($row->bonus_minor / 100) : null,
+            'expected_bonus' => $row ? ($row->expected_bonus_minor / 100) : null,
+            'clawback' => $row ? ($row->clawback_minor / 100) : null,
+        ];
+
+        return Inertia::render('Creator/Financial/FastStartBonus', [
+            'fast_start_bonus' => $data,
         ]);
     }
 

@@ -469,6 +469,37 @@ class RegisteredUserController extends Controller
                 'quantity' => 1,
             ]],
             'payment_method_types' => ['card'],
+            'metadata' => [
+                'platform'                => 'SpennyPiggy',
+                'type'                    => 'gifter_card_verification',
+                'purpose'                 => 'Gifter Card Verification',
+                'payment_category'        => 'card_verification',
+                'buyer_id'                => (string) $user->id,
+                'buyer_name'              => (string) $user->name,
+                'buyer_email'             => (string) $user->email,
+                'buyer_username'          => (string) ($user->username ?? ''),
+                'verification_amount'     => (string) $baseAmount,
+                'currency'                => (string) $currency,
+                'transaction_description' => 'Card verification charge for ' . $user->name,
+                'env'                     => (string) config('app.env'),
+            ],
+            'payment_intent_data' => [
+                'description' => 'SpennyPiggy - Card Verification for ' . $user->name,
+                'metadata' => [
+                    'platform'                => 'SpennyPiggy',
+                    'type'                    => 'gifter_card_verification',
+                    'purpose'                 => 'Gifter Card Verification',
+                    'payment_category'        => 'card_verification',
+                    'buyer_id'                => (string) $user->id,
+                    'buyer_name'              => (string) $user->name,
+                    'buyer_email'             => (string) $user->email,
+                    'buyer_username'          => (string) ($user->username ?? ''),
+                    'verification_amount'     => (string) $baseAmount,
+                    'currency'                => (string) $currency,
+                    'transaction_description' => 'Card verification charge for ' . $user->name,
+                    'env'                     => (string) config('app.env'),
+                ],
+            ],
         ]);
 
         // Create/update verification record

@@ -277,9 +277,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                         </Link>
                     </h2>
                     <p className="pb-4">
-                        You are about to send a payout to
-                        <strong> {cartsItems?.creator?.name || ""} </strong> to
-                        fund their lifestyle.
+                        You are about to purchase content from
+                        <strong> {cartsItems?.creator?.name || ""}</strong>.
                     </p>
                     <div className="CartItemBox">
                         {datatoMap &&

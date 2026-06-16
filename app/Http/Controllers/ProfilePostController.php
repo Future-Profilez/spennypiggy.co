@@ -129,6 +129,17 @@ class ProfilePostController extends Controller
 
                 $lifetimeCreators = array_diff($membershipCreators, $nonLifetimeCreators);
 
+                // Stripe compliance: a Lifetime membership has no recurring charge to pause, so
+                // when the creator stops meeting the posting cadence (content_posting_paused_at set)
+                // we pause the lifetime member's access to new member content until they post again.
+                if (!empty($lifetimeCreators)) {
+                    $pausedCreatorIds = \App\Models\User::whereIn('id', $lifetimeCreators)
+                        ->whereNotNull('content_posting_paused_at')
+                        ->pluck('id')
+                        ->toArray();
+                    $lifetimeCreators = array_values(array_diff($lifetimeCreators, $pausedCreatorIds));
+                }
+
                 $supportCreators = TipGoalsPayment::where(function ($q) use ($profileUser) {
                         $q->where('user_id', $profileUser->id)
                           ->orWhere('guest_email', $profileUser->email);

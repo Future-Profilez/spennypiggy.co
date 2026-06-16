@@ -123,13 +123,13 @@ export default function AddBills(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 !rounded-[30px]  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="pl-3 text-left">
-                    <h2 className="text-lg font-normal font-GillSans uppercase">Add Bills</h2>
+                    <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Recurring content</h2>
                     <p className="text-sm font-poppins">
-                        Get those pesky bills paid with exclusive content
+                        Offer a recurring content subscription.
                     </p>
                 </div>
             </div>
@@ -147,7 +147,7 @@ export default function AddBills(props) {
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
                     <h2 className="p-4 !pb-0 text-black text-left !border-0 font-GillSans uppercase text-large mb-1 pr-5">
-                        {isEdit ? "Update Bill" : "Add A Bill"}
+                        {isEdit ? "Manage subscription" : "Add recurring content"}
                     </h2>
                     <div className="wishinfo  p-4  ">
                         {item && item.is_suspended == 1 && (
@@ -174,13 +174,13 @@ export default function AddBills(props) {
                                 <li className="mb-4">
                                     <label className="mb-2 text-left block">
                                         {" "}
-                                        Bill Name{" "}
+                                        Subscription / content name{" "}
                                     </label>
                                     <input
                                         id="wishname"
                                         name="name"
                                         type="text"
-                                        placeholder="Eg. Netflix subscription"
+                                        placeholder="Eg. Weekly behind-the-scenes"
                                         value={data.name}
                                         className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                         autoComplete="name"
@@ -381,12 +381,13 @@ export default function AddBills(props) {
                             </ul>
 
                             <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[30px]    bg-yellow-50" role="alert">
-                                When adding items please ensure they are specific
-                                i.e Holiday Clothes or New Gym Equipment. Items that
-                                are non specific will be rejected and removed. Our
-                                AI blocks adult content but any overly suggestive
-                                images will also be rejected. Please reach out to
-                                support for further clarification.
+                                Describe the recurring content supporters receive
+                                (e.g. "Weekly behind-the-scenes"). Do not list bills,
+                                personal expenses, or brand/third-party service names —
+                                these will be rejected and removed. Our AI blocks adult
+                                content but any overly suggestive images will also be
+                                rejected. Please reach out to support for further
+                                clarification.
                             </p>
 
                             <div className="publish text-start mt-6 mb-4">
@@ -397,7 +398,7 @@ export default function AddBills(props) {
             className="p w-full min-h-[54px]"
             spinnerclass="fill-red-600"
         >
-            {loading ? "Updating.." : "Update Bill"}
+            {loading ? "Updating.." : "Manage subscription"}
         </LoaderButton>
     ) : (
         <>
