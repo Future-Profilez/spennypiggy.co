@@ -204,12 +204,17 @@ export default function EditProfile({
     );
 
     // Toggles State
-    const [piggyBankEnabled, setPiggyBankEnabled] = useState(
-        user?.show_piggy_bank === 1,
-    );
-    const [notificationsEnabled, setNotificationsEnabled] = useState(
-        user?.notification_send === 1,
-    );
+    const [piggyBankEnabled, setPiggyBankEnabled] = useState(false);
+
+    useEffect(() => {
+        setPiggyBankEnabled(user?.show_piggy_bank == 1);
+    }, [user?.show_piggy_bank]);
+
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+    useEffect(() => {
+        setNotificationsEnabled(auth?.user?.notification_send == 1);
+    }, [auth?.user?.notification_send]);
 
     const getImageUID = (e) => {
         setData("avatar", {
@@ -407,14 +412,23 @@ export default function EditProfile({
     };
 
     const toggleNotifications = async () => {
+        const previousValue = notificationsEnabled;
+
+        setNotificationsEnabled(!previousValue);
+
         try {
             const resp = await axios.post(route("notification-switch"));
+
             if (resp.data.status) {
-                setNotificationsEnabled(!notificationsEnabled);
                 successAlert(resp.data.message);
+            } else {
+                setNotificationsEnabled(previousValue);
             }
         } catch (e) {
             console.error(e);
+
+            setNotificationsEnabled(previousValue);
+
             errorAlert("Failed to update Notification setting.");
         }
     };
