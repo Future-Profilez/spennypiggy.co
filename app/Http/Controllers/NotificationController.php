@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\MagicBellService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use GuzzleHttp\Client;
 
 class NotificationController extends Controller
@@ -17,14 +18,17 @@ class NotificationController extends Controller
 
     public function getUserKey()
     {
-        $user = 'naveen@internetbusinesssolutionsindia.com';  // Get the authenticated user
+        $user = Auth::user()?->email;  // The authenticated user's email
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
 
         // Call MagicBell API to generate the user key
         $client = new Client();
         $response = $client->post('https://api.magicbell.com/users', [
             'headers' => [
-                'X-MAGICBELL-API-KEY' => env('MAGICBELL_API_KEY'),
-                'X-MAGICBELL-API-SECRET' => env('MAGICBELL_API_SECRET'),
+                'X-MAGICBELL-API-KEY' => config('services.magicbell.key'),
+                'X-MAGICBELL-API-SECRET' => config('services.magicbell.secret'),
                 'Content-Type' => 'application/json',
             ],
             'json' => [
@@ -45,8 +49,8 @@ class NotificationController extends Controller
 
         $response = $client->post('https://api.magicbell.com/notifications', [
             'headers' => [
-                'X-MAGICBELL-API-KEY' => env('MAGICBELL_API_KEY'),
-                'X-MAGICBELL-API-SECRET' => env('MAGICBELL_API_SECRET'),
+                'X-MAGICBELL-API-KEY' => config('services.magicbell.key'),
+                'X-MAGICBELL-API-SECRET' => config('services.magicbell.secret'),
                 'Content-Type' => 'application/json',
             ],
             'json' => [
@@ -54,8 +58,9 @@ class NotificationController extends Controller
                     'title' => $request->title,
                     'content' => $request->content,
                     'category' => 'general',
+                    // Scope to the authenticated user — never send to an arbitrary email.
                     'recipients' => [
-                        ['email' => $request->email],
+                        ['email' => Auth::user()?->email],
                     ],
                 ],
             ],
@@ -70,8 +75,8 @@ class NotificationController extends Controller
 
         $response = $client->post('https://api.magicbell.com/notifications', [
             'headers' => [
-                'X-MAGICBELL-API-KEY' => env('MAGICBELL_API_KEY'),
-                'X-MAGICBELL-API-SECRET' => env('MAGICBELL_API_SECRET'),
+                'X-MAGICBELL-API-KEY' => config('services.magicbell.key'),
+                'X-MAGICBELL-API-SECRET' => config('services.magicbell.secret'),
                 'Content-Type' => 'application/json',
             ],
             'json' => [
@@ -79,8 +84,9 @@ class NotificationController extends Controller
                     'title' => $request->query('title')  ?? '🎉 You\'re in! Let\'s get started.',
                     'content' => $request->query('content') ?? 'Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.',
                     'category' => 'general',
+                    // Scope to the authenticated user — never send to an arbitrary email.
                     'recipients' => [
-                        ['email' => $request->query('email')],
+                        ['email' => Auth::user()?->email],
                     ],
                 ],
             ],

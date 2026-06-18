@@ -1,32 +1,33 @@
 import { Link, Head } from "@inertiajs/react";
 import { lazy, Suspense, useEffect } from "react";
+import Lenis from "lenis";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
 import StackedCard from '@/Components/animations/StackedCard';
 import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
-import fun1 from "../../assets/new/Fun1.png";
-import fun2 from "../../assets/new/Fun2.png";
-import fun3 from "../../assets/new/Fun3.png";
+import FadeIn from '@/Components/animations/FadeIn';
+import WishlistPreview from './home/WishlistPreview';
 
 // The three "fun" panels render as a sticky 3D stacking-card scroll scene.
+// Each shows a crisp HTML page-preview mockup instead of a baked screenshot.
 const FUN_CARDS = [
     {
-        img: fun1,
+        variant: 'wishlist',
         reverse: true,
         bg: 'bg-[#EFEA7B]',
         textcolor: 'text-black',
         heading: 'Effortlessly add your dream items, share your page, and get going in minutes!',
     },
     {
-        img: fun2,
+        variant: 'gifts',
         reverse: false,
         bg: 'bg-[#FF007F]',
         textcolor: '',
         heading: 'Let your fans spoil you with gifts from any online store!',
     },
     {
-        img: fun3,
+        variant: 'shop',
         reverse: true,
         bg: 'bg-[#EFEA7B]',
         textcolor: 'text-black',
@@ -57,21 +58,26 @@ const TopEarners = lazy(() => import('./home/TopEarners'));
 const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'));
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
 
-    // Warm the fun-card images in the browser cache during idle time so the
-    // stacked cards never show an empty image side when scrolled into view.
+    // Buttery elastic smooth scroll (homepage only). Native scroll position is
+    // preserved, so sticky sections + framer scroll animations keep working.
+    // Skipped for prefers-reduced-motion; touch stays native.
     useEffect(() => {
-        const preload = () => {
-            FUN_CARDS.forEach(({ img }) => {
-                const image = new Image();
-                image.src = img;
-            });
+        if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+        const lenis = new Lenis({
+            lerp: 0.085,            // lower = smoother/longer glide
+            smoothWheel: true,
+            wheelMultiplier: 2,
+            smoothTouch: true,
+            touchMultiplier: 1.5,
+        });
+        let raf = requestAnimationFrame(function loop(t) {
+            lenis.raf(t);
+            raf = requestAnimationFrame(loop);
+        });
+        return () => {
+            cancelAnimationFrame(raf);
+            lenis.destroy();
         };
-        if ('requestIdleCallback' in window) {
-            const id = window.requestIdleCallback(preload, { timeout: 3000 });
-            return () => window.cancelIdleCallback(id);
-        }
-        const id = setTimeout(preload, 1500);
-        return () => clearTimeout(id);
     }, []);
 
     // https://ucarecdn.com/b8140316-a9b0-4833-af41-3bc5841a0ce6/-/preview/900x300/-/text_align/center/center/-/font/11/000000/-/text/80px90p/100p,100p/spennypiggy.co~sNAVEENFP/-/text_align/center/center/-/font/19/000000/-/text/100px100p/100p,100p/NAVEEN/-/overlay/50ee2983-6aa8-4f34-9ee4-f28b2930d82b/30px30p/20p,50p/
@@ -132,12 +138,13 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 <FounderProgramAnnouncement founderBonus={founderBonus} />
                 <LiveBarSection />
 
-                {trendingCreators && trendingCreators.length > 0 ? <TrendingCreators creators={trendingCreators} /> : ''}
-                {newVerifiedCreators && newVerifiedCreators.length > 0 ? <NewVerified creators={newVerifiedCreators} /> : ''}
-                {topEarners && topEarners.length > 0 ? <TopEarners creators={topEarners} periodLabel={topEarnersLabel} /> : ''}
+                {/* Social-proof sections glide up as they enter the viewport. */}
+                {trendingCreators && trendingCreators.length > 0 ? <FadeIn y={60} duration={0.7}><TrendingCreators creators={trendingCreators} /></FadeIn> : ''}
+                {newVerifiedCreators && newVerifiedCreators.length > 0 ? <FadeIn y={60} duration={0.7}><NewVerified creators={newVerifiedCreators} /></FadeIn> : ''}
+                {topEarners && topEarners.length > 0 ? <FadeIn y={60} duration={0.7}><TopEarners creators={topEarners} periodLabel={topEarnersLabel} /></FadeIn> : ''}
 
                 <PaymentSlider/>
-                <div className="bg-black md:pb-[12vh]">
+                <div className="md:pb-[12vh]">
                     {FUN_CARDS.map((card, i) => (
                         <StackedCard
                             key={i}
@@ -148,18 +155,20 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                         >
                             <FunPart
                                 classes={`border-top-0 md:rounded-[40px] overflow-hidden md:mx-8 md:border-4 md:border-black md:shadow-[0_-20px_60px_rgba(0,0,0,0.7)]`}
-                                img={card.img} reverse={card.reverse}
+                                reverse={card.reverse}
                                 mainbg={card.bg} eclasses={``}
                                 textbg={card.bg} textcolor={card.textcolor || undefined}
                                 heading={card.heading}
+                                mockup={<WishlistPreview variant={card.variant} />}
                             />
                         </StackedCard>
                     ))}
                 </div>
-                <Membership />
+                {/* Statement sections rise slow and heavy; testimonials settle softly. */}
+                <FadeIn y={48} duration={0.9}><Membership /></FadeIn>
                 <NotForBusiness />
-                <WhyLove />
-                <HappyCreators />
+                <FadeIn y={48} duration={0.9}><WhyLove /></FadeIn>
+                <FadeIn y={24} duration={0.7}><HappyCreators /></FadeIn>
                 <FeatureSuggestionSection auth={auth} />
                 <FAQ />
                 <JoinUs />

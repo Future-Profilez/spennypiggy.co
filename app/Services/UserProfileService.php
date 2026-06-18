@@ -490,7 +490,9 @@ class UserProfileService
                 // Check access based on post type
                 switch ($post->for_module) {
                     case 'subscription':
-                        $post->is_lock = $hasActiveSubscription ? 0 : 1;
+                        // 'subscription' covers both wish-subscriptions and Bills, so an
+                        // active bill also unlocks (previously $hasBill was computed but unused).
+                        $post->is_lock = ($hasActiveSubscription || $hasBill) ? 0 : 1;
                         break;
                     case 'membership':
                         $post->is_lock = $hasMembership ? 0 : 1;
@@ -502,6 +504,13 @@ class UserProfileService
                         // Public posts or posts with no module restriction
                         $post->is_lock = 0;
                         break;
+                }
+
+                // A locked post must not leak its premium content/media to a non-entitled
+                // viewer — strip the body + image so only the lock state is exposed.
+                if ($post->is_lock == 1) {
+                    $post->content = null;
+                    $post->image = null;
                 }
             }
             return $post;

@@ -5,7 +5,7 @@ export default function TrendingCreators({ creators }) {
   if (!creators || creators.length === 0) return null;
 
   return (
-    <section className="bg-black py-16 md:py-24 relative ">
+    <section className="bg-transparent py-20 md:py-28 relative ">
         {/* Decorative Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-1/4 left-0 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>

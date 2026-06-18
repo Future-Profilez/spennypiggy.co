@@ -413,9 +413,12 @@ class GuestSupportTicketController extends Controller
     public function resolve(Request $request, string $uuid)
     {
         $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
-        
-        $token = $request->query('access_token');
-        if ($ticket->guest_access_token !== $token) {
+
+        // This route is signature-protected (the email is part of the signed URL). Verify
+        // the signed email matches the ticket's guest email. The previous check referenced
+        // a non-existent `guest_access_token` column, so `null !== null` let any guest
+        // (omitting the param) resolve any ticket.
+        if (!$ticket->guest_email || strtolower($ticket->guest_email) !== strtolower((string) $request->email)) {
             abort(403, 'Unauthorized');
         }
 

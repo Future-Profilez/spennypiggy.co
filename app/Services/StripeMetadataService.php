@@ -34,8 +34,6 @@ class StripeMetadataService
         ?string $stripeAccountId = null
     ): bool {
         try {
-            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-            
             // Build metadata array with new flattened format
             $metadata = [
                 'updated_at' => now()->toISOString(),
@@ -77,10 +75,25 @@ class StripeMetadataService
                 $options['stripe_account'] = $stripeAccountId;
             }
             
-            \Stripe\PaymentIntent::update($paymentIntentId, [
-                'metadata' => $metadata
-            ], $options);
-            
+            // PaymentIntents live on whichever platform (UK/US) owns the connected
+            // account. We don't have the currency here, so try the UK platform first
+            // and fall back to the US platform on resource_missing (multi-region setup).
+            // Using region clients instead of a hardcoded global key (which forced the
+            // UK key and failed "No such payment_intent" for US payments).
+            try {
+                \App\StripeControl::getClient()->paymentIntents->update($paymentIntentId, [
+                    'metadata' => $metadata
+                ], $options);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                if ($e->getStripeCode() === 'resource_missing' || str_contains((string) $e->getMessage(), 'No such payment_intent')) {
+                    \App\StripeControl::getClientForCurrency('USD')->paymentIntents->update($paymentIntentId, [
+                        'metadata' => $metadata
+                    ], $options);
+                } else {
+                    throw $e;
+                }
+            }
+
             Log::info('StripeMetadataService: Successfully updated payment intent metadata (NEW FORMAT)', [
                 'payment_intent_id' => $paymentIntentId,
                 'certificate_url' => $certificateUrl,

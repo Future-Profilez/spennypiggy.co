@@ -104,6 +104,9 @@ class TaskController extends Controller
                     if ($priceGBP < 4.99) {
                         $fail('Paid Tasks must be at least £4.99 GBP equivalent.');
                     }
+                    if ($priceGBP > 10000) {
+                        $fail('Paid Tasks cannot exceed £10,000 GBP equivalent.');
+                    }
                 },
             ],
             'category' => 'required|string',
@@ -211,6 +214,9 @@ class TaskController extends Controller
 
                     if ($priceGBP < 4.99) {
                         $fail('Paid Tasks must be at least £4.99 GBP equivalent.');
+                    }
+                    if ($priceGBP > 10000) {
+                        $fail('Paid Tasks cannot exceed £10,000 GBP equivalent.');
                     }
                 },
             ],
@@ -386,6 +392,11 @@ class TaskController extends Controller
 
         if (!$user) {
             return redirect()->route('login');
+        }
+
+        // A creator cannot purchase their own task.
+        if ((int) Auth::id() === (int) $task->creator_id) {
+            return redirect()->back()->with('error', 'You cannot purchase your own task.');
         }
 
         $creator = $task->creator;

@@ -180,7 +180,7 @@ export default function AddMembership({updateState, item, text, classes}) {
           </div>
           <div className="pl-3 text-left">
               <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Membership</h2>
-              <p className="text-sm font-poppins">Offer a monthly content membership.</p>
+              <p className="text-sm font-poppins">Give fans monthly access to your exclusive posts.</p>
           </div>
       </div>
     }

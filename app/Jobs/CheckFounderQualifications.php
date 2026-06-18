@@ -152,6 +152,14 @@ class CheckFounderQualifications implements ShouldQueue
     private function qualifyAsFounder(User $creator, float $first30DayEarnings): void
     {
         DB::transaction(function () use ($creator, $first30DayEarnings) {
+            // Serialize on the creator row + re-check so two concurrent qualification runs
+            // can't both create a founder bonus for the same creator (no unique constraint
+            // is relied upon, avoiding a risky migration over possibly-duplicated data).
+            User::where('id', $creator->id)->lockForUpdate()->first();
+            if (FounderBonus::where('creator_id', $creator->id)->exists()) {
+                return;
+            }
+
             if (Schema::hasColumn('users', 'is_founder')) {
                 $creator->update(['is_founder' => true]);
             }

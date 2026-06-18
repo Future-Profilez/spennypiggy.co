@@ -166,7 +166,7 @@ export default function PiggyPotModal({
                         <textarea
                             className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                             rows="3"
-                            placeholder="Describe the content supporters will unlock..."
+                            placeholder="Tell backers what they unlock by chipping in..."
                             value={data.description}
                             onChange={(e) => setData("description", e.target.value)}
                         />

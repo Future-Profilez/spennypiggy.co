@@ -188,8 +188,7 @@ class BillsController extends Controller
         }
 
         $user = User::where('id', Auth::id())->first();
-        $bill = Bills::where('uuid', $id)->first();
-        $old_periods = $bill->period;
+        $bill = Bills::where('uuid', $id)->where('user_id', Auth::id())->first();
 
         if (!$user || !$bill) {
             return response()->json([
@@ -197,6 +196,8 @@ class BillsController extends Controller
                 'msg' => 'User or Bill not found'
             ]);
         }
+
+        $old_periods = $bill->period;
 
         $old_price = $bill->price;
         $old_price_id = $bill->price_id;
@@ -370,7 +371,7 @@ class BillsController extends Controller
 
     public function removeBill($uuid)
     {
-        $bill = Bills::whereUuid($uuid)->first();
+        $bill = Bills::whereUuid($uuid)->where('user_id', Auth::id())->first();
 
         if (!empty($bill)) {
             BillPayment::where('bills_id', $bill->id)->delete();
@@ -844,8 +845,8 @@ class BillsController extends Controller
 
                 $symbol = Currency::where('iso', strtoupper($bill_pay->currency))->first();
 
-                $vatAmountPercentage = $bill_pay->vat_tax_amount ?? 0;
-                $amountWithVat = $symbol->symbol . ($bill_pay->amount + $vatAmountPercentage);
+                $vatAmount = $bill_pay->vat_tax_amount ?? 0;
+                $amountWithVat = ($symbol->symbol ?? '£') . number_format($bill_pay->amount + $vatAmount, 2);
 
                 $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                 $totalPaidAmount = $bill_pay->total_paid && $bill_pay->total_paid > 0 ? $bill_pay->total_paid : (float) ($session->amount_total / $multiplier);
@@ -1627,20 +1628,18 @@ class BillsController extends Controller
 
         try {
 
-            Stripe::setApiKey(
-                config('services.stripe.secret')
-            );
-
             if (!empty($payment->stripe_id)) {
-
-                $subscription =
-                    Subscription::retrieve(
-                        $payment->stripe_id
-                    );
-
-                $subscription->cancel_at_period_end = true;
-
-                $subscription->save();
+                // Bills use Direct Charges on the creator's connected account, so the
+                // subscription lives there — retrieving/updating it on the platform
+                // account fails. Use the region-correct client + stripe_account option.
+                $connectedAccountId = $payment->bill->user->account_id ?? null;
+                $opts = $connectedAccountId ? ['stripe_account' => $connectedAccountId] : [];
+                $client = StripeControl::getClientForCurrency($payment->currency ?? 'gbp');
+                $client->subscriptions->update(
+                    $payment->stripe_id,
+                    ['cancel_at_period_end' => true],
+                    $opts
+                );
             }
         } catch (\Exception $e) {
 

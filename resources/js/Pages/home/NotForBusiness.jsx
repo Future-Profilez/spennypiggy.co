@@ -28,7 +28,7 @@ export default function NotForBusiness() {
     ];
 
     return (
-        <section className="bg-black py-16 md:py-24 relative overflow-x-hidden">
+        <section className="bg-transparent py-20 md:py-28 relative overflow-x-hidden">
              {/* Decorative Background Elements */}
              <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-1/4 left-0 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
@@ -55,7 +55,7 @@ export default function NotForBusiness() {
 
                             <div className="w-full mb-8 relative max-w-[300px]">
                                 <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px]   transform rotate-3 scale-105 opacity-0 group-hover:opacity-30 transition-all duration-500 blur-xl"></div>
-                                <div className="bg-black rounded-[30px]   transition-all duration-300  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]   relative overflow-hidden transition-all duration-300">
+                                <div className="bg-black rounded-[30px]   transition-all duration-300  border-2 border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.15)] md:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.15)]   relative overflow-hidden">
                                      <LazyLoadImage
                                         alt={item.title}
                                         effect="blur"

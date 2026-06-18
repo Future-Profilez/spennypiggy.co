@@ -443,7 +443,7 @@ export default function Dashboard(props) {
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
-                                                            text="Cash Gift"
+                                                            text="Cash Wish"
                                                             currency={
                                                                 global_currency
                                                             }
@@ -464,21 +464,10 @@ export default function Dashboard(props) {
                                                                 </div>
                                                                 <div className="pl-3 text-left">
                                                                     <h2 className="font-gulfs font-light text-md font-black uppercase text-black">
-                                                                        Add
-                                                                        Surprise
-                                                                        Gift
+                                                                        Pick A Treat
                                                                     </h2>
                                                                     <p className="text-sm font-bold text-gray-700">
-                                                                        Lets
-                                                                        supporters
-                                                                        pick
-                                                                        from the
-                                                                        1000’s
-                                                                        of Gifts
-                                                                        in the
-                                                                        Oink
-                                                                        Gift
-                                                                        Zone
+                                                                        Fans grab you something from the 1000s in the Oink Gift Zone.
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -751,7 +740,7 @@ export default function Dashboard(props) {
                             : ''} */}
 
                         {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto">
+                            <div className="wishManage sticky top-8 w-full">
                                 {/* Creator Subscription Widget - Show on all tabs for creators */}
                                 {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                         <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>

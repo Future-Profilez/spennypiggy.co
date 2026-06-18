@@ -118,8 +118,14 @@ class DiscoveryService
             $query->where('role', 1)
                 ->where('profile_status_lock', 2);
         } else {
-            // When searching, include both creators and gifters (role 0 and 1)
-            $query->whereIn('role', [0, 1]);
+            // When searching, creators (role 1) must still be publicly visible
+            // (profile_status_lock = 2) — previously search exposed unverified/private
+            // creator profiles. Fans (role 0) remain searchable.
+            $query->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('role', 1)->where('profile_status_lock', 2);
+                })->orWhere('role', 0);
+            });
         }
 
         $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;

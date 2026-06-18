@@ -83,7 +83,7 @@ const supportData = [
 export default function Membership() {
   return (
     <>
-      <section className='bg-black py-16 md:py-24 relative overflow-hidden'>
+      <section className='bg-transparent py-20 md:py-28 relative overflow-hidden'>
          <WatermarkStrip text="Premium" from={0} to={-450} opacity={0.18} className="top-2" />
          {/* Decorative Background Elements */}
          <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">

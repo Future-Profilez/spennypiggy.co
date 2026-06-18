@@ -68,16 +68,19 @@ Route::middleware('web')->group(function () {
 });
 
 // Risk Engine Routes
+// These are intentionally unauthenticated — guest checkout (PiggyPot/Wishes) must
+// be able to evaluate risk and create a PaymentIntent without logging in. Rate limit
+// to stop anonymous probing of limits / RiskIdentity creation / PaymentIntent spam.
 Route::prefix('risk')->group(function () {
-    Route::post('/evaluate', [RiskController::class, 'evaluate']);
+    Route::post('/evaluate', [RiskController::class, 'evaluate'])->middleware('throttle:60,1');
     Route::post('/step-up/verify', [RiskController::class, 'verifyStepUp'])->middleware('web');
     Route::post('/step-up/resend',[RiskController::class, 'resendStepUpOtp'])->middleware('web');
     Route::post('/step-up/verify-passkey', [RiskController::class, 'verifyStepUpPasskey'])->middleware('web');
-    Route::get('/limits', [RiskController::class, 'getEffectiveLimits']);
+    Route::get('/limits', [RiskController::class, 'getEffectiveLimits'])->middleware('throttle:60,1');
 });
 
 Route::prefix('payments')->group(function () {
-    Route::post('/create-intent', [RiskController::class, 'createPaymentIntent']);
+    Route::post('/create-intent', [RiskController::class, 'createPaymentIntent'])->middleware('throttle:30,1');
 });
 
 // Creator Risk Dashboard moved to web.php for session auth
@@ -88,8 +91,9 @@ Route::prefix('payments')->group(function () {
 // Internal Sync Routes
 Route::post('/internal/sync-financials', [\App\Http\Controllers\Api\InternalSyncController::class, 'syncFinancials']);
 
-// Admin Dashboard & Exports
-Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
+// Admin Dashboard & Exports — require an authenticated ADMIN (role 2), not just any
+// authenticated token. Previously any valid Sanctum token could reach these.
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);
     Route::get('/export/audit-pack', [\App\Http\Controllers\Admin\AuditExportController::class, 'export']);
 

@@ -13,17 +13,26 @@ class MagicBellProxyController extends Controller
             return response()->noContent(204);
         }
 
+        // This proxy backs the in-app notification widget, which only READS notifications
+        // and updates their read/seen state. Block creating notifications through it —
+        // otherwise an authenticated user could POST /notifications with an arbitrary
+        // `recipients` list and push notifications to any other user.
+        $normalizedPath = trim($path ?? '', '/');
+        if ($request->isMethod('post') && $normalizedPath === 'notifications') {
+            abort(403, 'Not allowed.');
+        }
+
         $baseUrl = config('services.magicbell.url', env('MAGICBELL_API_URL', 'https://api.magicbell.com'));
         $url = rtrim($baseUrl, '/') . '/' . ltrim($path ?? '', '/');
 
-        $apiKey = env('MAGICBELL_API_KEY') ?: $request->header('X-MagicBell-Api-Key') ?: $request->header('X-MAGICBELL-API-KEY');
+        $apiKey = config('services.magicbell.key') ?: $request->header('X-MagicBell-Api-Key') ?: $request->header('X-MAGICBELL-API-KEY');
 
         $headers = [
             'Accept' => $request->header('Accept', 'application/json'),
             'X-MAGICBELL-API-KEY' => $apiKey,
         ];
 
-        $apiSecret = env('MAGICBELL_API_SECRET');
+        $apiSecret = config('services.magicbell.secret');
         if ($apiSecret) {
             $headers['X-MAGICBELL-API-SECRET'] = $apiSecret;
         }

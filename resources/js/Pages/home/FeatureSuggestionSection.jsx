@@ -10,7 +10,7 @@ export default function FeatureSuggestionSection({ auth }) {
     const [showModal, setShowModal] = useState(false);
 
     return (
-        <section className="bg-[var(--pink)] py-16 md:py-32 relative overflow-hidden border-t border-white/5">
+        <section className="sp-band bg-[var(--pink)] py-20 md:py-28 relative overflow-hidden">
             {/* Background decorative elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-900/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
@@ -34,7 +34,7 @@ export default function FeatureSuggestionSection({ auth }) {
                         <ScrollX from={0} to={0} rotate={18}>
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
-                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border border-white/10 rounded-[20px] md:rounded-[30px]  flex items-center justify-center shadow-[4px 4px 0px 0px rgb(255 0 127)]xl transform transition-transform duration-700 group-hover:scale-110">
+                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border-2 border-white/10 rounded-[30px]  flex items-center justify-center shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] transform transition-transform duration-700 group-hover:scale-110">
                                 <FaLightbulb className="text-[#EFEA7B] text-3xl md:text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
                             </div>
                         </div>

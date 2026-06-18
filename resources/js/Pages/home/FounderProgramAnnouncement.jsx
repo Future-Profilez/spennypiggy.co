@@ -21,7 +21,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
     return (
         <>
-            <section className="bg-black pt-14 pb-12 md:py-24 px-4 relative overflow-hidden">
+            <section className="bg-transparent py-20 md:py-28 px-4 relative overflow-hidden">
                 {/* Background decorative elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>

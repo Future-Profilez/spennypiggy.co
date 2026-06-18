@@ -113,6 +113,10 @@ class PostsController extends Controller
             return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
         } else {
             if (!empty($post)) {
+                // Ownership check — only the post's author can edit it (IDOR).
+                if ((int) $post->user_id !== (int) Auth::id()) {
+                    return redirect()->back()->with("error", "Unauthorized.");
+                }
                 $post->type = $request->type;
                 $post->for_module = $request->for_module;
                 $post->title = $request->title ?? null;
@@ -425,6 +429,16 @@ class PostsController extends Controller
 
         $userId = Auth::id();
         $isCreator = $post->user_id === $userId;
+
+        // This route is public, so guard comments on premium/gated posts: an
+        // unauthenticated caller must not read comments (and commenter identities) on
+        // subscription/membership/support-gated posts.
+        if (!$isCreator && !$userId && in_array($post->for_module, ['subscription', 'membership', 'support'], true)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Unauthorized.'
+            ], 403);
+        }
 
         $comments = PostComment::where('post_id', $post->id)
             ->with(['replies' => function ($query) use ($userId, $isCreator) {

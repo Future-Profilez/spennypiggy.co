@@ -164,6 +164,9 @@ class PayoutAndStatusPropagationTest extends TestCase
             'status' => 'succeeded',
         ]);
 
+        // Payments are only payout-eligible after the 7-day hold (created_at <= now-7d).
+        Payment::where('stripe_session_id', $sessionId)->update(['created_at' => now()->subDays(10)]);
+
         // Create corresponding TipGoalsPayment + FinancialTransaction
         $tip = TipGoalsPayment::create([
             'tip_goal_id' => $this->tipGoalId,
@@ -231,8 +234,11 @@ class PayoutAndStatusPropagationTest extends TestCase
             'status' => 'succeeded',
         ]);
 
+        // Payments are only payout-eligible after the 7-day hold (created_at <= now-7d).
+        Payment::where('stripe_session_id', $session1)->update(['created_at' => now()->subDays(10)]);
+
         $tip1 = TipGoalsPayment::create([
-            'tip_goal_id' => $this->tipGoalId, 'user_id' => null, 
+            'tip_goal_id' => $this->tipGoalId, 'user_id' => null,
             'session_id' => $session1, 'currency' => 'GBP', 'amount' => 10.00, 'tax' => 0, 'status' => 'paid',
         ]);
         FinancialTransaction::create([
@@ -588,6 +594,8 @@ class PayoutAndStatusPropagationTest extends TestCase
             'reserve_amount_minor' => 100, 'currency' => 'gbp',
             'stripe_session_id' => $session1, 'status' => 'succeeded',
         ]);
+        // Payments are only payout-eligible after the 7-day hold (created_at <= now-7d).
+        Payment::where('stripe_session_id', $session1)->update(['created_at' => now()->subDays(10)]);
         $tip1 = TipGoalsPayment::create([
             'tip_goal_id' => $this->tipGoalId, 'user_id' => null, 
             'session_id' => $session1, 'currency' => 'GBP', 'amount' => 10, 'tax' => 0, 'status' => 'paid',

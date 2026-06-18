@@ -440,7 +440,7 @@ class SyncFinancialTransactions extends Command
         $recordedAmount = (float) ($riskData['reserve_amount'] ?? 0);
         if ($recordedAmount > 0) {
             $recordedCurrency = strtoupper((string) ($riskData['reserve_currency'] ?? 'GBP'));
-            $targetCurrency = strtoupper((string) ($creator->default_currency ?? 'GBP'));
+            $targetCurrency = strtoupper((string) ($creator?->default_currency ?? 'GBP'));
             $converted = $this->convertCurrency($recordedAmount, $recordedCurrency, $targetCurrency);
             return [
                 'amount' => round($converted, 2),

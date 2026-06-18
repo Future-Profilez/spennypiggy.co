@@ -1371,7 +1371,6 @@ class StripeController extends Controller
 
         try {
             $user = User::where('id', Auth::id())
-                ->where('is_uk', 0)
                 ->firstOrFail();
 
             $getdata = UserCart::where('user_id', Auth::id())
@@ -2714,7 +2713,7 @@ class StripeController extends Controller
 
             // Get email from billing_details
             $email = $charge->billing_details->email ?? null;
-            $user = User::where('email', $email)->where('is_uk', 0)->first();
+            $user = User::where('email', $email)->first();
             if (!$user) {
                 return response()->json([
                     'status' => true,
@@ -3148,14 +3147,14 @@ class StripeController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (!empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
                 'card_verification_required' => true,
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
             ]);
         }
-        $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
+        $creator = User::where('uuid', $creator_uid)->first();
         if (!$creator) {
             return response()->json([
                 'status' => false,
@@ -3488,31 +3487,37 @@ class StripeController extends Controller
 
                 $creatorNet = (float) $tip_pay->amount;
 
-                // Create deliverable record for tracking and certificate generation
-                $deliverable = Deliverable::create([
-                    'uuid' => (string) Str::uuid(),
-                    'product_id' => 'support_payment_' . $tip_pay->id,
-                    'item_id' => $tip_pay->id,
-                    'creator_id' => $tip_pay->creator_id,
-                    'gifter_id' => $tip_pay->user_id,
-                    'session_id' => $tip_pay->session_id,
-                    'payment_intent_id' => $session->payment_intent ?? null,
-                    'deliverable_type' => 'support',
-                    'product_type' => 'support_payment',
-                    'transaction_amount' => $tip_pay->amount,
-                    'customer_email' => $tip_pay->guest_email ?? ($tip_pay->user->email ?? null),
-                    'customer_name' => $tip_pay->guest_name ?? ($tip_pay->user->name ?? 'Anonymous'),
-                    'payment_currency' => strtoupper($tip_pay->currency ?? 'GBP'),
-                    'anonymous' => $tip_pay->anonymous ?? false,
-                    'message' => $tip_pay->message,
-                    'metadata' => json_encode([
-                        'support_payment_id' => $tip_pay->id,
+                // Create deliverable record for tracking and certificate generation.
+                // firstOrCreate keyed on product_type+item_id so a success-page reload or a
+                // webhook race doesn't create duplicate deliverables for the same payment.
+                $deliverable = Deliverable::firstOrCreate(
+                    [
+                        'product_type' => 'support_payment',
+                        'item_id' => $tip_pay->id,
+                    ],
+                    [
+                        'uuid' => (string) Str::uuid(),
+                        'product_id' => 'support_payment_' . $tip_pay->id,
                         'creator_id' => $tip_pay->creator_id,
-                        'tip_goal_id' => $tip_pay->tip_goal_id,
-                        'creator_net_amount' => $creatorNet,
-                        'anonymous' => $tip_pay->anonymous,
-                    ])
-                ]);
+                        'gifter_id' => $tip_pay->user_id,
+                        'session_id' => $tip_pay->session_id,
+                        'payment_intent_id' => $session->payment_intent ?? null,
+                        'deliverable_type' => 'support',
+                        'transaction_amount' => $tip_pay->amount,
+                        'customer_email' => $tip_pay->guest_email ?? ($tip_pay->user->email ?? null),
+                        'customer_name' => $tip_pay->guest_name ?? ($tip_pay->user->name ?? 'Anonymous'),
+                        'payment_currency' => strtoupper($tip_pay->currency ?? 'GBP'),
+                        'anonymous' => $tip_pay->anonymous ?? false,
+                        'message' => $tip_pay->message,
+                        'metadata' => json_encode([
+                            'support_payment_id' => $tip_pay->id,
+                            'creator_id' => $tip_pay->creator_id,
+                            'tip_goal_id' => $tip_pay->tip_goal_id,
+                            'creator_net_amount' => $creatorNet,
+                            'anonymous' => $tip_pay->anonymous,
+                        ])
+                    ]
+                );
 
                 // Dispatch ProcessWishItemDeliverable job for certificate generation
                 ProcessWishItemDeliverable::dispatch($deliverable);
@@ -3685,7 +3690,6 @@ class StripeController extends Controller
      */
     public function deleteStripeAccount($accountid)
     {
-        // $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         // if ($user->account_id) {
         //     StripeControl::deleteAccount($user->account_id);
         //     $user->account_id = NULL;
@@ -3992,7 +3996,7 @@ class StripeController extends Controller
             return to_route('user.show', ['username' => $sub->user->username])->with("success", 'Subscription already processed!');
         }
 
-        $user = User::where('id', $sub->user_id)->where('is_uk', 0)->first();
+        $user = User::where('id', $sub->user_id)->first();
 
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);

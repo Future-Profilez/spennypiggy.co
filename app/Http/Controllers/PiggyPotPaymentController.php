@@ -52,6 +52,14 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
+        // Don't allow purchases into a pot that is under moderation review or closed.
+        if (in_array($piggyPot->status, ['moderation_hold', 'archived', 'completed', 'expired'], true)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'This content is currently unavailable for purchase.'
+            ]);
+        }
+
         // Stripe compliance: content unlock pricing £4.99–£500 (GBP equivalent)
         $priceError = Helpers::priceWithinLimits($request->amount, $piggyPot->currency ?? 'gbp', 4.99, 500);
         if ($priceError) {
@@ -68,7 +76,7 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (!empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
                 'card_verification_required' => true,
@@ -104,7 +112,7 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $creator = User::where('id', $piggyPot->user_id)->where('is_uk', 0)->first();
+        $creator = User::where('id', $piggyPot->user_id)->first();
         if (!$creator) {
             return response()->json([
                 'status' => false,

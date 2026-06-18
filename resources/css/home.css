@@ -903,3 +903,53 @@ select#country{width:100%;}
 .sliderOption::-webkit-scrollbar-thumb{background-color:rgba(82, 82, 82, 0.5);border-radius:4px;}
 .sliderOption::-webkit-scrollbar-track{background-color:rgba(65, 65, 65, 0.5);border-radius:4px;}
 .sliderOption::-webkit-scrollbar-thumb:hover{background-color:rgba(0,0,0,0.7);}
+
+/* Wishlist showcase — HTML rebuild of the old HeroWishlist.png.
+   Mobile/tablet: snap-scroll row, upright. Desktop: tilted arc + float. */
+.wcards{display:flex;gap:14px;overflow-x:auto;padding:8px 16px 18px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+.wcards::-webkit-scrollbar{display:none;}
+.wcards{scrollbar-width:none;}
+.wcard{flex:0 0 auto;width:168px;scroll-snap-align:center;}
+/* Lenis smooth scroll */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+/* FUN stacked-card visual side — cheap radial glows (no filter:blur, smooth on scroll) */
+.funviz{
+  background:
+    radial-gradient(60% 55% at 24% 28%, rgba(5,239,184,0.30), transparent 70%),
+    radial-gradient(55% 50% at 82% 82%, rgba(255,0,127,0.22), transparent 70%),
+    linear-gradient(135deg, #0f2e2a 0%, #0c0c14 55%, #1a0b2e 100%);
+}
+.funfloat{animation:funfloat 7s ease-in-out infinite;will-change:transform;transform:translateZ(0);}
+@keyframes funfloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+@media (prefers-reduced-motion: reduce){.funfloat{animation:none;}}
+
+/* Desktop: cinematic 3D card stage */
+.wstage{position:relative;max-width:1240px;height:440px;margin:0 auto;perspective:2200px;}
+.wstage-glow{position:absolute;left:50%;top:54%;width:680px;height:380px;transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side, rgba(140,82,255,0.40), rgba(255,0,127,0.18), transparent 76%);
+  filter:blur(46px);pointer-events:none;}
+.wstage-inner{position:absolute;inset:0;transform-style:preserve-3d;}
+.w3d{position:absolute;width:188px;transform-style:preserve-3d;will-change:transform;
+  transform:translate(-50%,-50%) translateZ(var(--z)) rotateY(var(--ry)) rotateX(3deg);
+  filter:blur(var(--blur,0)) brightness(var(--dim,1));transition:filter .3s ease;}
+.w3d-float{animation:wfloaty var(--dur,6s) ease-in-out infinite;animation-delay:var(--delay,0s);will-change:transform;}
+@keyframes wfloaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-16px);}}
+@media (prefers-reduced-motion: reduce){
+  .w3d-float{animation:none;}
+  .wcard{animation:none !important;}
+}
+
+/* Coloured full-bleed bands: fade top & bottom edges into the black page so the
+   seam between a bright section and the black sections is soft, not a hard cut. */
+.sp-band{position:relative;}
+.sp-band::before,.sp-band::after{content:'';position:absolute;left:0;right:0;height:180px;pointer-events:none;z-index:2;}
+.sp-band::before{top:0;background:linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.85) 16%, rgba(0,0,0,0.5) 42%, rgba(0,0,0,0.18) 70%, transparent 100%);}
+.sp-band::after{bottom:0;background:linear-gradient(to top, #000 0%, rgba(0,0,0,0.85) 16%, rgba(0,0,0,0.5) 42%, rgba(0,0,0,0.18) 70%, transparent 100%);}
+@media (max-width:768px){
+  .sp-band::before,.sp-band::after{height:120px;}
+}

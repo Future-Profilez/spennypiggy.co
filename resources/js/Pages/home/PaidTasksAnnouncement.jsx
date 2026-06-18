@@ -8,7 +8,7 @@ export default function PaidTasksAnnouncement() {
     const isCreator = auth && auth.user && auth.user.role === 1;
     return (
         <>
-            <div className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative overflow-x-hidden">
+            <div className="bg-transparent py-20 md:py-28 px-4 relative overflow-x-hidden">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
                     <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>

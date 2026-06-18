@@ -533,6 +533,12 @@ class RegisteredUserController extends Controller
             return redirect()->route('login')->with('error', 'User not found.');
         }
 
+        // Prevent IDOR: the {uuid} must belong to the authenticated user — otherwise
+        // anyone could flip another user's verification by visiting their UUID.
+        if (!Auth::check() || (int) $user->id !== (int) Auth::id()) {
+            abort(403);
+        }
+
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // Optionally, retrieve the latest checkout session for this customer

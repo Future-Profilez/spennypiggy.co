@@ -408,7 +408,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         {text ? text : "Add Wish Item"}
                     </h2>
                     <p className="text-sm font-poppins">
-                        For products you will buy directly
+                        Fans fund a specific item and unlock an exclusive file.
                     </p>
                 </div>
             </div>
@@ -472,7 +472,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         id="wishname"
                                         name="wishname"
                                         type="text"
-                                        placeholder="Eg. Exclusive photo set"
+                                        placeholder="Eg. New gym leggings"
                                         value={data.wishname}
                                         className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm px-4 py-3"
                                         autoComplete="name"
@@ -719,10 +719,13 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             Required
                                         </span>
                                     </label>
-                                    <p className="text-sm text-gray-500 mb-4">
+                                    <p className="text-sm text-gray-500 mb-1">
                                         Upload the file that buyers will receive
                                         after purchase (Image, Video, Audio,
                                         Document, etc.).
+                                    </p>
+                                    <p className="text-sm font-semibold text-gray-700 mb-4">
+                                        This is what buyers pay for — make it good.
                                     </p>
 
                                     {item && item.content_file ? (

@@ -601,6 +601,17 @@ class SupportTicketController extends Controller
                 ], 422);
             }
 
+            // Guard against double-refund (double-click / concurrent request): status is
+            // only set to refund_initiated AFTER the Stripe call, so without this guard a
+            // second submit fires another refund. (The Stripe idempotency key in
+            // SupportTicketRefundService is the second layer of defence.)
+            if (in_array($ticket->status, ['refund_initiated', 'refunded', 'resolved', 'rejected'], true)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This refund has already been processed.'
+                ], 422);
+            }
+
             $creator = User::findOrFail($ticket->creator_id);
 
             $refundService->initiateRefund(

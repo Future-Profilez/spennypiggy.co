@@ -40,6 +40,15 @@ return [
     'stripe' => [
         'key' => env('STRIPE_PUBLIC_KEY'),
         'secret' => env('STRIPE_SECRET_KEY'),
+        'secret_us' => env('STRIPE_SECRET_KEY_US'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'webhook_secret_us' => env('STRIPE_WEBHOOK_SECRET_US'),
+    ],
+
+    'magicbell' => [
+        'key' => env('MAGICBELL_API_KEY'),
+        'secret' => env('MAGICBELL_API_SECRET'),
+        'url' => env('MAGICBELL_API_URL', 'https://api.magicbell.com'),
     ],
 
     'uploadcare' => [

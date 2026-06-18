@@ -48,6 +48,20 @@ class RiskEngineService
         // 1. Resolve Identity
         $identity = $this->identityService->resolveIdentity($context);
 
+        // --- HARD BLOCK: manually blocked identity ---
+        // A blocked identity must never receive ALLOW, regardless of limits/rollups.
+        if ($identity->is_blocked ?? false) {
+            $decision = 'BLOCK';
+            $reasons = ['IDENTITY_BLOCKED'];
+            $ui = [
+                'key' => 'IDENTITY_BLOCKED',
+                'title' => 'Payment Unavailable',
+                'body' => 'This payment cannot be processed. Please contact support.',
+            ];
+            $this->logDecision($identity, $context, $decision, $reasons);
+            return $this->formatResponse($decision, $reasons, $this->limitsService->getEffectiveLimits($identity), $ui);
+        }
+
         // 2. Refresh Rollups (to have latest counters)
         $rollup = $this->rollupService->refreshRollups($identity);
 

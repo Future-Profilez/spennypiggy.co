@@ -3316,7 +3316,15 @@ class WishitemController extends Controller
 
     public function editWishCategory(Request $request, $id)
     {
-        $category = UserCategory::where('id', $id)->first();
+        // Scope to the authenticated user — prevents editing another user's category (IDOR).
+        $category = UserCategory::where('id', $id)->where('user_id', Auth::id())->first();
+
+        if (empty($category)) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Category not found."
+            ], 404);
+        }
 
         $category->category = $request->name;
         $category->save();
@@ -3329,14 +3337,24 @@ class WishitemController extends Controller
 
     public function deleteCategory($id)
     {
-        $wish_cat = WishCategory::where('user_category_id', $id)->get();
+        // Scope to the authenticated user — prevents deleting another user's category (IDOR).
+        $category = UserCategory::where('id', $id)->where('user_id', Auth::id())->first();
+
+        if (empty($category)) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Category not found."
+            ], 404);
+        }
+
+        $wish_cat = WishCategory::where('user_category_id', $category->id)->get();
 
         foreach ($wish_cat as $value) {
             $value->user_category_id = NULL;
             $value->save();
         }
 
-        UserCategory::where('id', $id)->delete();
+        $category->delete();
 
         return response()->json([
             'status' => true,

@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 /**
  * Reusable fade-in scroll animation wrapper.
@@ -21,6 +21,12 @@ export default function FadeIn({
     scale = 1,
     className = "",
 }) {
+    // Honor prefers-reduced-motion: render content visible, no transform.
+    const reduce = useReducedMotion();
+    if (reduce) {
+        return <div className={className}>{children}</div>;
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, x, y, scale }}

@@ -51,7 +51,7 @@ class CheckMediaModeration implements ShouldQueue
 
         $headers = [
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
         ];
 
         // Kick off the Rekognition add-on. Processing is asynchronous, so the
@@ -86,10 +86,14 @@ class CheckMediaModeration implements ShouldQueue
         }
 
         if (!is_array($tags)) {
-            Log::warning('Moderation labels unavailable after polling', [
+            // Fail CLOSED: if we never got a verdict (API error / Rekognition timeout),
+            // flag the content for manual review rather than leaving monetised content
+            // live unscanned.
+            Log::warning('Moderation labels unavailable after polling — flagging for manual review', [
                 'model' => $this->modelClass,
                 'id' => $this->modelId,
             ]);
+            $this->flag();
             return;
         }
 

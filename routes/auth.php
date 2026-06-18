@@ -68,7 +68,7 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])
         ->name('login');
     Route::match(['get', 'post'], 'verify/login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store'])->name('login-user');
-    Route::post('verify-2fa', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
+    Route::post('verify-2fa', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'verify2FA'])->middleware('throttle:5,1')->name('verify2FA');
     Route::post('/verify-user', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
     Route::post('forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])->name('password.email');
     Route::get('forgot-password/{uuid}', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'forgotPasswordPage']);
@@ -1155,9 +1155,13 @@ Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 
 Route::get('/stripe/manual/payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
 Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'deleteConnectedAccount']);
 
-// Stripe Service Agreement Migration Routes
-Route::post('/stripe/migrate-account/{userId?}', [StripeController::class, 'migrateAccount'])->name('stripe.migrate-account');
-Route::get('/stripe/check-migration/{userId?}', [StripeController::class, 'checkMigrationNeeds'])->name('stripe.check-migration');
+// Stripe Service Agreement Migration Routes — require auth (was fully public; an
+// arbitrary {userId} could be migrated by anyone). The handler must still restrict
+// targeting another user's {userId} to admins.
+Route::middleware('auth')->group(function () {
+    Route::post('/stripe/migrate-account/{userId?}', [StripeController::class, 'migrateAccount'])->name('stripe.migrate-account');
+    Route::get('/stripe/check-migration/{userId?}', [StripeController::class, 'checkMigrationNeeds'])->name('stripe.check-migration');
+});
 
 Route::get('/force-error/error/file', function () {
     throw new \Exception("Testing Handler.php");

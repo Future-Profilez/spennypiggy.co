@@ -54,7 +54,7 @@ export default function Userprofile({ IsloggedIn }) {
     
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr  py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[100%] xl:max-w-none rounded-3xl"> 
+            <div className="userPr py-6 md:py-8 lg:flex items-center lg:items-end justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[0px]">
                         <img
@@ -139,7 +139,7 @@ export default function Userprofile({ IsloggedIn }) {
                                 ""}
                         </h1>
 
-                        <div className="userId mt- flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
+                        <div className="userId mt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
                             <Suspense fallback={<span className="flex text-gray-800 font-black text-normal mr-4 items-center">@{user?.username}</span>}>
                                 <ShareProfile
                                     username={user?.name}
@@ -158,7 +158,7 @@ export default function Userprofile({ IsloggedIn }) {
                 <div className="flex lg:block justify-center mt-6 lg:mt-0">
                     <div>
                         {user && user?.role == 1 ? (
-                            <div className="flex mb-4 justify-center md:mb-4 gap-2 md:gap-3">
+                            <div className="flex mb-4 justify-center lg:justify-end gap-2 md:gap-3">
                                 <div className="md:flex items-center gap-2 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">👥 {user?.followers_count}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Followers</p>
@@ -175,7 +175,7 @@ export default function Userprofile({ IsloggedIn }) {
                         ) : (
                             ""
                         )}
-                        <div className="mt-4 flex items-center justify-center lg:justify-end gap-1">
+                        <div className="mt-4 flex items-center justify-center lg:justify-end gap-2">
                             
                             {IsloggedIn ?
                                 <>

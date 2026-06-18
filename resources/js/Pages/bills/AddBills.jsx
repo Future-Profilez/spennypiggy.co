@@ -129,7 +129,7 @@ export default function AddBills(props) {
                 <div className="pl-3 text-left">
                     <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Recurring content</h2>
                     <p className="text-sm font-poppins">
-                        Offer a recurring content subscription.
+                        Pesky bill? Fans unlock exclusive content to help cover it.
                     </p>
                 </div>
             </div>

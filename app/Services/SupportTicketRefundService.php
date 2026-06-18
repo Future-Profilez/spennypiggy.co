@@ -38,6 +38,9 @@ class SupportTicketRefundService
         if ($connectedAccountId) {
             $options['stripe_account'] = $connectedAccountId;
         }
+        // Idempotency: a retry/double-submit returns the same refund instead of issuing
+        // a second one. Keyed to the ticket (one refund per support ticket).
+        $options['idempotency_key'] = 'refund_ticket_' . $ticket->uuid;
 
         \Stripe\Refund::create([
             'payment_intent' => $paymentIntentId,

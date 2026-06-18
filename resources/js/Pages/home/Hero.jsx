@@ -241,7 +241,7 @@ export default function Hero({auth}) {
           ref={heroRef}
           onPointerMove={onHeroPointerMove}
           onPointerLeave={onHeroPointerLeave}
-          className="bg-black relative min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center py-2 md:py-24 overflow-hidden"
+          className="bg-transparent relative min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center py-2 md:py-24 overflow-hidden"
         >
 
           <motion.div style={{ y: reduceMotion ? 0 : blobsY }} className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
@@ -364,7 +364,7 @@ export default function Hero({auth}) {
                     </FadeIn>
 
                     <FadeIn delay={0.3} y={20}>
-                        <h3 className="text-center text-base md:text-2xl text-gray-400 font-poppins font-light mb-10 md:mb-16 max-w-3xl mx-auto leading-relaxed opacity-100 px-2">
+                        <h3 className="text-center text-base md:text-2xl text-gray-300 font-poppins font-normal mb-10 md:mb-16 max-w-3xl mx-auto leading-relaxed opacity-100 px-2">
                           Get paid with secure, trackable income — with built-in
                           <span className="text-white font-semibold"> protection against disputes and chargebacks.</span>
                         </h3>
@@ -377,7 +377,7 @@ export default function Hero({auth}) {
                         ?
                         <Link
                           href={`/${auth && auth?.user && auth?.user?.username || ''}`}
-                          className="relative inline-flex items-center gap-3 md:gap-4 bg-white text-black font-black text-base md:text-xl py-3 px-7 md:px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden"
+                          className="relative inline-flex items-center gap-3 md:gap-4 bg-[#FF007F] text-white font-black text-base md:text-xl py-3 px-7 md:px-8 rounded-full shadow-[0_20px_50px_rgba(255,0,127,0.45)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden"
                           onMouseEnter={() => rocketIconRef1.current?.startAnimation()}
                         >
                           <span className="relative z-10">My Wishlist</span>
@@ -386,7 +386,7 @@ export default function Hero({auth}) {
                         </Link>
                         :  <Link
                           href="/register"
-                          className="relative inline-flex items-center gap-3 md:gap-4 bg-white text-black font-black text-base md:text-xl py-3 px-7 md:px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden"
+                          className="relative inline-flex items-center gap-3 md:gap-4 bg-[#FF007F] text-white font-black text-base md:text-xl py-3 px-7 md:px-8 rounded-full shadow-[0_20px_50px_rgba(255,0,127,0.45)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden"
                           onMouseEnter={() => rocketIconRef2.current?.startAnimation()}
                         >
                             <span className="relative z-10">Create your page</span>

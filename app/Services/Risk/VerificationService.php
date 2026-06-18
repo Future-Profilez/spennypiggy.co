@@ -10,7 +10,13 @@ use Illuminate\Support\Facades\Mail;
 
 class VerificationService
 {
-    private string $otpStore = 'file';
+    // Use the application's default cache driver. On Vapor/Lambda the local
+    // filesystem is ephemeral and not shared across invocations, so 'file'
+    // would lose OTPs between the send and verify requests.
+    private ?string $otpStore = null;
+
+    // Max failed OTP attempts before the identity is locked out.
+    private int $maxOtpAttempts = 5;
 
     /**
      * Generate and send OTP for a payment/identity context.
@@ -19,13 +25,15 @@ class VerificationService
      */
     public function sendOtp(RiskIdentity $identity, $context = [])
     {
-        // Simple 6-digit OTP
-        $otp = rand(100000, 999999);
-        
+        // Simple 6-digit OTP — use a cryptographically secure generator.
+        $otp = random_int(100000, 999999);
+
         // Store in Cache with 10 min expiry
         // Key: risk_otp_{identity_id}
         $key = 'risk_otp_' . $identity->id;
         Cache::store($this->otpStore)->put($key, $otp, 600);
+        // Reset the failed-attempt counter whenever a fresh code is issued.
+        Cache::store($this->otpStore)->forget('risk_otp_attempts_' . $identity->id);
         
         $email = $context['email'] ?? auth()->user()?->email;
         if (!$email) {
@@ -61,18 +69,29 @@ class VerificationService
     {
         $otp = trim((string) $otp);
         $key = 'risk_otp_' . $identity->id;
+        $attemptsKey = 'risk_otp_attempts_' . $identity->id;
         $cachedOtp = Cache::store($this->otpStore)->get($key);
-        
+
         if (!$cachedOtp) {
             return ['ok' => false, 'error' => 'OTP expired. Please request a new code.'];
         }
 
+        // Brute-force guard: lock out after too many failed attempts.
+        $attempts = (int) Cache::store($this->otpStore)->get($attemptsKey, 0);
+        if ($attempts >= $this->maxOtpAttempts) {
+            Cache::store($this->otpStore)->forget($key);
+            return ['ok' => false, 'error' => 'Too many incorrect attempts. Please request a new code.'];
+        }
+
         if ((string) $cachedOtp !== (string) $otp) {
+            // Increment failed-attempt counter, tied to the OTP's own lifetime.
+            Cache::store($this->otpStore)->put($attemptsKey, $attempts + 1, 600);
             return ['ok' => false, 'error' => 'Incorrect OTP. Please try again.'];
         }
-        
-        // Clear OTP after success to prevent replay
+
+        // Clear OTP + attempt counter after success to prevent replay
         Cache::store($this->otpStore)->forget($key);
+        Cache::store($this->otpStore)->forget($attemptsKey);
         
         // Create Confirmation Log
         $log = ConfirmationLog::create([

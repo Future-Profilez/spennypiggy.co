@@ -6,6 +6,8 @@ environments:
     queue-memory: 1024
     scheduler: true
     nodejs: 18
+    warm: 1
+    gateway-version: 2
     cli-timeout: 120
     cli-concurrency: 10
     cli-memory: 512
@@ -14,6 +16,8 @@ environments:
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
     cache: spenny-piggy-redis-caches
+    health-checks: false
+    database-proxy: true
     assets:
       - "public/build/**"
     build:

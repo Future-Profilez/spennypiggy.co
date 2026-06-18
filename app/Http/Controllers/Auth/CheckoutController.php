@@ -934,27 +934,26 @@ class CheckoutController extends Controller
         if (Auth::check()) {
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->with(['wish', 'owner', 'user'])->get();
         } else {
-            // For guest checkouts, we need to find the cart items by matching the payment details
-            // The $id parameter is the creator_id, not device_id
-            if ($paymentRecord && $paymentRecord->guest_email) {
-                // Try to find cart items by matching guest email and owner_id from the payment record
+            // For guest checkouts, scope to the device that created the cart first so
+            // two concurrent guests buying from the same creator don't pick up each
+            // other's items. The broad owner-only match is the last resort.
+            $deviceId = session('device_id') ?? request()->get('device_id');
+            if ($deviceId) {
+                $getdata = UserCart::where('device_id', $deviceId)
+                    ->where('owner_id', $id)
+                    ->where('status', 1)
+                    ->whereNull('user_id') // Guest cart items
+                    ->with(['wish', 'owner', 'user'])
+                    ->get();
+            } elseif ($paymentRecord && $paymentRecord->guest_email) {
+                // Fallback: no device id — match guest cart items by owner from the payment record.
                 $getdata = UserCart::where('owner_id', $paymentRecord->owner_id)
                     ->where('status', 1)
                     ->whereNull('user_id') // Guest cart items
                     ->with(['wish', 'owner', 'user'])
                     ->get();
             } else {
-                // Fallback: try to find by device_id from session or other means
-                $deviceId = session('device_id') ?? request()->get('device_id');
-                if ($deviceId) {
-                    $getdata = UserCart::where('device_id', $deviceId)
-                        ->where('owner_id', $id)
-                        ->where('status', 1)
-                        ->with(['wish', 'owner', 'user'])
-                        ->get();
-                } else {
-                    $getdata = collect(); // Empty collection
-                }
+                $getdata = collect(); // Empty collection
             }
         }
         try {
@@ -1006,6 +1005,25 @@ class CheckoutController extends Controller
                 }
             } else {
                 Log::warning("No existing payment found for session", ['session_id' => $sessionId]);
+            }
+
+            // Atomically claim this session for processing. A check-then-act guard
+            // (the paid-check above) still races the webhook / a concurrent redirect:
+            // both can read "not paid" and double-process (duplicate StripePaymentItems,
+            // UserPayment, Deliverable). This conditional update only succeeds for the
+            // first caller; if 0 rows are affected, someone else already owns it.
+            $claimed = StripePaymentDetail::where('session_id', $sessionId)
+                ->where('payment_status', '!=', 'paid')
+                ->update([
+                    'payment_status' => 'paid',
+                    'updated_at' => Carbon::now(),
+                ]);
+
+            if ($claimed === 0) {
+                Log::info("successCheckout: session already claimed, skipping duplicate processing", ['session_id' => $sessionId]);
+                $already = StripePaymentDetail::where('session_id', $sessionId)->first();
+                $thankYouParams = ($already && $already->owner) ? ['username' => $already->owner->username] : [];
+                return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
             }
 
             foreach ($getdata as $dd) {
@@ -1060,13 +1078,7 @@ class CheckoutController extends Controller
             }
 
             $sessionId = session('session_id');
-            // Log::info("Updating payment status", ['session_id' => $sessionId]);
-
-            StripePaymentDetail::where('session_id', $sessionId)->update([
-                'payment_status' => 'paid',
-                'updated_at' => Carbon::now(),
-            ]);
-            // Log::info("Payment update result", ['updated_rows' => $updateResult]);
+            // payment_status was already set to 'paid' atomically by the claim above.
 
             // Amount must be GBP (you already store subtotal in GBP)
 

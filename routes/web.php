@@ -483,10 +483,12 @@ Route::middleware('auth')->group(function () {
 });
 
 // One-click unsubscribe route (no authentication required — must stay outside the auth group
-// so logged-out users clicking the email link aren't bounced to login)
+// so logged-out users clicking the email link aren't bounced to login).
+// The controller validates the signature itself via hasValidSignature() and redirects
+// home with an error on an invalid/expired link, instead of the 'signed' middleware's
+// bare 403 — friendlier for users clicking a stale link from an old email.
 Route::get('/unsubscribe/{user}', [App\Http\Controllers\EmailPreferenceController::class, 'unsubscribe'])
-    ->name('email.unsubscribe')
-    ->middleware('signed');
+    ->name('email.unsubscribe');
 
 // Select Default Currency
 Route::get('/currency/{c}', function (Request $request, $c) {
@@ -907,9 +909,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     Route::patch('/feature-suggestions/{suggestion}/status', [FeatureSuggestionController::class, 'updateStatus'])->name('admin.feature-suggestions.update-status');
 });
 
-// System Diagnostics Admin
-Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
-Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
+// System Diagnostics Admin — must be admin-only (was previously unprotected).
+Route::middleware(['auth', 'verified', 'admin'])->group(function () {
+    Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
+    Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
+});
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
 Route::get('/debug-sentry', function () {

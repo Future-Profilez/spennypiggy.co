@@ -6,7 +6,7 @@ import StaggerItem from '@/Components/animations/StaggerItem';
 export default function ReferEarnAnnouncement() {
     return (
         <>
-            <div className="bg-pink-600 pb-12 py-24 md:pb-24 md:py-24 px-4 relative overflow-x-hidden">
+            <div className="sp-band bg-pink-600 py-20 md:py-28 px-4 relative overflow-x-hidden">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full mix-blend-multiply filter blur-xl opacity-20 floating-shape"></div>
                     <div className="absolute bottom-10 right-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-2xl opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>

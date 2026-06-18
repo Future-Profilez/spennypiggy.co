@@ -502,7 +502,8 @@ class ShopsController extends Controller
                 // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
 
             } catch (Exception $e) {
-                $shop->delete();
+                // Do NOT delete the existing listing on a transient Stripe error during an
+                // update — that would destroy the creator's shop item (and orphan its orders).
                 return response()->json([
                     'status' => false,
                     'msg' => "Stripe Error: " . $e->getMessage()
@@ -726,7 +727,9 @@ class ShopsController extends Controller
                 }
             }
 
-            $shop = Shop::where('uuid', $shop_id)->first();
+            // Only approved + active items can be purchased — blocks buying items still on
+            // moderation hold or held for >£2,500 enhanced review (approved=0).
+            $shop = Shop::where('uuid', $shop_id)->where('approved', 1)->where('status', 1)->first();
 
             if (!$shop) {
                 return response()->json([

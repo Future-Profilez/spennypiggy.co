@@ -1218,6 +1218,10 @@ class StripeControl
     /**
      * Transfer funds to a connected account
      *
+     * @deprecated Use transferToConnectedAccountMinor() instead. This major-unit
+     *             variant has no idempotency key and no metadata support, so a retry
+     *             can double-pay. Currently unused; kept only to avoid breaking any
+     *             dynamic references.
      * @param string $destinationAccountId
      * @param int|float $amount Amount in major units (e.g. 10.00)
      * @param string $currency

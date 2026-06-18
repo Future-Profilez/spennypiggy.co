@@ -158,7 +158,10 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
                 strtolower($currency),
                 $metadataBase,
                 $transferDescription,
-                'founder_monthly_transfer_' . $row->id
+                // Key on the STABLE (creator, month), not $row->id: firstOrNew can create
+                // different rows (different ids) in concurrent runs, which would defeat the
+                // idempotency and double-pay. (creator, month) is identical across runs.
+                'founder_monthly_transfer_' . $creator->id . '_' . $monthKey
             );
 
             StripeControl::ensureManualPayoutSchedule($creator->account_id, strtolower($currency));
@@ -170,7 +173,7 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
                 'metadata' => array_merge($metadataBase, [
                     'transfer_id' => (string) ($transfer->id ?? ''),
                 ]),
-                'idempotency_key' => 'founder_monthly_payout_' . $row->id,
+                'idempotency_key' => 'founder_monthly_payout_' . $creator->id . '_' . $monthKey,
             ], $creator->account_id);
 
             // Money has moved — commit the marks immediately in their own small transaction.

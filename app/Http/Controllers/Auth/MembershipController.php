@@ -253,7 +253,7 @@ class MembershipController extends Controller
         } else {
             try {
                 $user = User::where('id', Auth::id())->first();
-                $mem = Membership::where('uuid', $uuid)->first();
+                $mem = Membership::where('uuid', $uuid)->where('user_id', Auth::id())->first();
 
                 if (empty($mem)) {
                     return redirect()->back()->with("error", "Membership not found.");
@@ -427,7 +427,7 @@ class MembershipController extends Controller
 
     public function removeLevel($uuid)
     {
-        $mem = Membership::whereUuid($uuid)->first();
+        $mem = Membership::whereUuid($uuid)->where('user_id', Auth::id())->first();
 
         if (empty($mem)) {
             return response()->json([
@@ -1076,6 +1076,14 @@ class MembershipController extends Controller
                         : $memBreakdown['total_supporter_pays'];
                     $creatorAmount = $amount;
 
+                    // Reserve is taken from the creator's NET amount (never the gross).
+                    $reservePercent = (int) app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent(
+                        $creator,
+                        \App\Models\CreatorMetric::where('creator_id', $creator->uuid)->first(),
+                        now()
+                    );
+                    $reserveAmount = $reservePercent > 0 ? round($creatorAmount * $reservePercent / 100, 2, PHP_ROUND_HALF_UP) : 0;
+
                     FinancialTransaction::updateOrCreate(
                         [
                             'source_type' => \App\Models\MembershipPayment::class,
@@ -1090,6 +1098,8 @@ class MembershipController extends Controller
                             'stripe_fee' => $stripeFee,
                             'vat_amount' => $vat,
                             'net_amount' => $creatorAmount,
+                            'reserve_amount' => $reserveAmount,
+                            'reserve_status' => $reserveAmount > 0 ? 'held' : 'none',
                             'currency' => strtoupper($mem->currency ?? 'GBP'),
                             'status' => 'completed',
                             'description' => 'Membership: ' . ($mem->membership->level ?? 'Subscription'),

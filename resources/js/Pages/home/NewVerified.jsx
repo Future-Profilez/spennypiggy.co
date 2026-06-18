@@ -5,7 +5,7 @@ export default function NewVerified({ creators }) {
   if (!creators || creators.length === 0) return null;
 
   return (
-    <section className="bg-black relative  py-24">
+    <section className="bg-transparent relative py-20 md:py-28">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
           <div className="absolute top-1/4 left-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>

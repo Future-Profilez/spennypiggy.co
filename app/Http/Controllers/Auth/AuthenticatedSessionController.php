@@ -962,18 +962,24 @@ class AuthenticatedSessionController extends Controller
         $otp = $request->input('otp');
         $backup_code = $request->input('backup_code');
 
+        // Generic failure avoids user-enumeration and the fatal null-deref below
+        // ($user->tfa_key / $user->id) when the email doesn't match a user.
+        if (!$user) {
+            return response()->json(['status' => false, 'msg' => 'Invalid verification code.'], 422);
+        }
 
+        $valid = false;
 
         if (!empty($otp)) {
             $valid = $this->google2FA->verifyKey($user->tfa_key, $otp);
         }
 
         if (!empty($backup_code)) {
-            $valid = false;
             $backup = UserBackupCode::where('user_id', $user->id)->get();
-            foreach ($backup as $key => $value) {
+            foreach ($backup as $value) {
                 $code = decrypt($value->code);
-                if ($code == $backup_code) {
+                // Constant-time comparison to avoid timing side-channels.
+                if (hash_equals((string) $code, (string) $backup_code)) {
                     $valid = true;
                     $value->delete();
                 }

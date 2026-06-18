@@ -65,8 +65,11 @@ class StripeWebhookController extends Controller
     {
         Log::info("StripeWebhookController: Received request at /webhook/payment (Unified Endpoint)");
 
-        // Ensure API key is set for any subsequent Stripe calls
-        $stripe_secret = env('STRIPE_SECRET_KEY');
+        // Ensure API key is set for any subsequent Stripe calls.
+        // Prefer config() over env() — on Vapor, cached config makes env() return
+        // null mid-request, which would break webhook signature verification.
+        // env() is kept as a fallback so no environment regresses.
+        $stripe_secret = config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY');
         Stripe::setApiKey($stripe_secret);
 
         $payload = @file_get_contents('php://input');
@@ -75,8 +78,8 @@ class StripeWebhookController extends Controller
 
         // Try multiple secrets (UK and US)
         $configs = [
-            ['secret' => env('STRIPE_WEBHOOK_SECRET'), 'key' => env('STRIPE_SECRET_KEY')],
-            ['secret' => env('STRIPE_WEBHOOK_SECRET_US'), 'key' => env('STRIPE_SECRET_KEY_US')],
+            ['secret' => config('services.stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET'), 'key' => config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY')],
+            ['secret' => config('services.stripe.webhook_secret_us') ?: env('STRIPE_WEBHOOK_SECRET_US'), 'key' => config('services.stripe.secret_us') ?: env('STRIPE_SECRET_KEY_US')],
         ];
 
         $verified = false;
@@ -991,8 +994,23 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // Avoid duplicate processing if already completed
-        if ($pay->status === 'paid' && $pay->payment_intent_id) {
+        // Avoid duplicate processing. A check-then-act guard races concurrent
+        // webhook deliveries (both read "not paid" before either saves), so claim
+        // the row atomically: only the first delivery flips the flag and proceeds.
+        if ($session->payment_status === 'paid') {
+            $claimed = \App\Models\PiggyPotContribution::where('session_id', $session->id)
+                ->where(function ($q) {
+                    $q->where('status', '!=', 'paid')->orWhereNull('payment_intent_id');
+                })
+                ->update([
+                    'status' => 'paid',
+                    'payment_intent_id' => $session->payment_intent,
+                ]);
+            if ($claimed === 0) {
+                Log::info("Piggy pot payment already processed, skipping duplicate", ['session_id' => $session->id]);
+                return;
+            }
+        } elseif ($pay->status === 'paid' && $pay->payment_intent_id) {
             return;
         }
 
@@ -2061,6 +2079,26 @@ class StripeWebhookController extends Controller
     }
 
     /**
+     * Stripe fires both invoice.paid and invoice.payment_succeeded for the same
+     * invoice. Both wish-subscription handlers create a content deliverable, so
+     * without this guard one billing cycle produces two deliverables (double
+     * delivery + double certificate). Dedup on the invoice id (webhook-only, so
+     * it never collides with the checkout-time deliverable).
+     */
+    private function wishSubscriptionDeliverableExistsForInvoice($wishSubscription, $invoiceId): bool
+    {
+        if (empty($invoiceId)) {
+            return false;
+        }
+
+        return \App\Models\Deliverable::whereIn('product_type', ['wish_subscription_content', 'wish_subscription_renewal'])
+            ->where('item_id', $wishSubscription->wish_item->id)
+            ->where('gifter_id', $wishSubscription->user_id)
+            ->where('metadata', 'like', '%"invoice_id":"' . $invoiceId . '"%')
+            ->exists();
+    }
+
+    /**
      * Handle wish subscription renewal payments
      */
     private function handleWishSubscriptionRenewal($invoiceData, $wishSubscription)
@@ -2101,7 +2139,10 @@ class StripeWebhookController extends Controller
             ]);
 
             // If wish item has content to deliver for renewals, create deliverable
-            if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
+            // (skip if invoice.paid already created one for this same invoice).
+            if ($wishSubscription->wish_item
+                && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))
+                && !$this->wishSubscriptionDeliverableExistsForInvoice($wishSubscription, $invoiceData->id)) {
 
                 // Create deliverable record for renewal content delivery with certificate support
                 $deliverable = \App\Models\Deliverable::create([
@@ -2410,7 +2451,9 @@ class StripeWebhookController extends Controller
             ]);
 
             // Check if wish item has content to deliver
-            if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
+            // (skip if invoice.payment_succeeded already created one for this same invoice).
+            if ((!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))
+                && !$this->wishSubscriptionDeliverableExistsForInvoice($wishSubscription, $invoiceData->id)) {
 
                 // Create deliverable record for tracking with certificate support
                 $deliverable = \App\Models\Deliverable::create([
@@ -3495,8 +3538,12 @@ class StripeWebhookController extends Controller
                             'payment_currency' => strtoupper($shopPayment->currency ?? 'GBP'),
                             'anonymous' => $shopPayment->anonymous ?? false,
                             'message' => $shopPayment->message,
-                            'status' => $shopPayment->shop->type == 'physical' ? 'pending' : 'delivered',
-                            'delivered_at' => $shopPayment->shop->type == 'physical' ? null : now(),
+                            // Stripe compliance: high-value orders (>£2,500) are held for an
+                            // enhanced review (admin confirms delivery before payout clears).
+                            // Mirrors the redirect path in ShopsController.
+                            'needs_admin_review' => Helpers::priceFormat(strtoupper($shopPayment->currency ?? 'GBP'), (float) $shopPayment->amount, 'GBP') > 2500,
+                            'status' => ($shopPayment->shop->type == 'physical' || Helpers::priceFormat(strtoupper($shopPayment->currency ?? 'GBP'), (float) $shopPayment->amount, 'GBP') > 2500) ? 'pending' : 'delivered',
+                            'delivered_at' => ($shopPayment->shop->type == 'physical' || Helpers::priceFormat(strtoupper($shopPayment->currency ?? 'GBP'), (float) $shopPayment->amount, 'GBP') > 2500) ? null : now(),
                             'metadata' => json_encode([
                                 'shop_item_id' => $shopPayment->shop->id,
                                 'shop_item_name' => $shopPayment->shop->name,
@@ -3639,7 +3686,6 @@ class StripeWebhookController extends Controller
             // Update local PayoutRecord if it exists
             $record = \App\Models\PayoutRecord::where('stripe_payout_id', $payout->id)->first();
             if ($record) {
-                $prevStatus = (string) ($record->status ?? '');
                 $status = match ($payout->status) {
                     'paid' => 'paid',
                     'failed' => 'failed',
@@ -3648,12 +3694,21 @@ class StripeWebhookController extends Controller
                     default => 'pending'
                 };
 
-                $record->update([
-                    'status' => $status,
-                    'arrival_date' => $payout->arrival_date ? \Carbon\Carbon::createFromTimestamp($payout->arrival_date) : $record->arrival_date,
-                    'failure_code' => $payout->failure_code ?? null,
-                    'failure_message' => $payout->failure_message ?? null,
-                ]);
+                // Capture the previous status and apply the new one under a row lock so
+                // duplicate/concurrent Stripe events for the same payout can't both observe
+                // the same transition (which would double-requeue the creator's payments).
+                $isTransition = DB::transaction(function () use ($payout, $status, &$record) {
+                    $locked = \App\Models\PayoutRecord::where('id', $record->id)->lockForUpdate()->first();
+                    $prev = (string) ($locked->status ?? '');
+                    $locked->update([
+                        'status' => $status,
+                        'arrival_date' => $payout->arrival_date ? \Carbon\Carbon::createFromTimestamp($payout->arrival_date) : $locked->arrival_date,
+                        'failure_code' => $payout->failure_code ?? null,
+                        'failure_message' => $payout->failure_message ?? null,
+                    ]);
+                    $record = $locked->fresh();
+                    return $prev !== $status;
+                });
 
                 Log::info("Payout Record updated via webhook: {$payout->id} status: {$status}");
 
@@ -3661,14 +3716,14 @@ class StripeWebhookController extends Controller
                 // creator's payments so the next run retries automatically. Bonus payouts are
                 // excluded (they have their own reconciliation). prevStatus guard makes this
                 // idempotent against duplicate Stripe events.
-                if ($prevStatus !== $status
+                if ($isTransition
                     && in_array($status, ['failed', 'canceled'], true)
                     && empty($record->metadata['bonus_type'])
                 ) {
                     $this->requeueFailedRunPayout($record);
                 }
 
-                if ($prevStatus !== $status && in_array($status, ['paid', 'failed'], true)) {
+                if ($isTransition && in_array($status, ['paid', 'failed'], true)) {
                     $record->loadMissing('creator');
                     $creator = $record->creator;
                     $bonusType = (string) (($record->metadata['bonus_type'] ?? null) ?? '');
@@ -3852,17 +3907,26 @@ class StripeWebhookController extends Controller
                 if ($accountId) {
                     $creator = \App\Models\User::where('account_id', $accountId)->first();
                     if ($creator) {
-                        $creator->suspended_account = 1;
-                        $creator->save();
-                        $creator->tokens()->delete();
+                        try {
+                            $creator->suspended_account = 1;
+                            $creator->save();
+                            $creator->tokens()->delete();
 
-                        // Mark as HIGH RISK with minimum 20% reserve
-                        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
-                        $metrics->risk_level = 'high';
-                        $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
-                        $metrics->save();
+                            // Mark as HIGH RISK with minimum 20% reserve
+                            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+                            $metrics->risk_level = 'high';
+                            $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
+                            $metrics->save();
 
-                        Log::critical("Stripe Risk: Account {$accountId} locked and marked HIGH RISK due to unexpected manual payout creation.");
+                            Log::critical("Stripe Risk: Account {$accountId} locked and marked HIGH RISK due to unexpected manual payout creation.");
+                        } catch (\Throwable $suspendEx) {
+                            // Risk-critical: don't let the generic handler swallow this at error level.
+                            // Surface it loudly — an unexpected manual payout that failed to lock the
+                            // account needs manual intervention.
+                            Log::critical("Stripe Risk: FAILED to suspend account {$accountId} after unexpected payout {$payout->id} — manual intervention required.", [
+                                'error' => $suspendEx->getMessage(),
+                            ]);
+                        }
                     }
                 }
             }
@@ -4120,32 +4184,78 @@ class StripeWebhookController extends Controller
                 default     => $newStatus,
             };
 
+            // Resolve the checkout session for this PI. Many source records are keyed by
+            // session_id, not payment_intent — the previous `orWhere($sessionCol, $paymentIntentId)`
+            // compared a session column against the PI value and never matched them.
+            $sessionId = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->value('stripe_session_id')
+                ?? \App\Models\StripePaymentDetail::where('stripe_payment_intent_id', $paymentIntentId)->value('session_id');
+
+            // Cascade a source record's OWN status only for terminal/negative outcomes.
+            // A 'succeeded' sync must never overwrite a source 'paid' status with 'completed'.
+            $sourceStatus = in_array($newStatus, ['refunded', 'disputed', 'failed', 'blocked', 'review_hold'], true)
+                ? $newStatus
+                : null;
+
+            // [model, piColumn|null, sessionColumn|null, statusColumn]
             $sourceModels = [
-                [\App\Models\TaskPurchase::class,       'payment_intent_id', 'stripe_session_id'],
-                [\App\Models\PiggyPotContribution::class, 'payment_intent_id', 'session_id'],
-                [\App\Models\TipGoalsPayment::class,    'session_id',        'session_id'], // Uses session_id for both
-                [\App\Models\ShopPayment::class,        'session_id',        'session_id'],
-                [\App\Models\StripePaymentDetail::class, 'stripe_payment_intent_id', 'session_id'],
-                [\App\Models\MembershipPayment::class,  'session_id',        'session_id'],
-                [\App\Models\BillPayment::class,        'session_id',        'session_id'],
+                [\App\Models\TaskPurchase::class,         'payment_intent_id',        'stripe_session_id', 'status'],
+                [\App\Models\PiggyPotContribution::class, 'payment_intent_id',        'session_id',        'status'],
+                [\App\Models\TipGoalsPayment::class,      null,                       'session_id',        'status'],
+                [\App\Models\ShopPayment::class,          null,                       'session_id',        'payment_status'],
+                [\App\Models\StripePaymentDetail::class,  'stripe_payment_intent_id', 'session_id',        'payment_status'],
+                [\App\Models\MembershipPayment::class,    null,                       'session_id',        'status'],
+                [\App\Models\BillPayment::class,          null,                       'session_id',        'status'],
             ];
 
-            foreach ($sourceModels as [$modelClass, $piCol, $sessionCol]) {
-                $records = $modelClass::where($piCol, $paymentIntentId)
-                    ->orWhere($sessionCol, $paymentIntentId)
-                    ->get();
+            foreach ($sourceModels as [$modelClass, $piCol, $sessionCol, $statusCol]) {
+                $ids = [];
+                if ($piCol) {
+                    $ids = array_merge($ids, $modelClass::where($piCol, $paymentIntentId)->pluck('id')->all());
+                }
+                if ($sessionCol && $sessionId) {
+                    $ids = array_merge($ids, $modelClass::where($sessionCol, $sessionId)->pluck('id')->all());
+                }
+                $ids = array_values(array_unique($ids));
+                if (empty($ids)) {
+                    continue;
+                }
 
-                foreach ($records as $record) {
-                    $updated = \App\Models\FinancialTransaction::where('source_type', $modelClass)
-                        ->where('source_id', $record->id)
-                        ->update(['status' => $ftStatus]);
-                    if ($updated) {
-                        Log::info("FinancialTransaction updated directly", [
-                            'source_type' => $modelClass,
-                            'source_id'   => $record->id,
-                            'status'      => $ftStatus,
-                        ]);
+                if ($sourceStatus !== null) {
+                    $modelClass::whereIn('id', $ids)->update([$statusCol => $sourceStatus]);
+                }
+                \App\Models\FinancialTransaction::where('source_type', $modelClass)
+                    ->whereIn('source_id', $ids)
+                    ->update(['status' => $ftStatus]);
+            }
+
+            // StripePaymentItems are children of StripePaymentDetail (by session); their own
+            // FinancialTransactions (e.g. wish purchases) need the status propagated too.
+            if ($sessionId) {
+                $spdIds = \App\Models\StripePaymentDetail::where('session_id', $sessionId)->pluck('id')->all();
+                if (!empty($spdIds)) {
+                    $spiIds = \App\Models\StripePaymentItems::whereIn('stripe_payment_detail_id', $spdIds)->pluck('id')->all();
+                    if (!empty($spiIds)) {
+                        \App\Models\FinancialTransaction::where('source_type', \App\Models\StripePaymentItems::class)
+                            ->whereIn('source_id', $spiIds)
+                            ->update(['status' => $ftStatus]);
                     }
+                }
+            }
+
+            // Deliverable + UserPayment carry the same terminal status (refund/dispute/etc.).
+            if ($sourceStatus !== null) {
+                $delIds = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)
+                    ->when($sessionId, fn ($q) => $q->orWhere('session_id', $sessionId))
+                    ->pluck('id')->all();
+                if (!empty($delIds)) {
+                    \App\Models\Deliverable::whereIn('id', $delIds)
+                        ->update(['status' => $sourceStatus, 'payment_status' => $sourceStatus]);
+                }
+
+                if ($sessionId) {
+                    \App\Models\UserPayment::where('payment_details', json_encode($sessionId))
+                        ->orWhere('payment_details', $sessionId)
+                        ->update(['status' => $sourceStatus]);
                 }
             }
         } catch (\Exception $e) {

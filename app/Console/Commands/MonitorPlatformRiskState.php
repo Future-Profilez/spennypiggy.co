@@ -219,9 +219,18 @@ class MonitorPlatformRiskState extends Command
         
         $currentState = PlatformRiskState::latest('started_at')->first();
         if ($currentState && $currentState->state !== 'NORMAL' && $currentState->set_by === 'system') {
-            // Recovery logic: require 24h of stability?
-            // Spec doesn't strictly define auto-recovery, but implies automatic changes.
-            // Let's set to NORMAL if no triggers hit.
+            // Stabilization window: require the elevated state to have held for at least
+            // RECOVERY_STABILIZATION_HOURS (with no triggers firing this run) before
+            // auto-recovering. Without it, a metric oscillating around a threshold flaps
+            // NORMAL <-> elevated on every scheduler tick.
+            $stabilizationHours = 2;
+            if ($currentState->started_at && $currentState->started_at->gt(now()->subHours($stabilizationHours))) {
+                Log::info("Risk state auto-recovery deferred: elevated state not yet stable for {$stabilizationHours}h", [
+                    'state' => $currentState->state,
+                    'started_at' => (string) $currentState->started_at,
+                ]);
+                return;
+            }
             $this->transitionState('NORMAL', ['METRICS_STABILIZED'], []);
         }
     }

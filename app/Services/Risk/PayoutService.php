@@ -576,6 +576,28 @@ class PayoutService
                     }
                 });
 
+                // Record a zero-value payout entry so each run has a consistent
+                // per-creator audit trail. No Stripe payout was issued here (only
+                // adjustments/holds/negative-balance absorption ran), so no
+                // payout.failed webhook will ever fire for it — this record gives
+                // the run a handle for reconciliation without one.
+                try {
+                    \App\Models\PayoutRecord::create([
+                        'creator_id' => $creatorId,
+                        'payout_run_id' => $run->id,
+                        'stripe_payout_id' => 'zero_' . uniqid(),
+                        'amount_minor' => 0,
+                        'currency' => $currency,
+                        'status' => 'zero_payout',
+                        'metadata' => [
+                            'reason' => 'No net payout (adjustments/holds/negative-balance only)',
+                            'processed_at' => now()->toDateTimeString(),
+                        ],
+                    ]);
+                } catch (\Exception $logEx) {
+                    Log::error("Failed to record zero payout record for creator {$creatorId}: " . $logEx->getMessage());
+                }
+
                 // Zero payout is still a processed creator
                 $actualPayouts[$creatorId] = $data;
                 $actualCreatorCount++;
