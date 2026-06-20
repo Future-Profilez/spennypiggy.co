@@ -35,6 +35,7 @@ class ShopPayment extends Model
         'shipping_info',
         'digital_waiver_confirmed_at',
         'digital_waiver_text',
+        'creator_note',
     ];
 
 

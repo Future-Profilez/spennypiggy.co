@@ -1329,6 +1329,7 @@ class ShopsController extends Controller
             'tracking_id' => 'nullable|string',
             'courier_name' => 'nullable|string',
             'expected_delivery_date' => 'nullable|date',
+            'creator_note' => 'nullable|string',
         ]);
 
         $shopPayment = ShopPayment::where('uuid', $uuid)->firstOrFail();
@@ -1353,11 +1354,31 @@ class ShopsController extends Controller
         }
 
         $deliverable->update($updateData);
-        // $shopPayment->status = $request->status;
-        // $shopPayment->tracking_id = $request->tracking_id;
-        // $shopPayment->courier_name = $request->courier_name;
-        // $shopPayment->expected_delivery_date = $request->expected_delivery_date;
-        // $shopPayment->save();
+
+        // Persist creator note into deliverable metadata so it is returned to the frontend
+        try {
+            $meta = (array) ($deliverable->metadata ?? []);
+            if ($request->has('creator_note')) {
+                if ($request->creator_note !== null && $request->creator_note !== '') {
+                    $meta['creator_note'] = $request->creator_note;
+                } else {
+                    unset($meta['creator_note']);
+                }
+            }
+            $deliverable->metadata = $meta;
+            $deliverable->save();
+            $deliverable->refresh();
+
+            // Also store a copy on the ShopPayment row for easier frontend access
+            try {
+                $shopPayment->creator_note = $request->has('creator_note') ? $request->creator_note : $shopPayment->creator_note;
+                $shopPayment->save();
+            } catch (\Exception $inner) {
+                Log::warning('Fulfillment: Failed to save creator_note on ShopPayment', ['error' => $inner->getMessage()]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Fulfillment: Failed to save creator_note', ['error' => $e->getMessage()]);
+        }
 
         // Send PWA notification to supporter about status update
         try {
@@ -1515,6 +1536,9 @@ class ShopsController extends Controller
                     'is_delayed' => $isDelayed,
                     'tracking_id' => $deliverable->tracking_id ?? null,
                     'courier_name' => $deliverable->courier_name ?? null,
+                    'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
+                    'creator_note' => $order->creator_note,
+                    'metadata' => $deliverable->metadata ?? [],
                     'ask_question' => $order->ask_question,
                     'answer' => $order->answer,
                     'message' => $order->message,
@@ -1577,6 +1601,8 @@ class ShopsController extends Controller
                 'tracking_id' => $deliverable->tracking_id ?? null,
                 'courier_name' => $deliverable->courier_name ?? null,
                 'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
+                'creator_note' => $order->creator_note,
+                'metadata' => $deliverable->metadata ?? [],
                 'ask_question' => $order->ask_question,
                 'answer' => $order->answer,
                 'message' => $order->message,
