@@ -33,27 +33,36 @@ function CTA({ children, glyph }) {
     );
 }
 
-/* 1 — Wishlist: add dream items + share */
+/* 1 — Wishlist: add dream items + share (Option A — progress + dream-total meta) */
 function WishlistMock() {
     const items = [
-        { e: "🎧", n: "AirPods Max", p: "£499", done: true },
-        { e: "🥤", n: "Stanley Tumbler", p: "£49", done: true },
-        { e: "📱", n: "iPhone 16 Pro", p: "£1,200", done: false },
+        { e: "🎧", n: "AirPods Max", p: "£499", tint: PURPLE, done: true },
+        { e: "🥤", n: "Stanley Tumbler", p: "£49", tint: PINK, done: true },
+        { e: "📱", n: "iPhone 16 Pro", p: "£1,200", tint: YELLOW, done: false },
     ];
+    const inCount = items.filter((it) => it.done).length;
+    const pct = Math.round((inCount / items.length) * 100);
     return (
         <Frame>
-            <div className="flex items-center gap-2.5 mb-3.5">
+            <div className="flex items-center gap-2.5 mb-3">
                 <Avatar />
-                <div className="leading-tight">
+                <div className="leading-tight min-w-0">
                     <p className="font-gulfs uppercase text-[13px] text-black">@justjack</p>
-                    <p className="text-[10px] font-bold uppercase text-gray-500">Building my wishlist</p>
+                    <p className="text-[9.5px] font-bold uppercase text-gray-500 truncate">3 items · £1,748 dream list</p>
                 </div>
                 <span className="ml-auto text-[9px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: TEAL }}>Share</span>
             </div>
+            {/* progress */}
+            <div className="flex items-center gap-2 mb-3">
+                <div className="flex-1 h-2.5 rounded-full border-2 border-black bg-gray-100 overflow-hidden">
+                    <div className="h-full rounded-r-full" style={{ width: `${pct}%`, background: TEAL }}></div>
+                </div>
+                <span className="text-[9px] font-black uppercase whitespace-nowrap">{inCount}/{items.length} in</span>
+            </div>
             <div className="space-y-2">
                 {items.map((it, i) => (
-                    <div key={i} className="flex items-center gap-2.5 bg-gray-50 border-2 border-black rounded-[12px] p-2">
-                        <span className="w-8 h-8 shrink-0 rounded-[8px] border-2 border-black bg-white flex items-center justify-center text-base">{it.e}</span>
+                    <div key={i} className={`flex items-center gap-2.5 border-2 border-black rounded-[12px] p-2 ${it.done ? "bg-gray-50" : "bg-white"}`}>
+                        <span className="w-8 h-8 shrink-0 rounded-[8px] border-2 border-black flex items-center justify-center text-base" style={{ background: `${it.tint}33` }}>{it.e}</span>
                         <span className="text-[11.5px] font-black uppercase text-black flex-1 min-w-0 truncate">{it.n}</span>
                         <span className="font-black text-[11px] text-[#FF007F]">{it.p}</span>
                         <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[10px] ${it.done ? "text-black" : "text-gray-300"}`} style={it.done ? { background: TEAL } : undefined}>{it.done ? "✓" : ""}</span>

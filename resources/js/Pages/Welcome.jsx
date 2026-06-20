@@ -5,8 +5,8 @@ import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
 import StackedCard from '@/Components/animations/StackedCard';
 import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
-import FadeIn from '@/Components/animations/FadeIn';
 import WishlistPreview from './home/WishlistPreview';
+import { ChapterNav, ActIntro, Reveal, Parallax } from '@/Components/cinematic/Cinematic';
 
 const FUN_CARDS = [
     {
@@ -21,14 +21,24 @@ const FUN_CARDS = [
         reverse: false,
         bg: 'bg-[#FF007F]',
         textcolor: '',
-        heading: 'Let your fans spoil you with gifts from any online store!',
+        heading: 'Let your fans unlock and buy the things on your list, from any store.',
+        story: [
+            { title: 'Pick anything', text: 'Add items from any store to your page — no catalogue, no limits.' },
+            { title: 'Fans unlock it', text: 'They buy the things you actually want, straight from your list.' },
+            { title: 'You get paid', text: 'Secure, trackable income with protection built in.' },
+        ],
     },
     {
         variant: 'shop',
         reverse: true,
         bg: 'bg-[#EFEA7B]',
         textcolor: 'text-black',
-        heading: "Build your profile shop! the creative way to sell anything that probably doesn't have a place on shopify...",
+        heading: "Build your profile shop — the creative way to sell anything that doesn't fit a regular store.",
+        story: [
+            { title: 'Open your shop', text: 'Digital or physical, services or one-offs — your rules.' },
+            { title: 'Price it your way', text: 'From a fiver to a feature drop, you set the number.' },
+            { title: 'Deliver and earn', text: 'Every sale tracks a deliverable, so payouts stay clean.' },
+        ],
     },
 ];
 
@@ -49,10 +59,21 @@ const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
 const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
 const FounderProgramAnnouncement = lazy(() => import("./home/FounderProgramAnnouncement"));
 const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
-const TrendingCreators = lazy(() => import('./home/TrendingCreators'));
-const NewVerified = lazy(() => import('./home/NewVerified'));
-const TopEarners = lazy(() => import('./home/TopEarners'));
 const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'));
+const CreatorShowcase = lazy(() => import('./home/CreatorShowcase'));
+const SetupSteps = lazy(() => import('./home/SetupSteps'));
+const FeatureShowcase = lazy(() => import('./home/FeatureShowcase'));
+
+// Scroll-telling chapters for the fixed right-edge ChapterNav rail.
+const CHAPTERS = [
+    { id: 'act-earn', label: 'Earn' },
+    { id: 'act-setup', label: 'Set up' },
+    { id: 'act-proof', label: 'Proof' },
+    { id: 'act-build', label: 'Build' },
+    { id: 'act-love', label: 'Love' },
+    { id: 'act-join', label: 'Join' },
+];
+
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
 
     // https://ucarecdn.com/b8140316-a9b0-4833-af41-3bc5841a0ce6/-/preview/900x300/-/text_align/center/center/-/font/11/000000/-/text/80px90p/100p,100p/spennypiggy.co~sNAVEENFP/-/text_align/center/center/-/font/19/000000/-/text/100px100p/100p,100p/NAVEEN/-/overlay/50ee2983-6aa8-4f34-9ee4-f28b2930d82b/30px30p/20p,50p/
@@ -72,15 +93,15 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
     return <>
         <Head title="Spenny Piggy — Exclusive Content, Memberships & More!">
             <link rel="canonical" href="/" />
-            <meta name="description" content="Keep 100% of what you earn. Real gifting, paid tasks, bills and memberships with fast payouts and Stripe-aligned safety." />
+            <meta name="description" content="Keep 100% of what you earn. Sell content, memberships, paid tasks and your wishlist with fast payouts and Stripe-aligned safety." />
             <meta property="og:title" content="Spenny Piggy — Exclusive Content, Memberships & More!" />
-            <meta property="og:description" content="Keep 100% of what you earn. Real gifting, paid tasks, bills and memberships with fast payouts and Stripe-aligned safety." />
+            <meta property="og:description" content="Keep 100% of what you earn. Sell content, memberships, paid tasks and your wishlist with fast payouts and Stripe-aligned safety." />
             <meta property="og:image" content="/siteicon.png" />
             <meta property="og:url" content="https://spennypiggy.co/" />
             <meta property="og:type" content="website" />
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="Spenny Piggy — Exclusive Content, Memberships & More!" />
-            <meta name="twitter:description" content="Keep 100% of what you earn. Real gifting, paid tasks, bills and memberships with fast payouts and Stripe-aligned safety." />
+            <meta name="twitter:description" content="Keep 100% of what you earn. Sell content, memberships, paid tasks and your wishlist with fast payouts and Stripe-aligned safety." />
             <meta name="twitter:image" content="/siteicon.png" />
         </Head>
 
@@ -105,59 +126,64 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 ]}
              />
             <Hero auth={auth} />
-            
+
+            <ChapterNav chapters={CHAPTERS} />
+
             <Suspense fallback={<div className="h-20" />}>
-                <EarnMoreAnnouncement founderBonus={founderBonus} />
-                <PaidTasksAnnouncement />
-                <ReferEarnAnnouncement />
-                <FounderProgramAnnouncement founderBonus={founderBonus} />
-                <LiveBarSection />
-
-                {/* Social-proof sections glide up as they enter the viewport. */}
-                {trendingCreators && trendingCreators.length > 0 ? <FadeIn y={60} duration={0.7}><TrendingCreators creators={trendingCreators} /></FadeIn> : ''}
-                {newVerifiedCreators && newVerifiedCreators.length > 0 ? <FadeIn y={60} duration={0.7}><NewVerified creators={newVerifiedCreators} /></FadeIn> : ''}
-                {topEarners && topEarners.length > 0 ? <FadeIn y={60} duration={0.7}><TopEarners creators={topEarners} periodLabel={topEarnersLabel} /></FadeIn> : ''}
-
-                <PaymentSlider/>
-                <div className="md:pb-[12vh]">
-                    {FUN_CARDS.map((card, i) => (
-                        <StackedCard
-                            key={i}
-                            index={i}
-                            totalCards={FUN_CARDS.length}
-                            topOffset="12vh"
-                            className="mb-6 md:mb-0"
-                        >
-                            <FunPart
-                                classes={`border-top-0 md:rounded-[40px] overflow-hidden md:mx-8 md:border-4 md:border-black md:shadow-[0_-20px_60px_rgba(0,0,0,0.7)]`}
-                                reverse={card.reverse}
-                                mainbg={card.bg} eclasses={``}
-                                textbg={card.bg} textcolor={card.textcolor || undefined}
-                                heading={card.heading}
-                                mockup={<WishlistPreview variant={card.variant} />}
-                            />
-                        </StackedCard>
-                    ))}
+                {/* ── Chapter 01 · Earn more — announcements enter as cinematic curtain reveals ── */}
+                <div id="act-earn">
+                    <EarnMoreAnnouncement founderBonus={founderBonus} />
+                    <PaidTasksAnnouncement />
+                    <ReferEarnAnnouncement />
+                    <FounderProgramAnnouncement founderBonus={founderBonus} />
                 </div>
-                {/* Statement sections rise slow and heavy; testimonials settle softly. */}
-                <FadeIn y={48} duration={0.9}><Membership /></FadeIn>
-                <NotForBusiness />
-                <FadeIn y={48} duration={0.9}><WhyLove /></FadeIn>
-                <FadeIn y={24} duration={0.7}><HappyCreators /></FadeIn>
-                <FeatureSuggestionSection auth={auth} />
-                <FAQ />
-                <JoinUs />
-                <LiveBar
-                    reps={15}
-                    classes={"py-3 bg-[#E6EA7B]"}
-                    textclassName={`!text-4xl font-gulfs mb-0 mx-4 uppercase`}
-                    color={`bg-[#E6EA7B]`}
-                    text={
-                        <>
-                          ❤️ Keep <span className="text-[#FF007F]">100%</span> of what you Earn!
-                        </>
-                    }
+
+                <LiveBarSection />
+                <PaymentSlider />
+
+                {/* ── Chapter 02 · Set up in minutes — sticky-stack story cards ── */}
+                <div id="act-setup">
+                    <SetupSteps />
+                    <FeatureShowcase />
+                </div>
+
+                {/* ── Chapter 03 · The proof — pinned horizontal creator gallery ── */}
+                <CreatorShowcase
+                    trending={trendingCreators}
+                    newVerified={newVerifiedCreators}
+                    topEarners={topEarners}
+                    topEarnersLabel={topEarnersLabel}
                 />
+
+                {/* ── Chapter 04 · Build your world ── */}
+                <div id="act-build">
+                    <Reveal><Membership /></Reveal>
+                    <Parallax amount={50}><NotForBusiness /></Parallax>
+                </div>
+
+                {/* ── Chapter 05 · Why creators love it ── */}
+                <div id="act-love">
+                    <Reveal><WhyLove /></Reveal>
+                    <Reveal delay={0.05}><HappyCreators /></Reveal>
+                </div>
+
+                {/* ── Finale · Your turn ── */}
+                <div id="act-join">
+                    <FeatureSuggestionSection auth={auth} />
+                    <FAQ />
+                    <JoinUs />
+                    <LiveBar
+                        reps={15}
+                        classes={"py-3 bg-[#E6EA7B]"}
+                        textclassName={`!text-4xl font-gulfs mb-0 mx-4 uppercase`}
+                        color={`bg-[#E6EA7B]`}
+                        text={
+                            <>
+                              ❤️ Keep <span className="text-[#FF007F]">100%</span> of what you Earn!
+                            </>
+                        }
+                    />
+                </div>
                 <SitelinksSearchBox />
             </Suspense>
         </Guest>

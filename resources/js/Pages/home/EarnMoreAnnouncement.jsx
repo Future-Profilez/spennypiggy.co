@@ -27,7 +27,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                         </div>
                     </FadeIn>
                     <FadeIn x={60} y={0} delay={0.1} duration={0.7}>
-                        <h2 className="uppercase text-3xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-black mb-4 leading-none">
+                        <h2 className="uppercase text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-black mb-4 leading-none">
                             Earn More With <br />
                             <span className="text-[#FF007F] tracking-[2px]">Spenny Piggy</span>
                         </h2>
@@ -109,7 +109,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                         Creators keep 100% of what they earn.
                     </div>
                     <div className="text-black font-gulfs uppercase tracking-wider text-2xl md:text-3xl mt-2">
-                        We&#39;ll Pay You To Get Spoiled.
+                        We&#39;ll Pay You To Create.
                     </div>
                     <div className="mt-8">
                         <Magnetic strength={0.3}>

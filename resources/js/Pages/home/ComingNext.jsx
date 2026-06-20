@@ -5,7 +5,7 @@ import { FaTruck, FaGift, FaLock, FaRocket } from 'react-icons/fa';
 
 export default function ComingNext() {
   return (
-   <div className="bg-black py-16 md:py-24 relative overflow-hidden">
+   <div className="bg-black py-20 md:py-28 relative overflow-hidden">
        {/* Decorative Background Elements */}
        <div className="absolute top-0 right-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
@@ -32,7 +32,7 @@ export default function ComingNext() {
                         Coming Soon
                     </span>
                </div>
-               <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-8 uppercase leading-tight"> 
+               <h2 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-white mb-8 uppercase leading-tight"> 
                     Get ready for <br/>
                     <span className="text-gradient-wishlist">Next Level</span>
                </h2>

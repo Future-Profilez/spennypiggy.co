@@ -13,7 +13,7 @@ export default function NewVerified({ creators }) {
       </div>
 
       <div className="containerbox relative ">
-        <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
+        <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
           New & <span className="text-gradient-wishlist">Verified</span>
         </h2>
         <p className="fading max-w-[500px] m-auto !mb-8 md:!mb-12 text-center text-gray-300 mb-12 text-lg">

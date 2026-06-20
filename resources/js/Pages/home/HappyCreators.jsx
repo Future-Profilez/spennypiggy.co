@@ -23,7 +23,7 @@ export default function HappyCreators() {
             date: "Nov 12, 2023, 04:00 pm",
             name: "Titch_dnb",
             message:
-                "Honestly, this site has been a game changer for me! I’ve been able to get new decks and keep creating the music I love! All thanks to my fans and anonymous gifts I’ve received!",
+                "Honestly, this site has been a game changer for me! I’ve been able to get new decks and keep creating the music I love, all funded by fans buying my content and backing my page!",
         },
         {
             id: 2,
@@ -37,7 +37,7 @@ export default function HappyCreators() {
             name: "legitjustjack",
             date: "Nov 15, 2023, 04:15 am",
             message:
-                "I honestly didn’t realize how much I needed spenny piggy in my life! I’ve had loads of gifts funded already and from random strangers! I didn’t realize how easy and simple it could be to get support from my fans!",
+                "I honestly didn’t realize how much I needed spenny piggy in my life! I’ve had loads of purchases come through already, from supporters I’d never even met! I didn’t realize how easy and simple it could be to get backed by my fans!",
         },
         {
             id: 4,
@@ -58,7 +58,7 @@ export default function HappyCreators() {
 
             <div className="containerbox relative ">
                 <FadeIn y={30} duration={0.6}>
-                <h2 className="fading text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
+                <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
                     Happy <span className="text-gradient-wishlist">Creators</span>
                 </h2>
                 </FadeIn>

@@ -953,3 +953,7 @@ html.lenis, html.lenis body { height: auto; }
 @media (max-width:768px){
   .sp-band::before,.sp-band::after{height:120px;}
 }
+
+/* horizontal-pan mobile fallback */
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}

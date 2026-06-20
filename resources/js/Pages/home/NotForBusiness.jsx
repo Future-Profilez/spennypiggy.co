@@ -14,15 +14,15 @@ export default function NotForBusiness() {
             image: howitworks1,
         },
         {
-            title: "Receive endless gifts and support!",
+            title: "Get the items you actually want",
             description:
-                "Let your fans spoil you on Spenny Piggy with gifts from any online store!\n Receive gifts from 1000’s of brands shipped directly to your door.",
+                "Add anything you want from any store to your list. Your supporters unlock and buy the items, delivered straight to your door.",
             image: howitworks2,
         },
         {
-            title: "Get the gifts you’ve been dreaming of...",
+            title: "Unlock what you’ve been dreaming of...",
             description:
-                "Show off your gift with a shout-out on socials or send a personal thank-you directly on Spenny Piggy!",
+                "Show off what you unlocked with a shout-out on socials, or send a personal thank-you right on Spenny Piggy!",
             image: howitworks3,
         },
     ];
@@ -37,7 +37,7 @@ export default function NotForBusiness() {
 
             <div className="containerbox relative  ">
                 <FadeIn y={30} duration={0.6}>
-                <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-tight">
+                <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-tight">
                     How It <span className="text-gradient-wishlist">Works</span>
                 </h2>
                 </FadeIn>

@@ -34,7 +34,7 @@ export default function FAQ() {
 
       <div className='containerbox relative  ' >
           <FadeIn y={30} duration={0.6}>
-          <h2 className='fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
+          <h2 className='fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
             Frequently Asked <span className="text-gradient-wishlist">Questions</span>
           </h2>
           </FadeIn>

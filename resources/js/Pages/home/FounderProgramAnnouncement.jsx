@@ -30,7 +30,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                 </div>
 
                 {/* Giant outlined watermark strip — scrubs sideways with scroll */}
-                <WatermarkStrip text="Founder" from={0} to={-500} opacity={0.22} className="top-6 md:top-2" />
+                <WatermarkStrip text="Founder" from={-150} to={-150} opacity={0.22} className="top-6 md:top-2" />
 
                 <div className="max-w-7xl mx-auto relative z-10">
                     <div className="text-center mb-8 md:mb-16">
@@ -43,15 +43,13 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         </FadeIn>
 
                         {/* Heading lines scrub in opposite directions with the scroll */}
-                        <h2 className="uppercase fading text-3xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-[4px_4px_0px_0px_#FF007F]">
-                            <ScrollX as="span" from={-100} to={50} className="!block">
-                                JOIN THE
-                            </ScrollX>
-                            <ScrollX as="span" from={100} to={-50} className="!block mt-2">
+                        <h2 className="uppercase fading text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-[4px_4px_0px_0px_#FF007F]">
+                            <span className="block">JOIN THE</span>
+                            <span className="block mt-2">
                                 <span className="uppercase text-[#E6EA7B] tracking-[2px] drop-shadow-[0_0_25px_rgba(230,234,123,0.45)]">
                                     FOUNDER
                                 </span>{' '}PROGRAM!
-                            </ScrollX>
+                            </span>
                         </h2>
 
                         <p className="fading text-sm md:text-lg text-gray-400 mt-4 uppercase tracking-widest font-bold">
@@ -66,7 +64,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4 mt-12 md:mt-16 items-stretch">
 
                         {/* Card 1: Monthly Bonus */}
-                        <ScrollX from={-150} to={30} rotate={2} fade className="h-full">
+                        <ScrollX from={-45} to={0} rotate={2} fade className="h-full">
                         <TiltCard max={8} className="rounded-[30px] h-full">
                         <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15] flex flex-col h-full">
                             <div className="absolute -top-6 -right-6 bg-yellow-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
@@ -74,7 +72,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             </div>
                             <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">{config.bonusPercentage}% Monthly<br/><span className="text-yellow-400">Bonus</span></h3>
                             <p className="fading text-gray-400 text-base md:text-lg mb-6 leading-snug flex-grow">
-                                Boost your earnings with a permanent {config.bonusPercentage}% monthly bonus on all revenue. Every tip, membership, and sale automatically triggers an extra payout.
+                                Boost your earnings with a permanent {config.bonusPercentage}% monthly bonus on all revenue. Every membership, sale, and unlock automatically triggers an extra payout.
                             </p>
                             <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-yellow-400 animate-pulse"></div>
@@ -85,7 +83,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         </ScrollX>
 
                         {/* Card 2: Founder Status (drifts vertically, sits lower) */}
-                        <Parallax speed={50} className="h-full md:mt-12">
+                        <Parallax speed={22} className="h-full md:mt-12">
                         <TiltCard max={8} className="rounded-[30px] h-full">
                         <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] flex flex-col h-full">
                             <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
@@ -104,7 +102,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         </Parallax>
 
                         {/* Card 3: Priority Qualification */}
-                        <ScrollX from={150} to={-30} rotate={-2} fade className="h-full md:col-span-3 lg:col-span-1">
+                        <ScrollX from={45} to={0} rotate={-2} fade className="h-full md:col-span-3 lg:col-span-1">
                         <TiltCard max={8} className="rounded-[30px] h-full">
                         <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-green-400 rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#4ADE80] md:shadow-[8px_8px_0px_0px_#4ADE80] flex flex-col h-full">
                             <div className="absolute -top-6 -right-6 bg-green-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">

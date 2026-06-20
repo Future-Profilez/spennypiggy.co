@@ -3,7 +3,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component'
 
 export default function ForCreators() {
   return (
-    <div className='bg-gray-900 py-16 md:py-24 relative overflow-hidden' >
+    <div className='bg-gray-900 py-20 md:py-28 relative overflow-hidden' >
        
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-900 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>
@@ -12,7 +12,7 @@ export default function ForCreators() {
        <div className='containerbox relative z-10' >
 
        <div className='mt-2 mt-sm-5  pt-5 text-center' >
-            <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase leading-tight' >
+            <h2 className='text-3xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase leading-tight' >
                 Publish your <span className="text-gradient-wishlist">best Work</span>
             </h2>
             <p className='max-w-4xl mx-auto text-gray-300 text-xl md:text-2xl font-medium leading-relaxed mb-12' >

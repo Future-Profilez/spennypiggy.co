@@ -26,7 +26,7 @@ export default function PaidTasksAnnouncement() {
                         </FadeIn>
                         
                         <FadeIn x={-80} y={0} delay={0.1} duration={0.7}>
-                            <h2 className="uppercase fading text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-[4px_4px_0px_0px_#FF007F]xl">
+                            <h2 className="uppercase fading text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-[4px_4px_0px_0px_#FF007F]">
                                 Get Paid for Requests <br/>
                                 <span className="uppercase text-gradient-wishlist tracking-[2px] animate-pulse">
                                     On Your Terms 

@@ -1,5 +1,3 @@
-import PREMIUMMEMBERSHIP from '../../../assets/img/PREMIUMMEMBERSHIP.png'
-import { LazyLoadImage } from 'react-lazy-load-image-component'
 import LiveBar from '@/includes/LiveBar'
 import support from '../../../assets/new/Support.png'
 import FadeIn from '@/Components/animations/FadeIn'
@@ -108,14 +106,68 @@ export default function Membership() {
 
               <Reveal3D delay={0.2} rotate={40} y={80}>
               <Parallax speed={45}>
-              <div className='membership-image py-2 px-4 mx-auto flex justify-center max-w-4xl mt-3 relative  ' >
-                <TiltCard max={5} scale={1.01} className="rounded-[30px]">
-                <div className="rounded-[30px]   overflow-hidden border-2 border-[#FF007F]/30 shadow-[0_0_50px_rgba(236,72,153,0.3)] ">
-                    <LazyLoadImage
-                    alt={"image"}
-                    className="w-full h-auto"
-                    src={PREMIUMMEMBERSHIP}
-                    />
+              <div className='membership-image py-2 px-4 mx-auto flex justify-center max-w-5xl mt-3 relative z-10' >
+                <TiltCard max={4} scale={1.01} className="rounded-[30px] w-full">
+                <div className="relative w-full rounded-[30px] bg-[#0d0a16] border-2 border-[#FF007F]/40 shadow-[0_0_60px_rgba(236,72,153,0.32)] p-5 md:p-8 overflow-hidden">
+                    {/* ambient glow */}
+                    <div className="pointer-events-none absolute -top-24 -left-16 w-72 h-72 rounded-full bg-[#8C52FF] blur-[90px] opacity-25"></div>
+                    <div className="pointer-events-none absolute -bottom-24 -right-16 w-72 h-72 rounded-full bg-[#FF007F] blur-[90px] opacity-25"></div>
+
+                    <div className="relative flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FFD60A] to-[#FF8E25] border-2 border-black grid place-items-center text-black shadow-[3px_3px_0_0_#000]">
+                                <FaCrown size={20} />
+                            </span>
+                            <div className="text-left leading-tight">
+                                <p className="font-gulfs uppercase text-white text-lg md:text-xl">Membership tiers</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wide text-white/50">Set your own perks &amp; price</p>
+                            </div>
+                        </div>
+                        <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#06281a] bg-[#05EFB8] rounded-full px-3 py-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse"></span>0% fan fees
+                        </span>
+                    </div>
+
+                    <div className="relative grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+                        {[
+                            { name: 'Supporter', price: '£3', accent: '#1AD1A6', perks: ['Member-only posts', 'Community shoutout'] },
+                            { name: 'Super Fan', price: '£8', accent: '#FF007F', popular: true, perks: ['Everything in Supporter', 'Monthly video call', 'Early access drops'] },
+                            { name: 'VIP', price: '£20', accent: '#8C52FF', perks: ['Everything in Super Fan', '1:1 requests', 'Name in the credits'] },
+                        ].map((t, i) => (
+                            <div
+                                key={i}
+                                className={`relative rounded-[22px] border-2 p-5 text-left flex flex-col bg-[#13101f] ${t.popular ? 'md:-translate-y-2 md:scale-[1.03]' : ''}`}
+                                style={{ borderColor: t.accent, boxShadow: `6px 6px 0 0 ${t.accent}` }}
+                            >
+                                {t.popular && (
+                                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-wide text-black bg-[#FFD60A] border-2 border-black rounded-full px-3 py-0.5 whitespace-nowrap">Most popular</span>
+                                )}
+                                <p className="font-gulfs uppercase text-white text-lg" style={{ textShadow: `0 0 14px ${t.accent}66` }}>{t.name}</p>
+                                <p className="mt-1 mb-4">
+                                    <span className="font-gulfs text-3xl md:text-[34px] leading-none" style={{ color: t.accent }}>{t.price}</span>
+                                    <span className="text-white/55 font-bold text-[12px]"> /mo</span>
+                                </p>
+                                <ul className="space-y-2 mb-5">
+                                    {t.perks.map((p, j) => (
+                                        <li key={j} className="flex items-start gap-2 text-[12.5px] font-semibold text-white/80 leading-snug">
+                                            <span className="mt-0.5 w-4 h-4 shrink-0 rounded-full grid place-items-center text-[9px] text-black" style={{ background: t.accent }}>✓</span>
+                                            {p}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button
+                                    className={`mt-auto w-full rounded-full py-2.5 text-[12px] font-black uppercase tracking-wide border-2 border-black transition-transform hover:-translate-y-0.5 ${t.popular ? 'text-white' : 'text-black'}`}
+                                    style={{ background: t.popular ? '#FF007F' : t.accent, boxShadow: '3px 3px 0 0 #000' }}
+                                >
+                                    Join {t.name}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <p className="relative mt-6 text-center text-[12px] font-semibold text-white/50">
+                        Fans pay zero fees. You keep <span className="text-white font-black">100%</span> of every membership. Cancel anytime.
+                    </p>
                 </div>
                 </TiltCard>
               </div>
@@ -138,7 +190,7 @@ export default function Membership() {
           </div>
           </FadeIn>
 
-          <h2 className="text-3xl md:text-3xl lg:text-5xl font-gulfs text-white text-center mb-10 md:mb-16 uppercase leading-none tracking-[2px] max-w-6xl mx-auto drop-shadow-[4px 4px 0px 0px rgb(255 0 127)]xl">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-10 md:mb-16 uppercase leading-none tracking-[2px] max-w-6xl mx-auto drop-shadow-[4px_4px_0px_0px_#FF007F]">
               <span className="fading block mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"><WordReveal text="Supporting Creators!" stagger={0.08} /></span>
               <span className="fading block mb-2 animate-pulse drop-shadow-none"><WordReveal text="Empowering Supporters!" delay={0.2} stagger={0.08} wordClassName="text-gradient-wishlist" /></span>
               <span className="fading block text-yellow-400 drop-shadow-[4px_4px_0_rgba(0,0,0,1)]" style={{WebkitTextStroke: '1px #000'}}><WordReveal text="Made for Everyone!" delay={0.4} stagger={0.08} /></span>

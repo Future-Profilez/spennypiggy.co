@@ -26,10 +26,10 @@ export default function WatermarkStrip({
         >
             <ScrollX from={from} to={to} mobile="scrub" className="whitespace-nowrap">
                 <span
-                    className="font-gulfs uppercase text-[56px] md:text-[150px] leading-none text-transparent tracking-widest"
-                    style={{ WebkitTextStroke: `2px rgba(${color},${opacity})` }}
+                    className="font-gulfs uppercase text-[34px] md:text-[88px] leading-none text-transparent tracking-[0.18em]"
+                    style={{ WebkitTextStroke: `1.5px rgba(${color},${opacity})` }}
                 >
-                    {Array(6).fill(text).join(" ★ ")}
+                    {Array(9).fill(text).join(" ★ ")}
                 </span>
             </ScrollX>
         </div>
