@@ -26,6 +26,7 @@ import axios from "axios";
 import DeviceID from "./includes/DeviceID";
 import "./utils/pwaDebug";
 import Maintaince from "./Components/Maintaince.jsx";
+import SmoothScroll from "./Components/SmoothScroll.jsx";
 
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
@@ -237,6 +238,7 @@ createInertiaApp({
         const root = createRoot(el);
         root.render(
             <Provider store={store}>
+                <SmoothScroll />
                 <Suspense fallback={null}>
                     <GlobalErrorBoundary>
                         <App {...props} />

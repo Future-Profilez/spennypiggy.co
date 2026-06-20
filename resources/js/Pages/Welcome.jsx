@@ -1,6 +1,5 @@
 import { Link, Head } from "@inertiajs/react";
-import { lazy, Suspense, useEffect } from "react";
-import Lenis from "lenis";
+import { lazy, Suspense } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
@@ -9,8 +8,6 @@ import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
 import FadeIn from '@/Components/animations/FadeIn';
 import WishlistPreview from './home/WishlistPreview';
 
-// The three "fun" panels render as a sticky 3D stacking-card scroll scene.
-// Each shows a crisp HTML page-preview mockup instead of a baked screenshot.
 const FUN_CARDS = [
     {
         variant: 'wishlist',
@@ -57,28 +54,6 @@ const NewVerified = lazy(() => import('./home/NewVerified'));
 const TopEarners = lazy(() => import('./home/TopEarners'));
 const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'));
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
-
-    // Buttery elastic smooth scroll (homepage only). Native scroll position is
-    // preserved, so sticky sections + framer scroll animations keep working.
-    // Skipped for prefers-reduced-motion; touch stays native.
-    useEffect(() => {
-        if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-        const lenis = new Lenis({
-            lerp: 0.085,            // lower = smoother/longer glide
-            smoothWheel: true,
-            wheelMultiplier: 2,
-            smoothTouch: true,
-            touchMultiplier: 1.5,
-        });
-        let raf = requestAnimationFrame(function loop(t) {
-            lenis.raf(t);
-            raf = requestAnimationFrame(loop);
-        });
-        return () => {
-            cancelAnimationFrame(raf);
-            lenis.destroy();
-        };
-    }, []);
 
     // https://ucarecdn.com/b8140316-a9b0-4833-af41-3bc5841a0ce6/-/preview/900x300/-/text_align/center/center/-/font/11/000000/-/text/80px90p/100p,100p/spennypiggy.co~sNAVEENFP/-/text_align/center/center/-/font/19/000000/-/text/100px100p/100p,100p/NAVEEN/-/overlay/50ee2983-6aa8-4f34-9ee4-f28b2930d82b/30px30p/20p,50p/
 

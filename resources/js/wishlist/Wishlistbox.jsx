@@ -212,6 +212,11 @@ export default function Wishlistbox(props) {
                     onClick={openAddtocart}
                     className="wishlistdetial cursor-pointer relative bg-[#fdfbf7]" >
                     <div className="px-3">
+                        {itm.goal_label ? (
+                            <p className="text-center text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                                🎯 {itm.goal_label}
+                            </p>
+                        ) : null}
                         <h4 className={`text-xl font-black !text-black uppercase text-center ${
                                 itm.subscription !== "0" ? "el1" : "el2"
                             }`} > {itm.wishname}

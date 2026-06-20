@@ -17,6 +17,7 @@ class WishItem extends Model
         "user_id",
         "stripe_product_id",
         "wishname",
+        "goal_label",
         "price",
         "currency",
         "fullfill_amount",

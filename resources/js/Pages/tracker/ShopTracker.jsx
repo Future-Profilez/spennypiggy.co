@@ -184,7 +184,7 @@ export default function ShopTracker() {
                                             <p className="mb-0 pr-2">
                                                 {(g?.shop &&
                                                     g?.shop.name) ||
-                                                    "Surprise Gift"}
+                                                    "Treat"}
                                             </p>
                                             <p className="text-gray-500 text-sm">
                                                 QTY : {g.quantity || 1} x{" "}

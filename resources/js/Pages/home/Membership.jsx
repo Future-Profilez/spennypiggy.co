@@ -53,7 +53,7 @@ const supportData = [
   {
     title: "Wishes",
     description:
-      "Let supporters send you surprise gifts, cash gifts and gifts shipped directly to your door!",
+      "Fans fund your wishes and unlock exclusive content — or send you a treat shipped directly to your door!",
     color: "#D9DE62",
     icon: FaGift,
   },

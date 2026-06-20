@@ -932,7 +932,7 @@ export default function EditProfile({
                                             </li>
 
                                             {/* <li className="mb-6">
-                                                <label className="block text-normal font-medium !text-black mb-2">Minimum Surprise Gift Amount</label>
+                                                <label className="block text-normal font-medium !text-black mb-2">Minimum Treat Amount</label>
                                                 <div className="relative">
                                                     <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
                                                         {global_currency?.symbol || '£'}
@@ -947,7 +947,7 @@ export default function EditProfile({
                                                     />
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    Minimum amount supporters must spend for surprise gifts.
+                                                    Minimum amount supporters must spend on a treat.
                                                 </p>
                                             </li> */}
                                         </>

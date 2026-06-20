@@ -137,7 +137,7 @@ export default function MembershipTracker({auth}) {
                                         <div className="item-dd pl-3">
                                             <p className="mb-0 pr-2">
                                                 {(n.membership && n.membership.level) ||
-                                                    "Surprise Gift"}
+                                                    "Treat"}
                                             </p>
                                             <p className="text-gray-500 text-sm">
                                                 QTY : {n.quantity || 1} x{" "}

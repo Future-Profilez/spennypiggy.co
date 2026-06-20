@@ -17,7 +17,14 @@ class CreatorPayoutController extends Controller
 
     public function getReserves(Request $request)
     {
-        $data = $this->payoutService->getHeldReserves($request->user()->uuid);
+        $uuid = $request->user()->uuid;
+        // Match the page's display currency (passed by the UI) so the modal doesn't flip
+        // back to the creator's default currency after the live refresh.
+        $currency = $request->query('currency') ?: ($request->user()->default_currency ?? 'GBP');
+        $data = $this->payoutService->getHeldReserves($uuid, $currency);
+        $released = $this->payoutService->getReleasedReserves($uuid, 100, $currency);
+        $data['released_breakdown'] = $released['breakdown'] ?? [];
+        $data['total_released'] = $released['total_released'] ?? 0;
         return response()->json($data);
     }
 }

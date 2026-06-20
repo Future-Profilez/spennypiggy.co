@@ -153,6 +153,30 @@ class ReleaseReserves extends Command
                     'reserve_payout_id' => $payout->id,
                 ]);
 
+                // Record the reserve-release payout so it appears in the creator's Payout History
+                // (created date, amount, status). The payout.paid webhook flips status to 'paid'.
+                // Stripe already paid out — a record-creation failure must NOT undo that, so it's
+                // isolated in its own try/catch.
+                try {
+                    \App\Models\PayoutRecord::create([
+                        'creator_id' => $creator->uuid,
+                        'payout_run_id' => null,
+                        'stripe_payout_id' => $payout->id,
+                        'amount_minor' => (int) $amountMinor,
+                        'currency' => $currency,
+                        'status' => 'in_transit',
+                        'arrival_date' => isset($payout->arrival_date) ? \Carbon\Carbon::createFromTimestamp($payout->arrival_date) : null,
+                        'metadata' => [
+                            'payout_type' => 'reserve_release',
+                            'reserve_count' => $fts->count(),
+                            'ft_ids' => $ftIds->all(),
+                            'stripe_payout' => $payout->toArray(),
+                        ],
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error("reserve:release — PayoutRecord create failed for creator {$creator->uuid} (payout {$payout->id}): " . $e->getMessage());
+                }
+
                 $currencySymbol = \App\Helpers::getCurrency($currency);
                 \App\Helpers::sendNotification(
                     '💰 Reserve Released',

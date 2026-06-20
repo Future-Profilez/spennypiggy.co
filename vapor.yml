@@ -17,7 +17,6 @@ environments:
     database: spennypiggy-db-dev
     cache: spenny-piggy-redis-caches
     health-checks: false
-    database-proxy: true
     assets:
       - "public/build/**"
     build:

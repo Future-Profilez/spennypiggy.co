@@ -62,7 +62,7 @@ export default function BillsTracker({ auth }) {
                                         name={`From : Anonymous`}
                                         subhead={
                                             (n.bill && n.bill.name) ||
-                                            "Surprise Gift"
+                                            "Treat"
                                         }
                                         src={userphoto || ""}
                                     />
@@ -81,7 +81,7 @@ export default function BillsTracker({ auth }) {
                                         }
                                         subhead={
                                             (n.bill && n.bill.name) ||
-                                            "Surprise Gift"
+                                            "Treat"
                                         }
                                         username={
                                             (n.user && n.user.username) || ""
@@ -176,7 +176,7 @@ export default function BillsTracker({ auth }) {
                                         <div className="item-dd pl-3">
                                             <p className="mb-0 pr-2">
                                                 {(n.bill && n.bill.name) ||
-                                                    "Surprise Gift"}
+                                                    "Treat"}
                                             </p>
                                             <p className="text-gray-500 text-sm">
                                                 QTY : {n.quantity || 1} x{" "}

@@ -73,7 +73,7 @@ export default function SendSurprise({auth, owner}) {
             space="4" size="md"
             action={close} classes={`btn-pink sm lg px-4  `}
             text={`Support with 3 gold coins`} >
-            <h2 className="uppercase font-GillSans pb-4 text-lg">Send a Surprise Gift</h2>
+            <h2 className="uppercase font-GillSans pb-4 text-lg">Send a Treat</h2>
             <div className="mb-4">
                   <label className="block text-left mb-2">Amount</label>
                   <input

@@ -19,6 +19,7 @@ class Bills extends Model
         'product_id',
         'price_id',
         'name',
+        'goal_label',
         'price',
         'currency',
         'tax_amount',

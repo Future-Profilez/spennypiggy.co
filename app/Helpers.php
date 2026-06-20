@@ -1028,9 +1028,9 @@ class Helpers
                     // Essential Bill Information
                     'bill_id' => (string) ($paymentModel->bills_id ?? $bill->id ?? ''),
                     'content_id' => (string) ($paymentModel->bills_id ?? $bill->id ?? ''),
-                    // Internal audit label only — bill/expense wording must never reach
-                    // payment-facing text (descriptor, receipt, line item).
-                    'goal_label' => $bill ? substr($bill->name, 0, 100) : '',
+                    // Field A (aspirational goal label) — display/audit context only; must
+                    // never reach payment-facing text (descriptor, receipt, line item).
+                    'goal_label' => $bill ? substr((string) ($bill->goal_label ?? ''), 0, 60) : '',
                     'subscription_type' => $paymentModel->recurring_type ?? 'one_time',
                     'deliverable_type' => $bill && !empty($bill->content_file) ? 'digital_content' : 'recurring_content',
                     'has_content' => $bill && !empty($bill->content_file) ? '1' : '0',
@@ -1190,7 +1190,9 @@ class Helpers
                     'fulfilment_status'       => 'pending',
                     'delivery_status'         => 'pending',
                     // Progress goal is descriptive context only — never payment-facing text.
-                    'goal_label'              => $pot ? substr($pot->title ?? '', 0, 100) : '',
+                    // Piggy Pot's title IS the content deliverable, so the goal label here is
+                    // the optional progress goal (target amount), not the content title.
+                    'goal_label'              => '',
                     'goal_target'             => (string) ($pot->target_amount ?? ''),
                     'message'                 => $paymentModel->message ? substr($paymentModel->message, 0, 200) : '',
                     'transaction_description' => 'Content purchase from ' . ($creator ? $creator->name : 'creator'),

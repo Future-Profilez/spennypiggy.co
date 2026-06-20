@@ -124,7 +124,7 @@ export default function GifterItems(props) {
                         {w && w.is_surprise ? (
                             <p className="">
                                 <span className="text-capitalize">{uname}</span>{" "}
-                                send a surprise gift of {amount} to{" "}
+                                send a treat of {amount} to{" "}
                                 <b>{owner}</b>.
                                 {/* <span className='text-small text-time text-capitalize' >14hrs ago</span> */}
                             </p>

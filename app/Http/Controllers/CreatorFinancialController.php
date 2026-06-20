@@ -54,9 +54,11 @@ class CreatorFinancialController extends Controller
         // Analytics Data (Consistent with Tax Year)
         $displayCurrency = $summary['currency'] ?? $displayCurrency ?? 'GBP';
 
+        // Income by Type + Earnings Trend must reflect REALIZED income only — exclude refunded,
+        // disputed, review_hold and pending (those are reversed or not-yet-earned). Matches Gross.
         $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id', 'source_id', 'vat_amount']);
 
@@ -100,9 +102,9 @@ class CreatorFinancialController extends Controller
 
                 $base = class_basename($sourceType);
                 $label = match($base) {
-                    'StripePaymentItems' => 'Wish Gift',
+                    'StripePaymentItems' => 'Wish Content',
                     'ShopPayment' => 'Shop Purchase',
-                    'TipGoalsPayment' => 'Support/Tip',
+                    'TipGoalsPayment' => 'Content Unlock',
                     'PiggyPotContribution' => 'Piggy Pot',
                     'MembershipPayment' => 'Membership',
                     'TaskPurchase' => 'Task',
@@ -229,9 +231,9 @@ class CreatorFinancialController extends Controller
                 }
 
                 $tx->label = match($base) {
-                    'StripePaymentItems' => 'Wish Gift',
+                    'StripePaymentItems' => 'Wish Content',
                     'ShopPayment' => 'Shop Purchase',
-                    'TipGoalsPayment' => 'Support/Tip',
+                    'TipGoalsPayment' => 'Content Unlock',
                     'PiggyPotContribution' => 'Piggy Pot',
                     'MembershipPayment' => 'Membership',
                     'TaskPurchase' => 'Task',
@@ -342,10 +344,11 @@ class CreatorFinancialController extends Controller
         
         $recentTransactions = $recentTransactions->values();
 
-        // Top Supporters with Category Breakdown
+        // Top Supporters = realized contributions only. Exclude refunded/disputed/held/pending so a
+        // reversed payment never inflates a supporter's total (matches Gross Earnings).
         $supporterTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded', 'pending'])
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
             ->with(['supporter:id,name,username,avatar'])
@@ -412,8 +415,11 @@ class CreatorFinancialController extends Controller
             ->take(5)
             ->values();
 
-        // Reserve breakdown with release dates
-        $reserveBreakdown = $this->payoutService->getHeldReserves($user->uuid);
+        // Reserve breakdown with release dates. Pass displayCurrency so all figures are in the
+        // currency the UI labels them with (matches summary.* which are already display-converted).
+        $reserveBreakdown = $this->payoutService->getHeldReserves($user->uuid, $displayCurrency);
+        $releasedReserves = $this->payoutService->getReleasedReserves($user->uuid, 100, $displayCurrency);
+        $upcomingPayout = $this->payoutService->getUpcomingPayoutPreview($user->uuid, $displayCurrency);
 
         $fastStartBonus = null;
         if ($user->stripe_connected_at) {
@@ -601,9 +607,13 @@ class CreatorFinancialController extends Controller
                 $bonusMinor = (int) ($p->metadata['fast_start_bonus_applied_minor'] ?? 0);
                 $founderBonusMinor = (int) ($p->metadata['founder_bonus_amount_minor'] ?? 0);
                 $bonusType = $p->metadata['bonus_type'] ?? null;
+                $payoutType = $p->metadata['payout_type'] ?? null;
 
                 // Resolve a friendly payout "type" for the creator.
-                if ($bonusType === 'fast_start') {
+                if ($payoutType === 'reserve_release') {
+                    $typeKey = 'reserve_release';
+                    $typeLabel = 'Reserve Release';
+                } elseif ($bonusType === 'fast_start') {
                     $typeKey = 'fast_start';
                     $typeLabel = 'Fast Start Bonus';
                 } elseif ($bonusType && str_starts_with((string) $bonusType, 'founder')) {
@@ -748,6 +758,10 @@ class CreatorFinancialController extends Controller
             ],
             'status_breakdown' => $statusBreakdown,
             'reserve_breakdown' => $reserveBreakdown['breakdown'] ?? [],
+            'reserve_total_held' => $reserveBreakdown['total_held'] ?? 0,
+            'reserve_released_breakdown' => $releasedReserves['breakdown'] ?? [],
+            'reserve_total_released' => $releasedReserves['total_released'] ?? 0,
+            'upcoming_payout' => $upcomingPayout,
             'reserve_reason' => $reserveReason,
             'reserve_policy' => $reservePolicy,
             'payout_cycle' => [
@@ -924,9 +938,9 @@ class CreatorFinancialController extends Controller
                 }
 
                 $tx->label = match($base) {
-                    'StripePaymentItems' => 'Wish Gift',
+                    'StripePaymentItems' => 'Wish Content',
                     'ShopPayment' => 'Shop Purchase',
-                    'TipGoalsPayment' => 'Support/Tip',
+                    'TipGoalsPayment' => 'Content Unlock',
                     'PiggyPotContribution' => 'Piggy Pot',
                     'MembershipPayment' => 'Membership',
                     'TaskPurchase' => 'Task',
@@ -1176,9 +1190,9 @@ class CreatorFinancialController extends Controller
             ->map(function ($transaction) {
                 $base = class_basename($transaction->source_type);
                 $label = match($base) {
-                    'StripePaymentItems' => 'Wish Gift',
+                    'StripePaymentItems' => 'Wish Content',
                     'ShopPayment' => 'Shop Purchase',
-                    'TipGoalsPayment' => 'Support/Tip',
+                    'TipGoalsPayment' => 'Content Unlock',
                     'PiggyPotContribution' => 'Piggy Pot',
                     'MembershipPayment' => 'Membership',
                     'TaskPurchase' => 'Task',
@@ -1300,6 +1314,12 @@ class CreatorFinancialController extends Controller
             $tx->payout_badge = null;
 
             if (!empty($tx->payout_run_id)) {
+                $tx->payout_badge = 'paid_out';
+            } elseif (($tx->reserve_status ?? null) === 'released') {
+                // Reserve releases 30 days AFTER the transaction — the base earning was
+                // necessarily paid out before that. A released reserve therefore proves the
+                // earning is already paid, even if payout_run_id was never linked (legacy/
+                // requeue data gap). Never label it 'this week'.
                 $tx->payout_badge = 'paid_out';
             } elseif (
                 ($tx->type ?? null) === 'income'

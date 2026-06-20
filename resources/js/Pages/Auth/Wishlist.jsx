@@ -117,6 +117,7 @@ export default function Wishlist(props) {
 
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: item && item.wishname ? item.wishname : "",
+        goal_label: item && item.goal_label ? item.goal_label : "",
         price: item && item.price ? item.price : "",
         item_url: item && item.item_url ? item.item_url : "",
         thumbnail:
@@ -466,13 +467,43 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
                                 <div className="mb-4">
                                     <label className="mb-2 text-left block font-semibold text-gray-700">
+                                        Goal{" "}
+                                        <span className="text-gray-400 font-normal">(optional)</span>
+                                    </label>
+                                    <input
+                                        id="goal_label"
+                                        name="goal_label"
+                                        type="text"
+                                        maxLength={60}
+                                        placeholder="Eg. New camera fund"
+                                        value={data.goal_label}
+                                        className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm px-4 py-3"
+                                        onChange={(e) =>
+                                            setData("goal_label", e.target.value)
+                                        }
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 text-left">
+                                        A goal you're working toward (e.g. "studio
+                                        upgrade"). Shown as context only — it's never
+                                        what the supporter buys. Don't name a bill, debt
+                                        or expense (e.g. rent, phone bill).
+                                    </p>
+                                    {errors.goal_label && (
+                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                            {errors.goal_label}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">
                                         Content Title
                                     </label>
                                     <input
                                         id="wishname"
                                         name="wishname"
                                         type="text"
-                                        placeholder="Eg. New gym leggings"
+                                        placeholder="Eg. Exclusive photo set"
                                         value={data.wishname}
                                         className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm px-4 py-3"
                                         autoComplete="name"
@@ -481,6 +512,11 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         }
                                         required
                                     />
+                                    {errors.wishname && (
+                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                            {errors.wishname}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="mb-4">

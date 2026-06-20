@@ -72,7 +72,14 @@ class WishitemController extends Controller
                 "string",
                 "min:4",
                 "max:255",
-                new \App\Rules\NoBrandOrExpenseName,
+                new \App\Rules\NoExpenseOrBrandName,
+            ],
+            // Field A — optional aspirational goal label (display-only, never on a transactional surface).
+            "goal_label" => [
+                "nullable",
+                "string",
+                "max:60",
+                new \App\Rules\NoExpenseOrBrandName,
             ],
             "price" => [
                 "required",
@@ -126,6 +133,7 @@ class WishitemController extends Controller
             $wish = WishItem::create([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname,
+                'goal_label' => $request->goal_label ?: null,
                 'price' => ceil($request->price),
                 'currency' => $user->default_currency,
                 'item_url' => $request->item_url != "" ? $request->item_url : null,
@@ -216,7 +224,14 @@ class WishitemController extends Controller
                 "string",
                 "min:4",
                 "max:255",
-                new \App\Rules\NoBrandOrExpenseName,
+                new \App\Rules\NoExpenseOrBrandName,
+            ],
+            // Field A — optional aspirational goal label (display-only, never on a transactional surface).
+            "goal_label" => [
+                "nullable",
+                "string",
+                "max:60",
+                new \App\Rules\NoExpenseOrBrandName,
             ],
             "price" => [
                 "required",
@@ -314,6 +329,7 @@ class WishitemController extends Controller
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
+            'goal_label' => $request->goal_label ?: null,
             'price' => $price,
             'currency' => $user->default_currency,
             'item_url' => $request->item_url != "" ? $request->item_url : null,
@@ -414,6 +430,11 @@ class WishitemController extends Controller
         $old_wish_name = $wish->wish_name;
         $old_price_id = $wish->price_id;
 
+        $request->validate([
+            "wishname" => ["sometimes", "string", "min:4", "max:255", new \App\Rules\NoExpenseOrBrandName],
+            "goal_label" => ["nullable", "string", "max:60", new \App\Rules\NoExpenseOrBrandName],
+        ]);
+
         $blockedWord = Helpers::checkBlockData($request);
         if ($blockedWord !== false) {
             return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
@@ -471,6 +492,7 @@ class WishitemController extends Controller
             WishItem::where('uuid', $uuid)->update([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname ?? $wish->wishname,
+                'goal_label' => $request->has('goal_label') ? ($request->goal_label ?: null) : $wish->goal_label,
                 'price' => $price,
                 'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
                 'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
@@ -2441,7 +2463,7 @@ class WishitemController extends Controller
                         $cart[$key]['items'][$k] = [
                             'price' => $price,
                             'tax' => $tax,
-                            'wishname' => 'Surprise Gift',
+                            'wishname' => 'Treat',
                             'uuid' => $v['uuiddata'],
                             'price_id' => $priceid,
                             'product' => 'surprise',
@@ -2551,7 +2573,7 @@ class WishitemController extends Controller
                     $cart[$key]['items'][$k] = [
                         'price' => $price,
                         'tax' => $tax,
-                        'wishname' => 'Surprise Gift',
+                        'wishname' => 'Treat',
                         'uuid' => $v['uuiddata'] ?? null,
                         'price_id' => $priceid,
                         'product' => 'surprise',
@@ -2750,7 +2772,7 @@ class WishitemController extends Controller
                         $cart[$key]['items'][$k] = [
                             'price' => $price,
                             'tax' => $tax,
-                            'wishname' => 'Surprise Gift',
+                            'wishname' => 'Treat',
                             'uuid' => $v['uuiddata'],
                             'price_id' => $priceid,
                             'product' => 'surprise',
@@ -2834,7 +2856,7 @@ class WishitemController extends Controller
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
-            'name' => 'Surprise Gift',
+            'name' => 'Treat',
             'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
             "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round($total * 100, 0)],
         ], [
@@ -2853,7 +2875,7 @@ class WishitemController extends Controller
                 'status' => 1,
                 'country' => 'global', // CRITICAL: Always set country
             ]);
-            return back()->with('success', 'Surprise Gift item has been added to the cart.');
+            return back()->with('success', 'Treat added to the cart.');
         } else {
             UserCart::create([
                 'user_id' => Auth::id(),
@@ -2866,7 +2888,7 @@ class WishitemController extends Controller
                 'status' => 1,
                 'country' => 'global', // CRITICAL: Always set country
             ]);
-            return back()->with('success', 'Surprise Gift item has been added to the cart.');
+            return back()->with('success', 'Treat added to the cart.');
         }
     }
 

@@ -40,6 +40,7 @@ export default function AddBills(props) {
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: item && item.name ? item.name : "",
+        goal_label: item && item.goal_label ? item.goal_label : "",
         price: item && item.price ? item.price : "",
         thumbnail: item && item.thumbnail ? item.thumbnail : BillsImages[0],
         period: item && item.period ? item.period : "weekly",
@@ -173,6 +174,34 @@ export default function AddBills(props) {
                             <ul className="pl-0">
                                 <li className="mb-4">
                                     <label className="mb-2 text-left block">
+                                        Goal{" "}
+                                        <span className="text-gray-400">(optional)</span>
+                                    </label>
+                                    <input
+                                        id="goal_label"
+                                        name="goal_label"
+                                        type="text"
+                                        maxLength={60}
+                                        placeholder="Eg. Studio upgrade"
+                                        value={data.goal_label}
+                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                        onChange={(e) =>
+                                            setData("goal_label", e.target.value)
+                                        }
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 text-left">
+                                        A goal you're working toward — shown as context
+                                        only, never what the supporter buys. Don't name a
+                                        bill, debt or expense (e.g. rent, phone bill).
+                                    </p>
+                                    {errors.goal_label && (
+                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                            {errors.goal_label}
+                                        </p>
+                                    )}
+                                </li>
+                                <li className="mb-4">
+                                    <label className="mb-2 text-left block">
                                         {" "}
                                         Subscription / content name{" "}
                                     </label>
@@ -189,6 +218,11 @@ export default function AddBills(props) {
                                         }
                                         required
                                     />
+                                    {errors.name && (
+                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                            {errors.name}
+                                        </p>
+                                    )}
                                 </li>
                                 <li className="mb-4">
                                     <label className="mb-2 text-left block">

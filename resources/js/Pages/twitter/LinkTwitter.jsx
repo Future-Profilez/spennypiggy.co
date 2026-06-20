@@ -74,7 +74,7 @@ export default function LinkTwitter(props) {
               Someone just made a wishlist dream come true, funding a gift worth $50.00! Feel like joining in the fun?
               </p>
               <p className='mt-2' > 
-              Check out my wishlist and send me a little surprise 🎁 via <a className='text-blue-600 ml-2 inline-block' 
+              Check out my wishlist and send me a little treat 🎁 via <a className='text-blue-600 ml-2 inline-block' 
                 href={`${window.location.host}/${auth && auth.user && auth.user.username}`} > 
                 {`${window.location.host}/${auth && auth.user && auth.user.username}`} 
                 </a> using @SpennyPiggy! 🐷

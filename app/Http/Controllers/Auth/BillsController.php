@@ -54,7 +54,9 @@ class BillsController extends Controller
         ]);
 
         $validator = Validator::make($request->all(), [
-            "name" => ["required", "string", new \App\Rules\NoBrandOrExpenseName],
+            "name" => ["required", "string", new \App\Rules\NoExpenseOrBrandName],
+            // Field A — optional aspirational goal label (display-only, never on a transactional surface).
+            "goal_label" => ["nullable", "string", "max:60", new \App\Rules\NoExpenseOrBrandName],
             "price" => [
                 "required",
                 "numeric",
@@ -103,6 +105,7 @@ class BillsController extends Controller
         $bill = new Bills();
         $bill->user_id = Auth::id();
         $bill->name = $request->name;
+        $bill->goal_label = $request->goal_label ?: null;
         $bill->currency = $currency;
         $bill->price = $price;
         $bill->tax_amount = $taxAmount;
@@ -166,7 +169,9 @@ class BillsController extends Controller
         Log::info("from start request->period: $request->period");
 
         $validator = Validator::make($request->all(), [
-            "name" => ["required", "string", new \App\Rules\NoBrandOrExpenseName],
+            "name" => ["required", "string", new \App\Rules\NoExpenseOrBrandName],
+            // Field A — optional aspirational goal label (display-only, never on a transactional surface).
+            "goal_label" => ["nullable", "string", "max:60", new \App\Rules\NoExpenseOrBrandName],
             "price" => [
                 "required",
                 "numeric",
@@ -223,6 +228,7 @@ class BillsController extends Controller
         $bill->fill([
             'user_id' => $user->id,
             'name' => $request->name,
+            'goal_label' => $request->has('goal_label') ? ($request->goal_label ?: null) : $bill->goal_label,
             'currency' => $currency,
             'price' => $price,
             'tax_amount' => $taxamount,

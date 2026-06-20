@@ -237,7 +237,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $riskData['status'],
-                        'description' => 'Wish Gift: ' . ($item['wish_name'] ?? 'Item'),
+                        'description' => 'Wish Content: ' . ($item['wish_name'] ?? 'Item'),
                         'transaction_date' => $payment->created_at,
                     ]
                 );
@@ -787,7 +787,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($item->payment->currency ?? 'GBP'),
                         'status' => $status,
-                        'description' => 'Wish Gift: ' . ($item->wish->name ?? 'Item'),
+                        'description' => 'Wish Content: ' . ($item->wish->name ?? 'Item'),
                         'transaction_date' => $item->created_at,
                     ]
                 );

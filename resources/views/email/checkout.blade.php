@@ -38,9 +38,9 @@
                     @if ($data->payment->anonymous == 0)
                     <strong style="color:#1A1A1A;">{{
                         $anon == false ? ucwords($data->cart?->user?->name ?? $data->payment?->user?->name ?? 'Someone') : ucwords($anonname)
-                    }}</strong> just granted you a surprise gift on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    }}</strong> just sent you a treat on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @else
-                    An <strong style="color:#1A1A1A;">anonymous user</strong> just granted you a surprise gift on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    An <strong style="color:#1A1A1A;">anonymous user</strong> just sent you a treat on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @endif
                 </td>
                 @else
@@ -49,9 +49,9 @@
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
                     <strong style="color:#FF007F;">Lucky you!</strong><br><br>
                     @if ($data->payment->anonymous == 0)
-                    <strong style="color:#1A1A1A;">{{ $anon == false ? ucwords($data->cart->user->name) : ucwords($anonname) }}</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    <strong style="color:#1A1A1A;">{{ $anon == false ? ucwords($data->cart->user->name) : ucwords($anonname) }}</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'a treat' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @else
-                    An <strong style="color:#1A1A1A;">anonymous user</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    An <strong style="color:#1A1A1A;">anonymous user</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'a treat' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
                     @endif
                 </td>
                 @endif

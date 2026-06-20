@@ -196,6 +196,11 @@ function BillItem(props) {
                     className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-4 flex-grow"
                 >
                     <div>
+                        {itm.goal_label ? (
+                            <p className="text-[11px] font-bold text-center text-gray-500 uppercase tracking-wide mb-0.5">
+                                🎯 {itm.goal_label}
+                            </p>
+                        ) : null}
                         <h4 className="text-xl font-black !text-black text-center el1 uppercase tracking-wide">
                             {itm.name}
                         </h4>
