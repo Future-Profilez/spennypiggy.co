@@ -80,8 +80,6 @@ export default function OrdersLists({ type = 'sales' }) {
       fetchorders();
    }, [type]);
 
-   console.log("orders", orders);
-
 
   return <>
 

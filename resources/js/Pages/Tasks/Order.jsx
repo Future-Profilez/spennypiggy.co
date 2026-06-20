@@ -603,7 +603,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                         >
                                                             <label className="block text-sm font-bold uppercase text-red-800 mb-2">
                                                                 Reason for
-                                                                rejection
+                                                                rejection*
                                                             </label>
                                                             <textarea
                                                                 value={
