@@ -218,7 +218,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div>
                                             <label className="block text-sm font-bold text-gray-900 mb-1">
-                                                Progress Goal ({data.currency}) — optional
+                                                Progress Goal* ({data.currency}) — Required
                                             </label>
                                             <input
                                                 type="number"
@@ -325,6 +325,9 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                 onChange={(e) => setData('content_description', e.target.value)}
                                             />
                                         </div>
+                                        <label htmlFor="content_file" className="block text-sm font-bold text-gray-900 mb-1">
+                                            Content File*
+                                        </label>
 
                                         <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
                                             {data.content_file && (

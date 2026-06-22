@@ -642,16 +642,29 @@ export default function EditProfile({
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Gender
                                         </label>
-                                        <div className="custom-select-wrapper">
+
+                                        <div className="relative">
                                             <select
-                                                className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white"
+                                                className="
+                w-full
+                border border-gray-300
+                px-4 py-3 pr-12
+                rounded-[15px]
+                focus:outline-none
+                focus:border-[#FF007F]
+                focus:ring-1
+                focus:ring-pink-500
+                bg-white
+                appearance-none
+                cursor-pointer
+            "
+                                                value={data.gender}
                                                 onChange={(e) =>
                                                     setData(
                                                         "gender",
                                                         e.target.value,
                                                     )
                                                 }
-                                                value={data.gender}
                                             >
                                                 <option value="" disabled>
                                                     Select Gender
@@ -662,6 +675,23 @@ export default function EditProfile({
                                                     They
                                                 </option>
                                             </select>
+
+                                            {/* Custom Dropdown Icon */}
+                                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                                <svg
+                                                    className="w-5 h-5 text-gray-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M19 9l-7 7-7-7"
+                                                    />
+                                                </svg>
+                                            </div>
                                         </div>
                                     </li>
                                     <li className="mb-4">

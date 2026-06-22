@@ -35,8 +35,16 @@ export default function PiggyPotModal({
             "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/",
     };
 
-    const { data, setData, post, processing, errors, reset, clearErrors, setError } =
-        useForm(defaultValues);
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        reset,
+        clearErrors,
+        setError,
+    } = useForm(defaultValues);
 
     /*
     |--------------------------------------------------------------------------
@@ -94,7 +102,9 @@ export default function PiggyPotModal({
 
         if (!data.content_file) {
             setError("content_file", "Content file is required.");
-            errorAlert("Please upload the content file the supporter receives.");
+            errorAlert(
+                "Please upload the content file the supporter receives.",
+            );
             return;
         }
 
@@ -142,7 +152,7 @@ export default function PiggyPotModal({
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-bold text-gray-900 mb-1">
-                            Content Title
+                            Content Title*
                         </label>
                         <input
                             type="text"
@@ -168,7 +178,9 @@ export default function PiggyPotModal({
                             rows="3"
                             placeholder="Tell backers what they unlock by chipping in..."
                             value={data.description}
-                            onChange={(e) => setData("description", e.target.value)}
+                            onChange={(e) =>
+                                setData("description", e.target.value)
+                            }
                         />
                         {errors.description && (
                             <div className="text-red-500 text-xs mt-1 font-bold">
@@ -180,7 +192,7 @@ export default function PiggyPotModal({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-sm font-bold text-gray-900 mb-1">
-                                Progress Goal ({data.currency}) — optional
+                                Progress Goal* ({data.currency}) — optional
                             </label>
                             <input
                                 type="number"
@@ -189,7 +201,9 @@ export default function PiggyPotModal({
                                 className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                 placeholder="e.g. 500"
                                 value={data.target_amount}
-                                onChange={(e) => setData("target_amount", e.target.value)}
+                                onChange={(e) =>
+                                    setData("target_amount", e.target.value)
+                                }
                                 required
                             />
                             {errors.target_amount && (
@@ -207,7 +221,9 @@ export default function PiggyPotModal({
                                 type="datetime-local"
                                 className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                 value={data.deadline}
-                                onChange={(e) => setData("deadline", e.target.value)}
+                                onChange={(e) =>
+                                    setData("deadline", e.target.value)
+                                }
                             />
                             {errors.deadline && (
                                 <div className="text-red-500 text-xs mt-1 font-bold">
@@ -235,7 +251,9 @@ export default function PiggyPotModal({
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             type="button"
-                                            onClick={() => setData("cover_media", "")}
+                                            onClick={() =>
+                                                setData("cover_media", "")
+                                            }
                                             className="bg-white text-red-600 font-bold px-4 py-2 border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                                         >
                                             Remove Cover
@@ -252,7 +270,9 @@ export default function PiggyPotModal({
                                     sendFile={(file) =>
                                         setData(
                                             "cover_media",
-                                            file?.url || file?.cdnUrl || file?.originalUrl,
+                                            file?.url ||
+                                                file?.cdnUrl ||
+                                                file?.originalUrl,
                                         )
                                     }
                                     options={st.avatar}
@@ -271,7 +291,8 @@ export default function PiggyPotModal({
                             Content the supporter receives
                         </label>
                         <p className="text-xs text-gray-500 mb-3">
-                            Supporters automatically unlock this content after they purchase.
+                            Supporters automatically unlock this content after
+                            they purchase.
                         </p>
                         <div className="mb-4">
                             <label className="block text-sm font-bold text-gray-900 mb-1">
@@ -282,16 +303,26 @@ export default function PiggyPotModal({
                                 rows="2"
                                 placeholder="Describe the exclusive content they will get..."
                                 value={data.content_description}
-                                onChange={(e) => setData("content_description", e.target.value)}
+                                onChange={(e) =>
+                                    setData(
+                                        "content_description",
+                                        e.target.value,
+                                    )
+                                }
                             />
                         </div>
+                        <label htmlFor="">Upload Content File*</label>
                         <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
                             {data.content_file && (
                                 <div className="mb-3 p-3 bg-white border-2 border-black rounded-xl text-sm font-bold flex justify-between items-center">
-                                    <span className="truncate">File Uploaded!</span>
+                                    <span className="truncate">
+                                        File Uploaded!
+                                    </span>
                                     <button
                                         type="button"
-                                        onClick={() => setData("content_file", "")}
+                                        onClick={() =>
+                                            setData("content_file", "")
+                                        }
                                         className="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded-lg"
                                     >
                                         Remove
@@ -307,7 +338,10 @@ export default function PiggyPotModal({
                                     sendFile={(file) =>
                                         setData(
                                             "content_file",
-                                            file?.uuid || file?.url || file?.cdnUrl || "",
+                                            file?.uuid ||
+                                                file?.url ||
+                                                file?.cdnUrl ||
+                                                "",
                                         )
                                     }
                                     options={st.wishlistcontent}
@@ -328,16 +362,22 @@ export default function PiggyPotModal({
                                     type="checkbox"
                                     className="sr-only"
                                     checked={data.is_pinned}
-                                    onChange={(e) => setData("is_pinned", e.target.checked)}
+                                    onChange={(e) =>
+                                        setData("is_pinned", e.target.checked)
+                                    }
                                 />
                                 <div
                                     className={`block w-14 h-8 rounded-full border-2 border-black transition-colors ${
-                                        data.is_pinned ? "bg-[#A2E4B8]" : "bg-gray-300"
+                                        data.is_pinned
+                                            ? "bg-[#A2E4B8]"
+                                            : "bg-gray-300"
                                     }`}
                                 ></div>
                                 <div
                                     className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full border-2 border-black transition-transform ${
-                                        data.is_pinned ? "transform translate-x-6" : ""
+                                        data.is_pinned
+                                            ? "transform translate-x-6"
+                                            : ""
                                     }`}
                                 ></div>
                             </div>
@@ -352,16 +392,25 @@ export default function PiggyPotModal({
                                     type="checkbox"
                                     className="sr-only"
                                     checked={data.enable_leaderboard}
-                                    onChange={(e) => setData("enable_leaderboard", e.target.checked)}
+                                    onChange={(e) =>
+                                        setData(
+                                            "enable_leaderboard",
+                                            e.target.checked,
+                                        )
+                                    }
                                 />
                                 <div
                                     className={`block w-14 h-8 rounded-full border-2 border-black transition-colors ${
-                                        data.enable_leaderboard ? "bg-[#A2E4B8]" : "bg-gray-300"
+                                        data.enable_leaderboard
+                                            ? "bg-[#A2E4B8]"
+                                            : "bg-gray-300"
                                     }`}
                                 ></div>
                                 <div
                                     className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full border-2 border-black transition-transform ${
-                                        data.enable_leaderboard ? "transform translate-x-6" : ""
+                                        data.enable_leaderboard
+                                            ? "transform translate-x-6"
+                                            : ""
                                     }`}
                                 ></div>
                             </div>
@@ -379,7 +428,9 @@ export default function PiggyPotModal({
                             <select
                                 className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white appearance-none"
                                 value={data.status}
-                                onChange={(e) => setData("status", e.target.value)}
+                                onChange={(e) =>
+                                    setData("status", e.target.value)
+                                }
                             >
                                 <option value="active">Active</option>
                                 <option value="completed">Completed</option>

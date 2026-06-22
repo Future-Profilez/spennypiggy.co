@@ -76,7 +76,9 @@ const EnableCardCapabilities = lazy(
 const ActionRequired = lazy(() => import("./stripe/ActionRequired"));
 const ErrorBoundary = lazy(() => import("@/Components/ErrorBoundary"));
 const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
-const FounderProgressTracker = lazy(() => import("@/Components/FounderProgressTracker"));
+const FounderProgressTracker = lazy(
+    () => import("@/Components/FounderProgressTracker"),
+);
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
 const CreatorRiskBanner = lazy(
     () => import("@/Components/Risk/CreatorRiskBanner"),
@@ -204,11 +206,18 @@ export default function Dashboard(props) {
         // Hide if Stripe connected more than 45 days ago (window opportunity is over)
         const stripeConnectedAt = auth?.user?.stripe_connected_at;
         if (stripeConnectedAt) {
-            const daysSinceConnected = (Date.now() - new Date(stripeConnectedAt).getTime()) / 86400000;
+            const daysSinceConnected =
+                (Date.now() - new Date(stripeConnectedAt).getTime()) / 86400000;
             if (daysSinceConnected > 45) return false;
         }
         return !props.founderData?.isEligible;
-    }, [IsloggedIn, auth?.user?.role, auth?.user?.is_founder, auth?.user?.stripe_connected_at, props.founderData?.isEligible]);
+    }, [
+        IsloggedIn,
+        auth?.user?.role,
+        auth?.user?.is_founder,
+        auth?.user?.stripe_connected_at,
+        props.founderData?.isEligible,
+    ]);
 
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -406,172 +415,240 @@ export default function Dashboard(props) {
                                 +
                             </b>
                         </div>
-                        {showAdd ? createPortal((
-                            <div onClick={() => setShowAdd(false)} className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex justify-center items-center top-0 left-0 w-full h-full">
-                                <div onClick={(e) => e.stopPropagation()} className="w-full md:max-w-[520px] lg:max-w-[560px] px-6 py-4">
-                                    <Suspense fallback={"Loading.."}>
-                                        <div className="relative bg-[#FFF6EC] border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-[30px]  md:rounded-3xl z-10 mt-4 max-h-[75vh] ">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowAdd(false)}
-                                                aria-label="Close"
-                                                className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF007F] hover:text-white font-black text-2xl leading-none pb-1 transition-colors z-20"
-                                            >
-                                                ×
-                                            </button>
-                                            <div className="text-center mb-5 max-w-[480px] mx-auto">
-                                                <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] rounded-[22px] px-6 py-3 mb-3 -rotate-1">
-                                                    <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-[2.1rem] !leading-none m-0 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
-                                                        🐷 Turn Content Into Cash 💰
-                                                    </h2>
-                                                </div>
-                                                <p className="text-[#3d2b1f] font-bold text-sm md:text-base leading-snug">
-                                                    Sell content, rewards, memberships, and exclusive experiences.
-                                                </p>
-                                            </div>
+                        {showAdd
+                            ? createPortal(
+                                  <div
+                                      onClick={() => setShowAdd(false)}
+                                      className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex justify-center items-center top-0 left-0 w-full h-full"
+                                  >
+                                      <div
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="w-full md:max-w-[520px] lg:max-w-[560px] px-6 py-4"
+                                      >
+                                          <Suspense fallback={"Loading.."}>
+                                              <div
+                                                  className="
+                                                    relative
+                                                    bg-[#FFF6EC]
+                                                    border-[3px]
+                                                    border-black
+                                                    shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]
+                                                    w-full
+                                                    rounded-[30px]
+                                                    p-6 md:p-8
+                                                "
+                                              >
+                                                  <button
+                                                      type="button"
+                                                      onClick={() =>
+                                                          setShowAdd(false)
+                                                      }
+                                                      aria-label="Close"
+                                                      className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FF007F] hover:text-white font-black text-2xl leading-none pb-1 transition-colors z-20"
+                                                  >
+                                                      ×
+                                                  </button>
+                                                  <div className="text-center mb-5 max-w-[480px] mx-auto">
+                                                      <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] rounded-[22px] px-6 py-3 mb-3 -rotate-1">
+                                                          <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-[2.1rem] !leading-none m-0 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
+                                                              🐷 Turn Content
+                                                              Into Cash 💰
+                                                          </h2>
+                                                      </div>
+                                                      <p className="text-[#3d2b1f] font-bold text-sm md:text-base leading-snug">
+                                                          Sell content, rewards,
+                                                          memberships, and
+                                                          exclusive experiences.
+                                                      </p>
+                                                  </div>
 
-                                            {AuthUserStripeConnected !== 1 ? (
-                                                <p className="!mb-2 text-center">
-                                                    Please complete your Stripe
-                                                    account setup to add your
-                                                    wishlist.
-                                                </p>
-                                            ) : (
-                                                ""
-                                            )}
-                                            <div className="!max-h-[56vh] !min-h-[56vh] px-3 md:px-4 !pt-2 !pb-8 overflow-auto">
-                                                {wishOptions ? (
-                                                    <div>
-                                                        <Wishlist
-                                                            text="Cash Wish"
-                                                            currency={
-                                                                global_currency
-                                                            }
-                                                            setuped={
-                                                                AuthUserStripeConnected ==
-                                                                1
-                                                                    ? true
-                                                                    : false
-                                                            }
-                                                        />
-                                                        <div className="w-full font-bold disabled addop bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[30px]  p-3 mb-4 text-center">
-                                                            <div className=" flex items-center">
-                                                                <div className="p-1 rounded-[30px]  border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                    <CiGift
-                                                                        color="#000"
-                                                                        size="1.5rem"
-                                                                    />
-                                                                </div>
-                                                                <div className="pl-3 text-left">
-                                                                    <h2 className="font-gulfs font-light text-md font-black uppercase text-black">
-                                                                        Pick A Treat
-                                                                    </h2>
-                                                                    <p className="text-sm font-bold text-gray-700">
-                                                                        Fans grab you something from the 1000s in the Oink Gift Zone.
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                  {AuthUserStripeConnected !==
+                                                  1 ? (
+                                                      <p className="!mb-2 text-center">
+                                                          Please complete your
+                                                          Stripe account setup
+                                                          to add your wishlist.
+                                                      </p>
+                                                  ) : (
+                                                      ""
+                                                  )}
+                                                  <div className="max-h-[50vh] overflow-y-auto px-3 md:px-4 pt-2">
+                                                      {wishOptions ? (
+                                                          <div>
+                                                              <Wishlist
+                                                                  text="Cash Gift"
+                                                                  currency={
+                                                                      global_currency
+                                                                  }
+                                                                  setuped={
+                                                                      AuthUserStripeConnected ==
+                                                                      1
+                                                                          ? true
+                                                                          : false
+                                                                  }
+                                                              />
+                                                              <div className="w-full font-bold disabled addop bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[30px]  p-3 mb-4 text-center">
+                                                                  <div className=" flex items-center">
+                                                                      <div className="p-1 rounded-[30px]  border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                          <CiGift
+                                                                              color="#000"
+                                                                              size="1.5rem"
+                                                                          />
+                                                                      </div>
+                                                                      <div className="pl-3 text-left">
+                                                                          <h2 className="font-gulfs font-light text-md font-black uppercase text-black">
+                                                                              Add
+                                                                              Surprise
+                                                                              Gift
+                                                                          </h2>
+                                                                          <p className="text-sm font-bold text-gray-700">
+                                                                              Lets
+                                                                              supporters
+                                                                              pick
+                                                                              from
+                                                                              the
+                                                                              1000’s
+                                                                              of
+                                                                              Gifts
+                                                                              in
+                                                                              the
+                                                                              Oink
+                                                                              Gift
+                                                                              Zone
+                                                                          </p>
+                                                                      </div>
+                                                                  </div>
+                                                              </div>
 
-                                                        <div className="flex justify-center">
-                                                            <button
-                                                                onClick={() =>
-                                                                    setWishOptions(
-                                                                        !wishOptions,
-                                                                    )
-                                                                }
-                                                                className="bg-gray-200 text-back rounded-[30px]  px-3 py-2"
-                                                            >
-                                                                Back
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div className={`${AuthUserStripeConnected == 1 ? "block":"disabled"}`} >
-                                                            <div className="w-full grid grid-cols-1 lg:grid-cols-1 gap-x-4 gap-y-1">
-                                                                <div
-                                                                    onClick={() => setWishOptions( true,)}
-                                                                    className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" >
-                                                                    <div className=" flex items-center">
-                                                                        <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
-                                                                            <FaRegHeart
-                                                                                color="#FF007F"
-                                                                                size="1.6rem"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="pl-4 text-left">
-                                                                            <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
-                                                                                Sell exclusive content
-                                                                            </h2>
-                                                                            <p className="text-sm font-bold text-gray-700">
-                                                                                Offer a one-off piece of exclusive content.
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                                              <div className="flex justify-center">
+                                                                  <button
+                                                                      onClick={() =>
+                                                                          setWishOptions(
+                                                                              !wishOptions,
+                                                                          )
+                                                                      }
+                                                                      className="bg-gray-200 text-back rounded-[30px]  px-3 py-2"
+                                                                  >
+                                                                      Back
+                                                                  </button>
+                                                              </div>
+                                                          </div>
+                                                      ) : (
+                                                          <>
+                                                              <div
+                                                                  className={`${AuthUserStripeConnected == 1 ? "block" : "disabled"}`}
+                                                              >
+                                                                  <div className="w-full grid grid-cols-1 lg:grid-cols-1 gap-x-4 gap-y-1">
+                                                                      <div
+                                                                          onClick={() =>
+                                                                              setWishOptions(
+                                                                                  true,
+                                                                              )
+                                                                          }
+                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                      >
+                                                                          <div className=" flex items-center">
+                                                                              <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                  <FaRegHeart
+                                                                                      color="#FF007F"
+                                                                                      size="1.6rem"
+                                                                                  />
+                                                                              </div>
+                                                                              <div className="pl-4 text-left">
+                                                                                  <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                      Sell
+                                                                                      exclusive
+                                                                                      content
+                                                                                  </h2>
+                                                                                  <p className="text-sm font-bold text-gray-700">
+                                                                                      Offer
+                                                                                      a
+                                                                                      one-off
+                                                                                      piece
+                                                                                      of
+                                                                                      exclusive
+                                                                                      content.
+                                                                                  </p>
+                                                                              </div>
+                                                                          </div>
+                                                                      </div>
 
-                                                                {auth?.user
-                                                                    ?.role ===
-                                                                    1 && (
-                                                                    <Link
-                                                                        className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
-                                                                        href="/task/create"
-                                                                    >
-                                                                        <div className=" flex items-center">
-                                                                            <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
-                                                                                <BiTask
-                                                                                    color="#FF007F"
-                                                                                    size="1.6rem"
-                                                                                />
-                                                                            </div>
-                                                                            <div className="pl-4 text-left">
-                                                                                <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
-                                                                                    Create
-                                                                                    Task
-                                                                                </h2>
-                                                                                <p className="text-sm font-bold text-gray-700">
-                                                                                    Sell a personalised service or shoutout.
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </Link>
-                                                                )}
+                                                                      {auth
+                                                                          ?.user
+                                                                          ?.role ===
+                                                                          1 && (
+                                                                          <Link
+                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              href="/task/create"
+                                                                          >
+                                                                              <div className=" flex items-center">
+                                                                                  <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                      <BiTask
+                                                                                          color="#FF007F"
+                                                                                          size="1.6rem"
+                                                                                      />
+                                                                                  </div>
+                                                                                  <div className="pl-4 text-left">
+                                                                                      <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                          Create
+                                                                                          Task
+                                                                                      </h2>
+                                                                                      <p className="text-sm font-bold text-gray-700">
+                                                                                          Sell
+                                                                                          a
+                                                                                          personalised
+                                                                                          service
+                                                                                          or
+                                                                                          shoutout.
+                                                                                      </p>
+                                                                                  </div>
+                                                                              </div>
+                                                                          </Link>
+                                                                      )}
 
-                                                                {auth?.user
-                                                                    ?.role ===
-                                                                    1 && (
-                                                                    <div
-                                                                        onClick={() => {
-                                                                            setShowAdd(false);
-                                                                            openCreateModal();
-                                                                        }}
-                                                                        className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
-                                                                    >
-                                                                        <div className=" flex items-center">
-                                                                            <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
-                                                                                <span className="text-2xl">
-                                                                                    🐷
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="pl-4 text-left">
-                                                                                <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
-                                                                                    Content goal
-                                                                                </h2>
-                                                                                <p className="text-sm font-bold text-gray-700">
-                                                                                    Sell content toward a visible goal.
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                                      {auth
+                                                                          ?.user
+                                                                          ?.role ===
+                                                                          1 && (
+                                                                          <div
+                                                                              onClick={() => {
+                                                                                  setShowAdd(
+                                                                                      false,
+                                                                                  );
+                                                                                  openCreateModal();
+                                                                              }}
+                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          >
+                                                                              <div className=" flex items-center">
+                                                                                  <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                      <span className="text-2xl">
+                                                                                          🐷
+                                                                                      </span>
+                                                                                  </div>
+                                                                                  <div className="pl-4 text-left">
+                                                                                      <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                                                                                          Content
+                                                                                          goal
+                                                                                      </h2>
+                                                                                      <p className="text-sm font-bold text-gray-700">
+                                                                                          Sell
+                                                                                          content
+                                                                                          toward
+                                                                                          a
+                                                                                          visible
+                                                                                          goal.
+                                                                                      </p>
+                                                                                  </div>
+                                                                              </div>
+                                                                          </div>
+                                                                      )}
 
-                                                                <AddItem
-                                                                    classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
-                                                                    product_type="digital_products"
-                                                                />
-                                                                <AddPost classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                                {/* <AddGift
+                                                                      <AddItem
+                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          product_type="digital_products"
+                                                                      />
+                                                                      <AddPost classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      {/* <AddGift
                                                                     text="Add Gift "
                                                                     classes="font-bold py-3 px-3 mb-2 text-center"
                                                                     fetch_gifts={
@@ -582,35 +659,51 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                                <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
-                                            {!wishOptions ? (
-                                                <div className="flex justify-center">
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowAdd(false);
-                                                            // setWishOptions(false);
-                                                        }}
-                                                        className="w-[80%] mx-w-[200px] pt-3 rounded-[30px]    font-black uppercase tracking-widest block    transition-colors"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                ""
-                                            )}
-                                        </div>
-                                    </Suspense>
-                                </div>
-                            </div>
-                        ), document.body) : (
-                            ""
-                        )}
+                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]  !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                  </div>
+                                                              </div>
+                                                          </>
+                                                      )}
+                                                  </div>
+                                                  {!wishOptions && (
+                                                      <div className="sticky bottom-0 bg-[#FFF6EC] pt-4 pb-2 flex justify-center">
+                                                          <button
+                                                              onClick={() =>
+                                                                  setShowAdd(
+                                                                      false,
+                                                                  )
+                                                              }
+                                                              className="
+                                                                w-full
+                                                                max-w-[220px]
+                                                                h-[56px]
+                                                                bg-[#E9E1D7]
+                                                                border-[3px]
+                                                                border-black
+                                                                rounded-[20px]
+                                                                shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                                                                font-black
+                                                                uppercase
+                                                                tracking-wider
+                                                                text-black
+                                                                hover:translate-x-[2px]
+                                                                hover:translate-y-[2px]
+                                                                hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                                                transition-all
+                                                            "
+                                                          >
+                                                              Cancel
+                                                          </button>
+                                                      </div>
+                                                  )}
+                                              </div>
+                                          </Suspense>
+                                      </div>
+                                  </div>,
+                                  document.body,
+                              )
+                            : ""}
                     </>
                 ) : (
                     ""
@@ -649,7 +742,9 @@ export default function Dashboard(props) {
                 <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
                     <div className="containerbox relative z-10">
                         <VersionUpdate />
-                        {props.founderData?.isEligible && (IsloggedIn && auth?.user?.role === 1) ? (
+                        {props.founderData?.isEligible &&
+                        IsloggedIn &&
+                        auth?.user?.role === 1 ? (
                             <FounderProgressTracker
                                 founderData={props.founderData}
                                 variant="mini"
@@ -662,7 +757,7 @@ export default function Dashboard(props) {
                         ) : (
                             ""
                         )}
-                        
+
                         {IsloggedIn && <ReferralBanner />}
 
                         <div className="wishbanner relative ">
@@ -678,21 +773,12 @@ export default function Dashboard(props) {
                                     alt={`${user?.name} - Cover Image`}
                                     height={400}
                                     width={1200}
-                                    className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
-                                    src={
-                                        IsloggedIn
-                                            ? user?.cover_url ||
-                                              wishlistbannerimg
-                                            : user?.cover_url
-                                              ? user?.cover_url
-                                              : wishlistbannerimg
-                                    }
+                                    className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover"
+                                    src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_url ? user?.cover_url : wishlistbannerimg}
                                     loading="eager"
                                     fetchpriority="high"
                                 />
-                                {IsloggedIn &&
-                                auth?.user?.cover_url &&
-                                auth?.user?.cover_approved == 0 ? (
+                                {IsloggedIn && auth?.user?.cover_url && auth?.user?.cover_approved == 0 ? (
                                     <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
                                         <button className="flex items-center gap-2">
                                             <svg
@@ -740,7 +826,7 @@ export default function Dashboard(props) {
                             : ''} */}
 
                         {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 w-full">
+                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto">
                                 {/* Creator Subscription Widget - Show on all tabs for creators */}
                                 {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                         <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
@@ -1916,22 +2002,64 @@ export default function Dashboard(props) {
 
                                                         {page ===
                                                         "memberships" ? (
-                                                            <Suspense fallback={<LoadingScreen />}>
-                                                                <MembershipsLists IsloggedIn={IsloggedIn} username={user?.username || auth?.user?.username} suppressEmptyState={IsloggedIn && (!props.memberships || props.memberships?.length === 0)}/>
-                                                                {IsloggedIn && (!props.memberships || props.memberships?.length === 0) && (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <MembershipsLists
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                    username={
+                                                                        user?.username ||
+                                                                        auth
+                                                                            ?.user
+                                                                            ?.username
+                                                                    }
+                                                                    suppressEmptyState={
+                                                                        IsloggedIn &&
+                                                                        (!props.memberships ||
+                                                                            props
+                                                                                .memberships
+                                                                                ?.length ===
+                                                                                0)
+                                                                    }
+                                                                />
+                                                                {IsloggedIn &&
+                                                                    (!props.memberships ||
+                                                                        props
+                                                                            .memberships
+                                                                            ?.length ===
+                                                                            0) && (
                                                                         <>
                                                                             <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                                                                                 <div className="text-4xl mb-3">
                                                                                     ⭐
                                                                                 </div>
                                                                                 <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                    No Memberships Yet
+                                                                                    No
+                                                                                    Memberships
+                                                                                    Yet
                                                                                 </h3>
                                                                                 <p className="text-gray-600 font-bold mb-6">
-                                                                                    Create membership tiers for your most loyal supporters.
+                                                                                    Create
+                                                                                    membership
+                                                                                    tiers
+                                                                                    for
+                                                                                    your
+                                                                                    most
+                                                                                    loyal
+                                                                                    supporters.
                                                                                 </p>
-                                                                                <Link href={route("membershipDashboard")} className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
-                                                                                    Create Membership
+                                                                                <Link
+                                                                                    href={route(
+                                                                                        "membershipDashboard",
+                                                                                    )}
+                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                >
+                                                                                    Create
+                                                                                    Membership
                                                                                 </Link>
                                                                             </div>
                                                                         </>
@@ -1977,7 +2105,15 @@ export default function Dashboard(props) {
                                                                                     Bills
                                                                                 </h3>
                                                                                 <p className="text-gray-600 font-bold mb-6">
-                                                                                    Offer a content membership your fans can subscribe to.
+                                                                                    Offer
+                                                                                    a
+                                                                                    content
+                                                                                    membership
+                                                                                    your
+                                                                                    fans
+                                                                                    can
+                                                                                    subscribe
+                                                                                    to.
                                                                                 </p>
                                                                                 <button
                                                                                     onClick={() =>
