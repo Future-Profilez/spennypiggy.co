@@ -79,23 +79,25 @@ export default function BlockedUsers({ auth }) {
                                 <div
                                     key={item.id}
                                     className="
-                                    bg-white
-                                    rounded-[35px]
-                                    border-2
-                                    border-black/10
-                                    p-5 md:p-6
-                                    flex
-                                    flex-col
-                                    lg:flex-row
-                                    lg:items-center
-                                    lg:justify-between
-                                    gap-5
-                                    shadow-[0_8px_25px_rgba(0,0,0,0.08)]
-                                    transition-all
-                                    duration-300
-                                    hover:-translate-y-1
-                                    hover:shadow-[0_15px_35px_rgba(0,0,0,0.12)]
-                                "
+        relative
+        bg-white
+        border-[3px]
+        border-black
+        rounded-[30px]
+        p-5 md:p-6
+        flex
+        flex-col
+        lg:flex-row
+        lg:items-center
+        lg:justify-between
+        gap-5
+        shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]
+        transition-all
+        duration-200
+        hover:translate-x-[2px]
+        hover:translate-y-[2px]
+        hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+    "
                                 >
                                     {/* LEFT SIDE */}
                                     <div className="flex items-center gap-4 flex-1">
@@ -122,12 +124,14 @@ export default function BlockedUsers({ auth }) {
                                             </div>
 
                                             <div className="flex items-center gap-2 mt-3">
-                                                <span className="text-xs text-red-500 font-semibold">
-                                                    Blocked on{" "}
-                                                    {new Date(
-                                                        item.created_at,
-                                                    ).toLocaleDateString()}
-                                                </span>
+                                                <p className="text-[#FF007F] text-sm font-bold mt-2">
+    Blocked on{" "}
+    {new Date(item.created_at).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    })}
+</p>
                                             </div>
                                         </div>
                                     </div>
