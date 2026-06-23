@@ -28,7 +28,7 @@ import {
     HouseIcon,
     InfoIcon,
 } from "@animateicons/react/lucide";
-import { Calendar, Shield as ShieldIcon, PiggyBank } from "lucide-react";
+import { Calendar, Shield as ShieldIcon, PiggyBank, UserX } from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 import { FaFileInvoice } from "react-icons/fa";
 
@@ -532,6 +532,13 @@ export default function Header({ classMagicword }) {
                                     )}
                                 </>
 
+                                <NavLinkWithIcon
+                                    href={route("blocked.users")}
+                                    onClick={toggleClass}
+                                    icon={UserX}
+                                    label="Blocked User List"
+                                    activeColor="hover:bg-[#b892ff]"
+                                />
                                 {auth?.user?.username ? (
                                     ""
                                 ) : (

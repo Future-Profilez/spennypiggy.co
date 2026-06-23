@@ -64,6 +64,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Cache;
 use App\Models\SupportStoryReaction;
 use App\Models\SupportStoryReply;
+use App\Models\UserBlock;
 
 class ProfileController extends Controller
 {
@@ -135,184 +136,184 @@ class ProfileController extends Controller
     public function updateProfile(Request $request)
     {
         try {
-        // $fullUrl = $request->fullUrl(); // Includes query parameters
-        // $method = $request->method();   // GET, POST, etc.
+            // $fullUrl = $request->fullUrl(); // Includes query parameters
+            // $method = $request->method();   // GET, POST, etc.
 
-        $user = User::where('id', Auth::id())->first();
-        $currency = strtolower($request->cookie("currency", "GBP"));
+            $user = User::where('id', Auth::id())->first();
+            $currency = strtolower($request->cookie("currency", "GBP"));
 
-        // if($request->min_surprise_amount < 5){
-        //     return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
-        // }
-
-        $blockedWord = Helpers::checkBlockData($request);
-        if ($blockedWord !== false) {
-            return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
-        } else {
-            $messages = [
-                'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
-            ];
-
-            $request->validate([
-                'name' => ['string', 'max:255'],
-                'username' => ['string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'max:20', Rule::unique('users')->ignore($user->id)],
-                'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-                'bio' => ['nullable', 'string', 'max:255'], // updated
-                'creator_category' => ['nullable', 'array'],
-                'gender' => ['nullable', 'string', 'max:50'],
-                'country' => ['nullable', 'string', 'max:100'],
-            ], $messages);
-
-            $avatar = $request->avatar;
-            $cover = $request->cover;
-
-            $user->name = $request->name;
-            $user->username = $request->username;
-            $user->gender = $request->gender;
-            $user->country = $request->country;
-            $user->creator_category = !empty($request->creator_category) ? json_encode($request->creator_category) : null;
-
-            if ($request->email !== $user->email) {
-                 // Direct update to ensure it persists and bypasses any potential model interference
-                 User::where('id', $user->id)->update([
-                     'email' => $request->email,
-                     'email_verified_at' => null
-                 ]);
-                 $user->refresh(); // Sync the model instance with DB changes
-                 Log::info('Email updated and verification reset for user: ' . $user->id);
-            }
-            
-            $userProfileStatus = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
-            if (!$userProfileStatus) {
-                $userProfileStatus = UserVerificationStatus::create([
-                    'user_id' => $user->id,
-                    'role' => $user->role,
-                    'user_profile_status' => 1,
-                ]);
-            }
-            if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
-
-                UserVerificationStatus::UpdateOrCreate([
-                    'user_id' => $user->id,
-                    'role' => $user->role,
-                ], [
-                    'role' => $user->role,
-                    'bio_status' => !empty($request->bio) ? 0 : null,
-                ]);
-
-                $updatedFields = [
-                    'bio' => $request->bio !== $user->bio,
-                    'social' => $request->social_handle !== $user->social_handle,
-                ];
-
-                if ($user->profile_status_lock == 2 && ((!empty($updatedFields['bio']) && !empty($request->bio)) || !empty($updatedFields['social']))) {
-                    dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
-                }
-
-                if ($user->bio_approved == 2 || $user->bio_approved == 1) {
-                    $user->bio_approved = 0;
-                }
-
-                $user->bio = $request->bio;
-                if ($user->profile_status_lock == 2) {
-                    $user->profile_status_lock = 1;
-                }
-                if ($userProfileStatus) {
-                    $userProfileStatus->user_profile_status = 0;
-                    $userProfileStatus->save();
-                }
-            }
-
-            $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
-
-            if (is_array($avatar) && !empty($avatar)) {
-                $user->avatar = $avatar['uuid'] ?? null;
-                $user->avatar_approved = 0;
-                // $user->profile_status_lock = 1;
-                $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
-                if ($userProfileStatus) {
-                    $userProfileStatus->user_profile_status = 0;
-                    $userProfileStatus->save();
-                }
-            }
-            if (is_array($cover) && !empty($cover)) {
-                $user->cover = $cover['uuid'] ?? null;
-                $preApprovedCovers = [
-                    '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
-                    '21de57a2-c786-4a5a-b7e4-2edcdb61fc42',
-                    '6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2',
-                    'fcdb1692-d64d-4de8-b7af-5e0556cdf6e8',
-                    '40aaf556-fa59-4f8e-b482-e49726026499',
-                    'a2cad976-2480-4c77-baa3-cb5df3cdc0d6',
-                    'b81b3097-5c4c-4f48-aaf0-3687bc928a18',
-                    '32c130a9-37e6-4934-8d72-a83a5d8bdaa6',
-                    'e71ed424-f17a-47d9-b0e7-3e5eca4e51cb',
-                    'dc1021e2-41a4-4dfa-8379-b27fb7e3834e',
-                    '175e706f-ae6a-4920-a131-bf90502084f8',
-                    'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
-                    '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
-                    'c3b7ff7a-719a-452a-ba8f-d074d916b395',
-                    '133b057f-f069-4ea4-82e4-ba9184d721cd'
-                ];
-                $user->cover_approved = in_array($user->cover, $preApprovedCovers) ? 1 : 0;
-                $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
-            }
-
-            if ($request->hasFile('social_image')) {
-                $file = $request->file('social_image');
-
-                $uploadcareHost = "https://upload.uploadcare.com/base/";
-
-                $response = Http::asMultipart()->post($uploadcareHost, [
-                    [
-                        'name' => 'UPLOADCARE_PUB_KEY',
-                        'contents' => env('UPLOADCARE_PUBLIC_KEY'),
-                    ],
-                    [
-                        'name' => 'UPLOADCARE_STORE',
-                        'contents' => '1',
-                    ],
-                    [
-                        'name' => 'file',
-                        'contents' => fopen($file->getRealPath(), 'r'),
-                        'filename' => $file->getClientOriginalName(),
-                    ],
-                ]);
-
-                if ($response->successful() && isset($response['file'])) {
-                    $user->social_image = $response['file']; // store the Uploadcare UUID
-                } else {
-                    Log::error("Uploadcare error", ['response' => $response->body()]);
-                    return back()->with('error', 'Failed to upload image to Uploadcare.');
-                }
-            }
-
-
-            $user->save();
-            $user->refresh();
-
-            if (!empty($request->bio)) {
-                $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
-                if (!empty($logs)) {
-                    // logs data save
-                    $logs->status = 'updated';
-                    $logs->save();
-
-                    // user data save
-                    $user->edit_bio_reason = '';
-                    $user->save();
-                    $user->refresh();
-                }
-            }
-            $this->userProfileService->clearUserCaches($user->username, $user->id);
-            return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
-            // if($request->profilepage == 1){
-                //     return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
-            // } else { 
-            //     return back()->with('success', 'Profile updated successfully.');
+            // if($request->min_surprise_amount < 5){
+            //     return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
             // }
 
-        }
+            $blockedWord = Helpers::checkBlockData($request);
+            if ($blockedWord !== false) {
+                return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
+            } else {
+                $messages = [
+                    'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
+                ];
+
+                $request->validate([
+                    'name' => ['string', 'max:255'],
+                    'username' => ['string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'max:20', Rule::unique('users')->ignore($user->id)],
+                    'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+                    'bio' => ['nullable', 'string', 'max:255'], // updated
+                    'creator_category' => ['nullable', 'array'],
+                    'gender' => ['nullable', 'string', 'max:50'],
+                    'country' => ['nullable', 'string', 'max:100'],
+                ], $messages);
+
+                $avatar = $request->avatar;
+                $cover = $request->cover;
+
+                $user->name = $request->name;
+                $user->username = $request->username;
+                $user->gender = $request->gender;
+                $user->country = $request->country;
+                $user->creator_category = !empty($request->creator_category) ? json_encode($request->creator_category) : null;
+
+                if ($request->email !== $user->email) {
+                    // Direct update to ensure it persists and bypasses any potential model interference
+                    User::where('id', $user->id)->update([
+                        'email' => $request->email,
+                        'email_verified_at' => null
+                    ]);
+                    $user->refresh(); // Sync the model instance with DB changes
+                    Log::info('Email updated and verification reset for user: ' . $user->id);
+                }
+
+                $userProfileStatus = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
+                if (!$userProfileStatus) {
+                    $userProfileStatus = UserVerificationStatus::create([
+                        'user_id' => $user->id,
+                        'role' => $user->role,
+                        'user_profile_status' => 1,
+                    ]);
+                }
+                if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
+
+                    UserVerificationStatus::UpdateOrCreate([
+                        'user_id' => $user->id,
+                        'role' => $user->role,
+                    ], [
+                        'role' => $user->role,
+                        'bio_status' => !empty($request->bio) ? 0 : null,
+                    ]);
+
+                    $updatedFields = [
+                        'bio' => $request->bio !== $user->bio,
+                        'social' => $request->social_handle !== $user->social_handle,
+                    ];
+
+                    if ($user->profile_status_lock == 2 && ((!empty($updatedFields['bio']) && !empty($request->bio)) || !empty($updatedFields['social']))) {
+                        dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
+                    }
+
+                    if ($user->bio_approved == 2 || $user->bio_approved == 1) {
+                        $user->bio_approved = 0;
+                    }
+
+                    $user->bio = $request->bio;
+                    if ($user->profile_status_lock == 2) {
+                        $user->profile_status_lock = 1;
+                    }
+                    if ($userProfileStatus) {
+                        $userProfileStatus->user_profile_status = 0;
+                        $userProfileStatus->save();
+                    }
+                }
+
+                $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
+
+                if (is_array($avatar) && !empty($avatar)) {
+                    $user->avatar = $avatar['uuid'] ?? null;
+                    $user->avatar_approved = 0;
+                    // $user->profile_status_lock = 1;
+                    $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
+                    if ($userProfileStatus) {
+                        $userProfileStatus->user_profile_status = 0;
+                        $userProfileStatus->save();
+                    }
+                }
+                if (is_array($cover) && !empty($cover)) {
+                    $user->cover = $cover['uuid'] ?? null;
+                    $preApprovedCovers = [
+                        '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
+                        '21de57a2-c786-4a5a-b7e4-2edcdb61fc42',
+                        '6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2',
+                        'fcdb1692-d64d-4de8-b7af-5e0556cdf6e8',
+                        '40aaf556-fa59-4f8e-b482-e49726026499',
+                        'a2cad976-2480-4c77-baa3-cb5df3cdc0d6',
+                        'b81b3097-5c4c-4f48-aaf0-3687bc928a18',
+                        '32c130a9-37e6-4934-8d72-a83a5d8bdaa6',
+                        'e71ed424-f17a-47d9-b0e7-3e5eca4e51cb',
+                        'dc1021e2-41a4-4dfa-8379-b27fb7e3834e',
+                        '175e706f-ae6a-4920-a131-bf90502084f8',
+                        'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
+                        '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
+                        'c3b7ff7a-719a-452a-ba8f-d074d916b395',
+                        '133b057f-f069-4ea4-82e4-ba9184d721cd'
+                    ];
+                    $user->cover_approved = in_array($user->cover, $preApprovedCovers) ? 1 : 0;
+                    $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
+                }
+
+                if ($request->hasFile('social_image')) {
+                    $file = $request->file('social_image');
+
+                    $uploadcareHost = "https://upload.uploadcare.com/base/";
+
+                    $response = Http::asMultipart()->post($uploadcareHost, [
+                        [
+                            'name' => 'UPLOADCARE_PUB_KEY',
+                            'contents' => env('UPLOADCARE_PUBLIC_KEY'),
+                        ],
+                        [
+                            'name' => 'UPLOADCARE_STORE',
+                            'contents' => '1',
+                        ],
+                        [
+                            'name' => 'file',
+                            'contents' => fopen($file->getRealPath(), 'r'),
+                            'filename' => $file->getClientOriginalName(),
+                        ],
+                    ]);
+
+                    if ($response->successful() && isset($response['file'])) {
+                        $user->social_image = $response['file']; // store the Uploadcare UUID
+                    } else {
+                        Log::error("Uploadcare error", ['response' => $response->body()]);
+                        return back()->with('error', 'Failed to upload image to Uploadcare.');
+                    }
+                }
+
+
+                $user->save();
+                $user->refresh();
+
+                if (!empty($request->bio)) {
+                    $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
+                    if (!empty($logs)) {
+                        // logs data save
+                        $logs->status = 'updated';
+                        $logs->save();
+
+                        // user data save
+                        $user->edit_bio_reason = '';
+                        $user->save();
+                        $user->refresh();
+                    }
+                }
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
+                return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+                // if($request->profilepage == 1){
+                //     return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+                // } else { 
+                //     return back()->with('success', 'Profile updated successfully.');
+                // }
+
+            }
         } catch (\Throwable $e) {
             Log::error('Profile update error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
             return back()->with('error', 'Something went wrong while updating your profile.');
@@ -1234,47 +1235,58 @@ class ProfileController extends Controller
 
     public function gifterSubscription($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->firstOrFail();
 
-        $user_subs = StripePaymentDetail::where(function ($q) use ($user) {
-            $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-        })->with(['items', 'user'])->where('payment_status', 'paid')->paginate(30);
+        $billPayments = BillPayment::with([
+            'bill'
+        ])
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                    ->orWhere('guest_email', $user->email);
+            })
+            ->where('status', 'paid')
+            ->latest()
+            ->paginate(30);
 
         $trackData = [];
-        foreach ($user_subs as $key => $value) {
+
+        foreach ($billPayments as $key => $payment) {
+
+            $creator = $payment->bill?->user;
+
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->items->first()->wish->user->name ?? '',
-                    'avatar' => $value->items->first()->wish->user->avatar_url,
-                    'cover' => $value->items->first()->wish->user->cover_url,
-                    'username' => $value->items->first()->wish->user->username,
-                    'stripe_details_submitted' => $value->items->first()->wish->user->stripe_details_submitted
+                    'name' => $creator?->name ?? '',
+                    'avatar' => $creator?->avatar_url,
+                    'cover' => $creator?->cover_url,
+                    'username' => $creator?->username,
+                    'stripe_details_submitted' => $creator?->stripe_details_submitted,
                 ],
-                'amount' => $value->amount_total,
-                'tax' => 0,
-                // 'tax' => $value->tax,
-                'currency' => $value->currency,
-                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
-                'anonymous' => $value->anonymous
+
+                'amount' => $payment->amount,
+                'tax' => $payment->tax ?? 0,
+                'currency' => $payment->currency,
+                'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
+                'anonymous' => $payment->anonymous,
+
+                'bill' => [
+                    'id' => $payment->bill?->id,
+                    'uuid' => $payment->bill?->uuid,
+                    'name' => $payment->bill?->name,
+                    'thumbnail' => $payment->bill?->perma_link,
+                    'content_file' => $payment->bill?->content_file_url,
+                    'period' => $payment->bill?->period,
+                ],
             ];
-
-
-            if (!empty($value->items)) {
-                $trackData[$key]['wish_item'] = [
-                    'name' => $value->items->first()->wish->wishname,
-                    'perma_link' => $value->items->first()->wish->perma_link,
-                ];
-                $trackData[$key]['media_url'] = $value->recurring_for == 'onetime' ? $value->items->first()->wish->reward_url : false;
-            }
         }
 
         return response()->json([
             'status' => true,
             'subscriptions' => $trackData,
-            "last_page" => $user_subs->lastPage() ?? null,
-            "current_page" => $user_subs->currentPage() ?? null,
-            "total" => $user_subs->total() ?? null,
-            "per_page" => $user_subs->perPage() ?? null,
+            'last_page' => $billPayments->lastPage(),
+            'current_page' => $billPayments->currentPage(),
+            'total' => $billPayments->total(),
+            'per_page' => $billPayments->perPage(),
         ]);
     }
 
@@ -1291,10 +1303,10 @@ class ProfileController extends Controller
 
         $wishItems = StripePaymentItems::whereHas('payment', function ($q) use ($creator, $gifter) {
             $q->where('owner_id', $creator->id)
-              ->where(function ($sub) use ($gifter) {
-                  $sub->where('user_id', $gifter->id)->orWhere('guest_email', $gifter->email);
-              })
-              ->where('payment_status', 'paid');
+                ->where(function ($sub) use ($gifter) {
+                    $sub->where('user_id', $gifter->id)->orWhere('guest_email', $gifter->email);
+                })
+                ->where('payment_status', 'paid');
         })->with(['payment', 'wish'])->get();
 
         foreach ($wishItems as $it) {
@@ -1489,8 +1501,8 @@ class ProfileController extends Controller
                     'title' => $tpur->task->title,
                     'uuid' => $tpur->task->uuid,
                     'status' => $tpur->status,
-                    'reward_file' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out'])) 
-                        ? route('task.download', $tpur->task->uuid) 
+                    'reward_file' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out']))
+                        ? route('task.download', $tpur->task->uuid)
                         : ($tpur->proof_content['media_url'] ?? null),
                     'reward_note' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out']))
                         ? $tpur->task->deliverable_note
@@ -1596,7 +1608,7 @@ class ProfileController extends Controller
                 if ($ft) {
                     $ev['amount'] = $isViewerGifter ? (float) $ft->gross_amount : (float) $ft->net_amount;
                     $ev['creator_amount'] = (float) $ft->net_amount;
-                    
+
                     $status = $ft->status;
                     if ($isViewerGifter) {
                         // Gifter only sees 'completed' or 'refunded'
@@ -1697,7 +1709,7 @@ class ProfileController extends Controller
 
         $creator = User::where('username', $creatorUsername)->firstOrFail();
         $gifter = User::where('username', $gifterUsername)->firstOrFail();
-        
+
         if (!Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
             throw new AuthorizationException('Unauthorized');
         }
@@ -1709,7 +1721,7 @@ class ProfileController extends Controller
                 ->where('gifter_id', $gifter->id)
                 ->where('created_at', '>=', now()->subHours(24))
                 ->count();
-            
+
             if ($dailyCount >= 3) {
                 return response()->json(['status' => false, 'msg' => 'You have reached the limit of 3 replies to this creator in 24 hours.'], 422);
             }
@@ -1724,7 +1736,7 @@ class ProfileController extends Controller
             'source_id' => $request->source_id,
             'message' => $request->message
         ]);
-        
+
         return response()->json(['status' => true, 'reply' => [
             'id' => $reply->id,
             'user_id' => $reply->user_id,
@@ -1776,7 +1788,7 @@ class ProfileController extends Controller
             ->push($displayCurrency)
             ->push('GBP')
             ->filter()
-            ->map(fn ($c) => strtoupper($c))
+            ->map(fn($c) => strtoupper($c))
             ->unique()
             ->values();
 
@@ -1832,7 +1844,7 @@ class ProfileController extends Controller
         });
 
         // Mark excluded ones
-        $receivedAll->each(function($tx) use ($filterEarnings) {
+        $receivedAll->each(function ($tx) use ($filterEarnings) {
             if (!isset($tx->is_included_in_totals)) {
                 $tx->is_included_in_totals = $filterEarnings($tx);
             }
@@ -1973,7 +1985,7 @@ class ProfileController extends Controller
 
         // Load deliverables for all transactions
         $sessionIds = collect();
-        $rows->each(function($tx) use ($sessionIds) {
+        $rows->each(function ($tx) use ($sessionIds) {
             if (!$tx->source) return;
             $base = class_basename($tx->source_type);
             $sessionId = match ($base) {
@@ -1990,7 +2002,7 @@ class ProfileController extends Controller
         if ($sessionIds->isNotEmpty()) {
             $deliverables = \App\Models\Deliverable::whereIn('session_id', $sessionIds->filter()->unique())->get()->keyBy('session_id');
 
-            $rows->each(function($tx) use ($deliverables) {
+            $rows->each(function ($tx) use ($deliverables) {
                 if (!$tx->source) return;
                 $base = class_basename($tx->source_type);
                 $sessionId = match ($base) {
@@ -2008,10 +2020,10 @@ class ProfileController extends Controller
         $hasMore = $rows->count() > $limit;
         $rows = $rows->take($limit)->values();
 
-        $supportTickets = \App\Models\SupportTicket::whereIn('source_id', $rows->map(function($tx) {
+        $supportTickets = \App\Models\SupportTicket::whereIn('source_id', $rows->map(function ($tx) {
             return $tx->source_type === \App\Models\FinancialTransaction::class || empty($tx->source_type) ? $tx->id : $tx->source_id;
         })->filter())
-            ->where(function($q) use ($user, $tab) {
+            ->where(function ($q) use ($user, $tab) {
                 if ($tab === 'sent') {
                     $q->where('supporter_id', $user->id);
                 } else {
@@ -2019,14 +2031,16 @@ class ProfileController extends Controller
                 }
             })
             ->get()
-            ->groupBy(function($t) { return $t->source . '_' . $t->source_id; });
+            ->groupBy(function ($t) {
+                return $t->source . '_' . $t->source_id;
+            });
 
         $currencies = $rows
             ->pluck('currency')
             ->push($displayCurrency)
             ->push('GBP')
             ->filter()
-            ->map(fn ($c) => strtoupper($c))
+            ->map(fn($c) => strtoupper($c))
             ->unique()
             ->values();
 
@@ -2108,7 +2122,7 @@ class ProfileController extends Controller
             // Item status for tasks/shops
             $itemStatus = null;
             if ($tx->source_type === \App\Models\TaskPurchase::class && $tx->source) {
-                $itemStatus = match($tx->source->status) {
+                $itemStatus = match ($tx->source->status) {
                     'completed', 'completed_accepted', 'paid_out' => 'task_complete',
                     'delivered' => 'task_delivered',
                     'pending_review' => 'task_review_pending',
@@ -2117,7 +2131,7 @@ class ProfileController extends Controller
                 };
             } else if ($tx->source_type === \App\Models\ShopPayment::class && $tx->source) {
                 $deliverableStatus = $tx->source->deliverable ? $tx->source->deliverable->status : 'processing';
-                $itemStatus = match($deliverableStatus) {
+                $itemStatus = match ($deliverableStatus) {
                     'delivered' => 'item_complete',
                     'shipped' => 'item_shipped',
                     'processing' => 'item_processing',
@@ -2138,7 +2152,7 @@ class ProfileController extends Controller
             if ($tab === 'sent') {
                 $reserveAmount = 0; // Hide reserves from gifter
                 $isIncluded = true; // Gifter always sees their spend in their local totals
-                
+
                 // Gifter only sees 'completed' or 'refunded'
                 if ($status === 'refunded') {
                     $status = 'refunded';
@@ -2231,7 +2245,7 @@ class ProfileController extends Controller
                 }
                 if (is_array($rawRewards)) {
                     $reward['perks'] = array_values(array_filter(array_map(
-                        fn ($r) => ucwords(str_replace('_', ' ', trim((string) $r))),
+                        fn($r) => ucwords(str_replace('_', ' ', trim((string) $r))),
                         $rawRewards
                     )));
                 }
@@ -2302,7 +2316,7 @@ class ProfileController extends Controller
                 'gifter_id' => $tx->supporter_id,
                 'id' => $tx->id,
                 'description' => $tx->description,
-                'support_tickets' => optional($supportTickets->get($source . '_' . $sourceId))->map(function($t) {
+                'support_tickets' => optional($supportTickets->get($source . '_' . $sourceId))->map(function ($t) {
                     return [
                         'uuid' => $t->uuid,
                         'type' => $t->type,
@@ -2578,7 +2592,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
     public function uploadDalleImage(Request $request)
     {
         $request->validate([
@@ -2711,4 +2724,38 @@ class ProfileController extends Controller
             'backup_codes' => $codes ?? null
         ], 200);
     }
+
+    public function historyBlockedUsers(Request $request)
+    {
+        $blockedUsers = UserBlock::with([
+            'blockedUser:id,name,username,email,avatar,role'
+        ])
+            ->where('creator_id', auth()->id())
+            ->latest()
+            ->paginate(20);
+
+        return Inertia::render(
+            'History/BlockedUsers',
+            [
+                'blockedUsers' => $blockedUsers,
+            ]
+        );
+    }
+
+    // public function blockedUsers($id)
+    // {
+    //     $block = UserBlock::where(
+    //         'creator_id',
+    //         auth()->id()
+    //     )
+    //         ->where('id', $id)
+    //         ->firstOrFail();
+
+    //     $block->delete();
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'User unblocked successfully.',
+    //     ]);
+    // }
 }

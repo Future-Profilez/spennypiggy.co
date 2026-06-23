@@ -23,7 +23,7 @@ export default function MembershipLists({ username }) {
                             />
                         ) : (
                             <img
-                                src={itm?.wish_item?.perma_link || ""}
+                                src={itm?.bill?.thumbnail || ""}
                                 alt="image"
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                             />
@@ -61,13 +61,13 @@ export default function MembershipLists({ username }) {
                                 </h4>
                             ) : (
                                 <h4 className="text-white font-black text-lg tracking-tight capitalize">
-                                    {itm.wish_item?.name || ""}
+                                    {itm?.bill?.name || ""}
                                 </h4>
                             )}
                             <p className="text-white/40 text-[10px] font-black tracking-widest uppercase mt-1">
-                                {handleTab == "memberships"
+                                {handleTab === "memberships"
                                     ? "Membership Level"
-                                    : "Subscription"}
+                                    : "Bill Subscription"}
                             </p>
                         </div>
 
@@ -115,7 +115,8 @@ export default function MembershipLists({ username }) {
 
         const fetch = (signal) => {
             setLoading(true);
-            axios.get(`/gifter-${type}/${username}`, { signal })
+            axios
+                .get(`/gifter-${type}/${username}`, { signal })
                 .then((resp) => {
                     if (type == "memberships") {
                         setsubs(resp.data.membership || []);
@@ -189,7 +190,7 @@ export default function MembershipLists({ username }) {
                         onClick={() => setHandleTab("subscriptions")}
                         className={`${handleTab !== "subscriptions" ? "bg-gray-500 opacity-[0.6]" : "opacity-[1]"} button  rounded-[30px]   mx-1 px-3 text-[11px] uppercase `}
                     >
-                        Subscriptions
+                        Bill Subscriptions
                     </button>
                 </div>
 

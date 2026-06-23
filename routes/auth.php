@@ -878,6 +878,11 @@ Route::middleware('auth')->group(function () {
         Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->middleware('check.block')->name('support.story.react');
         Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->middleware('check.block')->name('support.story.reply');
         Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
+        
+        Route::get('/history/blocked-users', [ProfileController::class, 'historyBlockedUsers'])->name('blocked.users');
+        // Route::delete('/history/blocked-users/{id}', [ProfileController::class, 'blockedUsers'])->name('blocked.users.destroy');
+
+
         Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
 
 
