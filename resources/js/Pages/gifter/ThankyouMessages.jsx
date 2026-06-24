@@ -5,6 +5,7 @@ import { usePage } from '@inertiajs/react';
 import PriceFormat from '@/includes/PriceFormat';
 import LoadingScreen from '@/includes/LoadingScreen';
 import Avatar from '@/includes/Avatar';
+import LazyVideo from '@/Components/LazyVideo';
 import Popup from '@/Components/Popup';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
@@ -62,7 +63,7 @@ export default function ThankyouMessages(props) {
             </div>
           :
             <div className='video-payer-pop' >
-              <video playsInline='false' autoPlay src={w && w?.media_url || ''} controls controlsList='nodownload' />
+              <LazyVideo playsInline='false' fallback={w && w?.owner && w.owner.avatar} src={w && w?.media_url || ''} controls controlsList='nodownload' />
             </div>
           }
 

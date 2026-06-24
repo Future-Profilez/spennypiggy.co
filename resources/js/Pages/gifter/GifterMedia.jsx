@@ -1,5 +1,6 @@
 import Nocontent from "@/includes/Nocontent";
 import Popup from "@/Components/Popup";
+import LazyVideo from "@/Components/LazyVideo";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
@@ -52,7 +53,7 @@ export default function GifterMedia({ username }) {
             </button>
           ) : isVideo ? (
             <button  className="w-full aspect-video relative">
-              <video src={item.url} className="w-full h-full object-cover" muted />
+              <LazyVideo src={item.url} className="w-full h-full object-cover" muted />
               <span className="w-10 h-10 rounded bg-pink-100 border-2 border-black mr-3 flex items-center justify-center">📄</span>
               {/* <span className="absolute top-2 left-2 bg-black text-white text-xs px-2 py-1 rounded">Video</span>
               <span className="absolute inset-0 flex items-center justify-center">
@@ -113,7 +114,7 @@ export default function GifterMedia({ username }) {
             {viewerItem.type === 'image' ? (
               <img src={viewerItem.url} alt={viewerItem.title || ''} className="w-full h-full max-w-full max-h-full object-contain" />
             ) : viewerItem.type === 'video' ? (
-              <video src={viewerItem.url} controls autoPlay className="w-full h-full max-w-full max-h-full" />
+              <LazyVideo src={viewerItem.url} controls className="w-full h-full max-w-full max-h-full" />
             ) : (
               <iframe src={viewerItem.url} className="w-full h-full" />
             )}

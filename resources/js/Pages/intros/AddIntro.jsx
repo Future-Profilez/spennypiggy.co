@@ -267,8 +267,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                 muted
                 loop
                 playsInline
-                autoPlay
-                preload="metadata"
+                preload="none"
                 poster={posterUrl}
                 onLoadedData={() => setPosterLoaded(true)}
                 className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px] max-h-[300px] block'
@@ -324,11 +323,10 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                   ref={popupVideoRef}
                   // playsInline
                   muted
-                  autoPlay
                   controls
                   controlsList="nodownload"
                   disablePictureInPicture
-                  preload="metadata"
+                  preload="none"
                   poster={posterUrl}
                   className="w-full h-full"
                   src={popupVideoUrl}

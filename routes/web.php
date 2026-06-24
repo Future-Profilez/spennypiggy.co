@@ -2,6 +2,7 @@
 
 use App\Services\DiscoveryService;
 use App\Http\Controllers\FeatureSuggestionController;
+use App\Http\Controllers\VideoPosterController;
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
@@ -1013,3 +1014,8 @@ Route::get('/api/user-country', function (\Illuminate\Http\Request $request) {
     }
     return response()->json(['country_code' => strtoupper($country)]);
 })->name('api.user-country');
+
+// Lazy video poster resolver — returns cached Uploadcare thumbnails, generates misses.
+Route::post('/video-posters', [VideoPosterController::class, 'resolve'])
+    ->middleware('throttle:60,1')
+    ->name('video-posters.resolve');
