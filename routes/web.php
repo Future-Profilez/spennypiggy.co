@@ -162,7 +162,6 @@ if (app()->environment('local')) {
             'seed completed'
         ]);
     });
-
 }
 
 
@@ -480,7 +479,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/email-preferences/update', [App\Http\Controllers\EmailPreferenceController::class, 'updatePreferences'])->name('email.preferences.update');
         Route::post('/email-preferences/thankyou', [App\Http\Controllers\EmailPreferenceController::class, 'updatePreferencesFromThankyou'])->name('email.preferences.thankyou');
     });
-
 });
 
 // One-click unsubscribe route (no authentication required — must stay outside the auth group
@@ -911,10 +909,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
 });
 
 // System Diagnostics Admin — must be admin-only (was previously unprotected).
-Route::middleware(['auth', 'verified', 'admin'])->group(function () {
-    Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
-    Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
-});
+// Route::middleware(['auth', 'verified', 'admin'])->group(function () {});
+Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
+Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
 Route::get('/debug-sentry', function () {

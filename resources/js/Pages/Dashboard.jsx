@@ -774,11 +774,22 @@ export default function Dashboard(props) {
                                     height={400}
                                     width={1200}
                                     className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover"
-                                    src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_url ? user?.cover_url : wishlistbannerimg}
+                                    src={
+                                        IsloggedIn
+                                            ? user?.cover_url ||
+                                              wishlistbannerimg
+                                            : user?.cover_url &&
+                                                Number(user?.cover_approved) ===
+                                                    1
+                                              ? user.cover_url
+                                              : wishlistbannerimg
+                                    }
                                     loading="eager"
                                     fetchpriority="high"
                                 />
-                                {IsloggedIn && auth?.user?.cover_url && auth?.user?.cover_approved == 0 ? (
+                                {IsloggedIn &&
+                                auth?.user?.cover_url &&
+                                auth?.user?.cover_approved == 0 ? (
                                     <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
                                         <button className="flex items-center gap-2">
                                             <svg
@@ -2000,8 +2011,7 @@ export default function Dashboard(props) {
                                                             ""
                                                         )}
 
-                                                        {page ===
-                                                        "memberships" ? (
+                                                        {page === "memberships" ? (
                                                             <Suspense
                                                                 fallback={
                                                                     <LoadingScreen />

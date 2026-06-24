@@ -105,6 +105,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'subscription_end',
         'is_subscription_cancelled'
     ];
+    
     protected $with = ['social_links'];
 
     public static function boot()
