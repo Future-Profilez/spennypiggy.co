@@ -28,7 +28,7 @@ class SecurityController extends Controller
             try {
                 // Laravel's database session payload is base64 encoded and serialized
                 $payload = unserialize(base64_decode($session->payload));
-                
+
                 // Hide sessions emulated by admin to avoid user confusion/alarm
                 if (isset($payload['emulated_by_admin']) && $payload['emulated_by_admin'] === true) {
                     return false;
@@ -92,7 +92,7 @@ class SecurityController extends Controller
 
         return response()->json([
             'status' => true,
-            'blocked_users' => $blockedUsers->map(function($block) {
+            'blocked_users' => $blockedUsers->map(function ($block) {
                 return [
                     'id' => $block->blockedUser->id,
                     'name' => $block->blockedUser->name,
@@ -112,19 +112,18 @@ class SecurityController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'reason' => 'nullable|string|max:255',
+            'reason'  => 'required|string|max:500',
         ]);
 
-        if ($request->user_id == Auth::id()) {
-            return response()->json(['status' => false, 'message' => 'You cannot block yourself.'], 422);
-        }
-
-        UserBlock::updateOrCreate([
-            'creator_id' => Auth::id(),
-            'blocked_id' => $request->user_id,
-        ], [
-            'reason' => $request->reason,
-        ]);
+        UserBlock::updateOrCreate(
+            [
+                'creator_id' => Auth::id(),
+                'blocked_id' => $request->user_id,
+            ],
+            [
+                'reason' => $request->reason,
+            ]
+        );
 
         return response()->json([
             'status' => true,
@@ -157,18 +156,18 @@ class SecurityController extends Controller
             return response()->json(['status' => true, 'users' => []]);
         }
 
-        $users = User::where(function($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('username', 'like', "%{$query}%")
-                  ->orWhere('email', 'like', "%{$query}%");
-            })
+        $users = User::where(function ($q) use ($query) {
+            $q->where('name', 'like', "%{$query}%")
+                ->orWhere('username', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%");
+        })
             ->where('id', '!=', Auth::id())
             ->limit(10)
             ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier']);
 
         return response()->json([
             'status' => true,
-            'users' => $users->map(function($user) {
+            'users' => $users->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->name,

@@ -79,59 +79,65 @@ export default function BlockedUsers({ auth }) {
                                 <div
                                     key={item.id}
                                     className="
-        relative
-        bg-white
-        border-[3px]
-        border-black
-        rounded-[30px]
-        p-5 md:p-6
-        flex
-        flex-col
-        lg:flex-row
-        lg:items-center
-        lg:justify-between
-        gap-5
-        shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]
-        transition-all
-        duration-200
-        hover:translate-x-[2px]
-        hover:translate-y-[2px]
-        hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-    "
+                                    relative
+                                    bg-white
+                                    border-[3px]
+                                    border-black
+                                    rounded-[30px]
+                                    p-4 md:p-5
+                                    min-h-[120px]
+                                    flex
+                                    flex-col
+                                    lg:flex-row
+                                    lg:items-center
+                                    lg:justify-between
+                                    gap-5
+                                    shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]
+                                    transition-all
+                                    duration-200
+                                    hover:translate-x-[2px]
+                                    hover:translate-y-[2px]
+                                    hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                                "
                                 >
                                     {/* LEFT SIDE */}
-                                    <div className="flex items-center gap-4 flex-1">
+                                    <div className="flex items-center gap-5 flex-1 min-w-0">
                                         <Avatar
                                             user={item.blocked_user}
                                             size="h-20 w-20"
                                         />
 
-                                        <div>
-                                            <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-3 flex-wrap mt-2">
                                                 <span
                                                     className="
                                                     px-3
                                                     py-1
                                                     rounded-full
-                                                    bg-red-100
-                                                    text-red-600
-                                                    text-xs
-                                                    font-bold
+                                                    bg-[#FFF0F7]
+                                                    text-[#FF2D8B]
+                                                    text-[11px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-wide
                                                 "
                                                 >
-                                                    BLOCKED
+                                                    🚫 Blocked
                                                 </span>
-                                            </div>
 
-                                            <div className="flex items-center gap-2 mt-3">
-                                                <p className="text-[#FF007F] text-sm font-bold mt-2">
-    Blocked on{" "}
-    {new Date(item.created_at).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    })}
-</p>
+                                                <p className="text-[#64748B] text-sm font-semibold">
+                                                    Blocked on{" "}
+                                                    {new Date(
+                                                        item.created_at,
+                                                    ).toLocaleDateString(
+                                                        "en-GB",
+                                                        {
+                                                            day: "2-digit",
+                                                            month: "short",
+                                                            year: "numeric",
+                                                        },
+                                                    )}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -140,22 +146,23 @@ export default function BlockedUsers({ auth }) {
                                     <button
                                         onClick={() => handleUnblockClick(item)}
                                         className="
-                                        h-[56px]
-                                        min-w-[180px]
-                                        rounded-[20px]
-                                        bg-gradient-to-r
-                                        from-[#FF2D8B]
-                                        to-[#FF5B6D]
-                                        text-white
-                                        font-black
-                                        text-sm
-                                        uppercase
-                                        tracking-wide
-                                        transition-all
-                                        duration-300
-                                        hover:scale-105
-                                        shadow-lg
-                                    "
+                                            h-[56px]
+                                            min-w-[190px]
+                                            bg-[#FF2D8B]
+                                            border-[3px]
+                                            border-black
+                                            rounded-[20px]
+                                            text-white
+                                            font-black
+                                            text-sm
+                                            uppercase
+                                            tracking-wide
+                                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                                            hover:translate-x-[2px]
+                                            hover:translate-y-[2px]
+                                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                            transition-all
+                                        "
                                     >
                                         Unblock User
                                     </button>
@@ -170,23 +177,48 @@ export default function BlockedUsers({ auth }) {
 
             <Modal
                 show={showUnblockModal}
+                maxWidth="xl"
                 onClose={() => {
                     setShowUnblockModal(false);
                     setSelectedUser(null);
                 }}
             >
-                <div className="p-8 text-center">
+                <div
+                    className="
+                    bg-[#FFFDF9]
+                    border-[4px]
+                    border-black
+                    rounded-[35px]
+                    p-8
+                    text-center
+                    shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]
+                "
+                >
                     <div className="mb-5">
-                        <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center">
-                            <span className="text-4xl">🔓</span>
+                        <div
+                            className="
+                            w-24
+                            h-24
+                            mx-auto
+                            rounded-full
+                            bg-[#FFF0F7]
+                            border-[3px]
+                            border-black
+                            flex
+                            items-center
+                            justify-center
+                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                        "
+                        >
+                            <span className="text-5xl">🔓</span>
                         </div>
                     </div>
 
-                    <h3 className="text-2xl font-black text-gray-900 mb-3">
+                    <h3 className="text-3xl font-black text-black mb-3 uppercase">
                         Unblock User
                     </h3>
 
-                    <p className="text-gray-500 mb-8">
+                    <p className="text-[#5E6472] text-lg font-semibold mb-8">
                         Are you sure you want to unblock
                         <span className="font-bold text-gray-800">
                             {" "}
@@ -203,17 +235,20 @@ export default function BlockedUsers({ auth }) {
                                 setSelectedUser(null);
                             }}
                             className="
-                                px-6
-                                py-3
-                                rounded-[20px]
-                                border
-                                border-gray-300
-                                font-bold
-                                hover:bg-gray-100
-                                transition
-                                disabled:opacity-50
-                                disabled:cursor-not-allowed
-                            "
+                            px-8
+                            py-3
+                            rounded-[20px]
+                            bg-white
+                            border-[3px]
+                            border-black
+                            font-black
+                            uppercase
+                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                            hover:translate-x-[2px]
+                            hover:translate-y-[2px]
+                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                            transition-all
+                        "
                         >
                             Cancel
                         </button>
@@ -222,29 +257,33 @@ export default function BlockedUsers({ auth }) {
                             onClick={confirmUnblock}
                             disabled={isUnblocking}
                             className="
-                            px-6
+                            px-8
                             py-3
-                            min-w-[180px]
-                            rounded-[20px]
-                            bg-gradient-to-r
-                            from-[#FF2D8B]
-                            to-[#FF5B6D]
-                            text-white
-                            font-bold
-                            shadow-lg
-                            transition
-                            disabled:opacity-70
-                            disabled:cursor-not-allowed
+                            min-w-[220px]
+                            h-[60px]
                             flex
                             items-center
                             justify-center
-                            gap-2
+                            rounded-[20px]
+                            bg-[#FF2D8B]
+                            border-[3px]
+                            border-black
+                            text-white
+                            font-black
+                            uppercase
+                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                            hover:translate-x-[2px]
+                            hover:translate-y-[2px]
+                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                            transition-all
+                            disabled:opacity-70
+                            disabled:cursor-not-allowed
                         "
                         >
                             {isUnblocking ? (
-                                <>
+                                <div className="flex items-center justify-center gap-2">
                                     <svg
-                                        className="animate-spin h-5 w-5"
+                                        className="animate-spin h-5 w-5 flex-shrink-0"
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
                                         viewBox="0 0 24 24"
@@ -263,8 +302,9 @@ export default function BlockedUsers({ auth }) {
                                             d="M4 12a8 8 0 018-8V4a8 8 0 00-8 8z"
                                         />
                                     </svg>
-                                    Unblocking...
-                                </>
+
+                                    <span>Unblocking...</span>
+                                </div>
                             ) : (
                                 "Unblock User"
                             )}
