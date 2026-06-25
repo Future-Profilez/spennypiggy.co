@@ -44,31 +44,35 @@ export default function Userprofile({ IsloggedIn }) {
     const [isBlocking, setIsBlocking] = useState(false);
     const [showSuggestionModal, setShowSuggestionModal] = useState(false);
 
-    const blockUser = async () => {
-        if (isBlocking) return;
+    const [blockReason, setBlockReason] = useState("Spam or unwanted messages");
 
+    const blockUser = async () => {
         setIsBlocking(true);
 
         try {
-            const res = await axios.post(route("creator.security.block-user"), {
-                user_id: user.id,
-            });
-
-            successAlert(
-                res.data?.message || `${user?.name} has been blocked.`,
+            const response = await axios.post(
+                route("creator.security.block-user"),
+                {
+                    user_id: user.id,
+                    reason: blockReason,
+                },
             );
 
-            setIsBlocked(true);
-            setShowBlockConfirm(false);
+            if (response.data.status) {
+                successAlert(response.data.message);
+
+                setIsBlocked(true);
+                setShowBlockConfirm(false);
+                setBlockReason("Spam or unwanted messages");
+            }
         } catch (error) {
             errorAlert(
-                error.response?.data?.message || "Failed to block user.",
+                error?.response?.data?.message || "Failed to block user.",
             );
         } finally {
             setIsBlocking(false);
         }
     };
-
     const unblockUser = async () => {
         try {
             await axios.delete(
@@ -418,6 +422,139 @@ export default function Userprofile({ IsloggedIn }) {
                                                                             them.
                                                                         </p>
                                                                     </div>
+                                                                </div>
+                                                                <div className="mb-6">
+                                                                    <label className="block text-left font-black text-sm uppercase mb-3">
+                                                                        Why are
+                                                                        you
+                                                                        blocking
+                                                                        this
+                                                                        user?
+                                                                    </label>
+
+                                                                    <p className="text-xs text-gray-500 mb-3 ml-0 text-left">
+                                                                        Select
+                                                                        the
+                                                                        reason
+                                                                        that
+                                                                        best
+                                                                        describes
+                                                                        why
+                                                                        you're
+                                                                        blocking
+                                                                        this
+                                                                        account.
+                                                                    </p>
+
+                                                                    <div className="relative">
+                                                                        <select
+                                                                            value={
+                                                                                blockReason
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                setBlockReason(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                                )
+                                                                            }
+                                                                            className="
+                                                                            w-full
+                                                                            appearance-none
+                                                                            rounded-[20px]
+                                                                            border-[3px]
+                                                                            border-black
+                                                                            bg-white
+                                                                            px-5
+                                                                            py-4
+                                                                            pr-14
+                                                                            text-sm
+                                                                            font-black
+                                                                            text-black
+                                                                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                                                                            transition-all
+                                                                            focus:outline-none
+                                                                            focus:border-[#FF007F]
+                                                                            focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                                                            focus:translate-x-[2px]
+                                                                            focus:translate-y-[2px]
+                                                                        "
+                                                                        >
+                                                                            <option value="Spam or unwanted messages">
+                                                                                🚫
+                                                                                Spam
+                                                                                or
+                                                                                unwanted
+                                                                                messages
+                                                                            </option>
+                                                                            <option value="Harassment or bullying">
+                                                                                😡
+                                                                                Harassment
+                                                                                or
+                                                                                bullying
+                                                                            </option>
+                                                                            <option value="Inappropriate content">
+                                                                                ⚠️
+                                                                                Inappropriate
+                                                                                content
+                                                                            </option>
+                                                                            <option value="Scam or fraudulent activity">
+                                                                                💰
+                                                                                Scam
+                                                                                or
+                                                                                fraudulent
+                                                                                activity
+                                                                            </option>
+                                                                            <option value="Fake account">
+                                                                                👤
+                                                                                Fake
+                                                                                account
+                                                                            </option>
+                                                                            <option value="Personal reasons">
+                                                                                🤐
+                                                                                Personal
+                                                                                reasons
+                                                                            </option>
+                                                                            <option value="Other">
+                                                                                ✍️
+                                                                                Other
+                                                                            </option>
+                                                                        </select>
+
+                                                                        <svg
+                                                                            className="
+                                                                            absolute
+                                                                            right-5
+                                                                            top-1/2
+                                                                            -translate-y-1/2
+                                                                            pointer-events-none
+                                                                            text-black
+                                                                        "
+                                                                            width="20"
+                                                                            height="20"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="3"
+                                                                            viewBox="0 0 24 24"
+                                                                        >
+                                                                            <path
+                                                                                strokeLinecap="round"
+                                                                                strokeLinejoin="round"
+                                                                                d="M19 9l-7 7-7-7"
+                                                                            />
+                                                                        </svg>
+                                                                    </div>
+
+                                                                    <p className="text-xs text-gray-500 mt-2 text-left">
+                                                                        This
+                                                                        reason
+                                                                        may be
+                                                                        reviewed
+                                                                        by
+                                                                        administrators.
+                                                                    </p>
                                                                 </div>
                                                                 <div className="flex justify-center">
                                                                     <button
