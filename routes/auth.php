@@ -890,6 +890,10 @@ Route::middleware('auth')->group(function () {
         Route::get('my-purchases-feed', [\App\Http\Controllers\GifterHubController::class, 'feed'])->name('gifter.hub.feed');
         Route::get('my-purchases-data', [\App\Http\Controllers\GifterHubController::class, 'data'])->name('gifter.hub.data');
 
+        // Save-for-later (wishlist of items to buy)
+        Route::post('saved/toggle', [\App\Http\Controllers\SavedItemController::class, 'toggle'])->name('saved.toggle');
+        Route::get('saved/mine', [\App\Http\Controllers\SavedItemController::class, 'mine'])->name('saved.mine');
+
 
         // Intro video
         Route::get('/redirecting', function () {

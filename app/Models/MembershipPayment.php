@@ -35,6 +35,7 @@ class MembershipPayment extends Model
         'anonymous',
         'end',
         'upcoming_payment',
+        'renewal_reminded_for',
         'status',
         'twitter_response',
         'payout_at',

@@ -144,6 +144,11 @@ class Kernel extends ConsoleKernel
                  ->dailyAt('11:00')
                  ->withoutOverlapping();
 
+        // Notify supporters before a recurring subscription auto-renews
+        $schedule->command('renewals:notify')
+                 ->dailyAt('09:45')
+                 ->withoutOverlapping(10);
+
         $schedule->command('bonus:process-fast-start')
                  ->dailyAt('09:15')
                  ->withoutOverlapping();

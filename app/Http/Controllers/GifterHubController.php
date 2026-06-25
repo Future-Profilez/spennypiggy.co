@@ -4,12 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Models\BillPayment;
+use App\Models\Currency;
+use App\Models\Deliverable;
 use App\Models\MembershipPayment;
 use App\Models\PiggyPotContribution;
 use App\Models\ShopPayment;
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\PiggyPot;
+use App\Models\SavedItem;
+use App\Models\Shop;
 use App\Models\StripePaymentItems;
+use App\Models\Task;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
+use App\Models\WishItem;
+use App\Services\VipScoreService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,14 +54,14 @@ class GifterHubController extends Controller
         $page = max(1, (int) $request->input('page', 1));
         [$mediaPage, $pagination] = $this->paginate($media, $page, self::MEDIA_PER_PAGE);
 
-        return Inertia::render('gifter/Hub', [
+        return Inertia::render('gifter/Hub', array_merge([
             'display_currency' => $display,
             'media_library'    => $mediaPage,
             'media_pagination' => $pagination,
             'subscriptions'    => $this->buildSubscriptions($sources),
             'unlocked'         => $this->buildUnlocked($sources),
             'spend_summary'    => $this->buildSpendSummary($sources, $display),
-        ]);
+        ], $this->surfaced($buyer, $sources, $display)));
     }
 
     /**
@@ -66,7 +76,7 @@ class GifterHubController extends Controller
         $media = $this->buildMediaLibrary($sources);
         [$mediaPage, $pagination] = $this->paginate($media, 1, self::MEDIA_PER_PAGE);
 
-        return response()->json([
+        return response()->json(array_merge([
             'status'           => true,
             'display_currency' => $display,
             'media_library'    => $mediaPage,
@@ -74,7 +84,204 @@ class GifterHubController extends Controller
             'subscriptions'    => $this->buildSubscriptions($sources),
             'unlocked'         => $this->buildUnlocked($sources),
             'spend_summary'    => $this->buildSpendSummary($sources, $display),
-        ]);
+        ], $this->surfaced($buyer, $sources, $display)));
+    }
+
+    /**
+     * Additions that surface existing-but-hidden backends + relationship rollup:
+     * supporter VIP status, certificate wallet, delivery tracking, per-creator rollup.
+     */
+    private function surfaced($buyer, array $sources, string $display): array
+    {
+        return [
+            'supporter_status' => app(VipScoreService::class)->for($buyer),
+            'receipts'         => $this->buildReceipts($buyer),
+            'incoming'         => $this->buildIncoming($buyer),
+            'creators'         => $this->buildCreators($sources, $display, $buyer),
+            'saved'            => $this->buildSaved($buyer),
+        ];
+    }
+
+    /* ----------------------------------------------------------------- */
+    /* Saved items (save-for-later wishlist)                             */
+    /* ----------------------------------------------------------------- */
+
+    private function buildSaved($buyer): array
+    {
+        $rows = SavedItem::where('user_id', $buyer->id)->latest()->limit(100)->get();
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        // Bulk-load the referenced items per type, then resolve title + creator.
+        $ids = [];
+        foreach ($rows as $r) {
+            $ids[$r->product_type][] = $r->item_id;
+        }
+
+        $load = fn ($model, $type, $rel) => empty($ids[$type])
+            ? collect()
+            : $model::whereIn('id', $ids[$type])->with($rel)->get()->keyBy('id');
+
+        $items = [
+            'wish'       => $load(WishItem::class, 'wish', 'user'),
+            'shop'       => $load(Shop::class, 'shop', 'user'),
+            'membership' => $load(Membership::class, 'membership', 'user'),
+            'bill'       => $load(Bills::class, 'bill', 'user'),
+            'piggypot'   => $load(PiggyPot::class, 'piggypot', 'user'),
+            'task'       => $load(Task::class, 'task', 'creator'),
+        ];
+
+        $resolve = [
+            'wish'       => fn ($i) => [$i->wishname, $i->user],
+            'shop'       => fn ($i) => [$i->name, $i->user],
+            'membership' => fn ($i) => [$i->level, $i->user],
+            'bill'       => fn ($i) => [$i->name, $i->user],
+            'piggypot'   => fn ($i) => [$i->title, $i->user],
+            'task'       => fn ($i) => [$i->title, $i->creator],
+        ];
+
+        $out = [];
+        foreach ($rows as $r) {
+            $item = $items[$r->product_type][$r->item_id] ?? null;
+            if (!$item || empty($resolve[$r->product_type])) {
+                continue; // item deleted since saving
+            }
+            [$title, $owner] = $resolve[$r->product_type]($item);
+            if (!$owner) {
+                continue;
+            }
+            $out[] = [
+                'id'           => "saved:{$r->id}",
+                'product_type' => $r->product_type,
+                'item_id'      => $r->item_id,
+                'title'        => $title ?: 'Content',
+                'owner'        => $this->ownerBlock($owner),
+                'open_link'    => $this->openLink($owner, $this->pageFor($r->product_type)),
+                'saved_at'     => $this->ts($r->created_at),
+            ];
+        }
+
+        return $out;
+    }
+
+    /* ----------------------------------------------------------------- */
+    /* Receipts (certificate wallet)                                     */
+    /* ----------------------------------------------------------------- */
+
+    private function buildReceipts($buyer): array
+    {
+        $out = [];
+
+        $delis = Deliverable::where('gifter_id', $buyer->id)
+            ->whereNotNull('certificate_url')
+            ->with(['creator', 'wishItem', 'bill', 'membership', 'task', 'shop'])
+            ->latest()->limit(80)->get();
+
+        foreach ($delis as $d) {
+            $out[] = [
+                'id'              => "deliverable:{$d->id}",
+                'source_type'     => $this->deliverableCat($d->product_type),
+                'title'           => $this->deliverableTitle($d) ?: 'Purchase',
+                'owner'           => $this->ownerBlock($d->creator),
+                'amount'          => (float) ($d->transaction_amount ?: 0),
+                'currency'        => $d->payment_currency ?: 'GBP',
+                'date'            => $this->ts($d->created_at),
+                'certificate_url' => $d->certificate_url,
+            ];
+        }
+
+        $tips = TipGoalsPayment::where('user_id', $buyer->id)
+            ->whereNotNull('certificate_url')
+            ->with(['creator', 'tipGoal'])
+            ->latest()->limit(80)->get();
+
+        foreach ($tips as $t) {
+            if (!$t->creator) {
+                continue;
+            }
+            $out[] = [
+                'id'              => "tip:{$t->id}",
+                'source_type'     => 'tip',
+                'title'           => $t->tipGoal?->name ?: 'Exclusive content',
+                'owner'           => $this->ownerBlock($t->creator),
+                'amount'          => (float) ($t->total_paid ?: $t->amount ?: 0),
+                'currency'        => $t->currency ?: 'GBP',
+                'date'            => $this->ts($t->created_at),
+                'certificate_url' => $t->certificate_url,
+            ];
+        }
+
+        usort($out, fn ($a, $b) => strcmp((string) $b['date'], (string) $a['date']));
+
+        return $out;
+    }
+
+    /* ----------------------------------------------------------------- */
+    /* Incoming (in-progress delivery tracking)                          */
+    /* ----------------------------------------------------------------- */
+
+    private function buildIncoming($buyer): array
+    {
+        $rows = Deliverable::where('gifter_id', $buyer->id)
+            ->whereNotIn('status', ['delivered', 'refunded'])
+            ->with(['creator', 'wishItem', 'bill', 'membership', 'task', 'shop'])
+            ->latest()->get();
+
+        $out = [];
+        foreach ($rows as $d) {
+            if (!$d->creator) {
+                continue;
+            }
+            $type = $this->deliverableCat($d->product_type);
+            $overdue = $d->due_at && Carbon::parse($d->due_at)->isPast() && $d->status !== 'delivered';
+            $out[] = [
+                'id'          => "incoming:{$d->id}",
+                'source_type' => $type,
+                'title'       => $this->deliverableTitle($d) ?: 'Purchase',
+                'owner'       => $this->ownerBlock($d->creator),
+                'status'      => $d->status,
+                'is_physical' => $d->product_type === 'shop_item',
+                'is_overdue'  => (bool) $overdue,
+                'courier'     => $d->courier_name,
+                'tracking_id' => $d->tracking_id,
+                'eta'         => $this->ts($d->expected_delivery_date),
+                'due_at'      => $this->ts($d->due_at),
+                'created_at'  => $this->ts($d->created_at),
+                'open_link'   => $this->openLink($d->creator, $this->pageFor($type)),
+            ];
+        }
+
+        return $out;
+    }
+
+    private function deliverableCat(?string $productType): string
+    {
+        return [
+            'wish' => 'wish', 'bill' => 'bill', 'membership' => 'membership',
+            'task' => 'task', 'shop_item' => 'shop',
+        ][$productType] ?? 'wish';
+    }
+
+    private function deliverableTitle(Deliverable $d): ?string
+    {
+        switch ($d->product_type) {
+            case 'wish':       return $d->wishItem?->wishname;
+            case 'bill':       return $d->bill?->name;
+            case 'membership': return $d->membership?->level;
+            case 'task':       return $d->task?->title;
+            case 'shop_item':  return $d->shop?->name;
+            default:           return null;
+        }
+    }
+
+    private function pageFor(string $cat): string
+    {
+        return [
+            'wish' => 'wishes', 'shop' => 'shop', 'task' => 'tasks',
+            'piggypot' => 'piggy-pots', 'membership' => 'memberships',
+            'bill' => 'bills', 'tip' => 'tips',
+        ][$cat] ?? 'wishes';
     }
 
     /**
@@ -263,6 +470,8 @@ class GifterHubController extends Controller
             $m = $row->membership;
             $subs[] = [
                 'id'             => "membership:{$row->id}",
+                'raw_id'         => $row->id,
+                'cancelable'     => (bool) $row->stripe_id,
                 'source_type'    => 'membership',
                 'title'          => $m->level ?: 'Membership',
                 'owner'          => $this->ownerBlock($m->user),
@@ -292,6 +501,8 @@ class GifterHubController extends Controller
             $bill = $row->bill;
             $subs[] = [
                 'id'             => "bill:{$row->id}",
+                'raw_id'         => $row->id,
+                'cancelable'     => (bool) $row->stripe_id,
                 'source_type'    => 'bill',
                 'title'          => $bill->name ?: 'Subscription',
                 'owner'          => $this->ownerBlock($bill->user),
@@ -307,6 +518,92 @@ class GifterHubController extends Controller
         }
 
         return $subs;
+    }
+
+    /* ----------------------------------------------------------------- */
+    /* Creators rollup (per-creator relationship view)                   */
+    /* ----------------------------------------------------------------- */
+
+    private function buildCreators(array $sources, string $display, $buyer): array
+    {
+        $map = [];
+        $buyerUsername = $buyer->username;
+
+        $add = function ($owner, $type, $row, $currency, $active) use (&$map, $display, $buyerUsername) {
+            if (!$owner || !($owner->id ?? null)) {
+                return;
+            }
+            $id = $owner->id;
+            if (!isset($map[$id])) {
+                $map[$id] = [
+                    'owner'             => $this->ownerBlock($owner),
+                    'total_spent'       => 0.0,
+                    'purchase_count'    => 0,
+                    'active_subs'       => 0,
+                    'types'             => [],
+                    'open_link'         => $this->openLink($owner, 'wishes'),
+                    'support_story_url' => $owner->username && $buyerUsername
+                        ? "/support-story/{$owner->username}/{$buyerUsername}"
+                        : null,
+                ];
+            }
+            $gross = (float) ($row->total_paid ?: $row->amount ?: 0);
+            if ($gross > 0) {
+                $map[$id]['total_spent'] += $this->convert($currency, $gross, $display);
+            }
+            $map[$id]['purchase_count']++;
+            $map[$id]['types'][$type] = true;
+            if ($active) {
+                $map[$id]['active_subs']++;
+            }
+        };
+
+        foreach ($sources['wish'] as $r) {
+            if ($this->paidOk($r->payment?->payment_status)) {
+                $add($r->payment?->owner, 'wish', $r, $r->payment?->currency, false);
+            }
+        }
+        foreach ($sources['shop'] as $r) {
+            if ($this->paidOk($r->payment_status)) {
+                $add($r->shop?->user, 'shop', $r, $r->currency, false);
+            }
+        }
+        foreach ($sources['task'] as $r) {
+            if ($this->paidOk($r->status)) {
+                $add($r->task?->creator, 'task', $r, $r->currency, false);
+            }
+        }
+        foreach ($sources['piggypot'] as $r) {
+            if ($this->paidOk($r->status)) {
+                $add($r->piggyPot?->user, 'piggypot', $r, $r->currency, false);
+            }
+        }
+        foreach ($sources['tip'] as $r) {
+            if ($this->paidOk($r->status)) {
+                $add($r->creator, 'tip', $r, $r->currency, false);
+            }
+        }
+        foreach ($sources['membership'] as $r) {
+            if ($this->paidOk($r->status)) {
+                $add($r->membership?->user, 'membership', $r, $r->currency, $this->isRecurringActive($r));
+            }
+        }
+        foreach ($sources['bill'] as $r) {
+            if ($this->paidOk($r->status)) {
+                $add($r->bill?->user, 'bill', $r, $r->currency, $this->isRecurringActive($r));
+            }
+        }
+
+        $out = array_map(function ($c) {
+            $c['total_spent'] = round($c['total_spent'], 2);
+            $c['type_count'] = count($c['types']);
+            unset($c['types']);
+            return $c;
+        }, array_values($map));
+
+        usort($out, fn ($a, $b) => $b['total_spent'] <=> $a['total_spent']);
+
+        return $out;
     }
 
     /* ----------------------------------------------------------------- */
@@ -394,8 +691,7 @@ class GifterHubController extends Controller
             if ($gross <= 0) {
                 return;
             }
-            $from = $currency ?: 'GBP';
-            $value = ($from === $display) ? $gross : (float) Helpers::priceFormat($from, $gross, $display);
+            $value = $this->convert($currency, $gross, $display);
             $byType[$type] += $value;
             $count++;
             if ($owner) {
@@ -464,6 +760,37 @@ class GifterHubController extends Controller
     /* ----------------------------------------------------------------- */
     /* Helpers                                                           */
     /* ----------------------------------------------------------------- */
+
+    /** Cached currency rates (avoids Helpers::priceFormat's 2 DB hits per row). */
+    private array $ratesCache = [];
+
+    private function rates(): array
+    {
+        if (empty($this->ratesCache)) {
+            $this->ratesCache = Currency::whereNotNull('conversion_rate')
+                ->pluck('conversion_rate', 'ISO')
+                ->mapWithKeys(fn ($r, $iso) => [strtoupper($iso) => (float) $r])
+                ->toArray();
+        }
+        return $this->ratesCache;
+    }
+
+    /** GBP-pivot conversion, matching Helpers::priceFormat but rate-cached. */
+    private function convert(?string $from, float $amount, string $to): float
+    {
+        $from = strtoupper($from ?: 'GBP');
+        $to = strtoupper($to);
+        if ($from === $to) {
+            return round($amount, 2);
+        }
+        $rates = $this->rates();
+        $rf = $rates[$from] ?? 0;
+        $rt = $rates[$to] ?? 0;
+        if ($rf <= 0 || $rt <= 0) {
+            return round($amount, 2);
+        }
+        return round(($amount / $rf) * $rt, 2);
+    }
 
     private function ownerBlock($user): array
     {
