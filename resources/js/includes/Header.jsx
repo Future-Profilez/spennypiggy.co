@@ -6,8 +6,6 @@ import spennypiggy from "../../assets/img/logo.png";
 import { useState, useEffect, useCallback, useRef } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
 import ChangeCurrency from "@/Components/ChangeCurrency";
 
 import {
@@ -87,9 +85,7 @@ export default function Header({ classMagicword }) {
         }
     }, []);
 
-    const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
-    const dispatch = useDispatch();
 
     const fetchCounter = useCallback(async () => {
         try {
@@ -98,7 +94,7 @@ export default function Header({ classMagicword }) {
         } catch (_err) {
             console.error("Error fetching cart counter:", _err);
         }
-    }, [deviceid, dispatch, auth?.user?.id]);
+    }, [deviceid, auth?.user?.id]);
 
     useEffect(() => {
         const handleCartCounterRefresh = (event) => {
@@ -116,7 +112,7 @@ export default function Header({ classMagicword }) {
                 handleCartCounterRefresh,
             );
         };
-    }, [fetchCounter, dispatch]);
+    }, [fetchCounter]);
 
     const NavLinkWithIcon = ({
         href,
@@ -525,6 +521,17 @@ export default function Header({ classMagicword }) {
                                             onClick={toggleClass}
                                             icon={HandCoinsIcon}
                                             label="Support History"
+                                            activeColor="hover:bg-[#b892ff]"
+                                        />
+                                    ) : (
+                                        ""
+                                    )}
+                                    {auth?.user?.username ? (
+                                        <NavLinkWithIcon
+                                            href="/my-purchases"
+                                            onClick={toggleClass}
+                                            icon={ShoppingBagIcon}
+                                            label="My Purchases"
                                             activeColor="hover:bg-[#b892ff]"
                                         />
                                     ) : (

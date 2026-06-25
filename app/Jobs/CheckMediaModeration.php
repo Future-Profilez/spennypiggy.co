@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Generic PG-13 / no-sexual-content moderation gate.
@@ -22,11 +23,25 @@ class CheckMediaModeration implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** Rekognition label words that trigger a moderation hold. */
+    /**
+     * Rekognition moderation-label words that trigger a hold. Curated to the
+     * clearly-prohibited (NSFW / violent / hateful) categories so legitimate
+     * creator content (swimwear, "Suggestive", combat sports) is NOT flagged.
+     * Matched case-insensitively as a substring of the full label name.
+     */
     private const REST_WORDS = [
-        'Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood',
-        'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat',
-        'Sexual', 'Porn', 'Fucking', 'Graphic',
+        'Nudity', 'Sexual', 'Porn', 'Explicit', 'Gore', 'Graphic Violence',
+        'Visually Disturbing', 'Hate Symbol', 'Self-Injury', 'Self Injury',
+    ];
+
+    /** Minimum Rekognition confidence (%) before a label counts — cuts false positives. */
+    private const MIN_CONFIDENCE = 80.0;
+
+    /** Human-readable feature names for creator-facing notifications, keyed by model basename. */
+    private const FEATURE_LABELS = [
+        'PiggyPot' => 'Piggy Pot',
+        'Shop' => 'shop listing',
+        'Task' => 'task',
     ];
 
     /**
@@ -97,21 +112,25 @@ class CheckMediaModeration implements ShouldQueue
             return;
         }
 
-        // Any moderation label that matches a restricted word holds the content.
-        // Match case-insensitively against the full label name (labels can be
-        // multi-word, e.g. "Explicit Nudity", "Graphic Violence").
+        // A restricted label only holds the content when Rekognition is confident
+        // (>= MIN_CONFIDENCE). Match case-insensitively against the full label name
+        // (labels can be multi-word, e.g. "Explicit Nudity", "Graphic Violence").
         foreach ($tags as $tag) {
             $label = $tag['Name'] ?? '';
+            $confidence = (float) ($tag['Confidence'] ?? 0);
+            if ($confidence < self::MIN_CONFIDENCE) {
+                continue;
+            }
             foreach (self::REST_WORDS as $word) {
                 if (stripos($label, $word) !== false) {
-                    $this->flag();
+                    $this->flag($label);
                     return;
                 }
             }
         }
     }
 
-    private function flag(): void
+    private function flag(string $reasonLabel = ''): void
     {
         if (empty($this->flagOnViolation)) {
             return;
@@ -119,15 +138,72 @@ class CheckMediaModeration implements ShouldQueue
 
         try {
             $record = ($this->modelClass)::find($this->modelId);
-            if ($record) {
-                $record->forceFill($this->flagOnViolation)->save();
-                Log::warning('Content held by moderation gate', [
-                    'model' => $this->modelClass,
-                    'id' => $this->modelId,
-                ]);
+            if (! $record) {
+                return;
             }
+
+            $attributes = $this->flagOnViolation;
+
+            // Store a creator-facing reason on the listing itself (not just the
+            // notification) so they see WHY it's held — if the table supports it.
+            $reason = $this->friendlyReason($reasonLabel);
+            if (Schema::hasColumn($record->getTable(), 'moderation_reason')) {
+                $attributes['moderation_reason'] = $reason;
+            }
+
+            $record->forceFill($attributes)->save();
+            Log::warning('Content held by moderation gate', [
+                'model' => $this->modelClass,
+                'id' => $this->modelId,
+                'label' => $reasonLabel,
+            ]);
+
+            $this->notifyCreator($record, $reason);
         } catch (\Throwable $e) {
             Log::error('Failed to flag moderated content: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Map a raw Rekognition label to a soft, creator-facing reason. We never show
+     * the raw label (it can be wrong/embarrassing) — just the category + next step.
+     */
+    private function friendlyReason(string $label): string
+    {
+        $l = strtolower($label);
+        $category = match (true) {
+            str_contains($l, 'nud') || str_contains($l, 'sexual') || str_contains($l, 'porn') || str_contains($l, 'explicit')
+                => 'possible adult or explicit content',
+            str_contains($l, 'violence') || str_contains($l, 'gore') || str_contains($l, 'disturbing')
+                => 'possible violent or graphic content',
+            str_contains($l, 'hate') => 'possible hateful content or symbols',
+            default => 'content that may not meet our guidelines',
+        };
+
+        return "Held by our automated image check ({$category}). Upload a different image to make it live, or contact support if you think this is a mistake.";
+    }
+
+    /** Tell the creator their content is held and how to fix it. */
+    private function notifyCreator($record, string $reason = ''): void
+    {
+        try {
+            $creatorId = $record->user_id ?? $record->creator_id ?? null;
+            $creator = $creatorId ? \App\Models\User::find($creatorId) : null;
+            if (! $creator) {
+                return;
+            }
+
+            $label = self::FEATURE_LABELS[class_basename($this->modelClass)] ?? 'item';
+            $title = $record->title ?? $record->name ?? '';
+            $named = $title !== '' ? " \"{$title}\"" : '';
+            $why = $reason !== '' ? ' ' . $reason : ' Edit it and upload a different image to make it live, or contact support if you think this is a mistake.';
+
+            $message = "Your {$label}{$named} is under review and isn't visible to buyers yet." . $why;
+
+            \App\Jobs\NotificationSave::dispatch($message, $creator, $creator, 'moderation');
+        } catch (\Throwable $e) {
+            // A notification failure must not break the moderation hold itself.
+            Log::warning('Moderation notify failed: ' . $e->getMessage());
         }
     }
 }

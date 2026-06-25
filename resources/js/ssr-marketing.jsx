@@ -50,11 +50,6 @@ createServer((page) => {
     render: renderToString,
     title: (title) => `${title || appName} - ${appName}`,
     resolve: (name) => {
-      // Normalize name to handle potential path mismatches
-      if (name === 'marketing/CreatorVerificationNew') {
-          name = 'Profile/CreatorVerificationNew';
-      }
-
       let pageFn = pages[`./Pages/${name}.jsx`];
       if (!pageFn) {
          console.error(`[SSR] Page not found: ${name}`);

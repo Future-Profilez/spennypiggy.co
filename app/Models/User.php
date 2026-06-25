@@ -108,16 +108,37 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     
     protected $with = ['social_links'];
 
+    /**
+     * Per-instance runtime memo cache. Eloquent builds a fresh model per request,
+     * so caching here collapses the duplicate MonthlyCharge lookups that the
+     * subscription accessors otherwise fire (~10 identical queries per serialize)
+     * down to one, without changing any returned value or surviving the request.
+     */
+    private array $runtimeMemo = [];
+
     public static function boot()
     {
         parent::boot();
         static::creating(fn($u) => $u->uuid = Uuid::uuid4());
     }
 
+    /**
+     * Newest MonthlyCharge for this user, fetched once per request instance.
+     */
+    private function latestMonthlyCharge()
+    {
+        if (! array_key_exists('latestMonthlyCharge', $this->runtimeMemo)) {
+            $this->runtimeMemo['latestMonthlyCharge'] = MonthlyCharge::where('user_id', $this->id)
+                ->latest('id')
+                ->first();
+        }
+        return $this->runtimeMemo['latestMonthlyCharge'];
+    }
+
     public function getUpcomingPaymentDateAttribute()
     {
         if ($this->role != 1) return null;
-        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        $charge = $this->latestMonthlyCharge();
         if ($charge && $charge->upcoming_payment) {
             return Carbon::parse($charge->upcoming_payment)->format('d M Y');
         }
@@ -127,7 +148,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function getSubscriptionEndAttribute()
     {
         if ($this->role != 1) return null;
-        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        $charge = $this->latestMonthlyCharge();
         if ($charge && $charge->current_end_subscription_date) {
             return Carbon::parse($charge->current_end_subscription_date)->format('d M Y');
         }
@@ -137,7 +158,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function getIsSubscriptionCancelledAttribute()
     {
         if ($this->role != 1) return false;
-        $charge = MonthlyCharge::where('user_id', $this->id)->latest('id')->first();
+        $charge = $this->latestMonthlyCharge();
         return $charge ? ($charge->status === 'canceled' || $charge->cancelled_at !== null) : false;
     }
 
@@ -211,6 +232,17 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     }
 
     public function getSubscriptionStatusAttribute()
+    {
+        // Memoized: is_site_subscription_active + display_subscription_status both
+        // re-read this accessor, which would otherwise re-run its MonthlyCharge
+        // queries 3x per serialize.
+        if (array_key_exists('subscription_status', $this->runtimeMemo)) {
+            return $this->runtimeMemo['subscription_status'];
+        }
+        return $this->runtimeMemo['subscription_status'] = $this->computeSubscriptionStatus();
+    }
+
+    private function computeSubscriptionStatus()
     {
         if ($this->role == 1) {
             // Find the currently active subscription period (same logic as account route)

@@ -69,7 +69,12 @@ export default function ShopCard({ item, IsloggedIn = false, showCreator = false
                         <div
                             className={`absolute left-5 right-5 bg-yellow-300 border-2 border-black z-10 text-black text-xs font-black p-2 rounded-lg text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isOwner && item?.is_suspended == 1 ? "top-16" : "top-2"}`}
                         >
-                            Waiting for approval
+                            {item?.moderation_reason ? "Under review" : "Waiting for approval"}
+                            {item?.moderation_reason && (
+                                <div className="mt-1 text-[11px] font-bold normal-case">
+                                    {item.moderation_reason}
+                                </div>
+                            )}
                         </div>
                     )}
                     {isOwner && item?.edited_status == 0 && item?.edited_reason && (

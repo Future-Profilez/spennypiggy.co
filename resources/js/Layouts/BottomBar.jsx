@@ -1,12 +1,11 @@
 import { Link, usePage } from "@inertiajs/react";
 import { route } from 'ziggy-js';
-import { useSelector } from "react-redux";
 import { RetroHomeIcon, RetroCartIcon, RetroSearchIcon, RetroUserIcon } from '../Components/RetroIcons';
 import { useState, useEffect } from 'react';
 import '../../css/retro-bottombar.css';
 
 export default function BottomBar(){
-   const count = useSelector((state) => state.data.cart.cart);
+   const count = 0;
    const { auth, ziggy } = usePage().props;
    const [activeTab, setActiveTab] = useState('home');
 

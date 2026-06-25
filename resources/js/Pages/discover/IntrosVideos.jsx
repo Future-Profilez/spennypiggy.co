@@ -93,7 +93,8 @@ export default function IntroVideos(props) {
       const [imgLoaded, setImgLoaded] = useState(false);
       const [videoError, setVideoError] = useState(false);
       const verified = w && w.user && ((w.user.role === 1) && (w.user.profile_status_lock === 2));
-      const poster = (w && w?.poster_url && w.poster_url !== false) ? w.poster_url : (w && w?.user && w?.user?.avatar_url) || userphoto;
+      const avatar = (w && w?.user && w?.user?.avatar_url) || userphoto;
+      const poster = (w && w?.poster_url && w.poster_url !== false) ? w.poster_url : avatar;
       const introVideo = w && w?.perma_link ? w.perma_link : null;
 
       const handlePreviewTimeUpdate = (e) => {
@@ -107,31 +108,25 @@ export default function IntroVideos(props) {
         <ProfileIntro data={w} poster={poster} text={
           <>
             <div className="h-full relative bg-gray-200">
-              {!videoError && introVideo ? (
-                <video
-                  muted
-                  playsInline
-                  preload="none"
-                  poster={poster}
-                  src={introVideo}
-                  onLoadedData={() => setImgLoaded(true)}
-                  onTimeUpdate={handlePreviewTimeUpdate}
-                  onError={() => {
-                    setVideoError(true);
-                    setImgLoaded(true);
-                  }}
-                  className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
-                />
-              ) : (
-                <img
-                  alt={"image"}
-                  height={360}
-                  src={poster}
-                  onLoad={() => setImgLoaded(true)}
-                  className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
-                  width={260}
-                />
-              )}
+              {/* Thumbnail is the poster/avatar image only — no video bytes load
+                  on the grid. The real intro plays in the click-through popup. */}
+              <img
+                alt={"image"}
+                height={360}
+                src={poster}
+                onLoad={() => setImgLoaded(true)}
+                onError={(e) => {
+                  // Broken poster (e.g. raw video URL) -> creator profile image -> site icon.
+                  if (e.target.src !== avatar && avatar !== userphoto) {
+                    e.target.src = avatar;
+                  } else if (e.target.src !== userphoto) {
+                    e.target.src = userphoto;
+                  }
+                  setImgLoaded(true);
+                }}
+                className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
+                width={260}
+              />
               {!imgLoaded && (
                   <div className="absolute inset-0 bg-gray-300 animate-pulse z-10" />
               )}

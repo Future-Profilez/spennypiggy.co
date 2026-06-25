@@ -98,7 +98,7 @@ export default function HappyCreators() {
                 </div>
                 <div  className="containerbox relative lg:!mb-[-140px] z-1">
                     <div className="hidden lg:block relative bottom-[60px] left-0 pointer-events-none">
-                        <img src={faq} className="" alt="Decorative" />
+                        <img src={faq} className="" alt="Decorative" loading="lazy" decoding="async" />
                     </div>
                 </div>
         </section>

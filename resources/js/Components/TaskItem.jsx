@@ -11,6 +11,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const isApproved = approvalStatus === 1 || task?.is_approved === true;
     const isPending = !isApproved && !isRejected;
     const reviewMessage =
+        task?.moderation_reason ||
         task?.reason ||
         task?.is_approved_reason ||
         "Item is currently under review. Please check again after 30 minutes.";

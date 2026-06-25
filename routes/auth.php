@@ -885,6 +885,11 @@ Route::middleware('auth')->group(function () {
 
         Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
 
+        // Buyer/supporter self-service hub ("My Purchases")
+        Route::get('my-purchases', [\App\Http\Controllers\GifterHubController::class, 'index'])->name('gifter.hub');
+        Route::get('my-purchases-feed', [\App\Http\Controllers\GifterHubController::class, 'feed'])->name('gifter.hub.feed');
+        Route::get('my-purchases-data', [\App\Http\Controllers\GifterHubController::class, 'data'])->name('gifter.hub.data');
+
 
         // Intro video
         Route::get('/redirecting', function () {

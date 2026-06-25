@@ -7,11 +7,14 @@ import { useState, useEffect, Fragment } from "react";
 import GifterFeed from "./GifterFeed";
 import MembershipLists from "./MembershipLists";
 import GifterMedia from "./GifterMedia";
+import GifterPurchasesTab from "./GifterPurchasesTab";
 import ActivateCard from "./ActivateCard";
 
 export default function Gifter({ IsloggedIn, sLinks }) {
     const pageProps = usePage().props || {};
     const { auth, user, itemid } = pageProps;
+    // Owner viewing their own profile — gates the private "Purchases" tab.
+    const isOwner = !!(auth?.user?.id && user?.id && auth.user.id === user.id);
     const categories = [
         "about",
         "feed",
@@ -226,6 +229,7 @@ export default function Gifter({ IsloggedIn, sLinks }) {
                                         "Gifts",
                                         "Tips",
                                         "Media",
+                                        ...(isOwner ? ["Purchases"] : []),
                                     ].map((category, idx) => (
                                         <Tab key={category} as={Fragment}>
                                             {({ selected }) => (
@@ -304,6 +308,12 @@ export default function Gifter({ IsloggedIn, sLinks }) {
                                             </div>
                                         </div>
                                     </Tab.Panel>
+
+                                    {isOwner && (
+                                        <Tab.Panel className="focus:outline-none">
+                                            <GifterPurchasesTab />
+                                        </Tab.Panel>
+                                    )}
                                 </Tab.Panels>
                             </Tab.Group>
                         </div>
