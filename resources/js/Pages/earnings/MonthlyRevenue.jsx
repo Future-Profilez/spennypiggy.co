@@ -33,8 +33,6 @@ export default function MonthlyRevenue() {
         fetchingStats();
     }, []);
 
-    // console.log("lists:", lists.currency);
-
     const data = [
         {
             name: "Page A",

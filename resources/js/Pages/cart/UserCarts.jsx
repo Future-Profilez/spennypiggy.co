@@ -443,14 +443,10 @@ export default function UserCarts(props) {
                 risk_identity_id: stepUpContext?.risk_identity_id || null,
             };
 
-            console.log("RESEND OTP PAYLOAD", payload);
-
             const response = await axios.post(
                 "/api/risk/step-up/resend",
                 payload,
             );
-
-            console.log("RESEND OTP RESPONSE", response?.data);
 
             if (response?.data?.success) {
                 toast.success("OTP resent successfully.");
@@ -461,7 +457,6 @@ export default function UserCarts(props) {
                 toast.error(response?.data?.error || "Failed to resend OTP.");
             }
         } catch (error) {
-            console.log("RESEND OTP ERROR", error?.response?.data || error);
 
             toast.error(
                 error?.response?.data?.error ||

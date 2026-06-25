@@ -53,13 +53,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
             shopperIp: shopperIp,
             environment: ENVIRONMENT.STAGING,
         });
-        // console.log(
-        //     "data",
-        //     productId,
-        //     finalQuantity,
-        //     data?.cart?.id,
-        //     cartsItems?.creator_id
-        // );
         // return;
         const result = await ryeClient.updateCartItems({
             input: {
@@ -94,7 +87,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
             shopperIp: shopperIp,
             environment: ENVIRONMENT.STAGING,
         });
-        // console.log("data",productId,data?.cart?.id,cartsItems?.creator_id );
         // return;
         const result = await ryeClient.deleteCartItems({
             input: {

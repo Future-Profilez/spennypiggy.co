@@ -29,6 +29,7 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import useWidthCount from "@/Components/useWidthCount";
 import PiggyPotModal from "@/Components/PiggyPotModal";
+import BlockedProfileNotice from "../Components/BlockedProfileNotice";
 
 import {
     arrayMove,
@@ -189,6 +190,10 @@ export default function Dashboard(props) {
     const [IsloggedIn, setIsLoggedIn] = useState(
         auth?.user?.username == user?.username,
     );
+
+    const { is_blocked } = usePage().props;
+    const isInteractionBlocked = !IsloggedIn && is_blocked?.blocked;
+    const blockedByMe = is_blocked?.blocked_by_me;
 
     const hasPendingCardPayments = useMemo(() => {
         return (
@@ -715,6 +720,7 @@ export default function Dashboard(props) {
     const [UserStripeConnected, setUserStripeConnected] = useState(
         user && user?.stripe_details_submitted == 1 ? 1 : 0,
     );
+
     const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(
         auth && auth?.user && auth?.user?.stripe_details_submitted == 1 ? 1 : 0,
     );
@@ -816,7 +822,7 @@ export default function Dashboard(props) {
                                     ""
                                 )}
                             </div>
-                            <Userprofile IsloggedIn={IsloggedIn} />
+                            <Userprofile blockedByI={blockedByMe} IsloggedIn={IsloggedIn} />
                         </div>
 
                         {/* Stripe Account Migration Warning */}
@@ -850,1061 +856,1525 @@ export default function Dashboard(props) {
                                 {IsloggedIn && <CreatorRiskBanner />}
 
                                 <div className="userManageRt mt-4 mb-10">
-                                    <div
-                                        className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
-                                    >
-                                        <div className="inlinetab ">
-                                            <InstantTabSystem
-                                                Toggle={Toggle}
-                                                activeTab={page || "about"}
-                                                user={user}
-                                                username={user.username}
-                                                IsloggedIn={IsloggedIn}
-                                                onTabChange={(tabId) => {
-                                                    // Handle tab change if needed
-                                                }}
-                                            />
+                                    {blockedByMe ? (
+                                        <BlockedProfileNotice
+                                            blockedByMe={true}
+                                            username={user.username}
+                                            userId={user.id}
+                                        />
+                                    ) : (
+                                        <div
+                                            className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
+                                        >
+                                            <div className="inlinetab ">
+                                                <InstantTabSystem
+                                                    Toggle={Toggle}
+                                                    activeTab={page || "about"}
+                                                    user={user}
+                                                    username={user.username}
+                                                    IsloggedIn={IsloggedIn}
+                                                    onTabChange={(tabId) => {
+                                                        // Handle tab change if needed
+                                                    }}
+                                                />
 
-                                            <div className="tabs-containers min-height">
-                                                {page === "about" ||
-                                                page === false ? (
-                                                    <Suspense
-                                                        fallback={
-                                                            <LoadingScreen />
-                                                        }
-                                                    >
-                                                        <div className="flex flex-wrap about-sec self-start ">
-                                                            {props.piggyPotTopSupporters &&
-                                                                (props
-                                                                    .piggyPotTopSupporters
-                                                                    .length >
-                                                                    0 ||
-                                                                    (props.piggyPotFeed &&
-                                                                        props
-                                                                            .piggyPotFeed
+                                                <div className="tabs-containers min-height">
+                                                    <>
+                                                        {page === "about" ||
+                                                        page === false ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <div className="flex flex-wrap about-sec self-start ">
+                                                                    {props.piggyPotTopSupporters &&
+                                                                        (props
+                                                                            .piggyPotTopSupporters
                                                                             .length >
-                                                                            0)) && (
-                                                                    <Suspense
-                                                                        fallback={
-                                                                            <div className="mb-4">
-                                                                                Loading
-                                                                                community
-                                                                                activity...
-                                                                            </div>
-                                                                        }
-                                                                    >
-                                                                        <PiggyPotSocialProof
-                                                                            topSupporters={
-                                                                                props.piggyPotTopSupporters
-                                                                            }
-                                                                            feed={
-                                                                                props.piggyPotFeed
-                                                                            }
-                                                                            user={
-                                                                                user
-                                                                            }
-                                                                        />
-                                                                    </Suspense>
-                                                                )}
-                                                            <div className="w-full lg:w-1/2 h-auto ">
-                                                                <div className="!sticky !top-[113px]">
-                                                                    {IsloggedIn ||
-                                                                    user?.intro
-                                                                        ?.approved ==
-                                                                        1 ? (
-                                                                        <Suspense
-                                                                            fallback={
-                                                                                <div className="h-40 bg-gray-100 rounded-3xl animate-pulse border-3 border-black"></div>
-                                                                            }
-                                                                        >
-                                                                            <AddIntro
-                                                                                uuid={
-                                                                                    user?.id ||
-                                                                                    null
+                                                                            0 ||
+                                                                            (props.piggyPotFeed &&
+                                                                                props
+                                                                                    .piggyPotFeed
+                                                                                    .length >
+                                                                                    0)) && (
+                                                                            <Suspense
+                                                                                fallback={
+                                                                                    <div className="mb-4">
+                                                                                        Loading
+                                                                                        community
+                                                                                        activity...
+                                                                                    </div>
                                                                                 }
-                                                                                IsloggedIn={
-                                                                                    IsloggedIn
-                                                                                }
-                                                                                user={
-                                                                                    user
+                                                                            >
+                                                                                <PiggyPotSocialProof
+                                                                                    topSupporters={
+                                                                                        props.piggyPotTopSupporters
+                                                                                    }
+                                                                                    feed={
+                                                                                        props.piggyPotFeed
+                                                                                    }
+                                                                                    user={
+                                                                                        user
+                                                                                    }
+                                                                                />
+                                                                            </Suspense>
+                                                                        )}
+                                                                    <div className="w-full lg:w-1/2 h-auto ">
+                                                                        <div className="!sticky !top-[113px]">
+                                                                            {IsloggedIn ||
+                                                                            user
+                                                                                ?.intro
+                                                                                ?.approved ==
+                                                                                1 ? (
+                                                                                <Suspense
+                                                                                    fallback={
+                                                                                        <div className="h-40 bg-gray-100 rounded-3xl animate-pulse border-3 border-black"></div>
+                                                                                    }
+                                                                                >
+                                                                                    <AddIntro
+                                                                                        uuid={
+                                                                                            user?.id ||
+                                                                                            null
+                                                                                        }
+                                                                                        IsloggedIn={
+                                                                                            IsloggedIn
+                                                                                        }
+                                                                                        user={
+                                                                                            user
+                                                                                        }
+                                                                                    />
+                                                                                </Suspense>
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+
+                                                                            <DashboardStripeMigrationWarning
+                                                                                migrationStatus={
+                                                                                    migration_status
                                                                                 }
                                                                             />
-                                                                        </Suspense>
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
 
-                                                                    <DashboardStripeMigrationWarning
-                                                                        migrationStatus={
-                                                                            migration_status
-                                                                        }
-                                                                    />
-
-                                                                    {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    stripe_requirements &&
-                                                                    stripe_requirements.has_requirements &&
-                                                                    stripe_requirements.requirements &&
-                                                                    stripe_requirements
-                                                                        .requirements
-                                                                        .length >
-                                                                        0 &&
-                                                                    (AuthUserStripeConnected ||
-                                                                        has_stripe_account) ? (
-                                                                        <ActionRequired
-                                                                            requirements={
-                                                                                stripe_requirements.requirements
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
-
-                                                                    {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    !card_capabilities &&
-                                                                    !isNeedToUpgrade &&
-                                                                    !hasPendingCardPayments &&
-                                                                    (AuthUserStripeConnected ||
-                                                                        has_stripe_account) ? (
-                                                                        <EnableCardCapabilities />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
-                                                                    {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    (auth?.user
-                                                                        ?.subscription_status ==
-                                                                        3 ||
-                                                                        auth
-                                                                            ?.user
-                                                                            ?.subscription_status ==
-                                                                            0) ? (
-                                                                        <SiteSubscription
-                                                                            auth={
-                                                                                auth
-                                                                            }
-                                                                            subscription_status={
-                                                                                auth
-                                                                                    ?.user
-                                                                                    ?.subscription_status
-                                                                            }
-                                                                            charges={
-                                                                                auth
-                                                                                    ?.user
-                                                                                    ?.monthly_charge_enabled
-                                                                            }
-                                                                            user={
-                                                                                auth?.user
-                                                                            }
-                                                                            card_capabilities={
-                                                                                card_capabilities
-                                                                            }
-                                                                            monthly_charges={
-                                                                                monthly_charges
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
-
-                                                                    {IsloggedIn &&
-                                                                    (user?.profile_status_lock ==
-                                                                        0 ||
-                                                                        (user?.edit_bio_reason &&
-                                                                            user?.bio_approved ==
-                                                                                2) ||
-                                                                        slinks?.reason ||
-                                                                        user?.avatar_approved ==
-                                                                            2) ? (
-                                                                        <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px]  mb-4 p-4">
-                                                                            <h2 className="text-red-600 font-bold text-xl ">
-                                                                                Action
-                                                                                Required{" "}
-                                                                            </h2>
-                                                                            {user?.profile_status_lock ==
+                                                                            {IsloggedIn &&
+                                                                            auth?.user &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.role ==
+                                                                                1 &&
+                                                                            stripe_requirements &&
+                                                                            stripe_requirements.has_requirements &&
+                                                                            stripe_requirements.requirements &&
+                                                                            stripe_requirements
+                                                                                .requirements
+                                                                                .length >
                                                                                 0 &&
-                                                                                user?.profile_reject_reason && (
-                                                                                    <div className="mt-3">
-                                                                                        <p className="text-red-700 font-bold">
-                                                                                            Profile
-                                                                                            Edit
-                                                                                            Request
-                                                                                        </p>
-                                                                                        <p className="text-red-500 text-sm">
-                                                                                            Reason:{" "}
-                                                                                            {
-                                                                                                user.profile_reject_reason
-                                                                                            }
-                                                                                        </p>
-                                                                                    </div>
-                                                                                )}
-                                                                            {user?.edit_bio_reason &&
-                                                                            user?.bio_approved ==
-                                                                                2 ? (
-                                                                                <div className="mt-3 ">
-                                                                                    <p className="text-red-700 font-bold">
-                                                                                        {" "}
-                                                                                        Bio
-                                                                                        Edit
-                                                                                        Request{" "}
-                                                                                    </p>
-                                                                                    <p className="text-red-500 text-sm">
-                                                                                        Reason
-                                                                                        :
-                                                                                        {
-                                                                                            user?.edit_bio_reason
-                                                                                        }
-                                                                                        Please
-                                                                                        update
-                                                                                        your
-                                                                                        bio
-                                                                                        as
-                                                                                        per
-                                                                                        requested.
-                                                                                    </p>
+                                                                            (AuthUserStripeConnected ||
+                                                                                has_stripe_account) ? (
+                                                                                <ActionRequired
+                                                                                    requirements={
+                                                                                        stripe_requirements.requirements
+                                                                                    }
+                                                                                />
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+
+                                                                            {IsloggedIn &&
+                                                                            auth?.user &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.role ==
+                                                                                1 &&
+                                                                            !card_capabilities &&
+                                                                            !isNeedToUpgrade &&
+                                                                            !hasPendingCardPayments &&
+                                                                            (AuthUserStripeConnected ||
+                                                                                has_stripe_account) ? (
+                                                                                <EnableCardCapabilities />
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+                                                                            {IsloggedIn &&
+                                                                            auth?.user &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.role ==
+                                                                                1 &&
+                                                                            (auth
+                                                                                ?.user
+                                                                                ?.subscription_status ==
+                                                                                3 ||
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.subscription_status ==
+                                                                                    0) ? (
+                                                                                <SiteSubscription
+                                                                                    auth={
+                                                                                        auth
+                                                                                    }
+                                                                                    subscription_status={
+                                                                                        auth
+                                                                                            ?.user
+                                                                                            ?.subscription_status
+                                                                                    }
+                                                                                    charges={
+                                                                                        auth
+                                                                                            ?.user
+                                                                                            ?.monthly_charge_enabled
+                                                                                    }
+                                                                                    user={
+                                                                                        auth?.user
+                                                                                    }
+                                                                                    card_capabilities={
+                                                                                        card_capabilities
+                                                                                    }
+                                                                                    monthly_charges={
+                                                                                        monthly_charges
+                                                                                    }
+                                                                                />
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+
+                                                                            {IsloggedIn &&
+                                                                            (user?.profile_status_lock ==
+                                                                                0 ||
+                                                                                (user?.edit_bio_reason &&
+                                                                                    user?.bio_approved ==
+                                                                                        2) ||
+                                                                                slinks?.reason ||
+                                                                                user?.avatar_approved ==
+                                                                                    2) ? (
+                                                                                <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px]  mb-4 p-4">
+                                                                                    <h2 className="text-red-600 font-bold text-xl ">
+                                                                                        Action
+                                                                                        Required{" "}
+                                                                                    </h2>
+                                                                                    {user?.profile_status_lock ==
+                                                                                        0 &&
+                                                                                        user?.profile_reject_reason && (
+                                                                                            <div className="mt-3">
+                                                                                                <p className="text-red-700 font-bold">
+                                                                                                    Profile
+                                                                                                    Edit
+                                                                                                    Request
+                                                                                                </p>
+                                                                                                <p className="text-red-500 text-sm">
+                                                                                                    Reason:{" "}
+                                                                                                    {
+                                                                                                        user.profile_reject_reason
+                                                                                                    }
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        )}
+                                                                                    {user?.edit_bio_reason &&
+                                                                                    user?.bio_approved ==
+                                                                                        2 ? (
+                                                                                        <div className="mt-3 ">
+                                                                                            <p className="text-red-700 font-bold">
+                                                                                                {" "}
+                                                                                                Bio
+                                                                                                Edit
+                                                                                                Request{" "}
+                                                                                            </p>
+                                                                                            <p className="text-red-500 text-sm">
+                                                                                                Reason
+                                                                                                :
+                                                                                                {
+                                                                                                    user?.edit_bio_reason
+                                                                                                }
+                                                                                                Please
+                                                                                                update
+                                                                                                your
+                                                                                                bio
+                                                                                                as
+                                                                                                per
+                                                                                                requested.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        ""
+                                                                                    )}
+
+                                                                                    {user?.avatar_approved ==
+                                                                                        2 && (
+                                                                                        <div className="mt-3">
+                                                                                            <p className="text-red-700 font-semibold">
+                                                                                                Avatar
+                                                                                                Edit
+                                                                                                Request
+                                                                                            </p>
+                                                                                            <p className="text-red-500 text-sm">
+                                                                                                Profile
+                                                                                                avatar
+                                                                                                has
+                                                                                                been
+                                                                                                rejected
+                                                                                                by
+                                                                                                admin.
+                                                                                                Please
+                                                                                                upload
+                                                                                                a
+                                                                                                new
+                                                                                                avatar.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {slinks?.reason && (
+                                                                                        <div className="mt-3">
+                                                                                            <p className="text-red-700 font-semibold">
+                                                                                                Social
+                                                                                                Media
+                                                                                                Edit
+                                                                                                Request
+                                                                                            </p>
+                                                                                            <p className="text-red-500 text-sm">
+                                                                                                Reason:
+                                                                                                {
+                                                                                                    slinks.reason
+                                                                                                }
+                                                                                                <br />
+                                                                                                Please
+                                                                                                update
+                                                                                                your
+                                                                                                social
+                                                                                                links
+                                                                                                as
+                                                                                                per
+                                                                                                the
+                                                                                                requested
+                                                                                                changes.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
                                                                             ) : (
                                                                                 ""
                                                                             )}
 
-                                                                            {user?.avatar_approved ==
-                                                                                2 && (
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700 font-semibold">
-                                                                                        Avatar
-                                                                                        Edit
-                                                                                        Request
+                                                                            <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
+                                                                                <div className="p-4 md:p-8">
+                                                                                    <h2 className="text-xl sm:text-2xl font-black text-black uppercase tracking-wide">
+                                                                                        About
+                                                                                        Me
+                                                                                    </h2>
+                                                                                    <p
+                                                                                        className={`text-gray-700 font-bold text-md md:text-lg text-left mt-4 ${
+                                                                                            user &&
+                                                                                            !user.bio
+                                                                                                ? "hidden"
+                                                                                                : ""
+                                                                                        }`}
+                                                                                    >
+                                                                                        {(user &&
+                                                                                            user.bio) ||
+                                                                                            "Hy, I am a creator on SpennyPiggy."}
                                                                                     </p>
-                                                                                    <p className="text-red-500 text-sm">
-                                                                                        Profile
-                                                                                        avatar
-                                                                                        has
-                                                                                        been
-                                                                                        rejected
-                                                                                        by
-                                                                                        admin.
-                                                                                        Please
-                                                                                        upload
-                                                                                        a
-                                                                                        new
-                                                                                        avatar.
-                                                                                    </p>
-                                                                                </div>
-                                                                            )}
-                                                                            {slinks?.reason && (
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700 font-semibold">
-                                                                                        Social
-                                                                                        Media
-                                                                                        Edit
-                                                                                        Request
-                                                                                    </p>
-                                                                                    <p className="text-red-500 text-sm">
-                                                                                        Reason:
-                                                                                        {
-                                                                                            slinks.reason
-                                                                                        }
-                                                                                        <br />
-                                                                                        Please
-                                                                                        update
-                                                                                        your
-                                                                                        social
-                                                                                        links
-                                                                                        as
-                                                                                        per
-                                                                                        the
-                                                                                        requested
-                                                                                        changes.
-                                                                                    </p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
 
-                                                                    <div className="bg-white border-[3px] border-black rounded-[30px]  shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
-                                                                        <div className="p-4 md:p-8">
-                                                                            <h2 className="text-xl sm:text-2xl font-black text-black uppercase tracking-wide">
-                                                                                About
-                                                                                Me
-                                                                            </h2>
-                                                                            <p
-                                                                                className={`text-gray-700 font-bold text-md md:text-lg text-left mt-4 ${
-                                                                                    user &&
-                                                                                    !user.bio
-                                                                                        ? "hidden"
-                                                                                        : ""
-                                                                                }`}
-                                                                            >
-                                                                                {(user &&
-                                                                                    user.bio) ||
-                                                                                    "Hy, I am a creator on SpennyPiggy."}
-                                                                            </p>
-
-                                                                            {IsloggedIn &&
-                                                                                user?.bio_approved ==
-                                                                                    0 && (
-                                                                                    <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <svg
-                                                                                                width="20"
-                                                                                                height="20"
-                                                                                                viewBox="0 0 20 20"
-                                                                                                fill="none"
-                                                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                                            >
-                                                                                                <path
-                                                                                                    d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z"
-                                                                                                    fill="#FF8E25"
-                                                                                                />
-                                                                                            </svg>
-                                                                                            <p>
-                                                                                                Your
-                                                                                                bio
-                                                                                                is
-                                                                                                waiting
-                                                                                                for
-                                                                                                admin
-                                                                                                approval.
-                                                                                                Currently
-                                                                                                only
-                                                                                                you
-                                                                                                can
-                                                                                                see
-                                                                                                this.
-                                                                                            </p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-
-                                                                            {user?.creator_category && (
-                                                                                <div className="mt-6 flex flex-wrap gap-1 md:gap-2">
-                                                                                    {(() => {
-                                                                                        try {
-                                                                                            const tags =
-                                                                                                typeof user.creator_category ===
-                                                                                                "string"
-                                                                                                    ? JSON.parse(
-                                                                                                          user.creator_category,
-                                                                                                      )
-                                                                                                    : user.creator_category;
-
-                                                                                            if (
-                                                                                                !Array.isArray(
-                                                                                                    tags,
-                                                                                                )
-                                                                                            )
-                                                                                                return null;
-
-                                                                                            return tags.map(
-                                                                                                (
-                                                                                                    tag,
-                                                                                                    index,
-                                                                                                ) => (
-                                                                                                    <span
-                                                                                                        key={
-                                                                                                            index
-                                                                                                        }
-                                                                                                        className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-[12px] md:text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
+                                                                                    {IsloggedIn &&
+                                                                                        user?.bio_approved ==
+                                                                                            0 && (
+                                                                                            <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <svg
+                                                                                                        width="20"
+                                                                                                        height="20"
+                                                                                                        viewBox="0 0 20 20"
+                                                                                                        fill="none"
+                                                                                                        xmlns="http://www.w3.org/2000/svg"
                                                                                                     >
-                                                                                                        {
-                                                                                                            tag
-                                                                                                        }
-                                                                                                    </span>
-                                                                                                ),
-                                                                                            );
-                                                                                        } catch (e) {
-                                                                                            return null;
-                                                                                        }
-                                                                                    })()}
-                                                                                </div>
-                                                                            )}
+                                                                                                        <path
+                                                                                                            d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z"
+                                                                                                            fill="#FF8E25"
+                                                                                                        />
+                                                                                                    </svg>
+                                                                                                    <p>
+                                                                                                        Your
+                                                                                                        bio
+                                                                                                        is
+                                                                                                        waiting
+                                                                                                        for
+                                                                                                        admin
+                                                                                                        approval.
+                                                                                                        Currently
+                                                                                                        only
+                                                                                                        you
+                                                                                                        can
+                                                                                                        see
+                                                                                                        this.
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
 
-                                                                            <Suspense
-                                                                                fallback={
-                                                                                    null
-                                                                                }
-                                                                            >
-                                                                                <SocialLinks
-                                                                                    links={
-                                                                                        sLinks
-                                                                                    }
-                                                                                />
-                                                                            </Suspense>
+                                                                                    {user?.creator_category && (
+                                                                                        <div className="mt-6 flex flex-wrap gap-1 md:gap-2">
+                                                                                            {(() => {
+                                                                                                try {
+                                                                                                    const tags =
+                                                                                                        typeof user.creator_category ===
+                                                                                                        "string"
+                                                                                                            ? JSON.parse(
+                                                                                                                  user.creator_category,
+                                                                                                              )
+                                                                                                            : user.creator_category;
 
-                                                                            {IsloggedIn &&
-                                                                                slinks?.status ===
-                                                                                    0 && (
-                                                                                    <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <svg
-                                                                                                width="20"
-                                                                                                height="20"
-                                                                                                viewBox="0 0 20 20"
-                                                                                                fill="none"
-                                                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                                            >
-                                                                                                <path
-                                                                                                    d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z"
-                                                                                                    fill="#FF8E25"
-                                                                                                />
-                                                                                            </svg>
-                                                                                            <p>
-                                                                                                Your
-                                                                                                social
-                                                                                                media
-                                                                                                links
-                                                                                                are
-                                                                                                waiting
-                                                                                                for
-                                                                                                admin
-                                                                                                approval.
-                                                                                                Currently
-                                                                                                only
-                                                                                                you
-                                                                                                can
-                                                                                                see
-                                                                                                them.
-                                                                                            </p>
+                                                                                                    if (
+                                                                                                        !Array.isArray(
+                                                                                                            tags,
+                                                                                                        )
+                                                                                                    )
+                                                                                                        return null;
+
+                                                                                                    return tags.map(
+                                                                                                        (
+                                                                                                            tag,
+                                                                                                            index,
+                                                                                                        ) => (
+                                                                                                            <span
+                                                                                                                key={
+                                                                                                                    index
+                                                                                                                }
+                                                                                                                className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-[12px] md:text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
+                                                                                                            >
+                                                                                                                {
+                                                                                                                    tag
+                                                                                                                }
+                                                                                                            </span>
+                                                                                                        ),
+                                                                                                    );
+                                                                                                } catch (e) {
+                                                                                                    return null;
+                                                                                                }
+                                                                                            })()}
                                                                                         </div>
-                                                                                    </div>
-                                                                                )}
+                                                                                    )}
 
-                                                                            {IsloggedIn ? (
-                                                                                <div className="userProfileDate pt-0 md:pt-3">
-                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                                                                    <Suspense
+                                                                                        fallback={
+                                                                                            null
+                                                                                        }
+                                                                                    >
+                                                                                        <SocialLinks
+                                                                                            links={
+                                                                                                sLinks
+                                                                                            }
+                                                                                        />
+                                                                                    </Suspense>
+
+                                                                                    {IsloggedIn &&
+                                                                                        slinks?.status ===
+                                                                                            0 && (
+                                                                                            <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <svg
+                                                                                                        width="20"
+                                                                                                        height="20"
+                                                                                                        viewBox="0 0 20 20"
+                                                                                                        fill="none"
+                                                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                                                    >
+                                                                                                        <path
+                                                                                                            d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z"
+                                                                                                            fill="#FF8E25"
+                                                                                                        />
+                                                                                                    </svg>
+                                                                                                    <p>
+                                                                                                        Your
+                                                                                                        social
+                                                                                                        media
+                                                                                                        links
+                                                                                                        are
+                                                                                                        waiting
+                                                                                                        for
+                                                                                                        admin
+                                                                                                        approval.
+                                                                                                        Currently
+                                                                                                        only
+                                                                                                        you
+                                                                                                        can
+                                                                                                        see
+                                                                                                        them.
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+
+                                                                                    {IsloggedIn ? (
+                                                                                        <div className="userProfileDate pt-0 md:pt-3">
+                                                                                            {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                                                             <AddGoal stripe_enabled={auth.user && auth.user.stripe_details_submitted}
                                                                                             fetch_goal={fetch_goal} activegoal={goal} />
                                                                                         : ''}
                                                                                     */}
 
-                                                                                    <div className="addsocial flex">
-                                                                                        <ul>
-                                                                                            <li>
-                                                                                                <AddSocial
-                                                                                                    classes={`bg-[#A2E4B8] hover:bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black`}
-                                                                                                    sLinks={
-                                                                                                        sLinks
-                                                                                                    }
-                                                                                                />
-                                                                                            </li>
+                                                                                            <div className="addsocial flex">
+                                                                                                <ul>
+                                                                                                    <li>
+                                                                                                        <AddSocial
+                                                                                                            classes={`bg-[#A2E4B8] hover:bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black`}
+                                                                                                            sLinks={
+                                                                                                                sLinks
+                                                                                                            }
+                                                                                                        />
+                                                                                                    </li>
 
-                                                                                            <li>
-                                                                                                <ShareProfile
-                                                                                                    username={
-                                                                                                        user &&
-                                                                                                        user.username
-                                                                                                    }
-                                                                                                    classes={
-                                                                                                        " bg-yellow-300 hover:bg-yellow-500 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black"
-                                                                                                    }
-                                                                                                    custom={
-                                                                                                        wishitems &&
-                                                                                                        wishitems.length >
-                                                                                                            0
-                                                                                                            ? `${ziggy?.location}/${user?.username ?? "creator_test"}/wishes?item=${wishitems[0]?.uuid}`
-                                                                                                            : `${ziggy?.location}/${user?.username ?? "creator_test"}`
-                                                                                                    }
-                                                                                                >
-                                                                                                    Share
-                                                                                                    Profile
-                                                                                                </ShareProfile>
-                                                                                            </li>
-                                                                                        </ul>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-
-                                                                            {UserStripeConnected ==
-                                                                            1 ? (
-                                                                                <MyGoal
-                                                                                    IsloggedIn={
-                                                                                        IsloggedIn
-                                                                                    }
-                                                                                />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-
-                                                                            {auth
-                                                                                ?.user
-                                                                                ?.role ==
-                                                                                1 &&
-                                                                            AuthUserStripeConnected ==
-                                                                                1 ? (
-                                                                                <PaymentDashboard
-                                                                                    classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px]  bg-pink-600 hover:bg-pink-700   transition-all duration-200"
-                                                                                    text="Creator Payment Dashboard"
-                                                                                />
-                                                                            ) : (
-                                                                                <>
-                                                                                    {auth
-                                                                                        ?.user
-                                                                                        ?.identity_status ==
-                                                                                    1 ? (
-                                                                                        <div className="finish mt-4 block">
-                                                                                            <p className="mb-4 text-lg font-bold text-black">
-                                                                                                {" "}
-                                                                                                Finish
-                                                                                                setting
-                                                                                                up
-                                                                                                your
-                                                                                                account
-                                                                                                to
-                                                                                                receive
-                                                                                                funds.
-                                                                                                You
-                                                                                                have
-                                                                                                more
-                                                                                                steps
-                                                                                                to
-                                                                                                complete
-                                                                                                your
-                                                                                                payment
-                                                                                                setup.
-                                                                                            </p>
-                                                                                            <Link
-                                                                                                disabled={
-                                                                                                    auth
-                                                                                                        ?.user
-                                                                                                        ?.monthly_charge_enabled
-                                                                                                        ? ""
-                                                                                                        : true
-                                                                                                }
-                                                                                                href={
-                                                                                                    "/stripe"
-                                                                                                }
-                                                                                                className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center"
-                                                                                            >
-                                                                                                {" "}
-                                                                                                Finish
-                                                                                                Setup
-                                                                                            </Link>
+                                                                                                    <li>
+                                                                                                        <ShareProfile
+                                                                                                            username={
+                                                                                                                user &&
+                                                                                                                user.username
+                                                                                                            }
+                                                                                                            classes={
+                                                                                                                " bg-yellow-300 hover:bg-yellow-500 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black"
+                                                                                                            }
+                                                                                                            custom={
+                                                                                                                wishitems &&
+                                                                                                                wishitems.length >
+                                                                                                                    0
+                                                                                                                    ? `${ziggy?.location}/${user?.username ?? "creator_test"}/wishes?item=${wishitems[0]?.uuid}`
+                                                                                                                    : `${ziggy?.location}/${user?.username ?? "creator_test"}`
+                                                                                                            }
+                                                                                                        >
+                                                                                                            Share
+                                                                                                            Profile
+                                                                                                        </ShareProfile>
+                                                                                                    </li>
+                                                                                                </ul>
+                                                                                            </div>
                                                                                         </div>
                                                                                     ) : (
                                                                                         ""
                                                                                     )}
-                                                                                </>
+
+                                                                                    {UserStripeConnected ==
+                                                                                    1 ? (
+                                                                                        <MyGoal
+                                                                                            IsloggedIn={
+                                                                                                IsloggedIn
+                                                                                            }
+                                                                                        />
+                                                                                    ) : (
+                                                                                        ""
+                                                                                    )}
+
+                                                                                    {auth
+                                                                                        ?.user
+                                                                                        ?.role ==
+                                                                                        1 &&
+                                                                                    AuthUserStripeConnected ==
+                                                                                        1 ? (
+                                                                                        <PaymentDashboard
+                                                                                            classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px]  bg-pink-600 hover:bg-pink-700   transition-all duration-200"
+                                                                                            text="Creator Payment Dashboard"
+                                                                                        />
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            {auth
+                                                                                                ?.user
+                                                                                                ?.identity_status ==
+                                                                                            1 ? (
+                                                                                                <div className="finish mt-4 block">
+                                                                                                    <p className="mb-4 text-lg font-bold text-black">
+                                                                                                        {" "}
+                                                                                                        Finish
+                                                                                                        setting
+                                                                                                        up
+                                                                                                        your
+                                                                                                        account
+                                                                                                        to
+                                                                                                        receive
+                                                                                                        funds.
+                                                                                                        You
+                                                                                                        have
+                                                                                                        more
+                                                                                                        steps
+                                                                                                        to
+                                                                                                        complete
+                                                                                                        your
+                                                                                                        payment
+                                                                                                        setup.
+                                                                                                    </p>
+                                                                                                    <Link
+                                                                                                        disabled={
+                                                                                                            auth
+                                                                                                                ?.user
+                                                                                                                ?.monthly_charge_enabled
+                                                                                                                ? ""
+                                                                                                                : true
+                                                                                                        }
+                                                                                                        href={
+                                                                                                            "/stripe"
+                                                                                                        }
+                                                                                                        className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center"
+                                                                                                    >
+                                                                                                        {" "}
+                                                                                                        Finish
+                                                                                                        Setup
+                                                                                                    </Link>
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                ""
+                                                                                            )}
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {!IsloggedIn &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.username &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.username !==
+                                                                                user?.username ? (
+                                                                                <div className="mb-6 !mt-6 relative group">
+                                                                                    {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
+                                                                                    <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
+                                                                                        <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
+                                                                                            <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
+                                                                                                <div className="relative">
+                                                                                                    <img
+                                                                                                        src={
+                                                                                                            auth
+                                                                                                                ?.user
+                                                                                                                ?.avatar_url ||
+                                                                                                            ""
+                                                                                                        }
+                                                                                                        alt="you"
+                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                                                                    />
+                                                                                                </div>
+                                                                                                <div className="text-black text-xl font-black tracking-widest">
+                                                                                                    +
+                                                                                                </div>
+                                                                                                <div className="relative">
+                                                                                                    <img
+                                                                                                        src={
+                                                                                                            user?.avatar_url ||
+                                                                                                            ""
+                                                                                                        }
+                                                                                                        alt="creator"
+                                                                                                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                                                                    />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div className="flex-1 order-2 text-center md:text-left mt-6">
+                                                                                                <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
+                                                                                                    Support
+                                                                                                    Story
+                                                                                                </p>
+                                                                                                <p className="text-black font-black uppercase   text-xl md:text-xl leading-snug">
+                                                                                                    Relive
+                                                                                                    your
+                                                                                                    moments
+                                                                                                    with{" "}
+                                                                                                    {user?.name ||
+                                                                                                        "@" +
+                                                                                                            user?.username}
+                                                                                                </p>
+                                                                                                <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
+                                                                                                    Gifts,
+                                                                                                    thank‑yous
+                                                                                                    and
+                                                                                                    milestones
+                                                                                                    —
+                                                                                                    beautifully
+                                                                                                    in
+                                                                                                    one
+                                                                                                    place.
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
+                                                                                                <Link
+                                                                                                    href={`/support/${user?.username}/${auth?.user?.username}`}
+                                                                                                    className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-xl text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 "
+                                                                                                >
+                                                                                                    View
+                                                                                                    Your
+                                                                                                    Story
+                                                                                                </Link>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                ""
                                                                             )}
                                                                         </div>
                                                                     </div>
+                                                                    <div className="lg:pl-6 w-full lg:w-1/2">
+                                                                        {IsloggedIn &&
+                                                                            auth?.user &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.role ==
+                                                                                1 &&
+                                                                            UserStripeConnected ==
+                                                                                1 && (
+                                                                                <Suspense
+                                                                                    fallback={
+                                                                                        <div className="mb-4">
+                                                                                            Loading
+                                                                                            activity
+                                                                                            status...
+                                                                                        </div>
+                                                                                    }
+                                                                                >
+                                                                                    <CreatorActivityWidget
+                                                                                        activityStatus={
+                                                                                            activityStatus
+                                                                                        }
+                                                                                        className="mb-4"
+                                                                                    />
+                                                                                </Suspense>
+                                                                            )}
 
-                                                                    {!IsloggedIn &&
-                                                                    auth?.user
-                                                                        ?.username &&
-                                                                    auth?.user
-                                                                        ?.username !==
-                                                                        user?.username ? (
-                                                                        <div className="mb-6 !mt-6 relative group">
-                                                                            {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
-                                                                                <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
-                                                                                    <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
-                                                                                        <div className="relative">
-                                                                                            <img
-                                                                                                src={
-                                                                                                    auth
-                                                                                                        ?.user
-                                                                                                        ?.avatar_url ||
-                                                                                                    ""
-                                                                                                }
-                                                                                                alt="you"
-                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                                                            />
-                                                                                        </div>
-                                                                                        <div className="text-black text-xl font-black tracking-widest">
-                                                                                            +
-                                                                                        </div>
-                                                                                        <div className="relative">
-                                                                                            <img
-                                                                                                src={
-                                                                                                    user?.avatar_url ||
-                                                                                                    ""
-                                                                                                }
-                                                                                                alt="creator"
-                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                                                            />
-                                                                                        </div>
+                                                                        {IsloggedIn &&
+                                                                        UserStripeConnected !==
+                                                                            1 ? (
+                                                                            <CreatorVerification
+                                                                                IsloggedIn={
+                                                                                    IsloggedIn
+                                                                                }
+                                                                            />
+                                                                        ) : (
+                                                                            ""
+                                                                        )}
+                                                                        {IsloggedIn &&
+                                                                        UserStripeConnected ==
+                                                                            1 ? (
+                                                                            <Suspense
+                                                                                fallback={
+                                                                                    <div className="mb-4">
+                                                                                        Loading
+                                                                                        steps...
                                                                                     </div>
-                                                                                    <div className="flex-1 order-2 text-center md:text-left mt-6">
-                                                                                        <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
-                                                                                            Support
-                                                                                            Story
-                                                                                        </p>
-                                                                                        <p className="text-black font-black uppercase   text-xl md:text-xl leading-snug">
-                                                                                            Relive
-                                                                                            your
-                                                                                            moments
-                                                                                            with{" "}
-                                                                                            {user?.name ||
-                                                                                                "@" +
-                                                                                                    user?.username}
-                                                                                        </p>
-                                                                                        <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
-                                                                                            Gifts,
-                                                                                            thank‑yous
-                                                                                            and
-                                                                                            milestones
-                                                                                            —
-                                                                                            beautifully
-                                                                                            in
-                                                                                            one
-                                                                                            place.
-                                                                                        </p>
-                                                                                    </div>
-                                                                                    <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
-                                                                                        <Link
-                                                                                            href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                            className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-xl text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 "
-                                                                                        >
-                                                                                            View
-                                                                                            Your
-                                                                                            Story
-                                                                                        </Link>
-                                                                                    </div>
+                                                                                }
+                                                                            >
+                                                                                <ProfileSteps
+                                                                                    sLinks={
+                                                                                        sLinks
+                                                                                    }
+                                                                                    user={
+                                                                                        user
+                                                                                    }
+                                                                                    IsloggedIn={
+                                                                                        IsloggedIn
+                                                                                    }
+                                                                                />
+                                                                            </Suspense>
+                                                                        ) : (
+                                                                            ""
+                                                                        )}
+
+                                                                        {props.piggyPots &&
+                                                                            props
+                                                                                .piggyPots
+                                                                                .length >
+                                                                                0 && (
+                                                                                <div className="flex flex-col md:flex-row gap-6 md:gap-8 mb-6">
+                                                                                    <Suspense
+                                                                                        fallback={
+                                                                                            <div className="mb-4">
+                                                                                                Loading
+                                                                                                Piggy
+                                                                                                Pot...
+                                                                                            </div>
+                                                                                        }
+                                                                                    >
+                                                                                        <PiggyPotWidget
+                                                                                            piggyPots={
+                                                                                                props.piggyPots
+                                                                                            }
+                                                                                            user={
+                                                                                                user
+                                                                                            }
+                                                                                            global_currency={
+                                                                                                global_currency
+                                                                                            }
+                                                                                        />
+                                                                                    </Suspense>
                                                                                 </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <div className="lg:pl-6 w-full lg:w-1/2">
-                                                                {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    UserStripeConnected ==
-                                                                        1 && (
+                                                                            )}
+
+                                                                        {!IsloggedIn &&
+                                                                        UserStripeConnected ==
+                                                                            1 &&
+                                                                        w >
+                                                                            767 &&
+                                                                        (!props.piggyPots ||
+                                                                            props
+                                                                                .piggyPots
+                                                                                .length ===
+                                                                                0) ? (
+                                                                            <Suspense
+                                                                                fallback={
+                                                                                    null
+                                                                                }
+                                                                            >
+                                                                                <TipInner
+                                                                                    classes={`mb-4`}
+                                                                                />
+                                                                            </Suspense>
+                                                                        ) : (
+                                                                            ""
+                                                                        )}
                                                                         <Suspense
                                                                             fallback={
                                                                                 <div className="mb-4">
                                                                                     Loading
-                                                                                    activity
-                                                                                    status...
+                                                                                    posts...
                                                                                 </div>
                                                                             }
                                                                         >
-                                                                            <CreatorActivityWidget
-                                                                                activityStatus={
-                                                                                    activityStatus
+                                                                            <FeedList
+                                                                                user={
+                                                                                    user
                                                                                 }
-                                                                                className="mb-4"
+                                                                                IsloggedIn={
+                                                                                    IsloggedIn
+                                                                                }
+                                                                                initialFilter="all"
                                                                             />
                                                                         </Suspense>
-                                                                    )}
+                                                                    </div>
+                                                                </div>
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
 
-                                                                {IsloggedIn &&
-                                                                UserStripeConnected !==
-                                                                    1 ? (
-                                                                    <CreatorVerification
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
-                                                                    />
+                                                        {IsloggedIn ||
+                                                        UserStripeConnected ==
+                                                            1 ? (
+                                                            <>
+                                                                {page ===
+                                                                "wishes" ? (
+                                                                    <ErrorBoundary>
+                                                                        <Suspense
+                                                                            fallback={
+                                                                                <LoadingScreen />
+                                                                            }
+                                                                        >
+                                                                            <div className="wishes-items pb-6 ">
+                                                                                {wish_categories &&
+                                                                                wish_categories.length ? (
+                                                                                    <>
+                                                                                        <div className="new-wish-cats flex items-center mb-6 gap-2 flex-wrap p-2">
+                                                                                            <Link
+                                                                                                preserveScroll
+                                                                                                href={route(
+                                                                                                    "user.show",
+                                                                                                    {
+                                                                                                        username:
+                                                                                                            user.username,
+                                                                                                        page: "wishes",
+                                                                                                    },
+                                                                                                )}
+                                                                                                className={` ${
+                                                                                                    selectedCategory ==
+                                                                                                    ""
+                                                                                                        ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+                                                                                                        : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
+                                                                                            >
+                                                                                                All
+                                                                                            </Link>
+                                                                                            {wish_categories.map(
+                                                                                                (
+                                                                                                    c,
+                                                                                                    i,
+                                                                                                ) => {
+                                                                                                    return (
+                                                                                                        <Link
+                                                                                                            preserveScroll
+                                                                                                            href={route(
+                                                                                                                "user.show",
+                                                                                                                {
+                                                                                                                    username:
+                                                                                                                        user.username,
+                                                                                                                    page: "wishes",
+                                                                                                                    category:
+                                                                                                                        c.id,
+                                                                                                                },
+                                                                                                            )}
+                                                                                                            className={`${
+                                                                                                                selectedCategory ==
+                                                                                                                c.id
+                                                                                                                    ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+                                                                                                                    : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                            } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
+                                                                                                            key={`cats-${i}`}
+                                                                                                        >
+                                                                                                            {
+                                                                                                                c.category
+                                                                                                            }
+                                                                                                        </Link>
+                                                                                                    );
+                                                                                                },
+                                                                                            )}
+                                                                                            {IsloggedIn ? (
+                                                                                                <EditCategories
+                                                                                                    username={
+                                                                                                        (auth &&
+                                                                                                            auth
+                                                                                                                ?.user
+                                                                                                                ?.username) ||
+                                                                                                        null
+                                                                                                    }
+                                                                                                />
+                                                                                            ) : (
+                                                                                                ""
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    ""
+                                                                                )}
+
+                                                                                {loading ||
+                                                                                (isInitialLoad &&
+                                                                                    (!wishitems ||
+                                                                                        wishitems.length ===
+                                                                                            0)) ? (
+                                                                                    <LoadingScreen />
+                                                                                ) : wishitems &&
+                                                                                  wishitems.length >
+                                                                                      0 ? (
+                                                                                    <>
+                                                                                        <DndContext
+                                                                                            sensors={
+                                                                                                sensors
+                                                                                            }
+                                                                                            collisionDetection={
+                                                                                                closestCorners
+                                                                                            }
+                                                                                            onDragStart={
+                                                                                                handleDragStart
+                                                                                            }
+                                                                                            onDragEnd={
+                                                                                                handleDragEnd
+                                                                                            }
+                                                                                            onDragCancel={
+                                                                                                handleDragCancel
+                                                                                            }
+                                                                                        >
+                                                                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
+                                                                                                <SortableContext
+                                                                                                    strategy={
+                                                                                                        rectSortingStrategy
+                                                                                                    }
+                                                                                                    items={wishitems.map(
+                                                                                                        (
+                                                                                                            item,
+                                                                                                        ) =>
+                                                                                                            item.id ||
+                                                                                                            item.uuid,
+                                                                                                    )}
+                                                                                                >
+                                                                                                    {wishitems.map(
+                                                                                                        (
+                                                                                                            c,
+                                                                                                            i,
+                                                                                                        ) => {
+                                                                                                            return (
+                                                                                                                <Wishlistbox
+                                                                                                                    key={`wish-item-${
+                                                                                                                        c.id ||
+                                                                                                                        c.uuid ||
+                                                                                                                        i
+                                                                                                                    }`}
+                                                                                                                    classes=" "
+                                                                                                                    currency={
+                                                                                                                        global_currency
+                                                                                                                    }
+                                                                                                                    IsloggedIn={
+                                                                                                                        IsloggedIn
+                                                                                                                    }
+                                                                                                                    auth={
+                                                                                                                        auth.user
+                                                                                                                    }
+                                                                                                                    itemid={
+                                                                                                                        itemid
+                                                                                                                    }
+                                                                                                                    setuped={
+                                                                                                                        AuthUserStripeConnected ==
+                                                                                                                        1
+                                                                                                                            ? true
+                                                                                                                            : false
+                                                                                                                    }
+                                                                                                                    itm={
+                                                                                                                        c
+                                                                                                                    }
+                                                                                                                />
+                                                                                                            );
+                                                                                                        },
+                                                                                                    )}
+                                                                                                </SortableContext>
+                                                                                                {IsloggedIn && (
+                                                                                                    <AddMoreTile
+                                                                                                        title="Add Wish"
+                                                                                                        subtitle="Create a new wish for your supporters."
+                                                                                                        onClick={() =>
+                                                                                                            window.dispatchEvent(
+                                                                                                                new Event(
+                                                                                                                    "toggleAddOptions",
+                                                                                                                ),
+                                                                                                            )
+                                                                                                        }
+                                                                                                        minHeightClass="min-h-[300px]"
+                                                                                                    />
+                                                                                                )}
+                                                                                            </div>
+                                                                                            {createPortal(
+                                                                                                <DragOverlay
+                                                                                                    dropAnimation={{
+                                                                                                        duration: 250,
+                                                                                                        easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+                                                                                                        sideEffects:
+                                                                                                            defaultDropAnimationSideEffects(
+                                                                                                                {
+                                                                                                                    styles: {
+                                                                                                                        active: {
+                                                                                                                            opacity:
+                                                                                                                                "0.3",
+                                                                                                                        },
+                                                                                                                    },
+                                                                                                                },
+                                                                                                            ),
+                                                                                                    }}
+                                                                                                    zIndex={
+                                                                                                        999999
+                                                                                                    }
+                                                                                                >
+                                                                                                    {activeItem ? (
+                                                                                                        <div
+                                                                                                            style={{
+                                                                                                                width: "320px",
+                                                                                                                maxWidth:
+                                                                                                                    "90vw",
+                                                                                                            }}
+                                                                                                        >
+                                                                                                            <Wishlistbox
+                                                                                                                itm={
+                                                                                                                    activeItem
+                                                                                                                }
+                                                                                                                currency={
+                                                                                                                    global_currency
+                                                                                                                }
+                                                                                                                IsloggedIn={
+                                                                                                                    IsloggedIn
+                                                                                                                }
+                                                                                                                auth={
+                                                                                                                    auth.user
+                                                                                                                }
+                                                                                                                itemid={
+                                                                                                                    itemid
+                                                                                                                }
+                                                                                                                setuped={
+                                                                                                                    AuthUserStripeConnected ==
+                                                                                                                    1
+                                                                                                                }
+                                                                                                                classes=" "
+                                                                                                                isOverlay
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    ) : null}
+                                                                                                </DragOverlay>,
+                                                                                                document.body,
+                                                                                            )}
+                                                                                        </DndContext>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <div className="w-full">
+                                                                                        {IsloggedIn ? (
+                                                                                            <>
+                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                                    <div className="text-4xl mb-3">
+                                                                                                        🎁
+                                                                                                    </div>
+                                                                                                    <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                                        No
+                                                                                                        Wishes
+                                                                                                        Yet
+                                                                                                    </h3>
+                                                                                                    <p className="text-gray-600 font-bold mb-6">
+                                                                                                        Add
+                                                                                                        items
+                                                                                                        to
+                                                                                                        your
+                                                                                                        wishlist
+                                                                                                        and
+                                                                                                        let
+                                                                                                        your
+                                                                                                        fans
+                                                                                                        buy
+                                                                                                        them
+                                                                                                        for
+                                                                                                        you.
+                                                                                                    </p>
+                                                                                                    <button
+                                                                                                        onClick={() =>
+                                                                                                            window.dispatchEvent(
+                                                                                                                new Event(
+                                                                                                                    "toggleAddOptions",
+                                                                                                                ),
+                                                                                                            )
+                                                                                                        }
+                                                                                                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                                    >
+                                                                                                        Add
+                                                                                                        Wish
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </>
+                                                                                        ) : (
+                                                                                            <Nocontent
+                                                                                                showdiscover={
+                                                                                                    true
+                                                                                                }
+                                                                                                text="Nothing to see."
+                                                                                            />
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </Suspense>
+                                                                    </ErrorBoundary>
                                                                 ) : (
                                                                     ""
                                                                 )}
-                                                                {IsloggedIn &&
-                                                                UserStripeConnected ==
-                                                                    1 ? (
+
+                                                                {page ===
+                                                                "feed" ? (
                                                                     <Suspense
                                                                         fallback={
-                                                                            <div className="mb-4">
-                                                                                Loading
-                                                                                steps...
-                                                                            </div>
+                                                                            <LoadingScreen />
                                                                         }
                                                                     >
-                                                                        <ProfileSteps
-                                                                            sLinks={
-                                                                                sLinks
-                                                                            }
+                                                                        <FeedList
                                                                             user={
                                                                                 user
                                                                             }
                                                                             IsloggedIn={
                                                                                 IsloggedIn
                                                                             }
+                                                                            initialFilter="all"
                                                                         />
                                                                     </Suspense>
                                                                 ) : (
                                                                     ""
                                                                 )}
 
-                                                                {props.piggyPots &&
-                                                                    props
-                                                                        .piggyPots
-                                                                        .length >
-                                                                        0 && (
-                                                                        <div className="flex flex-col md:flex-row gap-6 md:gap-8 mb-6">
-                                                                            <Suspense
-                                                                                fallback={
-                                                                                    <div className="mb-4">
-                                                                                        Loading
-                                                                                        Piggy
-                                                                                        Pot...
-                                                                                    </div>
-                                                                                }
-                                                                            >
-                                                                                <PiggyPotWidget
-                                                                                    piggyPots={
-                                                                                        props.piggyPots
-                                                                                    }
-                                                                                    user={
-                                                                                        user
-                                                                                    }
-                                                                                    global_currency={
-                                                                                        global_currency
-                                                                                    }
-                                                                                />
-                                                                            </Suspense>
-                                                                        </div>
-                                                                    )}
-
-                                                                {!IsloggedIn &&
-                                                                UserStripeConnected ==
-                                                                    1 &&
-                                                                w > 767 &&
-                                                                (!props.piggyPots ||
-                                                                    props
-                                                                        .piggyPots
-                                                                        .length ===
-                                                                        0) ? (
+                                                                {page ===
+                                                                "tasks" ? (
                                                                     <Suspense
                                                                         fallback={
-                                                                            null
+                                                                            <LoadingScreen />
                                                                         }
                                                                     >
-                                                                        <TipInner
-                                                                            classes={`mb-4`}
+                                                                        <ProfileTaskLists
+                                                                            tasks={
+                                                                                tasks
+                                                                            }
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                            profileUser={
+                                                                                user
+                                                                            }
+                                                                            suppressEmptyState={
+                                                                                IsloggedIn &&
+                                                                                (!tasks ||
+                                                                                    tasks.length ===
+                                                                                        0)
+                                                                            }
+                                                                        />
+                                                                        {IsloggedIn &&
+                                                                            (!tasks ||
+                                                                                tasks.length ===
+                                                                                    0) && (
+                                                                                <>
+                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                        <div className="text-4xl mb-3">
+                                                                                            📋
+                                                                                        </div>
+                                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                            No
+                                                                                            Active
+                                                                                            Tasks
+                                                                                        </h3>
+                                                                                        <p className="text-gray-600 font-bold mb-6">
+                                                                                            Create
+                                                                                            tasks
+                                                                                            and
+                                                                                            let
+                                                                                            your
+                                                                                            fans
+                                                                                            pay
+                                                                                            you
+                                                                                            to
+                                                                                            complete
+                                                                                            them.
+                                                                                        </p>
+                                                                                        <button
+                                                                                            onClick={() =>
+                                                                                                window.dispatchEvent(
+                                                                                                    new Event(
+                                                                                                        "toggleAddOptions",
+                                                                                                    ),
+                                                                                                )
+                                                                                            }
+                                                                                            className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                        >
+                                                                                            Create
+                                                                                            Task
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+
+                                                                {page ===
+                                                                "memberships" ? (
+                                                                    <Suspense
+                                                                        fallback={
+                                                                            <LoadingScreen />
+                                                                        }
+                                                                    >
+                                                                        <MembershipsLists
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                            username={
+                                                                                user?.username ||
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.username
+                                                                            }
+                                                                            suppressEmptyState={
+                                                                                IsloggedIn &&
+                                                                                (!props.memberships ||
+                                                                                    props
+                                                                                        .memberships
+                                                                                        ?.length ===
+                                                                                        0)
+                                                                            }
+                                                                        />
+                                                                        {IsloggedIn &&
+                                                                            (!props.memberships ||
+                                                                                props
+                                                                                    .memberships
+                                                                                    ?.length ===
+                                                                                    0) && (
+                                                                                <>
+                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                        <div className="text-4xl mb-3">
+                                                                                            ⭐
+                                                                                        </div>
+                                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                            No
+                                                                                            Memberships
+                                                                                            Yet
+                                                                                        </h3>
+                                                                                        <p className="text-gray-600 font-bold mb-6">
+                                                                                            Create
+                                                                                            membership
+                                                                                            tiers
+                                                                                            for
+                                                                                            your
+                                                                                            most
+                                                                                            loyal
+                                                                                            supporters.
+                                                                                        </p>
+                                                                                        <Link
+                                                                                            href={route(
+                                                                                                "membershipDashboard",
+                                                                                            )}
+                                                                                            className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                        >
+                                                                                            Create
+                                                                                            Membership
+                                                                                        </Link>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+
+                                                                {page ===
+                                                                "bills" ? (
+                                                                    <Suspense
+                                                                        fallback={
+                                                                            <LoadingScreen />
+                                                                        }
+                                                                    >
+                                                                        <Billslist
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                            suppressEmptyState={
+                                                                                IsloggedIn &&
+                                                                                (!props.bills ||
+                                                                                    props
+                                                                                        .bills
+                                                                                        ?.length ===
+                                                                                        0)
+                                                                            }
+                                                                        />
+                                                                        {IsloggedIn &&
+                                                                            (!props.bills ||
+                                                                                props
+                                                                                    .bills
+                                                                                    ?.length ===
+                                                                                    0) && (
+                                                                                <>
+                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                        <div className="text-4xl mb-3">
+                                                                                            🧾
+                                                                                        </div>
+                                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                            No
+                                                                                            Active
+                                                                                            Bills
+                                                                                        </h3>
+                                                                                        <p className="text-gray-600 font-bold mb-6">
+                                                                                            Offer
+                                                                                            a
+                                                                                            content
+                                                                                            membership
+                                                                                            your
+                                                                                            fans
+                                                                                            can
+                                                                                            subscribe
+                                                                                            to.
+                                                                                        </p>
+                                                                                        <button
+                                                                                            onClick={() =>
+                                                                                                window.dispatchEvent(
+                                                                                                    new Event(
+                                                                                                        "toggleAddOptions",
+                                                                                                    ),
+                                                                                                )
+                                                                                            }
+                                                                                            className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                        >
+                                                                                            Create
+                                                                                            Bill
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+
+                                                                {page ===
+                                                                "shop" ? (
+                                                                    <Suspense
+                                                                        fallback={
+                                                                            <LoadingScreen />
+                                                                        }
+                                                                    >
+                                                                        <ProfileProductLists
+                                                                            profileuser={
+                                                                                user
+                                                                            }
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                            suppressEmptyState={
+                                                                                IsloggedIn &&
+                                                                                (!props.shops ||
+                                                                                    props
+                                                                                        .shops
+                                                                                        .length ===
+                                                                                        0)
+                                                                            }
+                                                                        />
+                                                                        {IsloggedIn &&
+                                                                            (!props.shops ||
+                                                                                props
+                                                                                    .shops
+                                                                                    .length ===
+                                                                                    0) && (
+                                                                                <>
+                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                        <div className="text-4xl mb-3">
+                                                                                            🛍️
+                                                                                        </div>
+                                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                            No
+                                                                                            Shop
+                                                                                            Items
+                                                                                            Yet
+                                                                                        </h3>
+                                                                                        <p className="text-gray-600 font-bold mb-6">
+                                                                                            Create
+                                                                                            physical
+                                                                                            or
+                                                                                            digital
+                                                                                            products
+                                                                                            for
+                                                                                            your
+                                                                                            fans
+                                                                                            to
+                                                                                            buy.
+                                                                                        </p>
+                                                                                        <button
+                                                                                            onClick={() =>
+                                                                                                window.dispatchEvent(
+                                                                                                    new Event(
+                                                                                                        "toggleAddOptions",
+                                                                                                    ),
+                                                                                                )
+                                                                                            }
+                                                                                            className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                        >
+                                                                                            Add
+                                                                                            Item
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                    </Suspense>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+
+                                                                {page ===
+                                                                "piggy-pots" ? (
+                                                                    <Suspense
+                                                                        fallback={
+                                                                            <LoadingScreen />
+                                                                        }
+                                                                    >
+                                                                        <PiggyPotsGrid
+                                                                            piggyPots={
+                                                                                props.piggyPots
+                                                                            }
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                            user={
+                                                                                user
+                                                                            }
+                                                                            global_currency={
+                                                                                global_currency
+                                                                            }
+                                                                            topSupporters={
+                                                                                props.piggyPotTopSupporters
+                                                                            }
+                                                                            feed={
+                                                                                props.piggyPotFeed
+                                                                            }
                                                                         />
                                                                     </Suspense>
                                                                 ) : (
                                                                     ""
                                                                 )}
-                                                                <Suspense
-                                                                    fallback={
-                                                                        <div className="mb-4">
-                                                                            Loading
-                                                                            posts...
-                                                                        </div>
-                                                                    }
-                                                                >
-                                                                    <FeedList
-                                                                        user={
-                                                                            user
-                                                                        }
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
-                                                                        initialFilter="all"
-                                                                    />
-                                                                </Suspense>
-                                                            </div>
-                                                        </div>
-                                                    </Suspense>
-                                                ) : (
-                                                    ""
-                                                )}
 
-                                                {IsloggedIn ||
-                                                UserStripeConnected == 1 ? (
-                                                    <>
-                                                        {page === "wishes" ? (
-                                                            <ErrorBoundary>
-                                                                <Suspense
-                                                                    fallback={
-                                                                        <LoadingScreen />
-                                                                    }
-                                                                >
-                                                                    <div className="wishes-items pb-6 ">
-                                                                        {wish_categories &&
-                                                                        wish_categories.length ? (
-                                                                            <>
-                                                                                <div className="new-wish-cats flex items-center mb-6 gap-2 flex-wrap p-2">
-                                                                                    <Link
-                                                                                        preserveScroll
-                                                                                        href={route(
-                                                                                            "user.show",
-                                                                                            {
-                                                                                                username:
-                                                                                                    user.username,
-                                                                                                page: "wishes",
-                                                                                            },
-                                                                                        )}
-                                                                                        className={` ${
-                                                                                            selectedCategory ==
-                                                                                            ""
-                                                                                                ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
-                                                                                                : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
-                                                                                        } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
-                                                                                    >
-                                                                                        All
-                                                                                    </Link>
-                                                                                    {wish_categories.map(
-                                                                                        (
-                                                                                            c,
-                                                                                            i,
-                                                                                        ) => {
-                                                                                            return (
-                                                                                                <Link
-                                                                                                    preserveScroll
-                                                                                                    href={route(
-                                                                                                        "user.show",
-                                                                                                        {
-                                                                                                            username:
-                                                                                                                user.username,
-                                                                                                            page: "wishes",
-                                                                                                            category:
-                                                                                                                c.id,
-                                                                                                        },
-                                                                                                    )}
-                                                                                                    className={`${
-                                                                                                        selectedCategory ==
-                                                                                                        c.id
-                                                                                                            ? "bg-[#FF007F] text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
-                                                                                                            : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
-                                                                                                    } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
-                                                                                                    key={`cats-${i}`}
-                                                                                                >
-                                                                                                    {
-                                                                                                        c.category
-                                                                                                    }
-                                                                                                </Link>
-                                                                                            );
-                                                                                        },
-                                                                                    )}
-                                                                                    {IsloggedIn ? (
-                                                                                        <EditCategories
-                                                                                            username={
-                                                                                                (auth &&
-                                                                                                    auth
-                                                                                                        ?.user
-                                                                                                        ?.username) ||
-                                                                                                null
-                                                                                            }
-                                                                                        />
-                                                                                    ) : (
-                                                                                        ""
-                                                                                    )}
-                                                                                </div>
-                                                                            </>
-                                                                        ) : (
-                                                                            ""
-                                                                        )}
-
-                                                                        {loading ||
-                                                                        (isInitialLoad &&
-                                                                            (!wishitems ||
-                                                                                wishitems.length ===
-                                                                                    0)) ? (
+                                                                {page ===
+                                                                "gifts" ? (
+                                                                    <Suspense
+                                                                        fallback={
                                                                             <LoadingScreen />
-                                                                        ) : wishitems &&
-                                                                          wishitems.length >
+                                                                        }
+                                                                    >
+                                                                        {giftsloading ? (
+                                                                            <LoadingScreen />
+                                                                        ) : gifts &&
+                                                                          gifts.length >
                                                                               0 ? (
-                                                                            <>
-                                                                                <DndContext
-                                                                                    sensors={
-                                                                                        sensors
-                                                                                    }
-                                                                                    collisionDetection={
-                                                                                        closestCorners
-                                                                                    }
-                                                                                    onDragStart={
-                                                                                        handleDragStart
-                                                                                    }
-                                                                                    onDragEnd={
-                                                                                        handleDragEnd
-                                                                                    }
-                                                                                    onDragCancel={
-                                                                                        handleDragCancel
-                                                                                    }
-                                                                                >
-                                                                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
-                                                                                        <SortableContext
-                                                                                            strategy={
-                                                                                                rectSortingStrategy
-                                                                                            }
-                                                                                            items={wishitems.map(
-                                                                                                (
-                                                                                                    item,
-                                                                                                ) =>
-                                                                                                    item.id ||
-                                                                                                    item.uuid,
-                                                                                            )}
-                                                                                        >
-                                                                                            {wishitems.map(
-                                                                                                (
-                                                                                                    c,
-                                                                                                    i,
-                                                                                                ) => {
-                                                                                                    return (
-                                                                                                        <Wishlistbox
-                                                                                                            key={`wish-item-${
-                                                                                                                c.id ||
-                                                                                                                c.uuid ||
-                                                                                                                i
-                                                                                                            }`}
-                                                                                                            classes=" "
-                                                                                                            currency={
-                                                                                                                global_currency
-                                                                                                            }
-                                                                                                            IsloggedIn={
-                                                                                                                IsloggedIn
-                                                                                                            }
-                                                                                                            auth={
-                                                                                                                auth.user
-                                                                                                            }
-                                                                                                            itemid={
-                                                                                                                itemid
-                                                                                                            }
-                                                                                                            setuped={
-                                                                                                                AuthUserStripeConnected ==
-                                                                                                                1
-                                                                                                                    ? true
-                                                                                                                    : false
-                                                                                                            }
-                                                                                                            itm={
-                                                                                                                c
-                                                                                                            }
-                                                                                                        />
-                                                                                                    );
-                                                                                                },
-                                                                                            )}
-                                                                                        </SortableContext>
-                                                                                        {IsloggedIn && (
-                                                                                            <AddMoreTile
-                                                                                                title="Add Wish"
-                                                                                                subtitle="Create a new wish for your supporters."
-                                                                                                onClick={() =>
-                                                                                                    window.dispatchEvent(
-                                                                                                        new Event(
-                                                                                                            "toggleAddOptions",
-                                                                                                        ),
-                                                                                                    )
-                                                                                                }
-                                                                                                minHeightClass="min-h-[300px]"
-                                                                                            />
-                                                                                        )}
-                                                                                    </div>
-                                                                                    {createPortal(
-                                                                                        <DragOverlay
-                                                                                            dropAnimation={{
-                                                                                                duration: 250,
-                                                                                                easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
-                                                                                                sideEffects:
-                                                                                                    defaultDropAnimationSideEffects(
-                                                                                                        {
-                                                                                                            styles: {
-                                                                                                                active: {
-                                                                                                                    opacity:
-                                                                                                                        "0.3",
-                                                                                                                },
-                                                                                                            },
-                                                                                                        },
-                                                                                                    ),
-                                                                                            }}
-                                                                                            zIndex={
-                                                                                                999999
-                                                                                            }
-                                                                                        >
-                                                                                            {activeItem ? (
-                                                                                                <div
-                                                                                                    style={{
-                                                                                                        width: "320px",
-                                                                                                        maxWidth:
-                                                                                                            "90vw",
-                                                                                                    }}
-                                                                                                >
-                                                                                                    <Wishlistbox
-                                                                                                        itm={
-                                                                                                            activeItem
+                                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                                                                {gifts.map(
+                                                                                    (
+                                                                                        gift,
+                                                                                    ) => {
+                                                                                        const details =
+                                                                                            JSON.parse(
+                                                                                                gift.details,
+                                                                                            ); // Parse the details JSON
+                                                                                        return (
+                                                                                            <>
+                                                                                                {(IsloggedIn ||
+                                                                                                    gift?.deleted_at ===
+                                                                                                        null) && (
+                                                                                                    <GiftListing
+                                                                                                        key={
+                                                                                                            gift.id
                                                                                                         }
-                                                                                                        currency={
-                                                                                                            global_currency
+                                                                                                        gift={
+                                                                                                            gift
+                                                                                                        }
+                                                                                                        details={
+                                                                                                            details
+                                                                                                        }
+                                                                                                        user={
+                                                                                                            user
                                                                                                         }
                                                                                                         IsloggedIn={
                                                                                                             IsloggedIn
                                                                                                         }
+                                                                                                        fetch_gifts={
+                                                                                                            fetch_gifts
+                                                                                                        }
                                                                                                         auth={
-                                                                                                            auth.user
+                                                                                                            auth
                                                                                                         }
-                                                                                                        itemid={
-                                                                                                            itemid
-                                                                                                        }
-                                                                                                        setuped={
-                                                                                                            AuthUserStripeConnected ==
-                                                                                                            1
-                                                                                                        }
-                                                                                                        classes=" "
-                                                                                                        isOverlay
                                                                                                     />
-                                                                                                </div>
-                                                                                            ) : null}
-                                                                                        </DragOverlay>,
-                                                                                        document.body,
-                                                                                    )}
-                                                                                </DndContext>
-                                                                            </>
+                                                                                                )}
+                                                                                            </>
+                                                                                        );
+                                                                                    },
+                                                                                )}
+                                                                            </div>
                                                                         ) : (
                                                                             <div className="w-full">
                                                                                 {IsloggedIn ? (
-                                                                                    <>
-                                                                                        <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
-                                                                                            <div className="text-4xl mb-3">
-                                                                                                🎁
-                                                                                            </div>
-                                                                                            <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                                No
-                                                                                                Wishes
-                                                                                                Yet
-                                                                                            </h3>
-                                                                                            <p className="text-gray-600 font-bold mb-6">
-                                                                                                Add
-                                                                                                items
-                                                                                                to
-                                                                                                your
-                                                                                                wishlist
-                                                                                                and
-                                                                                                let
-                                                                                                your
-                                                                                                fans
-                                                                                                buy
-                                                                                                them
-                                                                                                for
-                                                                                                you.
-                                                                                            </p>
-                                                                                            <button
-                                                                                                onClick={() =>
-                                                                                                    window.dispatchEvent(
-                                                                                                        new Event(
-                                                                                                            "toggleAddOptions",
-                                                                                                        ),
-                                                                                                    )
-                                                                                                }
-                                                                                                className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                                                                                            >
-                                                                                                Add
-                                                                                                Wish
-                                                                                            </button>
+                                                                                    <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                                                                                        <div className="text-4xl mb-3">
+                                                                                            🎁
                                                                                         </div>
-                                                                                    </>
+                                                                                        <h3 className="font-gulfs text-2xl uppercase mb-2">
+                                                                                            No
+                                                                                            Active
+                                                                                            Gifts
+                                                                                        </h3>
+                                                                                        <p className="text-gray-600 font-bold mb-6">
+                                                                                            Create
+                                                                                            physical
+                                                                                            gifts
+                                                                                            for
+                                                                                            your
+                                                                                            fans
+                                                                                            to
+                                                                                            buy
+                                                                                            for
+                                                                                            you.
+                                                                                        </p>
+                                                                                        <button
+                                                                                            onClick={() =>
+                                                                                                window.dispatchEvent(
+                                                                                                    new Event(
+                                                                                                        "toggleAddOptions",
+                                                                                                    ),
+                                                                                                )
+                                                                                            }
+                                                                                            className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                        >
+                                                                                            Add
+                                                                                            Gift
+                                                                                        </button>
+                                                                                    </div>
                                                                                 ) : (
                                                                                     <Nocontent
                                                                                         showdiscover={
@@ -1915,455 +2385,22 @@ export default function Dashboard(props) {
                                                                                 )}
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                </Suspense>
-                                                            </ErrorBoundary>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {page === "feed" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <FeedList
-                                                                    user={user}
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    initialFilter="all"
-                                                                />
-                                                            </Suspense>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {page === "tasks" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <ProfileTaskLists
-                                                                    tasks={
-                                                                        tasks
-                                                                    }
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    profileUser={
-                                                                        user
-                                                                    }
-                                                                    suppressEmptyState={
-                                                                        IsloggedIn &&
-                                                                        (!tasks ||
-                                                                            tasks.length ===
-                                                                                0)
-                                                                    }
-                                                                />
-                                                                {IsloggedIn &&
-                                                                    (!tasks ||
-                                                                        tasks.length ===
-                                                                            0) && (
-                                                                        <>
-                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
-                                                                                <div className="text-4xl mb-3">
-                                                                                    📋
-                                                                                </div>
-                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                    No
-                                                                                    Active
-                                                                                    Tasks
-                                                                                </h3>
-                                                                                <p className="text-gray-600 font-bold mb-6">
-                                                                                    Create
-                                                                                    tasks
-                                                                                    and
-                                                                                    let
-                                                                                    your
-                                                                                    fans
-                                                                                    pay
-                                                                                    you
-                                                                                    to
-                                                                                    complete
-                                                                                    them.
-                                                                                </p>
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        window.dispatchEvent(
-                                                                                            new Event(
-                                                                                                "toggleAddOptions",
-                                                                                            ),
-                                                                                        )
-                                                                                    }
-                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                                                                                >
-                                                                                    Create
-                                                                                    Task
-                                                                                </button>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-                                                            </Suspense>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {page === "memberships" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <MembershipsLists
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    username={
-                                                                        user?.username ||
-                                                                        auth
-                                                                            ?.user
-                                                                            ?.username
-                                                                    }
-                                                                    suppressEmptyState={
-                                                                        IsloggedIn &&
-                                                                        (!props.memberships ||
-                                                                            props
-                                                                                .memberships
-                                                                                ?.length ===
-                                                                                0)
-                                                                    }
-                                                                />
-                                                                {IsloggedIn &&
-                                                                    (!props.memberships ||
-                                                                        props
-                                                                            .memberships
-                                                                            ?.length ===
-                                                                            0) && (
-                                                                        <>
-                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
-                                                                                <div className="text-4xl mb-3">
-                                                                                    ⭐
-                                                                                </div>
-                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                    No
-                                                                                    Memberships
-                                                                                    Yet
-                                                                                </h3>
-                                                                                <p className="text-gray-600 font-bold mb-6">
-                                                                                    Create
-                                                                                    membership
-                                                                                    tiers
-                                                                                    for
-                                                                                    your
-                                                                                    most
-                                                                                    loyal
-                                                                                    supporters.
-                                                                                </p>
-                                                                                <Link
-                                                                                    href={route(
-                                                                                        "membershipDashboard",
-                                                                                    )}
-                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                                                                                >
-                                                                                    Create
-                                                                                    Membership
-                                                                                </Link>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-                                                            </Suspense>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {page === "bills" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <Billslist
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    suppressEmptyState={
-                                                                        IsloggedIn &&
-                                                                        (!props.bills ||
-                                                                            props
-                                                                                .bills
-                                                                                ?.length ===
-                                                                                0)
-                                                                    }
-                                                                />
-                                                                {IsloggedIn &&
-                                                                    (!props.bills ||
-                                                                        props
-                                                                            .bills
-                                                                            ?.length ===
-                                                                            0) && (
-                                                                        <>
-                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
-                                                                                <div className="text-4xl mb-3">
-                                                                                    🧾
-                                                                                </div>
-                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                    No
-                                                                                    Active
-                                                                                    Bills
-                                                                                </h3>
-                                                                                <p className="text-gray-600 font-bold mb-6">
-                                                                                    Offer
-                                                                                    a
-                                                                                    content
-                                                                                    membership
-                                                                                    your
-                                                                                    fans
-                                                                                    can
-                                                                                    subscribe
-                                                                                    to.
-                                                                                </p>
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        window.dispatchEvent(
-                                                                                            new Event(
-                                                                                                "toggleAddOptions",
-                                                                                            ),
-                                                                                        )
-                                                                                    }
-                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                                                                                >
-                                                                                    Create
-                                                                                    Bill
-                                                                                </button>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-                                                            </Suspense>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {page === "shop" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <ProfileProductLists
-                                                                    profileuser={
-                                                                        user
-                                                                    }
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    suppressEmptyState={
-                                                                        IsloggedIn &&
-                                                                        (!props.shops ||
-                                                                            props
-                                                                                .shops
-                                                                                .length ===
-                                                                                0)
-                                                                    }
-                                                                />
-                                                                {IsloggedIn &&
-                                                                    (!props.shops ||
-                                                                        props
-                                                                            .shops
-                                                                            .length ===
-                                                                            0) && (
-                                                                        <>
-                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
-                                                                                <div className="text-4xl mb-3">
-                                                                                    🛍️
-                                                                                </div>
-                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                    No
-                                                                                    Shop
-                                                                                    Items
-                                                                                    Yet
-                                                                                </h3>
-                                                                                <p className="text-gray-600 font-bold mb-6">
-                                                                                    Create
-                                                                                    physical
-                                                                                    or
-                                                                                    digital
-                                                                                    products
-                                                                                    for
-                                                                                    your
-                                                                                    fans
-                                                                                    to
-                                                                                    buy.
-                                                                                </p>
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        window.dispatchEvent(
-                                                                                            new Event(
-                                                                                                "toggleAddOptions",
-                                                                                            ),
-                                                                                        )
-                                                                                    }
-                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                                                                                >
-                                                                                    Add
-                                                                                    Item
-                                                                                </button>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-                                                            </Suspense>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {page ===
-                                                        "piggy-pots" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <PiggyPotsGrid
-                                                                    piggyPots={
-                                                                        props.piggyPots
-                                                                    }
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    user={user}
-                                                                    global_currency={
-                                                                        global_currency
-                                                                    }
-                                                                    topSupporters={
-                                                                        props.piggyPotTopSupporters
-                                                                    }
-                                                                    feed={
-                                                                        props.piggyPotFeed
-                                                                    }
-                                                                />
-                                                            </Suspense>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {page === "gifts" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                {giftsloading ? (
-                                                                    <LoadingScreen />
-                                                                ) : gifts &&
-                                                                  gifts.length >
-                                                                      0 ? (
-                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                                                        {gifts.map(
-                                                                            (
-                                                                                gift,
-                                                                            ) => {
-                                                                                const details =
-                                                                                    JSON.parse(
-                                                                                        gift.details,
-                                                                                    ); // Parse the details JSON
-                                                                                return (
-                                                                                    <>
-                                                                                        {(IsloggedIn ||
-                                                                                            gift?.deleted_at ===
-                                                                                                null) && (
-                                                                                            <GiftListing
-                                                                                                key={
-                                                                                                    gift.id
-                                                                                                }
-                                                                                                gift={
-                                                                                                    gift
-                                                                                                }
-                                                                                                details={
-                                                                                                    details
-                                                                                                }
-                                                                                                user={
-                                                                                                    user
-                                                                                                }
-                                                                                                IsloggedIn={
-                                                                                                    IsloggedIn
-                                                                                                }
-                                                                                                fetch_gifts={
-                                                                                                    fetch_gifts
-                                                                                                }
-                                                                                                auth={
-                                                                                                    auth
-                                                                                                }
-                                                                                            />
-                                                                                        )}
-                                                                                    </>
-                                                                                );
-                                                                            },
-                                                                        )}
-                                                                    </div>
+                                                                    </Suspense>
                                                                 ) : (
-                                                                    <div className="w-full">
-                                                                        {IsloggedIn ? (
-                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
-                                                                                <div className="text-4xl mb-3">
-                                                                                    🎁
-                                                                                </div>
-                                                                                <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                    No
-                                                                                    Active
-                                                                                    Gifts
-                                                                                </h3>
-                                                                                <p className="text-gray-600 font-bold mb-6">
-                                                                                    Create
-                                                                                    physical
-                                                                                    gifts
-                                                                                    for
-                                                                                    your
-                                                                                    fans
-                                                                                    to
-                                                                                    buy
-                                                                                    for
-                                                                                    you.
-                                                                                </p>
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        window.dispatchEvent(
-                                                                                            new Event(
-                                                                                                "toggleAddOptions",
-                                                                                            ),
-                                                                                        )
-                                                                                    }
-                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                                                                                >
-                                                                                    Add
-                                                                                    Gift
-                                                                                </button>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <Nocontent
-                                                                                showdiscover={
-                                                                                    true
-                                                                                }
-                                                                                text="Nothing to see."
-                                                                            />
-                                                                        )}
-                                                                    </div>
+                                                                    ""
                                                                 )}
-                                                            </Suspense>
+                                                            </>
                                                         ) : (
-                                                            ""
+                                                            <PaymentUnActivated
+                                                                heading={`WishList not activated yet. `}
+                                                                subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`}
+                                                            />
                                                         )}
                                                     </>
-                                                ) : (
-                                                    <PaymentUnActivated
-                                                        heading={`WishList not activated yet. `}
-                                                        subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`}
-                                                    />
-                                                )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -2372,6 +2409,7 @@ export default function Dashboard(props) {
                                     auth={auth}
                                     sLinks={sLinks}
                                     IsloggedIn={IsloggedIn}
+                                    blockData={is_blocked}
                                 />
                             </Suspense>
                         )}

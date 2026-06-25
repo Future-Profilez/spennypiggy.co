@@ -1,4 +1,4 @@
-import { usePage } from "@inertiajs/react";
+import { usePage, router } from "@inertiajs/react";
 import GifterItems from "./GifterItems";
 import GifterTips from "./GifterTips";
 import SocialLinks from "@/includes/SocialLinks";
@@ -8,10 +8,17 @@ import GifterFeed from "./GifterFeed";
 import MembershipLists from "./MembershipLists";
 import GifterMedia from "./GifterMedia";
 import ActivateCard from "./ActivateCard";
+import { Ban, Unlock } from "lucide-react";
+import Modal from "@/Components/Modal";
+import { useAlerts } from "@/Components/Alerts";
 
-export default function Gifter({ IsloggedIn, sLinks }) {
+export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
     const pageProps = usePage().props || {};
+    const { successAlert, errorAlert } = useAlerts();
     const { auth, user, itemid } = pageProps;
+    const isBlocked = blockData?.blocked;
+    const blockedByMe = blockData?.blocked_by_me;
+
     const categories = [
         "about",
         "feed",
@@ -203,117 +210,301 @@ export default function Gifter({ IsloggedIn, sLinks }) {
         );
     };
 
+    const [showUnblockModal, setShowUnblockModal] = useState(false);
+    const [isUnblocking, setIsUnblocking] = useState(false);
+
+    const unblockUser = () => {
+        setShowUnblockModal(true);
+    };
+
+    const confirmUnblock = async () => {
+        if (isUnblocking) return;
+
+        setIsUnblocking(true);
+
+        try {
+            const res = await axios.delete(
+                route("creator.security.unblock-user", user.id),
+            );
+
+            if (res.data.status) {
+                successAlert(
+                    res.data.message || "User unblocked successfully.",
+                );
+
+                setShowUnblockModal(false);
+
+                router.reload();
+            } else {
+                errorAlert(res.data.message);
+            }
+        } catch (error) {
+            errorAlert(
+                error?.response?.data?.message || "Failed to unblock user.",
+            );
+        } finally {
+            setIsUnblocking(false);
+        }
+    };
+
     return (
         <div
-            className={`relative z-1 min-h-screen pb-20 bg-[#A2E4B8] ${IsloggedIn ? "IsloggedIn" : ""}`}
+            className={`relative z-1 min-h-screen pb-20 bg-[#A2E4B8] ${
+                IsloggedIn ? "IsloggedIn" : ""
+            }`}
         >
-            <div className="max-w-[1400px] mx-auto  pt-8">
-                {IsloggedIn ? (
-                    <>
-                        <div className="max-w-4xl mx-auto">
-                            <ActivateCard />
+            <div className="max-w-[1400px] mx-auto pt-8">
+                {isBlocked ? (
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white border-[4px] border-black rounded-[30px] p-8 md:p-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                            {/* Icon */}
+                            <div className="flex justify-center">
+                                <div className="w-20 h-20 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                    <Ban className="w-10 h-10 text-red-600" />
+                                </div>
+                            </div>
+
+                            {/* Title */}
+                            <h2 className="font-gulfs text-3xl text-center mt-6 uppercase">
+                                {blockedByMe
+                                    ? "You Blocked This User"
+                                    : "You Cannot Interact With This User"}
+                            </h2>
+
+                            {/* Description */}
+                            <div className="max-w-xl mx-auto mt-6 text-center">
+                                {blockedByMe ? (
+                                    <>
+                                        <p className="text-xl font-black text-gray-900">
+                                            🚫 You blocked this user.
+                                        </p>
+
+                                        <p className="mt-4 text-gray-600 font-semibold ">
+                                            You can still browse this user's
+                                            public profile, but following,
+                                            messaging, sending gifts and tips
+                                            are disabled until you unblock them.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xl font-black text-gray-900">
+                                            🚫 This user has blocked you.
+                                        </p>
+
+                                        <p className="mt-4 text-gray-600 font-semibold">
+                                            This user has blocked you. You can
+                                            view their public profile, but all
+                                            interactions are currently
+                                            unavailable.
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Unblock Button */}
+                            {blockedByMe && (
+                                <div className="mt-8 flex justify-center">
+                                    <button
+                                        onClick={unblockUser}
+                                        className="
+                                            flex
+                                            items-center
+                                            gap-2
+                                            bg-[#32C766]
+                                            hover:bg-[#28b45a]
+                                            border-[3px]
+                                            border-black
+                                            rounded-[18px]
+                                            px-8
+                                            py-3
+                                            font-black
+                                            text-white
+                                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                                            hover:translate-x-[2px]
+                                            hover:translate-y-[2px]
+                                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                            transition-all
+                                        "
+                                    >
+                                        <Unlock className="w-5 h-5" />
+                                        Unblock User
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                        <div className="inlinetab ">
-                            <Tab.Group
-                                selectedIndex={selectedIndex}
-                                onChange={setSelectedIndex}
-                            >
-                                <Tab.List className="flex items-center justify-center gap-3 md:gap-4 mb-4 md:mb-12 overflow-x-auto scrollbar-hide p-2 pt-1">
-                                    {[
-                                        "About",
-                                        "Feed",
-                                        "Memberships",
-                                        "Gifts",
-                                        "Tips",
-                                        "Media",
-                                    ].map((category, idx) => (
-                                        <Tab key={category} as={Fragment}>
-                                            {({ selected }) => (
-                                                <button
-                                                    className={`relative focus:border-0 focus:outline-none text-sm md:text-base 
+                    </div>
+                ) : (
+                    <>
+                        {/* Existing Gifter UI */}
+
+                        {IsloggedIn ? (
+                            <>
+                                <div className="max-w-4xl mx-auto">
+                                    <ActivateCard />
+                                </div>
+                                <div className="inlinetab ">
+                                    <Tab.Group
+                                        selectedIndex={selectedIndex}
+                                        onChange={setSelectedIndex}
+                                    >
+                                        <Tab.List className="flex items-center justify-center gap-3 md:gap-4 mb-4 md:mb-12 overflow-x-auto scrollbar-hide p-2 pt-1">
+                                            {[
+                                                "About",
+                                                "Feed",
+                                                "Memberships",
+                                                "Gifts",
+                                                "Tips",
+                                                "Media",
+                                            ].map((category, idx) => (
+                                                <Tab
+                                                    key={category}
+                                                    as={Fragment}
+                                                >
+                                                    {({ selected }) => (
+                                                        <button
+                                                            className={`relative focus:border-0 focus:outline-none text-sm md:text-base 
                                                 font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap
                                                 py-2 px-6 border-[3px] border-black rounded-[30px]  
                                                 ${selected ? "text-black bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]" : "text-black bg-white hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"} 
                                             `}
-                                                >
-                                                    {category}
-                                                </button>
-                                            )}
-                                        </Tab>
-                                    ))}
-                                </Tab.List>
+                                                        >
+                                                            {category}
+                                                        </button>
+                                                    )}
+                                                </Tab>
+                                            ))}
+                                        </Tab.List>
 
-                                <Tab.Panels>
-                                    <Tab.Panel className="focus:outline-none">
-                                        <div className="max-w-4xl mx-auto">
-                                            <AboutScreen />
-                                        </div>
-                                    </Tab.Panel>
-                                    <Tab.Panel className="focus:outline-none">
-                                        <div className="w-full max-w-[700px] mx-auto ">
-                                            <GifterFeed
-                                                username={
-                                                    (user && user.username) ||
-                                                    ""
-                                                }
-                                            />
-                                        </div>
-                                    </Tab.Panel>
-                                    <Tab.Panel className="focus:outline-none">
-                                        <div className="max-w-4xl mx-auto">
-                                            <MembershipLists
-                                                username={
-                                                    (user && user.username) ||
-                                                    ""
-                                                }
-                                            />
-                                        </div>
-                                    </Tab.Panel>
-                                    <Tab.Panel className="focus:outline-none">
-                                        <div className="max-w-3xl mx-auto ">
-                                            <GifterItems
-                                                username={
-                                                    (user && user.username) ||
-                                                    ""
-                                                }
-                                            />
-                                        </div>
-                                    </Tab.Panel>
+                                        <Tab.Panels>
+                                            <Tab.Panel className="focus:outline-none">
+                                                <div className="max-w-4xl mx-auto">
+                                                    <AboutScreen />
+                                                </div>
+                                            </Tab.Panel>
+                                            <Tab.Panel className="focus:outline-none">
+                                                <div className="w-full max-w-[700px] mx-auto ">
+                                                    <GifterFeed
+                                                        username={
+                                                            (user &&
+                                                                user.username) ||
+                                                            ""
+                                                        }
+                                                    />
+                                                </div>
+                                            </Tab.Panel>
+                                            <Tab.Panel className="focus:outline-none">
+                                                <div className="max-w-4xl mx-auto">
+                                                    <MembershipLists
+                                                        username={
+                                                            (user &&
+                                                                user.username) ||
+                                                            ""
+                                                        }
+                                                    />
+                                                </div>
+                                            </Tab.Panel>
+                                            <Tab.Panel className="focus:outline-none">
+                                                <div className="max-w-3xl mx-auto ">
+                                                    <GifterItems
+                                                        username={
+                                                            (user &&
+                                                                user.username) ||
+                                                            ""
+                                                        }
+                                                    />
+                                                </div>
+                                            </Tab.Panel>
 
-                                    <Tab.Panel className="focus:outline-none">
-                                        <div className="max-w-3xl mx-auto">
-                                            <GifterTips
-                                                username={
-                                                    (user && user.username) ||
-                                                    ""
-                                                }
-                                            />
-                                        </div>
-                                    </Tab.Panel>
+                                            <Tab.Panel className="focus:outline-none">
+                                                <div className="max-w-3xl mx-auto">
+                                                    <GifterTips
+                                                        username={
+                                                            (user &&
+                                                                user.username) ||
+                                                            ""
+                                                        }
+                                                    />
+                                                </div>
+                                            </Tab.Panel>
 
-                                    <Tab.Panel className="focus:outline-none">
-                                        <div className="max-w-3xl mx-auto ">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                                                <GifterMedia
-                                                    username={
-                                                        (user &&
-                                                            user.username) ||
-                                                        ""
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                    </Tab.Panel>
-                                </Tab.Panels>
-                            </Tab.Group>
-                        </div>
+                                            <Tab.Panel className="focus:outline-none">
+                                                <div className="max-w-3xl mx-auto ">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+                                                        <GifterMedia
+                                                            username={
+                                                                (user &&
+                                                                    user.username) ||
+                                                                ""
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </Tab.Panel>
+                                        </Tab.Panels>
+                                    </Tab.Group>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="max-w-4xl mx-auto pt-10">
+                                <AboutScreen />
+                            </div>
+                        )}
                     </>
-                ) : (
-                    <div className="max-w-4xl mx-auto pt-10">
-                        <AboutScreen />
-                    </div>
                 )}
             </div>
+            {showUnblockModal && (
+                <Modal
+                    show={showUnblockModal}
+                    onClose={() => setShowUnblockModal(false)}
+                >
+                    <div className="p-8 text-center">
+                        <div className="mx-auto mb-6 w-20 h-20 rounded-full bg-green-100 border-[3px] border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <Unlock className="w-10 h-10 text-green-600" />
+                        </div>
+
+                        <h2 className="font-gulfs text-3xl uppercase">
+                            Unblock User
+                        </h2>
+
+                        <p className="mt-4 text-gray-600 font-semibold leading-7">
+                            Are you sure you want to unblock this user?
+                        </p>
+
+                        <div className="mt-6 rounded-[18px] border-[3px] border-black bg-[#F8F9FC] p-5 text-left">
+                            <p className="font-black mb-3">
+                                Once unblocked you'll be able to:
+                            </p>
+
+                            <ul className="space-y-2 font-semibold text-gray-700">
+                                <li>✅ View this user's activity</li>
+                                <li>✅ Follow this user again</li>
+                                <li>✅ Interact with their public profile</li>
+                            </ul>
+                        </div>
+
+                        <div className="mt-8 flex justify-center gap-4">
+                            <button
+                                onClick={() => setShowUnblockModal(false)}
+                                disabled={isUnblocking}
+                                className="px-7 py-3 rounded-[18px] border-[3px] border-black bg-white font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={confirmUnblock}
+                                disabled={isUnblocking}
+                                className="px-7 py-3 rounded-[18px] border-[3px] border-black bg-[#32C766] text-white font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-60"
+                            >
+                                {isUnblocking
+                                    ? "Unblocking..."
+                                    : "Unblock User"}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 }

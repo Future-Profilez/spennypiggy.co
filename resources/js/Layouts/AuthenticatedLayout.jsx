@@ -13,7 +13,6 @@ const Header = lazy(() => import('@/includes/Header'));
 export default function Authenticated(props){ 
 
     const pageprops = usePage().props;
-        console.log(pageprops);
     const { auth, user, children, cart_count } = props;
 
     return <>

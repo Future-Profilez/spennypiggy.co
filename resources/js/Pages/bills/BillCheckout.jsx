@@ -355,7 +355,6 @@ export default function BillCheckout(props) {
                 toast.error("Verification failed.");
             }
         } catch (error) {
-            console.log("OTP verification error:", error.response?.data || error);
             toast.error(
                 error.response?.data?.error || "OTP Verification failed.",
             );
@@ -406,7 +405,6 @@ export default function BillCheckout(props) {
                     // show error toasts, alerts, or update error state
                 },
                 onFinish: () => {
-                    console.log("Request finished (success or error)");
                     // cleanup, stop loader, etc.
                     setChecking(false);
                 },

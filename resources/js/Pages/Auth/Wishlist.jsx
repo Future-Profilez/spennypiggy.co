@@ -99,7 +99,6 @@ export default function Wishlist(props) {
         axios
             .post("/user/save-category", { category: value })
             .then((res) => {
-                console.log("res", res);
                 setAdding(false);
                 if (res.data.status) {
                     successAlert(res.data.msg || "Added");
