@@ -1,4 +1,5 @@
 import Authenticated from '@/Layouts/AuthenticatedLayout';
+import LazyVideo from '@/Components/LazyVideo';
 import { Link, Head, usePage } from '@inertiajs/react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/siteicon.png";
@@ -241,10 +242,10 @@ export default function Thankyou(props) {
             </h4>
             
             {String(normalizedWishContent.type || '').includes('video') ? (
-               <video controls controlsList="nodownload" className="w-full max-h-[250px] object-contain rounded-lg border border-gray-200 bg-black">
+               <LazyVideo controls controlsList="nodownload" posterSrc={normalizedWishContent.url} fallback={owner?.avatar_url || userphoto} className="w-full max-h-[250px] object-contain rounded-lg border border-gray-200 bg-black">
                    <source src={normalizedWishContent.url} type={normalizedWishContent.type} />
                    Your browser does not support the video tag.
-               </video>
+               </LazyVideo>
             ) : String(normalizedWishContent.type || '').includes('audio') ? (
                <audio controls controlsList="nodownload" className="w-full mt-2">
                    <source src={normalizedWishContent.url} type={normalizedWishContent.type} />

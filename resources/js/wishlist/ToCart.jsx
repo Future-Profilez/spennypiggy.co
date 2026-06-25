@@ -4,8 +4,6 @@ import axios from "axios";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import DeviceID from "@/includes/DeviceID";
-import { useDispatch, useSelector } from "react-redux";
-import { add_to_cart } from "@/Pages/redux/UserSlice";
 import { router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 
@@ -33,8 +31,6 @@ export default function ToCart({
     const deviceID = DeviceID();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
-    const dispatch = useDispatch();
-    const cart = useSelector((state) => state.data.cart.cart);
     const {auth, card_capabilities} = usePage().props;
     const { usdtogbp } = PriceFormat();
     const gbpprice = usdtogbp(item.price);

@@ -62,6 +62,8 @@ export default function WhyLove() {
                            <img
                              src={brand.src}
                              alt={brand.name}
+                             loading="lazy"
+                             decoding="async"
                              className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
                            />
                          </TiltCard>

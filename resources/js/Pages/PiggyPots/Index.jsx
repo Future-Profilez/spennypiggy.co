@@ -508,6 +508,16 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                 <h4 className="font-black font-GillSans uppercase text-2xl mb-2 pr-12 text-black tracking-wide leading-tight">
                                                     {pot.title}
                                                 </h4>
+                                                {pot.status === 'moderation_hold' && (
+                                                    <div className="mb-3 rounded-xl border-2 border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                                                        ⚠️ Under review — not visible to buyers.
+                                                        {pot.moderation_reason ? (
+                                                            <span className="block font-medium text-red-600 mt-0.5">
+                                                                {pot.moderation_reason}
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                )}
                                                 <p className="text-gray-600 font-medium text-sm mb-6 line-clamp-2 flex-grow">
                                                     {pot.description || 'No description'}
                                                 </p>

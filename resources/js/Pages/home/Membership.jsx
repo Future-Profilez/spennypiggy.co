@@ -186,7 +186,7 @@ export default function Membership() {
         <div className=" relative  ">
           <FadeIn y={20} scale={0.9} duration={0.5}>
           <div className="flex justify-center mb-6">
-            <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain animate-bounce" />
+            <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain animate-bounce" loading="lazy" decoding="async" />
           </div>
           </FadeIn>
 

@@ -79,6 +79,35 @@ class Uploadcare
     }
 
     /**
+     * Generate a still poster (single thumbnail) for a video.
+     *
+     * Uses the documented Uploadcare `thumbs` video operation, which yields a
+     * thumbnails group; the first frame is then served as `{group}/nth/0/`.
+     * (generateThumb() above produces a video *clip*, not a still image.)
+     *
+     * @param string $uuid Video's UUID
+     * @return array{status:bool,code:int,result:mixed}
+     */
+    public static function generatePoster($uuid): array
+    {
+        $req = Http::accept('application/vnd.uploadcare-v0.7+json')
+            ->contentType('application/json')
+            ->withHeaders([
+                'Authorization' => "Uploadcare.Simple " . config("services.uploadcare.public") . ":" . config('services.uploadcare.secret')
+            ])
+            ->post(config("services.uploadcare.host", "https://api.uploadcare.com/") . "convert/video/", [
+                "paths" => ["$uuid/video/-/thumbs~1/0/"],
+                "store" => 1
+            ]);
+
+        return [
+            'status' => $req->successful(),
+            "code" => $req->status(),
+            "result" => $req->json()
+        ];
+    }
+
+    /**
      * Create Video Preview
      * with Thumbnail
      *

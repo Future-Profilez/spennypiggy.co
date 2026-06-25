@@ -7,6 +7,7 @@ import { useState, useEffect, Fragment } from "react";
 import GifterFeed from "./GifterFeed";
 import MembershipLists from "./MembershipLists";
 import GifterMedia from "./GifterMedia";
+import GifterPurchasesTab from "./GifterPurchasesTab";
 import ActivateCard from "./ActivateCard";
 import { Ban, Unlock } from "lucide-react";
 import Modal from "@/Components/Modal";

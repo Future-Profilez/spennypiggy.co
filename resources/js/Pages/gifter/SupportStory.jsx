@@ -5,6 +5,7 @@ import LoadingScreen from '@/includes/LoadingScreen';
 import Nocontent from '@/includes/Nocontent';
 import PriceFormat from '@/includes/PriceFormat';
 import Avatar from '@/includes/Avatar';
+import LazyVideo from '@/Components/LazyVideo';
 import Popup from '@/Components/Popup';
 import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
@@ -292,7 +293,7 @@ export default function SupportStory({ creator, gifter }) {
                       {ev.media_type === 'image' ? (
                         <img crossOrigin="anonymous" src={ev.media_url} alt="media" />
                       ) : (
-                        <video crossOrigin="anonymous" playsInline src={ev.media_url} controls controlsList="nodownload" />
+                        <LazyVideo crossOrigin="anonymous" playsInline fallback={data?.creator?.avatar} src={ev.media_url} controls controlsList="nodownload" />
                       )}
                     </div>
                   </Popup>

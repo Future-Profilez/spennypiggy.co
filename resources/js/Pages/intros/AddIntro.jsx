@@ -107,95 +107,10 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
   }, [fullVideoUrl, rawUrl]);
 
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !previewSrc) return;
-
-    video.muted = true;
-    video.defaultMuted = true;
-    video.src = previewSrc;
-    video.load();
-
-    const tryPlay = () => {
-      video.play().catch((err) => {
-        if (err.name !== 'AbortError') setNeedsInteraction(true);
-      });
-    };
-
-    const onTimeUpdate = () => {
-      if (video.currentTime >= 8) {
-        video.currentTime = 0;
-      }
-    };
-    let autoStopTimerId = null;
-    const onPlay = () => {
-      if (autoStopTimerId) return;
-      autoStopTimerId = setTimeout(() => {
-        video.pause();
-        setPreviewAutoStopped(true);
-        setNeedsInteraction(true);
-      }, 50000);
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        video.pause();
-        return;
-      }
-      if (close === true) return;
-      if (previewAutoStopped) return;
-      if (needsInteraction) return;
-      video.play().catch(() => {});
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-        if (!entry.isIntersecting) {
-          video.pause();
-          return;
-        }
-        if (document.hidden) return;
-        if (close === true) return;
-        if (previewAutoStopped) return;
-        if (needsInteraction) return;
-        video.play().catch(() => {});
-      },
-      { threshold: 0.2 }
-    );
-
-
-    video.addEventListener('canplay', tryPlay, { once: true });
-    video.addEventListener('play', onPlay);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    observer.observe(video);
-    video.addEventListener('timeupdate', onTimeUpdate);
-    return () => {
-      video.removeEventListener('canplay', tryPlay);
-      video.removeEventListener('play', onPlay);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      observer.disconnect();
-      if (autoStopTimerId) clearTimeout(autoStopTimerId);
-      video.removeEventListener('timeupdate', onTimeUpdate);
-    };
-  }, [previewSrc, close, needsInteraction, previewAutoStopped]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (close === true) {
-      video.pause();
-      return;
-    }
-    if (close === false) {
-      if (needsInteraction) return;
-      const id = setTimeout(() => {
-        video.play().catch(() => {});
-      }, 0);
-      return () => clearTimeout(id);
-    }
-  }, [close, needsInteraction]);
+  // NOTE: the intro card no longer autoplays. It shows the poster image only
+  // (real video poster -> creator avatar); the actual video loads and plays in
+  // the click-through popup below. This stops sitewide Uploadcare bandwidth
+  // from intros eagerly downloading/playing on every profile view.
 
   const popupVideoRef = useRef(null);
   const [popupNeedsInteraction, setPopupNeedsInteraction] = useState(false);
@@ -262,46 +177,27 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                 Intro video
               </div>
 
-              <video
-                ref={videoRef}
-                muted
-                loop
-                playsInline
-                autoPlay
-                preload="metadata"
-                poster={posterUrl}
-                onLoadedData={() => setPosterLoaded(true)}
-                className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px] max-h-[300px] block'
-                onPlaying={() => setNeedsInteraction(false)}
-                onPlay={() => setNeedsInteraction(false)}
-                onError={() => {
-                  const video = videoRef.current;
-                  if (!video || previewSrc === rawUrl) return;
-                  setPreviewSrc(rawUrl);
-                  video.muted = true;
-                  video.src = rawUrl;
-                  video.load();
-                  video.play().catch(() => {});
+              {/* Static poster only — real video plays in the popup on click.
+                  Poster -> creator avatar -> banner. No autoplay, no bytes loaded. */}
+              <img
+                src={posterUrl}
+                alt="Intro video"
+                onLoad={() => setPosterLoaded(true)}
+                onError={(e) => {
+                  const fallback = user?.avatar_url || wishlistbannerimg;
+                  if (e.target.src !== fallback) e.target.src = fallback;
+                  setPosterLoaded(true);
                 }}
+                className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px] max-h-[300px] block'
               />
 
-              {needsInteraction && (
-                <div
-                  className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (videoRef.current) {
-                      videoRef.current.play().then(() => setNeedsInteraction(false)).catch(() => {});
-                    }
-                  }}
-                >
-                  <div className="bg-white/90 rounded-full p-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
-                      <polygon points="5,3 19,12 5,21" />
-                    </svg>
-                  </div>
+              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                <div className="bg-white/90 rounded-full p-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
+                    <polygon points="5,3 19,12 5,21" />
+                  </svg>
                 </div>
-              )}
+              </div>
 
               <div className='absolute bottom-4 right-4 z-10 bg-[#FF007F] p-2 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:scale-110 transition-transform'>
                 <Maximize size={20} strokeWidth={3} />
@@ -324,11 +220,10 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                   ref={popupVideoRef}
                   // playsInline
                   muted
-                  autoPlay
                   controls
                   controlsList="nodownload"
                   disablePictureInPicture
-                  preload="metadata"
+                  preload="none"
                   poster={posterUrl}
                   className="w-full h-full"
                   src={popupVideoUrl}

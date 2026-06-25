@@ -120,7 +120,7 @@ export default function ContentFilePreview({
                                 className="w-20 h-20 object-cover rounded-[30px]   lg:rounded-[30px]   border shadow-sm"
                                 controls={false}
                                 muted
-                                preload="metadata"
+                                preload="none"
                                 onError={(e) => {
                                     e.target.style.display = 'none';
                                     e.target.nextSibling.style.display = 'flex';
@@ -173,7 +173,7 @@ export default function ContentFilePreview({
                                 src={fileUrl}
                                 controls
                                 className="w-full max-w-xs max-h-[200px] h-auto rounded border"
-                                preload="metadata"
+                                preload="none"
                             >
                                 Your browser does not support video playback.
                             </video>

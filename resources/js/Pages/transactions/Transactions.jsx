@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import LoadingScreen from '@/includes/LoadingScreen';
+import LazyVideo from '@/Components/LazyVideo';
 import Nocontent from '@/includes/Nocontent';
 import axios from 'axios';
 import Authenticated from '../../Layouts/AuthenticatedLayout';
@@ -327,9 +328,9 @@ export default function Transactions(props) {
           {hasMedia ? (
             <div className="group/media">
               {mediaType.includes('video') ? (
-                <video controls controlsList="nodownload" className="w-full max-h-[230px] object-contain rounded-[20px] bg-black shadow-sm">
+                <LazyVideo controls controlsList="nodownload" posterSrc={r.media.url} fallback={e.category === 'sent' ? e?.creator?.avatar : e?.gifter?.avatar} className="w-full max-h-[230px] object-contain rounded-[20px] bg-black shadow-sm">
                   <source src={r.media.url} type={r.media.type} />
-                </video>
+                </LazyVideo>
               ) : mediaType.includes('audio') ? (
                 <audio controls controlsList="nodownload" className="w-full">
                   <source src={r.media.url} type={r.media.type} />

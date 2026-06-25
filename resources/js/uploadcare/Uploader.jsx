@@ -246,7 +246,7 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
                   src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
                 />
               ) : (
-                <video playsInline controls className="rounded" src={`https://ucarecdn.com/${file.uuid}/`} alt="Preview" />
+                <video playsInline controls preload="none" className="rounded" src={`https://ucarecdn.com/${file.uuid}/`} alt="Preview" />
               )}
             </div>
           ))}

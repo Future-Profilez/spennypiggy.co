@@ -10,7 +10,6 @@ import "../css/core-web-vitals.css";
 import "../css/index.css";
 import "../css/home.css";
 import "../css/app.css";
-import "../css/confetti.css";
 import 'react-lazy-load-image-component/src/effects/blur.css';
 import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
@@ -19,8 +18,6 @@ import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { router } from "@inertiajs/react";
 
-import { Provider } from "react-redux";
-import store from "./Pages/redux/Store";
 import * as Sentry from "@sentry/react";
 import axios from "axios";
 import DeviceID from "./includes/DeviceID";
@@ -61,10 +58,10 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
             }
             return event;
         },
-        // Keep feedback, disable replays to reduce bandwidth
+        // Session Replay removed to cut bundle weight — error tracking, stack
+        // traces, breadcrumbs and performance tracing are all unaffected.
         integrations: [
             Sentry.browserTracingIntegration(),
-            Sentry.replayIntegration(),
             Sentry.feedbackIntegration({
                 colorScheme: "system",
                 autoInject: false,
@@ -72,9 +69,6 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
         ],
         // Performance Monitoring
         tracesSampleRate: 0.1,
-        // Disable session replays completely and reduce on-error sampling
-        replaysSessionSampleRate: 0,
-        replaysOnErrorSampleRate: 0.05,
     });
     console.warn("Sentry Initialized on spennypiggy.co");
 } 
@@ -237,14 +231,14 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(
-            <Provider store={store}>
+            <>
                 <SmoothScroll />
                 <Suspense fallback={null}>
                     <GlobalErrorBoundary>
                         <App {...props} />
                     </GlobalErrorBoundary>
                 </Suspense>
-            </Provider>
+            </>
         );
         
         // Hide initial loading screen once React app is mounted
