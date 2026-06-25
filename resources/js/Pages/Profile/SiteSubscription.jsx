@@ -19,7 +19,6 @@ export default function SiteSubscription({
         monthly_charges || page.props?.monthly_charges || null;
 
     // Debug: Uncomment to see the data structure
-    // console.log("Monthly Charges Data:", finalMonthlyCharges);
 
     const hasMonthlyChargeRecord = !!finalMonthlyCharges;
 

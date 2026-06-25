@@ -31,6 +31,7 @@ use App\Models\WishItemSubscription;
 use App\Models\FounderBonus;
 use App\Models\Deliverable;
 use App\Models\MonthlyCharge;
+use App\Models\UserBlock;
 use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
 use App\StripeControl;
@@ -346,11 +347,35 @@ class AuthenticatedSessionController extends Controller
             }
             $founderData = $this->getFounderData($user);
 
-            $isBlocked = false;
-            if (Auth::check() && Auth::id() !== $user->id) {
-                $isBlocked = \App\Models\UserBlock::where('creator_id', Auth::id())
-                    ->where('blocked_id', $user->id)
-                    ->exists();
+            $blockData = [
+                'blocked' => false,
+                'blocked_by_me' => false,
+            ];
+
+            if (Auth::check() && Auth::id() != $user->id) {
+
+                $viewerId = Auth::id();
+                $creatorId = $user->id;
+
+                // Logged in user blocked this profile
+                $blockedByMe = UserBlock::where([
+                    'creator_id' => $viewerId,
+                    'blocked_id' => $creatorId,
+                ])->exists();
+
+                // Profile owner blocked logged in user
+                $blockedByCreator = UserBlock::where([
+                    'creator_id' => $creatorId,
+                    'blocked_id' => $viewerId,
+                ])->exists();
+
+                $blockData = [
+                    // If either side blocked, interaction is blocked
+                    'blocked' => ($blockedByMe || $blockedByCreator),
+
+                    // Used only to know whether to show the Unblock button
+                    'blocked_by_me' => $blockedByMe,
+                ];
             }
 
             return [
@@ -371,7 +396,7 @@ class AuthenticatedSessionController extends Controller
                 'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories : [],
                 'selectedCategory' => request()->query('category') ?? false,
                 'page' => $page,
-                'is_blocked' => $isBlocked,
+                'is_blocked' => $blockData,
                 'monthly_charges' => $monthlyCharges,
                 ...$pageData,
                 'first30DayEarnings' => $founderData['first30DayEarnings'],

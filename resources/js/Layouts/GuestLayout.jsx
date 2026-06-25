@@ -10,7 +10,6 @@ import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
 import { usePage } from '@inertiajs/react';
 export default function Guest({children, auth, className}) {
     const pageprops = usePage().props;
-    console.log(pageprops);
     return <div className={`guest-layout ${className || ''}`}>
         <Header auth={auth ||''} />
         <main >

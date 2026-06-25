@@ -11,9 +11,7 @@ import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import axios from "axios";
 
 export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
-    // console.log("user", user);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    // console.log("data",data);
 
     const { format, formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
