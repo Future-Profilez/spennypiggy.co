@@ -1,12 +1,8 @@
 import { usePage, router } from "@inertiajs/react";
-import GifterItems from "./GifterItems";
-import GifterTips from "./GifterTips";
 import SocialLinks from "@/includes/SocialLinks";
 import { Tab } from "@headlessui/react";
 import { useState, useEffect, Fragment } from "react";
 import GifterFeed from "./GifterFeed";
-import MembershipLists from "./MembershipLists";
-import GifterMedia from "./GifterMedia";
 import GifterPurchasesTab from "./GifterPurchasesTab";
 import ActivateCard from "./ActivateCard";
 import { Ban, Unlock } from "lucide-react";
@@ -25,12 +21,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
     const categories = [
         "about",
         "feed",
-        "memberships",
-        "gifts",
-        "tips",
-        "media",
         ...(isOwner ? ["purchases"] : []),
-        "thanks",
     ];
     const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -356,10 +347,6 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                             {[
                                                 "About",
                                                 "Feed",
-                                                "Memberships",
-                                                "Gifts",
-                                                "Tips",
-                                                "Media",
                                                 ...(isOwner ? ["Purchases"] : []),
                                             ].map((category, idx) => (
                                                 <Tab
@@ -396,54 +383,6 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                                             ""
                                                         }
                                                     />
-                                                </div>
-                                            </Tab.Panel>
-                                            <Tab.Panel className="focus:outline-none">
-                                                <div className="max-w-4xl mx-auto">
-                                                    <MembershipLists
-                                                        username={
-                                                            (user &&
-                                                                user.username) ||
-                                                            ""
-                                                        }
-                                                    />
-                                                </div>
-                                            </Tab.Panel>
-                                            <Tab.Panel className="focus:outline-none">
-                                                <div className="max-w-3xl mx-auto ">
-                                                    <GifterItems
-                                                        username={
-                                                            (user &&
-                                                                user.username) ||
-                                                            ""
-                                                        }
-                                                    />
-                                                </div>
-                                            </Tab.Panel>
-
-                                            <Tab.Panel className="focus:outline-none">
-                                                <div className="max-w-3xl mx-auto">
-                                                    <GifterTips
-                                                        username={
-                                                            (user &&
-                                                                user.username) ||
-                                                            ""
-                                                        }
-                                                    />
-                                                </div>
-                                            </Tab.Panel>
-
-                                            <Tab.Panel className="focus:outline-none">
-                                                <div className="max-w-3xl mx-auto ">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                                                        <GifterMedia
-                                                            username={
-                                                                (user &&
-                                                                    user.username) ||
-                                                                ""
-                                                            }
-                                                        />
-                                                    </div>
                                                 </div>
                                             </Tab.Panel>
 
