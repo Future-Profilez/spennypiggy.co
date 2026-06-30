@@ -2,7 +2,7 @@ import MagicBell, { NotificationInbox, useMagicBellContext } from '@magicbell/ma
 import { usePage } from '@inertiajs/react';
 import messagereciev from '../../../assets/audio/bell.mp3';
 import { useMagicBellEvent } from '@magicbell/magicbell-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Component } from 'react';
 import { MdClose, MdCheckCircle, MdSettings, MdMoreHoriz, MdDeleteSweep } from 'react-icons/md';
 import { WebPushClient, isSupported } from '@magicbell/webpush';
 
@@ -166,6 +166,24 @@ const BrowserNotificationBanner = ({ onEnable, onHide }) => (
   </div>
 );
 
+// The bell is non-critical UI. If the MagicBell provider throws during render
+// (e.g. realtime token/config missing), render nothing instead of crashing the page.
+class BellBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { failed: false };
+  }
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    /* swallow — notification bell failure must not break the page */
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 const MagicBellNotification = () => {
   const { auth } = usePage().props;
   const [showBanner, setShowBanner] = useState(false);
@@ -208,6 +226,26 @@ const MagicBellNotification = () => {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  // Suppress uncaught promise rejections thrown deep inside MagicBell's realtime
+  // SDK (Ably) when the self-hosted proxy returns no realtime token — e.g.
+  // "reading 'in_app/inbox'" / "reading 'toString'". These fire inside the
+  // library's own promises (un-catchable here); the bell still works without
+  // realtime. We match narrowly so unrelated rejections are never swallowed.
+  useEffect(() => {
+    const isBellNoise = (err) => {
+      const msg = (err && (err.message || String(err))) || '';
+      const stack = (err && err.stack) || '';
+      return /in_app\/inbox/.test(msg)
+        || /magicbell|ably/i.test(stack)
+        || (/reading 'toString'/.test(msg) && /listen|url\.ts|router\.ts/.test(stack));
+    };
+    const onRejection = (e) => {
+      if (isBellNoise(e.reason)) e.preventDefault();
+    };
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => window.removeEventListener('unhandledrejection', onRejection);
   }, []);
 
   const notificationRecieve = async () => {
@@ -274,8 +312,9 @@ const MagicBellNotification = () => {
          .magicbell-wrapper .magicbell--footer { display: none !important; }
          .magicbell-wrapper .magicbell--header { border-radius: 24px 24px 0 0 !important; }
        `}</style>
-       <MagicBell 
-        theme={customTheme} 
+       <BellBoundary>
+       <MagicBell
+        theme={customTheme}
         className='magicbell' 
         onNewNotification={notificationRecieve} 
         closeOnClickOutside={true}
@@ -324,6 +363,7 @@ const MagicBellNotification = () => {
           </>
         )}
       </MagicBell>
+       </BellBoundary>
     </div>
   );
 };
