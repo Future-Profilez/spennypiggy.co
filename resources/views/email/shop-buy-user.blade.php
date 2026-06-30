@@ -1,9 +1,7 @@
 @extends('email.default-2')
 @section('content')
 @php
-    $totalPaid = isset($data->total_paid) && $data->total_paid > 0
-        ? $data->total_paid
-        : ($data->amount + ($data->shipping_amount ?? 0) + ($data->vat_tax_amount ?? 0));
+    $totalPaid = isset($data->total_paid) && $data->total_paid > 0 ? $data->total_paid : ($data->amount + ($data->shipping_amount ?? 0) + ($data->vat_tax_amount ?? 0));
     $creatorUsername = $data->shop->user->username ?? null;
     $base = url('/history');
     $common = http_build_query([

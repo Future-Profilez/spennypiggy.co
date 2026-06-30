@@ -168,8 +168,7 @@ class EmailService
             }
 
             Log::info('EmailService::shopBuyedUser sending to buyer', ['email' => $toEmail]);
-            Mail::to($toEmail)
-                ->send(new ShopBuyedMailUser($data, $url, $curr, $deliverable));
+            Mail::to($toEmail)->send(new ShopBuyedMailUser($data, $url, $curr, $deliverable));
             Log::info('EmailService::shopBuyedUser sent successfully');
         } catch (\Throwable $e) {
             Log::error('EmailService::shopBuyedUser failed', [

@@ -3561,6 +3561,7 @@ class StripeWebhookController extends Controller
                 }
 
                 ShopBuyedUser::dispatchSync($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
+                
 
                 // 9. Send PWA notifications
                 try {
