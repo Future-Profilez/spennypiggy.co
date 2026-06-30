@@ -1059,6 +1059,7 @@ class ShopsController extends Controller
         return DB::transaction(function () use ($id) {
             try {
                 $stripeid = ShopPayment::with(['shop', 'user'])->where('uuid', $id)->lockForUpdate()->first();
+                
                 if (!$stripeid) {
                     Log::error("No ShopPayment found for UUID: $id");
                     return redirect()->back()->with('error', 'Invalid payment ID.');
@@ -1208,6 +1209,7 @@ class ShopsController extends Controller
                     Log::error('ShopsController: Failed to create deliverable record', ['error' => $e->getMessage()]);
                 }
 
+                Log::info("total paid amount $stripeid->total_paid");
                 ShopBuyedUser::dispatchSync($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
 
                 /**************************SHOP**PWA**START****************************************************/
