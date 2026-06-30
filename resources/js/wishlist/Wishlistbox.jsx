@@ -15,6 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import RemoveWish from "./RemoveWish";
 import { trackSearchClick } from "@/includes/Analytics";
 import { Link, usePage } from "@inertiajs/react";
+import SaveButton from "@/Components/SaveButton";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
@@ -160,6 +161,11 @@ export default function Wishlistbox(props) {
                         uuid={itm.uuid}
                         action={open}
                     />
+                )}
+                {IsloggedIn && !isCreator && itm?.id && (
+                    <div className="absolute top-4 left-4 z-10">
+                        <SaveButton productType="wish" itemId={itm.id} initialSaved={itm.is_saved} />
+                    </div>
                 )}
                 {IsloggedIn ? (
                     <Menu as="div" className="absolute top-4 right-4 z-10 inline-block text-left">

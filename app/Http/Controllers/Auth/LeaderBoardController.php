@@ -2406,15 +2406,15 @@ class LeaderBoardController extends Controller
                 // - Number of gifts (up to 30 points)
                 // - Diversity of creators supported (up to 20 points)
                 // - Variety of support types (up to 10 points)
-                $supporter['vip_score'] = min(40, $supporter['total_amount']) +
-                    min(30, $supporter['total_gifts'] * 2) +
-                    min(20, $supporter['creators_supported_count'] * 4) +
-                    min(10, $supporter['support_types_count'] * 2);
-
-                // Add recency bonus (up to 10 points for recent activity)
-                $daysSinceLastSupport = Carbon::parse($supporter['latest_support_date'])->diffInDays($currentDate);
-                $recencyBonus = max(0, 10 - ($daysSinceLastSupport / 3));
-                $supporter['vip_score'] += $recencyBonus;
+                // Canonical formula — single source of truth shared with the gifter hub.
+                $supporter['vip_score'] = \App\Services\VipScoreService::scoreFromTotals(
+                    $supporter['total_amount'],
+                    $supporter['total_gifts'],
+                    $supporter['creators_supported_count'],
+                    $supporter['support_types_count'],
+                    $supporter['latest_support_date'],
+                    $currentDate
+                );
 
                 // Clean up internal arrays
                 unset($supporter['creators_supported']);
@@ -2455,11 +2455,8 @@ class LeaderBoardController extends Controller
      */
     private function getVipLevel($score)
     {
-        if ($score >= 90) return ['level' => 'Diamond', 'icon' => '💎', 'color' => '#e879f9'];
-        if ($score >= 70) return ['level' => 'Platinum', 'icon' => '🏆', 'color' => '#a855f7'];
-        if ($score >= 50) return ['level' => 'Gold', 'icon' => '🥇', 'color' => '#f59e0b'];
-        if ($score >= 30) return ['level' => 'Silver', 'icon' => '🥈', 'color' => '#6b7280'];
-        return ['level' => 'Bronze', 'icon' => '🥉', 'color' => '#92400e'];
+        // Canonical thresholds — single source of truth shared with the gifter hub.
+        return \App\Services\VipScoreService::tier((float) $score);
     }
 
     private function normalizeToGbp(float $amount, ?string $currency, array $currencyRates): float

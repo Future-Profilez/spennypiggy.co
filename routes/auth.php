@@ -849,16 +849,7 @@ Route::middleware('auth')->group(function () {
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
 
 
-        Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
-        Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
-        Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
         Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
-        Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
-        Route::get('gifter-medias/{username}', [ProfileController::class, 'gifterMedia'])->name('gifter-media');
-        Route::get('gifter-content/{username}', [ProfileController::class, 'gifterContentFiles'])->name('gifter-content');
-        Route::get('gifter-bills/{username}', [ProfileController::class, 'gifterBills'])->name('gifter-bills');
-        Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
-        Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
 
         Route::post('support/tickets', [\App\Http\Controllers\SupportTicketController::class, 'store'])->name('support.tickets.store');
         Route::get('support/transaction-details', [\App\Http\Controllers\SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
@@ -889,6 +880,10 @@ Route::middleware('auth')->group(function () {
         Route::get('my-purchases', [\App\Http\Controllers\GifterHubController::class, 'index'])->name('gifter.hub');
         Route::get('my-purchases-feed', [\App\Http\Controllers\GifterHubController::class, 'feed'])->name('gifter.hub.feed');
         Route::get('my-purchases-data', [\App\Http\Controllers\GifterHubController::class, 'data'])->name('gifter.hub.data');
+
+        // Save-for-later (wishlist of items to buy)
+        Route::post('saved/toggle', [\App\Http\Controllers\SavedItemController::class, 'toggle'])->name('saved.toggle');
+        Route::get('saved/mine', [\App\Http\Controllers\SavedItemController::class, 'mine'])->name('saved.mine');
 
 
         // Intro video

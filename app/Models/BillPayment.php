@@ -34,6 +34,7 @@ class BillPayment extends Model
         'twitter_response',
         'end',
         'upcoming_payment',
+        'renewal_reminded_for',
         'creator_currency',
         'charge_currency',
         'display_currency',
