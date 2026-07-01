@@ -939,6 +939,7 @@ class ShopsController extends Controller
 
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
+                'total_paid' => (float) ($breakdown['total_supporter_pays'] ?? $listedPriceToGrossUp),
                 'tax_amount' => 0,
                 'vat_tax_amount' => $vatAmount,
                 'shipping_amount' => $shipping_price,
@@ -1059,7 +1060,7 @@ class ShopsController extends Controller
         return DB::transaction(function () use ($id) {
             try {
                 $stripeid = ShopPayment::with(['shop', 'user'])->where('uuid', $id)->lockForUpdate()->first();
-                
+
                 if (!$stripeid) {
                     Log::error("No ShopPayment found for UUID: $id");
                     return redirect()->back()->with('error', 'Invalid payment ID.');
@@ -1082,7 +1083,7 @@ class ShopsController extends Controller
                         \Illuminate\Support\Facades\Log::error("Failed to fetch Stripe session for shop payment", ['error' => $e->getMessage()]);
                     }
                 }
-                $displayAmount = $totalPaid && $totalPaid > 0 ? $totalPaid : ($stripeid->amount ?? 0);
+                $displayAmount = $stripeid->getResolvedTotalPaidAmount();
 
                 // Idempotency check: if UserPayment already exists, the business logic has already run.
                 if ($existingUserPayment) {
@@ -1209,7 +1210,21 @@ class ShopsController extends Controller
                     Log::error('ShopsController: Failed to create deliverable record', ['error' => $e->getMessage()]);
                 }
 
-                Log::info("total paid amount $stripeid->total_paid");
+                Log::info('SHOP EMAIL DEBUG', [
+                    'payment_id'         => $stripeid->id,
+                    'session_id'         => $stripeid->session_id,
+
+                    'product_amount'     => $stripeid->amount,
+                    'shipping_amount'    => $stripeid->shipping_amount,
+                    'vat_tax_amount'     => $stripeid->vat_tax_amount,
+
+                    'database_total_paid' => $stripeid->total_paid,
+                    'display_amount'     => $displayAmount,
+                    'creator_net_amount' => $creatorNetAmount,
+
+                    'payment_status'     => $stripeid->payment_status,
+                    'currency'           => $stripeid->currency,
+                ]);
                 ShopBuyedUser::dispatchSync($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
 
                 /**************************SHOP**PWA**START****************************************************/
@@ -1306,7 +1321,6 @@ class ShopsController extends Controller
         $payment->payment_status = "unpaid";
         $payment->save();
         return redirect(route('user.show', [$payment->shop->user->username]))->with('error', 'Payment Cancelled.');
-        // return view('cancel');
     }
 
     public function deactivateShop($uuid)

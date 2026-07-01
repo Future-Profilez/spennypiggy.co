@@ -69,6 +69,21 @@ class ShopPayment extends Model
         return $sender;
     }
 
+    public function getResolvedTotalPaidAmount(): float
+    {
+        $totalPaid = (float) ($this->total_paid ?? 0);
+        if ($totalPaid > 0) {
+            return round($totalPaid, 2);
+        }
+
+        $baseAmount = (float) ($this->amount ?? 0);
+        $shippingAmount = (float) ($this->shipping_amount ?? 0);
+        $vatAmount = (float) ($this->vat_tax_amount ?? 0);
+        $taxAmount = (float) ($this->tax_amount ?? 0);
+
+        return round($baseAmount + $shippingAmount + $vatAmount + $taxAmount, 2);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
