@@ -63,6 +63,14 @@ class ShopBuyedUser implements ShouldQueue
         $this->payment = $payment;
         $this->url = $url;
         $this->curr = $curr;
+
+        Log::info('SHOP MAIL DATA', [
+            'payment_id'      => $this->payment->id,
+            'amount'          => $this->payment->amount,
+            'total_paid'      => $this->payment->total_paid,
+            'shipping_amount' => $this->payment->shipping_amount,
+            'vat_tax_amount'  => $this->payment->vat_tax_amount,
+        ]);
     }
 
     /**

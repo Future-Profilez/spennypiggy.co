@@ -3493,10 +3493,15 @@ class StripeWebhookController extends Controller
                 $message = $username . " just purchased your shop item " . $shopPayment->shop->name;
                 NotificationSave::dispatch($message, $shopPayment->shop->user, $shopPayment->user, 'Shop');
 
-                // 5. Update status
+                $currencyModel = \App\Models\Currency::where('ISO', strtoupper($shopPayment->currency ?? 'GBP'))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                $sessionAmount = isset($session->amount_total) ? (float) ($session->amount_total / $multiplier) : 0;
+
+                // 5. Update status and persist the actual paid total
                 $shopPayment->update([
                     'payment_status' => 'paid',
                     'session_id' => $session->id,
+                    'total_paid' => $sessionAmount > 0 ? $sessionAmount : ($shopPayment->total_paid ?? 0),
                     'updated_at' => Carbon::now(),
                 ]);
 
