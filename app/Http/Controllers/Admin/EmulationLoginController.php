@@ -21,13 +21,16 @@ class EmulationLoginController extends Controller
         $signature = $request->query('signature');
 
         // Verify the manual signature
-        $appKey = config('app.key');
-        if (str_starts_with($appKey, 'base64:')) {
-            $appKey = base64_decode(substr($appKey, 7));
+        $signatureSecret = config('services.emulation.secret');
+        if (empty($signatureSecret)) {
+            $signatureSecret = config('app.key');
+        }
+        if (str_starts_with($signatureSecret, 'base64:')) {
+            $signatureSecret = base64_decode(substr($signatureSecret, 7));
         }
 
         $signatureData = "user={$userId}&admin={$adminId}&expires={$expires}";
-        $expectedSignature = hash_hmac('sha256', $signatureData, $appKey);
+        $expectedSignature = hash_hmac('sha256', $signatureData, $signatureSecret);
 
         if (!hash_equals($expectedSignature, (string)$signature)) {
             Log::warning("Invalid emulation signature attempt for User ID {$userId}");
@@ -54,7 +57,8 @@ class EmulationLoginController extends Controller
 
         // Store emulation info in session
         $request->session()->put('emulated_by_admin', true);
-        $request->session()->put('emulation_admin_id', $adminId);
+        $request->session()->put('emulation_admin_id', (int) $adminId);
+        $request->session()->put('emulation_target_user_id', (int) $user->id);
 
         Log::info("User ID {$user->id} is being emulated by Admin ID {$adminId} via signed link.");
 
@@ -73,7 +77,7 @@ class EmulationLoginController extends Controller
 
         Auth::logout();
         
-        $request->session()->forget(['emulated_by_admin', 'emulation_admin_id']);
+        $request->session()->forget(['emulated_by_admin', 'emulation_admin_id', 'emulation_target_user_id']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

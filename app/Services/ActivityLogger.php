@@ -39,6 +39,11 @@ class ActivityLogger
                 'created_at' => now(),
             ];
 
+            $emulationAdminId = self::getEmulationAdminId();
+            if ($emulationAdminId !== null) {
+                $data['admin_id'] = $emulationAdminId;
+            }
+
             // Add optional fields if provided
             if (!empty($options['entity_type'])) {
                 $data['entity_type'] = $options['entity_type'];
@@ -184,7 +189,47 @@ class ActivityLogger
             $context['referer'] = $request->headers->get('referer');
         }
 
+        if ($request->hasSession() && $request->session()->get('emulated_by_admin')) {
+            $context['emulated_by_admin'] = true;
+            $context['emulation_admin_id'] = $request->session()->get('emulation_admin_id');
+            $context['emulation_target_user_id'] = $request->session()->get('emulation_target_user_id');
+        }
+
         return $context;
+    }
+
+    /**
+     * Get the super admin id for the current emulated session, if present.
+     */
+    private static function getEmulationAdminId(): ?int
+    {
+        try {
+            $request = Request::instance();
+
+            if (!$request->hasSession() || !$request->session()->get('emulated_by_admin')) {
+                return null;
+            }
+
+            $adminId = $request->session()->get('emulation_admin_id');
+            if (empty($adminId)) {
+                return null;
+            }
+
+            $actor = self::getCurrentActor();
+            if (!str_starts_with($actor, 'user:')) {
+                return null;
+            }
+
+            $userId = intval(substr($actor, 5));
+            $targetUserId = $request->session()->get('emulation_target_user_id');
+            if ($targetUserId !== null && intval($targetUserId) !== $userId) {
+                return null;
+            }
+
+            return (int) $adminId;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**
@@ -198,7 +243,7 @@ class ActivityLogger
         try {
             $records = [];
             foreach ($activities as $activity) {
-                $records[] = [
+                $record = [
                     'id' => (string) \Illuminate\Support\Str::uuid(),
                     'actor' => $activity['actor'] ?? self::getCurrentActor(),
                     'action_type' => strtoupper($activity['action_type']),
@@ -211,6 +256,13 @@ class ActivityLogger
                     ),
                     'created_at' => now(),
                 ];
+
+                $emulationAdminId = self::getEmulationAdminId();
+                if ($emulationAdminId !== null) {
+                    $record['admin_id'] = $emulationAdminId;
+                }
+
+                $records[] = $record;
             }
 
             AuditLog::insert($records);
