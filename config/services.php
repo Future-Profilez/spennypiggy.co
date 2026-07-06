@@ -73,6 +73,10 @@ return [
         'secret_key' => env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY'),
     ],
 
+    'emulation' => [
+        'secret' => env('EMULATION_SECRET'),
+    ],
+
     'payout_notifications' => [
         'weekly_job_email' => env('WEEKLY_PAYOUT_JOB_NOTIFY_EMAIL', 'naveen@internetbusinesssolutionsindia.com'),
     ],
