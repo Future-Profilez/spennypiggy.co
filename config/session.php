@@ -31,7 +31,10 @@ return [
     |
     */
 
-    'lifetime' => env('SESSION_LIFETIME', 120),
+    // Persistent login: 7-day session (10080 min). Kept in config (not env) intentionally
+    // so the 7-day window is fixed across environments and can't be silently shortened
+    // by an env override. "Remember me" (remember_token cookie) extends beyond this window.
+    'lifetime' => 10080,
 
     'expire_on_close' => false,
 
