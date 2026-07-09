@@ -1300,6 +1300,240 @@ class CreatorFinancialController extends Controller
     }
 
     /**
+     * One-Click Earnings Statement download (PDF or CSV).
+     *
+     * Periods: month (YYYY-MM), tax_year (existing UK tax-year format),
+     * or custom (from/to, max 366 days). Totals reuse FinancialService::getSummary()
+     * so the statement always matches the dashboard numbers.
+     */
+    public function downloadStatement(Request $request)
+    {
+        $validated = $request->validate([
+            'period' => 'required|in:month,tax_year,custom',
+            'month'  => 'required_if:period,month|date_format:Y-m',
+            'year'   => 'required_if:period,tax_year|integer|min:2020|max:2100',
+            'from'   => 'required_if:period,custom|date_format:Y-m-d',
+            'to'     => 'required_if:period,custom|date_format:Y-m-d|after_or_equal:from',
+            'format' => 'required|in:pdf,csv',
+        ]);
+
+        $user = Auth::user();
+
+        [$start, $end, $periodLabel] = $this->resolveStatementRange($validated);
+
+        // Guard: cap custom ranges at 366 days so a bad request can't build a giant document.
+        if ($start->diffInDays($end) > 366) {
+            return response()->json(['message' => 'Date range cannot exceed 12 months.'], 422);
+        }
+
+        $data = $this->buildStatementData($user, $start, $end, $periodLabel);
+
+        $slug = $start->format('Y-m-d') . '_' . $end->format('Y-m-d');
+
+        if ($validated['format'] === 'csv') {
+            return $this->streamStatementCsv($data, "earnings-statement-{$slug}.csv");
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.earnings-statement', $data)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download("earnings-statement-{$slug}.pdf");
+    }
+
+    /** Resolve the requested statement period into [start, end, label]. */
+    private function resolveStatementRange(array $validated): array
+    {
+        switch ($validated['period']) {
+            case 'month':
+                // Parse with an explicit day: 'Y-m' alone inherits the CURRENT day-of-month,
+                // which overflows short months (requesting Feb on Jan 31 would yield March).
+                $start = Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01')->startOfMonth();
+                $end = $start->copy()->endOfMonth();
+                return [$start, $end, $start->format('F Y')];
+
+            case 'tax_year':
+                $dates = $this->financialService->getTaxYearDates($validated['year']);
+                $start = Carbon::parse($dates['start']);
+                $end = Carbon::parse($dates['end']);
+                return [$start, $end, 'Tax Year ' . $validated['year'] . '/' . (substr((string) ($validated['year'] + 1), -2))];
+
+            default: // custom
+                $start = Carbon::parse($validated['from'])->startOfDay();
+                $end = Carbon::parse($validated['to'])->endOfDay();
+                return [$start, $end, $start->format('d M Y') . ' – ' . $end->format('d M Y')];
+        }
+    }
+
+    /**
+     * Assemble everything the statement needs. Summary totals come from
+     * FinancialService::getSummary (single source of truth — matches dashboard).
+     */
+    private function buildStatementData($user, Carbon $start, Carbon $end, string $periodLabel): array
+    {
+        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+        $summary = $this->financialService->getSummary($user, $start, $end, $displayCurrency);
+        $currency = $summary['currency'] ?? $displayCurrency;
+
+        // Refunds in the period (shown as their own statement line; getSummary counts completed income only).
+        $refundTx = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->where('status', 'refunded')
+            ->whereBetween('transaction_date', [$start, $end])
+            ->get(['net_amount', 'vat_amount', 'currency']);
+
+        $refundsTotal = 0.0;
+        foreach ($refundTx as $tx) {
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $amount = (float) ($tx->net_amount ?? 0) + (float) ($tx->vat_amount ?? 0);
+            $refundsTotal += $from === $currency ? $amount : (float) \App\Helpers::priceFormat($from, $amount, $currency);
+        }
+
+        // Payouts whose Stripe payout was created in the period.
+        $payouts = \App\Models\PayoutRecord::where('creator_id', $user->uuid)
+            ->whereBetween('created_at', [$start, $end])
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn ($p) => [
+                'date' => $p->created_at?->format('d M Y'),
+                'amount' => ((int) $p->amount_minor) / 100,
+                'currency' => strtoupper($p->currency ?? 'GBP'),
+                'status' => $p->status,
+                'arrival_date' => $p->arrival_date?->format('d M Y'),
+            ]);
+
+        $rows = $this->statementTransactionRows($user, $start, $end);
+
+        $profile = CreatorFinancialProfile::firstOrCreate(['user_id' => $user->id]);
+
+        return [
+            'user' => $user,
+            'entity_name' => $profile->business_name ?: $user->name,
+            'period_label' => $periodLabel,
+            'range' => ['start' => $start->format('d M Y'), 'end' => $end->format('d M Y')],
+            'generated_at' => now()->format('d M Y H:i') . ' UTC',
+            'currency' => $currency,
+            'summary' => [
+                'gross' => (float) ($summary['gross_income'] ?? 0),
+                'fees' => (float) ($summary['fees'] ?? 0),
+                'vat' => (float) ($summary['vat_collected'] ?? 0),
+                'net' => (float) ($summary['net_income'] ?? 0),
+                'refunds' => $refundsTotal,
+                'expenses' => (float) ($summary['expenses'] ?? 0),
+                'profit' => (float) ($summary['profit'] ?? 0),
+            ],
+            'payouts' => $payouts,
+            'transactions' => $rows['rows'],
+            'transactions_truncated' => $rows['truncated'],
+        ];
+    }
+
+    /**
+     * Transaction rows for the statement appendix. Same labelling as exportCsv;
+     * kept separate so the existing tax-year CSV export is untouched.
+     * Capped at 500 rows to keep the PDF renderable.
+     */
+    private function statementTransactionRows($user, Carbon $start, Carbon $end): array
+    {
+        $limit = 500;
+
+        $query = FinancialTransaction::where('user_id', $user->id)
+            ->whereBetween('transaction_date', [$start, $end])
+            ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
+            ->orderByDesc('transaction_date');
+
+        $total = (clone $query)->count();
+
+        $rows = $query->limit($limit)->get()
+            ->map(function ($transaction) {
+                $base = class_basename($transaction->source_type);
+                $label = match ($base) {
+                    'StripePaymentItems' => 'Wish Content',
+                    'ShopPayment' => 'Shop Purchase',
+                    'TipGoalsPayment' => 'Content Unlock',
+                    'PiggyPotContribution' => 'Piggy Pot',
+                    'MembershipPayment' => 'Membership',
+                    'TaskPurchase' => 'Task',
+                    'BillPayment' => 'Bill',
+                    default => str_replace(['Payment', 'Purchase'], '', $base)
+                };
+
+                return [
+                    'date' => $transaction->transaction_date?->format('Y-m-d'),
+                    'type' => $label,
+                    'gross' => $transaction->type === 'income'
+                        ? ((float) $transaction->net_amount + (float) ($transaction->vat_amount ?? 0))
+                        : (float) $transaction->gross_amount,
+                    'net' => (float) $transaction->net_amount,
+                    'currency' => strtoupper($transaction->currency ?? 'GBP'),
+                    'status' => $transaction->status,
+                ];
+            })
+            ->values();
+
+        return ['rows' => $rows, 'truncated' => $total > $limit];
+    }
+
+    /** Stream the statement as CSV: summary block, payouts, then transactions. */
+    private function streamStatementCsv(array $data, string $filename)
+    {
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$filename",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($data) {
+            $file = fopen('php://output', 'w');
+            $s = $data['summary'];
+            $c = $data['currency'];
+
+            fputcsv($file, ['Spenny Piggy Earnings Statement']);
+            fputcsv($file, ['Creator', $data['entity_name']]);
+            fputcsv($file, ['Period', $data['period_label']]);
+            fputcsv($file, ['From', $data['range']['start'], 'To', $data['range']['end']]);
+            fputcsv($file, ['Currency', $c]);
+            fputcsv($file, ['Generated', $data['generated_at']]);
+            fputcsv($file, []);
+
+            fputcsv($file, ['Summary']);
+            fputcsv($file, ['Gross earnings', number_format($s['gross'], 2, '.', '')]);
+            fputcsv($file, ['Fees (platform + processing)', number_format($s['fees'], 2, '.', '')]);
+            fputcsv($file, ['VAT collected', number_format($s['vat'], 2, '.', '')]);
+            fputcsv($file, ['Net earnings', number_format($s['net'], 2, '.', '')]);
+            fputcsv($file, ['Refunds', number_format($s['refunds'], 2, '.', '')]);
+            fputcsv($file, ['Expenses / adjustments', number_format($s['expenses'], 2, '.', '')]);
+            fputcsv($file, ['Profit', number_format($s['profit'], 2, '.', '')]);
+            fputcsv($file, []);
+
+            fputcsv($file, ['Payouts']);
+            fputcsv($file, ['Date', 'Amount', 'Currency', 'Status', 'Arrival date']);
+            foreach ($data['payouts'] as $p) {
+                fputcsv($file, [$p['date'], number_format($p['amount'], 2, '.', ''), $p['currency'], $p['status'], $p['arrival_date']]);
+            }
+            fputcsv($file, []);
+
+            fputcsv($file, ['Transactions' . ($data['transactions_truncated'] ? ' (first 500 shown)' : '')]);
+            fputcsv($file, ['Date', 'Type', 'Gross', 'Net', 'Currency', 'Status']);
+            foreach ($data['transactions'] as $row) {
+                fputcsv($file, [
+                    $row['date'],
+                    $row['type'],
+                    number_format($row['gross'], 2, '.', ''),
+                    number_format($row['net'], 2, '.', ''),
+                    $row['currency'],
+                    $row['status'],
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
      * Tag each income transaction with a payout badge:
      *   - 'paid_out'  : already included in an executed payout run (FT.payout_run_id set).
      *   - 'this_week' : eligible for the upcoming weekly run (succeeded, past the 7-day hold,

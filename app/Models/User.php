@@ -119,7 +119,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($u) => $u->uuid = Uuid::uuid4());
+        // Cast to string: Uuid::uuid4() returns an object, and the in-memory model would
+        // otherwise carry that object (not the string the DB stores) until re-fetched —
+        // breaking any array-by-uuid lookup done in the same request the user was created.
+        static::creating(fn($u) => $u->uuid = (string) Uuid::uuid4());
     }
 
     /**
