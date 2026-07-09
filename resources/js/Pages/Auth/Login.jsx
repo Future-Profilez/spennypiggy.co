@@ -619,6 +619,22 @@ export default function Login({ status, canResetPassword }) {
                                             </Link>
                                         </div>
                                     )}
+
+                                    {/* Persistent login: keeps the user signed in beyond the session window */}
+                                    <div className="flex items-center justify-center mt-3 relative z-1">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                name="remember"
+                                                checked={data.remember}
+                                                onChange={(e) =>
+                                                    setData("remember", e.target.checked)
+                                                }
+                                                className="w-4 h-4 accent-[#FF007F] cursor-pointer"
+                                            />
+                                            Remember me
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {/* Login Button */}

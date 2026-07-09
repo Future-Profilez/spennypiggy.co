@@ -1017,7 +1017,9 @@ class AuthenticatedSessionController extends Controller
                 'email' => $email,
                 'password' => $password,
             ];
-            if (Auth::attempt($credentials)) {
+            // Persistent login: honour "Remember me" for 2FA users too.
+            // Defaults to false when the 2FA form doesn't post `remember`, so no behaviour change.
+            if (Auth::attempt($credentials, $request->boolean('remember'))) {
 
                 $request->session()->regenerate();
                 $user = Auth::user();
