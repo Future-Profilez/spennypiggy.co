@@ -177,6 +177,7 @@ class ShopsController extends Controller
                 'slot_limitation' => $request->slot_limitation ?? null,
                 'special_member_price' => $request->special_member_price ?? null,
                 'quantity_allow' => $request->quantity_allow ?? null,
+                'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both',
             ]);
         } else {
             $shop = Shop::create([
@@ -195,6 +196,7 @@ class ShopsController extends Controller
                 'slot_limitation' => $request->slot_limitation ?? null,
                 'special_member_price' => $request->special_member_price ?? null,
                 'quantity_allow' => $request->quantity_allow ?? null,
+                'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both',
                 'shipping_profile_id' => $request->shipping_profile_id ?? null,
                 'shipping_information' => $request->shipping_info ?? null
             ]);
@@ -357,6 +359,7 @@ class ShopsController extends Controller
                     'slot_limitation' => $request->slot_limitation ?? null,
                     'special_member_price' => $request->special_member_price ?? null,
                     'quantity_allow' => $request->quantity_allow ?? 0,
+                    'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : $shop->payment_methods_accepted,
                 ]);
             } else {
                 Shop::where('uuid', $uuid)->update([
@@ -376,6 +379,7 @@ class ShopsController extends Controller
                     'slot_limitation' => $request->slot_limitation ?? null,
                     'special_member_price' => $request->special_member_price ?? null,
                     'quantity_allow' => $request->quantity_allow ?? null,
+                    'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : $shop->payment_methods_accepted,
                     'shipping_profile_id' => $request->shipping_profile_id ?? null,
                     'shipping_information' => $request->shipping_info ?? null
                 ]);
@@ -903,12 +907,31 @@ class ShopsController extends Controller
 
             $chargeCurrency = $shop->user->default_currency ?? 'GBP';
 
+            // Resolve requested payment method (card|bank) against listing
+            // preference, progressive tiers, and creator capabilities.
+            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+                $request->input('payment_method', 'card'),
+                $shop->payment_methods_accepted ?? 'both',
+                $listedPriceToGrossUp,
+                $chargeCurrency,
+                Auth::user(),
+                request()->query('email'),
+                $shop->user->account_id
+            );
+            if (!($methodResolution['ok'] ?? false)) {
+                return response()->json([
+                    'status' => false,
+                    'code' => $methodResolution['code'],
+                    'msg' => $methodResolution['message'],
+                ]);
+            }
+
             // Fetch creator risk metrics for reserve calculation
             $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shop->user->uuid]);
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use new gross-up flow with the full price the creator expects to receive
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $chargeCurrency, $reserveRate);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $chargeCurrency, $reserveRate, $methodResolution['fee_profile']);
             $applicationFeeAmount = $breakdown['application_fee'] ?? 0;
 
             $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
@@ -940,6 +963,7 @@ class ShopsController extends Controller
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
                 'total_paid' => (float) ($breakdown['total_supporter_pays'] ?? $listedPriceToGrossUp),
+                'fee_profile' => $methodResolution['fee_profile'],
                 'tax_amount' => 0,
                 'vat_tax_amount' => $vatAmount,
                 'shipping_amount' => $shipping_price,
@@ -963,7 +987,7 @@ class ShopsController extends Controller
             $sessionCreate = null;
             $connectedAccountId = $shop->user->account_id;
 
-            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+            if ($methodResolution['fee_profile'] === 'card' && !StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
                 return response()->json([
                     'status' => false,
                     'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
@@ -996,7 +1020,7 @@ class ShopsController extends Controller
                     ],
                 ]],
                 'mode' => 'payment',
-                'payment_method_types' => ['card'],
+                'payment_method_types' => $methodResolution['payment_method_types'],
                 'customer_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                 'metadata' => $metadata,
                 'payment_intent_data' => [
@@ -1007,8 +1031,9 @@ class ShopsController extends Controller
                 ],
             ];
 
-            // Check if we need to force 3DS
-            if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
+            // Check if we need to force 3DS (risk engine or £1k+ tier fallback; card sessions only)
+            if ($methodResolution['fee_profile'] === 'card'
+                && (in_array('FORCE_3DS', $riskData['reason_codes'] ?? []) || $methodResolution['force_3ds'])) {
                 $payload['payment_method_options'] = [
                     'card' => [
                         'request_three_d_secure' => 'any',
@@ -1064,6 +1089,28 @@ class ShopsController extends Controller
                 if (!$stripeid) {
                     Log::error("No ShopPayment found for UUID: $id");
                     return redirect()->back()->with('error', 'Invalid payment ID.');
+                }
+
+                // Delayed-settlement bank methods (SEPA/ACH): don't fulfil on the
+                // redirect while the debit is still clearing — the
+                // async_payment_succeeded webhook completes fulfilment later.
+                if ($stripeid->fee_profile === 'bank' && $stripeid->payment_status !== 'paid') {
+                    $settled = false;
+                    try {
+                        $session = \App\StripeControl::getCheckoutSession($stripeid->session_id, $stripeid->shop->user->account_id);
+                        $settled = $session && ($session->payment_status ?? null) === 'paid';
+                    } catch (\Exception $e) {
+                        // Fail closed: never fulfil an unconfirmed bank payment on a
+                        // transient Stripe error — the webhook completes it later.
+                        Log::error('Failed settlement check for bank shop payment', ['error' => $e->getMessage()]);
+                    }
+
+                    if (!$settled) {
+                        $stripeid->update(['payment_status' => 'processing']);
+
+                        return redirect(route('user.show', [$stripeid->shop->user->username]))
+                            ->with('success', 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.');
+                    }
                 }
 
                 $existingUserPayment = \App\Models\UserPayment::where('payment_details', json_encode($stripeid->session_id, true))->exists();

@@ -79,7 +79,7 @@ class StripeController extends Controller
         // Find the latest active subscription for this user
         $charge = MonthlyCharge::where('user_id', $user->id)
             ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
-            ->latest()
+            ->newestFirst()
             ->first();
 
         if (!$charge || !$charge->stripe_id) {
@@ -110,7 +110,7 @@ class StripeController extends Controller
         }
         $charge = MonthlyCharge::where('user_id', $user->id)
             ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
-            ->latest()
+            ->newestFirst()
             ->first();
 
         if (!$charge || !$charge->stripe_id) {
@@ -1404,6 +1404,27 @@ class StripeController extends Controller
             $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner_id);
             $reserveRate = $metrics->reserve_percent ?? 0;
 
+            // Resolve requested payment method (card|bank) against progressive
+            // tiers for the whole basket (one creator per cart).
+            $cartListedTotal = 0;
+            foreach ($getdata as $dd) {
+                $ddVat = ((float) $dd->amount * (float) ($dd->owner->vat_amount_percentage ?? 0)) / 100;
+                $cartListedTotal += ((float) $dd->amount + $ddVat) * $dd->quantity;
+            }
+            $cartCurrency = $getdata[0]->wish->currency ?? 'USD';
+            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+                request()->input('payment_method', 'card'),
+                'both',
+                $cartListedTotal,
+                $cartCurrency,
+                Auth::user(),
+                Auth::user()->email ?? null,
+                $getdata[0]->owner->account_id
+            );
+            if (!($methodResolution['ok'] ?? false)) {
+                return back()->with('error', $methodResolution['message']);
+            }
+
             foreach ($getdata as $dd) {
                 $basePrice = (float) $dd->amount;
                 $vatPercent = (float) ($dd->owner->vat_amount_percentage ?? 0);
@@ -1411,7 +1432,7 @@ class StripeController extends Controller
                 $listedPriceWithVat = $basePrice + $vatAmount;
 
                 // Use new gross-up flow
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $dd->wish->currency ?? 'USD', $reserveRate);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $dd->wish->currency ?? 'USD', $reserveRate, $methodResolution['fee_profile']);
 
                 $totalPrice = $breakdown['total_supporter_pays'];
                 $applicationFee = $breakdown['application_fee'];
@@ -1435,16 +1456,25 @@ class StripeController extends Controller
 
             $stripe = StripeControl::getClient();
 
-            $sessionCreate = $stripe->checkout->sessions->create([
+            $cartSessionPayload = [
                 'success_url' => route('checkout.success', [$owner_id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel', [$owner_id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 'line_items' => $lineItems,
                 'mode' => 'payment',
+                'payment_method_types' => $methodResolution['payment_method_types'],
                 'payment_intent_data' => [
                     'application_fee_amount' => (int)($totalApplicationFee * 100),
                     'receipt_email' => $user->email,
                     'description' => "Wish/Cart Payment for {$getdata[0]->owner->username} (Total value including all fees)",
                 ],
+            ];
+            if ($methodResolution['fee_profile'] === 'card' && $methodResolution['force_3ds']) {
+                $cartSessionPayload['payment_method_options'] = [
+                    'card' => ['request_three_d_secure' => 'any'],
+                ];
+            }
+
+            $sessionCreate = $stripe->checkout->sessions->create(array_merge($cartSessionPayload, [
                 'customer_email' => $user->email,
                 'metadata' => Helpers::buildStripeMetadata('wishlist', $getdata[0], [
                     'user_id' => Auth::id(),
@@ -1453,14 +1483,16 @@ class StripeController extends Controller
                     'deliverable_type' => 'media_bundle',
                     'certificate' => 'true',
                     'product_type' => 'wish_one_off',
+                    'fee_profile' => $methodResolution['fee_profile'],
                     'digital_waiver_confirmed_at' => now()->toDateTimeString(),
                     'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
                 ]),
-            ], [
+            ]), [
                 'stripe_account' => $getdata[0]->owner->account_id,
             ]);
 
             $stripePaymentDetail = StripePaymentDetail::create([
+                'fee_profile' => $methodResolution['fee_profile'],
                 'amount_subtotal' => $totalCreatorNet,
                 'amount_total' => $sessionCreate->amount_total / 100,
                 'tax' => $totalApplicationFee,
@@ -1671,6 +1703,24 @@ class StripeController extends Controller
                 $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $cart[0]->owner_id);
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
+                // Resolve requested payment method (card|bank) for the basket total.
+                $cartListedTotal = $cart->sum(function ($item) {
+                    $vat = ((float) $item->amount * (float) ($item->owner->vat_amount_percentage ?? 0)) / 100;
+                    return ((float) $item->amount + $vat) * $item->quantity;
+                });
+                $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+                    request()->input('payment_method', 'card'),
+                    'both',
+                    $cartListedTotal,
+                    $currency,
+                    null,
+                    request()->query('email'),
+                    $cart[0]->owner->account_id ?? ''
+                );
+                if (!($methodResolution['ok'] ?? false)) {
+                    return redirect()->back()->with('error', $methodResolution['message']);
+                }
+
                 foreach ($cart as $value) {
                     $basePrice = (float) $value->amount;
                     $vatPercent = (float) ($value->owner->vat_amount_percentage ?? 0);
@@ -1678,7 +1728,7 @@ class StripeController extends Controller
                     $listedPriceWithVat = $basePrice + $vatAmount;
 
                     // Use new gross-up flow
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $currency, $reserveRate);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $currency, $reserveRate, $methodResolution['fee_profile']);
 
                     $totalPrice = $breakdown['total_supporter_pays'];
                     $applicationFee = $breakdown['application_fee'];
@@ -1708,11 +1758,20 @@ class StripeController extends Controller
                 }
 
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-                $sessioncreate = $stripe->checkout->sessions->create([
+                $anonSessionPayload = [
                     'success_url' => route('checkout.anonymous.success', [$device_id]),
                     'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
+                    'payment_method_types' => $methodResolution['payment_method_types'],
+                ];
+                if ($methodResolution['fee_profile'] === 'card' && $methodResolution['force_3ds']) {
+                    $anonSessionPayload['payment_method_options'] = [
+                        'card' => ['request_three_d_secure' => 'any'],
+                    ];
+                }
+
+                $sessioncreate = $stripe->checkout->sessions->create($anonSessionPayload + [
                     'payment_intent_data' => [
                         'application_fee_amount' => (int)($totalApplicationFee * 100),
                         'description' => "Anonymous Support Payment for {$creator->username} (Total value including all fees)",
@@ -1740,6 +1799,7 @@ class StripeController extends Controller
                 session(['anonymous_session_id' => $callbackData->id]);
                 $stripeid = StripePaymentDetail::create([
                     'session_id' => $callbackData->id,
+                    'fee_profile' => $methodResolution['fee_profile'],
                     'amount_subtotal' => $subtotal,
                     'amount_total' => $callbackData->amount_total / 100,
                     'tax' => $taxnew,
@@ -1993,7 +2053,23 @@ class StripeController extends Controller
             $vatPercent = $wish->user->vat_amount_percentage ?? 0;
             $vatAmountCalculated = $price * $vatPercent / 100;
             $priceWithVat = $price + $vatAmountCalculated;
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
+
+            // Bank payments are one-off only — recurring wish subscriptions stay on card.
+            $requestedMethod = $reccure === 'onetime' ? $request->input('payment_method', 'card') : 'card';
+            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+                $requestedMethod,
+                $wish->payment_methods_accepted ?? 'both',
+                $priceWithVat,
+                $chargeCurrency,
+                Auth::user(),
+                $request->email ?? null,
+                $wish->user->account_id
+            );
+            if (!($methodResolution['ok'] ?? false)) {
+                return back()->with('error', $methodResolution['message']);
+            }
+
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, 0, $methodResolution['fee_profile']);
             $finalTotalAmount = $breakdown['total_supporter_pays'];
 
             $sub = WishItemSubscription::create([
@@ -2140,7 +2216,8 @@ class StripeController extends Controller
             $totalChargeAmount = round($finalTotalAmount * $multiplier);
 
             // Check if creator has card_payments capability to determine payment flow
-            $hasCardPayments = StripeControl::hasCardPaymentsCapability($connectedAccountId);
+            $hasCardPayments = $methodResolution['fee_profile'] !== 'card'
+                || StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
             if (!$hasCardPayments) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
@@ -2154,15 +2231,17 @@ class StripeController extends Controller
 
             $payload = [
                 'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
-                'payment_method_types' => ['card'],
+                'payment_method_types' => $methodResolution['payment_method_types'],
                 'line_items' => $lineItems, // Total amount determined by line items
                 'customer' => $customer_id,
                 'success_url' => $successUrl,
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
 
-            // Risk Engine: Force 3DS if Step-Up required
-            if (isset($force3DS) && $force3DS) {
+            // Risk Engine: Force 3DS if Step-Up required (or £1k+ tier card fallback; card sessions only)
+            $force3DS = $methodResolution['fee_profile'] === 'card'
+                && ((isset($force3DS) && $force3DS) || $methodResolution['force_3ds']);
+            if ($force3DS) {
                 $payload['payment_method_options'] = [
                     'card' => [
                         'request_three_d_secure' => 'any',
@@ -2591,6 +2670,19 @@ class StripeController extends Controller
                 }
 
                 return to_route('thank-you', $thankYouParams)->with('success', $message);
+            }
+
+            // Delayed-settlement bank methods (SEPA/ACH): the one-time wish
+            // session completes with payment_status 'unpaid' while the debit
+            // clears — fulfilment runs via the async_payment_succeeded webhook.
+            if ($session->payment_status === 'unpaid'
+                && ($session->metadata->fee_profile ?? null) !== 'card'
+                && !empty(array_intersect(['pay_by_bank', 'sepa_debit', 'us_bank_account'], $session->payment_method_types ?? []))) {
+                $sub->status = 'processing';
+                $sub->save();
+
+                return to_route('user.show', ['username' => $sub->wish_item->user->username])
+                    ->with('success', 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.');
             }
 
             SubscriptionFailed::dispatch($sub);
@@ -3299,7 +3391,26 @@ class StripeController extends Controller
             $vatAmount = $basePrice * $vatPercent / 100;
             $priceWithVat = $basePrice + $vatAmount;
 
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $sourceCurrency);
+            // Resolve requested payment method (card|bank) against listing
+            // preference, progressive tiers, and creator capabilities.
+            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+                $request->input('payment_method', 'card'),
+                $goal->payment_methods_accepted ?? 'both',
+                $priceWithVat,
+                $sourceCurrency,
+                Auth::user(),
+                $request->email ?? null,
+                $creator->account_id
+            );
+            if (!($methodResolution['ok'] ?? false)) {
+                return response()->json([
+                    'status' => false,
+                    'code' => $methodResolution['code'],
+                    'msg' => $methodResolution['message'],
+                ]);
+            }
+
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $sourceCurrency, 0, $methodResolution['fee_profile']);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -3337,6 +3448,7 @@ class StripeController extends Controller
                 'guest_email' => $request->email,
                 'currency' => $sourceCurrency,
                 'amount' => $basePrice,
+                'fee_profile' => $methodResolution['fee_profile'],
                 'tax' => $breakdown['total_fees'],
                 'vat_amount' => round($vatAmount, $precision, PHP_ROUND_HALF_UP),
                 'total_paid' => $finalTotalAmount,
@@ -3362,7 +3474,8 @@ class StripeController extends Controller
             ];
 
             // Check if creator has card_payments capability
-            $hasCardPayments = StripeControl::hasCardPaymentsCapability($creator->account_id);
+            $hasCardPayments = $methodResolution['fee_profile'] !== 'card'
+                || StripeControl::hasCardPaymentsCapability($creator->account_id);
 
             if (!$hasCardPayments) {
                 return response()->json([
@@ -3396,7 +3509,7 @@ class StripeController extends Controller
 
             $payload = [
                 "mode" => 'payment',
-                'payment_method_types' => ['card'],
+                'payment_method_types' => $methodResolution['payment_method_types'],
                 'line_items' => $lineItems,
                 'payment_intent_data' => $paymentIntentData,
                 'customer_email' => $user->email ?? $request->email,
@@ -3404,8 +3517,8 @@ class StripeController extends Controller
                 'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
             ];
 
-            // Check if we need to force 3DS
-            if ($force3DS) {
+            // Check if we need to force 3DS (risk engine or £1k+ tier fallback; card sessions only)
+            if ($methodResolution['fee_profile'] === 'card' && ($force3DS || $methodResolution['force_3ds'])) {
                 $payload['payment_method_options'] = [
                     'card' => [
                         'request_three_d_secure' => 'any',
@@ -3675,6 +3788,16 @@ class StripeController extends Controller
             }
 
             $tip_pay->save();
+            // Delayed-settlement bank methods (SEPA/ACH): fulfilment runs via
+            // the async_payment_succeeded webhook once the debit clears.
+            if ($tip_pay->fee_profile === 'bank' && $session->payment_status === 'unpaid') {
+                $tip_pay->status = 'processing';
+                $tip_pay->save();
+
+                return to_route('user.show', ['username' => $tip_pay->creator->username])
+                    ->with('success', 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.');
+            }
+
             return to_route('user.show', ['username' => $tip_pay->creator->username])->with('warning', "Payment is in {$session->payment_status} status.");
         } catch (Exception $e) {
             Log::error("Stripe Checkout Error: " . $e->getMessage());
@@ -3884,14 +4007,27 @@ class StripeController extends Controller
         $tax = round($price * $vatRate / 100, 2);
         $finalTotalAmount = $price + $tax;
 
-        if (!$user->stripe_id) {
+        // A stored customer can be missing or deleted on Stripe (deleted test data, or a
+        // key rotated to a different Stripe account). Checkout rejects both, so re-create.
+        $needsCustomer = !$user->stripe_id;
+
+        if ($user->stripe_id) {
+            try {
+                $existingCustomer = StripeControl::retrieveCustomer($user->stripe_id);
+                $needsCustomer = !$existingCustomer || ($existingCustomer->deleted ?? false);
+            } catch (Exception $e) {
+                Log::warning("StripeController: Customer {$user->stripe_id} unusable for user {$user->id}: " . $e->getMessage());
+                $needsCustomer = true;
+            }
+        }
+
+        if ($needsCustomer) {
             $customer = StripeControl::createCustomer([
                 'email' => $user->email,
                 'name' => $user->name,
             ], '');
 
-            $customer_id = $customer->id;
-            $user->stripe_id = $customer_id;
+            $user->stripe_id = $customer->id;
             $user->save();
 
             // Clear cache since user data changed
@@ -3976,7 +4112,8 @@ class StripeController extends Controller
             return Inertia::location($session->url);
         } catch (Exception $e) {
             $sub->delete();
-            return back()->with('error', $e->getMessage());
+            Log::error("StripeController: Mandatory subscription checkout failed for user {$user->id} (customer {$user->stripe_id}): " . $e->getMessage());
+            return back()->with('error', 'We could not start checkout: ' . $e->getMessage());
         }
     }
 

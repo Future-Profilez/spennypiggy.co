@@ -10,6 +10,7 @@ import Turnstile from "@/Components/Turnstile";
 import Social from "../Auth/Social";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import SummaryReceipt, { PayButton, SectionLabel } from "@/Components/Checkout/SummaryReceipt";
 import axios from "axios";
 
 export default function SubCheckout(props) {
@@ -361,63 +362,36 @@ export default function SubCheckout(props) {
         <>
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${membership?.level} membership`} />
-                <div className={`bg-white py-12 px-0  lg:px-2`}>
-                    <div className="containerbox mx-auto">
-                        <div className="cartMain max-w-[800px] mx-auto">
-                            <div className="md:flex w-full gap-10 mb-10">
-                                <div className="w-full md:max-w-[40%]">
+                <div className="bg-white py-6 md:py-12 px-4">
+                    <div className="max-w-[1040px] mx-auto">
+                        <div className="mb-6 md:mb-8">
+                            <h1 className="font-black uppercase tracking-tight text-2xl md:text-3xl leading-none">
+                                Join {membership?.level} membership
+                            </h1>
+                            <p className="text-sm font-bold text-black/60 mt-2">
+                                Membership from {membership?.user?.name || ""}{" "}
+                                <Link
+                                    className="text-[#FF007F] hover:underline"
+                                    target="_blank"
+                                    href={`/${membership?.user?.username || ""}`}
+                                >
+                                    @{membership?.user?.username || ""}
+                                </Link>
+                            </p>
+                        </div>
+
+                        <div className="grid lg:grid-cols-[1fr_400px] gap-6 lg:gap-10 items-start">
+                            <div className="min-w-0">
+                                {/* <div className="max-w-[380px] mb-6">
                                     <Membership hidebtn={true} item={membership} />
-                                </div>
-                                <div className="pt-6">
-                                    <h2 className="pb-1 text-3xl font-bold">
-                                        Membership Basket for{" "}
-                                        {membership?.user?.name || " "}
-                                        <Link
-                                            className="text-violet-600"
-                                            target="_blank"
-                                            href={`/${
-                                                membership?.user?.username || ""
-                                            }`}
-                                        >
-                                            @{membership?.user?.username || ""}
-                                        </Link>
-                                    </h2>
-                                    <p className="pb-4 mt-3">
-                                        You are about to join {membership?.level}{" "}
-                                        membership.
-                                    </p>
-                                    <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
-                                        <ul className="w-full">
-                                            <li className="flex justify-between mb-3">
-                                                <span className="min-w-[100px] text-xl block">Total:</span>
-                                                <div className="text-right">
-                                                    <strong className="block text-xl">
-                                                        {formatMultiPrice(finalTotalAmount, membership?.currency)}
-                                                    </strong>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-
-                                    {display_currency && display_currency !== membership?.currency && (
-                                        <div className="text-normal text-gray-500 font-medium mt-1">
-                                            ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
-                                        </div>
-                                    )}
-
-                                    <span className="text-normal text-gray-500 font-normal mt-1 leading-tight block">
-                                        *Includes platform and payment processing fees. You will be charged in {membership?.currency}.
-                                    </span>
-                                    
-                                </div>
-                                
-                            </div>
-                            <div className="addMessage mt-5">
+                                </div> */}
+                            <div className="addMessage">
                                 <ul className="flex flex-wrap">
                                     <li className="w-full">
-                                        <label className=" mb-2 text-sm font-medium text-gray-900">Add Message </label>
+                                        <SectionLabel>Message for the creator</SectionLabel>
                                         <textarea
-                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                            rows={3}
+                                            className="w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
                                             onKeyUp={(e) => setData("message",e.target.value)}
                                             placeholder="Write message in under 800 Words..."
                                             defaultValue={data.message}
@@ -427,14 +401,13 @@ export default function SubCheckout(props) {
 
 
                                     <li className="w-full mt-3">
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            <div className="w-full mb-4">
-                                                <label className=" text-left ">
-                                                    Email{" "}
+                                        <div className="">
+                                            <div className=" mb-4 !text-start">
+                                                <label className="text-xs font-bold text-black/60 !mb-2">
+                                                    Email <span className="text-black/40 font-bold"> — stays private </span>
                                                 </label>
-                                                
                                                 <input
-                                                    className={`${auth && auth?.user && auth?.user?.email ? "disabled":""} mt-2 border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500`}
+                                                    className={`${auth && auth?.user && auth?.user?.email ? "opacity-60 cursor-not-allowed" : ""} w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -455,17 +428,17 @@ export default function SubCheckout(props) {
                                                 <span className=" text-xs text-red-600">
                                                     {errors.email}
                                                 </span>
-                                                <p className="mt-2 text-sm text-gray-500 mb-1">
-                                                    Your e-mail remains
-                                                    private.
-                                                </p>
                                             </div>
+                                            <p className="mt-2 text-sm text-gray-500 mb-1">
+                                                Your e-mail remains
+                                                private.
+                                            </p>
                                             <div className="w-full mb-4">
-                                                <label className=" text-left">
+                                                <label className="text-xs !text-start font-bold text-black/60 block mb-1">
                                                     From
                                                 </label>
                                                 <input
-                                                    className="mt-2 border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
+                                                    className="w-full border-[3px] border-black !rounded-[16px] px-4 py-2 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -481,6 +454,7 @@ export default function SubCheckout(props) {
                                                 </span>
                                             </div>
                                         </div>
+                                         
                                     </li>
                                     <li className="cheklistbox mt-6">
                                         <label
@@ -524,35 +498,61 @@ export default function SubCheckout(props) {
                                         />
                                     </div>
                                     ) : null}
-                                <div className="mt-4 flex items-center justify-center">
-                                    <button
-                                        onClick={handleSubmit}
-                                        className={`${
-                                            !data.agree ||
-                                            !data.digital_waiver ||
-                                            processing ||
-                                            checking ||
-                                            !card_capabilities
-                                                ? "disabled"
-                                                : ""
-                                        } button-pink btn-shadow shadow-[4px_4px_0px_0px_#FF007F]lack text-white md !px-8 mt-3 text-center`}
+                            </div>
+                            </div>
+
+                            <div className="lg:sticky lg:top-24">
+                                <SummaryReceipt
+                                    itemTitle={`${membership?.level || ""} membership`}
+                                    itemSub={
+                                        membership?.level == "lifetime"
+                                            ? "One-time payment"
+                                            : "Monthly membership"
+                                    }
+                                    creatorName={membership?.user?.name}
+                                    creatorUsername={membership?.user?.username}
+                                    rows={
+                                        display_currency &&
+                                        display_currency !== membership?.currency
+                                            ? [
+                                                  {
+                                                      label: `≈ in ${display_currency}`,
+                                                      value: `${formatMultiPrice(finalTotalAmount, display_currency)} (estimated)`,
+                                                  },
+                                              ]
+                                            : []
+                                    }
+                                    total={formatMultiPrice(
+                                        finalTotalAmount,
+                                        membership?.currency,
+                                    )}
+                                    totalNote={`Includes all fees. You'll be charged in ${membership?.currency}.`}
+                                    renewalNote={
+                                        membership?.level == "lifetime"
+                                            ? "One-time · lifetime access"
+                                            : "Renews monthly · cancel anytime"
+                                    }
+                                >
+                                    <PayButton
+                                        label={`${membership?.level == "lifetime" ? "Join now" : "Subscribe"} · ${formatMultiPrice(
+                                            finalTotalAmount,
+                                            membership && membership?.currency,
+                                        )}`}
+                                        processing={processing || checking}
                                         disabled={
                                             !data.agree ||
                                             !data.digital_waiver ||
-                                            processing ||
-                                            checking ||
                                             !card_capabilities
                                         }
-                                    >
-                                        {processing || checking
-                                            ? "Processing..."
-                                            : `${membership?.level == "lifetime" ? "Join Now for" : "Subscribe Now for"} ${formatMultiPrice(
-                                                finalTotalAmount,
-                                                membership && membership?.currency
-                                            )}`}
-                                    </button>
-                                    
-                                </div>
+                                        onClick={handleSubmit}
+                                    />
+                                    {(!data.agree || !data.digital_waiver) && (
+                                        <p className="text-[10px] font-bold text-black/50 text-center mt-2">
+                                            Accept the terms on the left to
+                                            continue.
+                                        </p>
+                                    )}
+                                </SummaryReceipt>
                             </div>
                         </div>
                     </div>

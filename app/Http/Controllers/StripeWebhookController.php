@@ -207,6 +207,10 @@ class StripeWebhookController extends Controller
                     $this->handleAsyncPaymentFailed($data);
                     break;
 
+                case 'checkout.session.expired':
+                    $this->handleCheckoutSessionExpired($data);
+                    break;
+
                 case 'invoice.paid':
                     // Handles Wish/Bill/Membership subscriptions
                     $this->handleInvoicePaid($data);
@@ -880,6 +884,25 @@ class StripeWebhookController extends Controller
                 'session_id' => $session->id,
                 'metadata' => $metadata
             ]);
+
+            // Delayed-settlement bank methods (SEPA/ACH): the session completes
+            // with payment_status 'unpaid' while the debit clears. Defer ALL
+            // fulfilment to checkout.session.async_payment_succeeded — mark the
+            // risk-ledger payment 'processing' and stop here.
+            if (($session->payment_status ?? 'paid') === 'unpaid') {
+                \App\Models\Payment::where('stripe_session_id', $session->id)
+                    ->whereIn('status', ['initiated', 'review_hold'])
+                    ->update([
+                        'status' => 'processing',
+                        'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                    ]);
+
+                Log::info('Delayed-settlement session: fulfilment deferred to async_payment_succeeded', [
+                    'session_id' => $session->id,
+                ]);
+
+                return response()->json(['status' => 'processing_deferred']);
+            }
 
             try {
                 // Wait briefly for the checkout controller to finish writing the payment record
@@ -2862,10 +2885,22 @@ class StripeWebhookController extends Controller
     {
         Log::info("Processing async payment succeeded", ['session_id' => $session->id]);
 
+        // Delayed-settlement bank methods (SEPA/ACH): the completed-session
+        // fulfilment was deferred while the debit cleared — run it now. The
+        // per-product processors are idempotent (firstOrCreate / exists guards),
+        // so re-entry is safe.
+        try {
+            $this->handleCheckoutSessionCompleted($session, $session->metadata ?? null);
+        } catch (\Exception $e) {
+            Log::error('Async settlement: deferred fulfilment failed: ' . $e->getMessage(), [
+                'session_id' => $session->id,
+            ]);
+        }
+
         $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
         if ($purchase) {
-            // Only update if currently pending or unpaid
-            if (in_array($purchase->status, ['pending', 'unpaid'])) {
+            // Only update if currently pending, processing or unpaid
+            if (in_array($purchase->status, ['pending', 'unpaid', 'processing'])) {
                 $purchase->status = 'paid';
                 $purchase->save();
                 Log::info("Updated TaskPurchase status to paid", ['id' => $purchase->id]);
@@ -2890,11 +2925,38 @@ class StripeWebhookController extends Controller
             $piggyPot->save();
             Log::info("Updated PiggyPotContribution status to succeeded", ['id' => $piggyPot->id]);
         }
+
+        $shopPay = \App\Models\ShopPayment::where('session_id', $session->id)->first();
+        if ($shopPay && !in_array($shopPay->payment_status, ['paid'])) {
+            $shopPay->payment_status = 'paid';
+            $shopPay->save();
+            Log::info("Updated ShopPayment status to paid (async settlement)", ['id' => $shopPay->id]);
+        }
+
+        $tipPay = \App\Models\TipGoalsPayment::where('session_id', $session->id)->first();
+        if ($tipPay && !in_array($tipPay->status, ['paid'])) {
+            $tipPay->status = 'paid';
+            $tipPay->save();
+            Log::info("Updated TipGoalsPayment status to paid (async settlement)", ['id' => $tipPay->id]);
+        }
     }
 
     /**
      * Handle Async Payment Failed
      */
+    /**
+     * A checkout session the supporter never completed. Close out the risk-ledger
+     * Payment row so it stops sitting at 'initiated' forever.
+     */
+    private function handleCheckoutSessionExpired($session)
+    {
+        Log::info("Processing checkout session expired", ['session_id' => $session->id]);
+
+        \App\Models\Payment::where('stripe_session_id', $session->id)
+            ->where('status', 'initiated')
+            ->update(['status' => 'expired']);
+    }
+
     private function handleAsyncPaymentFailed($session)
     {
         Log::info("Processing async payment failed", ['session_id' => $session->id]);
@@ -2933,6 +2995,24 @@ class StripeWebhookController extends Controller
             $piggyPot->save();
             Log::info("Updated PiggyPotContribution status to failed", ['id' => $piggyPot->id]);
         }
+
+        $shopPay = \App\Models\ShopPayment::where('session_id', $session->id)->first();
+        if ($shopPay && $shopPay->payment_status !== 'paid') {
+            $shopPay->payment_status = 'failed';
+            $shopPay->save();
+            Log::info("Updated ShopPayment status to failed (async settlement)", ['id' => $shopPay->id]);
+        }
+
+        $tipPay = \App\Models\TipGoalsPayment::where('session_id', $session->id)->first();
+        if ($tipPay && $tipPay->status !== 'paid') {
+            $tipPay->status = 'failed';
+            $tipPay->save();
+            Log::info("Updated TipGoalsPayment status to failed (async settlement)", ['id' => $tipPay->id]);
+        }
+
+        \App\Models\Payment::where('stripe_session_id', $session->id)
+            ->whereIn('status', ['initiated', 'processing', 'review_hold'])
+            ->update(['status' => 'failed']);
     }
 
     /**

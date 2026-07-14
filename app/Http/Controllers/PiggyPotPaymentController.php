@@ -120,7 +120,9 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        if (!StripeControl::hasCardPaymentsCapability($creator->account_id)) {
+        $requestedMethod = $request->input('payment_method', 'card') === 'bank' ? 'bank' : 'card';
+
+        if ($requestedMethod === 'card' && !StripeControl::hasCardPaymentsCapability($creator->account_id)) {
             return response()->json([
                 'status' => false,
                 'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled'])
@@ -170,7 +172,26 @@ class PiggyPotPaymentController extends Controller
         // Usually Helpers::calculateStripeDirectChargeFlow expects base amount and adds fees.
         // Let's use the provided amount as the base amount and calculate fees if that's how it's designed.
         // If UI says "Amounts shown are estimates", it might be adding fees. Let's look at TipInner logic.
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency);
+        // Resolve requested payment method (card|bank) against listing
+        // preference, progressive tiers, and creator capabilities.
+        $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+            $requestedMethod,
+            $piggyPot->payment_methods_accepted ?? 'both',
+            $basePrice,
+            $sourceCurrency,
+            $user,
+            $request->email ?? null,
+            $creator->account_id
+        );
+        if (!($methodResolution['ok'] ?? false)) {
+            return response()->json([
+                'status' => false,
+                'code' => $methodResolution['code'],
+                'msg' => $methodResolution['message'],
+            ]);
+        }
+
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency, 0, $methodResolution['fee_profile']);
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -218,6 +239,7 @@ class PiggyPotPaymentController extends Controller
             'guest_email' => $request->email,
             'currency' => $sourceCurrency,
             'amount' => $basePrice,
+            'fee_profile' => $methodResolution['fee_profile'],
             'tax' => $breakdown['total_fees'],
             'vat_amount' => $vatAmount,
             'total_paid' => $finalTotalAmount,
@@ -259,7 +281,7 @@ class PiggyPotPaymentController extends Controller
 
         $payload = [
             "mode" => 'payment',
-            'payment_method_types' => ['card'],
+            'payment_method_types' => $methodResolution['payment_method_types'],
             'line_items' => $lineItems,
             'payment_intent_data' => $paymentIntentData,
             'customer_email' => $user?->email ?? $request->email,
@@ -267,7 +289,7 @@ class PiggyPotPaymentController extends Controller
             'cancel_url' => route('piggy-pot.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]) . '?redirect=' . urlencode($redirectUrl),
         ];
 
-        if ($force3DS) {
+        if ($methodResolution['fee_profile'] === 'card' && ($force3DS || $methodResolution['force_3ds'])) {
             $payload['payment_method_options'] = [
                 'card' => [
                     'request_three_d_secure' => 'any',
@@ -528,6 +550,21 @@ class PiggyPotPaymentController extends Controller
                 }
 
                 return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
+            }
+
+            // Delayed-settlement bank methods (SEPA/ACH): session completes with
+            // payment_status 'unpaid' while the debit clears — fulfilment runs
+            // via the async_payment_succeeded webhook.
+            if ($pay->fee_profile === 'bank' && in_array($session->payment_status, ['unpaid', 'processing'])) {
+                $pay->status = 'processing';
+                $pay->save();
+
+                $processingMsg = 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.';
+                if ($redirectUrl) {
+                    return redirect($redirectUrl)->with('success', $processingMsg);
+                }
+                return to_route('user.show', ['username' => $pay->creator->username, 'page' => 'piggy-pots'])
+                    ->with('success', $processingMsg);
             }
 
             if ($redirectUrl) {

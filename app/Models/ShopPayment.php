@@ -14,6 +14,7 @@ class ShopPayment extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'fee_profile',
         'uuid',
         'session_id',
         'amount',

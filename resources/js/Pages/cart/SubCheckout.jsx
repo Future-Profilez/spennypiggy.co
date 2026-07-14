@@ -8,6 +8,7 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 
 export default function SubCheckout(props) {
     const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
@@ -23,6 +24,7 @@ export default function SubCheckout(props) {
         agree: false,
         digital_waiver: false,
         anonymous: 0,
+        payment_method: 'card',
     });
 
     // Helper to identify zero decimal currencies
@@ -466,6 +468,17 @@ export default function SubCheckout(props) {
                                     </label>
                                     <p className="text-gray-500 text-sm mb-3" >Your personal email and name will be private.</p>
                                     
+                                    {reccure == 'onetime' && (
+                                        <PaymentMethodSelector
+                                            amount={(parseFloat(String(wish?.price || 0).replace(/,/g, '')) || 0) * (1 + (parseFloat(wish?.user?.vat_amount_percentage) || 0) / 100)}
+                                            currency={wish?.currency || 'GBP'}
+                                            email={data.email || auth?.user?.email}
+                                            value={data.payment_method}
+                                            onChange={(m) => setData('payment_method', m)}
+                                            className="mb-4"
+                                        />
+                                    )}
+
                                     <CheckoutLegalTerms onAgreeChange={(checked) => {
                                         setData('agree', checked);
                                         setData('digital_waiver', checked);

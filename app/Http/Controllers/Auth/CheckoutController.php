@@ -203,7 +203,7 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Unable to process payment. Please check your cart and try again.');
             }
 
-            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+            if (request()->input('payment_method', 'card') !== 'bank' && !StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
                 return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
@@ -214,6 +214,28 @@ class CheckoutController extends Controller
                 'creator_id' => $creator_id,
                 'owner_username' => $owner->username ?? 'unknown'
             ]);
+
+            // Resolve requested payment method (card|bank) against progressive
+            // tiers for the whole basket (one creator per cart checkout).
+            $cartListedTotal = $getdata->sum(function ($item) {
+                if (!$item->wish_item_id || !$item->wish) {
+                    return 0;
+                }
+                $vat = ((float) $item->amount * (float) ($item->owner->vat_amount_percentage ?? 0)) / 100;
+                return ((float) $item->amount + $vat) * $item->quantity;
+            });
+            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+                request()->input('payment_method', 'card'),
+                'both',
+                $cartListedTotal,
+                $chargeCurrency,
+                Auth::user(),
+                request()->query('email'),
+                $connectedAccountId
+            );
+            if (!($methodResolution['ok'] ?? false)) {
+                return redirect()->back()->with('error', $methodResolution['message']);
+            }
 
             $lineItems = [];
             $subtotal = 0;
@@ -249,7 +271,7 @@ class CheckoutController extends Controller
                 $itemAmountWithVat = $itemAmount + $vatAmount;
 
                 // Calculate breakdown using gross-up logic for this item in creator's currency
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $chargeCurrency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $chargeCurrency, 0, $methodResolution['fee_profile']);
 
                 $finalTotalAmount = $breakdown['total_supporter_pays'];
                 $applicationFeeAmount = $breakdown['application_fee'];
@@ -287,8 +309,8 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
 
-            // Check if creator has card_payments capability
-            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+            // Check if creator has card_payments capability (card path only)
+            if ($methodResolution['fee_profile'] === 'card' && !StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
                 return redirect()->back()->with('error', 'This creator cannot receive direct payments at the moment.');
             }
 
@@ -307,8 +329,9 @@ class CheckoutController extends Controller
                 return $riskData;
             }
 
-            // Check if we need to force 3DS
-            $force3ds = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
+            // Check if we need to force 3DS (risk engine or £1k+ tier card fallback; card sessions only)
+            $force3ds = $methodResolution['fee_profile'] === 'card'
+                && (in_array('FORCE_3DS', $riskData['reason_codes'] ?? []) || $methodResolution['force_3ds']);
 
             // Direct Charges Implementation
             $paymentIntentData = [
@@ -333,6 +356,7 @@ class CheckoutController extends Controller
                 'success_url' => $successUrl,
                 'cancel_url' => route('checkout.cancel', [$creator_id]),
                 "mode"  =>  "payment",
+                'payment_method_types' => $methodResolution['payment_method_types'],
                 'line_items' => $lineItems, // This determines the total amount automatically
                 'payment_intent_data' => $paymentIntentData,
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
@@ -431,6 +455,7 @@ class CheckoutController extends Controller
 
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
+                'fee_profile' => $methodResolution['fee_profile'],
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / $multiplier,
                 'tax' => $totalApplicationFee, // Use the total application fee as tax/fee

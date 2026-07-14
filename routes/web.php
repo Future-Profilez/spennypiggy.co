@@ -1016,3 +1016,8 @@ Route::get('/api/user-country', function (\Illuminate\Http\Request $request) {
 Route::post('/video-posters', [VideoPosterController::class, 'resolve'])
     ->middleware('throttle:60,1')
     ->name('video-posters.resolve');
+
+// Method-aware supporter price preview (card vs bank) for the checkout selector.
+Route::post('/payments/price-preview', [\App\Http\Controllers\PaymentMethodController::class, 'preview'])
+    ->middleware('throttle:60,1')
+    ->name('payments.price-preview');

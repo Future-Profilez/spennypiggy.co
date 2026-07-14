@@ -6,6 +6,7 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import toast from "react-hot-toast";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 
@@ -17,6 +18,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         agree: false,
         digital_waiver: false,
         cf_turnstile_response: '',
+        payment_method: 'card',
     });
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
 
@@ -541,6 +543,17 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                     />
                                                 </div>
                                             ) : null}
+                                            {(task.payment_methods_accepted ?? 'both') !== 'card' && (
+                                                <PaymentMethodSelector
+                                                    amount={task.price}
+                                                    currency={task.currency || 'USD'}
+                                                    email={auth?.user?.email}
+                                                    value={data.payment_method}
+                                                    onChange={(m) => setData('payment_method', m)}
+                                                    className="mb-4"
+                                                />
+                                            )}
+
                                             <CheckoutLegalTerms onAgreeChange={(checked) => {
                                                 setData('agree', checked);
                                                 setData('digital_waiver', checked);

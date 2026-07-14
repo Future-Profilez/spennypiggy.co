@@ -13,6 +13,7 @@ class PiggyPotContribution extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'fee_profile',
         'uuid',
         'piggy_pot_id',
         'creator_id',

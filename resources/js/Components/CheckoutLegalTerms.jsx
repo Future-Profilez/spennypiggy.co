@@ -16,7 +16,7 @@ export default function CheckoutLegalTerms({ onAgreeChange }) {
                     className="mt-1 mr-3 rounded border-gray-300 text-[#FF007F] focus:ring-pink-500 cursor-pointer w-5 h-5"
                     onChange={handleCheck}
                 />
-                <span className="text-normal font-medium text-gray-900 leading-tight pt-1">
+                <span className="!text-start text-normal font-medium text-gray-900 leading-tight pt-1">
                     I agree to the <Link target="_blank" className="text-violet-600 hover:underline" href={route("terms-and-conditions")}>Terms of Service</Link> and <Link target="_blank" className="text-violet-600 hover:underline" href={route("terms-and-conditions")}>Privacy Policy</Link>.
                 </span>
             </label>

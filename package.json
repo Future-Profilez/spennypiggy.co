@@ -3,7 +3,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "livebuild": "php vendor/bin/vapor deploy production",
+        "livebuild": "php artisan ziggy:generate && npm run build && php vendor/bin/vapor deploy production",
         "both": "php vendor/bin/vapor deploy development && php vendor/bin/vapor deploy production",
         "devbuild": "php vendor/bin/vapor deploy development",
         "build": "vite build",

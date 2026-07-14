@@ -598,7 +598,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function creatorMonthlySubscription()
     {
-        return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany();
+        return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany('id');
     }
 
     /**
@@ -606,7 +606,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function allMonthlyCharges()
     {
-        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderBy('created_at', 'desc');
+        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderByDesc('id');
     }
 
     public function followers()

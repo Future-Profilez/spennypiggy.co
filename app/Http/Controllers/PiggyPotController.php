@@ -89,6 +89,7 @@ class PiggyPotController extends Controller
 
         $data = $validator->validated();
         $data['user_id'] = Auth::id();
+        $data['payment_methods_accepted'] = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
 
         if (!empty($data['is_pinned']) && $data['is_pinned']) {
             // Unpin others

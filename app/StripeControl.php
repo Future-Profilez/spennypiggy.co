@@ -125,6 +125,31 @@ class StripeControl
     }
 
     /**
+     * Fetch a platform customer.
+     *
+     * Returns null when the customer does not exist on this Stripe account; a
+     * returned object may still carry deleted=true, which Checkout rejects.
+     *
+     * @param string $customer_id Stripe Customer Id
+     * @return \Stripe\Customer|null
+     */
+    public static function retrieveCustomer($customer_id)
+    {
+        self::setClient();
+        try {
+            return self::$client->customers->retrieve($customer_id, []);
+        } catch (InvalidRequestException $e) {
+            return null;
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Delete an Account
      *
      * @param string $account_id Stripe Account Id
@@ -220,6 +245,44 @@ class StripeControl
             return true;
         }
         // });
+    }
+
+    /**
+     * Generic connected-account capability check for bank payment methods.
+     * $capabilities e.g. ['pay_by_bank_payments', 'sepa_debit_payments'].
+     * Returns the subset of Stripe payment_method_types whose capability is
+     * active on the account (fails open like hasCardPaymentsCapability).
+     */
+    public static function activeBankMethodTypes(string $accountId, array $methodTypes): array
+    {
+        if (empty($methodTypes)) {
+            return [];
+        }
+
+        $capabilityMap = [
+            'pay_by_bank' => 'pay_by_bank_payments',
+            'sepa_debit' => 'sepa_debit_payments',
+            'us_bank_account' => 'us_bank_account_ach_payments',
+        ];
+
+        self::setClient();
+        try {
+            $account = self::$client->accounts->retrieve($accountId);
+
+            return array_values(array_filter($methodTypes, function ($type) use ($account, $capabilityMap) {
+                $capability = $capabilityMap[$type] ?? null;
+
+                return $capability && ($account->capabilities->{$capability} ?? null) === 'active';
+            }));
+        } catch (\Exception $e) {
+            Log::error('Failed to check bank payment capabilities: ' . $e->getMessage(), [
+                'account_id' => $accountId,
+            ]);
+
+            // Fail open (same policy as hasCardPaymentsCapability) — Stripe
+            // rejects the session at create time if the capability is missing.
+            return $methodTypes;
+        }
     }
 
     public static function hasTransfersCapability(string $accountId): bool

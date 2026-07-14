@@ -288,12 +288,12 @@ class AuthenticatedSessionController extends Controller
                             ->whereDate('current_end_trial_date', '>=', $now);
                     });
                 })
-                ->latest()
+                ->newestFirst()
                 ->first();
 
             if (!$subscription) {
                 $subscription = MonthlyCharge::where('user_id', $user->id)
-                    ->latest()
+                    ->newestFirst()
                     ->first();
             }
 

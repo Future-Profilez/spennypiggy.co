@@ -517,20 +517,20 @@ Route::middleware('auth')->group(function () {
                                     ->whereDate('current_end_trial_date', '>=', $now);
                             });
                         })
-                        // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
-                        ->latest()
+                        // Newest period first (created_at ties are not reliable here)
+                        ->newestFirst()
                         ->first();
 
                     // If no active period found, get the most recent one
                     if (!$subscription) {
                         $subscription = MonthlyCharge::where('user_id', $user->id)
-                            ->latest()
+                            ->newestFirst()
                             ->first();
                     }
 
                     // Get complete subscription history for the user
                     $historyCollection = MonthlyCharge::where('user_id', $user->id)
-                        ->latest()
+                        ->newestFirst()
                         ->get();
                     $subscription_history = $historyCollection->map(function ($charge) {
                         $fmt = function ($date) {
@@ -738,7 +738,7 @@ Route::middleware('auth')->group(function () {
 
                 if ($user) {
                     $subscription = MonthlyCharge::where('user_id', $user->id)
-                        ->latest()
+                        ->newestFirst()
                         ->first();
 
                     if ($subscription) {

@@ -18,3 +18,10 @@ composer.lock
 package-lock.json
 .phpunit.result.cache
 .DS_Store
+coverage
+docs
+sources
+public/build_old
+public/build/**/*.map
+cookies.txt
+current_dashboard.txt

@@ -9,6 +9,7 @@ import { add_to_cart } from "@/Pages/redux/UserSlice";
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
@@ -116,6 +117,7 @@ export default function UserCarts(props) {
     );
     const [subtotal, setsubtotal] = useState(0);
     const [fee, setFee] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState("card");
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
@@ -611,6 +613,7 @@ export default function UserCarts(props) {
             from: name || "",
             email: email || auth?.user?.email || "",
             anonymous: keepAnonmyous ? 1 : 0,
+            payment_method: paymentMethod,
             device_id: deviceid,
             cf_turnstile_response: skipCaptcha ? "" : captchaToken || "",
             digital_waiver: 1,
@@ -1010,6 +1013,15 @@ export default function UserCarts(props) {
                                             Your personal email and name will be
                                             private.
                                         </p>
+
+                                        <PaymentMethodSelector
+                                            amount={subtotal}
+                                            currency={chargeCurrency}
+                                            email={email || auth?.user?.email}
+                                            value={paymentMethod}
+                                            onChange={setPaymentMethod}
+                                            className="mb-4"
+                                        />
 
                                         <CheckoutLegalTerms
                                             onAgreeChange={(checked) => {

@@ -9,6 +9,7 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import SummaryReceipt, { PayButton, SectionLabel } from "@/Components/Checkout/SummaryReceipt";
 import axios from "axios";
 
 export default function BillCheckout(props) {
@@ -416,95 +417,37 @@ export default function BillCheckout(props) {
         <>
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - content membership`} />
-                <div className={`py-4 md:py-12 px-0 pb-3 lg:px-2 bg-white`}>
-                    <div className="max-w-[800px] mx-auto">
-                        <div className="cartMain p-6 md:p-8 ">
-                            <h2 className="pb-1 wishtitle">
-                                Content membership from {bill?.user?.name || " "}
+                <div className="py-6 md:py-12 px-4 bg-white">
+                    <div className="max-w-[1040px] mx-auto">
+                        <div className="mb-6 md:mb-8">
+                            <h1 className="font-black uppercase tracking-tight text-2xl md:text-3xl leading-none">
+                                Complete your membership
+                            </h1>
+                            <p className="text-sm font-bold text-black/60 mt-2">
+                                Monthly content membership from{" "}
+                                {bill?.user?.name || ""}{" "}
                                 <Link
-                                    className="text-violet-600"
+                                    className="text-[#FF007F] hover:underline"
                                     target="_blank"
                                     href={`/${bill?.user?.username || ""}`}
                                 >
                                     @{bill?.user?.username || ""}
-                                </Link>
-                            </h2>
-                            <p className="pb-4">
-                                You’re purchasing a content membership (min. 3 posts/month).
+                                </Link>{" "}
+                                — at least 3 member posts every month.
                             </p>
+                        </div>
 
-                            <div className="CartItemBox">
-                                <div
-                                    className={`border cartlist flex flex-wrap justify-between items-center content-between border-voilet shadow-voilet rounded-[20px]  mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}
-                                >
-                                    <div className="prodcartbox items-center">
-                                        <div className="productimg">
-                                            <img
-                                                src={
-                                                    bill.perma_link ||
-                                                    uploadedimg
-                                                }
-                                                alt="img"
-                                            />
-                                        </div>
-                                        <div>
-                                            <div className="cartProdTitle pl-3">
-                                                Content membership
-                                                <div className="text-[11px] font-normal text-gray-500">
-                                                    {bill.name}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="cartProRtbox mt-3 items-center">
-                                        <div className="cartPric pr-4">
-                                            {formatMultiPrice(
-                                                finalTotalAmount,
-                                                bill && bill.currency,
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="cartTotal px-0 pt-4 flex justify-end">
-                                <ul className="max-w-[300px] w-full">
-                                    <li className="flex justify-end">
-                                        <div className="text-right">
-                                            <strong className="text-lg block">
-                                                Total :{" "}
-                                                {formatMultiPrice(
-                                                    finalTotalAmount,
-                                                    bill && bill?.currency,
-                                                )}
-                                            </strong>
-
-                                            {/* Show estimated price if display currency differs from charge currency */}
-                                            {/* {display_currency && display_currency !== bill?.currency && (
-                                                <div className="text-sm text-gray-500 font-medium mt-1">
-                                                    ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
-                                                </div>
-                                            )} */}
-
-                                            <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                                *Includes platform and payment
-                                                processing fees. You will be
-                                                charged in {bill?.currency}.
-                                            </span>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <div className="addMessage mt-2">
+                        <div className="grid lg:grid-cols-[1fr_400px] gap-6 lg:gap-10 items-start">
+                            <div className="min-w-0">
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <ul className="flex flex-wrap">
                                         <li className="w-full">
-                                            <label className=" text-sm font-medium text-gray-900">
-                                                Add Message{" "}
-                                            </label>
+                                            <SectionLabel>
+                                                Message for the creator
+                                            </SectionLabel>
                                             <textarea
-                                                className="mt-2 border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                                rows={3}
+                                                className="w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
                                                 onKeyUp={(e) =>
                                                     setData(
                                                         "message",
@@ -521,11 +464,14 @@ export default function BillCheckout(props) {
                                         <li className="w-full mt-3">
                                             <div className="flex flex-wrap">
                                                 <div className="w-full mb-4">
-                                                    <label className=" text-left">
+                                                    <SectionLabel>
+                                                        Your details
+                                                    </SectionLabel>
+                                                    <label className="text-xs font-bold text-black/60 block mb-1">
                                                         From
                                                     </label>
                                                     <input
-                                                        className="mt-1 border-gray-300 border !rounded-[12px]  px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
+                                                        className="w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
                                                         onChange={(e) =>
                                                             setData(
                                                                 "name",
@@ -541,21 +487,20 @@ export default function BillCheckout(props) {
                                                     </span>
                                                 </div>
                                                 <div className="w-full mb-4">
-                                                    <label className=" text-left">
+                                                    <label className="text-xs font-bold text-black/60 block mb-1">
                                                         Email{" "}
+                                                        <span className="text-black/40 font-bold normal-case">
+                                                            — stays private
+                                                        </span>
                                                     </label>
-                                                    <p className="text-sm text-gray-500 mb-1">
-                                                        Your e-mail remains
-                                                        private.
-                                                    </p>
                                                     <input
                                                         className={`${
                                                             auth &&
                                                             auth.user &&
                                                             auth.user.email
-                                                                ? "disabled"
+                                                                ? "opacity-60 cursor-not-allowed"
                                                                 : ""
-                                                        } mt-1 border-gray-300 border !rounded-[12px] !h-[55px] !px-4 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 `}
+                                                        } w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
                                                         value={data.email}
                                                         disabled={
                                                             auth &&
@@ -634,36 +579,52 @@ export default function BillCheckout(props) {
                                             />
                                         </div>
                                     ) : null}
-                                    <div className="mt-4 flex items-center justify-center">
-                                        <button
-                                            type="button"
-                                            className={`${
-                                                !data.agree ||
-                                                !data.digital_waiver ||
-                                                processing ||
-                                                checking ||
-                                                !card_capabilities
-                                                    ? "disabled"
-                                                    : ""
-                                            } button p w-full`}
-                                            disabled={
-                                                !data.agree ||
-                                                !data.digital_waiver ||
-                                                processing ||
-                                                checking ||
-                                                !card_capabilities
-                                            }
-                                            onClick={handleSubmit}
-                                        >
-                                            {processing || checking
-                                                ? "Processing..."
-                                                : `Subscribe & Pay Now - ${formatMultiPrice(
-                                                      finalTotalAmount,
-                                                      bill && bill?.currency,
-                                                  )}`}
-                                        </button>
-                                    </div>
                                 </form>
+                            </div>
+
+                            <div className="lg:sticky lg:top-24">
+                                <SummaryReceipt
+                                    image={bill.perma_link || uploadedimg}
+                                    itemTitle="Content membership"
+                                    itemSub={bill.name}
+                                    creatorName={bill?.user?.name}
+                                    creatorUsername={bill?.user?.username}
+                                    rows={[
+                                        {
+                                            label: "Monthly membership",
+                                            value: formatMultiPrice(
+                                                finalTotalAmount,
+                                                bill && bill.currency,
+                                            ),
+                                        },
+                                    ]}
+                                    total={formatMultiPrice(
+                                        finalTotalAmount,
+                                        bill && bill?.currency,
+                                    )}
+                                    totalNote={`Includes all fees. You'll be charged in ${bill?.currency}.`}
+                                    renewalNote="Renews monthly · cancel anytime"
+                                >
+                                    <PayButton
+                                        label={`Subscribe & pay ${formatMultiPrice(
+                                            finalTotalAmount,
+                                            bill && bill?.currency,
+                                        )}`}
+                                        processing={processing || checking}
+                                        disabled={
+                                            !data.agree ||
+                                            !data.digital_waiver ||
+                                            !card_capabilities
+                                        }
+                                        onClick={handleSubmit}
+                                    />
+                                    {(!data.agree || !data.digital_waiver) && (
+                                        <p className="text-[10px] font-bold text-black/50 text-center mt-2">
+                                            Accept the terms on the left to
+                                            continue.
+                                        </p>
+                                    )}
+                                </SummaryReceipt>
                             </div>
                         </div>
                     </div>
