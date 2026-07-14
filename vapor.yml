@@ -54,12 +54,21 @@ environments:
     health-checks: false 
     assets:
       - "public/build/**"
-    # Front-end assets are built on the host BEFORE `vapor deploy` (see the
-    # "livebuild" npm script) — never inside the Vapor build copy, which starts
-    # with no node_modules and would re-download the whole npm tree every deploy.
     build:
       - "composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader"
       - "php artisan event:cache"
+      - "php artisan optimize:clear"
+      - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
+      - "php artisan ziggy:generate"
+      - "npm run build"
+      - "rm -rf node_modules/.DS_Store || true"
+      - "rm -rf node_modules || rm -rf node_modules"
+      - "php artisan config:clear"
+      - "php artisan config:cache"
+      - "php artisan route:clear"
+      - "php artisan view:clear"
+      - "php artisan event:clear"
+      - "php artisan cache:clear"
 
     deploy:
       - "php artisan migrations:fix-state"
