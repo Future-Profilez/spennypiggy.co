@@ -617,7 +617,6 @@ class TaskController extends Controller
                 ]
             );
 
-            Helpers::applyDigitalWaiver($payment, (bool) $request->digital_waiver);
             $payment->save();
         } catch (\Exception $e) {
             Log::warning('Risk Ledger: Failed to record task purchase payment', [
@@ -631,6 +630,7 @@ class TaskController extends Controller
 
     public function success(Request $request, $uuid)
     {
+        Log::info('come at success method');
         $sessionId = $request->query('session_id');
 
         $task = Task::where('uuid', $uuid)
@@ -696,7 +696,7 @@ class TaskController extends Controller
                     ? (float) $purchase->total_paid
                     : (
                         (float) $purchase->amount +
-                        (float) $purchase->platform_fee + 
+                        (float) $purchase->platform_fee +
                         (float) $purchase->vat_amount
                     );
             }

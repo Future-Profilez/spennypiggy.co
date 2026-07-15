@@ -214,6 +214,68 @@ class PayoutAndStatusPropagationTest extends TestCase
         $this->assertEquals(1350, $payout['net_payout']);
     }
 
+    public function test_instant_task_purchase_is_not_completed_during_initial_sync_creation(): void
+    {
+        $creator = User::factory()->create([
+            'default_currency' => 'GBP',
+            'account_id' => 'acct_test_creator',
+        ]);
+        $buyer = User::factory()->create([
+            'default_currency' => 'GBP',
+        ]);
+
+        $task = Task::create([
+            'creator_id' => $creator->id,
+            'title' => 'Instant task',
+            'description' => 'Test',
+            'price' => 10.00,
+            'currency' => 'GBP',
+            'category' => 'general',
+            'type' => 'instant',
+            'status' => 'active',
+            'is_approved' => true,
+            'deliverable_note' => 'Delivered later',
+        ]);
+
+        $session = (object) [
+            'id' => 'cs_test_' . Str::random(10),
+            'currency' => 'GBP',
+            'amount_total' => 1000,
+            'payment_intent' => null,
+            'metadata' => (object) [
+                'task_id' => $task->id,
+                'buyer_id' => $buyer->id,
+                'creator_id' => $creator->id,
+                'item_amount' => 1000,
+                'payment_type' => 'STANDARD',
+                'vat_amount' => 0,
+                'vat_percent' => 0,
+                'admin_fee' => 0,
+                'platform_fee' => 0,
+                'transfer_amount' => 1000,
+            ],
+            'customer_details' => (object) [
+                'email' => 'buyer@example.com',
+                'name' => 'Buyer',
+            ],
+        ];
+
+        $controller = app(\App\Http\Controllers\TaskController::class);
+        $reflection = new \ReflectionClass($controller);
+        $method = $reflection->getMethod('createTaskPurchaseSync');
+        $method->setAccessible(true);
+
+        $purchase = $method->invoke($controller, $session, $task);
+        $purchase->refresh();
+
+        $this->assertSame('paid', $purchase->status);
+        $this->assertNull($purchase->completed_at);
+
+        $deliverable = Deliverable::where('order_id', $purchase->id)->first();
+        $this->assertNotNull($deliverable);
+        $this->assertSame('pending', $deliverable->status);
+    }
+
     public function test_payout_excludes_review_hold_payments(): void
     {
         Carbon::setTestNow('2026-05-01 12:00:00');

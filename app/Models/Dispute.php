@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Dispute extends Model
 {
-    use HasFactory, HasUuids;
+    protected $table = 'disputes';
+
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
+        'id',
         'payment_id',
         'creator_id',
         'stripe_dispute_id',
@@ -18,31 +21,31 @@ class Dispute extends Model
         'currency',
         'reason',
         'status',
+        'created_at',
+        'resolved_at',
         'evidence_due_by',
         'evidence_status',
         'evidence_details',
         'customer_email',
         'has_response',
-        'resolved_at',
     ];
 
     protected $casts = [
         'amount' => 'integer',
+        'has_response' => 'boolean',
         'evidence_due_by' => 'datetime',
         'resolved_at' => 'datetime',
-        'evidence_details' => 'array',
-        'has_response' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
-    
-    public $timestamps = false; // Disable updated_at since migration doesn't have it
 
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'creator_id', 'uuid');
-    }
-
-    public function payment()
+    public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class, 'payment_id', 'id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creator_id', 'uuid');
     }
 }

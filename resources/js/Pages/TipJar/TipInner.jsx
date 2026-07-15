@@ -28,7 +28,7 @@ export default function TipInner({classes, idd}) {
   const { data, setData } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
-    message: 'Unlock my supporter-only posts 💖',
+    message: 'Access to my supporter-only posts 💖',
     anonymous: 0,
     amount: amount,
     digital_waiver: false,
@@ -415,7 +415,7 @@ export default function TipInner({classes, idd}) {
 
               {amount > 0 ? <>
                 <div className="mb-3"> 
-                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Unlock my supporter-only posts 💖'}
+                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Access to my supporter-only posts 💖'}
                   onChange={(e) => setData('message', e.target.value)}
                   placeholder="Write a short note." />
                 </div>
