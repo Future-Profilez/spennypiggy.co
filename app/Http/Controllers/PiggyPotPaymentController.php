@@ -416,6 +416,7 @@ class PiggyPotPaymentController extends Controller
                             'supporter_id'  => $pay->user_id,
                             'type'          => 'income',
                             'gross_amount'  => $gross,
+                            'fee_profile'   => $pay->fee_profile ?? 'card',
                             'platform_fee'  => $platformFee,
                             'stripe_fee'    => $stripeFee,
                             'vat_amount'    => $vatAmt,

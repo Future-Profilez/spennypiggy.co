@@ -12,6 +12,7 @@ class FinancialTransaction extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'fee_profile',
         'uuid',
         'user_id',
         'supporter_id',

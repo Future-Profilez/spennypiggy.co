@@ -26,6 +26,7 @@ export default function PaymentMethodSelector({
     email = null,
     value = "card",
     onChange,
+    onPrices = null,
     className = "",
 }) {
     const [preview, setPreview] = useState(null);
@@ -47,7 +48,10 @@ export default function PaymentMethodSelector({
                     email: email || undefined,
                 })
                 .then((res) => {
-                    if (res.data?.status) setPreview(res.data);
+                    if (res.data?.status) {
+                        setPreview(res.data);
+                        onPrices?.(res.data.prices);
+                    }
                 })
                 .catch(() => setPreview(null));
         }, 350);

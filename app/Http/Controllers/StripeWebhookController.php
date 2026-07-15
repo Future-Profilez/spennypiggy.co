@@ -1087,6 +1087,7 @@ class StripeWebhookController extends Controller
                         'supporter_id'  => $pay->user_id,
                         'type'          => 'income',
                         'gross_amount'  => $gross,
+                        'fee_profile'   => $pay->fee_profile ?? 'card',
                         'platform_fee'  => $platformFee,
                         'stripe_fee'    => $stripeFee,
                         'vat_amount'    => $vatAmt,
@@ -1451,6 +1452,7 @@ class StripeWebhookController extends Controller
             'currency' => $currency,
             'status' => $initialStatus,
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
+            'fee_profile' => $metadata->fee_profile ?? 'card',
             'gifter_message' => $metadata->gifter_message ?? null,
             'admin_fee' => $adminFee,
             'platform_fee' => $platformFee,
@@ -2270,7 +2272,7 @@ class StripeWebhookController extends Controller
                     $total_amount = $wishSubscription->amount;
                 }
 
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency);
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
                 $creatorNet = $breakdown['net_to_creator'];
                 $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
 
@@ -2570,7 +2572,7 @@ class StripeWebhookController extends Controller
                         $total_amount = $wishSubscription->amount;
                     }
 
-                    $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency);
+                    $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
                     $creatorNet = $breakdown['net_to_creator'];
                     $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
 
@@ -3595,7 +3597,7 @@ class StripeWebhookController extends Controller
                 $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $shopPayment->shop->user->uuid);
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate, $shopPayment->fee_profile ?? 'card');
                 $creatorNetAmount = $symbol . number_format($breakdown['net_to_creator'], 2);
 
                 // 7. Dispatch jobs

@@ -2079,6 +2079,7 @@ class StripeController extends Controller
                 'guest_email'    => $request->email,
                 'currency'       => $wish->currency,
                 'amount'         => $wish->price,
+                'fee_profile'    => $methodResolution['fee_profile'],
                 'total_paid'     => $finalTotalAmount,
                 'tax'            => $totalTax,
                 'vat_tax_amount' => ceil($vat_percentage_amount),
@@ -2627,6 +2628,7 @@ class StripeController extends Controller
                             [
                                 'user_id' => $sub->wish_item->user->id,
                                 'type' => 'wish_subscription',
+                                'fee_profile' => $sub->fee_profile ?? 'card',
                                 'amount' => $sub->amount,
                                 'currency' => strtoupper($sub->currency),
                                 'status' => 'completed',
@@ -2712,6 +2714,7 @@ class StripeController extends Controller
             $stripePayment = StripePaymentDetail::create([
                 'uuid' => Str::uuid(),
                 'session_id' => $subscription->session_id,
+                'fee_profile' => $subscription->fee_profile ?? 'card',
                 'user_id' => $subscription->user_id,
                 'owner_id' => $subscription->wish_item->user_id,
                 'stripe_payment_intent_id' => $session->payment_intent ?? null,
@@ -3698,6 +3701,7 @@ class StripeController extends Controller
                             'supporter_id'  => $tip_pay->user_id,
                             'type'          => 'income',
                             'gross_amount'  => $gross,
+                            'fee_profile'   => $tip_pay->fee_profile ?? 'card',
                             'platform_fee'  => $platformFee,
                             'stripe_fee'    => $stripeFee,
                             'vat_amount'    => $vatAmt,

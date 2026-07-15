@@ -26,6 +26,7 @@ export default function SubCheckout(props) {
         anonymous: 0,
         payment_method: 'card',
     });
+    const [previewPrices, setPreviewPrices] = useState(null);
 
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -377,7 +378,9 @@ export default function SubCheckout(props) {
 
                                     <div className='cartPric pr-4'>
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
+                                            data.payment_method === 'bank' && previewPrices?.bank != null
+                                                ? previewPrices.bank
+                                                : calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                             wish && wish.currency
                                         )}
                                     </div>
@@ -391,14 +394,18 @@ export default function SubCheckout(props) {
                                 <span className=" text-black">
                                     <strong className="block text-xl">
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
+                                            data.payment_method === 'bank' && previewPrices?.bank != null
+                                                ? previewPrices.bank
+                                                : calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                             wish && wish.currency
                                         )}
                                     </strong>
                                     {global_currency && global_currency.toUpperCase() !== (wish?.currency || '').toUpperCase() && (
                                         <div className="text-sm text-gray-500 font-medium mt-1">
                                             ≈ {formatMultiPrice(
-                                                calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
+                                                data.payment_method === 'bank' && previewPrices?.bank != null
+                                                    ? previewPrices.bank
+                                                    : calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                                 global_currency
                                             )} (estimated)
                                         </div>
@@ -475,6 +482,7 @@ export default function SubCheckout(props) {
                                             email={data.email || auth?.user?.email}
                                             value={data.payment_method}
                                             onChange={(m) => setData('payment_method', m)}
+                                            onPrices={setPreviewPrices}
                                             className="mb-4"
                                         />
                                     )}

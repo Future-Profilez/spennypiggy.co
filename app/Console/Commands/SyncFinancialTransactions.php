@@ -230,6 +230,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $payment->fee_profile ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $amount,
@@ -536,6 +537,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
@@ -608,6 +610,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $purchase->fee_profile ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
@@ -692,6 +695,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
@@ -752,11 +756,12 @@ class SyncFinancialTransactions extends Command
                 
                 $currency = strtoupper($item->payment->currency ?? 'GBP');
                 
-                // Use actual fee breakdown for consistent display
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                // Use actual fee breakdown for consistent display (honour the
+                // fee profile the payment was actually priced with).
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $item->payment->fee_profile ?? 'card');
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
-                
+
                 $gross = $item->total_paid && $item->total_paid > 0 
                     ? (float) $item->total_paid 
                     : $breakdown['total_supporter_pays'];
@@ -780,6 +785,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
@@ -835,7 +841,7 @@ class SyncFinancialTransactions extends Command
                 $currency = strtoupper($payment->currency ?? 'GBP');
                 
                 // Use actual fee breakdown for consistent display
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $shippingAmount + $vat, $currency);
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $shippingAmount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
                 
@@ -862,6 +868,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
@@ -910,7 +917,7 @@ class SyncFinancialTransactions extends Command
                 $currency = strtoupper($payment->currency ?? 'GBP');
                 
                 // Use actual fee breakdown for consistent display
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
@@ -937,6 +944,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
@@ -986,7 +994,7 @@ class SyncFinancialTransactions extends Command
                 $amount = (float) ($payment->amount ?? 0);
                 $vat = (float) ($payment->vat_amount ?? 0);
 
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
                 $platformFee = (float) ($breakdown['application_fee'] ?? 0);
                 $stripeFee = (float) ($breakdown['stripe_fee'] ?? 0);
                 $gross = $payment->total_paid && $payment->total_paid > 0
@@ -1018,6 +1026,7 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $amount,

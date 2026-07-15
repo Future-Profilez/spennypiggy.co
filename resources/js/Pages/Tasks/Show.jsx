@@ -20,6 +20,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         cf_turnstile_response: '',
         payment_method: 'card',
     });
+    const [previewPrices, setPreviewPrices] = useState(null);
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
 
     // Helper to identify zero decimal currencies
@@ -424,11 +425,13 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                             formatMultiPrice(task.price, task.currency || 'USD')
                                         ) : (
                                             formatMultiPrice(
-                                                calculateTotalSupporterPays(
-                                                    task.price, 
-                                                    task.currency || 'USD',
-                                                    ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)
-                                                ), 
+                                                data.payment_method === 'bank' && previewPrices?.bank != null
+                                                    ? previewPrices.bank
+                                                    : calculateTotalSupporterPays(
+                                                        task.price,
+                                                        task.currency || 'USD',
+                                                        ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)
+                                                    ),
                                                 task.currency || 'USD'
                                             )
                                         )}
@@ -545,11 +548,12 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                             ) : null}
                                             {(task.payment_methods_accepted ?? 'both') !== 'card' && (
                                                 <PaymentMethodSelector
-                                                    amount={task.price}
+                                                    amount={(parseFloat(String(task.price || 0).replace(/,/g, '')) || 0) * (1 + (task?.creator?.vat_amount_percentage || 0) / 100)}
                                                     currency={task.currency || 'USD'}
                                                     email={auth?.user?.email}
                                                     value={data.payment_method}
                                                     onChange={(m) => setData('payment_method', m)}
+                                                    onPrices={setPreviewPrices}
                                                     className="mb-4"
                                                 />
                                             )}
