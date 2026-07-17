@@ -59,6 +59,7 @@ const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
 const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
 const FounderProgramAnnouncement = lazy(() => import("./home/FounderProgramAnnouncement"));
 const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
+const PayByBankAnnouncement = lazy(() => import("./home/PayByBankAnnouncement"));
 const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'));
 const CreatorShowcase = lazy(() => import('./home/CreatorShowcase'));
 const SetupSteps = lazy(() => import('./home/SetupSteps'));
@@ -133,6 +134,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 {/* ── Chapter 01 · Earn more — announcements enter as cinematic curtain reveals ── */}
                 <div id="act-earn">
                     <EarnMoreAnnouncement founderBonus={founderBonus} />
+                    <PayByBankAnnouncement />
                     <PaidTasksAnnouncement />
                     <ReferEarnAnnouncement />
                     <FounderProgramAnnouncement founderBonus={founderBonus} />

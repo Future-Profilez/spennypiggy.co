@@ -123,9 +123,9 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
 
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr py-6 md:py-8 lg:flex items-center lg:items-end justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto">
-                <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
-                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[0px]">
+            <div className="userPr max-w-[1200px] mx-auto pt-4 pb-6 md:pb-8 lg:flex lg:items-center justify-center lg:justify-between relative">
+                <div className="update-profile text-center lg:flex lg:items-center justify-center lg:justify-start">
+                    <div className="fading userphoto relative flex items-center justify-center mb-4 lg:mb-0 -mt-[64px] md:-mt-[72px]">
                         <img
                             alt={`${user?.name || "User"} - Profile Avatar`}
                             src={
@@ -194,12 +194,12 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                             )}
                     </div>
 
-                    <div className="md:ps-[20px] md:pe-[20px] pt-[20px] lg:pt-[0px] lg:mt-0 lg:text-start">
-                        <h1 className="font-gulfs uppercase !text-2xl md:!text-2xl inline-flex items-center justify-center lg:justify-start  text-center lg:text-left !text-black ">
-                            <p className="line-clamp-1">{user?.name} </p>
+                    <div className="lg:ps-6 pt-2 lg:pt-0 lg:pb-1 text-center lg:text-left">
+                        <h1 className="font-gulfs uppercase text-2xl md:text-3xl flex items-center justify-center lg:justify-start gap-2 !text-black leading-none">
+                            <span className="line-clamp-1">{user?.name}</span>
                             {(user?.role == 1 &&
                                 user?.profile_status_lock == 2 && (
-                                    <span className="ms-2">
+                                    <span className="flex items-center">
                                         {user?.is_founder ? (
                                             <Suspense
                                                 fallback={
@@ -207,7 +207,7 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                                 }
                                             >
                                                 <FounderBadge
-                                                    classes="min-w-8 min-h-8 w-8 h-8 ml-2"
+                                                    classes="min-w-8 min-h-8 w-8 h-8"
                                                     icon={true}
                                                 />
                                             </Suspense>
@@ -219,17 +219,17 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                 ""}
                         </h1>
 
-                        <div className="userId mt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
+                        <div className="userId mt-2 flex items-center justify-center lg:justify-start text-center lg:text-left">
                             <Suspense
                                 fallback={
-                                    <span className="flex text-gray-800 font-black text-normal mr-4 items-center">
+                                    <span className="flex text-gray-800 font-black text-base items-center">
                                         @{user?.username}
                                     </span>
                                 }
                             >
                                 <ShareProfile
                                     username={user?.name}
-                                    classes="flex text-gray-800 font-black text-normal transition-all mr-4 items-center group"
+                                    classes="flex text-gray-800 font-black text-base transition-all items-center group"
                                     onMouseEnter={() =>
                                         copyIconRef.current?.startAnimation?.()
                                     }
@@ -254,27 +254,27 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                     <div>
                         {user && user?.role == 1 ? (
                             <div className="flex mb-4 justify-center lg:justify-end gap-2 md:gap-3">
-                                <div className="md:flex items-center gap-2 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">
+                                <div className="flex flex-col items-center justify-center text-center min-w-[84px] bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black text-lg md:text-xl leading-none whitespace-nowrap">
                                         👥 {user?.followers_count}
                                     </span>
-                                    <p className="font-black text-black text-[10px] md:text-sm uppercase">
+                                    <p className="font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
                                         Followers
                                     </p>
                                 </div>
-                                <div className="md:flex items-center gap-2 text-center  bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">
+                                <div className="flex flex-col items-center justify-center text-center min-w-[84px] bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black text-lg md:text-xl leading-none whitespace-nowrap">
                                         🤝 {user?.following_count}
                                     </span>
-                                    <p className="font-black text-black text-[10px] md:text-sm uppercase">
+                                    <p className="font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
                                         Following
                                     </p>
                                 </div>
-                                <div className="md:flex items-center gap-2 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">
+                                <div className="flex flex-col items-center justify-center text-center min-w-[84px] bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black text-lg md:text-xl leading-none whitespace-nowrap">
                                         🐷 {supporters}
                                     </span>
-                                    <p className="font-black text-black text-[10px] md:text-sm uppercase">
+                                    <p className="font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
                                         Supporters
                                     </p>
                                 </div>

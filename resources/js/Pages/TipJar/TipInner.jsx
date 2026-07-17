@@ -598,12 +598,12 @@ export default function TipInner({classes, idd}) {
             You're purchasing access to this creator's content, not making a gift. Platform terms apply to fulfilment and refunds.
           </p>
           <div className="flex gap-3">
-            <button
+            {/* <button
               type="button"
               onClick={() => setShowConfirm(false)}
               className="w-full main-button b"
             > Cancel
-            </button>
+            </button> */}
             <button
               type="button"
               disabled={loading}

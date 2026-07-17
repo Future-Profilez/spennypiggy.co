@@ -1830,6 +1830,8 @@ class ProfileController extends Controller
                 'certificate_url' => $certificateUrl,
                 'payment_id' => $paymentId,
                 'vat_amount' => (float) ($tx->vat_amount ?? 0),
+                // Mode of payment: bank rows are tagged fee_profile='bank'; NULL/'card' = card/wallet.
+                'payment_method' => (($tx->fee_profile ?? 'card') === 'bank') ? 'bank' : 'card',
             ];
 
             // Load reactions and replies

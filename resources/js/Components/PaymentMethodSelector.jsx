@@ -1,6 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
+// Hoisted so it isn't re-created (and remounted) on every parent render.
+function Radio({ checked }) {
+    return (
+        <span
+            aria-hidden="true"
+            className="shrink-0 w-[22px] h-[22px] rounded-full border-[3px] border-black bg-white flex items-center justify-center"
+        >
+            <span
+                className={`w-[10px] h-[10px] rounded-full bg-[#FF007F] transition-transform duration-150 motion-reduce:transition-none ${
+                    checked ? "scale-100" : "scale-0"
+                }`}
+            />
+        </span>
+    );
+}
+
 /**
  * Card vs Bank payment method selector with method-aware supporter prices.
  *
@@ -80,19 +96,6 @@ export default function PaymentMethodSelector({
             maximumFractionDigits: 2,
         })}`;
 
-    const Radio = ({ checked }) => (
-        <span
-            aria-hidden="true"
-            className="shrink-0 w-[22px] h-[22px] rounded-full border-[3px] border-black bg-white flex items-center justify-center"
-        >
-            <span
-                className={`w-[10px] h-[10px] rounded-full bg-[#FF007F] transition-transform duration-150 ${
-                    checked ? "scale-100" : "scale-0"
-                }`}
-            />
-        </span>
-    );
-
     return (
         <div
             role="radiogroup"
@@ -110,10 +113,10 @@ export default function PaymentMethodSelector({
                     role="radio"
                     aria-checked={value === "bank"}
                     onClick={() => onChange?.("bank")}
-                    className={`relative w-full text-left border-[3px] border-black rounded-[18px] px-4 py-3.5 transition-all duration-150 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
+                    className={`relative w-full text-left border-[3px] border-black rounded-[18px] px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         value === "bank"
                             ? "bg-[#A2E4B8] shadow-[3px_3px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px]"
+                            : "bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     {/* Signature: tilted save sticker */}
@@ -140,7 +143,7 @@ export default function PaymentMethodSelector({
                                 {fmt(prices.bank)}
                             </span>
                             {prices.saving > 0 && (
-                                <span className="block text-[11px] font-bold text-black/40 line-through mt-1">
+                                <span className="block text-[11px] font-bold text-black/55 line-through mt-1">
                                     {fmt(prices.card)}
                                 </span>
                             )}
@@ -155,12 +158,12 @@ export default function PaymentMethodSelector({
                     aria-checked={value === "card"}
                     onClick={() => !cardDisabled && onChange?.("card")}
                     disabled={cardDisabled}
-                    className={`w-full text-left border-[3px] border-black rounded-[18px] px-4 py-3.5 transition-all duration-150 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
+                    className={`w-full text-left border-[3px] border-black rounded-[18px] px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         cardDisabled
                             ? "bg-gray-100 border-black/30 cursor-not-allowed"
                             : value === "card"
                             ? "bg-[#A2E4B8] shadow-[3px_3px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px]"
+                            : "bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     <span className={`flex items-center gap-3 ${cardDisabled ? "opacity-50" : ""}`}>

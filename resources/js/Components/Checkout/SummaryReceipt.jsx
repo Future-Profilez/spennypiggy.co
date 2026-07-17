@@ -105,14 +105,14 @@ export default function SummaryReceipt({
                     </span>
                 </div>
                 {totalNote && (
-                    <p className="text-[10px] font-bold text-black/50 text-right mt-1.5 leading-snug">
+                    <p className="text-[10px] font-bold text-black/60 text-right mt-1.5 leading-snug">
                         {totalNote}
                     </p>
                 )}
 
                 <div className="mt-4">{children}</div>
 
-                <p className="flex items-center justify-center gap-1.5 text-[10px] font-bold text-black/50 mt-3">
+                <p className="flex items-center justify-center gap-1.5 text-[10px] font-bold text-black/60 mt-3">
                     <svg
                         width="10"
                         height="12"
@@ -140,10 +140,10 @@ export function PayButton({ label, processingLabel = "Processing…", processing
             type="button"
             onClick={onClick}
             disabled={off}
-            className={`w-full border-[3px] border-black rounded-[16px] px-4 py-3.5 font-black uppercase tracking-wide text-sm transition-all duration-150 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
+            className={`w-full border-[3px] border-black rounded-[16px] px-4 py-3.5 font-black uppercase tracking-wide text-sm transition-[transform,box-shadow] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                 off
-                    ? "bg-gray-200 text-black/40 cursor-not-allowed"
-                    : "bg-[#FF007F] text-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+                    ? "bg-gray-200 text-black/50 cursor-not-allowed"
+                    : "bg-[#FF007F] text-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
             }`}
         >
             {processing ? processingLabel : label}

@@ -20,50 +20,60 @@ use App\Jobs\TipJarTweet;
 use App\Jobs\TipPaymentMailToUser;
 use App\Jobs\WishSubscriptionMailToUser;
 use App\Models\ConnectedAccountCustomer;
+use App\Models\CreatorMetric;
 use App\Models\Currency;
 use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
 use App\Models\MonthlyCharge;
 use App\Models\MorConsent;
+use App\Models\Payment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
 use App\Models\Subscription;
 use App\Models\TipGoal;
-use App\Models\FinancialTransaction;
 use App\Models\TipGoalsPayment;
-use App\Models\PiggyPot;
-use App\Models\PiggyPotContribution;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserPayment;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
-use App\StripeControl;
+use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\StripeAccountMigrationNotification;
+use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\CheckoutMethodResolver;
+use App\Services\CreatorActivityService;
+use App\Services\CreatorAvailabilityMessageService;
+use App\Services\CreatorSubscriptionService;
+use App\Services\Risk\MoneyNormalizer;
+use App\Services\Risk\ReservePolicy;
+use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
-use Stripe\StripeClient;
+use App\Services\UserProfileService;
+use App\StripeControl;
+use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Stripe\Stripe;
-use Stripe\Webhook;
-use Stripe\Identity\VerificationSession;
 use Stripe\Exception\ApiErrorException;
-use App\Services\CreatorActivityService;
-use App\Services\CreatorSubscriptionService;
-use App\Notifications\PaymentBlockedNotification;
-use App\Notifications\SubscriptionBlockedNotification;
-use App\Notifications\StripeAccountMigrationNotification;
-use App\Services\UserProfileService;
-use Illuminate\Support\Facades\Http;
-use App\Traits\RiskEnforcement;
+use Stripe\Exception\SignatureVerificationException;
+use Stripe\Identity\VerificationSession;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
+use Stripe\StripeClient;
+use Stripe\Webhook;
 
 class StripeController extends Controller
 {
     use RiskEnforcement;
+
     protected $userProfileService;
 
     public function __construct(UserProfileService $userProfileService)
@@ -82,7 +92,7 @@ class StripeController extends Controller
             ->newestFirst()
             ->first();
 
-        if (!$charge || !$charge->stripe_id) {
+        if (! $charge || ! $charge->stripe_id) {
             return back()->with('error', 'No active subscription found to cancel.');
         }
 
@@ -91,12 +101,13 @@ class StripeController extends Controller
             $subscription = StripeControl::cancelSubscription($charge->stripe_id, true);
 
             // Sync the change locally
-            app(\App\Services\UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
+            app(UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
 
-            return back()->with('success', 'Auto-renewal has been cancelled. You will have access until ' . Carbon::createFromTimestamp($subscription->current_period_end)->format('d M Y'));
-        } catch (\Exception $e) {
-            Log::error("StripeController: Manual cancellation failed: " . $e->getMessage());
-            return back()->with('error', 'Failed to cancel subscription: ' . $e->getMessage());
+            return back()->with('success', 'Auto-renewal has been cancelled. You will have access until '.Carbon::createFromTimestamp($subscription->current_period_end)->format('d M Y'));
+        } catch (Exception $e) {
+            Log::error('StripeController: Manual cancellation failed: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to cancel subscription: '.$e->getMessage());
         }
     }
 
@@ -105,7 +116,7 @@ class StripeController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return back()->with('error', 'User not found.');
         }
         $charge = MonthlyCharge::where('user_id', $user->id)
@@ -113,7 +124,7 @@ class StripeController extends Controller
             ->newestFirst()
             ->first();
 
-        if (!$charge || !$charge->stripe_id) {
+        if (! $charge || ! $charge->stripe_id) {
             return back()->with('error', 'No subscription found to resume.');
         }
 
@@ -123,14 +134,14 @@ class StripeController extends Controller
                 'cancel_at_period_end' => false,
             ]);
 
-            Log::info("StripeController: Resumed subscription", [
+            Log::info('StripeController: Resumed subscription', [
                 'id' => $subscription->id,
                 'cancel_at_period_end' => $subscription->cancel_at_period_end,
-                'current_period_end' => $subscription->current_period_end
+                'current_period_end' => $subscription->current_period_end,
             ]);
 
             // Sync the change locally
-            app(\App\Services\UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
+            app(UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
 
             // Force a refresh of the local models to ensure the 'upcoming_payment' and 'cancelled_at' are correct
             $charge->refresh();
@@ -138,9 +149,10 @@ class StripeController extends Controller
             $user->refresh();
 
             return back()->with('success', 'Auto-renewal has been re-enabled successfully!');
-        } catch (\Exception $e) {
-            Log::error("StripeController: Manual resume failed: " . $e->getMessage());
-            return back()->with('error', 'Failed to resume subscription: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('StripeController: Manual resume failed: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to resume subscription: '.$e->getMessage());
         }
     }
 
@@ -148,7 +160,7 @@ class StripeController extends Controller
      * Determine the appropriate service agreement type based on country
      * to handle cross-border payment restrictions
      *
-     * @param string $country Country code (e.g., 'IT', 'FR', 'DE')
+     * @param  string  $country  Country code (e.g., 'IT', 'FR', 'DE')
      * @return string 'recipient' or 'full'
      */
     private static function getServiceAgreementType($country)
@@ -157,7 +169,7 @@ class StripeController extends Controller
         // and card_payments capability.
         return 'full';
 
-        /* 
+        /*
         // Legacy recipient logic - disabled to support Direct Charges
         // Countries that require 'recipient' service agreement for cross-border payments
         // These are primarily EU countries that have restrictions with full service agreements
@@ -199,7 +211,6 @@ class StripeController extends Controller
     /**
      * Check if an existing Stripe account needs migration to recipient service agreement
      *
-     * @param User $user
      * @return array
      */
     public static function checkAccountMigrationNeeds(User $user)
@@ -225,7 +236,7 @@ class StripeController extends Controller
                 'current_agreement' => $currentServiceAgreement,
                 'required_agreement' => $requiredServiceAgreement,
                 'needs_migration' => $needsMigration,
-                'account_id' => $user->account_id
+                'account_id' => $user->account_id,
             ]);
 
             return [
@@ -235,18 +246,18 @@ class StripeController extends Controller
                 'country' => $user->country,
                 'account_id' => $user->account_id,
                 'charges_enabled' => $account->charges_enabled ?? false,
-                'reason' => $needsMigration ? 'Country requires recipient agreement for cross-border payments' : 'Account is correctly configured'
+                'reason' => $needsMigration ? 'Country requires recipient agreement for cross-border payments' : 'Account is correctly configured',
             ];
         } catch (Exception $e) {
             Log::error('Failed to check account migration needs', [
                 'user_id' => $user->id,
                 'account_id' => $user->account_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'needs_migration' => false,
-                'reason' => 'Error checking account: ' . $e->getMessage()
+                'reason' => 'Error checking account: '.$e->getMessage(),
             ];
         }
     }
@@ -255,17 +266,16 @@ class StripeController extends Controller
      * Migrate an existing account from full to recipient service agreement
      * Note: This requires creating a new account as service agreements cannot be changed
      *
-     * @param User $user
      * @return array
      */
     public static function migrateExistingAccount(User $user)
     {
         $migrationCheck = self::checkAccountMigrationNeeds($user);
 
-        if (!$migrationCheck['needs_migration']) {
+        if (! $migrationCheck['needs_migration']) {
             return [
                 'success' => false,
-                'message' => 'Account does not need migration: ' . $migrationCheck['reason']
+                'message' => 'Account does not need migration: '.$migrationCheck['reason'],
             ];
         }
 
@@ -277,7 +287,7 @@ class StripeController extends Controller
                 'old_account_id' => $oldAccountId,
                 'country' => $user->country,
                 'from_agreement' => $migrationCheck['current_agreement'],
-                'to_agreement' => $migrationCheck['required_agreement']
+                'to_agreement' => $migrationCheck['required_agreement'],
             ]);
 
             // Create new account with recipient service agreement
@@ -318,7 +328,7 @@ class StripeController extends Controller
                 'user_id' => $user->id,
                 'old_account_id' => $oldAccountId,
                 'new_account_id' => $newAccount->id,
-                'new_agreement' => $serviceAgreementType
+                'new_agreement' => $serviceAgreementType,
             ]);
 
             $migrationResult = [
@@ -327,7 +337,7 @@ class StripeController extends Controller
                 'old_account_id' => $oldAccountId,
                 'new_account_id' => $newAccount->id,
                 'new_service_agreement' => $serviceAgreementType,
-                'onboarding_required' => true
+                'onboarding_required' => true,
             ];
 
             // Send notification to creator
@@ -336,7 +346,7 @@ class StripeController extends Controller
             } catch (Exception $e) {
                 Log::warning('Failed to send migration notification', [
                     'user_id' => $user->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
 
@@ -349,18 +359,18 @@ class StripeController extends Controller
                 'old_account_id' => $oldAccountId,
                 'new_account_id' => $newAccount->id,
                 'new_service_agreement' => $serviceAgreementType,
-                'onboarding_required' => true
+                'onboarding_required' => true,
             ];
         } catch (Exception $e) {
             Log::error('Account migration failed', [
                 'user_id' => $user->id,
                 'old_account_id' => $oldAccountId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Migration failed: ' . $e->getMessage()
+                'message' => 'Migration failed: '.$e->getMessage(),
             ];
         }
     }
@@ -373,29 +383,29 @@ class StripeController extends Controller
     {
         $userId = $userId ?? $request->get('user_id');
 
-        if (!$userId) {
+        if (! $userId) {
             return response()->json([
                 'success' => false,
-                'message' => 'User ID is required'
+                'message' => 'User ID is required',
             ], 400);
         }
 
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
+                'message' => 'User not found',
             ], 404);
         }
 
         // Check if migration is needed first
         $migrationCheck = self::checkAccountMigrationNeeds($user);
 
-        if (!$migrationCheck['needs_migration']) {
+        if (! $migrationCheck['needs_migration']) {
             return response()->json([
                 'success' => false,
                 'message' => 'Account migration not needed',
-                'details' => $migrationCheck
+                'details' => $migrationCheck,
             ]);
         }
 
@@ -412,18 +422,18 @@ class StripeController extends Controller
     {
         $userId = $userId ?? $request->get('user_id');
 
-        if (!$userId) {
+        if (! $userId) {
             return response()->json([
                 'success' => false,
-                'message' => 'User ID is required'
+                'message' => 'User ID is required',
             ], 400);
         }
 
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
+                'message' => 'User not found',
             ], 404);
         }
 
@@ -432,7 +442,7 @@ class StripeController extends Controller
         return response()->json([
             'success' => true,
             'user_id' => $userId,
-            'migration_check' => $migrationCheck
+            'migration_check' => $migrationCheck,
         ]);
     }
 
@@ -452,39 +462,40 @@ class StripeController extends Controller
 
         // Check if Stripe is already connected
         if ($user->stripe_details_submitted == 1) {
-            return redirect(route("user.show", $user->username))->with("error", "Stripe Account already connected!");
+            return redirect(route('user.show', $user->username))->with('error', 'Stripe Account already connected!');
         }
 
         // Require: approved profile, Stripe identity verified
         if (($user->profile_status_lock ?? 0) != 2) {
-            return redirect(route("user.show", $user->username))->with("error", "Your profile is not approved yet.");
+            return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
         }
         if (($user->identity_status ?? 0) != 1) {
-            return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
+            return redirect(route('user.show', $user->username))->with('error', 'Please complete Stripe identity verification first.');
         }
 
         // Check if MoR consent exists in the database
         $morConsentGiven = MorConsent::userHasGivenConsent($user->id);
 
         // Check if account already exists and is active
-        if (!empty($user->account_id)) {
+        if (! empty($user->account_id)) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
                 if ($account->charges_enabled) {
                     $user->stripe_details_submitted = 1;
-                    if (!$user->stripe_connected_at) {
+                    if (! $user->stripe_connected_at) {
                         $user->stripe_connected_at = now();
                     }
                     $user->save();
                     $this->applyContentDescriptorToAccount($user);
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
-                    return redirect(route("user.show", $user->username))->with("success", "Stripe already connected!");
+
+                    return redirect(route('user.show', $user->username))->with('success', 'Stripe already connected!');
                 }
             } catch (Exception $e) {
                 // If there's an error fetching account, continue to show the connect page
                 Log::warning('Error fetching Stripe account', [
                     'user_id' => $user->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -498,18 +509,18 @@ class StripeController extends Controller
                     'given_at' => $latestConsent->consent_given_at->format('M d, Y h:i A'),
                     'ip_address' => $latestConsent->ip_address,
                     'device' => $latestConsent->device_type,
-                    'location' => $latestConsent->city ? $latestConsent->city . ', ' . $latestConsent->country : 'Unknown'
+                    'location' => $latestConsent->city ? $latestConsent->city.', '.$latestConsent->country : 'Unknown',
                 ];
             }
         }
 
-        return Inertia::render("stripe/Stripe", [
+        return Inertia::render('stripe/Stripe', [
             'auth' => [
-                'user' => $user
+                'user' => $user,
             ],
             'mor_consent_given' => $morConsentGiven,
             'mor_consent_details' => $morConsentDetails,
-            'success' => session('success')
+            'success' => session('success'),
         ]);
     }
 
@@ -527,8 +538,8 @@ class StripeController extends Controller
 
         return inertia('stripe/MorConsent', [
             'auth' => [
-                'user' => $user
-            ]
+                'user' => $user,
+            ],
         ]);
     }
 
@@ -538,7 +549,7 @@ class StripeController extends Controller
     public function storeMorConsent(Request $request)
     {
         $request->validate([
-            'mor_agreed' => 'required|accepted'
+            'mor_agreed' => 'required|accepted',
         ]);
 
         $user = Auth::user();
@@ -576,8 +587,8 @@ class StripeController extends Controller
                 'method' => $request->method(),
                 'url' => $request->fullUrl(),
                 'session_id' => $request->session()->getId(),
-                'location_data' => $locationData
-            ]
+                'location_data' => $locationData,
+            ],
         ]);
 
         // Log the consent
@@ -587,7 +598,7 @@ class StripeController extends Controller
             'ip' => $ipAddress,
             'device' => $deviceInfo['device_type'],
             'time' => now()->toDateTimeString(),
-            'consent_id' => $morConsent->id
+            'consent_id' => $morConsent->id,
         ]);
 
         // Redirect back with success message
@@ -621,7 +632,7 @@ class StripeController extends Controller
         $user = Auth::user();
 
         // Check if user has given MoR consent
-        if (!MorConsent::userHasGivenConsent($user->id)) {
+        if (! MorConsent::userHasGivenConsent($user->id)) {
             return redirect()->route('stripe.mor-consent');
         }
 
@@ -635,17 +646,17 @@ class StripeController extends Controller
                     'given_at' => $latestConsent->consent_given_at->format('M d, Y h:i A'),
                     'ip_address' => $latestConsent->ip_address,
                     'device' => $latestConsent->device_type,
-                    'location' => $latestConsent->city ? $latestConsent->city . ', ' . $latestConsent->country : 'Unknown'
-                ] : null
+                    'location' => $latestConsent->city ? $latestConsent->city.', '.$latestConsent->country : 'Unknown',
+                ] : null,
             ],
-            'success' => session('success')
+            'success' => session('success'),
         ]);
     }
 
     /**
      * Init Connect Account Start
      *
-     * @param string $step Connection Current Step
+     * @param  string  $step  Connection Current Step
      * @return mixed
      */
     /**
@@ -656,11 +667,11 @@ class StripeController extends Controller
      */
     public function initConnect(Request $request, $country = null, $currency = null)
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = User::find(Auth::id());
 
         // Check Merchant of Record consent
-        if (!MorConsent::userHasGivenConsent($user->id)) {
+        if (! MorConsent::userHasGivenConsent($user->id)) {
             return redirect()->route('stripe.index')->with('error', 'You must agree to the Merchant of Record terms first.');
         }
 
@@ -676,10 +687,10 @@ class StripeController extends Controller
 
         // Require: approved profile, Stripe identity verified
         if (($user->profile_status_lock ?? 0) != 2) {
-            return redirect(route("user.show", $user->username))->with("error", "Your profile is not approved yet.");
+            return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
         }
         if (($user->identity_status ?? 0) != 1) {
-            return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
+            return redirect(route('user.show', $user->username))->with('error', 'Please complete Stripe identity verification first.');
         }
 
         // Log MoR consent verification
@@ -690,7 +701,7 @@ class StripeController extends Controller
             'mor_consent_id' => $morConsent->id ?? null,
             'consent_given_at' => $morConsent->consent_given_at ?? null,
             'country' => $country,
-            'currency' => $currency
+            'currency' => $currency,
         ]);
 
         if (empty($user->account_id)) {
@@ -704,7 +715,7 @@ class StripeController extends Controller
                     'country' => $country,
                     'service_agreement' => $serviceAgreementType,
                     'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account',
-                    'mor_consent' => true
+                    'mor_consent' => true,
                 ]);
 
                 // Set capabilities based on service agreement type
@@ -718,15 +729,15 @@ class StripeController extends Controller
                 }
 
                 $payload = [
-                    "country" => $country,
-                    "type" => "express",
+                    'country' => $country,
+                    'type' => 'express',
                     'email' => $user->email,
                     'capabilities' => $capabilities,
                     'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
-                    "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
+                    'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
-                        'url'   => "https://spennypiggy.co/{$user->username}",
-                        'mcc'   => '7278',
+                        'url' => "https://spennypiggy.co/{$user->username}",
+                        'mcc' => '7278',
                     ],
                     'default_currency' => $currency,
                     'metadata' => [
@@ -734,8 +745,8 @@ class StripeController extends Controller
                         'mor_consent_id' => $morConsent->id ?? null,
                         'mor_consent_date' => $morConsent->consent_given_at->toISOString() ?? null,
                         'user_id' => $user->id,
-                        'username' => $user->username
-                    ]
+                        'username' => $user->username,
+                    ],
                 ];
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
@@ -743,7 +754,7 @@ class StripeController extends Controller
                 $user->save();
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
             } catch (Exception $e) {
-                return redirect(route("stripe.index"))->with("error", "Account creation error:" . $e->getMessage());
+                return redirect(route('stripe.index'))->with('error', 'Account creation error:'.$e->getMessage());
             }
         }
 
@@ -751,24 +762,26 @@ class StripeController extends Controller
             $account = StripeControl::getAccount($user->account_id);
             if ($account->charges_enabled) {
                 $user->stripe_details_submitted = 1;
-                if (!$user->stripe_connected_at) {
+                if (! $user->stripe_connected_at) {
                     $user->stripe_connected_at = now();
                 }
                 $user->save();
                 $this->applyContentDescriptorToAccount($user);
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
-                return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");
+
+                return redirect(route('user.show', ['username' => $user->username]))->with('success', 'Stripe already connected.');
             }
             $link = StripeControl::createAccountLink([
-                "account" => $account->id,
-                "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
-                "return_url"  => route("stripe.return"),
-                "type"        => "account_onboarding",
-                "collect"   => 'currently_due'
+                'account' => $account->id,
+                'refresh_url' => route('stripe.connect', ['step' => 'refresh', 'country' => $user->country]),
+                'return_url' => route('stripe.return'),
+                'type' => 'account_onboarding',
+                'collect' => 'currently_due',
             ]);
+
             return Inertia::location($link->url);
         } catch (Exception $e) {
-            return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
+            return redirect(route('stripe.index'))->with('error', 'Internal server error:'.$e->getMessage());
         }
     }
 
@@ -816,12 +829,13 @@ class StripeController extends Controller
         Log::info('Stripe return callback', [
             'user_id' => $user->id,
             'username' => $user->username,
-            'mor_consent_id' => $morConsent->id ?? null
+            'mor_consent_id' => $morConsent->id ?? null,
         ]);
 
         // Your existing return logic
         // ...
     }
+
     /**
      * Get location data from IP address
      */
@@ -831,7 +845,7 @@ class StripeController extends Controller
             // Using ipinfo.io (free tier available)
             $token = env('IPINFO_TOKEN');
 
-            if (!$token || $ip === '127.0.0.1' || $ip === '::1') {
+            if (! $token || $ip === '127.0.0.1' || $ip === '::1') {
                 return [];
             }
 
@@ -856,10 +870,10 @@ class StripeController extends Controller
                     'timezone' => $data['timezone'] ?? null,
                 ];
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to get IP location', [
                 'ip' => $ip,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -887,7 +901,7 @@ class StripeController extends Controller
             $browser = 'Chrome';
         } elseif (preg_match('/Firefox/i', $userAgent)) {
             $browser = 'Firefox';
-        } elseif (preg_match('/Safari/i', $userAgent) && !preg_match('/Chrome/i', $userAgent)) {
+        } elseif (preg_match('/Safari/i', $userAgent) && ! preg_match('/Chrome/i', $userAgent)) {
             $browser = 'Safari';
         } elseif (preg_match('/Edge/i', $userAgent)) {
             $browser = 'Edge';
@@ -911,17 +925,16 @@ class StripeController extends Controller
         return [
             'device_type' => $deviceType,
             'browser' => $browser,
-            'platform' => $platform
+            'platform' => $platform,
         ];
     }
 
-
     public function upgradeStripeAccount()
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
-        if (!$user->account_id) {
+        if (! $user->account_id) {
             return back()->with('error', 'You must first connect a Stripe account.');
         }
 
@@ -941,7 +954,7 @@ class StripeController extends Controller
             $migrationCheck = self::checkAccountMigrationNeeds($user);
 
             // If no migration is needed, account is already properly configured
-            if (!$migrationCheck['needs_migration']) {
+            if (! $migrationCheck['needs_migration']) {
                 return back()->with('success', 'Your Stripe account is already fully upgraded.');
             }
 
@@ -961,7 +974,7 @@ class StripeController extends Controller
                     'user_id' => $user->id,
                     'country' => $user->country,
                     'service_agreement' => $serviceAgreementType,
-                    'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account'
+                    'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account',
                 ]);
 
                 // Set capabilities based on service agreement type
@@ -976,10 +989,10 @@ class StripeController extends Controller
                 }
 
                 $newAccount = StripeControl::createAccount([
-                    'country'       => $user->country,
-                    'type'          => 'express',
-                    'email'         => $user->email,
-                    'capabilities'  => $capabilities,
+                    'country' => $user->country,
+                    'type' => 'express',
+                    'email' => $user->email,
+                    'capabilities' => $capabilities,
                     'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
                         'url' => "https://spennypiggy.co/{$user->username}",
@@ -991,10 +1004,10 @@ class StripeController extends Controller
                 ]);
             } catch (ApiErrorException $e) {
                 Log::error('Stripe createAccount failed', [
-                    'user_id'   => $user->id,
+                    'user_id' => $user->id,
                     'stripe_id' => $user->account_id,
-                    'code'      => $e->getStripeCode(),
-                    'msg'       => $e->getError()->message ?? $e->getMessage(),
+                    'code' => $e->getStripeCode(),
+                    'msg' => $e->getError()->message ?? $e->getMessage(),
                 ]);
 
                 return back()->with(
@@ -1012,23 +1025,23 @@ class StripeController extends Controller
             // ── 3. Generate onboarding link ──────────────────────────────
             try {
                 $link = StripeControl::createAccountLink([
-                    'account'     => $newAccount->id,
+                    'account' => $newAccount->id,
                     'refresh_url' => route('stripe.connect', [
-                        'step'    => 'refresh',
+                        'step' => 'refresh',
                         'country' => $user->country,
                     ]),
-                    'return_url'  => route('stripe.return'),
-                    'type'        => 'account_onboarding',
-                    'collect'     => 'currently_due',
+                    'return_url' => route('stripe.return'),
+                    'type' => 'account_onboarding',
+                    'collect' => 'currently_due',
                 ]);
 
                 return Inertia::location($link->url);
             } catch (ApiErrorException $e) {
                 Log::warning('Stripe accountLink failed', [
                     'user_id' => $user->id,
-                    'new_id'  => $newAccount->id,
-                    'code'    => $e->getStripeCode(),
-                    'msg'     => $e->getError()->message ?? $e->getMessage(),
+                    'new_id' => $newAccount->id,
+                    'code' => $e->getStripeCode(),
+                    'msg' => $e->getError()->message ?? $e->getMessage(),
                 ]);
 
                 return back()->with(
@@ -1044,8 +1057,6 @@ class StripeController extends Controller
             );
         }
     }
-
-
 
     public function enableCardPayments()
     {
@@ -1063,7 +1074,7 @@ class StripeController extends Controller
             // now strictly uses Direct Charges which requires card_payments capability.
             $capabilities = [
                 'card_payments' => ['requested' => true],
-                'transfers' => ['requested' => true]
+                'transfers' => ['requested' => true],
             ];
 
             // if ($currentServiceAgreement === 'recipient') {
@@ -1083,7 +1094,7 @@ class StripeController extends Controller
                 'current_service_agreement' => $currentServiceAgreement,
                 'expected_service_agreement' => $expectedServiceAgreementType,
                 'capabilities' => array_keys($capabilities),
-                'service_agreement_mismatch' => $currentServiceAgreement !== $expectedServiceAgreementType
+                'service_agreement_mismatch' => $currentServiceAgreement !== $expectedServiceAgreementType,
             ]);
 
             // Log a warning if there's a service agreement mismatch
@@ -1093,7 +1104,7 @@ class StripeController extends Controller
                     'account_id' => $user->account_id,
                     'current_agreement' => $currentServiceAgreement,
                     'expected_agreement' => $expectedServiceAgreementType,
-                    'country' => $user->country
+                    'country' => $user->country,
                 ]);
 
                 // FIX: If account is 'recipient' but needs to be 'full', we MUST create a new account.
@@ -1103,10 +1114,10 @@ class StripeController extends Controller
 
                     try {
                         $newAccount = StripeControl::createAccount([
-                            'country'       => $user->country,
-                            'type'          => 'express',
-                            'email'         => $user->email,
-                            'capabilities'  => $capabilities,
+                            'country' => $user->country,
+                            'type' => 'express',
+                            'email' => $user->email,
+                            'capabilities' => $capabilities,
                             'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
                             'business_profile' => [
                                 'url' => "https://spennypiggy.co/{$user->username}",
@@ -1126,7 +1137,7 @@ class StripeController extends Controller
                         Log::info('User migrated to new Stripe account', [
                             'user_id' => $user->id,
                             'old_account' => $oldAccountId,
-                            'new_account' => $newAccount->id
+                            'new_account' => $newAccount->id,
                         ]);
 
                         // Use the new account ID for the rest of the flow
@@ -1173,13 +1184,13 @@ class StripeController extends Controller
             }
 
             $accountLink = StripeControl::getClient()->accountLinks->create([
-                'account'      => $user->account_id,
-                'refresh_url'  => route('stripe.connect', [
-                    'step'    => 'refresh',
+                'account' => $user->account_id,
+                'refresh_url' => route('stripe.connect', [
+                    'step' => 'refresh',
                     'country' => $user->country,
                 ]),
-                'return_url'   => route('stripe.return'),
-                'type'         => $accountLinkType,
+                'return_url' => route('stripe.return'),
+                'type' => $accountLinkType,
             ]);
 
             // 3. Redirect to Stripe’s URL
@@ -1188,7 +1199,7 @@ class StripeController extends Controller
             Log::warning('Stripe onboarding failed', [
                 'user_id' => $user->id,
                 'stripe_error' => $e->getError()->message ?? $e->getMessage(),
-                'stripe_code'  => $e->getStripeCode(),
+                'stripe_code' => $e->getStripeCode(),
             ]);
             $errorMessage = $e->getError()->message ?? $e->getMessage();
 
@@ -1198,31 +1209,30 @@ class StripeController extends Controller
                 $userErrorMessage = 'Your account is configured for recipient payments only and cannot process card payments. Please contact support if you need to change your account type.';
             } elseif (str_contains($errorMessage, 'capability') || str_contains($errorMessage, 'capabilities')) {
                 $userErrorMessage = 'There was an issue configuring payment capabilities for your account. Please contact support for assistance.';
-            } elseif (!$userErrorMessage) {
+            } elseif (! $userErrorMessage) {
                 $userErrorMessage = 'Your Stripe account cannot be onboarded. Please contact support.';
             }
 
-            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error", $userErrorMessage);
+            return redirect(route('user.show', ['username' => $user->username, 'page' => 'about']))->with('error', $userErrorMessage);
         }
     }
-
 
     /**
      * Return URL After Success
      *
-     * @param Request $request
+     * @param  Request  $request
      * @return mixed
      */
     public function connectReturn()
     {
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
-            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Stripe did not initiated properly.");
+            return redirect(route('user.show', ['username' => $user->username]))->with('error', 'Stripe did not initiated properly.');
         }
         try {
             $account = StripeControl::getAccount($user->account_id);
             if (empty($user->stripe_details_submitted)) {
-                $user->stripe_details_submitted = $account->details_submitted ?? NULL;
+                $user->stripe_details_submitted = $account->details_submitted ?? null;
                 $user->default_currency = $account->default_currency;
                 $user->save();
             }
@@ -1239,19 +1249,19 @@ class StripeController extends Controller
                 'payouts_enabled' => $account->payouts_enabled ?? null,
                 'cap_card_payments' => $account->capabilities->card_payments ?? null,
                 'cap_transfers' => $account->capabilities->transfers ?? null,
-                'requirements_due' => $account->requirements->eventually_due ?? []
+                'requirements_due' => $account->requirements->eventually_due ?? [],
             ]);
 
-            return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe connected.");
+            return redirect(route('user.show', ['username' => $user->username]))->with('success', 'Stripe connected.');
         } catch (Exception $e) {
-            return redirect(route("user.show", ["username" => $user->username]))->with("error", $e->getMessage());
+            return redirect(route('user.show', ['username' => $user->username]))->with('error', $e->getMessage());
         }
     }
 
     /**
      * Login To Stripe Express Account Dashboard
      *
-     * @param Request $request
+     * @param  Request  $request
      * @return Response
      */
     // public function loginToStripe(Request $request)
@@ -1264,11 +1274,10 @@ class StripeController extends Controller
     //     }
     // }
 
-
     public function loginToStripe($country = null)
     {
         try {
-            /** @var \App\Models\User|null $user */
+            /** @var User|null $user */
             $user = Auth::user();
 
             Stripe::setApiKey(config('services.stripe.secret'));
@@ -1298,7 +1307,7 @@ class StripeController extends Controller
                         // card_payments ALWAYS requires transfers
                         $capabilities = [
                             'card_payments' => ['requested' => true],
-                            'transfers'     => ['requested' => true],
+                            'transfers' => ['requested' => true],
                         ];
                     }
 
@@ -1307,9 +1316,9 @@ class StripeController extends Controller
 
                     // 4️⃣ Payload
                     $payload = [
-                        'type'    => 'express',
+                        'type' => 'express',
                         'country' => $country,
-                        'email'   => $user->email,
+                        'email' => $user->email,
 
                         'capabilities' => $capabilities,
 
@@ -1326,7 +1335,7 @@ class StripeController extends Controller
                     ];
 
                     // 5️⃣ Default currency (ONLY if valid)
-                    if (!empty($currency)) {
+                    if (! empty($currency)) {
                         $payload['default_currency'] = strtolower($currency);
                     }
 
@@ -1336,21 +1345,20 @@ class StripeController extends Controller
                     // 7️⃣ Persist safely
                     $user->update([
                         'account_id' => $account->id,
-                        'country'    => $country,
+                        'country' => $country,
                     ]);
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
                 } catch (\Throwable $e) {
 
                     Log::error('Stripe account creation failed', [
                         'user_id' => $user->id,
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                     ]);
 
                     return redirect(route('stripe.index'))
                         ->with('error', 'Stripe account creation failed. Please try again.');
                 }
             }
-
 
             // ✅ 2. Create login link
             $loginLink = StripeControl::getLoginLink($user->account_id);
@@ -1360,7 +1368,6 @@ class StripeController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
-
 
     /* create checkout */
     public function createCheckout($owner_id)
@@ -1379,7 +1386,7 @@ class StripeController extends Controller
                 ->with(['wish'])
                 ->get();
 
-            if (!empty($getdata) && $getdata->count() > 0) {
+            if (! empty($getdata) && $getdata->count() > 0) {
                 $message = request()->query('message');
                 if ($msgErr = Helpers::validateSupporterMessage($message)) {
                     return redirect()->back()->with('error', $msgErr);
@@ -1401,7 +1408,7 @@ class StripeController extends Controller
             $totalApplicationFee = 0;
             $totalCreatorNet = 0;
 
-            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner_id);
+            $metrics = app(RiskService::class)->recalculateMetrics((string) $owner_id);
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Resolve requested payment method (card|bank) against progressive
@@ -1412,7 +1419,7 @@ class StripeController extends Controller
                 $cartListedTotal += ((float) $dd->amount + $ddVat) * $dd->quantity;
             }
             $cartCurrency = $getdata[0]->wish->currency ?? 'USD';
-            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+            $methodResolution = CheckoutMethodResolver::resolve(
                 request()->input('payment_method', 'card'),
                 'both',
                 $cartListedTotal,
@@ -1421,7 +1428,7 @@ class StripeController extends Controller
                 Auth::user()->email ?? null,
                 $getdata[0]->owner->account_id
             );
-            if (!($methodResolution['ok'] ?? false)) {
+            if (! ($methodResolution['ok'] ?? false)) {
                 return back()->with('error', $methodResolution['message']);
             }
 
@@ -1442,10 +1449,10 @@ class StripeController extends Controller
                     'price_data' => [
                         'currency' => $dd->wish->currency ?? 'USD',
                         'product_data' => [
-                            'name' => "Total value of item including all fees",
-                            'description' => "Support payment for " . ($dd->wish->title ?? 'Wish Item'),
+                            'name' => 'Total value of item including all fees',
+                            'description' => 'Support payment for '.($dd->wish->title ?? 'Wish Item'),
                         ],
-                        'unit_amount' => (int)round($totalPrice * 100),
+                        'unit_amount' => (int) round($totalPrice * 100),
                     ],
                     'quantity' => $dd->quantity,
                 ];
@@ -1457,13 +1464,13 @@ class StripeController extends Controller
             $stripe = StripeControl::getClient();
 
             $cartSessionPayload = [
-                'success_url' => route('checkout.success', [$owner_id]) . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel', [$owner_id]) . '?session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => route('checkout.success', [$owner_id]).'?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel', [$owner_id]).'?session_id={CHECKOUT_SESSION_ID}',
                 'line_items' => $lineItems,
                 'mode' => 'payment',
                 'payment_method_types' => $methodResolution['payment_method_types'],
                 'payment_intent_data' => [
-                    'application_fee_amount' => (int)($totalApplicationFee * 100),
+                    'application_fee_amount' => (int) ($totalApplicationFee * 100),
                     'receipt_email' => $user->email,
                     'description' => "Wish/Cart Payment for {$getdata[0]->owner->username} (Total value including all fees)",
                 ],
@@ -1519,13 +1526,13 @@ class StripeController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (Exception $e) {
-            return back()->with('error', 'Something went wrong. Error: ' . $e->getMessage());
+            return back()->with('error', 'Something went wrong. Error: '.$e->getMessage());
         }
     }
 
     public function retrive($id)
     {
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe->checkout->sessions->retrieve(
             $id,
             []
@@ -1541,7 +1548,7 @@ class StripeController extends Controller
                 $dd->status = 0;
                 $dd->save();
 
-                if (!empty($dd->wish->subscription)) {
+                if (! empty($dd->wish->subscription)) {
                     if ($dd->wish->subscription == 1) {
                         if ($dd->wish->subscription_period == 'daily') {
                             $end = Carbon::now()->addDay(1);
@@ -1551,8 +1558,7 @@ class StripeController extends Controller
                             $end = Carbon::now()->addMonth(1);
                         }
 
-
-                        $subscription = new Subscription();
+                        $subscription = new Subscription;
                         $subscription->user_id = $dd->user_id;
                         $subscription->owner_id = $dd->owner_id;
                         $subscription->wish_id = $dd->wish_item_id;
@@ -1577,16 +1583,15 @@ class StripeController extends Controller
                 $payment_data = StripePaymentItems::create([
                     'uuid' => (string) Str::uuid(),
                     'stripe_payment_detail_id' => $stripeid->id,
-                    'wish_item_id' => $dd->wish_item_id ?? Null,
+                    'wish_item_id' => $dd->wish_item_id ?? null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
-                    'total_paid' => (float)$dd->amount + (float)($dd->tax ?? 0),
+                    'total_paid' => (float) $dd->amount + (float) ($dd->tax ?? 0),
                     'tax' => $dd->tax,
                     'anonymous' => $dd->anonymous ?? false,
                     'message' => $dd->message ?? null,
                 ]);
                 $payment_data->refresh();
-
 
                 // if ($dd->wish_item_id == NULL) {
                 //     CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
@@ -1598,15 +1603,17 @@ class StripeController extends Controller
             // CheckoutMailToUser::dispatch($stripeid);
             // NOTE: Disabled to prevent duplicate emails - CheckoutController handles this with proper currency
 
-            if (!empty($getdata[0]->owner->username)) {
+            if (! empty($getdata[0]->owner->username)) {
                 $this->userProfileService->clearUserCaches($getdata[0]->owner->username, $getdata[0]->owner->id);
+
                 return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
             } else {
                 $this->userProfileService->clearUserCaches(Auth::user()->username, Auth::user()->id);
+
                 return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
             }
         } catch (\Throwable $th) {
-            Log::info('error:' . $th);
+            Log::info('error:'.$th);
         }
     }
 
@@ -1618,6 +1625,7 @@ class StripeController extends Controller
             'payment_status' => 'unpaid',
             'updated_at' => Carbon::now(),
         ]);
+
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', 'Payment Cancel.');
         // return view('cancel');
     }
@@ -1632,7 +1640,7 @@ class StripeController extends Controller
             // \Log::info(request()->query('name'));
             $cart = UserCart::where('device_id', $device_id)->where('status', 1)->with('owner', 'wish')->get();
 
-            if (!empty($cart) && $cart->count() > 0) {
+            if (! empty($cart) && $cart->count() > 0) {
                 // Check if any cart item is suspended
                 foreach ($cart as $item) {
                     if ($item->wish && $item->wish->is_suspended) {
@@ -1652,14 +1660,14 @@ class StripeController extends Controller
 
                 // Get the creator from the first cart item to validate activity
                 $creator = $cart[0]->owner;
-                if (!$creator) {
+                if (! $creator) {
                     return redirect()->back()->with('error', 'Creator not found.');
                 }
 
                 // NEW: Check creator activity eligibility for anonymous checkout
                 $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
 
-                if (!$activityCheck['eligible']) {
+                if (! $activityCheck['eligible']) {
                     // Send notification to creator about blocked payment
                     $preliminaryTotal = $cart->sum(function ($item) {
                         return $item->amount * $item->quantity;
@@ -1674,13 +1682,13 @@ class StripeController extends Controller
                         'cart_items_count' => $cart->count(),
                         'preliminary_total' => $preliminaryTotal,
                         'activity_status' => $activityCheck['status'],
-                        'content_count' => $activityCheck['content_count'] ?? 0
+                        'content_count' => $activityCheck['content_count'] ?? 0,
                     ]);
 
                     // Return user-friendly error to fan
                     return redirect()->back()->with(
                         'error',
-                        app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
+                        app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
                     );
                 }
 
@@ -1691,7 +1699,7 @@ class StripeController extends Controller
                         'creator_username' => $creator->username,
                         'device_id' => $device_id,
                         'activity_status' => $activityCheck['status'],
-                        'content_count' => $activityCheck['content_count'] ?? 0
+                        'content_count' => $activityCheck['content_count'] ?? 0,
                     ]);
                 }
 
@@ -1700,15 +1708,16 @@ class StripeController extends Controller
                 $totalCreatorNet = 0;
                 $currency = $cart[0]->wish->currency ?? 'USD';
 
-                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $cart[0]->owner_id);
+                $metrics = app(RiskService::class)->recalculateMetrics((string) $cart[0]->owner_id);
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
                 // Resolve requested payment method (card|bank) for the basket total.
                 $cartListedTotal = $cart->sum(function ($item) {
                     $vat = ((float) $item->amount * (float) ($item->owner->vat_amount_percentage ?? 0)) / 100;
+
                     return ((float) $item->amount + $vat) * $item->quantity;
                 });
-                $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+                $methodResolution = CheckoutMethodResolver::resolve(
                     request()->input('payment_method', 'card'),
                     'both',
                     $cartListedTotal,
@@ -1717,7 +1726,7 @@ class StripeController extends Controller
                     request()->query('email'),
                     $cart[0]->owner->account_id ?? ''
                 );
-                if (!($methodResolution['ok'] ?? false)) {
+                if (! ($methodResolution['ok'] ?? false)) {
                     return redirect()->back()->with('error', $methodResolution['message']);
                 }
 
@@ -1738,10 +1747,10 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product_data' => [
-                                'name' => "Total value of item including all fees",
-                                'description' => "Support payment for " . ($value->wish->title ?? 'Wish Item'),
+                                'name' => 'Total value of item including all fees',
+                                'description' => 'Support payment for '.($value->wish->title ?? 'Wish Item'),
                             ],
-                            'unit_amount' => (int)round($totalPrice * 100),
+                            'unit_amount' => (int) round($totalPrice * 100),
                         ],
                         'quantity' => $value->quantity,
                     ];
@@ -1757,7 +1766,7 @@ class StripeController extends Controller
                     return redirect()->back()->with('error', 'Creator has not connected their Stripe account.');
                 }
 
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $anonSessionPayload = [
                     'success_url' => route('checkout.anonymous.success', [$device_id]),
                     'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
@@ -1773,7 +1782,7 @@ class StripeController extends Controller
 
                 $sessioncreate = $stripe->checkout->sessions->create($anonSessionPayload + [
                     'payment_intent_data' => [
-                        'application_fee_amount' => (int)($totalApplicationFee * 100),
+                        'application_fee_amount' => (int) ($totalApplicationFee * 100),
                         'description' => "Anonymous Support Payment for {$creator->username} (Total value including all fees)",
                         'metadata' => Helpers::buildStripeMetadata('wishlist', $cart[0], [
                             'user_id' => null, // Anonymous purchase
@@ -1783,8 +1792,8 @@ class StripeController extends Controller
                             'certificate' => 'true',
                             'product_type' => 'wish_one_off',
                             'device_id' => $device_id,
-                            'creator_net_amount' => (string)($totalCreatorNet * 100),
-                            'total_charge_amount' => (string)(array_sum(array_column($lineItems, 'price_data.unit_amount'))),
+                            'creator_net_amount' => (string) ($totalCreatorNet * 100),
+                            'total_charge_amount' => (string) (array_sum(array_column($lineItems, 'price_data.unit_amount'))),
                             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
                             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
                         ]),
@@ -1823,7 +1832,7 @@ class StripeController extends Controller
                 return Inertia::location($sessioncreate->url);
             }
         } catch (\Throwable) {
-            //throw $th;
+            // throw $th;
         }
     }
 
@@ -1854,7 +1863,7 @@ class StripeController extends Controller
                     'stripe_payment_detail_id' => $stripeid->id,
                     'wish_item_id' => $value->wish_item_id ?? null,
                     'amount' => $amount,
-                    'total_paid' => (float)$amount + (float)($tax ?? 0),
+                    'total_paid' => (float) $amount + (float) ($tax ?? 0),
                     'tax' => $tax,
                     'anonymous' => $value->anonymous ?? false,
                     'message' => $value->message ?? null,
@@ -1867,11 +1876,11 @@ class StripeController extends Controller
                 // CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }
 
-
             $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
+
             return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable) {
-            //throw $th;
+            // throw $th;
         }
     }
 
@@ -1889,9 +1898,8 @@ class StripeController extends Controller
     /**
      * Create Subscription
      *
-     * @param Request $request
-     * @param string $uuid WishItem UUID
-     * @param string $reccure Subscription Reccurning - onetime or Continue
+     * @param  string  $uuid  WishItem UUID
+     * @param  string  $reccure  Subscription Reccurning - onetime or Continue
      * @return mixed
      */
     public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
@@ -1899,28 +1907,35 @@ class StripeController extends Controller
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
             $user = Auth::user();
+
             return to_route('user.show', ['username' => $user->username])
-                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+                ->with('error', '⚠️ Please complete your card verification payment and wait for admin approval before making further payments.');
         }
 
         $user = Auth::user();
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
-        if (!$wish) return redirect()->back()->with('error', 'Wish item not found!');
-        if ($wish->is_suspended) return redirect()->back()->with('error', 'This item is currently suspended and cannot accept payments.');
-        if (!$wish->user) return redirect()->back()->with('error', 'Creator not found!');
+        if (! $wish) {
+            return redirect()->back()->with('error', 'Wish item not found!');
+        }
+        if ($wish->is_suspended) {
+            return redirect()->back()->with('error', 'This item is currently suspended and cannot accept payments.');
+        }
+        if (! $wish->user) {
+            return redirect()->back()->with('error', 'Creator not found!');
+        }
 
         $guestRestriction = Helpers::guestCheckoutRestriction('GBP', 0);
-        if (!Auth::check() && $guestRestriction) {
+        if (! Auth::check() && $guestRestriction) {
             return to_route('login', [
                 'redirect' => $request->fullUrl(),
-                'message' => $guestRestriction['message']
+                'message' => $guestRestriction['message'],
             ]);
         }
 
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($wish->user);
 
-        if (!$activityCheck['eligible']) {
+        if (! $activityCheck['eligible']) {
             // Send notification to creator about blocked payment
             $wish->user->notify(new PaymentBlockedNotification($activityCheck, $wish->price));
 
@@ -1931,13 +1946,13 @@ class StripeController extends Controller
                 'wish_item_id' => $wish->id,
                 'wish_price' => $wish->price,
                 'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
+                'content_count' => $activityCheck['content_count'] ?? 0,
             ]);
 
             // Return user-friendly error to fan
             return redirect()->back()->with(
                 'error',
-                app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
+                app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
             );
         }
 
@@ -1948,12 +1963,9 @@ class StripeController extends Controller
                 'creator_username' => $wish->user->username,
                 'wish_item_id' => $wish->id,
                 'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
+                'content_count' => $activityCheck['content_count'] ?? 0,
             ]);
         }
-
-
-
 
         $subtotals = 0;
         $totalAmount = $wish->price;
@@ -1972,12 +1984,11 @@ class StripeController extends Controller
         );
 
         // If risk enforcement returned a redirect, return it immediately
-        if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+        if ($riskData instanceof RedirectResponse) {
             return $riskData;
         }
 
         $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
-
 
         $chargeCurrency = $wish->currency ?? $wish->user->default_currency ?? 'usd';
         $tax = (float) str_replace(',', '', $wish->tax_amount);
@@ -1986,16 +1997,16 @@ class StripeController extends Controller
         $totalTax = $tax + $adminFee;
         $vat_percentage_amount = 0;
 
-        if ($reccure === 'continue' && !empty($wish->user->vat_amount_percentage)) {
+        if ($reccure === 'continue' && ! empty($wish->user->vat_amount_percentage)) {
             $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
         }
 
-        if ($request->isMethod("POST")) {
+        if ($request->isMethod('POST')) {
             $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $subtotals);
-            if (!Auth::check() && $guestRestriction) {
+            if (! Auth::check() && $guestRestriction) {
                 return to_route('login', [
                     'redirect' => $request->fullUrl(),
-                    'message' => $guestRestriction['message']
+                    'message' => $guestRestriction['message'],
                 ]);
             }
             $request->validate([
@@ -2035,13 +2046,13 @@ class StripeController extends Controller
                             'old_subscription_id' => $existingSub->id,
                             'old_stripe_id' => $existingSub->stripe_id,
                             'user_id' => $user->id,
-                            'wish_item_id' => $wish->id
+                            'wish_item_id' => $wish->id,
                         ]);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         Log::warning('StripeController: Failed to cancel existing subscription', [
                             'old_subscription_id' => $existingSub->id,
                             'old_stripe_id' => $existingSub->stripe_id,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ]);
                         // Mark as cancelled locally even if Stripe call fails
                         $existingSub->status = 'cancelled';
@@ -2056,7 +2067,7 @@ class StripeController extends Controller
 
             // Bank payments are one-off only — recurring wish subscriptions stay on card.
             $requestedMethod = $reccure === 'onetime' ? $request->input('payment_method', 'card') : 'card';
-            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+            $methodResolution = CheckoutMethodResolver::resolve(
                 $requestedMethod,
                 $wish->payment_methods_accepted ?? 'both',
                 $priceWithVat,
@@ -2065,7 +2076,7 @@ class StripeController extends Controller
                 $request->email ?? null,
                 $wish->user->account_id
             );
-            if (!($methodResolution['ok'] ?? false)) {
+            if (! ($methodResolution['ok'] ?? false)) {
                 return back()->with('error', $methodResolution['message']);
             }
 
@@ -2073,21 +2084,21 @@ class StripeController extends Controller
             $finalTotalAmount = $breakdown['total_supporter_pays'];
 
             $sub = WishItemSubscription::create([
-                'wish_item_id'   => $wish->id,
-                'user_id'        => Auth::id(),
-                'guest_name'     => $request->name ?? NULL,
-                'guest_email'    => $request->email,
-                'currency'       => $wish->currency,
-                'amount'         => $wish->price,
-                'fee_profile'    => $methodResolution['fee_profile'],
-                'total_paid'     => $finalTotalAmount,
-                'tax'            => $totalTax,
+                'wish_item_id' => $wish->id,
+                'user_id' => Auth::id(),
+                'guest_name' => $request->name ?? null,
+                'guest_email' => $request->email,
+                'currency' => $wish->currency,
+                'amount' => $wish->price,
+                'fee_profile' => $methodResolution['fee_profile'],
+                'total_paid' => $finalTotalAmount,
+                'tax' => $totalTax,
                 'vat_tax_amount' => ceil($vat_percentage_amount),
-                'recurring_for'  => $reccure,
+                'recurring_for' => $reccure,
                 'recurring_type' => $wish->subscription_period,
                 'payment_method' => 'stripe',
-                'surprise_message' => $request->message ?? NULL,
-                'anonymous' => $request->anonymous ?? 0
+                'surprise_message' => $request->message ?? null,
+                'anonymous' => $request->anonymous ?? 0,
             ]);
 
             Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
@@ -2100,10 +2111,10 @@ class StripeController extends Controller
                 'creator_id' => $wish->user->id,
                 'connected_account_id' => $connectedAccountId,
                 'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
-                'currency' => $chargeCurrency
+                'currency' => $chargeCurrency,
             ])->first();
 
-            if (!$storeCustomer) {
+            if (! $storeCustomer) {
                 $customer = StripeControl::createCustomer([
                     'email' => $user->email ?? $request->email,
                     'name' => $user->name ?? $request->name,
@@ -2123,7 +2134,7 @@ class StripeController extends Controller
                 'connected_account_id' => $connectedAccountId,
                 'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                 'product_id' => $wish->stripe_product_id,
-                'currency' => $chargeCurrency
+                'currency' => $chargeCurrency,
             ])->first();
 
             $priceId = $existingPrice->price_id ?? null;
@@ -2131,7 +2142,7 @@ class StripeController extends Controller
             $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-            if (!$priceId) {
+            if (! $priceId) {
 
                 $priceParams = [
                     'unit_amount' => round($finalTotalAmount * $multiplier),
@@ -2169,11 +2180,11 @@ class StripeController extends Controller
                     'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
-                    'currency' => $chargeCurrency
+                    'currency' => $chargeCurrency,
                 ]);
             }
 
-            if (!$storeCustomer) {
+            if (! $storeCustomer) {
                 ConnectedAccountCustomer::create([
                     'user_id' => $user->id ?? null,
                     'creator_id' => $wish->user->id,
@@ -2182,7 +2193,7 @@ class StripeController extends Controller
                     'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
-                    'currency' => $chargeCurrency
+                    'currency' => $chargeCurrency,
                 ]);
             }
 
@@ -2198,8 +2209,8 @@ class StripeController extends Controller
                             'description' => "Subscription content from {$wish->user->name}",
                         ],
                         'unit_amount' => round($finalTotalAmount * $multiplier),
-                    ]
-                ]
+                    ],
+                ],
             ];
 
             // Add recurring data for non-onetime subscriptions
@@ -2220,14 +2231,15 @@ class StripeController extends Controller
             $hasCardPayments = $methodResolution['fee_profile'] !== 'card'
                 || StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
-            if (!$hasCardPayments) {
+            if (! $hasCardPayments) {
                 $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
-                return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+
+                return back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
 
             $successUrl = route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']);
             if ($request->has('marketing_opt_in') && $request->input('marketing_opt_in')) {
-                $successUrl .= (parse_url($successUrl, PHP_URL_QUERY) ? '&' : '?') . 'marketing_opt_in=1';
+                $successUrl .= (parse_url($successUrl, PHP_URL_QUERY) ? '&' : '?').'marketing_opt_in=1';
             }
 
             $payload = [
@@ -2279,11 +2291,15 @@ class StripeController extends Controller
                 // Funds go to connected account, platform takes application fee.
 
                 $payload['payment_intent_data'] = $paymentIntentData;
+                // Session-level metadata is what the webhook reads to route the
+                // async-settlement (bank/SEPA/ACH) completion for one-time wish
+                // purchases. Without it a delayed bank payment never fulfils.
+                $payload['metadata'] = $paymentIntentData['metadata'];
 
                 Log::info('Wish subscription payment flow determined', [
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
-                    'payment_type' => 'onetime_direct'
+                    'payment_type' => 'onetime_direct',
                 ]);
             } else {
                 $subscriptionData = [
@@ -2313,7 +2329,7 @@ class StripeController extends Controller
                 Log::info('Wish subscription payment flow determined', [
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
-                    'payment_type' => 'subscription_direct'
+                    'payment_type' => 'subscription_direct',
                 ]);
             }
 
@@ -2321,10 +2337,12 @@ class StripeController extends Controller
                 // Create session on CONNECTED account
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, current(compact('force3DS')), $wish->user->username);
                 $sub->update(['session_id' => $session->id]);
+
                 return Inertia::location($session->url);
             } catch (Exception $e) {
                 $sub->delete();
-                Log::error("Stripe Checkout Error: " . $e->getMessage());
+                Log::error('Stripe Checkout Error: '.$e->getMessage());
+
                 return back()->with('error', $e->getMessage());
             }
         }
@@ -2332,24 +2350,24 @@ class StripeController extends Controller
         return Inertia::render('cart/SubCheckout', [
             'wish' => $wish,
             'vat_amount' => $vat_percentage_amount,
-            'reccure' => $reccure
+            'reccure' => $reccure,
         ]);
     }
 
     /**
      * Handle Checkout Session
      *
-     * @param string $uuid Subscription UUID
+     * @param  string  $uuid  Subscription UUID
      * @return mixed
      */
     public function handleSubscription($uuid)
     {
         $sub = WishItemSubscription::whereUuid($uuid)->first();
-        if (!$sub) {
-            return to_route('home')->with("error", 'Insufficient data!');
+        if (! $sub) {
+            return to_route('home')->with('error', 'Insufficient data!');
         }
         if ($sub->status !== 'initiated') {
-            return to_route('user.show', ['username' => $sub->user->username])->with("success", 'Subscription already processed!');
+            return to_route('user.show', ['username' => $sub->user->username])->with('success', 'Subscription already processed!');
         }
         try {
             // Retrieve session from connected account
@@ -2359,15 +2377,16 @@ class StripeController extends Controller
             if ($session->payment_status == 'paid') {
 
                 $symbol = Currency::where('iso', strtoupper($sub->currency))->first();
-                if (!$symbol) {
-                    Log::error("Currency not found for ISO: " . strtoupper($sub->currency));
+                if (! $symbol) {
+                    Log::error('Currency not found for ISO: '.strtoupper($sub->currency));
+
                     return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('error', 'Currency configuration error. Please contact support.');
                 }
                 $creatorAmount = $sub->amount + $sub->vat_tax_amount;
-                $creatorFinalAmount = $symbol->symbol . $creatorAmount;
+                $creatorFinalAmount = $symbol->symbol.$creatorAmount;
                 // Include subscription period in amount display
                 $subscriptionPeriod = $sub->wish_item->subscription_period ?? 'monthly';
-                $amountTotal = $symbol->symbol . $sub->amount . '/' . $subscriptionPeriod;
+                $amountTotal = $symbol->symbol.$sub->amount.'/'.$subscriptionPeriod;
                 $creator_name = $sub->wish_item->user->name;
                 $mailToSend = $sub->guest_email;
 
@@ -2375,9 +2394,9 @@ class StripeController extends Controller
                     'subscription_id' => $sub->id,
                     'wish_item_id' => $sub->wish_item->id,
                     'recurring_for' => $sub->recurring_for,
-                    'has_content_file' => !empty($sub->wish_item->content_file),
-                    'has_reward' => !empty($sub->wish_item->reward),
-                    'guest_email' => $sub->guest_email
+                    'has_content_file' => ! empty($sub->wish_item->content_file),
+                    'has_reward' => ! empty($sub->wish_item->reward),
+                    'guest_email' => $sub->guest_email,
                 ]);
 
                 // ✅ NEW: Use CheckoutMailToUser system for ALL subscriptions (both one-time and recurring)
@@ -2391,7 +2410,7 @@ class StripeController extends Controller
                         'stripe_payment_id' => $stripePayment->id,
                         'session_id' => $stripePayment->session_id,
                         'user_id' => $stripePayment->user_id,
-                        'owner_id' => $stripePayment->owner_id
+                        'owner_id' => $stripePayment->owner_id,
                     ]);
 
                     // Get currency symbol for email
@@ -2405,13 +2424,13 @@ class StripeController extends Controller
                         'subscription_id' => $sub->id,
                         'stripe_payment_id' => $stripePayment->id,
                         'currency_symbol' => $currencySymbol,
-                        'email_address' => $sub->guest_email
+                        'email_address' => $sub->guest_email,
                     ]);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('StripeController: Failed to dispatch CheckoutMailToUser for subscription', [
                         'subscription_id' => $sub->id,
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
 
@@ -2422,7 +2441,7 @@ class StripeController extends Controller
                     'subscription_id' => $sub->id,
                     'gifter_email' => $mailToSend,
                     'amount_total' => $amountTotal,
-                    'creator_name' => $creator_name
+                    'creator_name' => $creator_name,
                 ]);
 
                 $sub->stripe_id = $session->subscription;
@@ -2458,7 +2477,7 @@ class StripeController extends Controller
                             'stripe_price_id' => $stripeSubscription->items->data[0]->price->id ?? null,
                             'collection_method' => $stripeSubscription->collection_method ?? null,
                             'billing_cycle_anchor' => $stripeSubscription->billing_cycle_anchor ?? null,
-                            'created' => $stripeSubscription->created ?? null
+                            'created' => $stripeSubscription->created ?? null,
                         ];
 
                         // Use current_period_end for upcoming_payment instead of manual calculation
@@ -2471,22 +2490,22 @@ class StripeController extends Controller
                             'current_period_start' => $sub->current_period_start,
                             'current_period_end' => $sub->current_period_end,
                             'cancel_at_period_end' => $sub->cancel_at_period_end,
-                            'upcoming_payment' => $sub->upcoming_payment
+                            'upcoming_payment' => $sub->upcoming_payment,
                         ]);
                     } else {
                         // Fallback for one-time payments or sessions without subscriptions
                         Log::warning('StripeController: No subscription ID in session, using fallback calculation', [
                             'subscription_id' => $sub->id,
                             'session_id' => $session->id,
-                            'payment_status' => $session->payment_status
+                            'payment_status' => $session->payment_status,
                         ]);
 
                         $current = Carbon::now();
                         if ($sub->recurring_type == 'daily') {
                             $current->addDay();
-                        } else if ($sub->recurring_type == 'weekly') {
+                        } elseif ($sub->recurring_type == 'weekly') {
                             $current->addWeek();
-                        } else if ($sub->recurring_type == "monthly") {
+                        } elseif ($sub->recurring_type == 'monthly') {
                             $current->addMonth();
                         } else {
                             $current->addYear();
@@ -2494,21 +2513,21 @@ class StripeController extends Controller
                         $sub->upcoming_payment = $current;
                         $sub->stripe_status = 'active'; // Default for one-time payments
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('StripeController: Failed to retrieve Stripe subscription details', [
                         'subscription_id' => $sub->id,
                         'stripe_id' => $session->subscription,
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                        'trace' => $e->getTraceAsString(),
                     ]);
 
                     // Fallback to manual calculation if Stripe API fails
                     $current = Carbon::now();
                     if ($sub->recurring_type == 'daily') {
                         $current->addDay();
-                    } else if ($sub->recurring_type == 'weekly') {
+                    } elseif ($sub->recurring_type == 'weekly') {
                         $current->addWeek();
-                    } else if ($sub->recurring_type == "monthly") {
+                    } elseif ($sub->recurring_type == 'monthly') {
                         $current->addMonth();
                     } else {
                         $current->addYear();
@@ -2533,19 +2552,19 @@ class StripeController extends Controller
                 }
 
                 if ($sub->anonymous == 1) {
-                    $username = "Anonymous user";
+                    $username = 'Anonymous user';
                 } else {
-                    $username = $sub->guest_name ?? "Anonymous user";
+                    $username = $sub->guest_name ?? 'Anonymous user';
                 }
 
-                $userPayment = new UserPayment();
+                $userPayment = new UserPayment;
                 $userPayment->from_user_id = $sub->user_id ?? null;
                 $userPayment->to_user_id = $sub->wish_item->user_id;
                 $userPayment->product_type = 'wish item subscription';
                 $userPayment->amount = $sub->wish_item->price; // Use wish item price directly (no fees)
 
                 // Ensure total_paid is updated in WishItemSubscription if missing
-                if (!$sub->total_paid || $sub->total_paid <= 0) {
+                if (! $sub->total_paid || $sub->total_paid <= 0) {
                     $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                     $sub->total_paid = (float) ($session->amount_total / $multiplier);
                     $sub->save();
@@ -2566,38 +2585,38 @@ class StripeController extends Controller
                 try {
                     $paymentIntentId = $session->payment_intent ?? ($stripeSubscription->latest_invoice->payment_intent ?? null);
                     if ($paymentIntentId) {
-                        $existingPayment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+                        $existingPayment = Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
 
-                        $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($sub->currency ?? 'GBP');
+                        $isZeroDecimal = Helpers::isZeroDecimalCurrency($sub->currency ?? 'GBP');
                         $multiplier = $isZeroDecimal ? 1 : 100;
 
                         // Use actual creator net from session metadata if available, otherwise calculate
                         $creatorNetMinor = round($sub->amount * $multiplier); // Default fallback
                         if ($session && isset($session->metadata->creator_net_amount)) {
                             $creatorNetMinor = (int) $session->metadata->creator_net_amount;
-                        } else if ($session && isset($session->subscription)) {
+                        } elseif ($session && isset($session->subscription)) {
                             // Try to get from subscription metadata
-                            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                             try {
                                 $stripeSub = $stripe->subscriptions->retrieve($session->subscription);
                                 if (isset($stripeSub->metadata->creator_net_amount)) {
                                     $creatorNetMinor = (int) $stripeSub->metadata->creator_net_amount;
                                 }
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 // Ignore
                             }
                         }
 
                         // Calculate initial reserve if needed
                         $reserveMinor = 0;
-                        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $sub->wish_item->user->uuid]);
-                        $reservePercent = app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($sub->wish_item->user, $metrics, now());
+                        $metrics = CreatorMetric::firstOrCreate(['creator_id' => $sub->wish_item->user->uuid]);
+                        $reservePercent = app(ReservePolicy::class)->getEffectiveReservePercent($sub->wish_item->user, $metrics, now());
                         if ($reservePercent > 0) {
                             $reserveMinor = (int) round(($creatorNetMinor * $reservePercent) / 100);
                         }
 
-                        if (!$existingPayment) {
-                            \App\Models\Payment::create([
+                        if (! $existingPayment) {
+                            Payment::create([
                                 'creator_id' => $sub->wish_item->user->uuid,
                                 'amount' => $creatorNetMinor,
                                 'currency' => strtolower($sub->currency),
@@ -2614,16 +2633,18 @@ class StripeController extends Controller
 
                         // Sync to FinancialTransaction to reflect on dashboard
                         $stripeFeeMinor = 0;
-                        if (!empty($paymentIntentId)) {
+                        if (! empty($paymentIntentId)) {
                             $stripeFeeMinor = StripeControl::getStripeFeeMinorForPaymentIntent((string) $paymentIntentId, $sub->wish_item->user->account_id);
                         }
                         $stripeFee = $isZeroDecimal ? (float) $stripeFeeMinor : ((float) $stripeFeeMinor / 100);
 
                         $gross = $sub->total_paid && $sub->total_paid > 0 ? (float) $sub->total_paid : $creatorAmount;
                         $platformFee = $gross - $stripeFee - (float) $sub->amount - (float) $sub->vat_tax_amount;
-                        if ($platformFee < 0) $platformFee = 0;
+                        if ($platformFee < 0) {
+                            $platformFee = 0;
+                        }
 
-                        \App\Models\FinancialTransaction::updateOrCreate(
+                        FinancialTransaction::updateOrCreate(
                             ['stripe_payment_intent_id' => $paymentIntentId],
                             [
                                 'user_id' => $sub->wish_item->user->id,
@@ -2635,16 +2656,16 @@ class StripeController extends Controller
                                 'stripe_fee' => $stripeFee,
                                 'platform_fee' => $platformFee,
                                 'net_amount' => $sub->amount,
-                                'metadata' => json_encode(['wish_item_id' => $sub->wish_item->id])
+                                'metadata' => json_encode(['wish_item_id' => $sub->wish_item->id]),
                             ]
                         );
                     }
-                } catch (\Exception $e) {
-                    Log::error("Failed to create Payment/FinancialTransaction record for wish subscription: " . $e->getMessage());
+                } catch (Exception $e) {
+                    Log::error('Failed to create Payment/FinancialTransaction record for wish subscription: '.$e->getMessage());
                 }
                 // -------------------------------------------------------------
 
-                $message = $username . " just subscribed to your subscription wish " . $sub->wish_item->name;
+                $message = $username.' just subscribed to your subscription wish '.$sub->wish_item->name;
                 NotificationSave::dispatch($message, $sub->wish_item->user, $sub->user, 'Wish Subscription');
                 $message = null;
                 if ($sub->recurring_for == 'onetime') {
@@ -2660,14 +2681,14 @@ class StripeController extends Controller
                     'item_name' => $sub->wish_item->name,
                     'amount' => $sub->amount ?? 0,
                     'currency' => $sub->currency ?? 'GBP',
-                    'item_id' => $sub->wish_item->id
+                    'item_id' => $sub->wish_item->id,
                 ];
 
                 if ($sub->wish_item->content_file) {
                     $thankYouParams['wish_content'] = [
                         'type' => $sub->wish_item->content_file_type,
                         'name' => $sub->wish_item->content_file_name,
-                        'url'  => $sub->wish_item->content_file_url
+                        'url' => $sub->wish_item->content_file_url,
                     ];
                 }
 
@@ -2679,7 +2700,7 @@ class StripeController extends Controller
             // clears — fulfilment runs via the async_payment_succeeded webhook.
             if ($session->payment_status === 'unpaid'
                 && ($session->metadata->fee_profile ?? null) !== 'card'
-                && !empty(array_intersect(['pay_by_bank', 'sepa_debit', 'us_bank_account'], $session->payment_method_types ?? []))) {
+                && ! empty(array_intersect(['pay_by_bank', 'sepa_debit', 'us_bank_account'], $session->payment_method_types ?? []))) {
                 $sub->status = 'processing';
                 $sub->save();
 
@@ -2690,6 +2711,7 @@ class StripeController extends Controller
             SubscriptionFailed::dispatch($sub);
 
             $sub->save();
+
             return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
         } catch (Exception $e) {
             return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('error', $e->getMessage());
@@ -2732,8 +2754,8 @@ class StripeController extends Controller
                     'subscription_id' => $subscription->id,
                     'wish_item_id' => $subscription->wish_item->id,
                     'subscription_type' => $subscription->recurring_for,
-                    'content_delivery' => true
-                ])
+                    'content_delivery' => true,
+                ]),
             ]);
 
             // Create the corresponding stripe payment items for the subscription
@@ -2745,22 +2767,22 @@ class StripeController extends Controller
                 'total_paid' => $totalPaid,
                 'quantity' => 1,
                 'message' => $subscription->surprise_message,
-                'anonymous' => $subscription->anonymous ?? false
+                'anonymous' => $subscription->anonymous ?? false,
             ]);
 
             Log::info('StripeController: Created StripePaymentDetail and Item for subscription', [
                 'subscription_id' => $subscription->id,
                 'stripe_payment_id' => $stripePayment->id,
                 'stripe_payment_item_id' => $stripePaymentItem->id,
-                'wish_item_id' => $subscription->wish_item->id
+                'wish_item_id' => $subscription->wish_item->id,
             ]);
 
             return $stripePayment;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('StripeController: Failed to create StripePaymentDetail for subscription', [
                 'subscription_id' => $subscription->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
@@ -2787,12 +2809,12 @@ class StripeController extends Controller
         } catch (\UnexpectedValueException $e) {
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
             // Invalid payload
             http_response_code(400);
             exit();
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+        } catch (SignatureVerificationException $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
@@ -2803,13 +2825,13 @@ class StripeController extends Controller
         }
 
         $array = [];
-        if (!empty($event)) {
+        if (! empty($event)) {
             $charge = $event->data->object;
 
             // Get email from billing_details
             $email = $charge->billing_details->email ?? null;
             $user = User::where('email', $email)->first();
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'status' => true,
                     'message' => 'user not found',
@@ -2818,7 +2840,7 @@ class StripeController extends Controller
             $subs = StripePaymentDetail::where('user_id', $user->id)->whereIn('payment_status', ['paid', 'pending'])->latest()->first();
             StripeControl::getSubscription($event->data->object->subscription);
             if ($charge->object == 'charge') {
-                if ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                if ($event->type == 'customer.subscription.deleted' && ! empty($subs)) {
                     $subs->payment_status = 'cancelled';
                     $subs->save();
 
@@ -2830,7 +2852,7 @@ class StripeController extends Controller
                     }
 
                     SendRenewMail::dispatch($array, 'cancelled', 'main');
-                } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                } elseif ($event->type == 'invoice.payment_failed' && ! empty($subs)) {
                     $subs->payment_status = 'failed';
                     $subs->save();
 
@@ -2842,7 +2864,7 @@ class StripeController extends Controller
                     }
 
                     SendRenewMail::dispatch($array, 'failed', 'main');
-                } elseif ($event->type == "charge.updated" && !empty($subs)) {
+                } elseif ($event->type == 'charge.updated' && ! empty($subs)) {
 
                     $subs->payment_status = $charge->status ?? 'unknown';
                     $subs->save();
@@ -2867,7 +2889,7 @@ class StripeController extends Controller
                     }
                 }
 
-                if (!empty($subs)) {
+                if (! empty($subs)) {
                     $stripe = new StripeWebhookStatus;
                     $stripe->subscription_id = $subs->id;
                     $stripe->invoice_type = $event->type;
@@ -2885,12 +2907,12 @@ class StripeController extends Controller
             }
 
             // Handle invoice.payment_succeeded events for wish item subscription renewals
-            if ($event->type == "invoice.payment_succeeded") {
+            if ($event->type == 'invoice.payment_succeeded') {
                 $this->handleSubscriptionRenewal($event);
             }
 
             // Handle invoice.paid events for wish item subscriptions
-            if ($event->type == "invoice.paid" && !empty($subs)) {
+            if ($event->type == 'invoice.paid' && ! empty($subs)) {
                 // Find the subscription to get wish item info
                 $subscriptionId = $event->data->object->subscription ?? null;
                 if ($subscriptionId) {
@@ -2900,14 +2922,14 @@ class StripeController extends Controller
                         Log::info('Processing invoice.paid for wish subscription', [
                             'subscription_id' => $subscriptionId,
                             'wish_item_id' => $wishSubscription->wish_item->id,
-                            'event_type' => $event->type
+                            'event_type' => $event->type,
                         ]);
 
                         // Check if wish item has content to deliver
-                        if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
+                        if (! empty($wishSubscription->wish_item->content_file) || ! empty($wishSubscription->wish_item->reward)) {
 
                             $creatorUuid = $wishSubscription->wish_item && $wishSubscription->wish_item->user ? $wishSubscription->wish_item->user->uuid : null;
-                            $metrics = $creatorUuid ? app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creatorUuid) : null;
+                            $metrics = $creatorUuid ? app(RiskService::class)->recalculateMetrics((string) $creatorUuid) : null;
                             $reserveRate = $metrics ? ($metrics->reserve_percent ?? 0) : 0;
 
                             // Use consistent fee calculation for creator net amount
@@ -2923,7 +2945,7 @@ class StripeController extends Controller
                                 'gifter_id' => $wishSubscription->user_id,
                                 'session_id' => $wishSubscription->session_id,
                                 'payment_intent_id' => $event->data->object->payment_intent ?? null,
-                                'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
+                                'deliverable_type' => ! empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
                                 'product_type' => 'wish_subscription_content',
                                 'transaction_amount' => $wishSubscription->amount,
                                 'status' => 'pending',
@@ -2937,10 +2959,10 @@ class StripeController extends Controller
                                     'stripe_subscription_id' => $subscriptionId,
                                     'creator_net_amount' => $creatorNet,
                                     'subscription_payment' => true,
-                                    'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
+                                    'content_type' => ! empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
                                     'invoice_id' => $event->data->object->id,
-                                    'billing_reason' => $event->data->object->billing_reason ?? null
-                                ])
+                                    'billing_reason' => $event->data->object->billing_reason ?? null,
+                                ]),
                             ]);
 
                             // Dispatch ProcessWishItemDeliverable job for content processing
@@ -2952,13 +2974,13 @@ class StripeController extends Controller
                                     $stripeMetadataService = app(StripeMetadataService::class);
                                     $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                                         'wish_content_processed_at' => now()->toISOString(),
-                                        'immediate_delivery' => 'true'
+                                        'immediate_delivery' => 'true',
                                     ]);
-                                } catch (\Exception $e) {
+                                } catch (Exception $e) {
                                     Log::error('StripeController: Failed to update Stripe metadata for wish subscription', [
                                         'deliverable_id' => $deliverable->id,
                                         'payment_intent_id' => $event->data->object->payment_intent,
-                                        'error' => $e->getMessage()
+                                        'error' => $e->getMessage(),
                                     ]);
                                 }
                             }
@@ -2967,16 +2989,16 @@ class StripeController extends Controller
                                 'deliverable_id' => $deliverable->id,
                                 'subscription_id' => $subscriptionId,
                                 'wish_item_id' => $wishSubscription->wish_item->id,
-                                'has_content_file' => !empty($wishSubscription->wish_item->content_file),
-                                'has_reward' => !empty($wishSubscription->wish_item->reward)
+                                'has_content_file' => ! empty($wishSubscription->wish_item->content_file),
+                                'has_reward' => ! empty($wishSubscription->wish_item->reward),
                             ]);
 
                             // Send subscription payment notification using existing wish subscription email
                             $currency = Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
                             $currencySymbol = $currency ? $currency->symbol : '£';
-                            $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+                            $formattedAmount = $currencySymbol.number_format($wishSubscription->amount, 2);
                             $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
-                            $paymentAmount = $formattedAmount . '/' . $subscriptionPeriod;
+                            $paymentAmount = $formattedAmount.'/'.$subscriptionPeriod;
 
                             // Use existing wish subscription email system
                             WishSubscriptionMailToUser::dispatch(
@@ -3033,7 +3055,7 @@ class StripeController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'success'
+            'message' => 'success',
         ]);
         // return true;
     }
@@ -3046,16 +3068,17 @@ class StripeController extends Controller
         $subscriptionId = $event->data->object->subscription ?? null;
         $invoiceData = $event->data->object;
 
-        if (!$subscriptionId) {
-            Log::info("Invoice payment succeeded but no subscription ID found", ['invoice_id' => $invoiceData->id]);
+        if (! $subscriptionId) {
+            Log::info('Invoice payment succeeded but no subscription ID found', ['invoice_id' => $invoiceData->id]);
+
             return;
         }
 
-        Log::info("Processing subscription renewal for invoice.payment_succeeded", [
+        Log::info('Processing subscription renewal for invoice.payment_succeeded', [
             'invoice_id' => $invoiceData->id,
             'subscription_id' => $subscriptionId,
             'billing_reason' => $invoiceData->billing_reason ?? null,
-            'amount' => $invoiceData->amount_paid ?? 0
+            'amount' => $invoiceData->amount_paid ?? 0,
         ]);
 
         // Find the wish item subscription
@@ -3063,8 +3086,9 @@ class StripeController extends Controller
             ->where('status', 'paid')
             ->first();
 
-        if (!$wishSubscription) {
-            Log::info("No wish subscription found for renewal", ['subscription_id' => $subscriptionId]);
+        if (! $wishSubscription) {
+            Log::info('No wish subscription found for renewal', ['subscription_id' => $subscriptionId]);
+
             return;
         }
 
@@ -3093,17 +3117,17 @@ class StripeController extends Controller
                 'subscription_id' => $wishSubscription->id,
                 'stripe_id' => $subscriptionId,
                 'new_period_end' => $wishSubscription->current_period_end,
-                'new_upcoming_payment' => $wishSubscription->upcoming_payment
+                'new_upcoming_payment' => $wishSubscription->upcoming_payment,
             ]);
 
             // Send renewal email notification
             $this->sendRenewalEmailNotification($wishSubscription);
 
             // If wish item has content to deliver for renewals, create deliverable
-            if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
+            if ($wishSubscription->wish_item && (! empty($wishSubscription->wish_item->content_file) || ! empty($wishSubscription->wish_item->reward))) {
 
                 $creatorUuid = $wishSubscription->wish_item && $wishSubscription->wish_item->user ? $wishSubscription->wish_item->user->uuid : null;
-                $metrics = $creatorUuid ? app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creatorUuid) : null;
+                $metrics = $creatorUuid ? app(RiskService::class)->recalculateMetrics((string) $creatorUuid) : null;
                 $reserveRate = $metrics ? ($metrics->reserve_percent ?? 0) : 0;
 
                 // Use consistent fee calculation for creator net amount
@@ -3119,7 +3143,7 @@ class StripeController extends Controller
                     'gifter_id' => $wishSubscription->user_id,
                     'session_id' => $wishSubscription->session_id,
                     'payment_intent_id' => $invoiceData->payment_intent ?? null,
-                    'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
+                    'deliverable_type' => ! empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
                     'product_type' => 'wish_subscription_renewal',
                     'transaction_amount' => $wishSubscription->amount,
                     'status' => 'pending',
@@ -3133,10 +3157,10 @@ class StripeController extends Controller
                         'stripe_subscription_id' => $subscriptionId,
                         'creator_net_amount' => $creatorNet,
                         'subscription_renewal' => true,
-                        'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
+                        'content_type' => ! empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
                         'invoice_id' => $invoiceData->id,
-                        'billing_reason' => $invoiceData->billing_reason ?? 'subscription_cycle'
-                    ])
+                        'billing_reason' => $invoiceData->billing_reason ?? 'subscription_cycle',
+                    ]),
                 ]);
 
                 // Dispatch job to process renewal content delivery
@@ -3148,13 +3172,13 @@ class StripeController extends Controller
                         $stripeMetadataService = app(StripeMetadataService::class);
                         $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                             'wish_renewal_processed_at' => now()->toISOString(),
-                            'immediate_delivery' => 'true'
+                            'immediate_delivery' => 'true',
                         ]);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         Log::error('StripeController: Failed to update Stripe metadata for renewal', [
                             'deliverable_id' => $deliverable->id,
                             'payment_intent_id' => $invoiceData->payment_intent,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ]);
                     }
                 }
@@ -3162,7 +3186,7 @@ class StripeController extends Controller
                 Log::info('Subscription renewal content delivery job dispatched', [
                     'deliverable_id' => $deliverable->id,
                     'subscription_id' => $subscriptionId,
-                    'wish_item_id' => $wishSubscription->wish_item->id
+                    'wish_item_id' => $wishSubscription->wish_item->id,
                 ]);
             }
 
@@ -3173,13 +3197,13 @@ class StripeController extends Controller
             if ($wishSubscription->user) {
                 $this->userProfileService->clearUserCaches($wishSubscription->user->username, $wishSubscription->user->id);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to process subscription renewal', [
                 'subscription_id' => $subscriptionId,
                 'wish_item_id' => $wishSubscription->wish_item_id ?? null,
                 'invoice_id' => $invoiceData->id ?? null,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
@@ -3194,9 +3218,9 @@ class StripeController extends Controller
             // Use the base subscription amount (wish item price only, without platform fees)
             $currency = Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
             $currencySymbol = $currency ? $currency->symbol : '£';
-            $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+            $formattedAmount = $currencySymbol.number_format($wishSubscription->amount, 2);
             $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
-            $renewalAmount = $formattedAmount . '/' . $subscriptionPeriod;
+            $renewalAmount = $formattedAmount.'/'.$subscriptionPeriod;
 
             // Use the existing wish subscription email system for renewals
             WishSubscriptionMailToUser::dispatch(
@@ -3211,12 +3235,12 @@ class StripeController extends Controller
                 'subscription_id' => $wishSubscription->stripe_id,
                 'customer_email' => $wishSubscription->guest_email,
                 'amount' => $renewalAmount,
-                'creator_name' => $wishSubscription->wish_item->user->name
+                'creator_name' => $wishSubscription->wish_item->user->name,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send renewal email notification', [
                 'subscription_id' => $wishSubscription->stripe_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -3224,7 +3248,7 @@ class StripeController extends Controller
     public function cancelSubs($uuid)
     {
         $subs = WishItemSubscription::where('uuid', $uuid)->first();
-        $subs->status = "cancelled";
+        $subs->status = 'cancelled';
         $subs->save();
 
         StripeControl::cancelSubscription($subs->stripe_id);
@@ -3232,6 +3256,7 @@ class StripeController extends Controller
         if ($subs->user) {
             $this->userProfileService->clearUserCaches($subs->user->username, $subs->user->id);
         }
+
         return to_route('user.show', ['username' => $subs->wish_item->user->username])->with('success', "Subscription is cancelled for wish {$subs->wish_item->wishname}.");
     }
 
@@ -3242,35 +3267,35 @@ class StripeController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (! empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
                 'card_verification_required' => true,
-                'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
+                'msg' => 'Please complete your card verification process. Go your profile and complete your card verification process.',
             ]);
         }
         $creator = User::where('uuid', $creator_uid)->first();
-        if (!$creator) {
+        if (! $creator) {
             return response()->json([
                 'status' => false,
-                'msg' => "Creator not found."
+                'msg' => 'Creator not found.',
             ]);
         }
 
-
         // Check if creator has card_payments capability
-        if (!StripeControl::hasCardPaymentsCapability($creator->account_id)) {
+        if (! StripeControl::hasCardPaymentsCapability($creator->account_id)) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+
             return response()->json([
                 'status' => false,
-                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck)
+                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck),
             ]);
         }
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
 
-        if (!$subscriptionCheck['eligible']) {
+        if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
 
@@ -3280,20 +3305,20 @@ class StripeController extends Controller
                 'creator_username' => $creator->username,
                 'payment_amount' => $request->amount ?? 0,
                 'subscription_status' => $subscriptionCheck['status'],
-                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown',
             ]);
 
             // Return user-friendly error to fan
             return response()->json([
                 'status' => false,
-                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
+                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null),
             ]);
         }
 
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
 
-        if (!$activityCheck['eligible']) {
+        if (! $activityCheck['eligible']) {
             // Send notification to creator about blocked payment
             $creator->notify(new PaymentBlockedNotification($activityCheck, $request->amount ?? 0));
 
@@ -3303,13 +3328,13 @@ class StripeController extends Controller
                 'creator_username' => $creator->username,
                 'payment_amount' => $request->amount ?? 0,
                 'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
+                'content_count' => $activityCheck['content_count'] ?? 0,
             ]);
 
             // Return user-friendly error to fan
             return response()->json([
                 'status' => false,
-                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
+                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck),
             ]);
         }
 
@@ -3319,15 +3344,16 @@ class StripeController extends Controller
                 'creator_id' => $creator->id,
                 'creator_username' => $creator->username,
                 'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
+                'content_count' => $activityCheck['content_count'] ?? 0,
             ]);
         }
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
             $user = Auth::user();
+
             return response()->json([
                 'status' => false,
-                'msg' => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
+                'msg' => '⚠️ Please complete your card verification payment and wait for admin approval before making further payments.',
             ]);
         }
 
@@ -3349,7 +3375,7 @@ class StripeController extends Controller
             if ($creator->id == Auth::id()) {
                 return response()->json([
                     'status' => false,
-                    'msg' => "You can't pay yourself!"
+                    'msg' => "You can't pay yourself!",
                 ]);
             }
         }
@@ -3364,7 +3390,7 @@ class StripeController extends Controller
         //     return redirect()->back()->with('error', 'Goal is completed already.');
         // }
 
-        if ($request->isMethod("POST")) {
+        if ($request->isMethod('POST')) {
             $request->validate([
                 'name' => 'required|string|min:3|max:50',
                 'email' => 'required|email:dns',
@@ -3396,7 +3422,7 @@ class StripeController extends Controller
 
             // Resolve requested payment method (card|bank) against listing
             // preference, progressive tiers, and creator capabilities.
-            $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+            $methodResolution = CheckoutMethodResolver::resolve(
                 $request->input('payment_method', 'card'),
                 $goal->payment_methods_accepted ?? 'both',
                 $priceWithVat,
@@ -3405,7 +3431,7 @@ class StripeController extends Controller
                 $request->email ?? null,
                 $creator->account_id
             );
-            if (!($methodResolution['ok'] ?? false)) {
+            if (! ($methodResolution['ok'] ?? false)) {
                 return response()->json([
                     'status' => false,
                     'code' => $methodResolution['code'],
@@ -3437,7 +3463,7 @@ class StripeController extends Controller
             );
 
             // If it's a JSON error response (blocked, step_up, login required), return it immediately
-            if ($riskData instanceof \Illuminate\Http\JsonResponse) {
+            if ($riskData instanceof JsonResponse) {
                 return $riskData;
             }
 
@@ -3468,29 +3494,29 @@ class StripeController extends Controller
                     'price_data' => [
                         'currency' => $sourceCurrency,
                         'product_data' => [
-                            'name' => "Exclusive content",
+                            'name' => 'Exclusive content',
                             'description' => "Exclusive content from {$creator->name}.",
                         ],
                         'unit_amount' => $unitAmount,
-                    ]
-                ]
+                    ],
+                ],
             ];
 
             // Check if creator has card_payments capability
             $hasCardPayments = $methodResolution['fee_profile'] !== 'card'
                 || StripeControl::hasCardPaymentsCapability($creator->account_id);
 
-            if (!$hasCardPayments) {
+            if (! $hasCardPayments) {
                 return response()->json([
                     'status' => false,
-                    'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
+                    'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),
                 ]);
             }
 
             // Direct Charges Implementation
             $paymentIntentData = [
                 'description' => "Exclusive content from {$creator->name}",
-                "metadata" => Helpers::buildStripeMetadata('support_payment', $pay, [
+                'metadata' => Helpers::buildStripeMetadata('support_payment', $pay, [
                     'item_amount' => (string) $unitAmount,
                     'certificate' => 'true',
                     'creator_net_amount' => (string) $creatorNet,
@@ -3507,17 +3533,21 @@ class StripeController extends Controller
                 'creator_id' => $creator->id,
                 'connected_account_id' => $creator->account_id,
                 'payment_type' => 'support_payment',
-                'application_fee_amount' => $applicationFeeAmount
+                'application_fee_amount' => $applicationFeeAmount,
             ]);
 
             $payload = [
-                "mode" => 'payment',
+                'mode' => 'payment',
                 'payment_method_types' => $methodResolution['payment_method_types'],
                 'line_items' => $lineItems,
                 'payment_intent_data' => $paymentIntentData,
+                // Session-level metadata is what the webhook reads to route the
+                // async-settlement (bank/SEPA/ACH) completion. Without it the
+                // delayed bank payment never completes → no deliverable/mail.
+                'metadata' => $paymentIntentData['metadata'],
                 'customer_email' => $user->email ?? $request->email,
-                'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
-                'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
+                'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => 'success']),
+                'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => 'cancel']),
             ];
 
             // Check if we need to force 3DS (risk engine or £1k+ tier fallback; card sessions only)
@@ -3535,16 +3565,19 @@ class StripeController extends Controller
                 $pay->update(['session_id' => $session->id]);
 
                 try {
-                    \App\Models\Payment::create([
+                    Payment::create([
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $riskData['risk_identity_id'],
-                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $creatorNetMinor, (string) strtoupper($sourceCurrency)),
+                        'amount' => app(MoneyNormalizer::class)->toGbpMinor((int) $creatorNetMinor, (string) strtoupper($sourceCurrency)),
                         'reserve_amount_minor' => (function () use ($creator, $creatorNetMinor, $sourceCurrency) {
-                            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
+                            $metrics = app(RiskService::class)->recalculateMetrics((string) $creator->uuid);
                             $reservePercent = (int) ($metrics->reserve_percent ?? 0);
-                            if ($reservePercent <= 0) return 0;
+                            if ($reservePercent <= 0) {
+                                return 0;
+                            }
                             $reserveMinor = (int) round(((int) $creatorNetMinor * $reservePercent) / 100);
-                            return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($sourceCurrency));
+
+                            return app(MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($sourceCurrency));
                         })(),
                         'currency' => 'gbp',
                         'stripe_session_id' => $session->id,
@@ -3552,7 +3585,7 @@ class StripeController extends Controller
                         'status' => 'initiated',
                         'reason_codes' => $riskData['reason_codes'] ?? [],
                     ]);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('Risk Ledger: Failed to record tip jar payment', [
                         'session_id' => $session->id,
                         'error' => $e->getMessage(),
@@ -3561,12 +3594,12 @@ class StripeController extends Controller
 
                 return response()->json([
                     'status' => true,
-                    'url' => $session->url
+                    'url' => $session->url,
                 ]);
             } catch (Exception $e) {
                 return response()->json([
                     'status' => false,
-                    'msg' => $e->getMessage()
+                    'msg' => $e->getMessage(),
                 ]);
             }
         }
@@ -3575,15 +3608,15 @@ class StripeController extends Controller
     /**
      * Handle Checkout Session
      *
-     * @param string $uuid Subscription UUID
+     * @param  string  $uuid  Subscription UUID
      * @return mixed
      */
     public function handleTipJarPayment($uuid)
     {
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        $currency = ! empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         $tip_pay = TipGoalsPayment::whereUuid($uuid)->first();
-        if (!$tip_pay) {
-            return to_route('home')->with("error", 'Insufficient data!');
+        if (! $tip_pay) {
+            return to_route('home')->with('error', 'Insufficient data!');
         }
         try {
             // Need to pass the connected account ID because the session was created on the creator's account
@@ -3593,8 +3626,9 @@ class StripeController extends Controller
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso', strtoupper($currency))->first();
 
-                if (!$ownerCurrency || !$userCurrency) {
-                    Log::error("Currency not found - Owner: " . strtoupper($tip_pay->currency) . ", User: " . strtoupper($currency));
+                if (! $ownerCurrency || ! $userCurrency) {
+                    Log::error('Currency not found - Owner: '.strtoupper($tip_pay->currency).', User: '.strtoupper($currency));
+
                     return to_route('user.show', ['username' => $tip_pay->creator->username])->with('error', 'Currency configuration error. Please contact support.');
                 }
 
@@ -3613,7 +3647,7 @@ class StripeController extends Controller
                     ],
                     [
                         'uuid' => (string) Str::uuid(),
-                        'product_id' => 'support_payment_' . $tip_pay->id,
+                        'product_id' => 'support_payment_'.$tip_pay->id,
                         'creator_id' => $tip_pay->creator_id,
                         'gifter_id' => $tip_pay->user_id,
                         'session_id' => $tip_pay->session_id,
@@ -3631,7 +3665,7 @@ class StripeController extends Controller
                             'tip_goal_id' => $tip_pay->tip_goal_id,
                             'creator_net_amount' => $creatorNet,
                             'anonymous' => $tip_pay->anonymous,
-                        ])
+                        ]),
                     ]
                 );
 
@@ -3644,13 +3678,13 @@ class StripeController extends Controller
                         $stripeMetadataService = app(StripeMetadataService::class);
                         $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                             'support_payment_processed_at' => now()->toISOString(),
-                            'immediate_delivery' => 'true'
+                            'immediate_delivery' => 'true',
                         ]);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         Log::error('StripeController: Failed to update Stripe metadata for support payment', [
                             'deliverable_id' => $deliverable->id,
                             'payment_intent_id' => $session->payment_intent,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ]);
                     }
                 }
@@ -3670,7 +3704,7 @@ class StripeController extends Controller
                         : (float) $tip_pay->amount;
                     $vatAmt = (float) ($tip_pay->vat_amount ?? 0);
                     $stripeFeeMinor = 0;
-                    if (!empty($session->payment_intent)) {
+                    if (! empty($session->payment_intent)) {
                         $stripeFeeMinor = StripeControl::getStripeFeeMinorForPaymentIntent((string) $session->payment_intent, $tip_pay->creator->account_id);
                     }
                     $isZeroDecimal = Helpers::isZeroDecimalCurrency((string) strtoupper($tip_pay->currency ?? 'GBP'));
@@ -3679,46 +3713,47 @@ class StripeController extends Controller
                     // Platform fee is what remains after we give the creator their base amount + vat, and stripe takes its fee from the gross.
                     // Or we can just use the difference.
                     $platformFee = $gross - $stripeFee - (float) $tip_pay->amount - $vatAmt;
-                    if ($platformFee < 0) $platformFee = 0;
+                    if ($platformFee < 0) {
+                        $platformFee = 0;
+                    }
 
                     // Fetch exact platform fee (application_fee_amount) from Stripe Session/Intent if available
-                    if (!empty($session->payment_intent)) {
+                    if (! empty($session->payment_intent)) {
                         try {
-                            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-                            $intentObj = \Stripe\PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $tip_pay->creator->account_id]);
+                            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                            $intentObj = PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $tip_pay->creator->account_id]);
                             if (isset($intentObj->application_fee_amount)) {
                                 $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
                             }
-                        } catch (\Exception $e) {
-                            Log::warning("Could not fetch application_fee_amount for tip", ['error' => $e->getMessage()]);
+                        } catch (Exception $e) {
+                            Log::warning('Could not fetch application_fee_amount for tip', ['error' => $e->getMessage()]);
                         }
                     }
 
                     FinancialTransaction::updateOrCreate(
                         ['source_type' => TipGoalsPayment::class, 'source_id' => $tip_pay->id],
                         [
-                            'user_id'       => $tip_pay->creator_id,
-                            'supporter_id'  => $tip_pay->user_id,
-                            'type'          => 'income',
-                            'gross_amount'  => $gross,
-                            'fee_profile'   => $tip_pay->fee_profile ?? 'card',
-                            'platform_fee'  => $platformFee,
-                            'stripe_fee'    => $stripeFee,
-                            'vat_amount'    => $vatAmt,
-                            'net_amount'    => (float) $tip_pay->amount,
-                            'currency'      => strtoupper($tip_pay->currency ?? 'GBP'),
-                            'status'        => 'completed',
-                            'description'   => 'Tip / Support',
+                            'user_id' => $tip_pay->creator_id,
+                            'supporter_id' => $tip_pay->user_id,
+                            'type' => 'income',
+                            'gross_amount' => $gross,
+                            'fee_profile' => $tip_pay->fee_profile ?? 'card',
+                            'platform_fee' => $platformFee,
+                            'stripe_fee' => $stripeFee,
+                            'vat_amount' => $vatAmt,
+                            'net_amount' => (float) $tip_pay->amount,
+                            'currency' => strtoupper($tip_pay->currency ?? 'GBP'),
+                            'status' => 'completed',
+                            'description' => 'Tip / Support',
                             'transaction_date' => $tip_pay->created_at,
                         ]
                     );
                 } catch (\Throwable $e) {
-                    Log::error('Failed to sync TipGoalsPayment to FinancialTransaction: ' . $e->getMessage(), ['tip_pay_id' => $tip_pay->id]);
+                    Log::error('Failed to sync TipGoalsPayment to FinancialTransaction: '.$e->getMessage(), ['tip_pay_id' => $tip_pay->id]);
                 }
 
                 // Update GMV for creator
                 Helpers::addGmv($tip_pay->creator_id, (float) $tip_pay->amount, $tip_pay->currency);
-
 
                 /**************************TIP**JAR**PWA**START****************************************************/
                 // below is TIP JAR pwa for fans
@@ -3726,8 +3761,8 @@ class StripeController extends Controller
 
                 $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                 $totalPaidAmount = $tip_pay->total_paid && $tip_pay->total_paid > 0 ? $tip_pay->total_paid : (float) ($session->amount_total / $multiplier);
-                $symbolStr = \App\Models\Currency::where('iso', strtoupper($tip_pay->currency))->value('symbol') ?? '£';
-                $amountWithcurrency = $symbolStr . number_format($totalPaidAmount, 2);
+                $symbolStr = Currency::where('iso', strtoupper($tip_pay->currency))->value('symbol') ?? '£';
+                $amountWithcurrency = $symbolStr.number_format($totalPaidAmount, 2);
 
                 $title = "🏅 You've unlocked a new badge!";
                 $content = "You just tipped {$amountWithcurrency} to $CreatorName. Thanks for supporting them!.";
@@ -3737,14 +3772,14 @@ class StripeController extends Controller
 
                 // below is membership pwa for creator
                 $FanName = ucfirst($tip_pay->user->name ?? 'A Fan');
-                $title = "💰 New Support Received";
+                $title = '💰 New Support Received';
                 $content = "You just received a support payment from $FanName!.";
                 $email = $tip_pay->creator->email;
 
                 Helpers::sendNotification($title, $content, $email);
                 /****************************TIP**JAR**PWA**ENDS****************************************************/
 
-                if (!empty($tip_pay->tipGoal)) {
+                if (! empty($tip_pay->tipGoal)) {
                     $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
                     $tip_pay->tipGoal->save();
 
@@ -3754,12 +3789,12 @@ class StripeController extends Controller
                 }
 
                 if ($tip_pay->anonymous == 1) {
-                    $username = "Anonymous user";
+                    $username = 'Anonymous user';
                 } else {
-                    $username = $tip_pay->guest_name ?? "Anonymous user";
+                    $username = $tip_pay->guest_name ?? 'Anonymous user';
                 }
 
-                $userPayment = new UserPayment();
+                $userPayment = new UserPayment;
                 $userPayment->from_user_id = $tip_pay->user_id ?? null;
                 $userPayment->to_user_id = $tip_pay->creator_id ?? null;
                 $userPayment->product_type = 'support payment';
@@ -3772,7 +3807,7 @@ class StripeController extends Controller
                 $userPayment->status = $session->payment_status ?? 'paid';
                 $userPayment->save();
 
-                $message = $username . " just granted some coins to your piggy bank";
+                $message = $username.' just granted some coins to your piggy bank';
                 NotificationSave::dispatch($message, $tip_pay->creator, $tip_pay->user, 'Piggy Bank');
 
                 $this->userProfileService->clearUserCaches($tip_pay->creator->username, $tip_pay->creator->id);
@@ -3788,7 +3823,7 @@ class StripeController extends Controller
                     'currency' => $tip_pay->currency ?? 'GBP',
                     'source' => 'tip_goals_payments',
                     'source_id' => $tip_pay->id,
-                ])->with('success', "Thank you for your support!");
+                ])->with('success', 'Thank you for your support!');
             }
 
             $tip_pay->save();
@@ -3804,7 +3839,8 @@ class StripeController extends Controller
 
             return to_route('user.show', ['username' => $tip_pay->creator->username])->with('warning', "Payment is in {$session->payment_status} status.");
         } catch (Exception $e) {
-            Log::error("Stripe Checkout Error: " . $e->getMessage());
+            Log::error('Stripe Checkout Error: '.$e->getMessage());
+
             return to_route('user.show', ['username' => $tip_pay->creator->username])->with('error', $e->getMessage());
         }
     }
@@ -3812,7 +3848,7 @@ class StripeController extends Controller
     /**
      * Deleting the stripe account through user.
      *
-     * @param string $uuid user UUID
+     * @param  string  $uuid  user UUID
      * @return mixed
      */
     public function deleteStripeAccount($accountid)
@@ -3825,6 +3861,7 @@ class StripeController extends Controller
         // }
         // return to_route('user.show', ['username' => $user->username])->with('success', 'Stripe account deleted successfully!');
         StripeControl::deleteAccount($accountid);
+
         return 'Deleted';
     }
 
@@ -3837,21 +3874,21 @@ class StripeController extends Controller
     {
         $now = now();
         $user = User::where('id', Auth::id())->first();
-        if (!$user) {
+        if (! $user) {
             return back()->with('error', 'Subscription not allowed for this user.');
         }
 
         // If user doesn't have a stripe_id, try to find one by email on Stripe first
-        if (!$user->stripe_id) {
+        if (! $user->stripe_id) {
             try {
-                $search = StripeControl::searchCustomer("email:'" . $user->email . "'");
+                $search = StripeControl::searchCustomer("email:'".$user->email."'");
                 if ($search->data && count($search->data) > 0) {
                     $user->stripe_id = $search->data[0]->id;
                     $user->save();
                     Log::info("Found existing Stripe customer for user {$user->id} by email: {$user->stripe_id}");
                 }
-            } catch (\Exception $e) {
-                Log::warning("StripeController: Could not search for existing customer: " . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('StripeController: Could not search for existing customer: '.$e->getMessage());
             }
         }
 
@@ -3868,11 +3905,11 @@ class StripeController extends Controller
                     $invoices = $stripe->invoices->all([
                         'subscription' => $stripeSub->id,
                         'status' => 'paid',
-                        'limit' => 1
+                        'limit' => 1,
                     ]);
                     $invoice = $invoices->data[0] ?? null;
-                } catch (\Exception $e) {
-                    Log::warning("StripeController: Could not fetch latest invoice for sync: " . $e->getMessage());
+                } catch (Exception $e) {
+                    Log::warning('StripeController: Could not fetch latest invoice for sync: '.$e->getMessage());
                 }
 
                 // Subscription exists on Stripe - sync it using the unified service method
@@ -3883,15 +3920,16 @@ class StripeController extends Controller
                 $user->load('creatorMonthlySubscription');
                 $user->refresh();
 
-                Log::info("StripeController: Sync completed for user {$user->id}. New status: " . $user->subscription_status);
+                Log::info("StripeController: Sync completed for user {$user->id}. New status: ".$user->subscription_status);
 
                 if ($user->subscription_status >= 1) {
                     // Subscription is now active locally (either fully active or trialing)
                     $msg = $user->subscription_status == 2 ? 'Your trial was synchronized.' : 'Your subscription was synchronized.';
+
                     return redirect(
                         route('user.show', [
-                            'username' => $user->username
-                        ]) . '#profile'
+                            'username' => $user->username,
+                        ]).'#profile'
                     )->with('success', $msg);
                 }
 
@@ -3899,8 +3937,8 @@ class StripeController extends Controller
                 if (in_array($stripeSub->status, ['active', 'trialing'])) {
                     return redirect(
                         route('user.show', [
-                            'username' => $user->username
-                        ]) . '#profile'
+                            'username' => $user->username,
+                        ]).'#profile'
                     )->with('success', 'Your subscription is active on Stripe and has been synchronized.');
                 }
 
@@ -3917,12 +3955,13 @@ class StripeController extends Controller
 
                         return redirect(
                             route('user.show', [
-                                'username' => $user->username
-                            ]) . '#profile'
+                                'username' => $user->username,
+                            ]).'#profile'
                         )->with('success', 'Your auto-renewal has been re-enabled successfully!');
-                    } catch (\Exception $e) {
-                        Log::warning("StripeController: Auto-resume failed in checkout flow: " . $e->getMessage());
-                        $endDate = \Carbon\Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
+                    } catch (Exception $e) {
+                        Log::warning('StripeController: Auto-resume failed in checkout flow: '.$e->getMessage());
+                        $endDate = Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
+
                         return back()->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
                     }
                 }
@@ -3931,20 +3970,20 @@ class StripeController extends Controller
                     // Fully active subscription — no action needed
                     return redirect(
                         route('user.show', [
-                            'username' => $user->username
-                        ]) . '#profile'
+                            'username' => $user->username,
+                        ]).'#profile'
                     )->with('success', 'You already have an active subscription.');
                 }
 
-                // If we found a subscription on Stripe but local status is not active, 
+                // If we found a subscription on Stripe but local status is not active,
                 // it might be because the webhook was missed or sync was delayed.
-                // Since syncUserSubscription was just called and it's robust, 
+                // Since syncUserSubscription was just called and it's robust,
                 // we should check again if it fixed the user status.
                 if ($user->is_subscribed) {
                     return redirect(
                         route('user.show', [
-                            'username' => $user->username
-                        ]) . '#profile'
+                            'username' => $user->username,
+                        ]).'#profile'
                     )->with('success', 'Your subscription was found and has been synchronized.');
                 }
 
@@ -3953,7 +3992,7 @@ class StripeController extends Controller
                     ->with('info', 'An existing subscription was found on Stripe but it requires attention (e.g. payment failed). Please check your Stripe billing or contact support.');
             } else {
                 // No active subscription on Stripe — check if local record is still in its paid/trial window
-                $canceledButActive = \App\Models\MonthlyCharge::where('user_id', $user->id)
+                $canceledButActive = MonthlyCharge::where('user_id', $user->id)
                     ->where('status', 'canceled')
                     ->where(function ($q) use ($now) {
                         $q->where(function ($q2) use ($now) {
@@ -3969,24 +4008,24 @@ class StripeController extends Controller
 
                 if ($canceledButActive) {
                     $date = $canceledButActive->current_end_subscription_date
-                        ? \Carbon\Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
-                        : \Carbon\Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
+                        ? Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
+                        : Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
 
                     $date = $canceledButActive->current_end_subscription_date
-                        ? \Carbon\Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
-                        : \Carbon\Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
+                        ? Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
+                        : Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
 
                     $infoMessage = "Your subscription is active until {$date}. You can renew after that date.";
 
                     return redirect(
                         route('user.show', [
-                            'username' => $user->username
-                        ]) . '#profile'
+                            'username' => $user->username,
+                        ]).'#profile'
                     )->with('info', $infoMessage);
                 }
 
                 // Also handle existing paid/active DB record that DB didn't sync (webhook missed)
-                $existingActive = \App\Models\MonthlyCharge::where('user_id', $user->id)
+                $existingActive = MonthlyCharge::where('user_id', $user->id)
                     ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
                     ->whereNotNull('current_end_subscription_date')
                     ->whereDate('current_end_subscription_date', '>=', $now)
@@ -4003,7 +4042,7 @@ class StripeController extends Controller
             }
         }
 
-        $currency = strtolower($request->cookie("currency", "GBP"));
+        $currency = strtolower($request->cookie('currency', 'GBP'));
         $price = 8.99;
 
         // Calculate VAT (20%) on top of the base price, same as the previous 4+VAT logic
@@ -4013,14 +4052,14 @@ class StripeController extends Controller
 
         // A stored customer can be missing or deleted on Stripe (deleted test data, or a
         // key rotated to a different Stripe account). Checkout rejects both, so re-create.
-        $needsCustomer = !$user->stripe_id;
+        $needsCustomer = ! $user->stripe_id;
 
         if ($user->stripe_id) {
             try {
                 $existingCustomer = StripeControl::retrieveCustomer($user->stripe_id);
-                $needsCustomer = !$existingCustomer || ($existingCustomer->deleted ?? false);
+                $needsCustomer = ! $existingCustomer || ($existingCustomer->deleted ?? false);
             } catch (Exception $e) {
-                Log::warning("StripeController: Customer {$user->stripe_id} unusable for user {$user->id}: " . $e->getMessage());
+                Log::warning("StripeController: Customer {$user->stripe_id} unusable for user {$user->id}: ".$e->getMessage());
                 $needsCustomer = true;
             }
         }
@@ -4039,12 +4078,12 @@ class StripeController extends Controller
         }
 
         $sub = MonthlyCharge::create([
-            'user_id'   =>  $user->id,
-            'name'      =>  $user->name ?? NULL,
-            'email'     =>  $user->email,
-            'currency'  =>  "GBP",
-            'amount'    =>  $price,
-            'tax'       =>  $tax,
+            'user_id' => $user->id,
+            'name' => $user->name ?? null,
+            'email' => $user->email,
+            'currency' => 'GBP',
+            'amount' => $price,
+            'tax' => $tax,
             'digital_waiver_confirmed_at' => now(), // Auto-confirm since it's not required to be clicked
         ]);
 
@@ -4057,7 +4096,7 @@ class StripeController extends Controller
         if (strtoupper($currency) === 'GBP') {
             $unit_amount = (int) round($finalTotalAmount * 100);
         } else {
-            $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * $multiplier);
+            $unit_amount = round(Helpers::priceFormat('GBP', $amount, $currency) * $multiplier);
         }
 
         // Determine if user has already used a free trial for the mandatory platform subscription
@@ -4067,27 +4106,27 @@ class StripeController extends Controller
         $trial_period_days = $hasUsedTrial ? 0 : 3;
 
         $payload = [
-            "mode"  =>  'subscription',
-            "currency"  =>  $currency,
-            'line_items' =>  [[
+            'mode' => 'subscription',
+            'currency' => $currency,
+            'line_items' => [[
                 'quantity' => 1,
                 'price_data' => [
                     'currency' => $currency,
                     'product_data' => [
-                        'name' => "Platform Charge: SpennyPiggy (Total value including all fees)",
-                        'description' => "Monthly platform charge for SpennyPiggy features",
+                        'name' => 'Platform Charge: SpennyPiggy (Total value including all fees)',
+                        'description' => 'Monthly platform charge for SpennyPiggy features',
                     ],
                     'unit_amount' => $unit_amount, // Ensure integer
                     'recurring' => [
-                        'interval' => StripeControl::$periods["monthly"],
-                        'interval_count' => 1
-                    ]
-                ]
+                        'interval' => StripeControl::$periods['monthly'],
+                        'interval_count' => 1,
+                    ],
+                ],
             ]],
             'subscription_data' => array_filter([
                 // Only include trial if user has not used it before
                 'trial_period_days' => $trial_period_days > 0 ? $trial_period_days : null,
-                'description' => "Subscription for using site through Stripe.",
+                'description' => 'Subscription for using site through Stripe.',
                 'metadata' => Helpers::buildStripeMetadata('site_subscription', $sub, [
                     'subscription_amount' => (string) $price,
                     'tax_amount' => (string) $tax,
@@ -4098,8 +4137,8 @@ class StripeController extends Controller
                 ]),
             ]),
             'customer' => $user->stripe_id,
-            'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-            'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+            'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
+            'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
         ];
 
         try {
@@ -4113,28 +4152,30 @@ class StripeController extends Controller
                 $updateData['current_end_trial_date'] = now()->addDays($trial_period_days);
             }
             $sub->update($updateData);
+
             return Inertia::location($session->url);
         } catch (Exception $e) {
             $sub->delete();
-            Log::error("StripeController: Mandatory subscription checkout failed for user {$user->id} (customer {$user->stripe_id}): " . $e->getMessage());
-            return back()->with('error', 'We could not start checkout: ' . $e->getMessage());
+            Log::error("StripeController: Mandatory subscription checkout failed for user {$user->id} (customer {$user->stripe_id}): ".$e->getMessage());
+
+            return back()->with('error', 'We could not start checkout: '.$e->getMessage());
         }
     }
 
     /**
      * Handle Checkout Session for mandatory subscription of 4 pound
      *
-     * @param string $uuid Subscription UUID
+     * @param  string  $uuid  Subscription UUID
      * @return mixed
      */
     public function handleMandatorySubscription(Request $request, $uuid)
     {
         $sub = MonthlyCharge::whereUuid($uuid)->first();
-        if (!$sub) {
-            return to_route('home')->with("error", 'Insufficient data!');
+        if (! $sub) {
+            return to_route('home')->with('error', 'Insufficient data!');
         }
         if ($sub->status !== 'initiated') {
-            return to_route('user.show', ['username' => $sub->user->username])->with("success", 'Subscription already processed!');
+            return to_route('user.show', ['username' => $sub->user->username])->with('success', 'Subscription already processed!');
         }
 
         $user = User::where('id', $sub->user_id)->first();
@@ -4147,7 +4188,7 @@ class StripeController extends Controller
                 $sub->stripe_id = $session->subscription;
 
                 // Set upcoming payment and subscription dates based on whether a trial was applied
-                if (!empty($sub->current_end_trial_date)) {
+                if (! empty($sub->current_end_trial_date)) {
                     $sub->upcoming_payment = Carbon::parse($sub->current_end_trial_date);
                 } else {
                     $sub->upcoming_payment = Carbon::now()->addMonth();
@@ -4166,7 +4207,7 @@ class StripeController extends Controller
                 // Create deliverable record for tracking and consistency
                 $deliverable = Deliverable::create([
                     'uuid' => (string) Str::uuid(),
-                    'product_id' => 'mandatory_charge_' . $sub->id,
+                    'product_id' => 'mandatory_charge_'.$sub->id,
                     'item_id' => $sub->id,
                     'creator_id' => null, // Platform access doesn't have a specific creator
                     'gifter_id' => $sub->user_id,
@@ -4183,8 +4224,8 @@ class StripeController extends Controller
                         'user_id' => $sub->user_id,
                         'creator_net_amount' => $creatorNet,
                         'stripe_subscription_id' => $session->subscription,
-                        'access_type' => 'mandatory_platform_access'
-                    ])
+                        'access_type' => 'mandatory_platform_access',
+                    ]),
                 ]);
 
                 // Update Stripe payment intent metadata
@@ -4193,18 +4234,18 @@ class StripeController extends Controller
                         $stripeMetadataService = app(StripeMetadataService::class);
                         $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                             'mandatory_access_processed_at' => now()->toISOString(),
-                            'immediate_delivery' => 'true'
+                            'immediate_delivery' => 'true',
                         ]);
                     } catch (Exception $e) {
                         Log::error('StripeController: Failed to update Stripe metadata for mandatory charge', [
                             'deliverable_id' => $deliverable->id,
                             'payment_intent_id' => $session->payment_intent,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ]);
                     }
                 }
 
-                $currency = strtolower($request->cookie("currency", "GBP"));
+                $currency = strtolower($request->cookie('currency', 'GBP'));
 
                 // Force correct display for GBP emails (Total = Price + Tax)
                 if (strtoupper($currency) === 'GBP') {
@@ -4218,7 +4259,7 @@ class StripeController extends Controller
 
                 $this->userProfileService->clearUserCaches($sub->user->username, $sub->user->id);
 
-                return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
+                return to_route('user.show', ['username' => $sub->user->username])->with('success', 'Subscription Success!');
             }
 
             MonthlySubscribedJob::dispatch($sub->email, $sub, 'failure');
@@ -4226,21 +4267,20 @@ class StripeController extends Controller
             // SubscriptionFailed::dispatch($sub);
 
             $sub->save();
+
             return to_route('user.show', ['username' => $sub->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
         } catch (Exception $e) {
             return to_route('user.show', ['username' => $sub->user->username])->with('error', $e->getMessage());
         }
     }
 
-    
-
     public function createVerificationSession()
     {
         try {
             Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-            /** @var \App\Models\User $user */
+            /** @var User $user */
             $user = Auth::user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'User not found.'], 404);
             }
             if ($user->identity_admin_status == 2) {
@@ -4284,7 +4324,7 @@ class StripeController extends Controller
                 'sessionId' => $session->id,
                 'url' => $session->url,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error creating verification session', ['error' => $e->getMessage()]);
 
             return response()->json([
@@ -4296,31 +4336,31 @@ class StripeController extends Controller
     public function deleteConnectedAccount($accountId)
     {
         // Only allow admins to delete connected accounts or the owner
-        $user = \App\Models\User::find(auth()->id());
-        if (!$user) {
+        $user = User::find(auth()->id());
+        if (! $user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        if ((string)$user->role !== '2' && $user->account_id !== $accountId) {
+        if ((string) $user->role !== '2' && $user->account_id !== $accountId) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
         try {
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY')); // move your secret to .env
+            $stripe = new StripeClient(env('STRIPE_SECRET_KEY')); // move your secret to .env
 
             $deleted = $stripe->accounts->delete($accountId, []);
 
             // Clear local user account ID if it matches
             if ($user->account_id === $accountId) {
-                \App\Models\User::whereKey($user->id)->update([
+                User::whereKey($user->id)->update([
                     'account_id' => null,
                     'stripe_details_submitted' => 0,
                 ]);
             } else {
                 // If admin deleted it, find the user and clear it
-                $targetUser = \App\Models\User::where('account_id', $accountId)->first();
+                $targetUser = User::where('account_id', $accountId)->first();
                 if ($targetUser) {
-                    \App\Models\User::whereKey($targetUser->id)->update([
+                    User::whereKey($targetUser->id)->update([
                         'account_id' => null,
                         'stripe_details_submitted' => 0,
                     ]);
@@ -4331,7 +4371,7 @@ class StripeController extends Controller
                 'message' => 'Connected account deleted successfully.',
                 'deleted' => $deleted,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'message' => 'Failed to delete connected account.',
                 'error' => $e->getMessage(),
@@ -4348,14 +4388,12 @@ class StripeController extends Controller
 
         $product = StripeControl::createProduct([
             'name' => 'Supporter Card Verification',
-            'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
-            "default_price_data" => ["currency" => $currency, "unit_amount_decimal" => $price * $multiplier],
+            'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
+            'default_price_data' => ['currency' => $currency, 'unit_amount_decimal' => $price * $multiplier],
         ], true);
 
         return response()->json([
             'product_id' => $product->id,
         ]);
     }
-
-
 }

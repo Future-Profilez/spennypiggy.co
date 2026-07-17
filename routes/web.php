@@ -946,6 +946,9 @@ if (config('app.env') !== 'production') {
     require __DIR__ . '/test-subscription.php';
 }
 
+// Dev helper: refresh logged-in creator's content dates to today.
+require __DIR__ . '/dev-refresh-dates.php';
+
 
 // Routes already defined above
 // Removed duplicate purchases route
