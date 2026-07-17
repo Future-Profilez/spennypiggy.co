@@ -3372,6 +3372,7 @@ class StripeWebhookController extends Controller
     {
         Log::info('================ EFW WEBHOOK START ================');
         Log::info('EFW Payload Received', [
+            'efw_data' => $efw,
             'efw_id' => $efw->id ?? null,
             'payment_intent' => $efw->payment_intent ?? null,
             'charge' => $efw->charge ?? null,
@@ -3531,8 +3532,7 @@ class StripeWebhookController extends Controller
                         // $content = "A payment received an Early Fraud Warning. Consider refunding to reduce chargeback risk.";
                         $title = "🚨 Refund Recommended";
 
-                        $content =
-                            "{$creator->name} received an Early Fraud Warning.\n\n" .
+                        $content = "{$creator->name} received an Early Fraud Warning.\n\n" .
                             "Product: {$payment->payment_type}\n" .
                             "Amount: {$payment->currency} {$payment->amount}\n" .
                             "Risk: {$efw->risk_level}\n\n" .
@@ -3555,7 +3555,7 @@ class StripeWebhookController extends Controller
 
                         // Email Job
                         \App\Jobs\FraudWarning\SendFraudWarningMailJob::dispatch(
-                            $adminEmail,
+                            $creator,
                             $fraudWarning,
                             $payment
                         );
