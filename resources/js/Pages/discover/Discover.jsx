@@ -14,6 +14,7 @@ import {
 import { Gift } from "lucide-react";
 import IntroVideos from './IntrosVideos';
 import TopSupporters from '../leaderboard/TopSupporters';
+import DiscoverHero from './components/DiscoverHero';
 
 export default function Discover(props) {
     
@@ -251,9 +252,22 @@ export default function Discover(props) {
         <Authenticated auth={auth?.user || ''} >
             <Head title={"Seek & Search"} />
             
-            <div className="min-h-screen bg-[#A2E4B8] ">
-                
-                <TopBar 
+            <div className="min-h-screen bg-[#A2E4B8]">
+
+                {/* Hero shows on landing + trending/new browse states (not keyword search
+                    or a specific content-type tab). Falls back to searchResults when the
+                    backend serves the trending grid instead of featured carousels. */}
+                {!(searchQuery && searchQuery.trim()) && !filters.contentType && (
+                    <DiscoverHero
+                        featuredCreators={(featuredCreators && featuredCreators.length) ? featuredCreators : (searchResults?.creators || [])}
+                        newVerifiedCreators={newVerifiedCreators}
+                        topEarners={topEarners}
+                        featuredWishes={(featuredWishes && featuredWishes.length) ? featuredWishes : (searchResults?.wishes || [])}
+                        onExplore={() => handleQuickFilter('creators')}
+                    />
+                )}
+
+                <TopBar
                     onSearch={handleSearch}
                     initialSearch={searchQuery}
                     activeFilters={activeQuickFilters}
@@ -370,10 +384,10 @@ export default function Discover(props) {
                         {isSearching ? (
                             searchLoading ? (
                                 <div className="space-y-12 py-10">
-                                    <div className="h-8 w-64 bg-gray-200/40 animate-pulse border-2 border-black rounded-lg" />
+                                    <div className="h-8 w-64 bg-black/5 animate-pulse border border-black/10 rounded-[20px]" />
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                                         {Array(4).fill(0).map((_, i) => (
-                                            <div key={i} className="h-64 bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+                                            <div key={i} className="h-64 bg-black/5 animate-pulse border border-black/10 rounded-[30px]" />
                                         ))}
                                     </div>
                                 </div>
@@ -381,18 +395,18 @@ export default function Discover(props) {
                                 <div className="space-y-12">
                                 {searchResults.creators && searchResults.creators.length > 0 && (
                                         <div className="pb-6 mt-5">
-                                            <h2 className=" text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
+                                            <h2 className=" text-2xl text-black font-gulfs uppercase text-black"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
                                             {filters.type === 'trending' && (
-                                                <p className="text-gray-600">Trending creators are selected based on their recent activity, supporter engagement, and overall popularity on the platform.</p>
+                                                <p className="text-gray-700">Trending creators are selected based on their recent activity, supporter engagement, and overall popularity on the platform.</p>
                                             )}
                                             {filters.type === 'new' && (
-                                                <p className="text-gray-600">Fresh faces just joining the platform. Be one of their first supporters!</p>
+                                                <p className="text-gray-700">Fresh faces just joining the platform. Be one of their first supporters!</p>
                                             )}
                                             {searchQuery && (
-                                                <p className="text-gray-600">Found these creators matching your search terms "{searchQuery}".</p>
+                                                <p className="text-gray-700">Found these creators matching your search terms "{searchQuery}".</p>
                                             )}
                                             {filters.contentType === 'Creators' && !filters.type && !searchQuery && (
-                                                <p className="text-gray-600">Explore our diverse community of creators.</p>
+                                                <p className="text-gray-700">Explore our diverse community of creators.</p>
                                             )}
                                             <ResultsGrid  global_currency={global_currency} auth={auth}
                                                 results={searchResults.creators}
@@ -407,18 +421,18 @@ export default function Discover(props) {
 
                                     {searchResults.wishes && searchResults.wishes.length > 0 && (
                                         <div className="pb-6 ">
-                                            <h2 className="text-2xl text-gray-900 !mt-8 mb-0 font-gulfs uppercase"><span className="text-pink">WishLists</span> : Showing  {searchResults.wishes.length} Results</h2>
+                                            <h2 className="text-2xl text-black !mt-8 mb-0 font-gulfs uppercase text-black"><span className="text-pink">WishLists</span> : Showing  {searchResults.wishes.length} Results</h2>
                                             {filters.type === 'trending' && (
-                                                <p className="text-gray-600 mt-0">These wishes are currently receiving the most attention and support from the community.</p>
+                                                <p className="text-gray-700 mt-0">These wishes are currently receiving the most attention and support from the community.</p>
                                             )}
                                             {filters.type === 'new' && (
-                                                <p className="text-gray-600 mt-0">Recently added wishes from creators.</p>
+                                                <p className="text-gray-700 mt-0">Recently added wishes from creators.</p>
                                             )}
                                             {searchQuery && (
-                                                <p className="text-gray-600 mt-0">Wishes matching your search criteria "{searchQuery}".</p>
+                                                <p className="text-gray-700 mt-0">Wishes matching your search criteria "{searchQuery}".</p>
                                             )}
                                             {filters.contentType === 'Wishes' && !filters.type && !searchQuery && (
-                                                <p className="text-gray-600 mt-0">Browse through wishes from various creators.</p>
+                                                <p className="text-gray-700 mt-0">Browse through wishes from various creators.</p>
                                             )}
                                             <ResultsGrid 
                                                 results={searchResults.wishes}
@@ -439,18 +453,18 @@ export default function Discover(props) {
 
                                     {searchResults.bills && searchResults.bills.length > 0 && (
                                         <div className="pb-8 ">
-                                            <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Bills</span> : Showing  {searchResults.bills.length} Results</h2>
+                                            <h2 className="text-2xl text-black font-gulfs uppercase text-black"><span className="text-pink">Bills</span> : Showing  {searchResults.bills.length} Results</h2>
                                             {filters.type === 'trending' && (
-                                                <p className="text-gray-600 mt-0">Bills that are urgently seeking support or have high community interest right now.</p>
+                                                <p className="text-gray-700 mt-0">Bills that are urgently seeking support or have high community interest right now.</p>
                                             )}
                                             {filters.type === 'new' && (
-                                                <p className="text-gray-600 mt-0">Latest bills posted by creators needing support.</p>
+                                                <p className="text-gray-700 mt-0">Latest bills posted by creators needing support.</p>
                                             )}
                                             {searchQuery && (
-                                                <p className="text-gray-600 mt-0">Bills matching your search "{searchQuery}".</p>
+                                                <p className="text-gray-700 mt-0">Bills matching your search "{searchQuery}".</p>
                                             )}
                                             {filters.contentType === 'Bills' && !filters.type && !searchQuery && (
-                                                <p className="text-gray-600 mt-0">Support creators by helping with their bills.</p>
+                                                <p className="text-gray-700 mt-0">Support creators by helping with their bills.</p>
                                             )}
                                             <ResultsGrid 
                                                 results={searchResults.bills}
@@ -465,18 +479,18 @@ export default function Discover(props) {
 
                                     {searchResults.memberships && searchResults.memberships.length > 0 && (
                                         <div className="pb-6 ">
-                                            <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Memberships</span> : Showing  {searchResults.memberships.length} Results</h2>
+                                            <h2 className="text-2xl  text-black font-gulfs uppercase text-black"><span className="text-pink">Memberships</span> : Showing  {searchResults.memberships.length} Results</h2>
                                             {filters.type === 'trending' && (
-                                                <p className="text-gray-600 mt-0">The most popular membership tiers offering exclusive perks and content.</p>
+                                                <p className="text-gray-700 mt-0">The most popular membership tiers offering exclusive perks and content.</p>
                                             )}
                                             {filters.type === 'new' && (
-                                                <p className="text-gray-600 mt-0">Newest membership tiers available.</p>
+                                                <p className="text-gray-700 mt-0">Newest membership tiers available.</p>
                                             )}
                                             {searchQuery && (
-                                                <p className="text-gray-600 mt-0">Membership tiers matching your search "{searchQuery}".</p>
+                                                <p className="text-gray-700 mt-0">Membership tiers matching your search "{searchQuery}".</p>
                                             )}
                                             {filters.contentType === 'Memberships' && !filters.type && !searchQuery && (
-                                                <p className="text-gray-600 mt-0">Exclusive membership options.</p>
+                                                <p className="text-gray-700 mt-0">Exclusive membership options.</p>
                                             )}
                                             <ResultsGrid 
                                                 results={searchResults.memberships}
@@ -491,9 +505,9 @@ export default function Discover(props) {
 
                                     {displayedTasks && displayedTasks.length > 0 && (
                                         <div className="pb-6 ">
-                                            <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Tasks</span> : Showing  {displayedTasks.length} Results</h2>
+                                            <h2 className="text-2xl  text-black font-gulfs uppercase text-black"><span className="text-pink">Tasks</span> : Showing  {displayedTasks.length} Results</h2>
                                             {filters.contentType === 'Tasks' && !filters.type && !searchQuery && (
-                                                <p className="text-gray-600 mt-0">Explore featured tasks.</p>
+                                                <p className="text-gray-700 mt-0">Explore featured tasks.</p>
                                             )}
                                             <ResultsGrid 
                                                 results={displayedTasks}
@@ -508,9 +522,9 @@ export default function Discover(props) {
 
                                     {displayedShops && displayedShops.length > 0 && (
                                         <div className="pb-6 ">
-                                            <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Shop Items</span> : Showing  {displayedShops.length} Results</h2>
+                                            <h2 className="text-2xl  text-black font-gulfs uppercase text-black"><span className="text-pink">Shop Items</span> : Showing  {displayedShops.length} Results</h2>
                                             {filters.contentType === 'Shops' && !filters.type && !searchQuery && (
-                                                <p className="text-gray-600 mt-0">Explore featured shop items.</p>
+                                                <p className="text-gray-700 mt-0">Explore featured shop items.</p>
                                             )}
                                             <ResultsGrid 
                                                 results={displayedShops}
@@ -524,10 +538,10 @@ export default function Discover(props) {
                                     )}
 
                                     {(!searchResults.creators?.length && !searchResults.wishes?.length && !searchResults.bills?.length && !searchResults.memberships?.length && !displayedTasks?.length && !displayedShops?.length) && (
-                                        <div className="text-center py-20 px-10 bg-white rounded-[30px]    border border-dashed border-gray-200">
+                                        <div className="text-center py-20 px-10 bg-white rounded-[30px] border border-dashed border-black/15">
                                             <div className="text-gray-400 text-5xl mb-4">🔍</div>
-                                            <h3 className="text-lg font-medium text-gray-900 mb-2">No matches found</h3>
-                                            <p className="text-gray-500">Try adjusting your search or filters to find what you're looking for.</p>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No matches found</h3>
+                                            <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
                                         </div>
                                     )}
                                 </div>

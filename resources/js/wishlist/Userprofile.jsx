@@ -254,27 +254,27 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                     <div>
                         {user && user?.role == 1 ? (
                             <div className="flex mb-4 justify-center lg:justify-end gap-2 md:gap-3">
-                                <div className="flex flex-col items-center justify-center text-center min-w-[84px] bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="sm:flex items-center justify-center text-center min-w-[84px] bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black text-lg md:text-xl leading-none whitespace-nowrap">
                                         👥 {user?.followers_count}
                                     </span>
-                                    <p className="font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
+                                    <p className="sm:ps-1 font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
                                         Followers
                                     </p>
                                 </div>
-                                <div className="flex flex-col items-center justify-center text-center min-w-[84px] bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="sm:flex items-center justify-center text-center min-w-[84px] bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black text-lg md:text-xl leading-none whitespace-nowrap">
                                         🤝 {user?.following_count}
                                     </span>
-                                    <p className="font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
+                                    <p className="sm:ps-1 font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
                                         Following
                                     </p>
                                 </div>
-                                <div className="flex flex-col items-center justify-center text-center min-w-[84px] bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="sm:flex items-center justify-center text-center min-w-[84px] bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black text-lg md:text-xl leading-none whitespace-nowrap">
                                         🐷 {supporters}
                                     </span>
-                                    <p className="font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
+                                    <p className="sm:ps-1 font-black text-black text-[10px] md:text-xs uppercase mt-1 tracking-wide">
                                         Supporters
                                     </p>
                                 </div>
@@ -307,35 +307,19 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                     {!IsloggedIn ? (
                                         <div className="flex gap-1">
                                             <Suspense fallback={null}>
-                                                <ReportContentModal
-                                                    reportedUser={user}
-                                                />
+                                                <ReportContentModal reportedUser={user} />
                                             </Suspense>
                                             <Suspense fallback={null}>
-                                                <FollowButton
-                                                    targetUserId={
-                                                        opponantUser?.id
-                                                    }
-                                                    isInitiallyFollowing={
-                                                        follow_status
-                                                    }
-                                                />
+                                                <FollowButton targetUserId={opponantUser?.id } isInitiallyFollowing={follow_status} />
                                             </Suspense>
 
                                             {auth?.user && (
                                                 <>
                                                     {blockState?.blocked_by_me ? (
-                                                        // Show Unblock Button (Green)
                                                         <button
-                                                            onClick={
-                                                                unblockUser
-                                                            }
-                                                            onMouseEnter={() =>
-                                                                unblockIconRef.current?.startAnimation?.()
-                                                            }
-                                                            onMouseLeave={() =>
-                                                                unblockIconRef.current?.stopAnimation?.()
-                                                            }
+                                                            onClick={unblockUser}
+                                                            onMouseEnter={() => unblockIconRef.current?.startAnimation?.() }
+                                                            onMouseLeave={() => unblockIconRef.current?.stopAnimation?.()}
                                                             className="bg-green-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white group"
                                                             title="Unblock User"
                                                         >

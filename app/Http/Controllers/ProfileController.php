@@ -2,76 +2,80 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\IntroStatus;
 use App\Helpers;
+use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\SendBioSocialUpdateEmail;
 use App\Jobs\SendIntroMailAdmin;
+use App\Models\BillPayment;
+use App\Models\Bills;
+use App\Models\Currency;
+use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
+use App\Models\Logs;
+use App\Models\Membership;
+use App\Models\MembershipPayment;
+use App\Models\MonthlyCharge;
+use App\Models\Notification;
+use App\Models\PiggyPotContribution;
+use App\Models\Post;
+use App\Models\PostComment;
+use App\Models\PostCommentReplies;
+use App\Models\PostLike;
+use App\Models\Shop;
+use App\Models\ShopCategory;
+use App\Models\ShopPayment;
+use App\Models\ShopShippingInfo;
+use App\Models\StripePaymentDetail;
+use App\Models\StripePaymentItems;
+use App\Models\SupportStoryReaction;
+use App\Models\SupportStoryReply;
+use App\Models\SupportTicket;
+use App\Models\TaskPurchase;
+use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
+use App\Models\User;
+use App\Models\UserBackupCode;
+use App\Models\UserBlock;
+use App\Models\UserCart;
+use App\Models\UserCategory;
 use App\Models\UserIntro;
+use App\Models\UserShopCategories;
+use App\Models\UserVerificationStatus;
+use App\Models\WishCategory;
+use App\Models\WishItem;
+use App\Models\WishItemSubscription;
+use App\Services\Risk\EffectiveLimitsService;
+use App\Services\Risk\RiskIdentityService;
+use App\Services\UserProfileService;
+use App\StripeControl;
+use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use PhpParser\Node\Expr\Print_;
+use Intervention\Image\Facades\Image;
+use PragmaRX\Google2FALaravel\Google2FA;
+use PragmaRX\Recovery\Recovery;
 use Uploadcare\Api;
 use Uploadcare\AuthUrl\AuthUrlConfig;
 use Uploadcare\AuthUrl\Token\AkamaiToken;
-use PragmaRX\Google2FALaravel\Google2FA;
 use Uploadcare\Configuration;
-use PragmaRX\Recovery\Recovery;
-use App\Http\Requests\ProfileUpdateRequest;
-use App\Models\User;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
-use Carbon\Carbon;
-use App\Models\UserVerificationStatus;
-use App\Jobs\SendBioSocialUpdateEmail;
-use App\Models\Logs;
-use App\Models\BillPayment;
-use App\Models\Bills;
-use App\Models\Membership;
-use App\Models\MembershipPayment;
-use App\Models\WishItemSubscription;
-use App\Models\WishItem;
-use App\Models\MonthlyCharge;
-use App\Models\StripePaymentDetail;
-use App\Models\StripePaymentItems;
-use App\Models\Notification;
-use App\Models\Post;
-use App\Models\PostLike;
-use App\Models\PostComment;
-use App\Models\PostCommentReplies;
-use App\Models\Shop;
-use App\Models\ShopCategory;
-use App\Models\ShopShippingInfo;
-use App\Models\WishCategory;
-use App\StripeControl;
-use Intervention\Image\Facades\Image;
-use App\Models\ShopPayment;
-use App\Models\UserCart;
-use App\Models\UserCategory;
-use App\Models\UserShopCategories;
-use App\Models\TipGoal;
-use App\Models\TipGoalsPayment;
-use App\Models\Deliverable;
-use App\Models\UserBackupCode;
-use App\Services\UserProfileService;
-use App\Models\TaskPurchase;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\Cache;
-use App\Models\SupportStoryReaction;
-use App\Models\SupportStoryReply;
-use App\Models\UserBlock;
 
 class ProfileController extends Controller
 {
-
     protected $uploadcareApi;
 
     protected $google2FA;
+
     protected $userProfileService;
 
     public function __construct(Google2FA $google2FA, UserProfileService $userProfileService)
@@ -105,13 +109,14 @@ class ProfileController extends Controller
             $request->user()->email_verified_at = null;
         }
         $request->user()->save();
+
         // return Redirect::route('profile.edit');
         return back()->with('success', 'Profile information updated.');
     }
 
     public function uploadToUploadcare($file)
     {
-        $uploadcareHost = "https://upload.uploadcare.com/base/";
+        $uploadcareHost = 'https://upload.uploadcare.com/base/';
         $response = Http::asMultipart()->post($uploadcareHost, [
             [
                 'name' => 'UPLOADCARE_PUB_KEY',
@@ -127,6 +132,7 @@ class ProfileController extends Controller
                 'filename' => $file->getClientOriginalName(),
             ],
         ]);
+
         return json_decode($response);
     }
 
@@ -140,7 +146,7 @@ class ProfileController extends Controller
             // $method = $request->method();   // GET, POST, etc.
 
             $user = User::where('id', Auth::id())->first();
-            $currency = strtolower($request->cookie("currency", "GBP"));
+            $currency = strtolower($request->cookie('currency', 'GBP'));
 
             // if($request->min_surprise_amount < 5){
             //     return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
@@ -148,7 +154,7 @@ class ProfileController extends Controller
 
             $blockedWord = Helpers::checkBlockData($request);
             if ($blockedWord !== false) {
-                return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
+                return redirect()->back()->with('error', "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
             } else {
                 $messages = [
                     'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
@@ -171,20 +177,20 @@ class ProfileController extends Controller
                 $user->username = $request->username;
                 $user->gender = $request->gender;
                 $user->country = $request->country;
-                $user->creator_category = !empty($request->creator_category) ? json_encode($request->creator_category) : null;
+                $user->creator_category = ! empty($request->creator_category) ? json_encode($request->creator_category) : null;
 
                 if ($request->email !== $user->email) {
                     // Direct update to ensure it persists and bypasses any potential model interference
                     User::where('id', $user->id)->update([
                         'email' => $request->email,
-                        'email_verified_at' => null
+                        'email_verified_at' => null,
                     ]);
                     $user->refresh(); // Sync the model instance with DB changes
-                    Log::info('Email updated and verification reset for user: ' . $user->id);
+                    Log::info('Email updated and verification reset for user: '.$user->id);
                 }
 
                 $userProfileStatus = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
-                if (!$userProfileStatus) {
+                if (! $userProfileStatus) {
                     $userProfileStatus = UserVerificationStatus::create([
                         'user_id' => $user->id,
                         'role' => $user->role,
@@ -198,7 +204,7 @@ class ProfileController extends Controller
                         'role' => $user->role,
                     ], [
                         'role' => $user->role,
-                        'bio_status' => !empty($request->bio) ? 0 : null,
+                        'bio_status' => ! empty($request->bio) ? 0 : null,
                     ]);
 
                     $updatedFields = [
@@ -206,7 +212,7 @@ class ProfileController extends Controller
                         'social' => $request->social_handle !== $user->social_handle,
                     ];
 
-                    if ($user->profile_status_lock == 2 && ((!empty($updatedFields['bio']) && !empty($request->bio)) || !empty($updatedFields['social']))) {
+                    if ($user->profile_status_lock == 2 && ((! empty($updatedFields['bio']) && ! empty($request->bio)) || ! empty($updatedFields['social']))) {
                         dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                     }
 
@@ -226,7 +232,7 @@ class ProfileController extends Controller
 
                 $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
-                if (is_array($avatar) && !empty($avatar)) {
+                if (is_array($avatar) && ! empty($avatar)) {
                     $user->avatar = $avatar['uuid'] ?? null;
                     $user->avatar_approved = 0;
                     // $user->profile_status_lock = 1;
@@ -236,7 +242,7 @@ class ProfileController extends Controller
                         $userProfileStatus->save();
                     }
                 }
-                if (is_array($cover) && !empty($cover)) {
+                if (is_array($cover) && ! empty($cover)) {
                     $user->cover = $cover['uuid'] ?? null;
                     $preApprovedCovers = [
                         '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
@@ -253,7 +259,7 @@ class ProfileController extends Controller
                         'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
                         '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
                         'c3b7ff7a-719a-452a-ba8f-d074d916b395',
-                        '133b057f-f069-4ea4-82e4-ba9184d721cd'
+                        '133b057f-f069-4ea4-82e4-ba9184d721cd',
                     ];
                     $user->cover_approved = in_array($user->cover, $preApprovedCovers) ? 1 : 0;
                     $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
@@ -262,7 +268,7 @@ class ProfileController extends Controller
                 if ($request->hasFile('social_image')) {
                     $file = $request->file('social_image');
 
-                    $uploadcareHost = "https://upload.uploadcare.com/base/";
+                    $uploadcareHost = 'https://upload.uploadcare.com/base/';
 
                     $response = Http::asMultipart()->post($uploadcareHost, [
                         [
@@ -283,18 +289,18 @@ class ProfileController extends Controller
                     if ($response->successful() && isset($response['file'])) {
                         $user->social_image = $response['file']; // store the Uploadcare UUID
                     } else {
-                        Log::error("Uploadcare error", ['response' => $response->body()]);
+                        Log::error('Uploadcare error', ['response' => $response->body()]);
+
                         return back()->with('error', 'Failed to upload image to Uploadcare.');
                     }
                 }
 
-
                 $user->save();
                 $user->refresh();
 
-                if (!empty($request->bio)) {
+                if (! empty($request->bio)) {
                     $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
-                    if (!empty($logs)) {
+                    if (! empty($logs)) {
                         // logs data save
                         $logs->status = 'updated';
                         $logs->save();
@@ -306,16 +312,18 @@ class ProfileController extends Controller
                     }
                 }
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
-                return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+
+                return redirect(route('user.show', ['username' => $request->username ?? $user->username]))->with('success', 'Profile has been updated.');
                 // if($request->profilepage == 1){
                 //     return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
-                // } else { 
+                // } else {
                 //     return back()->with('success', 'Profile updated successfully.');
                 // }
 
             }
         } catch (\Throwable $e) {
             Log::error('Profile update error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
+
             return back()->with('error', 'Something went wrong while updating your profile.');
         }
     }
@@ -334,7 +342,8 @@ class ProfileController extends Controller
 
             return back()->with('success', 'Your Verification Request Submit Successfully.');
         } catch (\Exception $e) {
-            Log::error('Error updating profile lock status: ' . $e->getMessage());
+            Log::error('Error updating profile lock status: '.$e->getMessage());
+
             return back()->with('error', 'Failed to update profile lock status. Please try again later.');
         }
     }
@@ -352,7 +361,7 @@ class ProfileController extends Controller
 
         $bills = BillPayment::where('user_id', $user->id)->where('status', 'paid')->get();
         $connectedAccount = $bills->bill->user->account_id;
-        if (!empty($bills)) {
+        if (! empty($bills)) {
             foreach ($bills as $bill) {
                 StripeControl::cancelSubscription($bill->stripe_id, $connectedAccount);
             }
@@ -360,7 +369,7 @@ class ProfileController extends Controller
 
         $members = MembershipPayment::where('user_id', $user->id)->where('status', 'paid')->get();
 
-        if (!empty($members)) {
+        if (! empty($members)) {
             foreach ($members as $member) {
                 StripeControl::cancelSubscription($member->stripe_id);
             }
@@ -368,7 +377,7 @@ class ProfileController extends Controller
 
         $wishSubs = WishItemSubscription::where('user_id', $user->id)->where('status', 'paid')->get();
 
-        if (!empty($wishSubs)) {
+        if (! empty($wishSubs)) {
             foreach ($wishSubs as $sub) {
                 StripeControl::cancelSubscription($sub->stripe_id);
             }
@@ -376,7 +385,7 @@ class ProfileController extends Controller
 
         $monthlyCharges = MonthlyCharge::where('user_id', $user->id)->where('status', 'paid')->get();
 
-        if (!empty($monthlyCharges)) {
+        if (! empty($monthlyCharges)) {
             foreach ($monthlyCharges as $charge) {
                 StripeControl::cancelSubscription($charge->stripe_id);
             }
@@ -490,10 +499,9 @@ class ProfileController extends Controller
 
         WishItem::where('user_id', $user->id)->delete();
 
-
-        if (!empty($user->account_id)) {
+        if (! empty($user->account_id)) {
             StripeControl::deleteAccount($user->account_id);
-            $user->account_id = NULL;
+            $user->account_id = null;
             $user->stripe_details_submitted = 0;
         }
         $user->save();
@@ -515,10 +523,10 @@ class ProfileController extends Controller
     {
         $user = User::where('id', Auth::id())->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => false,
-                'msg' => 'User not found.'
+                'msg' => 'User not found.',
             ], 404);
         }
 
@@ -536,7 +544,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => "Notifications for email are $status."
+            'message' => "Notifications for email are $status.",
         ]);
     }
 
@@ -544,21 +552,19 @@ class ProfileController extends Controller
     {
         $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking', 'Graphic'];
 
-
-        //For avatar adult check.
+        // For avatar adult check.
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
+            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
         ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
             'target' => $uuid,
         ]);
 
-
         $response = Http::withHeaders([
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
-        ])->get("https://api.uploadcare.com/files/" . $uuid . "/?include=appdata");
+            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
+        ])->get('https://api.uploadcare.com/files/'.$uuid.'/?include=appdata');
 
         $data = $response->json();
         $tags = [];
@@ -569,26 +575,26 @@ class ProfileController extends Controller
         if (empty($tags)) {
             return response()->json([
                 'status' => true,
-                'msg' => 'Success.'
+                'msg' => 'Success.',
             ]);
         }
 
         foreach ($tags as $key => $tag) {
-            $name = explode(" ", $tag['Name']);
+            $name = explode(' ', $tag['Name']);
 
             $common = array_intersect($rest_words, $name);
 
             if (count($common) > 0) {
                 return response()->json([
                     'status' => false,
-                    'msg' => 'Your content contains nudity. Please try an alternative.'
+                    'msg' => 'Your content contains nudity. Please try an alternative.',
                 ]);
             }
         }
 
         return response()->json([
             'status' => true,
-            'msg' => 'Success.'
+            'msg' => 'Success.',
         ]);
     }
 
@@ -602,14 +608,14 @@ class ProfileController extends Controller
         $request->validate([
             'media' => [
                 'required',
-            ]
+            ],
         ]);
 
         $media = $request->media;
 
         // Robustly derive UUID from payload (supports both uuid and url)
         $uuid = $media['uuid'] ?? null;
-        if (empty($uuid) && !empty($media['url'])) {
+        if (empty($uuid) && ! empty($media['url'])) {
             $url = $media['url'];
             // Extract the first path segment after host as UUID
             $uuid = preg_replace('#https?://[^/]+/([^/]+)/?.*#', '$1', $url);
@@ -617,7 +623,7 @@ class ProfileController extends Controller
         if (empty($uuid)) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Unable to identify uploaded video. Please re-upload.'
+                'msg' => 'Unable to identify uploaded video. Please re-upload.',
             ], 422);
         }
 
@@ -649,7 +655,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => true,
-            'msg' => 'Your intro video has been saved.'
+            'msg' => 'Your intro video has been saved.',
         ]);
     }
 
@@ -664,7 +670,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => true,
-            'intro' => $intro
+            'intro' => $intro,
         ]);
     }
 
@@ -677,10 +683,10 @@ class ProfileController extends Controller
     {
         $intro = UserIntro::where('user_id', Auth::id())->first();
 
-        if (!$intro) {
+        if (! $intro) {
             return response()->json([
                 'status' => false,
-                'msg' => 'No intro video found to remove.'
+                'msg' => 'No intro video found to remove.',
             ], 404);
         }
 
@@ -691,7 +697,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => true,
-            'msg' => 'The intro video has been removed.'
+            'msg' => 'The intro video has been removed.',
         ]);
     }
 
@@ -744,7 +750,6 @@ class ProfileController extends Controller
             });
         })->pluck('user_id');
 
-
         $tip = TipGoalsPayment::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
         })->pluck('creator_id');
@@ -765,16 +770,17 @@ class ProfileController extends Controller
 
         $posts->map(function ($q) {
             $q->is_lock = 0;
+
             return $q;
         });
 
         return response()->json([
             'status' => true,
             'posts' => $posts,
-            "last_page" => $posts->lastPage() ?? null,
-            "current_page" => $posts->currentPage() ?? null,
-            "total" => $posts->total() ?? null,
-            "per_page" => $posts->perPage() ?? null,
+            'last_page' => $posts->lastPage() ?? null,
+            'current_page' => $posts->currentPage() ?? null,
+            'total' => $posts->total() ?? null,
+            'per_page' => $posts->perPage() ?? null,
         ]);
     }
 
@@ -783,7 +789,7 @@ class ProfileController extends Controller
         $creator = User::where('username', $creatorUsername)->firstOrFail();
         $gifter = User::where('username', $gifterUsername)->firstOrFail();
 
-        if (!Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
+        if (! Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
             throw new AuthorizationException('Unauthorized');
         }
 
@@ -813,7 +819,7 @@ class ProfileController extends Controller
                     'username' => $it->payment->owner->username,
                     'avatar' => $it->payment->owner->avatar_url,
                 ],
-                'wish' => !empty($it->wish) ? [
+                'wish' => ! empty($it->wish) ? [
                     'id' => $it->wish->id,
                     'uuid' => $it->wish->uuid ?? null,
                     'name' => $it->wish->wishname,
@@ -824,7 +830,7 @@ class ProfileController extends Controller
                 'status' => $it->payment->payment_status ?? null,
             ];
 
-            if (!empty($it->thankyou_message) || !empty($it->message_url)) {
+            if (! empty($it->thankyou_message) || ! empty($it->message_url)) {
                 $events[] = [
                     'type' => 'thankyou',
                     'source' => 'stripe_payment_items',
@@ -863,7 +869,7 @@ class ProfileController extends Controller
                     'username' => $creator->username,
                     'avatar' => $creator->avatar_url,
                 ],
-                'membership' => !empty($mp->membership) ? [
+                'membership' => ! empty($mp->membership) ? [
                     'uuid' => $mp->membership->uuid ?? null,
                     'level' => $mp->membership->level,
                     'perma_link' => $mp->membership->perma_link,
@@ -893,7 +899,7 @@ class ProfileController extends Controller
                     'username' => $creator->username,
                     'avatar' => $creator->avatar_url,
                 ],
-                'bill' => !empty($bp->bill) ? [
+                'bill' => ! empty($bp->bill) ? [
                     'uuid' => $bp->bill->uuid ?? null,
                     'name' => $bp->bill->name,
                     'perma_link' => $bp->bill->perma_link,
@@ -925,7 +931,7 @@ class ProfileController extends Controller
                     'username' => $creator->username,
                     'avatar' => $creator->avatar_url,
                 ],
-                'tip' => !empty($tp->tipGoal) ? [
+                'tip' => ! empty($tp->tipGoal) ? [
                     'name' => $tp->tipGoal->name,
                 ] : null,
                 'status' => $tp->status,
@@ -953,7 +959,7 @@ class ProfileController extends Controller
                     'username' => $creator->username,
                     'avatar' => $creator->avatar_url,
                 ],
-                'shop' => !empty($sp->shop) ? [
+                'shop' => ! empty($sp->shop) ? [
                     'uuid' => $sp->shop->uuid ?? null,
                     'name' => $sp->shop->name,
                     'perma_link' => $sp->shop->perma_link,
@@ -985,7 +991,7 @@ class ProfileController extends Controller
                     'username' => $creator->username,
                     'avatar' => $creator->avatar_url,
                 ],
-                'task' => !empty($tpur->task) ? [
+                'task' => ! empty($tpur->task) ? [
                     'title' => $tpur->task->title,
                     'uuid' => $tpur->task->uuid,
                     'status' => $tpur->status,
@@ -1013,12 +1019,13 @@ class ProfileController extends Controller
             $src = $ev['source'] ?? null;
             $sid = $ev['source_id'] ?? null;
             $etype = $ev['type'] ?? null;
-            if (!$src || !$sid || !$etype) {
+            if (! $src || ! $sid || ! $etype) {
                 $events[$idx]['reactions'] = [];
                 if ($etype === 'thankyou') {
                     $events[$idx]['replies'] = [];
                     $events[$idx]['reply_count'] = 0;
                 }
+
                 continue;
             }
             $counts = SupportStoryReaction::where([
@@ -1070,7 +1077,7 @@ class ProfileController extends Controller
 
         $limit = intval(request()->query('limit', 30));
         $before = request()->query('before');
-        if (!empty($before)) {
+        if (! empty($before)) {
             $events = array_values(array_filter($events, function ($e) use ($before) {
                 return strtotime($e['created_at']) < strtotime($before);
             }));
@@ -1078,18 +1085,18 @@ class ProfileController extends Controller
         $isViewerGifter = Auth::id() === $gifter->id;
         $events = array_map(function ($ev) use ($isViewerGifter) {
             $modelClass = match ($ev['source']) {
-                'stripe_payment_items' => \App\Models\StripePaymentDetail::class,
-                'membership_payments' => \App\Models\MembershipPayment::class,
-                'bill_payments' => \App\Models\BillPayment::class,
-                'tip_goals_payments' => \App\Models\TipGoalsPayment::class,
-                'piggy_pot_contributions' => \App\Models\PiggyPotContribution::class,
-                'shop_payments' => \App\Models\ShopPayment::class,
-                'task_purchases' => \App\Models\TaskPurchase::class,
+                'stripe_payment_items' => StripePaymentDetail::class,
+                'membership_payments' => MembershipPayment::class,
+                'bill_payments' => BillPayment::class,
+                'tip_goals_payments' => TipGoalsPayment::class,
+                'piggy_pot_contributions' => PiggyPotContribution::class,
+                'shop_payments' => ShopPayment::class,
+                'task_purchases' => TaskPurchase::class,
                 default => null,
             };
 
             if ($modelClass && isset($ev['source_id'])) {
-                $ft = \App\Models\FinancialTransaction::where('source_type', $modelClass)
+                $ft = FinancialTransaction::where('source_type', $modelClass)
                     ->where('source_id', $ev['source_id'])
                     ->first();
 
@@ -1110,12 +1117,13 @@ class ProfileController extends Controller
                     }
                 }
             }
+
             return $ev;
         }, $events);
 
         $sliced = array_slice($events, 0, $limit);
         $hasMore = count($events) > $limit;
-        $nextBefore = $hasMore && !empty($sliced) ? end($sliced)['created_at'] : null;
+        $nextBefore = $hasMore && ! empty($sliced) ? end($sliced)['created_at'] : null;
 
         return response()->json([
             'status' => true,
@@ -1141,11 +1149,11 @@ class ProfileController extends Controller
             'event_type' => 'required|string',
             'source' => 'required|string',
             'source_id' => 'required',
-            'emoji' => 'required|string|max:12'
+            'emoji' => 'required|string|max:12',
         ]);
         $creator = User::where('username', $creatorUsername)->firstOrFail();
         $gifter = User::where('username', $gifterUsername)->firstOrFail();
-        if (!Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
+        if (! Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
             throw new AuthorizationException('Unauthorized');
         }
         $exists = SupportStoryReaction::where([
@@ -1155,7 +1163,7 @@ class ProfileController extends Controller
             'event_type' => $request->event_type,
             'source' => $request->source,
             'source_id' => $request->source_id,
-            'emoji' => $request->emoji
+            'emoji' => $request->emoji,
         ])->first();
         if ($exists) {
             $exists->delete();
@@ -1167,7 +1175,7 @@ class ProfileController extends Controller
                 'event_type' => $request->event_type,
                 'source' => $request->source,
                 'source_id' => $request->source_id,
-                'emoji' => $request->emoji
+                'emoji' => $request->emoji,
             ]);
         }
         $counts = SupportStoryReaction::where([
@@ -1177,6 +1185,7 @@ class ProfileController extends Controller
             'source' => $request->source,
             'source_id' => $request->source_id,
         ])->selectRaw('emoji, COUNT(*) as c')->groupBy('emoji')->pluck('c', 'emoji')->toArray();
+
         return response()->json(['status' => true, 'counts' => $counts, 'user' => Auth::id()]);
     }
 
@@ -1186,7 +1195,7 @@ class ProfileController extends Controller
             'event_type' => 'required|string',
             'source' => 'required|string',
             'source_id' => 'required',
-            'message' => 'required|string|max:250'
+            'message' => 'required|string|max:250',
         ]);
 
         // Word count limit: 90 words
@@ -1198,7 +1207,7 @@ class ProfileController extends Controller
         $creator = User::where('username', $creatorUsername)->firstOrFail();
         $gifter = User::where('username', $gifterUsername)->firstOrFail();
 
-        if (!Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
+        if (! Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
             throw new AuthorizationException('Unauthorized');
         }
 
@@ -1222,7 +1231,7 @@ class ProfileController extends Controller
             'event_type' => $request->event_type,
             'source' => $request->source,
             'source_id' => $request->source_id,
-            'message' => $request->message
+            'message' => $request->message,
         ]);
 
         return response()->json(['status' => true, 'reply' => [
@@ -1231,13 +1240,13 @@ class ProfileController extends Controller
             'username' => Auth::user()->username,
             'avatar' => Auth::user()->avatar_url,
             'message' => $reply->message,
-            'created_at' => $reply->created_at->format('Y-m-d H:i:s')
+            'created_at' => $reply->created_at->format('Y-m-d H:i:s'),
         ]]);
     }
 
     public function supportHistory()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return Inertia::render('Auth/Login');
         }
 
@@ -1247,24 +1256,24 @@ class ProfileController extends Controller
         $limitsMinor = null;
         try {
             $deviceId = request()->cookie('device_id') ?: request()->header('X-Device-ID');
-            $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity([
+            $identity = app(RiskIdentityService::class)->resolveIdentity([
                 'email' => $user->email,
                 'ip' => request()->ip(),
                 'device_id' => $deviceId,
                 'is_guest' => false,
             ]);
-            $limitsMinor = app(\App\Services\Risk\EffectiveLimitsService::class)->getEffectiveLimits($identity);
+            $limitsMinor = app(EffectiveLimitsService::class)->getEffectiveLimits($identity);
         } catch (\Throwable $e) {
             $limitsMinor = null;
         }
 
-        $receivedAll = \App\Models\FinancialTransaction::where('user_id', $user->id)
+        $receivedAll = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->where('status', 'completed')
             ->with('source')
             ->get();
 
-        $sentAll = \App\Models\FinancialTransaction::where('supporter_id', $user->id)
+        $sentAll = FinancialTransaction::where('supporter_id', $user->id)
             ->where('type', 'income')
             ->where('status', 'completed')
             ->with('source')
@@ -1276,16 +1285,16 @@ class ProfileController extends Controller
             ->push($displayCurrency)
             ->push('GBP')
             ->filter()
-            ->map(fn($c) => strtoupper($c))
+            ->map(fn ($c) => strtoupper($c))
             ->unique()
             ->values();
 
-        $currencyMeta = \App\Models\Currency::whereIn('ISO', $allCurrencies)
+        $currencyMeta = Currency::whereIn('ISO', $allCurrencies)
             ->get(['ISO', 'conversion_rate', 'ISOdigits'])
             ->keyBy('ISO');
 
         if (
-            !isset($currencyMeta[$displayCurrency]) ||
+            ! isset($currencyMeta[$displayCurrency]) ||
             (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0
         ) {
             $displayCurrency = 'GBP';
@@ -1299,7 +1308,7 @@ class ProfileController extends Controller
                 return $amount;
             }
 
-            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) {
+            if (! isset($currencyMeta[$from]) || ! isset($currencyMeta[$to])) {
                 return null;
             }
 
@@ -1312,15 +1321,20 @@ class ProfileController extends Controller
             $gbp = $amount / $fromRate;
             $converted = $gbp * $toRate;
             $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
         $filterEarnings = function ($tx) {
             // If it's a Task purchase, only include if it's actually finished/completed
-            if ($tx->source_type === \App\Models\TaskPurchase::class) {
-                if (!$tx->source) return false;
+            if ($tx->source_type === TaskPurchase::class) {
+                if (! $tx->source) {
+                    return false;
+                }
+
                 return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out', 'delivered']);
             }
+
             return true;
         };
 
@@ -1328,12 +1342,13 @@ class ProfileController extends Controller
             $tx->is_included_in_totals = true; // Mark as included
             $from = strtoupper($tx->currency ?? 'GBP');
             $amount = (float) ($tx->net_amount ?? 0);
+
             return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
         });
 
         // Mark excluded ones
         $receivedAll->each(function ($tx) use ($filterEarnings) {
-            if (!isset($tx->is_included_in_totals)) {
+            if (! isset($tx->is_included_in_totals)) {
                 $tx->is_included_in_totals = $filterEarnings($tx);
             }
         });
@@ -1341,13 +1356,14 @@ class ProfileController extends Controller
         $sentTotal = $sentAll->sum(function ($tx) use ($convert, $displayCurrency) {
             $from = strtoupper($tx->currency ?? 'GBP');
             $amount = (float) ($tx->gross_amount ?? 0);
+
             return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
         });
 
         $spendSummary = null;
         try {
             $now = Carbon::now();
-            $sentCompletedBase = \App\Models\FinancialTransaction::where('supporter_id', $user->id)
+            $sentCompletedBase = FinancialTransaction::where('supporter_id', $user->id)
                 ->where('type', 'income')
                 ->where('status', 'completed');
 
@@ -1355,6 +1371,7 @@ class ProfileController extends Controller
                 return $rows->sum(function ($tx) use ($convert, $displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $amount = (float) ($tx->gross_amount ?? 0);
+
                     return $from === $displayCurrency
                         ? $amount
                         : ($convert($from, $amount, $displayCurrency) ?? $amount);
@@ -1409,6 +1426,7 @@ class ProfileController extends Controller
             if ($dateA !== $dateB) {
                 return $dateB <=> $dateA;
             }
+
             return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
         });
 
@@ -1425,7 +1443,7 @@ class ProfileController extends Controller
                 'stats' => [
                     'received' => [strtolower($displayCurrency) => $receivedTotal],
                     'sent' => [strtolower($displayCurrency) => $sentTotal],
-                ]
+                ],
             ],
         ]);
     }
@@ -1436,7 +1454,7 @@ class ProfileController extends Controller
         $limit = (int) $limit;
         $before = $before ?: null;
 
-        $query = \App\Models\FinancialTransaction::query()
+        $query = FinancialTransaction::query()
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded']);
 
@@ -1446,7 +1464,7 @@ class ProfileController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        if (!empty($before)) {
+        if (! empty($before)) {
             $query->where('transaction_date', '<', $before);
         }
 
@@ -1462,19 +1480,21 @@ class ProfileController extends Controller
             ->get();
 
         $rows->loadMorph('source', [
-            \App\Models\ShopPayment::class => ['shop'],
-            \App\Models\TaskPurchase::class => ['task'],
-            \App\Models\StripePaymentItems::class => ['wish', 'payment'],
-            \App\Models\MembershipPayment::class => ['membership'],
-            \App\Models\BillPayment::class => ['bill'],
-            \App\Models\PiggyPotContribution::class => ['piggyPot'],
-            \App\Models\TipGoalsPayment::class => ['tipGoal'],
+            ShopPayment::class => ['shop'],
+            TaskPurchase::class => ['task'],
+            StripePaymentItems::class => ['wish', 'payment'],
+            MembershipPayment::class => ['membership'],
+            BillPayment::class => ['bill'],
+            PiggyPotContribution::class => ['piggyPot'],
+            TipGoalsPayment::class => ['tipGoal'],
         ]);
 
         // Load deliverables for all transactions
         $sessionIds = collect();
         $rows->each(function ($tx) use ($sessionIds) {
-            if (!$tx->source) return;
+            if (! $tx->source) {
+                return;
+            }
             $base = class_basename($tx->source_type);
             $sessionId = match ($base) {
                 'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment', 'PiggyPotContribution' => $tx->source->session_id ?? null,
@@ -1488,10 +1508,12 @@ class ProfileController extends Controller
         });
 
         if ($sessionIds->isNotEmpty()) {
-            $deliverables = \App\Models\Deliverable::whereIn('session_id', $sessionIds->filter()->unique())->get()->keyBy('session_id');
+            $deliverables = Deliverable::whereIn('session_id', $sessionIds->filter()->unique())->get()->keyBy('session_id');
 
             $rows->each(function ($tx) use ($deliverables) {
-                if (!$tx->source) return;
+                if (! $tx->source) {
+                    return;
+                }
                 $base = class_basename($tx->source_type);
                 $sessionId = match ($base) {
                     'ShopPayment', 'MembershipPayment', 'BillPayment', 'TipGoalsPayment', 'PiggyPotContribution' => $tx->source->session_id ?? null,
@@ -1508,8 +1530,8 @@ class ProfileController extends Controller
         $hasMore = $rows->count() > $limit;
         $rows = $rows->take($limit)->values();
 
-        $supportTickets = \App\Models\SupportTicket::whereIn('source_id', $rows->map(function ($tx) {
-            return $tx->source_type === \App\Models\FinancialTransaction::class || empty($tx->source_type) ? $tx->id : $tx->source_id;
+        $supportTickets = SupportTicket::whereIn('source_id', $rows->map(function ($tx) {
+            return $tx->source_type === FinancialTransaction::class || empty($tx->source_type) ? $tx->id : $tx->source_id;
         })->filter())
             ->where(function ($q) use ($user, $tab) {
                 if ($tab === 'sent') {
@@ -1520,7 +1542,7 @@ class ProfileController extends Controller
             })
             ->get()
             ->groupBy(function ($t) {
-                return $t->source . '_' . $t->source_id;
+                return $t->source.'_'.$t->source_id;
             });
 
         $currencies = $rows
@@ -1528,11 +1550,11 @@ class ProfileController extends Controller
             ->push($displayCurrency)
             ->push('GBP')
             ->filter()
-            ->map(fn($c) => strtoupper($c))
+            ->map(fn ($c) => strtoupper($c))
             ->unique()
             ->values();
 
-        $currencyMeta = \App\Models\Currency::whereIn('ISO', $currencies)
+        $currencyMeta = Currency::whereIn('ISO', $currencies)
             ->get(['ISO', 'conversion_rate', 'ISOdigits'])
             ->keyBy('ISO');
 
@@ -1544,7 +1566,7 @@ class ProfileController extends Controller
                 return $amount;
             }
 
-            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) {
+            if (! isset($currencyMeta[$from]) || ! isset($currencyMeta[$to])) {
                 return null;
             }
 
@@ -1557,6 +1579,7 @@ class ProfileController extends Controller
             $gbp = $amount / $fromRate;
             $converted = $gbp * $toRate;
             $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
@@ -1565,7 +1588,7 @@ class ProfileController extends Controller
         $creatorIds = $rows->pluck('user_id')->filter()->unique()->values();
         $gatedPostCounts = collect();
         if ($creatorIds->isNotEmpty()) {
-            $gatedPostCounts = \App\Models\Post::whereIn('user_id', $creatorIds)
+            $gatedPostCounts = Post::whereIn('user_id', $creatorIds)
                 ->whereIn('for_module', ['membership', 'subscription', 'support'])
                 ->where('approved', 1)
                 ->selectRaw('user_id, for_module, COUNT(*) as c')
@@ -1609,30 +1632,35 @@ class ProfileController extends Controller
 
             // Item status for tasks/shops
             $itemStatus = null;
-            if ($tx->source_type === \App\Models\TaskPurchase::class && $tx->source) {
+            if ($tx->source_type === TaskPurchase::class && $tx->source) {
                 $itemStatus = match ($tx->source->status) {
                     'completed', 'completed_accepted', 'paid_out' => 'task_complete',
                     'delivered' => 'task_delivered',
                     'pending_review' => 'task_review_pending',
                     'paid', 'assigned' => 'task_pending',
-                    default => 'task_' . $tx->source->status
+                    default => 'task_'.$tx->source->status
                 };
-            } else if ($tx->source_type === \App\Models\ShopPayment::class && $tx->source) {
+            } elseif ($tx->source_type === ShopPayment::class && $tx->source) {
                 $deliverableStatus = $tx->source->deliverable ? $tx->source->deliverable->status : 'processing';
                 $itemStatus = match ($deliverableStatus) {
                     'delivered' => 'item_complete',
                     'shipped' => 'item_shipped',
                     'processing' => 'item_processing',
-                    default => 'item_' . $deliverableStatus
+                    default => 'item_'.$deliverableStatus
                 };
             }
 
-            // Inclusion logic for UI messages
+            // Inclusion logic for UI messages.
+            // Must match the canonical earned-status list used by
+            // FinancialService::getSummary, PayoutService and ReleaseReserves —
+            // a 'delivered' task is still in escrow until the buyer accepts (or
+            // auto-confirm runs), so it is NOT counted as earned yet. Listing it
+            // as "included in totals" here contradicted the dashboard/payout.
             $isIncluded = true;
-            if ($tx->type === 'income' && $tx->source_type === \App\Models\TaskPurchase::class) {
+            if ($tx->type === 'income' && $tx->source_type === TaskPurchase::class) {
                 $taskStatus = $tx->source->status ?? null;
-                $isIncluded = in_array($taskStatus, ['completed', 'completed_accepted', 'paid_out', 'delivered']);
-            } else if ($tx->status !== 'completed') {
+                $isIncluded = in_array($taskStatus, ['completed', 'completed_accepted', 'paid_out']);
+            } elseif ($tx->status !== 'completed') {
                 $isIncluded = false;
             }
 
@@ -1652,10 +1680,13 @@ class ProfileController extends Controller
             // Normalized item + reward contract for the history UI.
             // Every paid item exposes the same shape so the frontend renders one card.
             $cdn = function ($v) {
-                if (empty($v)) return null;
-                return \Illuminate\Support\Str::startsWith($v, ['http://', 'https://'])
+                if (empty($v)) {
+                    return null;
+                }
+
+                return Str::startsWith($v, ['http://', 'https://'])
                     ? $v
-                    : 'https://ucarecdn.com/' . $v . '/';
+                    : 'https://ucarecdn.com/'.$v.'/';
             };
 
             $src = $tx->source;
@@ -1670,11 +1701,11 @@ class ProfileController extends Controller
             $paymentId = null;
             $reward = [
                 'description' => null,
-                'media'       => null,
-                'file_url'    => null,
-                'perks'       => [],
-                'access'      => null,
-                'is_instant'  => true,
+                'media' => null,
+                'file_url' => null,
+                'perks' => [],
+                'access' => null,
+                'is_instant' => true,
             ];
 
             if ($base === 'StripePaymentItems' && $src) {
@@ -1686,7 +1717,7 @@ class ProfileController extends Controller
                         $reward['media'] = [
                             'type' => $wish->content_file_type ?? 'image',
                             'name' => $wish->content_file_name ?: 'Exclusive content',
-                            'url'  => $cdn($wish->content_file),
+                            'url' => $cdn($wish->content_file),
                         ];
                     }
                     $reward['file_url'] = $cdn($wish->reward ?? null);
@@ -1705,7 +1736,7 @@ class ProfileController extends Controller
                         $reward['media'] = [
                             'type' => $shop->reward_file_type ?? null,
                             'name' => 'Digital content',
-                            'url'  => $cdn($shop->reward_file),
+                            'url' => $cdn($shop->reward_file),
                         ];
                     }
                 }
@@ -1719,12 +1750,12 @@ class ProfileController extends Controller
                     $reward['media'] = [
                         'type' => $task->deliverable_content_type ?? 'image',
                         'name' => 'Task content',
-                        'url'  => $cdn($task->deliverable_content),
+                        'url' => $cdn($task->deliverable_content),
                     ];
                 }
             } elseif ($base === 'MembershipPayment' && $src) {
                 $membership = $src->membership;
-                $itemTitle = ($membership?->level) ? 'Level ' . ucfirst($membership->level) : null;
+                $itemTitle = ($membership?->level) ? 'Level '.ucfirst($membership->level) : null;
                 $openPage = 'memberships';
                 $rawRewards = $membership?->rewards;
                 if (is_string($rawRewards)) {
@@ -1733,7 +1764,7 @@ class ProfileController extends Controller
                 }
                 if (is_array($rawRewards)) {
                     $reward['perks'] = array_values(array_filter(array_map(
-                        fn($r) => ucwords(str_replace('_', ' ', trim((string) $r))),
+                        fn ($r) => ucwords(str_replace('_', ' ', trim((string) $r))),
                         $rawRewards
                     )));
                 }
@@ -1764,14 +1795,14 @@ class ProfileController extends Controller
                 $reward['description'] = $tip?->description;
             }
 
-            $openLink = ($creatorUsername && $openPage) ? '/' . $creatorUsername . '?page=' . $openPage : null;
+            $openLink = ($creatorUsername && $openPage) ? '/'.$creatorUsername.'?page='.$openPage : null;
 
             // Content-access reward: members-only / subscriber / supporter-only posts.
             $accessSpec = match ($type) {
                 'gift_membership' => ['module' => 'membership',   'label' => 'Members-only posts'],
-                'gift_bill'       => ['module' => 'subscription', 'label' => 'Subscriber posts'],
-                'gift_tip'        => ['module' => 'support',      'label' => 'Supporter-only posts'],
-                default           => null,
+                'gift_bill' => ['module' => 'subscription', 'label' => 'Subscriber posts'],
+                'gift_tip' => ['module' => 'support',      'label' => 'Supporter-only posts'],
+                default => null,
             };
             if ($accessSpec && $creatorUsername) {
                 $byCreator = $gatedPostCounts->get($tx->user_id);
@@ -1779,7 +1810,7 @@ class ProfileController extends Controller
                 $reward['access'] = [
                     'label' => $accessSpec['label'],
                     'count' => $countRow ? (int) $countRow->c : 0,
-                    'url'   => '/' . $creatorUsername,
+                    'url' => '/'.$creatorUsername,
                 ];
             }
 
@@ -1804,12 +1835,12 @@ class ProfileController extends Controller
                 'gifter_id' => $tx->supporter_id,
                 'id' => $tx->id,
                 'description' => $tx->description,
-                'support_tickets' => optional($supportTickets->get($source . '_' . $sourceId))->map(function ($t) {
+                'support_tickets' => optional($supportTickets->get($source.'_'.$sourceId))->map(function ($t) {
                     return [
                         'uuid' => $t->uuid,
                         'type' => $t->type,
                         'status' => $t->status,
-                        'created_at' => $t->created_at->format('Y-m-d H:i:s')
+                        'created_at' => $t->created_at->format('Y-m-d H:i:s'),
                     ];
                 }) ?? [],
                 'gifter' => $tx->supporter ? [
@@ -1882,7 +1913,7 @@ class ProfileController extends Controller
             return $event;
         })->values()->toArray();
 
-        $nextBefore = $hasMore && !empty($events) ? end($events)['created_at'] : null;
+        $nextBefore = $hasMore && ! empty($events) ? end($events)['created_at'] : null;
 
         return [
             'status' => true,
@@ -1899,8 +1930,8 @@ class ProfileController extends Controller
         $limit = intval($request->query('limit', 20));
         $before = $request->query('before');
         $displayCurrency = strtoupper($request->cookie('currency', $user->default_currency ?? 'GBP'));
-        $rate = \App\Models\Currency::where('ISO', $displayCurrency)->value('conversion_rate');
-        if (!$rate || (float) $rate <= 0) {
+        $rate = Currency::where('ISO', $displayCurrency)->value('conversion_rate');
+        if (! $rate || (float) $rate <= 0) {
             $displayCurrency = 'GBP';
         }
 
@@ -1927,7 +1958,7 @@ class ProfileController extends Controller
             $total += 1;
         }
         $userIntro = UserIntro::where('user_id', $user->id)->first();
-        $intro = !empty($userIntro) ? 1 : 0;
+        $intro = ! empty($userIntro) ? 1 : 0;
         if ($intro) {
             $total += 1;
         }
@@ -1935,15 +1966,15 @@ class ProfileController extends Controller
         // if ($post_required) {
         //     $total += 1;
         // }
-        $member_required = !empty($membership) ? 1 : 0;
+        $member_required = ! empty($membership) ? 1 : 0;
         if ($member_required) {
             $total += 1;
         }
-        $bill_required = !empty($bill) ? 1 : 0;
+        $bill_required = ! empty($bill) ? 1 : 0;
         if ($bill_required) {
             $total += 1;
         }
-        $vat_setting = !empty($user->vat_amount_percentage) ? 1 : 0;
+        $vat_setting = ! empty($user->vat_amount_percentage) ? 1 : 0;
         if ($vat_setting) {
             $total += 1;
         }
@@ -1951,11 +1982,11 @@ class ProfileController extends Controller
         // if ($payment_connect) {
         //     $total += 1;
         // }
-        $shop = !empty($user->shop) ? 1 : 0;
+        $shop = ! empty($user->shop) ? 1 : 0;
         if ($shop) {
             $total += 1;
         }
-        $contents = !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0;
+        $contents = ! empty($user->wishItems) && ! empty($user->memberships) && ! empty($user->bills) ? 1 : 0;
         if ($contents) {
             $total += 1;
         }
@@ -1991,13 +2022,14 @@ class ProfileController extends Controller
         $user = User::where('id', Auth::id())->first();
 
         $notifications = Notification::where('notifiable_id', $user->id)->with('user')->orderBy('created_at', 'DESC')->paginate(30);
+
         return response()->json([
             'status' => true,
             'notifications' => $notifications->items(),
-            "last_page" => $notifications->lastPage() ?? null,
-            "current_page" => $notifications->currentPage() ?? null,
-            "total" => $notifications->total() ?? null,
-            "per_page" => $notifications->perPage() ?? null,
+            'last_page' => $notifications->lastPage() ?? null,
+            'current_page' => $notifications->currentPage() ?? null,
+            'total' => $notifications->total() ?? null,
+            'per_page' => $notifications->perPage() ?? null,
         ]);
     }
 
@@ -2009,7 +2041,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => "Notifications marked as read."
+            'message' => 'Notifications marked as read.',
         ]);
     }
 
@@ -2021,7 +2053,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => "All notifications deleted."
+            'message' => 'All notifications deleted.',
         ]);
     }
 
@@ -2036,9 +2068,10 @@ class ProfileController extends Controller
         }
         $user->save();
         $this->userProfileService->clearUserCaches($user->username, $user->id);
+
         return response()->json([
             'status' => true,
-            'message' => 'Piggy Bank Settings Updated.'
+            'message' => 'Piggy Bank Settings Updated.',
         ]);
     }
 
@@ -2047,7 +2080,7 @@ class ProfileController extends Controller
         $request->validate([
             'prompt' => [
                 'required',
-                'string'
+                'string',
             ],
             'size' => ['required', 'string'],
         ]);
@@ -2063,22 +2096,23 @@ class ProfileController extends Controller
 
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $secret,
+            'Authorization' => 'Bearer '.$secret,
         ])->post('https://api.openai.com/v1/images/generations', $data);
 
         $resp = json_decode($response);
 
-        if (!empty($resp->data[0])) {
+        if (! empty($resp->data[0])) {
             $url = $resp->data[0];
+
             return response()->json([
                 'status' => true,
-                'image_url' => $url
+                'image_url' => $url,
             ]);
         }
 
         return response()->json([
             'status' => false,
-            'data' => $resp
+            'data' => $resp,
         ]);
     }
 
@@ -2086,8 +2120,8 @@ class ProfileController extends Controller
     {
         $request->validate([
             'url' => [
-                'required'
-            ]
+                'required',
+            ],
         ]);
 
         $imageContent = file_get_contents($request->url);
@@ -2104,7 +2138,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => true,
-            'uuid' => $response->getUuid()
+            'uuid' => $response->getUuid(),
         ]);
     }
 
@@ -2118,7 +2152,7 @@ class ProfileController extends Controller
             $user->save();
         }
 
-        $qrCode = $this->google2FA->getQRCodeInline("SpennyPiggy", $user->email, $user->tfa_key);
+        $qrCode = $this->google2FA->getQRCodeInline('SpennyPiggy', $user->email, $user->tfa_key);
 
         return response()->json([
             'status' => true,
@@ -2131,17 +2165,17 @@ class ProfileController extends Controller
         $user = User::where('id', Auth::id())->first();
 
         $valid = false;
-        if (!empty($request->otp)) {
+        if (! empty($request->otp)) {
             $valid = $this->google2FA->verifyKey($user->tfa_key, $request->otp);
         }
 
         $codes = [];
         if ($valid) {
-            $recovery = new Recovery();
+            $recovery = new Recovery;
             $codes = $recovery->setCount(5)->toCollection();
             UserBackupCode::where('user_id', $user->id)->delete();
             foreach ($codes as $key => $value) {
-                $backup = new UserBackupCode();
+                $backup = new UserBackupCode;
                 $backup->user_id = $user->id;
                 $backup->code = encrypt($value);
                 $backup->save();
@@ -2151,7 +2185,8 @@ class ProfileController extends Controller
             $user->save();
         }
 
-        $message = $valid ? "Two factor authentication verification success." : "Two factor authentication verification failed.";
+        $message = $valid ? 'Two factor authentication verification success.' : 'Two factor authentication verification failed.';
+
         return response()->json([
             'status' => $valid,
             'msg' => $message,
@@ -2162,13 +2197,12 @@ class ProfileController extends Controller
     /**
      * Enable disable 2FA
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response json
      */
     public function update2faStatus(Request $request)
     {
         $request->validate([
-            'status' => 'required|boolean'
+            'status' => 'required|boolean',
         ]);
         $user = User::find(Auth::id());
         $status = $request->status ?? 0;
@@ -2179,12 +2213,12 @@ class ProfileController extends Controller
             UserBackupCode::where('user_id', $user->id)->delete();
         }
 
-        $msg = 'Two factor authentication has been ' . ($status ? 'enabled.' : 'disabled.');
+        $msg = 'Two factor authentication has been '.($status ? 'enabled.' : 'disabled.');
 
         return response()->json([
             'status' => true,
             'tfa_status' => $user->is_2fa,
-            'msg'  => $msg,
+            'msg' => $msg,
         ]);
     }
 
@@ -2197,28 +2231,29 @@ class ProfileController extends Controller
     {
         $user = User::findOrFail(Auth::id());
 
-        $recovery = new Recovery();
+        $recovery = new Recovery;
         $codes = $recovery->setCount(5)->toCollection();
         UserBackupCode::where('user_id', $user->id)->delete();
         foreach ($codes as $key => $value) {
-            $backup = new UserBackupCode();
+            $backup = new UserBackupCode;
             $backup->user_id = $user->id;
             $backup->code = encrypt($value);
             $backup->save();
         }
+
         return response()->json([
             'status' => true,
-            'tfa'  => true,
+            'tfa' => true,
             'msg' => 'Open your authenticator app to get security code.',
             'qr' => request()->query('type') == 1 ? $this->twofQR($user->id) : null,
-            'backup_codes' => $codes ?? null
+            'backup_codes' => $codes ?? null,
         ], 200);
     }
 
     public function historyBlockedUsers(Request $request)
     {
         $blockedUsers = UserBlock::with([
-            'blockedUser:id,name,username,email,avatar,role'
+            'blockedUser:id,name,username,email,avatar,role',
         ])
             ->where('creator_id', auth()->id())
             ->latest()

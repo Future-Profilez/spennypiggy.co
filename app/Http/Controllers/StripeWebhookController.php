@@ -3184,6 +3184,50 @@ class StripeWebhookController extends Controller
     /**
      * Handle Async Payment Succeeded
      */
+    /**
+     * Resolve the product type from the payment row keyed by session_id and run
+     * the matching processor. Used when session-level metadata is missing, so a
+     * settled bank payment still fulfils (deliverable + notification + mail)
+     * instead of being silently dropped.
+     *
+     * Public so `payments:reconcile` can replay a settled session that the
+     * webhook missed.
+     */
+    public function completeBySessionLookup($session): void
+    {
+        $sid = $session->id;
+
+        if (PiggyPotContribution::where('session_id', $sid)->exists()) {
+            Log::info('Async settlement: routed to piggy pot by session lookup', ['session_id' => $sid]);
+            $this->processPiggyPotPayment($session, $session->metadata ?? (object) []);
+
+            return;
+        }
+
+        if (TipGoalsPayment::where('session_id', $sid)->exists()) {
+            Log::info('Async settlement: routed to support payment by session lookup', ['session_id' => $sid]);
+            $this->processSupportPayment($session, $session->metadata ?? (object) []);
+
+            return;
+        }
+
+        if (ShopPayment::where('session_id', $sid)->exists()) {
+            Log::info('Async settlement: routed to shop by session lookup', ['session_id' => $sid]);
+            $this->processShopItemPayment($session, $session->metadata ?? (object) []);
+
+            return;
+        }
+
+        if (TaskPurchase::where('stripe_session_id', $sid)->exists()) {
+            Log::info('Async settlement: routed to task by session lookup', ['session_id' => $sid]);
+            $this->processTaskPurchase($session, $session->metadata ?? (object) []);
+
+            return;
+        }
+
+        Log::warning('Async settlement: no payment row matched this session', ['session_id' => $sid]);
+    }
+
     private function handleAsyncPaymentSucceeded($session)
     {
         Log::info('Processing async payment succeeded', ['session_id' => $session->id]);
@@ -3192,12 +3236,30 @@ class StripeWebhookController extends Controller
         // fulfilment was deferred while the debit cleared — run it now. The
         // per-product processors are idempotent (firstOrCreate / exists guards),
         // so re-entry is safe.
+        $metadata = $session->metadata ?? null;
+
         try {
-            $this->handleCheckoutSessionCompleted($session, $session->metadata ?? null);
+            $this->handleCheckoutSessionCompleted($session, $metadata);
         } catch (\Exception $e) {
             Log::error('Async settlement: deferred fulfilment failed: '.$e->getMessage(), [
                 'session_id' => $session->id,
             ]);
+        }
+
+        // Fallback routing: handleCheckoutSessionCompleted dispatches on
+        // SESSION-level metadata, which is empty for sessions created before
+        // that metadata was added (and for any future checkout that forgets it).
+        // The session_id is the reliable key, so resolve the product from the
+        // payment row itself and run the matching processor. Processors are
+        // idempotent, so this is safe even when metadata routing already ran.
+        if (! isset($metadata->type) && ! isset($metadata->deliverable_type)) {
+            try {
+                $this->completeBySessionLookup($session);
+            } catch (\Exception $e) {
+                Log::error('Async settlement: session-lookup fulfilment failed: '.$e->getMessage(), [
+                    'session_id' => $session->id,
+                ]);
+            }
         }
 
         $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
@@ -4271,6 +4333,46 @@ class StripeWebhookController extends Controller
     /**
      * Handle Stripe Connect Account Updates (Risk Monitoring)
      */
+    /**
+     * Request any bank payment capability this account's country supports but
+     * doesn't yet hold. Reads the capabilities off the event payload, so it only
+     * calls Stripe when something is actually missing (account.updated fires
+     * often). Never throws — capability top-up must not break the webhook.
+     */
+    private function ensureBankCapabilities($account): void
+    {
+        try {
+            $country = $account->country ?? null;
+            $wanted = AppStripeControl::bankCapabilitiesForCountry($country);
+
+            if (empty($wanted)) {
+                return; // country has no bank rail
+            }
+
+            $current = AppStripeControl::capabilitiesMap($account);
+            $missing = array_values(array_filter(
+                $wanted,
+                fn ($c) => ! array_key_exists($c, $current)
+            ));
+
+            if (empty($missing)) {
+                return; // already requested/active/pending — nothing to do
+            }
+
+            Log::info('Requesting missing bank capabilities for connected account', [
+                'account_id' => $account->id,
+                'country' => $country,
+                'missing' => $missing,
+            ]);
+
+            AppStripeControl::requestBankCapabilities($account->id, $country);
+        } catch (\Throwable $e) {
+            Log::warning('ensureBankCapabilities failed: '.$e->getMessage(), [
+                'account_id' => $account->id ?? null,
+            ]);
+        }
+    }
+
     private function handleAccountUpdated($account)
     {
         try {
@@ -4283,6 +4385,14 @@ class StripeWebhookController extends Controller
                     $this->userProfileService->clearUserCaches($creator->username, $creator->id);
                 }
             }
+
+            // Self-healing bank capabilities. Stripe's dashboard "on by default"
+            // doesn't reach Express accounts, so an account that never had
+            // pay_by_bank/SEPA/ACH requested would silently refuse bank at
+            // checkout. Accounts are created from several code paths, so rather
+            // than relying on each one, top up here — account.updated fires on
+            // every account change, including when onboarding completes.
+            $this->ensureBankCapabilities($account);
 
             if (! isset($account->settings->payouts->schedule->interval)) {
                 return;

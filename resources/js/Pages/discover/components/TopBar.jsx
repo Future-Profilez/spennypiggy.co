@@ -81,17 +81,17 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
-        <div className="ssticky top-[75px] sm:top-[78px] md:top-[87px] z-10 bg-[#A2E4B8] backdrop-blur-sm pt-2  transition-all">
+        <div className="sticky top-[75px] sm:top-[78px] md:top-[87px] z-10 bg-[#A2E4B8]/90 backdrop-blur-md pt-2 transition-all">
             <div className="container max-w-7xl mx-auto px-4 pb-0  md:pb-3 pt-3">
                 {/* Search Bar */}
                 <div className="relative mb-2 md:mb-4">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <RiSearchLine className="text-black font-black" size={24} />
+                        <RiSearchLine className="text-white/50" size={22} />
                     </div>
                     <input
                         ref={inputRef}
                         type="text"
-                        className="w-full pl-12 pr-4 py-4 rounded-[20px] border-[3px] border-black bg-[#fdfbf7] focus:bg-white focus:ring-0 focus:outline-none transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]  text-md md:text-lg font-black text-black placeholder-gray-600"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-[20px] border border-black/10 bg-[#16161C] focus:border-[#FF007F]/70 focus:ring-2 focus:ring-[#FF007F]/25 focus:outline-none transition-all text-base md:text-lg font-medium text-white placeholder-white/45 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.7)]"
                         placeholder="Search creators and wishes..."
                         value={query}
                         onChange={(e) => {
@@ -209,9 +209,11 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         )}
                         {quickFilters.map(filter => (
                             <button key={filter.id} onClick={() => onQuickFilter(filter.id)}
-                                className={`flex-shrink-0 px-5 py-2 rounded-xl text-[14px] font-black uppercase tracking-wider transition-all whitespace-nowrap border-[3px] border-black ${
-                                    activeFilters.includes(filter.id) ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' : 'bg-[#fdfbf7] text-black shadow-none hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-100 hover:translate-x-[-1px] hover:translate-y-[-1px]'
-                                }`} > {filter.label} 
+                                className={`flex-shrink-0 px-4 py-2 rounded-[20px] text-[13px] font-semibold transition-all whitespace-nowrap border ${
+                                    activeFilters.includes(filter.id)
+                                        ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_6px_20px_-6px_rgba(255,0,127,0.7)]'
+                                        : 'bg-white text-black/70 border-black/10 hover:text-black hover:border-black/30'
+                                }`} > {filter.label}
                             </button>
                         ))}
                     </div>

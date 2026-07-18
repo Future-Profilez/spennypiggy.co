@@ -13,12 +13,12 @@ export default function FeatureSuggestionSection({ auth }) {
         <section className="sp-band bg-[var(--pink)] py-20 md:py-28 relative overflow-hidden">
             {/* Background decorative elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-900/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
+                <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#FF007F]/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
                 <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-yellow-500/5 rounded-full filter blur-[100px]"></div>
 
                 {/* Floating particles */}
                 <div className="absolute top-1/4 left-10 w-1 h-1 bg-white/20 rounded-full animate-ping"></div>
-                <div className="absolute top-3/4 left-1/4 w-1.5 h-1.5 bg-purple-500/20 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
+                <div className="absolute top-3/4 left-1/4 w-1.5 h-1.5 bg-[#05EFB8]/20 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
                 <div className="absolute top-1/2 right-20 w-1 h-1 bg-yellow-400/20 rounded-full animate-pulse"></div>
                 <div className="absolute top-10 right-1/3 w-2 h-2 bg-[#FF007F]/10 rounded-full animate-ping" style={{ animationDuration: '4s' }}></div>
             </div>
@@ -67,7 +67,7 @@ export default function FeatureSuggestionSection({ auth }) {
                             <FaRocket className="relative z-10 text-xl group-hover:translate-x-3 group-hover:-translate-y-3 transition-transform duration-500" />
 
                             {/* Hover Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#E6EA7B] via-[#FF007F] to-[#05EFB8] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         </button>
                         </Magnetic>
                     </div>

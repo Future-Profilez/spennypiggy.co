@@ -51,7 +51,6 @@ const WhyLove = lazy(() => import('./home/WhyLove'));
 const HappyCreators = lazy(() => import('./home/HappyCreators'));
 const FeatureSuggestionSection = lazy(() => import('./home/FeatureSuggestionSection'));
 const JoinUs = lazy(() => import('@/Components/JoinUs'));
-const Membership = lazy(() => import("./home/Membership"));
 const NotForBusiness = lazy(() => import("./home/NotForBusiness"));
 const FAQ = lazy(() => import("./home/FAQ"));
 const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
@@ -159,7 +158,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
 
                 {/* ── Chapter 04 · Build your world ── */}
                 <div id="act-build">
-                    <Reveal><Membership /></Reveal>
                     <Parallax amount={50}><NotForBusiness /></Parallax>
                 </div>
 

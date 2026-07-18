@@ -26,6 +26,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Stripe\PaymentIntent;
@@ -106,7 +107,10 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $raised = (float) $piggyPot->contributions()->where('status', 'paid')->sum('amount');
+        // Same status set as the locked re-check below, so the "max you can add"
+        // figure shown here matches what the insert will actually allow
+        // (bank payments sitting in 'processing' already consume headroom).
+        $raised = (float) $piggyPot->contributions()->whereIn('status', ['paid', 'succeeded', 'processing'])->sum('amount');
         $target = (float) $piggyPot->target_amount;
         $remaining = max(0, round($target - $raised, 2));
         if ($remaining <= 0) {
@@ -235,21 +239,47 @@ class PiggyPotPaymentController extends Controller
 
         $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
-        $pay = PiggyPotContribution::create([
-            'piggy_pot_id' => $piggyPot->id,
-            'user_id' => $user ? $user->id : null,
-            'creator_id' => $creator->id,
-            'guest_name' => $request->name,
-            'guest_email' => $request->email,
-            'currency' => $sourceCurrency,
-            'amount' => $basePrice,
-            'fee_profile' => $methodResolution['fee_profile'],
-            'tax' => $breakdown['total_fees'],
-            'vat_amount' => $vatAmount,
-            'total_paid' => $finalTotalAmount,
-            'message' => $request->message ?? null,
-            'is_anonymous' => $request->anonymous ?? 0,
-        ]);
+        // Re-check the remaining headroom under a row lock before inserting.
+        // The earlier $remaining read is unlocked, so two concurrent buyers near
+        // the goal cap could both pass it and over-fund the pot past
+        // target_amount. Locking the pot row serialises the check + insert.
+        try {
+            $pay = DB::transaction(function () use ($piggyPot, $basePrice, $user, $creator, $request, $sourceCurrency, $methodResolution, $breakdown, $vatAmount, $finalTotalAmount) {
+                $locked = PiggyPot::where('id', $piggyPot->id)->lockForUpdate()->first();
+                if (! $locked) {
+                    throw new \RuntimeException('This content is no longer available.');
+                }
+
+                $raisedNow = (float) PiggyPotContribution::where('piggy_pot_id', $piggyPot->id)
+                    ->whereIn('status', ['paid', 'succeeded', 'processing'])
+                    ->sum('amount');
+                $remainingNow = max(0, round((float) $locked->target_amount - $raisedNow, 2));
+
+                if ($remainingNow <= 0 || $basePrice > $remainingNow) {
+                    throw new \RuntimeException($remainingNow <= 0
+                        ? 'This goal is already completed.'
+                        : 'Max you can add right now is '.number_format($remainingNow, 2).'.');
+                }
+
+                return PiggyPotContribution::create([
+                    'piggy_pot_id' => $piggyPot->id,
+                    'user_id' => $user ? $user->id : null,
+                    'creator_id' => $creator->id,
+                    'guest_name' => $request->name,
+                    'guest_email' => $request->email,
+                    'currency' => $sourceCurrency,
+                    'amount' => $basePrice,
+                    'fee_profile' => $methodResolution['fee_profile'],
+                    'tax' => $breakdown['total_fees'],
+                    'vat_amount' => $vatAmount,
+                    'total_paid' => $finalTotalAmount,
+                    'message' => $request->message ?? null,
+                    'is_anonymous' => $request->anonymous ?? 0,
+                ]);
+            });
+        } catch (\RuntimeException $e) {
+            return response()->json(['status' => false, 'msg' => $e->getMessage()]);
+        }
 
         Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);
         $pay->save();

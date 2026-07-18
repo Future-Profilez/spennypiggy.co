@@ -445,7 +445,7 @@ function RenewingBanner({ items, money, onCancel, canceling, onView }) {
 
 /* ---------------- Subscriptions ---------------- */
 function SubscriptionList({ items, money, reduce, onCancel, canceling }) {
-    if (!items.length) return <Empty title="No active subscriptions" sub="Your recurring memberships and subscriptions appear here." Icon={Repeat} />;
+    if (!items.length) return <Empty title="No subscriptions yet" sub="Your recurring memberships and subscriptions appear here — active and past." Icon={Repeat} />;
     return (
         <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-4" variants={stagger(reduce)} initial="hidden" animate="show">
             {items.map((s) => (
@@ -454,9 +454,13 @@ function SubscriptionList({ items, money, reduce, onCancel, canceling }) {
                     <div className="flex-1 min-w-0">
                         <div className="font-medium text-zinc-900 truncate">{s.title}</div>
                         <div className="text-xs text-zinc-400 truncate mt-0.5">@{s.owner?.username}</div>
-                        {s.next_charge_at && (
+                        {s.is_active === false ? (
+                            <span className="inline-block text-[11px] font-medium rounded-full px-2 py-0.5 mt-1 bg-zinc-100 text-zinc-500">
+                                Ended
+                            </span>
+                        ) : s.next_charge_at ? (
                             <div className="text-xs text-zinc-500 mt-1">Renews {fmtDate(s.next_charge_at)}</div>
-                        )}
+                        ) : null}
                     </div>
                     <div className="text-right shrink-0">
                         <div className={`font-semibold text-zinc-900 ${MONO}`}>{money(s.amount)}</div>

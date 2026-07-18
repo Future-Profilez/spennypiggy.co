@@ -2,12 +2,16 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Illuminate\Validation\ValidationException;
+use App\Http\Controllers\ErrorController;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -29,15 +33,13 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            if (app()->bound('sentry') && !app()->environment('local', 'testing')) {
+            if (app()->bound('sentry') && ! app()->environment('local', 'testing')) {
                 app('sentry')->captureException($e);
             }
         });
     }
 
-
-
-     /**
+    /**
      * A list of error messages
      *
      * @var array<int, string>
@@ -52,18 +54,27 @@ class Handler extends ExceptionHandler
     /**
      * Render an exception into an HTTP response.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param  Request  $request
+     * @return Response
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
-
-
-    public function render($request, Throwable $e){
+    public function render($request, Throwable $e)
+    {
         // Ensure ErrorPage renders even if APP_DEBUG is true for specific cases or all production-like errors
-        
+
         if ($e instanceof ValidationException || $e instanceof AuthenticationException) {
             return parent::render($request, $e);
+        }
+
+        // CSRF token mismatch (419): the page's token went stale (expired session,
+        // another local app overwrote the XSRF cookie, old tab). Redirect back —
+        // Inertia reloads the page with a fresh token so the user can just retry —
+        // instead of dead-ending on the ErrorPage.
+        if ($e instanceof TokenMismatchException) {
+            return redirect()->back()
+                ->withInput($request->except(['_token', 'password', 'password_confirmation']))
+                ->with('error', 'Your session expired — please try again.');
         }
 
         $status = 500;
@@ -72,12 +83,13 @@ class Handler extends ExceptionHandler
         }
 
         if ($status === 404) {
-            $errorController = new \App\Http\Controllers\ErrorController();
+            $errorController = new ErrorController;
+
             return $errorController->show404();
         }
 
         $message = $this->messages[$status] ?? $this->messages[500];
-        
+
         // Pass actual error message to view for console logging in debug mode or if requested
         $consoleMessage = $e->getMessage();
 
@@ -92,7 +104,7 @@ class Handler extends ExceptionHandler
                 return Inertia::render('ErrorPage', [
                     'status' => $status,
                     'message' => $message,
-                    'consoleMessage' => $consoleMessage
+                    'consoleMessage' => $consoleMessage,
                 ])
                     ->toResponse($request)
                     ->setStatusCode($status);
@@ -106,7 +118,7 @@ class Handler extends ExceptionHandler
                 return Inertia::render('ErrorPage', [
                     'status' => $status,
                     'message' => $message,
-                    'consoleMessage' => $consoleMessage
+                    'consoleMessage' => $consoleMessage,
                 ])
                     ->toResponse($request)
                     ->setStatusCode($status);
@@ -117,7 +129,4 @@ class Handler extends ExceptionHandler
 
         return parent::render($request, $e);
     }
-
-
-
 }

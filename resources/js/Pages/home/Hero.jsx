@@ -22,7 +22,7 @@ import {
 // the right side of the split.
 const TILES = [
   { emoji: "👟", label: "Sneakers", price: "£179", bg: "#E6EA7B", dark: true,  pos: "left-0 top-2 md:top-4",          rot: "-rotate-6", z: "z-20", delay: 0.45 },
-  { emoji: "🎮", label: "Gaming",   price: "£479", bg: "#8C52FF", dark: false, pos: "right-0 top-24 md:top-28",       rot: "rotate-5",  z: "z-30", delay: 0.30 },
+  { emoji: "🎮", label: "Gaming",   price: "£479", bg: "#05EFB8", dark: false, pos: "right-0 top-24 md:top-28",       rot: "rotate-5",  z: "z-30", delay: 0.30 },
   { emoji: "✈️", label: "Travel",   price: "£650", bg: "#05EFB8", dark: true,  pos: "left-6 bottom-2 md:left-10",     rot: "rotate-3",  z: "z-10", delay: 0.60 },
 ];
 
@@ -242,7 +242,7 @@ export default function Hero({auth}) {
           <motion.div style={{ y: reduceMotion ? 0 : blobsY }} className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
               <motion.div style={reduceMotion ? {} : { x: blobX, y: blobY }} className="absolute inset-0">
                 <div className="absolute top-[6%] right-[8%] w-[360px] md:w-[640px] h-[380px] bg-[#FF007F] rounded-full filter blur-[160px] opacity-25"></div>
-                <div className="absolute -bottom-24 left-[2%] w-80 h-80 bg-[#8C52FF] rounded-full filter blur-[150px] opacity-[0.18]"></div>
+                <div className="absolute -bottom-24 left-[2%] w-80 h-80 bg-[#05EFB8] rounded-full filter blur-[150px] opacity-[0.18]"></div>
               </motion.div>
           </motion.div>
 
@@ -315,7 +315,7 @@ export default function Hero({auth}) {
                         >
                           <span className="relative z-10">{ctaLabel}</span>
                           <RocketIcon ref={ctaRef} size={24} duration={1.5} className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
-                          <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="absolute inset-0 bg-gradient-to-r from-[#E6EA7B] via-[#FF007F] to-[#05EFB8] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </Link>
                       </Magnetic>
                       <span className="absolute -top-4 -right-3 bg-white text-[#FF007F] text-[11px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full shadow-[0_8px_24px_-6px_rgba(255,0,127,0.5)]">It's Free</span>

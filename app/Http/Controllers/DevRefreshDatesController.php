@@ -2,7 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Bills, Membership, PiggyPot, Post, Shop, Task, TipGoal, WishItem};
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\PiggyPot;
+use App\Models\Post;
+use App\Models\Shop;
+use App\Models\Task;
+use App\Models\TipGoal;
+use App\Models\WishItem;
 use App\Services\UserProfileService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -22,8 +29,16 @@ class DevRefreshDatesController extends Controller
 {
     public function __invoke()
     {
+        // Defence in depth: the route is already excluded from production in
+        // routes/web.php. This helper clears content_posting_paused_at and
+        // back-dates content, which would let a creator self-bypass the
+        // posting-cadence pause and the creator-activity payment gate.
+        if (app()->environment('production')) {
+            abort(404);
+        }
+
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['status' => false, 'message' => 'Log in first.'], 401);
         }
 
@@ -32,14 +47,14 @@ class DevRefreshDatesController extends Controller
 
         // label => [Model, owner column]
         $targets = [
-            'posts'       => [Post::class, 'user_id'],
-            'wishes'      => [WishItem::class, 'user_id'],
-            'shops'       => [Shop::class, 'user_id'],
-            'tasks'       => [Task::class, 'creator_id'],
-            'piggy_pots'  => [PiggyPot::class, 'user_id'],
-            'bills'       => [Bills::class, 'user_id'],
+            'posts' => [Post::class, 'user_id'],
+            'wishes' => [WishItem::class, 'user_id'],
+            'shops' => [Shop::class, 'user_id'],
+            'tasks' => [Task::class, 'creator_id'],
+            'piggy_pots' => [PiggyPot::class, 'user_id'],
+            'bills' => [Bills::class, 'user_id'],
             'memberships' => [Membership::class, 'user_id'],
-            'tip_goals'   => [TipGoal::class, 'user_id'],
+            'tip_goals' => [TipGoal::class, 'user_id'],
         ];
 
         foreach ($targets as $label => [$model, $col]) {
@@ -47,7 +62,7 @@ class DevRefreshDatesController extends Controller
                 $bumped[$label] = $model::where($col, $user->id)
                     ->update(['created_at' => $now, 'updated_at' => $now]);
             } catch (\Throwable $e) {
-                $bumped[$label] = 'skip: ' . $e->getMessage();
+                $bumped[$label] = 'skip: '.$e->getMessage();
             }
         }
 
@@ -64,10 +79,10 @@ class DevRefreshDatesController extends Controller
         }
 
         return response()->json([
-            'status'  => true,
-            'user'    => $user->username,
-            'bumped'  => $bumped,
-            'paused'  => $user->content_posting_paused_at,
+            'status' => true,
+            'user' => $user->username,
+            'bumped' => $bumped,
+            'paused' => $user->content_posting_paused_at,
             'message' => 'All your content items are now dated today. Refresh the page.',
         ]);
     }

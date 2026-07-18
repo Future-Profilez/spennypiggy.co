@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CheckMediaModeration;
 use App\Models\PiggyPot;
+use App\Services\UserProfileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
-use App\Uploadcare;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
-use App\Services\UserProfileService;
+use Inertia\Inertia;
 
 class PiggyPotController extends Controller
 {
@@ -20,6 +18,13 @@ class PiggyPotController extends Controller
      * The Piggy Pot area is only available for creators with role === 1,
      * so any authenticated user without creator privileges must be blocked.
      */
+    /**
+     * Platform-owned default cover art (the pink piggy illustration) that the
+     * frontend submits when the creator uploads nothing. It is a known-safe
+     * asset — never send it to the Rekognition moderation scan.
+     */
+    private const DEFAULT_COVER_UUID = '6d5506b2-7361-4c58-8f1b-dfe1e196885a';
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -27,6 +32,7 @@ class PiggyPotController extends Controller
             if (Auth::user()?->role !== 1) {
                 abort(403, 'Unauthorized access.');
             }
+
             return $next($request);
         });
     }
@@ -91,7 +97,7 @@ class PiggyPotController extends Controller
         $data['user_id'] = Auth::id();
         $data['payment_methods_accepted'] = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
 
-        if (!empty($data['is_pinned']) && $data['is_pinned']) {
+        if (! empty($data['is_pinned']) && $data['is_pinned']) {
             // Unpin others
             PiggyPot::where('user_id', Auth::id())->update(['is_pinned' => false]);
         }
@@ -99,8 +105,9 @@ class PiggyPotController extends Controller
         $piggyPot = PiggyPot::create($data);
 
         // SFW gate: scan the cover image; hold for review if it fails moderation.
-        if (!empty($piggyPot->cover_media)) {
-            \App\Jobs\CheckMediaModeration::dispatch(
+        // Skip the platform default cover — known-safe, nothing user-uploaded.
+        if (! empty($piggyPot->cover_media) && ! str_contains($piggyPot->cover_media, self::DEFAULT_COVER_UUID)) {
+            CheckMediaModeration::dispatch(
                 PiggyPot::class,
                 $piggyPot->id,
                 $piggyPot->cover_media,
@@ -141,7 +148,13 @@ class PiggyPotController extends Controller
 
         $data = $validator->validated();
 
-        if (!empty($data['is_pinned']) && $data['is_pinned']) {
+        // A held pot can only be released by admin approval (Content Review in
+        // the admin app) — never by the creator re-submitting status=active.
+        if ($piggyPot->status === 'moderation_hold') {
+            unset($data['status']);
+        }
+
+        if (! empty($data['is_pinned']) && $data['is_pinned']) {
             // Unpin others
             PiggyPot::where('user_id', Auth::id())->where('id', '!=', $id)->update(['is_pinned' => false]);
         }
@@ -149,8 +162,9 @@ class PiggyPotController extends Controller
         $piggyPot->update($data);
 
         // SFW gate: re-scan the cover image on update.
-        if (!empty($piggyPot->cover_media)) {
-            \App\Jobs\CheckMediaModeration::dispatch(
+        // Skip the platform default cover — known-safe, nothing user-uploaded.
+        if (! empty($piggyPot->cover_media) && ! str_contains($piggyPot->cover_media, self::DEFAULT_COVER_UUID)) {
+            CheckMediaModeration::dispatch(
                 PiggyPot::class,
                 $piggyPot->id,
                 $piggyPot->cover_media,

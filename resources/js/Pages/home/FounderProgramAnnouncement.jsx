@@ -24,9 +24,9 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
             <section className="bg-transparent py-20 md:py-28 px-4 relative overflow-hidden">
                 {/* Background decorative elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                    <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
+                    <div className="absolute top-10 left-10 w-32 h-32 bg-[#E6EA7B] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
                     <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
-                    <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-green-500 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
+                    <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-[#05EFB8] rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
                 </div>
 
                 {/* Giant outlined watermark strip — scrubs sideways with scroll */}
@@ -36,7 +36,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                     <div className="text-center mb-8 md:mb-16">
                         <FadeIn y={20} duration={0.5}>
                         <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-                            <span className="bg-yellow-400 text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
+                            <span className="bg-[#E6EA7B] text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
                                 👑 NEW PROGRAM LAUNCH 👑
                             </span>
                         </div>
@@ -53,10 +53,10 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         </h2>
 
                         <p className="fading text-sm md:text-lg text-gray-400 mt-4 uppercase tracking-widest font-bold">
-                            Earn <span className="text-yellow-400 font-bold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days and automatically qualify for a <span className="text-[#FF007F] font-bold">{config.bonusPercentage}% monthly bonus</span>.
+                            Earn <span className="text-[#E6EA7B] font-bold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days and automatically qualify for a <span className="text-[#FF007F] font-bold">{config.bonusPercentage}% monthly bonus</span>.
                         </p>
                         <p className="fading text-sm md:text-lg text-gray-400 mt-1 uppercase tracking-widest font-bold">
-                            Join our exclusive founder community. Limited to the first <span className="text-green-400">{config.maxFounderSeats}</span> creators!
+                            Join our exclusive founder community. Limited to the first <span className="text-[#05EFB8]">{config.maxFounderSeats}</span> creators!
                         </p>
                     </div>
 
@@ -66,16 +66,16 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         {/* Card 1: Monthly Bonus */}
                         <ScrollX from={-45} to={0} rotate={2} fade className="h-full">
                         <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15] flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-yellow-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#E6EA7B] md:shadow-[8px_8px_0px_0px_#E6EA7B] flex flex-col h-full">
+                            <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
                                 <FaTrophy />
                             </div>
-                            <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">{config.bonusPercentage}% Monthly<br/><span className="text-yellow-400">Bonus</span></h3>
+                            <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">{config.bonusPercentage}% Monthly<br/><span className="text-[#E6EA7B]">Bonus</span></h3>
                             <p className="fading text-gray-400 text-base md:text-lg mb-6 leading-snug flex-grow">
                                 Boost your earnings with a permanent {config.bonusPercentage}% monthly bonus on all revenue. Every membership, sale, and unlock automatically triggers an extra payout.
                             </p>
                             <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
-                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-yellow-400 animate-pulse"></div>
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#E6EA7B] animate-pulse"></div>
                                 <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">Extra Payouts</span>
                             </div>
                         </div>
@@ -85,7 +85,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         {/* Card 2: Founder Status (drifts vertically, sits lower) */}
                         <Parallax speed={22} className="h-full md:mt-12">
                         <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] flex flex-col h-full">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] flex flex-col h-full">
                             <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
                                 <FaCrown />
                             </div>
@@ -104,16 +104,16 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         {/* Card 3: Priority Qualification */}
                         <ScrollX from={45} to={0} rotate={-2} fade className="h-full md:col-span-3 lg:col-span-1">
                         <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-green-400 rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#4ADE80] md:shadow-[8px_8px_0px_0px_#4ADE80] flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-green-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#05EFB8] md:shadow-[8px_8px_0px_0px_#05EFB8] flex flex-col h-full">
+                            <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
                                 <FaGift />
                             </div>
-                            <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Priority<br/><span className="text-green-400">Access</span></h3>
+                            <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Priority<br/><span className="text-[#05EFB8]">Access</span></h3>
                             <p className="fading text-gray-400 text-base md:text-lg mb-6 leading-snug flex-grow">
                                 Earn {config.currencySymbol}{config.minMonthlyEarnings.toLocaleString()} in your first 30 days to automatically unlock lifetime bonuses and rewards. Act fast—only {config.maxFounderSeats} seats available.
                             </p>
                             <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
-                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-green-400 animate-pulse"></div>
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#05EFB8] animate-pulse"></div>
                                 <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">Limited Seats</span>
                             </div>
                         </div>
@@ -126,7 +126,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                     <div className="mt-10 md:mt-24 text-center relative z-10">
                         <Magnetic strength={0.3}>
                         <Link href="/founder/bonus"
-                            className="relative inline-flex items-center gap-3 md:gap-4 bg-yellow-400 text-black font-black text-sm md:text-lg py-3 px-7 md:py-4 md:px-12 rounded-full shadow-[6px_6px_0px_0px_#FF007F] border-2 border-yellow-400 hover:shadow-[0px_0px_0px_0px_#FF007F] hover:translate-y-[6px] hover:translate-x-[6px] transition-all duration-300 uppercase tracking-wide group">
+                            className="relative inline-flex items-center gap-3 md:gap-4 bg-[#E6EA7B] text-black font-black text-sm md:text-lg py-3 px-7 md:py-4 md:px-12 rounded-full shadow-[6px_6px_0px_0px_#FF007F] border-2 border-[#E6EA7B] hover:shadow-[0px_0px_0px_0px_#FF007F] hover:translate-y-[6px] hover:translate-x-[6px] transition-all duration-300 uppercase tracking-wide group">
                             <span>Learn More About Founder Bonus</span>
                             <FaArrowRight className="text-base md:text-2xl group-hover:translate-x-1 transition-transform" />
                         </Link>

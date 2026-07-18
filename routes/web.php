@@ -947,7 +947,12 @@ if (config('app.env') !== 'production') {
 }
 
 // Dev helper: refresh logged-in creator's content dates to today.
-require __DIR__ . '/dev-refresh-dates.php';
+// NEVER expose in production — it clears content_posting_paused_at and back-dates
+// content, which would let a creator self-bypass the posting-cadence pause and the
+// creator-activity payment gate (both are content-compliance controls).
+if (config('app.env') !== 'production') {
+    require __DIR__ . '/dev-refresh-dates.php';
+}
 
 
 // Routes already defined above

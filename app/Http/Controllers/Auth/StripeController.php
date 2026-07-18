@@ -299,6 +299,12 @@ class StripeController extends Controller
                 $capabilities['transfers'] = ['requested' => true];
             } else {
                 $capabilities['card_payments'] = ['requested' => true];
+
+                // Bank payment methods must be requested explicitly (the Stripe
+                // dashboard "on by default" toggle doesn't reach Express accounts).
+                foreach (StripeControl::bankCapabilitiesForCountry($user->country) as $bankCapability) {
+                    $capabilities[$bankCapability] = ['requested' => true];
+                }
             }
 
             $newAccount = StripeControl::createAccount([
@@ -726,6 +732,14 @@ class StripeController extends Controller
                     // For card_payments capability, Stripe requires BOTH card_payments AND transfers
                     $capabilities['card_payments'] = ['requested' => true];
                     $capabilities['transfers'] = ['requested' => true];
+
+                    // Bank payment methods (Pay by Bank / SEPA / ACH) must be
+                    // requested explicitly — the dashboard "on by default"
+                    // toggle only covers accounts with Stripe Dashboard access,
+                    // so without this a new creator's checkout refuses bank.
+                    foreach (StripeControl::bankCapabilitiesForCountry($country) as $bankCapability) {
+                        $capabilities[$bankCapability] = ['requested' => true];
+                    }
                 }
 
                 $payload = [
@@ -776,7 +790,7 @@ class StripeController extends Controller
                 'refresh_url' => route('stripe.connect', ['step' => 'refresh', 'country' => $user->country]),
                 'return_url' => route('stripe.return'),
                 'type' => 'account_onboarding',
-                'collect' => 'currently_due',
+                'collect' => 'eventually_due',
             ]);
 
             return Inertia::location($link->url);
@@ -1032,7 +1046,7 @@ class StripeController extends Controller
                     ]),
                     'return_url' => route('stripe.return'),
                     'type' => 'account_onboarding',
-                    'collect' => 'currently_due',
+                    'collect' => 'eventually_due',
                 ]);
 
                 return Inertia::location($link->url);
@@ -1183,7 +1197,7 @@ class StripeController extends Controller
                 Log::info('Switching to account_update flow due to inactive capability without requirements');
             }
 
-            $accountLink = StripeControl::getClient()->accountLinks->create([
+            $accountLinkPayload = [
                 'account' => $user->account_id,
                 'refresh_url' => route('stripe.connect', [
                     'step' => 'refresh',
@@ -1191,7 +1205,16 @@ class StripeController extends Controller
                 ]),
                 'return_url' => route('stripe.return'),
                 'type' => $accountLinkType,
-            ]);
+            ];
+
+            // Collect EVERYTHING pending (currently_due + eventually_due) in one
+            // onboarding pass so the creator isn't asked again later for
+            // "Action Needed Soon" fields. Only valid for onboarding links.
+            if ($accountLinkType === 'account_onboarding') {
+                $accountLinkPayload['collect'] = 'eventually_due';
+            }
+
+            $accountLink = StripeControl::getClient()->accountLinks->create($accountLinkPayload);
 
             // 3. Redirect to Stripe’s URL
             return Inertia::location($accountLink->url);
@@ -1245,12 +1268,26 @@ class StripeController extends Controller
             Log::info('Stripe connectReturn status', [
                 'user_id' => $user->id,
                 'account_id' => $user->account_id,
+                'details_submitted' => $account->details_submitted ?? null,
                 'charges_enabled' => $account->charges_enabled ?? null,
                 'payouts_enabled' => $account->payouts_enabled ?? null,
                 'cap_card_payments' => $account->capabilities->card_payments ?? null,
                 'cap_transfers' => $account->capabilities->transfers ?? null,
                 'requirements_due' => $account->requirements->eventually_due ?? [],
             ]);
+
+            // Stripe hits return_url whether or not onboarding was actually
+            // finished (user can close/back out mid-form). Never claim success
+            // unless the details were really submitted.
+            if (empty($account->details_submitted)) {
+                return redirect(route('user.show', ['username' => $user->username]))
+                    ->with('error', 'Your Stripe setup is not finished yet — please complete all onboarding steps to activate payments.');
+            }
+
+            if (! $account->charges_enabled) {
+                return redirect(route('user.show', ['username' => $user->username]))
+                    ->with('success', 'Stripe details submitted. Verification is in progress — payments will activate once Stripe finishes reviewing your information.');
+            }
 
             return redirect(route('user.show', ['username' => $user->username]))->with('success', 'Stripe connected.');
         } catch (Exception $e) {

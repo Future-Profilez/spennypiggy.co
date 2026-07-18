@@ -139,10 +139,10 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
                 }}
               />
             </div>
-            <div className="avatar-content">
-              <h2 className={`${namecolor || ''}`}>{name}</h2>
-              {subhead && <p className=''>{subhead}</p>}
-            </div>
+            {name || subhead ? <div className="avatar-content">
+              {name ? <h2 className={`${namecolor || ''}`}>{name}</h2> : ''}
+              {subhead ? <p className=''>{subhead}</p> : ''}
+            </div> : ''}
           </div>
         </div>
       )}

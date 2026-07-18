@@ -28,6 +28,7 @@ environments:
       - "npm run build"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
+      - "php artisan stripe:request-bank-capabilities"
       # - "rd /s /q node_modules"
       # - "rd /s /q package-lock.json"
  
@@ -69,6 +70,7 @@ environments:
       - "php artisan view:clear"
       - "php artisan event:clear"
       - "php artisan cache:clear"
+      - "php artisan stripe:request-bank-capabilities"
 
     deploy:
       - "php artisan migrations:fix-state"
