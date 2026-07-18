@@ -25,6 +25,7 @@ use App\Jobs\WishSubscriptionMailToUser;
 use App\Mail\CommandFailed;
 use App\Mail\FastStartBonusPayoutStatusUpdated;
 use App\Mail\FounderBonusPayoutStatusUpdated;
+<<<<<<< HEAD
 use App\Mail\TaskPurchasedMail;
 use App\Mail\TaskPurchasedSupporterMail;
 use App\Mail\TaskRefunded;
@@ -78,6 +79,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+=======
+use App\Models\EarlyFraudWarning;
+use App\Models\FounderBonus;
+use App\Models\FounderBonusMonthly;
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Ramsey\Uuid\Uuid;
@@ -286,10 +292,15 @@ class StripeWebhookController extends Controller
                     $this->handleChargeDisputeCreated($data);
                     break;
 
+<<<<<<< HEAD
                     // case 'charge.dispute.updated':
                     // case 'charge.dispute.funds_withdrawn':
 
                 case 'charge.dispute.updated':
+=======
+                // case 'charge.dispute.updated':
+                // case 'charge.dispute.funds_withdrawn':
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                 case 'charge.dispute.funds_reinstated':
                     $this->handleChargeDisputeUpdated($data);
                     break;
@@ -311,6 +322,7 @@ class StripeWebhookController extends Controller
                     break;
 
                 case 'radar.early_fraud_warning.created':
+                    Log::info('come at radar.early_fraud_warning.created');
                     $this->handleEarlyFraudWarningCreated($data);
                     break;
 
@@ -1053,7 +1065,6 @@ class StripeWebhookController extends Controller
             // Check if this is a task purchase
             if (isset($metadata->type) && $metadata->type === 'task_purchase') {
                 $this->processTaskPurchase($session, $metadata);
-                $this->finalizeTaskPurchaseAfterConfirmation($session, $metadata, $session->payment_intent ?? null);
             }
 
             // Check if this is a piggy pot contribution
@@ -1460,12 +1471,18 @@ class StripeWebhookController extends Controller
         }
     }
 
-    private function createTaskPurchaseRecord($session, $metadata, $paymentIntentId = null, $initialStatus = 'pending')
+    /**
+     * Process task purchase creation
+     */
+    private function processTaskPurchase($session, $metadata)
     {
+        Log::info("Processing task purchase", ['session_id' => $session->id]);
+
         $taskId = $metadata->task_id ?? null;
         $buyerId = $metadata->buyer_id ?? null;
         $creatorId = $metadata->creator_id ?? null;
 
+<<<<<<< HEAD
         if (! $taskId || ! $buyerId) {
             Log::error('Missing task_id or buyer_id in metadata for task purchase');
 
@@ -1496,6 +1513,23 @@ class StripeWebhookController extends Controller
             Log::error('Task not found for purchase', ['task_id' => $taskId]);
 
             return null;
+=======
+        if (!$taskId || !$buyerId) {
+            Log::error("Missing task_id or buyer_id in metadata for task purchase");
+            return;
+        }
+
+        // Idempotency check
+        if (TaskPurchase::where('stripe_session_id', $session->id)->exists()) {
+            Log::info("Task purchase already exists for session", ['session_id' => $session->id]);
+            return;
+        }
+
+        $task = Task::find($taskId);
+        if (!$task) {
+            Log::error("Task not found for purchase", ['task_id' => $taskId]);
+            return;
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
         }
 
         $currency = strtoupper($session->currency ?? ($metadata->currency ?? ($task->currency ?? 'GBP')));
@@ -1514,10 +1548,16 @@ class StripeWebhookController extends Controller
         $platformFee = isset($metadata->platform_fee) ? ((float) $metadata->platform_fee / $multiplier) : 0;
         $transferAmount = isset($metadata->transfer_amount) ? ((float) $metadata->transfer_amount / $multiplier) : 0;
 
+        // Try to get charge_id from payment intent if available
         $chargeId = null;
+<<<<<<< HEAD
         if (! empty($session?->payment_intent)) {
+=======
+        if (!empty($session->payment_intent)) {
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
             try {
                 $client = AppStripeControl::getClient();
+                // Check if payment_intent is already an object (expanded) or string
                 $piId = is_string($session->payment_intent) ? $session->payment_intent : $session->payment_intent->id;
                 $pi = $client->paymentIntents->retrieve($piId, ['expand' => ['latest_charge']]);
                 $chargeId = $pi->latest_charge->id ?? ($pi->latest_charge ?? null);
@@ -1526,12 +1566,17 @@ class StripeWebhookController extends Controller
             }
         }
 
+        // Determine initial status based on payment_status
+        // 'paid' -> 'paid', 'unpaid'/'no_payment_required' -> 'pending'
+        $initialStatus = ($session->payment_status === 'paid') ? 'paid' : 'pending';
+
+        // Create TaskPurchase
         $purchase = TaskPurchase::create([
             'task_id' => $taskId,
             'supporter_id' => $buyerId,
             'creator_id' => $creatorId ?? $task->creator_id,
-            'stripe_session_id' => $session?->id,
-            'payment_intent_id' => $paymentIntentId,
+            'stripe_session_id' => $session->id,
+            'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
             'charge_id' => $chargeId,
             'amount' => $amount,
             'currency' => $currency,
@@ -1546,21 +1591,23 @@ class StripeWebhookController extends Controller
             'dispute_status' => 'none',
         ]);
 
+        // SLA logic
         $slaHours = (int) ($metadata->sla_hours ?? 0);
         if ($slaHours > 0) {
             $purchase->sla_deadline = Carbon::now()->addHours($slaHours);
             $purchase->save();
         }
 
-        Deliverable::create([
+        // Create Deliverable
+        $deliverable = Deliverable::create([
             'uuid' => (string) Str::uuid(),
             'product_id' => (string) $taskId,
             'item_id' => $taskId,
             'order_id' => $purchase->id,
             'creator_id' => $creatorId ?? $task->creator_id,
             'gifter_id' => $buyerId,
-            'payment_intent_id' => $paymentIntentId ?? ($session->payment_intent ?? null),
-            'session_id' => $session?->id,
+            'payment_intent_id' => $session->payment_intent,
+            'session_id' => $session->id,
             'deliverable_type' => 'digital_task',
             'product_type' => 'task',
             'transaction_amount' => $amount,
@@ -1576,9 +1623,10 @@ class StripeWebhookController extends Controller
             'metadata' => json_encode($metadata),
         ]);
 
-        return $purchase;
-    }
+        // Dispatch job to process the deliverable (certificate generation)
+        \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
 
+<<<<<<< HEAD
     /**
      * Process task purchase creation
      */
@@ -1589,21 +1637,26 @@ class StripeWebhookController extends Controller
         $purchase = $this->createTaskPurchaseRecord($session, $metadata, is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null));
         if (! $purchase) {
             return;
+=======
+        // Initial Metadata Sync (ensure payment_status is 'paid' on Stripe)
+        try {
+            app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
+        } catch (\Exception $e) {
+            Log::error("Failed to sync initial metadata in processTaskPurchase: " . $e->getMessage());
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
         }
 
-        Log::info('Task purchase created; waiting for Stripe confirmation before dispatching deliverable work', [
-            'purchase_id' => $purchase->id,
-            'session_id' => $session->id,
-            'task_id' => $metadata->task_id ?? null,
-        ]);
-    }
+        // Handle Instant Task
+        if (($metadata->task_type ?? '') === 'instant') {
+            $purchase->status = 'completed';
+            $purchase->completed_at = Carbon::now();
+            $purchase->save();
 
-    private function finalizeTaskPurchaseAfterConfirmation($session, $metadata, $paymentIntentId)
-    {
-        if (empty($paymentIntentId) && empty($session?->id)) {
-            return;
-        }
+            $deliverable->status = 'delivered';
+            $deliverable->delivered_at = Carbon::now();
+            $deliverable->save();
 
+<<<<<<< HEAD
         $purchase = null;
         if (! empty($paymentIntentId)) {
             $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
@@ -1632,9 +1685,20 @@ class StripeWebhookController extends Controller
                 ]);
 
                 return;
+=======
+            // Update Metadata for Instant Completion
+            try {
+                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                    'content_delivery_status' => 'delivered',
+                    'current_status_of_order' => 'completed',
+                    'task_type' => 'instant'
+                ]);
+            } catch (\Exception $e) {
+                Log::error("Failed to update metadata on instant task completion (webhook): " . $e->getMessage());
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
             }
-        }
 
+<<<<<<< HEAD
         $deliverable = Deliverable::where('order_id', $purchase->id)->first();
         if (! $deliverable) {
             Log::warning('StripeWebhookController: No deliverable found for task purchase finalization', [
@@ -1699,6 +1763,16 @@ class StripeWebhookController extends Controller
 
             $creator = User::find($purchase->creator_id);
             $supporter = $purchase->supporter_id ? User::find($purchase->supporter_id) : null;
+=======
+            Log::info("Instant task purchase completed", ['purchase_id' => $purchase->id]);
+        } else {
+            Log::info("Timed task purchase created", ['purchase_id' => $purchase->id]);
+        }
+
+        try {
+            $creator = User::find($creatorId ?? $task->creator_id);
+            $supporter = $buyerId ? User::find($buyerId) : null;
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
 
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
@@ -1707,28 +1781,23 @@ class StripeWebhookController extends Controller
                 }
 
                 Helpers::sendNotification(
+<<<<<<< HEAD
                     'New Task Order! 💰',
                     ($supporter ? $supporter->name : 'A Guest').' purchased your task: '.$task->title,
+=======
+                    "New Task Order! 💰",
+                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title,
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                     $creator->email
                 );
+                Log::info("Task purchase email sent", ['creator_email' => $creator->email]);
             }
 
             if ($supporter && $supporter->notification_send == 1) {
                 Mail::to($supporter->email)->send(new TaskPurchasedSupporterMail($purchase, $task, $supporter));
             }
-
-            Log::info('StripeWebhookController: Task purchase finalized after Stripe confirmation', [
-                'purchase_id' => $purchase->id,
-                'deliverable_id' => $deliverable->id,
-                'task_type' => $task->type,
-                'payment_intent_id' => $paymentIntentId,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('StripeWebhookController: Failed to finalize task purchase after confirmation', [
-                'purchase_id' => $purchase->id,
-                'payment_intent_id' => $paymentIntentId,
-                'error' => $e->getMessage(),
-            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to send task purchase email/notification", ['error' => $e->getMessage()]);
         }
     }
 
@@ -1747,6 +1816,7 @@ class StripeWebhookController extends Controller
             'reason' => $dispute->reason,
         ]);
 
+        // --- Risk Engine: Record Dispute ---
         try {
             $payment = Payment::where('stripe_payment_intent_id', $paymentIntentId)->with('creator')->first();
 
@@ -1757,8 +1827,9 @@ class StripeWebhookController extends Controller
             if (! $payment && $paymentIntentId) {
                 Log::warning("handleChargeDisputeCreated: Payment not found for PaymentIntent ID: $paymentIntentId. Attempting auto-creation.");
 
-                $amount = $dispute->amount;
+                $amount = $dispute->amount; // Default to dispute amount if we can't find original
 
+<<<<<<< HEAD
                 $deliverable = Deliverable::where('payment_intent_id', $paymentIntentId)->first();
                 if ($deliverable) {
                     $creatorId = $deliverable->creator_id;
@@ -1766,6 +1837,17 @@ class StripeWebhookController extends Controller
                 }
 
                 if (! $creatorId) {
+=======
+                // Check Deliverable
+                $deliverable = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)->first();
+                if ($deliverable) {
+                    $creatorId = $deliverable->creator_id;
+                    $amount = (int)($deliverable->transaction_amount * 100); // Convert back to cents
+                }
+
+                // Check TaskPurchase
+                if (!$creatorId) {
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                     $taskPurchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
                     if ($taskPurchase) {
                         $creatorId = $taskPurchase->creator_id;
@@ -1773,14 +1855,24 @@ class StripeWebhookController extends Controller
                     }
                 }
 
+<<<<<<< HEAD
                 if (! $creatorId) {
                     $piggyPot = PiggyPotContribution::where('payment_intent_id', $paymentIntentId)->first();
                     if ($piggyPot) {
                         $creatorId = $piggyPot->creator_id;
                         $amount = (int) ($piggyPot->amount * 100);
+=======
+                // Check PiggyPotContribution
+                if (!$creatorId) {
+                    $piggyPot = \App\Models\PiggyPotContribution::where('payment_intent_id', $paymentIntentId)->first();
+                    if ($piggyPot) {
+                        $creatorId = $piggyPot->creator_id;
+                        $amount = (int)($piggyPot->amount * 100); // Assuming it's major units now
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                     }
                 }
 
+                // Resolve UUID if we got an integer ID
                 if ($creatorId && is_numeric($creatorId)) {
                     $cUser = User::find($creatorId);
                     if ($cUser) {
@@ -1799,8 +1891,13 @@ class StripeWebhookController extends Controller
                             'currency' => $dispute->currency,
                             'status' => 'disputed',
                         ]);
+<<<<<<< HEAD
                         $payment->load('creator');
                         Log::info('handleChargeDisputeCreated: Auto-created Payment record', ['payment_id' => $payment->id]);
+=======
+                        $payment->load('creator'); // Load relationship for downstream logic
+                        Log::info("handleChargeDisputeCreated: Auto-created Payment record", ['payment_id' => $payment->id]);
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                     } catch (\Exception $e) {
                         Log::error('handleChargeDisputeCreated: Failed to auto-create payment: '.$e->getMessage());
                     }
@@ -1833,10 +1930,12 @@ class StripeWebhookController extends Controller
                     'payment_id' => $dbDispute->payment_id ?? ($payment->id ?? null),
                 ]);
 
+                // Update Identity Rollups (Dispute Count)
                 if ($payment && $payment->riskIdentity) {
                     app(IdentityRollupService::class)->refreshRollups($payment->riskIdentity);
                 }
 
+                // Recalculate Risk Metrics (Always, if we know the creator)
                 if ($creatorId) {
                     try {
                         $this->riskService->recalculateMetrics($creatorId);
@@ -1845,6 +1944,7 @@ class StripeWebhookController extends Controller
                     }
                 }
 
+<<<<<<< HEAD
                 $adminEmail = config('services.dispute_notifications.admin_email');
                 if ($adminEmail) {
                     $currencySymbol = Helpers::getCurrency($dispute->currency);
@@ -1877,6 +1977,30 @@ class StripeWebhookController extends Controller
                             'dispute_id' => $dispute->id,
                             'error' => $e->getMessage(),
                         ]);
+=======
+                if ($payment || $creatorId) {
+                    // Notify Creator
+                    $creator = null;
+                    if ($payment && $payment->creator) {
+                        $creator = $payment->creator;
+                    } elseif ($creatorId) {
+                        $creator = \App\Models\User::find($creatorId);
+                    }
+
+                    if ($creator) {
+                        $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
+                        $formattedAmount = number_format($dispute->amount / 100, 2);
+
+                        $title = "⚠️ Dispute Opened: We Are Handling It";
+                        $content = "A dispute for {$currencySymbol}{$formattedAmount} has been opened by a supporter. No action is required from you—Spenny Piggy is automatically submitting evidence on your behalf. The amount is temporarily reserved.";
+
+                        try {
+                            \App\Helpers::sendNotification($title, $content, $creator->email);
+                            Log::info("Dispute notification sent to creator: " . $creator->email);
+                        } catch (\Exception $e) {
+                            Log::error("Failed to send dispute notification: " . $e->getMessage());
+                        }
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                     }
                 }
 
@@ -1889,6 +2013,7 @@ class StripeWebhookController extends Controller
         } catch (\Exception $e) {
             Log::error('Risk Engine: Failed to record dispute: '.$e->getMessage());
         }
+        // -----------------------------------
 
         if (! $paymentIntentId) {
             return;
@@ -1911,24 +2036,23 @@ class StripeWebhookController extends Controller
 
     private function handleChargeDisputeUpdated($dispute)
     {
-        Log::info('StripeWebhookController: Processing charge.dispute.updated', [
-            'dispute_id' => $dispute->id,
-            'status' => $dispute->status,
-            'reason' => $dispute->reason,
-        ]);
-
         try {
             $riskDispute = Dispute::where('stripe_dispute_id', $dispute->id)->first();
 
+<<<<<<< HEAD
             if (! $riskDispute) {
                 Log::info('StripeWebhookController: Dispute not found for update, processing as created', [
                     'dispute_id' => $dispute->id,
                 ]);
+=======
+            if (!$riskDispute) {
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                 $this->handleChargeDisputeCreated($dispute);
 
                 return;
             }
 
+<<<<<<< HEAD
             $changes = [];
             $oldStatus = $riskDispute->status;
             $newStatus = $dispute->status ?? $oldStatus;
@@ -1983,6 +2107,8 @@ class StripeWebhookController extends Controller
                 'changes' => $changes,
             ]);
 
+=======
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
             $riskDispute->update([
                 'amount' => $dispute->amount,
                 'currency' => $dispute->currency,
@@ -1991,9 +2117,9 @@ class StripeWebhookController extends Controller
                 'evidence_due_by' => isset($dispute->evidence_details->due_by)
                     ? Carbon::createFromTimestamp($dispute->evidence_details->due_by)
                     : $riskDispute->evidence_due_by,
-                'updated_at' => now(),
             ]);
 
+<<<<<<< HEAD
             Log::info('StripeWebhookController: Dispute updated', [
                 'db_dispute_id' => $riskDispute->id,
                 'dispute_id' => $dispute->id,
@@ -2032,6 +2158,11 @@ class StripeWebhookController extends Controller
             if (! empty($dispute->payment_intent)) {
                 $payment = Payment::where('stripe_payment_intent_id', $dispute->payment_intent)->first();
                 if ($payment && $payment->status !== 'disputed' && ! in_array($payment->status, ['refunded', 'failed', 'blocked'], true)) {
+=======
+            if (!empty($dispute->payment_intent)) {
+                $payment = \App\Models\Payment::where('stripe_payment_intent_id', $dispute->payment_intent)->first();
+                if ($payment && $payment->status !== 'disputed' && !in_array($payment->status, ['refunded', 'failed', 'blocked'], true)) {
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                     $payment->update(['status' => 'disputed']);
                 }
             }
@@ -2039,6 +2170,7 @@ class StripeWebhookController extends Controller
             if (! empty($dispute->payment_intent)) {
                 $this->syncRiskLedgerStatus($dispute->payment_intent, 'disputed');
             }
+<<<<<<< HEAD
 
             try {
                 AuditLog::create([
@@ -2059,6 +2191,8 @@ class StripeWebhookController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
+=======
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
         } catch (\Exception $e) {
             Log::error('Risk Engine: Failed to update dispute: '.$e->getMessage(), ['stripe_dispute_id' => $dispute->id ?? null]);
         }
@@ -2071,6 +2205,7 @@ class StripeWebhookController extends Controller
     {
         $paymentIntentId = $dispute->payment_intent ?? null;
 
+        // --- Risk Engine: Update Dispute Status ---
         try {
             $riskDispute = Dispute::where('stripe_dispute_id', $dispute->id)->with('creator')->first();
             if ($riskDispute && $riskDispute->status !== $dispute->status) {
@@ -2080,6 +2215,7 @@ class StripeWebhookController extends Controller
                 ]);
                 Log::info('Risk Engine: Dispute status updated', ['status' => $dispute->status]);
 
+<<<<<<< HEAD
                 try {
                     $adminEmail = config('services.dispute_notifications.admin_email');
                     if ($adminEmail) {
@@ -2101,17 +2237,34 @@ class StripeWebhookController extends Controller
                             'dispute_id' => $dispute->id,
                             'admin_email' => $adminEmail,
                         ]);
+=======
+                // Notify Creator
+                if ($riskDispute->creator) {
+                    $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
+                    $formattedAmount = number_format($dispute->amount / 100, 2);
+
+                    if ($dispute->status === 'won') {
+                        $title = "✅ Dispute Won!";
+                        $content = "Great news! You won the dispute for {$currencySymbol}{$formattedAmount}. The funds have been returned to your balance.";
+                    } elseif ($dispute->status === 'lost') {
+                        $title = "❌ Dispute Lost";
+                        $content = "The dispute for {$currencySymbol}{$formattedAmount} was decided in favor of the cardholder. The funds have been deducted.";
                     }
-                } catch (\Exception $e) {
-                    Log::error('StripeWebhookController: Failed to send admin notification for dispute closed', [
-                        'dispute_id' => $dispute->id,
-                        'error' => $e->getMessage(),
-                    ]);
+
+                    if (isset($title)) {
+                        try {
+                            \App\Helpers::sendNotification($title, $content, $riskDispute->creator->email);
+                        } catch (\Exception $e) {
+                            Log::error("Failed to send dispute closed notification: " . $e->getMessage());
+                        }
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
+                    }
                 }
             }
         } catch (\Exception $e) {
             Log::error('Risk Engine: Failed to update dispute status: '.$e->getMessage());
         }
+        // ------------------------------------------
 
         if ($paymentIntentId) {
             if ($dispute->status === 'won') {
@@ -2127,21 +2280,26 @@ class StripeWebhookController extends Controller
 
         $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
         if ($purchase) {
-            $status = $dispute->status;
+            $status = $dispute->status; // won, lost, warning_closed
 
+            // Map Stripe status to our enum ['none', 'open', 'won', 'lost']
             if ($status === 'won') {
                 $purchase->dispute_status = 'won';
             } elseif ($status === 'lost') {
                 $purchase->dispute_status = 'lost';
+
+                // If lost, it means the customer got a refund.
                 $purchase->status = 'refunded';
                 $purchase->refunded_at = now();
 
+                // Update Deliverable Status
                 try {
                     $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                     if ($deliverable) {
                         $deliverable->status = 'refunded';
                         $deliverable->save();
 
+                        // Update Stripe Metadata using Service
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'status' => 'refunded',
                             'dispute_result' => 'lost',
@@ -2153,7 +2311,21 @@ class StripeWebhookController extends Controller
                 } catch (\Exception $e) {
                     Log::error('Failed to update deliverable status on dispute lost: '.$e->getMessage());
                 }
+
+                // Notify Creator (Loser)
+                try {
+                    $creator = $purchase->creator;
+                    if ($creator) {
+                        Helpers::sendNotification(
+                            "Dispute Lost ⚠️",
+                            "The dispute for '{$purchase->task->title}' was decided in favor of the customer. Funds have been returned.",
+                            $creator->email
+                        );
+                    }
+                } catch (\Exception $e) {
+                }
             } else {
+                // Keep open or set to none if it was just a warning
                 if (str_contains($status, 'warning')) {
                     $purchase->dispute_status = 'none';
                 }
@@ -2920,8 +3092,7 @@ class StripeWebhookController extends Controller
         }
 
         $user = User::find($subs->owner->id ?? $subs->owner_id ?? 0);
-        $ret = null;
-        if ($user && $user->account_id) {
+        if ($user->account_id) {
             $ret = AppStripeControl::getSubscription($data->id, $user->account_id);
         }
 
@@ -2939,12 +3110,16 @@ class StripeWebhookController extends Controller
         $wish_subscription->status = 'ended';
         $wish_subscription->save();
 
+<<<<<<< HEAD
         $upcomingPayment = null;
         if ($ret && isset($ret->current_period_end)) {
             $upcomingPayment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
         }
 
         $newSubs = new WishItemSubscription;
+=======
+        $newSubs = new WishItemSubscription();
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
         $newSubs->stripe_id = $wish_subscription->stripe_id;
         $newSubs->session_id = $wish_subscription->session_id;
         $newSubs->wish_item_id = $wish_subscription->wish_item_id;
@@ -2959,8 +3134,13 @@ class StripeWebhookController extends Controller
         $newSubs->payment_method = 'stripe';
         $newSubs->surprise_message = $wish_subscription->surprise_message;
         $newSubs->anonymous = $wish_subscription->anonymous;
+<<<<<<< HEAD
         $newSubs->upcoming_payment = $upcomingPayment;
         $newSubs->status = 'paid';
+=======
+        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+        $newSubs->status = "paid";
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
         $newSubs->created_at = $wish_subscription->created_at;
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
@@ -3804,11 +3984,6 @@ class StripeWebhookController extends Controller
         } else {
             Log::info('Payment intent succeeded but not found in Risk Ledger (might be legacy or direct)', ['pi' => $paymentIntentId]);
         }
-
-        $metadata = $paymentIntent->metadata ?? null;
-        if ($metadata && (isset($metadata->type) && $metadata->type === 'task_purchase')) {
-            $this->finalizeTaskPurchaseAfterConfirmation((object) ['id' => $paymentIntent->metadata->checkout_session_id ?? null], $metadata, $paymentIntentId);
-        }
     }
 
     /**
@@ -3817,8 +3992,18 @@ class StripeWebhookController extends Controller
     private function handleEarlyFraudWarningCreated($efw)
     {
         Log::info('================ EFW WEBHOOK START ================');
+        Log::info('EFW Payload Received', [
+            'efw_data' => $efw,
+            'efw_id' => $efw->id ?? null,
+            'payment_intent' => $efw->payment_intent ?? null,
+            'charge' => $efw->charge ?? null,
+            'actionable' => $efw->actionable ?? null,
+            'fraud_type' => $efw->fraud_type ?? null,
+            'risk_level' => $efw->risk_level ?? null,
+        ]);
 
         try {
+<<<<<<< HEAD
             Log::info('EFW Payload Received', [
                 'efw_id' => $efw->id ?? null,
                 'payment_intent' => $efw->payment_intent ?? null,
@@ -3828,18 +4013,19 @@ class StripeWebhookController extends Controller
                 'risk_level' => $efw->risk_level ?? null,
             ]);
 
+=======
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
             $paymentIntentId = $efw->payment_intent;
             $chargeId = $efw->charge;
 
-            Log::info('STEP 1 : Looking for Payment', [
-                'payment_intent' => $paymentIntentId,
+            Log::info('STEP 1: Finding related payment', [
+                'payment_intent_id' => $paymentIntentId,
             ]);
 
-            // Try to find payment
-            $payment = null;
-            if ($paymentIntentId) {
-                $payment = Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            // Find related payment
+            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
 
+<<<<<<< HEAD
                 if (! $payment) {
                     Log::info('Payment not found - Creating minimal payment record', [
                         'payment_intent' => $paymentIntentId,
@@ -4021,15 +4207,69 @@ class StripeWebhookController extends Controller
                 Log::error('Fraud Mail Dispatch FAILED', [
                     'error' => $e->getMessage(),
                     'fraud_warning_id' => $fraudWarning->id,
+=======
+            if ($payment) {
+                Log::info('Payment found', [
+                    'payment_id' => $payment->id,
+                    'payment_intent_id' => $paymentIntentId,
+                    'creator_id' => $payment->creator_id,
+                    'payment_status' => $payment->status,
+                ]);
+            } else {
+                Log::info('Payment not found', [
+                    'payment_intent_id' => $paymentIntentId,
+                    'note' => 'Payment may not exist yet or may have been deleted',
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                 ]);
             }
 
-            // Process payment actions if payment exists
-            if ($payment) {
-                Log::info('STEP 7 : Processing Payment Actions');
+            Log::info('STEP 2: Checking for existing fraud warning', [
+                'stripe_efw_id' => $efw->id,
+                'payment_found' => $payment ? true : false,
+            ]);
 
-                // Update Payment Reason Codes
+            $existing = \App\Models\EarlyFraudWarning::where('stripe_efw_id', $efw->id)->exists();
+            if ($existing) {
+                Log::warning('Early Fraud Warning already recorded, skipping duplicate', [
+                    'efw_id' => $efw->id,
+                    'stripe_efw_id' => $efw->id,
+                    'payment_intent_id' => $paymentIntentId,
+                ]);
+                return;
+            }
+
+            Log::info('STEP 3: Creating EarlyFraudWarning record', [
+                'stripe_efw_id' => $efw->id,
+                'payment_id' => $payment ? $payment->id : null,
+                'stripe_charge_id' => $chargeId,
+            ]);
+
+            $fraudWarning = EarlyFraudWarning::create([
+                'payment_id'             => $payment?->id,
+                'stripe_efw_id'          => $efw->id,
+                'stripe_charge_id'       => $chargeId,
+                'stripe_payment_intent'  => $paymentIntentId,
+                'risk_level'             => $efw->risk_level,
+                'fraud_type'             => $efw->fraud_type,
+                'action'                 => $efw->action,
+                'actionable'             => $efw->actionable,
+                'created_at'             => now(),
+            ]);
+
+            Log::info('EarlyFraudWarning record created', [
+                'fraud_warning_id' => $fraudWarning->id,
+                'stripe_efw_id' => $efw->id,
+                'payment_id' => $fraudWarning->payment_id,
+            ]);
+
+            if ($payment) {
+                Log::info('STEP 4: Payment exists - updating with fraud warning data', [
+                    'payment_id' => $payment->id,
+                    'fraud_warning_id' => $fraudWarning->id,
+                ]);
+
                 try {
+<<<<<<< HEAD
                     $reasons = [];
                     if ($payment->reason_codes) {
                         $reasons = is_array($payment->reason_codes)
@@ -4043,18 +4283,51 @@ class StripeWebhookController extends Controller
 
                     $payment->update([
                         'reason_codes' => $reasons,
+=======
+                    Log::info('Updating payment reason codes', [
+                        'payment_id' => $payment->id,
+                        'current_reason_codes' => $payment->reason_codes,
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                     ]);
 
-                    Log::info('Payment Reason Codes Updated');
+                    $reasons = is_array($payment->reason_codes) ? $payment->reason_codes : [];
+                    if (!in_array('EFW_RECEIVED', $reasons, true)) {
+                        $reasons[] = 'EFW_RECEIVED';
+                        Log::info('Adding EFW_RECEIVED to reason codes', [
+                            'payment_id' => $payment->id,
+                            'new_reason_codes' => $reasons,
+                        ]);
+                    } else {
+                        Log::info('EFW_RECEIVED already in reason codes', [
+                            'payment_id' => $payment->id,
+                        ]);
+                    }
+                    $payment->update(['reason_codes' => $reasons]);
+
+                    Log::info('Payment reason codes updated successfully', [
+                        'payment_id' => $payment->id,
+                        'updated_reason_codes' => $reasons,
+                    ]);
                 } catch (\Throwable $e) {
                     Log::error('Failed to update payment reason codes', [
                         'error' => $e->getMessage(),
+                        'payment_id' => $payment->id,
+                        'fraud_warning_id' => $fraudWarning->id,
                     ]);
                 }
 
-                // Create Audit Log
                 try {
+<<<<<<< HEAD
                     AuditLog::create([
+=======
+                    Log::info('Creating audit log for fraud warning', [
+                        'payment_id' => $payment->id,
+                        'fraud_warning_id' => $fraudWarning->id,
+                        'stripe_efw_id' => $efw->id,
+                    ]);
+
+                    \App\Models\AuditLog::create([
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                         'actor' => 'system',
                         'action_type' => 'EARLY_FRAUD_WARNING',
                         'reference_id' => (string) $payment->id,
@@ -4063,37 +4336,120 @@ class StripeWebhookController extends Controller
                             'stripe_charge_id' => $chargeId,
                             'stripe_payment_intent_id' => $paymentIntentId,
                             'creator_id' => $payment->creator_id,
-                            'fraud_type' => $efw->fraud_type ?? null,
-                            'risk_level' => $efw->risk_level ?? null,
-                            'action' => $efw->action ?? null,
-                            'amount' => $amount,
-                            'currency' => $currency,
-                            'creator_name' => $creatorName,
-                            'creator_email' => $creatorEmail,
                         ],
                     ]);
 
-                    Log::info('Audit Log Created');
+                    Log::info('Audit log created successfully', [
+                        'payment_id' => $payment->id,
+                        'fraud_warning_id' => $fraudWarning->id,
+                    ]);
                 } catch (\Throwable $e) {
                     Log::error('Failed to create audit log', [
                         'error' => $e->getMessage(),
+                        'payment_id' => $payment->id,
+                        'fraud_warning_id' => $fraudWarning->id,
                     ]);
                 }
 
-                Log::info('Payment Actions Completed Successfully');
+                try {
+                    Log::info('STEP 5: Sending fraud notification', [
+                        'payment_id' => $payment->id,
+                        'creator_id' => $payment->creator_id,
+                    ]);
+
+                    $creator = \App\Models\User::where('uuid', $payment->creator_id)->first();
+                    if ($creator) {
+                        Log::info('Creator found for notification', [
+                            'creator_id' => $creator->id,
+                            'creator_email' => $creator->email,
+                            'creator_name' => $creator->name,
+                        ]);
+
+                        // $title = "Refund Recommended";
+                        // $content = "A payment received an Early Fraud Warning. Consider refunding to reduce chargeback risk.";
+                        $title = "🚨 Refund Recommended";
+
+                        $content = "{$creator->name} received an Early Fraud Warning.\n\n" .
+                            "Product: {$payment->payment_type}\n" .
+                            "Amount: {$payment->currency} {$payment->amount}\n" .
+                            "Risk: {$efw->risk_level}\n\n" .
+                            "Review immediately to reduce chargeback risk.";
+
+                        Log::info('Sending fraud notification to admin', [
+                            'admin_email' => 'prem@futureprofilez.com',
+                            'payment_id' => $payment->id,
+                            'title' => $title,
+                        ]);
+
+                        $adminEmail = 'prem@futureprofilez.com';
+
+                        // PWA Notification
+                        \App\Helpers::sendNotification(
+                            $title,
+                            $content,
+                            $adminEmail
+                        );
+
+                        // Email Job
+                        \App\Jobs\FraudWarning\SendFraudWarningMailJob::dispatch(
+                            $creator,
+                            $fraudWarning,
+                            $payment
+                        );
+
+                        Log::info('Fraud notifications dispatched', [
+                            'admin_email' => $adminEmail,
+                            'payment_id' => $payment->id,
+                            'fraud_warning_id' => $fraudWarning->id,
+                        ]);
+
+                        // \App\Helpers::sendNotification($title, $content, $creator->email);
+                        Log::info('Creator notification skipped (commented out)', [
+                            'creator_email' => $creator->email,
+                            'payment_id' => $payment->id,
+                        ]);
+                    } else {
+                        Log::warning('Creator not found for notification', [
+                            'creator_id' => $payment->creator_id,
+                            'payment_id' => $payment->id,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Failed to send fraud notification', [
+                        'error' => $e->getMessage(),
+                        'payment_id' => $payment->id,
+                        'fraud_warning_id' => $fraudWarning->id,
+                    ]);
+                }
+            } else {
+                Log::info('STEP 4: Payment not found - fraud warning recorded without payment association', [
+                    'payment_intent_id' => $paymentIntentId,
+                    'fraud_warning_id' => $fraudWarning->id,
+                    'note' => 'Payment will need to be associated later if/when it is created',
+                ]);
             }
 
+            Log::info('Early Fraud Warning recorded successfully', [
+                'efw_id' => $efw->id,
+                'payment_intent' => $paymentIntentId,
+                'charge_id' => $chargeId,
+                'payment_found' => $payment ? true : false,
+                'fraud_warning_id' => $fraudWarning->id,
+            ]);
+
             Log::info('================ EFW WEBHOOK END ================');
-        } catch (\Throwable $e) {
-            Log::error('EFW FATAL ERROR', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
+        } catch (\Exception $e) {
+            Log::error('Failed to handle Early Fraud Warning', [
+                'error' => $e->getMessage(),
+                'efw_id' => $efw->id ?? null,
+                'payment_intent' => $efw->payment_intent ?? null,
+                'charge' => $efw->charge ?? null,
                 'trace' => $e->getTraceAsString(),
             ]);
         }
     }
 
+<<<<<<< HEAD
     // UPDATED: Helper method to send MagicBell notification with proper formatting
     private function sendFraudWarningMagicBellNotification($efw, $fraudWarning, $amount, $currency, $creatorName, $creatorEmail, $buyerName, $buyerEmail, $paymentDescription, $adminEmail)
     {
@@ -4140,6 +4496,11 @@ class StripeWebhookController extends Controller
         }
     }
 
+=======
+    /**
+     * Handle Payment Intent Failed
+     */
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
     private function handlePaymentIntentFailed($paymentIntent)
     {
         $paymentIntentId = $paymentIntent->id;
@@ -4207,15 +4568,18 @@ class StripeWebhookController extends Controller
                 $message = $username.' just purchased your shop item '.$shopPayment->shop->name;
                 NotificationSave::dispatch($message, $shopPayment->shop->user, $shopPayment->user, 'Shop');
 
+<<<<<<< HEAD
                 $currencyModel = Currency::where('ISO', strtoupper($shopPayment->currency ?? 'GBP'))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
                 $sessionAmount = isset($session->amount_total) ? (float) ($session->amount_total / $multiplier) : 0;
 
                 // 5. Update status and persist the actual paid total
+=======
+                // 5. Update status
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
                 $shopPayment->update([
                     'payment_status' => 'paid',
                     'session_id' => $session->id,
-                    'total_paid' => $sessionAmount > 0 ? $sessionAmount : ($shopPayment->total_paid ?? 0),
                     'updated_at' => Carbon::now(),
                 ]);
 
@@ -5045,6 +5409,7 @@ class StripeWebhookController extends Controller
             Log::error('syncFinancialTransactionsByPaymentIntent failed: '.$e->getMessage());
         }
     }
+<<<<<<< HEAD
 
     /**
      * Handle Early Fraud Warning Updated
@@ -5327,4 +5692,6 @@ class StripeWebhookController extends Controller
     //         ]);
     //     }
     // }
+=======
+>>>>>>> 68513a7ccffbeef7d15281b06d10f6c1c77d7003
 }
