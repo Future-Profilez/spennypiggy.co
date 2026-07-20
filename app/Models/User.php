@@ -58,6 +58,9 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'creator_email_receipt_acknowledged_at',
         'marketing_emails_enabled',
         'marketing_unsubscribed_at',
+        'push_notifications_enabled',
+        'reactivation_emails_enabled',
+        'date_of_birth',
         'utm_source',
         'utm_medium',
         'utm_campaign',
@@ -84,6 +87,9 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'creator_email_receipt_acknowledged_at' => 'datetime',
         'marketing_emails_enabled' => 'boolean',
         'marketing_unsubscribed_at' => 'datetime',
+        'push_notifications_enabled' => 'boolean',
+        'reactivation_emails_enabled' => 'boolean',
+        'date_of_birth' => 'date',
     ];
 
     protected $appends = [

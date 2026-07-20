@@ -46,6 +46,7 @@ class Kernel extends HttpKernel
             // \App\Http\Middleware\BlockWordsAndEmojis::class,
             \App\Http\Middleware\IpTracker::class,
             \App\Http\Middleware\CheckSuspendedUser::class,
+            \App\Http\Middleware\EnforceEmulationTimeBox::class,
         ],
 
         'api' => [

@@ -89,6 +89,18 @@ class AppServiceProvider extends ServiceProvider
         // Register model observers
         Deliverable::observe(DeliverableObserver::class);
 
+        // Tell a creator's followers when new content goes live (moderation-aware —
+        // held items only notify once approved). See CreatorContentObserver.
+        foreach ([
+            \App\Models\WishItem::class,
+            \App\Models\Shop::class,
+            \App\Models\PiggyPot::class,
+            \App\Models\Membership::class,
+            \App\Models\Bills::class,
+        ] as $contentModel) {
+            $contentModel::observe(\App\Observers\CreatorContentObserver::class);
+        }
+
         // Register ActivityObserver for all models
         $this->registerActivityObservers();
 
