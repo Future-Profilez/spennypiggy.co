@@ -42,6 +42,13 @@ export default function StatementDownloadCard({ taxYear }) {
                 setError("End date must be after the start date.");
                 return null;
             }
+            // Mirror the backend's 366-day cap so the user gets an inline message
+            // instead of a server validation error.
+            const days = (new Date(to) - new Date(from)) / 86400000;
+            if (days > 366) {
+                setError("Date range cannot exceed 12 months.");
+                return null;
+            }
             params.set("period", "custom");
             params.set("from", from);
             params.set("to", to);
@@ -50,9 +57,41 @@ export default function StatementDownloadCard({ taxYear }) {
         return `${base}?${params.toString()}`;
     };
 
-    const download = (format) => {
+    const [downloading, setDownloading] = useState(false);
+
+    // Fetch as a blob so backend errors surface as the inline banner
+    // instead of a new tab full of raw JSON.
+    const download = async (format) => {
         const url = buildUrl(format);
-        if (url) window.open(url, "_blank");
+        if (!url || downloading) return;
+        setDownloading(true);
+        try {
+            const resp = await fetch(url, { headers: { Accept: "application/octet-stream" } });
+            if (!resp.ok) {
+                let msg = "Could not generate the statement. Please try again.";
+                try {
+                    const body = await resp.json();
+                    if (body?.message) msg = body.message;
+                } catch (_) { /* non-JSON error body */ }
+                setError(msg);
+                return;
+            }
+            const blob = await resp.blob();
+            const dispo = resp.headers.get("Content-Disposition") || "";
+            const match = dispo.match(/filename=([^;]+)/);
+            const filename = match ? match[1].replace(/"/g, "").trim() : `earnings-statement.${format}`;
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(link.href);
+        } catch (_) {
+            setError("Download failed. Check your connection and try again.");
+        } finally {
+            setDownloading(false);
+        }
     };
 
     return (
@@ -99,16 +138,18 @@ export default function StatementDownloadCard({ taxYear }) {
                 <button
                     type="button"
                     onClick={() => download("pdf")}
-                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] text-white py-2 rounded-lg text-normal font-bold transition-all"
+                    disabled={downloading}
+                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] disabled:opacity-60 text-white py-2 rounded-lg text-normal font-bold transition-all"
                 >
-                    <Download size={14} /> PDF
+                    <Download size={14} /> {downloading ? "..." : "PDF"}
                 </button>
                 <button
                     type="button"
                     onClick={() => download("csv")}
-                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] text-white py-2 rounded-lg text-normal font-bold transition-all"
+                    disabled={downloading}
+                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] disabled:opacity-60 text-white py-2 rounded-lg text-normal font-bold transition-all"
                 >
-                    <Download size={14} /> CSV
+                    <Download size={14} /> {downloading ? "..." : "CSV"}
                 </button>
             </div>
         </div>

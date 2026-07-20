@@ -14,6 +14,7 @@ class WishItem extends Model
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
+        'payment_methods_accepted',
         "user_id",
         "stripe_product_id",
         "wishname",

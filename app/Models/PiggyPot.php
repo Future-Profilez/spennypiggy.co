@@ -12,6 +12,7 @@ class PiggyPot extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'payment_methods_accepted',
         'uuid',
         'user_id',
         'title',

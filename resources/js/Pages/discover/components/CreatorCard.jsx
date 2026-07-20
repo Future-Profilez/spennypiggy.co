@@ -1,48 +1,67 @@
+import { memo } from 'react';
 import { Link } from '@inertiajs/react';
 import wishlistbannerimg from "../../../../assets/img/wishlistbannerimg.png";
 import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
-import { RiFireLine  } from 'react-icons/ri';
+import { RiFireLine, RiVerifiedBadgeFill } from 'react-icons/ri';
 
-export default function CreatorCard({auth, item}) {
-   return (
-       <Link href={route('user.show', item.username)} onClick={() => trackSearchClick(item.id, item.username)} 
-       className="relative bg-white rounded-[25px] md:rounded-[30px]  overflow-hidden flex flex-col items-center text-left group cursor-pointer block border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] bg-[#fdfbf7]">
-            <div className="h-full w-full max-h-[260px] overflow-hidden transition-colors !border-b-[3px] border-b-black relative">
-                <img src={item.cover_url || wishlistbannerimg} alt={item.name} 
-                className="w-full h-[100px] object-cover bg-white" loading="lazy" />
-                <div className='!z-2 absolute top-4 left-4 flex justify-center'>
+/**
+ * CreatorCard — compact rectangular tile. Cover shows as a full landscape banner
+ * (not cropped behind an overlay); creator info sits on a dark footer below.
+ * Radius follows DESIGN.md: 30px card, 20px inner controls. Item cards unchanged.
+ */
+function CreatorCard({ auth, item }) {
+    const cover = item.cover_url || wishlistbannerimg;
+    const verified = item.profile_status_lock == 2 || item.is_verified;
+
+    return (
+        <Link
+            href={route('user.show', item.username)}
+            onClick={() => trackSearchClick(item.id, item.username)}
+            className="group block overflow-hidden rounded-[30px] border border-white/10 bg-[#16161C] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 hover:shadow-[0_18px_44px_-14px_rgba(255,0,127,0.4)]"
+        >
+            {/* cover banner — fully visible, shorter */}
+            <div className="relative aspect-[21/9] overflow-hidden bg-[#0E0E12]">
+                <img
+                    src={cover}
+                    alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {item.clicks_24h > 0 && (
+                    <div className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                        <RiFireLine size={12} className="text-[#FF007F]" /> {item.clicks_24h}
+                    </div>
+                )}
+                {/* blend cover into footer */}
+                {/* <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#16161C] to-transparent" aria-hidden /> */}
+            </div>
+
+            {/* footer — avatar overlaps the cover */}
+            <div className="relative flex items-center   px-3.5 pb-3.5 pt-1">
+                <div className="mt-[-15px] overflow-hidden rounded-[20px] max-w-[70px] border-[1px] border-pink-500  shadow-[0_6px_6px_-6px_rgba(0,0,0,0.8)]">
                     <Avatar
                     auth={auth}
-                    user={item} 
+                    user={item}
                     role={item.role}
                     hidename={true}
                     profile_status_lock={item.profile_status_lock == 2 ? true : false}
                     src={item.avatar_url}
                     username={item.username || ""}
                     nolink={true}
-                    imgclass="!border-[2px] !border-[black] rounded-[15px]"
-                    />
+                    imgclass="!w-full !h-12 object-cover !border-0" />
+                </div>
+                <div className="ps-3 min-w-0 pb-0.5">
+                    <h3 className="flex items-center gap-1 truncate text-[17px] font-bold leading-tight text-white transition-colors group-hover:text-[#FF9ecb]">
+                        <span className="truncate">{item.name}</span>
+                        {verified && <RiVerifiedBadgeFill className="shrink-0 text-[#3BA3FF]" size={14} />}
+                    </h3>
+                    <p className="truncate text-sm font-medium text-white/50">@{item.username}</p>
                 </div>
             </div>
-           <div className='w-full p-3 sm:p-4 flex-grow'>
-               <h3 className="text-lg font-black text-black uppercase tracking-wider truncate w-full group-hover:text-[#FF007F] transition-colors">{item.name}</h3>
-               <p className="text-sm font-bold text-gray-700 truncate w-full">@{item.username}</p>
-               {/* <p className="text-xs mt-1 text-gray-500 truncate w-full px-1">{item.bio}</p> */}
-           </div>
-       
-           {item.clicks_24h > 0 && (
-               <div className="w-full p-3 border-t-[3px] border-black bg-yellow-300 flex justify-center">
-                    <p className="text-xs font-black text-black flex items-center justify-center gap-1 uppercase">
-                        <RiFireLine size={14} /> {item.clicks_24h} views today
-                    </p>
-               </div>
-           )}
-   
-           {/* {item.total_amount && (
-               <p className="text-xs font-medium text-green-600 mt-1">{item.total_amount}</p>
-           )} */}
-   
-       </Link>
-   );
+        </Link>
+    );
 }
+
+export default memo(CreatorCard);

@@ -6,7 +6,7 @@ export default function ForCreators() {
     <div className='bg-gray-900 py-20 md:py-28 relative overflow-hidden' >
        
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-900 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF007F] rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>
         </div>
 
        <div className='containerbox relative z-10' >
@@ -20,7 +20,7 @@ export default function ForCreators() {
             </p>
 
         <div className='publish-image max-w-5xl mx-auto relative group' >
-             <div className="absolute inset-0 bg-gradient-to-b from-pink-500 to-purple-600 rounded-[30px]    transform scale-105 opacity-50 blur-2xl group-hover:opacity-70 transition-opacity duration-500"></div>
+             <div className="absolute inset-0 bg-gradient-to-b from-[#FF007F] to-[#05EFB8] rounded-[30px]    transform scale-105 opacity-50 blur-2xl group-hover:opacity-70 transition-opacity duration-500"></div>
             <div className="relative rounded-[30px]    overflow-hidden border-2 border-gray-800 shadow-[4px_4px_0px_0px_#FF007F]xl bg-gray-800">
                 <LazyLoadImage
                     alt={"image"} className="img-fluid w-full h-auto"

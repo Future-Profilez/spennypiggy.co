@@ -1,5 +1,6 @@
 import React from 'react';
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import Popup from "@/Components/Popup";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
@@ -79,6 +80,8 @@ export default function BuyShopItem({
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(false);
     const [digitalWaiver, setDigitalWaiver] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState("card");
+    const [previewPrices, setPreviewPrices] = useState(null);
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
@@ -314,6 +317,7 @@ export default function BuyShopItem({
                     `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
                     {
                         shipping_info: JSON.stringify(shipping_info),
+                        payment_method: paymentMethod,
                     }
                 )
                 .then((res) => {
@@ -351,7 +355,8 @@ export default function BuyShopItem({
         } else {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
+                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`,
+                    { payment_method: paymentMethod }
                 )
                 .then((res) => {
                     if (res.data.status == false) {
@@ -532,10 +537,12 @@ export default function BuyShopItem({
                                         You will be charged{" "}
                                         <strong className="text-black">
                                             {formatMultiPrice(
-                                            calculateTotalSupporterPays(
-                                                ((parseFloat(fairPrice || s.price) || 0) * (1 + (s?.user?.vat_amount_percentage || 0) / 100) + (parseFloat(shippingPrice) || 0)) * quantity,
-                                                s?.currency || "GBP"
-                                            ).total_supporter_pays,
+                                            paymentMethod === "bank" && previewPrices?.bank != null
+                                                ? previewPrices.bank
+                                                : calculateTotalSupporterPays(
+                                                    ((parseFloat(fairPrice || s.price) || 0) * (1 + (s?.user?.vat_amount_percentage || 0) / 100) + (parseFloat(shippingPrice) || 0)) * quantity,
+                                                    s?.currency || "GBP"
+                                                ).total_supporter_pays,
                                             s?.currency || "GBP"
                                         )}
                                         </strong>
@@ -742,6 +749,18 @@ export default function BuyShopItem({
                                     <strong className="font-bold">Payment Unavailable: </strong>
                                     <span className="block sm:inline">This creator cannot receive payments yet.</span>
                                 </div>
+                            )}
+
+                            {(s?.payment_methods_accepted ?? "both") !== "card" && (
+                                <PaymentMethodSelector
+                                    amount={((parseFloat(fairPrice || s.price) || 0) * (1 + (s?.user?.vat_amount_percentage || 0) / 100) + (parseFloat(shippingPrice) || 0)) * quantity}
+                                    currency={s?.currency || "GBP"}
+                                    email={email}
+                                    value={paymentMethod}
+                                    onChange={setPaymentMethod}
+                                    onPrices={setPreviewPrices}
+                                    className="mb-4"
+                                />
                             )}
 
                             <CheckoutLegalTerms onAgreeChange={(checked) => setDigitalWaiver(checked)} />

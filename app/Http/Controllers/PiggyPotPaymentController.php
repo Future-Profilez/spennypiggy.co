@@ -2,28 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use App\Helpers;
+use App\Jobs\PiggyPotContributionMailToUser;
+use App\Models\CreatorMetric;
+use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
+use App\Models\Payment;
 use App\Models\PiggyPot;
 use App\Models\PiggyPotContribution;
-use App\Models\Deliverable;
-use Illuminate\Support\Str;
 use App\Models\User;
-use App\Models\Payment;
-use App\Models\FinancialTransaction;
-use App\Models\CreatorMetric;
-use App\Jobs\PiggyPotContributionMailToUser;
-use App\StripeControl;
-use App\Helpers;
+use App\Services\CheckoutMethodResolver;
+use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
-use App\Services\CreatorActivityService;
-use App\Services\Risk\RiskService;
-use App\Services\Risk\RiskIdentityService;
-use App\Services\Risk\RiskController;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
+use App\Services\Risk\RiskEngineService;
+use App\Services\Risk\RiskIdentityService;
+use App\Services\Risk\RiskService;
+use App\Services\UserProfileService;
+use App\StripeControl;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Stripe\PaymentIntent;
 
 class PiggyPotPaymentController extends Controller
 {
@@ -34,7 +40,7 @@ class PiggyPotPaymentController extends Controller
             'amount' => ['required', 'numeric', 'min:1'],
         ];
 
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             $rules['name'] = ['required', 'string', 'max:255'];
             $rules['email'] = ['required', 'email', 'max:255'];
         }
@@ -48,7 +54,7 @@ class PiggyPotPaymentController extends Controller
         if (! $piggyPot) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Piggy Pot not found.'
+                'msg' => 'Piggy Pot not found.',
             ]);
         }
 
@@ -56,7 +62,7 @@ class PiggyPotPaymentController extends Controller
         if (in_array($piggyPot->status, ['moderation_hold', 'archived', 'completed', 'expired'], true)) {
             return response()->json([
                 'status' => false,
-                'msg' => 'This content is currently unavailable for purchase.'
+                'msg' => 'This content is currently unavailable for purchase.',
             ]);
         }
 
@@ -72,24 +78,23 @@ class PiggyPotPaymentController extends Controller
         if ($user && $user->id === $piggyPot->user_id) {
             return response()->json([
                 'status' => false,
-                'msg' => 'You cannot purchase your own content.'
+                'msg' => 'You cannot purchase your own content.',
             ]);
         }
 
-        if (!empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (! empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
                 'card_verification_required' => true,
-                'msg' => "Please complete your card verification process."
+                'msg' => 'Please complete your card verification process.',
             ]);
         }
 
-
         $piggyPot = PiggyPot::where('uuid', $piggy_pot_uuid)->first();
-        if (!$piggyPot) {
+        if (! $piggyPot) {
             return response()->json([
                 'status' => false,
-                'msg' => "Piggy Pot not found."
+                'msg' => 'Piggy Pot not found.',
             ]);
         }
 
@@ -102,44 +107,49 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $raised = (float) $piggyPot->contributions()->where('status', 'paid')->sum('amount');
+        // Same status set as the locked re-check below, so the "max you can add"
+        // figure shown here matches what the insert will actually allow
+        // (bank payments sitting in 'processing' already consume headroom).
+        $raised = (float) $piggyPot->contributions()->whereIn('status', ['paid', 'succeeded', 'processing'])->sum('amount');
         $target = (float) $piggyPot->target_amount;
         $remaining = max(0, round($target - $raised, 2));
         if ($remaining <= 0) {
             return response()->json([
                 'status' => false,
-                'msg' => "This goal is already completed."
+                'msg' => 'This goal is already completed.',
             ]);
         }
 
         $creator = User::where('id', $piggyPot->user_id)->first();
-        if (!$creator) {
+        if (! $creator) {
             return response()->json([
                 'status' => false,
-                'msg' => "Creator not found."
+                'msg' => 'Creator not found.',
             ]);
         }
 
-        if (!StripeControl::hasCardPaymentsCapability($creator->account_id)) {
+        $requestedMethod = $request->input('payment_method', 'card') === 'bank' ? 'bank' : 'card';
+
+        if ($requestedMethod === 'card' && ! StripeControl::hasCardPaymentsCapability($creator->account_id)) {
             return response()->json([
                 'status' => false,
-                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled'])
+                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ['eligible' => false, 'status' => 'stripe_disabled']),
             ]);
         }
 
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
-        if (!$subscriptionCheck['eligible']) {
+        if (! $subscriptionCheck['eligible']) {
             return response()->json([
                 'status' => false,
-                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
+                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null),
             ]);
         }
 
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
-        if (!$activityCheck['eligible']) {
+        if (! $activityCheck['eligible']) {
             return response()->json([
                 'status' => false,
-                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
+                'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck),
             ]);
         }
 
@@ -147,7 +157,7 @@ class PiggyPotPaymentController extends Controller
         if ($basePrice > $remaining) {
             return response()->json([
                 'status' => false,
-                'msg' => "Max you can add right now is " . number_format($remaining, 2) . "."
+                'msg' => 'Max you can add right now is '.number_format($remaining, 2).'.',
             ]);
         }
         $sourceCurrency = strtoupper($request->currency ?? $creator->default_currency ?? 'GBP');
@@ -161,7 +171,7 @@ class PiggyPotPaymentController extends Controller
         $platformFeePercent = config('app.platform_fee_percentage'); // e.g. 5
         // $basePrice is what the supporter wants to pay total. We need to work backwards to find the actual amount.
         // Or, in Piggy Pot, the entered amount is the base amount and we add fees on top?
-        // Wait, the UI says: "Includes platform and payment processing fees." 
+        // Wait, the UI says: "Includes platform and payment processing fees."
         // This means the entered amount is the FINAL amount the supporter pays.
         // Let's assume $basePrice is the final amount.
         $finalTotalAmount = $basePrice;
@@ -170,7 +180,26 @@ class PiggyPotPaymentController extends Controller
         // Usually Helpers::calculateStripeDirectChargeFlow expects base amount and adds fees.
         // Let's use the provided amount as the base amount and calculate fees if that's how it's designed.
         // If UI says "Amounts shown are estimates", it might be adding fees. Let's look at TipInner logic.
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency);
+        // Resolve requested payment method (card|bank) against listing
+        // preference, progressive tiers, and creator capabilities.
+        $methodResolution = CheckoutMethodResolver::resolve(
+            $requestedMethod,
+            $piggyPot->payment_methods_accepted ?? 'both',
+            $basePrice,
+            $sourceCurrency,
+            $user,
+            $request->email ?? null,
+            $creator->account_id
+        );
+        if (! ($methodResolution['ok'] ?? false)) {
+            return response()->json([
+                'status' => false,
+                'code' => $methodResolution['code'],
+                'msg' => $methodResolution['message'],
+            ]);
+        }
+
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency, 0, $methodResolution['fee_profile']);
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -192,7 +221,7 @@ class PiggyPotPaymentController extends Controller
             'device_id' => $request->device_id,
         ]);
 
-        $riskData = app(\App\Services\Risk\RiskEngineService::class)->evaluate(
+        $riskData = app(RiskEngineService::class)->evaluate(
             [
                 'creator' => $creator,
                 'supporter' => $user,
@@ -200,30 +229,57 @@ class PiggyPotPaymentController extends Controller
                 'amount' => $unitAmount,
                 'currency' => $sourceCurrency,
                 'type' => 'piggy_pot',
-                'return_json' => true
+                'return_json' => true,
             ]
         );
 
-        if ($riskData instanceof \Illuminate\Http\JsonResponse) {
+        if ($riskData instanceof JsonResponse) {
             return $riskData;
         }
 
         $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
-        $pay = PiggyPotContribution::create([
-            'piggy_pot_id' => $piggyPot->id,
-            'user_id' => $user ? $user->id : null,
-            'creator_id' => $creator->id,
-            'guest_name' => $request->name,
-            'guest_email' => $request->email,
-            'currency' => $sourceCurrency,
-            'amount' => $basePrice,
-            'tax' => $breakdown['total_fees'],
-            'vat_amount' => $vatAmount,
-            'total_paid' => $finalTotalAmount,
-            'message' => $request->message ?? null,
-            'is_anonymous' => $request->anonymous ?? 0,
-        ]);
+        // Re-check the remaining headroom under a row lock before inserting.
+        // The earlier $remaining read is unlocked, so two concurrent buyers near
+        // the goal cap could both pass it and over-fund the pot past
+        // target_amount. Locking the pot row serialises the check + insert.
+        try {
+            $pay = DB::transaction(function () use ($piggyPot, $basePrice, $user, $creator, $request, $sourceCurrency, $methodResolution, $breakdown, $vatAmount, $finalTotalAmount) {
+                $locked = PiggyPot::where('id', $piggyPot->id)->lockForUpdate()->first();
+                if (! $locked) {
+                    throw new \RuntimeException('This content is no longer available.');
+                }
+
+                $raisedNow = (float) PiggyPotContribution::where('piggy_pot_id', $piggyPot->id)
+                    ->whereIn('status', ['paid', 'succeeded', 'processing'])
+                    ->sum('amount');
+                $remainingNow = max(0, round((float) $locked->target_amount - $raisedNow, 2));
+
+                if ($remainingNow <= 0 || $basePrice > $remainingNow) {
+                    throw new \RuntimeException($remainingNow <= 0
+                        ? 'This goal is already completed.'
+                        : 'Max you can add right now is '.number_format($remainingNow, 2).'.');
+                }
+
+                return PiggyPotContribution::create([
+                    'piggy_pot_id' => $piggyPot->id,
+                    'user_id' => $user ? $user->id : null,
+                    'creator_id' => $creator->id,
+                    'guest_name' => $request->name,
+                    'guest_email' => $request->email,
+                    'currency' => $sourceCurrency,
+                    'amount' => $basePrice,
+                    'fee_profile' => $methodResolution['fee_profile'],
+                    'tax' => $breakdown['total_fees'],
+                    'vat_amount' => $vatAmount,
+                    'total_paid' => $finalTotalAmount,
+                    'message' => $request->message ?? null,
+                    'is_anonymous' => $request->anonymous ?? 0,
+                ]);
+            });
+        } catch (\RuntimeException $e) {
+            return response()->json(['status' => false, 'msg' => $e->getMessage()]);
+        }
 
         Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);
         $pay->save();
@@ -234,17 +290,17 @@ class PiggyPotPaymentController extends Controller
                 'price_data' => [
                     'currency' => $sourceCurrency,
                     'product_data' => [
-                        'name' => "Exclusive content",
+                        'name' => 'Exclusive content',
                         'description' => "Exclusive content from {$creator->name}.",
                     ],
                     'unit_amount' => $unitAmount,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $paymentIntentData = [
             'description' => "SpennyPiggy content from {$creator->name}",
-            "metadata" => Helpers::buildStripeMetadata('piggy_pot', $pay, [
+            'metadata' => Helpers::buildStripeMetadata('piggy_pot', $pay, [
                 'item_amount' => (string) $unitAmount,
                 'creator_net_amount' => (string) $creatorNet,
                 'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
@@ -258,16 +314,23 @@ class PiggyPotPaymentController extends Controller
         $redirectUrl = url()->previous() ?: route('user.show', ['username' => $creator->username]);
 
         $payload = [
-            "mode" => 'payment',
-            'payment_method_types' => ['card'],
+            'mode' => 'payment',
+            'payment_method_types' => $methodResolution['payment_method_types'],
             'line_items' => $lineItems,
             'payment_intent_data' => $paymentIntentData,
+            // Session-level metadata is what the webhook reads
+            // ($event->data->object->metadata). Without type=piggy_pot here the
+            // async-settlement webhook (bank/SEPA/ACH) can't route to
+            // processPiggyPotPayment → payment never completes, no deliverable,
+            // no notification. The redirect handler covers card; the webhook
+            // covers delayed bank settlement.
+            'metadata' => $paymentIntentData['metadata'],
             'customer_email' => $user?->email ?? $request->email,
-            'success_url' => route('piggy-pot.handle', ['uuid' => $pay->uuid, 'status' => "success"]) . '?redirect=' . urlencode($redirectUrl),
-            'cancel_url' => route('piggy-pot.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]) . '?redirect=' . urlencode($redirectUrl),
+            'success_url' => route('piggy-pot.handle', ['uuid' => $pay->uuid, 'status' => 'success']).'?redirect='.urlencode($redirectUrl),
+            'cancel_url' => route('piggy-pot.handle', ['uuid' => $pay->uuid, 'status' => 'cancel']).'?redirect='.urlencode($redirectUrl),
         ];
 
-        if ($force3DS) {
+        if ($methodResolution['fee_profile'] === 'card' && ($force3DS || $methodResolution['force_3ds'])) {
             $payload['payment_method_options'] = [
                 'card' => [
                     'request_three_d_secure' => 'any',
@@ -286,10 +349,13 @@ class PiggyPotPaymentController extends Controller
                     'amount' => app(MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($sourceCurrency)),
                     'reserve_amount_minor' => (function () use ($creator, $creatorNetMinor, $sourceCurrency) {
                         $metrics = app(RiskService::class)->recalculateMetrics((string) $creator->uuid);
-                        $reservePolicy = app(\App\Services\Risk\ReservePolicy::class);
+                        $reservePolicy = app(ReservePolicy::class);
                         $reservePercent = $reservePolicy->getEffectiveReservePercent($creator, $metrics);
-                        if ($reservePercent <= 0) return 0;
+                        if ($reservePercent <= 0) {
+                            return 0;
+                        }
                         $reserveMinor = (int) round(((int) $creatorNetMinor * $reservePercent) / 100);
+
                         return app(MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($sourceCurrency));
                     })(),
                     'platform_holds_funds' => in_array('MARK_REVIEW_HOLD', $riskData['reason_codes'] ?? []),
@@ -303,13 +369,14 @@ class PiggyPotPaymentController extends Controller
 
             return response()->json([
                 'status' => true,
-                'url' => $session->url
+                'url' => $session->url,
             ]);
         } catch (\Exception $e) {
             $pay->delete();
+
             return response()->json([
                 'status' => false,
-                'msg' => $e->getMessage()
+                'msg' => $e->getMessage(),
             ]);
         }
     }
@@ -317,8 +384,8 @@ class PiggyPotPaymentController extends Controller
     public function handlePiggyPotPayment(Request $request, $uuid)
     {
         $pay = PiggyPotContribution::whereUuid($uuid)->first();
-        if (!$pay) {
-            return to_route('home')->with("error", 'Insufficient data!');
+        if (! $pay) {
+            return to_route('home')->with('error', 'Insufficient data!');
         }
 
         $pay->load(['creator', 'piggyPot', 'user']);
@@ -349,7 +416,7 @@ class PiggyPotPaymentController extends Controller
 
                     Payment::where('stripe_session_id', $session->id)->update([
                         'stripe_payment_intent_id' => $session->payment_intent,
-                        'status' => $newStatus
+                        'status' => $newStatus,
                     ]);
                 } catch (\Throwable $e) {
                 }
@@ -365,7 +432,7 @@ class PiggyPotPaymentController extends Controller
 
                     if ($session->payment_intent) {
                         try {
-                            $intentObj = \Stripe\PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $pay->creator->account_id]);
+                            $intentObj = PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $pay->creator->account_id]);
                             if (isset($intentObj->application_fee_amount)) {
                                 $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
                             }
@@ -390,24 +457,25 @@ class PiggyPotPaymentController extends Controller
                     FinancialTransaction::updateOrCreate(
                         ['source_type' => PiggyPotContribution::class, 'source_id' => $pay->id],
                         [
-                            'user_id'       => $pay->creator_id,
-                            'supporter_id'  => $pay->user_id,
-                            'type'          => 'income',
-                            'gross_amount'  => $gross,
-                            'platform_fee'  => $platformFee,
-                            'stripe_fee'    => $stripeFee,
-                            'vat_amount'    => $vatAmt,
-                            'net_amount'    => (float) $pay->amount,
+                            'user_id' => $pay->creator_id,
+                            'supporter_id' => $pay->user_id,
+                            'type' => 'income',
+                            'gross_amount' => $gross,
+                            'fee_profile' => $pay->fee_profile ?? 'card',
+                            'platform_fee' => $platformFee,
+                            'stripe_fee' => $stripeFee,
+                            'vat_amount' => $vatAmt,
+                            'net_amount' => (float) $pay->amount,
                             'reserve_amount' => $reserveAmountMajor,
                             'reserve_status' => $reserveStatus,
-                            'currency'      => strtoupper($pay->currency ?? 'GBP'),
-                            'status'        => 'completed',
-                            'description'   => 'Content purchase: ' . ($pay->piggyPot?->title ?? 'Content'),
+                            'currency' => strtoupper($pay->currency ?? 'GBP'),
+                            'status' => 'completed',
+                            'description' => 'Content purchase: '.($pay->piggyPot?->title ?? 'Content'),
                             'transaction_date' => $pay->created_at,
                         ]
                     );
                 } catch (\Throwable $e) {
-                    Log::error('Failed to sync PiggyPotContribution to FinancialTransaction: ' . $e->getMessage());
+                    Log::error('Failed to sync PiggyPotContribution to FinancialTransaction: '.$e->getMessage());
                 }
 
                 // Stripe compliance: every payment stores a content/service deliverable
@@ -415,61 +483,61 @@ class PiggyPotPaymentController extends Controller
                 try {
                     $pot = $pay->piggyPot;
                     $contentUrl = null;
-                    if (!empty($pot?->content_file)) {
+                    if (! empty($pot?->content_file)) {
                         $contentUrl = $pot->content_file;
-                        if (!str_starts_with($contentUrl, 'http')) {
-                            $contentUrl = 'https://ucarecdn.com/' . trim($contentUrl, '/') . '/';
+                        if (! str_starts_with($contentUrl, 'http')) {
+                            $contentUrl = 'https://ucarecdn.com/'.trim($contentUrl, '/').'/';
                         }
                     }
 
                     Deliverable::firstOrCreate(
                         [
                             'product_type' => 'piggy_pot',
-                            'item_id'      => $pay->id,
+                            'item_id' => $pay->id,
                         ],
                         [
-                            'uuid'               => (string) Str::uuid(),
-                            'product_id'         => 'piggy_pot_' . ($pot?->id ?? 'unknown'),
-                            'creator_id'         => $pay->creator_id,
-                            'gifter_id'          => $pay->user_id,
-                            'payment_intent_id'  => $session->payment_intent,
-                            'session_id'         => $session->id,
-                            'deliverable_type'   => !empty($pot?->content_file) ? 'digital_file' : 'content_file',
+                            'uuid' => (string) Str::uuid(),
+                            'product_id' => 'piggy_pot_'.($pot?->id ?? 'unknown'),
+                            'creator_id' => $pay->creator_id,
+                            'gifter_id' => $pay->user_id,
+                            'payment_intent_id' => $session->payment_intent,
+                            'session_id' => $session->id,
+                            'deliverable_type' => ! empty($pot?->content_file) ? 'digital_file' : 'content_file',
                             'transaction_amount' => $pay->amount,
-                            'deliverable_url'    => $contentUrl,
-                            'customer_email'     => $pay->user?->email ?? $pay->guest_email,
-                            'customer_name'      => $pay->is_anonymous ? 'Anonymous' : ($pay->user?->name ?? $pay->guest_name),
-                            'payment_status'     => $pay->status,
-                            'payment_currency'   => $pay->currency,
-                            'anonymous'          => (bool) $pay->is_anonymous,
-                            'message'            => $pay->message,
-                            'status'             => !empty($contentUrl) ? 'delivered' : 'pending',
-                            'delivered_at'       => !empty($contentUrl) ? now() : null,
-                            'metadata'           => [
-                                'product_type'      => 'piggy_pot',
-                                'content_id'        => $pot?->id,
-                                'content_title'     => $pot?->title,
-                                'goal_target'       => $pot?->target_amount,
-                                'amount'            => $pay->amount,
-                                'currency'          => $pay->currency,
+                            'deliverable_url' => $contentUrl,
+                            'customer_email' => $pay->user?->email ?? $pay->guest_email,
+                            'customer_name' => $pay->is_anonymous ? 'Anonymous' : ($pay->user?->name ?? $pay->guest_name),
+                            'payment_status' => $pay->status,
+                            'payment_currency' => $pay->currency,
+                            'anonymous' => (bool) $pay->is_anonymous,
+                            'message' => $pay->message,
+                            'status' => ! empty($contentUrl) ? 'delivered' : 'pending',
+                            'delivered_at' => ! empty($contentUrl) ? now() : null,
+                            'metadata' => [
+                                'product_type' => 'piggy_pot',
+                                'content_id' => $pot?->id,
+                                'content_title' => $pot?->title,
+                                'goal_target' => $pot?->target_amount,
+                                'amount' => $pay->amount,
+                                'currency' => $pay->currency,
                             ],
                         ]
                     );
                 } catch (\Throwable $e) {
-                    Log::error('Failed to create PiggyPot deliverable: ' . $e->getMessage());
+                    Log::error('Failed to create PiggyPot deliverable: '.$e->getMessage());
                 }
 
                 // Clear the cache for the creator's piggy pots
-                \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_owner_pinned');
-                \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_owner_all');
-                \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_public_pinned');
-                \Illuminate\Support\Facades\Cache::forget('user_piggy_pots_' . $pay->creator_id . '_public_all');
-                \Illuminate\Support\Facades\Cache::forget('user_piggy_pot_top_' . $pay->creator_id);
-                \Illuminate\Support\Facades\Cache::forget('user_piggy_pot_top_supporters_' . $pay->creator_id);
-                \Illuminate\Support\Facades\Cache::forget('user_piggy_pot_feed_' . $pay->creator_id);
+                Cache::forget('user_piggy_pots_'.$pay->creator_id.'_owner_pinned');
+                Cache::forget('user_piggy_pots_'.$pay->creator_id.'_owner_all');
+                Cache::forget('user_piggy_pots_'.$pay->creator_id.'_public_pinned');
+                Cache::forget('user_piggy_pots_'.$pay->creator_id.'_public_all');
+                Cache::forget('user_piggy_pot_top_'.$pay->creator_id);
+                Cache::forget('user_piggy_pot_top_supporters_'.$pay->creator_id);
+                Cache::forget('user_piggy_pot_feed_'.$pay->creator_id);
 
                 if ($pay->creator) {
-                    app(\App\Services\UserProfileService::class)->clearUserCaches($pay->creator->username, $pay->creator->id);
+                    app(UserProfileService::class)->clearUserCaches($pay->creator->username, $pay->creator->id);
                 }
 
                 Helpers::addGmv($pay->creator_id, (float) $pay->amount, $pay->currency);
@@ -480,18 +548,18 @@ class PiggyPotPaymentController extends Controller
                 $sendSupporter = empty($pay->supporter_notified_at);
 
                 if ($sendCreator && $pay->creator?->email) {
-                    $title = "🐷 New content purchase!";
-                    $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}" . number_format((float) $pay->amount, 2) . ".";
+                    $title = '🐷 New content purchase!';
+                    $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}".number_format((float) $pay->amount, 2).'.';
                     Helpers::sendNotification($title, $content, $pay->creator->email);
                     $pay->creator_notified_at = now();
                 }
 
                 $supporterEmail = $pay->user?->email ?: $pay->guest_email;
                 if ($sendSupporter && $supporterEmail) {
-                    $title = "✅ Payment Successful!";
-                    $content = "Your purchase of {$symbol}" . number_format((float) $pay->total_paid, 2) . " from {$pay->creator?->name} is complete.";
-                    if (!empty($pay->piggyPot?->content_file)) {
-                        $content .= " Exclusive content unlocked.";
+                    $title = '✅ Payment Successful!';
+                    $content = "Your purchase of {$symbol}".number_format((float) $pay->total_paid, 2)." from {$pay->creator?->name} is complete.";
+                    if (! empty($pay->piggyPot?->content_file)) {
+                        $content .= ' Exclusive content unlocked.';
                     }
                     Helpers::sendNotification($title, $content, $supporterEmail);
                     $pay->supporter_notified_at = now();
@@ -513,35 +581,54 @@ class PiggyPotPaymentController extends Controller
                     'source_id' => $pay->id,
                 ];
 
-                if (!empty($pay->piggyPot?->content_file)) {
+                if (! empty($pay->piggyPot?->content_file)) {
                     $contentUrl = $pay->piggyPot->content_file;
-                    if (!str_starts_with($contentUrl, 'http://') && !str_starts_with($contentUrl, 'https://')) {
-                        $contentUrl = 'https://ucarecdn.com/' . trim($contentUrl, '/') . '/';
+                    if (! str_starts_with($contentUrl, 'http://') && ! str_starts_with($contentUrl, 'https://')) {
+                        $contentUrl = 'https://ucarecdn.com/'.trim($contentUrl, '/').'/';
                     }
                     $thankYouParams['wish_content'] = [
                         'type' => null,
                         'name' => $pay->piggyPot?->content_description ?: 'Exclusive content',
                         'url' => $contentUrl,
                     ];
-                } elseif (!empty($pay->piggyPot?->content_description)) {
+                } elseif (! empty($pay->piggyPot?->content_description)) {
                     $thankYouParams['benefits'] = $pay->piggyPot->content_description;
                 }
 
                 return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
             }
 
-            if ($redirectUrl) {
-                return redirect($redirectUrl)->with("error", "Payment cancelled or failed.");
+            // Delayed-settlement bank methods (SEPA/ACH): session completes with
+            // payment_status 'unpaid' while the debit clears — fulfilment runs
+            // via the async_payment_succeeded webhook.
+            if (! config('payments.instant_fulfilment', true)
+                && $pay->fee_profile === 'bank' && in_array($session->payment_status, ['unpaid', 'processing'])) {
+                $pay->status = 'processing';
+                $pay->save();
+
+                $processingMsg = 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.';
+                if ($redirectUrl) {
+                    return redirect($redirectUrl)->with('success', $processingMsg);
+                }
+
+                return to_route('user.show', ['username' => $pay->creator->username, 'page' => 'piggy-pots'])
+                    ->with('success', $processingMsg);
             }
+
+            if ($redirectUrl) {
+                return redirect($redirectUrl)->with('error', 'Payment cancelled or failed.');
+            }
+
             return to_route('user.show', ['username' => $pay->creator->username, 'page' => 'piggy-pots'])
-                ->with("error", "Payment cancelled or failed.");
+                ->with('error', 'Payment cancelled or failed.');
         } catch (\Exception $e) {
-            Log::error("PiggyPot Payment Handle Error: " . $e->getMessage());
+            Log::error('PiggyPot Payment Handle Error: '.$e->getMessage());
             if ($redirectUrl) {
-                return redirect($redirectUrl)->with("error", "Something went wrong while verifying payment.");
+                return redirect($redirectUrl)->with('error', 'Something went wrong while verifying payment.');
             }
+
             return to_route('user.show', ['username' => $pay->creator->username])
-                ->with("error", "Something went wrong while verifying payment.");
+                ->with('error', 'Something went wrong while verifying payment.');
         }
     }
 }

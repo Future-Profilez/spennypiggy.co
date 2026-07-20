@@ -40,9 +40,14 @@ class IdentityRollupService
             $windows['48h']
         ])->first();
 
+        // Spend windows count money that actually moved (or is held for review).
+        // 'initiated' is excluded: an abandoned Stripe checkout leaves that row
+        // behind forever, and counting it burned the supporter's spend limit for
+        // a payment they never made. Burst abuse of checkout creation is still
+        // caught by payment_count_10m below, which does count 'initiated'.
         $spendPayments = Payment::where('risk_identity_id', $identity->id)
             ->where('created_at', '>=', $windows['7d'])
-            ->whereIn('status', ['succeeded', 'review_hold', 'initiated'])
+            ->whereIn('status', ['succeeded', 'review_hold', 'processing'])
             ->get(['amount', 'currency', 'created_at']);
 
         $spend = [

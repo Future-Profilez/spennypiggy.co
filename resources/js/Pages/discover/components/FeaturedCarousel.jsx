@@ -27,16 +27,14 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon 
 
     return (
         <div className="!pb-[40px]">
-            <div className="pt-4 sm:flex items-center gap-3 mb-6">
-                <h2 className="text-xl sm:text-2xl md:text-3xl text-black font-anton tracking-wider uppercase ">{title || 'Creators'}</h2>
-                <div className='hidden sm:block !mt-2 sm:mt-0 '>
-                    <Link href={route('discover', { contentType: linkContentType })} className="ml-auto text-sm md:text-base text-black font-black uppercase border-2 border-black bg-white px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-300 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">See All</Link>
-                </div>
+            <div className="pt-4 flex items-center justify-between gap-3 mb-6">
+                <h2 className="text-xl sm:text-2xl md:text-3xl text-black font-anton tracking-wide uppercase">{title || 'Creators'}</h2>
+                <Link href={route('discover', { contentType: linkContentType })} className="shrink-0 text-xs md:text-sm font-semibold text-black/70 uppercase tracking-wider border border-black/15 bg-white px-4 py-1.5 rounded-[20px] hover:text-black hover:border-[#FF007F]/60 transition-all">See all</Link>
             </div>
-            <div className={`${isTaskLayout ? 'grid grid-cols-1 gap-4 pb-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-4'}`}> 
+            <div className={`${isTaskLayout ? 'grid grid-cols-1 gap-4 pb-4' : type === 'creator' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5 pb-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-4'}`}>
                 {isLoading ? (
                     skeletonItems.map((_, index) => (
-                        <div key={`skeleton-${index}`} className="h-[200px] bg-gray-200/40 animate-pulse border-2 border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+                        <div key={`skeleton-${index}`} className="h-[200px] bg-black/5 animate-pulse border border-black/10 rounded-[30px]" />
                     ))
                 ) : (
                     <>
@@ -61,8 +59,8 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon 
                             {type === 'shop' && <ShopCard item={item} classes="" />}
                         </div>
                     ))}
-                    <div className='flex justify-center sm:hidden !mt-2 sm:mt-0 '>
-                        <Link href={route('discover', { contentType: linkContentType })} className="text-sm md:text-base text-black font-black uppercase border-2 border-black bg-white px-4 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-300 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">See All</Link>
+                    <div className='flex justify-center sm:hidden col-span-full !mt-2'>
+                        <Link href={route('discover', { contentType: linkContentType })} className="text-xs font-semibold text-black/70 uppercase tracking-wider border border-black/15 bg-white px-5 py-2 rounded-[20px] hover:text-black hover:border-[#FF007F]/60 transition-all">See all</Link>
                     </div>
                     </>
                      

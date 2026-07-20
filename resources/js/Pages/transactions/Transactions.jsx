@@ -670,6 +670,11 @@ export default function Transactions(props) {
                             {Number(e?.vat_amount || 0) > 0 ? (
                               <div className="text-[10px] text-gray-400 font-semibold mt-1">VAT {formatMoney(Number(e.vat_amount || 0))}</div>
                             ) : null}
+                            {e?.payment_method ? (
+                              <div className="inline-flex items-center gap-1 mt-1 text-[9px] font-bold uppercase tracking-wide text-gray-500">
+                                {e.payment_method === 'bank' ? '🏦 Bank' : '💳 Card'}
+                              </div>
+                            ) : null}
                             {e?.status && e.status !== 'completed' ? (
                               <div className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide mt-1">Not in totals</div>
                             ) : null}

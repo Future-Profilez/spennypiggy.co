@@ -8,7 +8,7 @@
  */
 
 const PINK = "#FF007F";
-const PURPLE = "#8C52FF";
+const PURPLE = "#05EFB8";
 const TEAL = "#05EFB8";
 const YELLOW = "#FFE14D";
 
@@ -21,7 +21,7 @@ function Frame({ children }) {
 }
 
 function Avatar({ size = "w-9 h-9" }) {
-    return <span className={`${size} shrink-0 rounded-full border-2 border-black flex items-center justify-center text-white text-[10px] font-black bg-gradient-to-br from-[#8C52FF] to-[#FF007F]`}>JJ</span>;
+    return <span className={`${size} shrink-0 rounded-full border-2 border-black flex items-center justify-center text-white text-[10px] font-black bg-gradient-to-br from-[#05EFB8] to-[#FF007F]`}>JJ</span>;
 }
 
 function CTA({ children, glyph }) {

@@ -2,25 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers;
+use App\Models\BillPayment;
+use App\Models\CreatorExpense;
 use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorMetric;
-use App\Models\FounderBonus;
-use App\Models\FounderBonusMonthly;
+use App\Models\Currency;
 use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
+use App\Models\FounderBonus;
+use App\Models\FounderBonusMonthly;
+use App\Models\MembershipPayment;
+use App\Models\PayoutRecord;
+use App\Models\PiggyPotContribution;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentItems;
+use App\Models\TaskPurchase;
+use App\Models\TipGoalsPayment;
 use App\Models\UkTaxSetting;
 use App\Services\FinancialService;
 use App\Services\Risk\PayoutService;
+use App\Services\Risk\ReservePolicy;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Inertia\Inertia;
 
 class CreatorFinancialController extends Controller
 {
     protected $financialService;
+
     protected $payoutService;
 
     public function __construct(FinancialService $financialService, PayoutService $payoutService)
@@ -34,19 +52,19 @@ class CreatorFinancialController extends Controller
         $user = Auth::user();
         $year = $request->input('year', $this->financialService->getCurrentTaxYear());
         $dates = $this->financialService->getTaxYearDates($year);
-        
+
         $profile = CreatorFinancialProfile::firstOrCreate(['user_id' => $user->id]);
 
         // Get Summary
         $displayCurrency = strtoupper($request->cookie('currency', $user->default_currency ?? 'GBP'));
         $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end'], $displayCurrency);
-        
+
         // Calculate Tax
         $estimatedTaxGbp = $this->financialService->calculateEstimatedTax($summary['profit_gbp'] ?? 0);
         $estimatedTax = $summary['currency'] === 'GBP'
             ? $estimatedTaxGbp
-            : \App\Helpers::priceFormat('GBP', $estimatedTaxGbp, $summary['currency']);
-        
+            : Helpers::priceFormat('GBP', $estimatedTaxGbp, $summary['currency']);
+
         $taxSettings = UkTaxSetting::where('tax_year_start', (int) $year)->first()
             ?: UkTaxSetting::orderByDesc('tax_year_start')->first();
         $taxBandLabel = $taxSettings?->tax_year_label;
@@ -65,23 +83,24 @@ class CreatorFinancialController extends Controller
         // Collect Shop IDs for analytics shipping
         $analyticsShopIds = $incomeForAnalytics->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
         $analyticsShopShipping = [];
-        if (!empty($analyticsShopIds)) {
-            $analyticsShopShipping = \App\Models\ShopPayment::whereIn('id', $analyticsShopIds)->pluck('shipping_amount', 'id')->toArray();
+        if (! empty($analyticsShopIds)) {
+            $analyticsShopShipping = ShopPayment::whereIn('id', $analyticsShopIds)->pluck('shipping_amount', 'id')->toArray();
         }
 
         $monthlyStats = $incomeForAnalytics
             ->groupBy(function ($tx) {
                 return optional($tx->transaction_date)->format('Y-m');
             })
-            ->map(function ($items, $month) use ($displayCurrency, $analyticsShopShipping) {
+            ->map(function ($items, $month) use ($displayCurrency) {
                 $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
                     $gross = $net + $vat;
 
-                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
+                    return $from === $displayCurrency ? $gross : Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
+
                 return (object) ['month' => $month, 'total' => $total];
             })
             ->sortBy('month')
@@ -96,12 +115,12 @@ class CreatorFinancialController extends Controller
                     $vat = (float) ($tx->vat_amount ?? 0);
                     $gross = $net + $vat;
 
-                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
+                    return $from === $displayCurrency ? $gross : Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
                 $count = $items->count();
 
                 $base = class_basename($sourceType);
-                $label = match($base) {
+                $label = match ($base) {
                     'StripePaymentItems' => 'Wish Content',
                     'ShopPayment' => 'Shop Purchase',
                     'TipGoalsPayment' => 'Content Unlock',
@@ -133,16 +152,16 @@ class CreatorFinancialController extends Controller
         // Collect all Shop IDs for status breakdown shipping
         $allShopIds = $allStatusTx->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
         $allShopShipping = [];
-        if (!empty($allShopIds)) {
-            $allShopShipping = \App\Models\ShopPayment::whereIn('id', $allShopIds)->pluck('shipping_amount', 'id')->toArray();
+        if (! empty($allShopIds)) {
+            $allShopShipping = ShopPayment::whereIn('id', $allShopIds)->pluck('shipping_amount', 'id')->toArray();
         }
 
         $statusBreakdown = $allStatusTx
-            ->groupBy(function($tx) {
+            ->groupBy(function ($tx) {
                 // If payment is succeeded but item is not completed/delivered, treat as 'pending'
                 if ($tx->status === 'completed') {
                     if ($tx->source_type === 'App\Models\TaskPurchase' && $tx->source) {
-                        if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                        if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
                             return 'pending';
                         }
                     }
@@ -159,17 +178,19 @@ class CreatorFinancialController extends Controller
                         return 'unpaid';
                     }
                 }
+
                 return $tx->status;
             })
-            ->map(function ($items, $status) use ($displayCurrency, $allShopShipping) {
-                $total = $items->sum(function ($tx) use ($displayCurrency, $allShopShipping) {
+            ->map(function ($items, $status) use ($displayCurrency) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
                     $net = (float) ($tx->net_amount ?? 0);
                     $vat = (float) ($tx->vat_amount ?? 0);
                     $gross = $net + $vat;
 
-                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
+                    return $from === $displayCurrency ? $gross : Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
+
                 return ['status' => $status, 'count' => $items->count(), 'total' => $total];
             })
             ->values();
@@ -178,145 +199,145 @@ class CreatorFinancialController extends Controller
         $incomeQuery = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
-            ->with(['supporter:id,name,username,email', 'source' => function($morphTo) {
+            ->with(['supporter:id,name,username,email', 'source' => function ($morphTo) {
                 $morphTo->morphWith([
-                    \App\Models\TaskPurchase::class => ['task'],
-                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
-                    \App\Models\StripePaymentItems::class => [],
-                    \App\Models\TipGoalsPayment::class => ['tipGoal'],
-                    \App\Models\PiggyPotContribution::class => ['piggyPot'],
-                    \App\Models\MembershipPayment::class => ['membership'],
-                    \App\Models\BillPayment::class => ['bill'],
+                    TaskPurchase::class => ['task'],
+                    ShopPayment::class => ['shop', 'deliverable'],
+                    StripePaymentItems::class => [],
+                    TipGoalsPayment::class => ['tipGoal'],
+                    PiggyPotContribution::class => ['piggyPot'],
+                    MembershipPayment::class => ['membership'],
+                    BillPayment::class => ['bill'],
                 ]);
             }])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc');
-            
+
         if ($tab !== 'payouts') {
             $incomeQuery->whereBetween('transaction_date', [$dates['start'], $dates['end']])->take(20);
         }
-        
+
         $income = $incomeQuery->get();
 
         // Collect Shop IDs for shipping info
         $shopIds = $income->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
         $shopShipping = [];
-        if (!empty($shopIds)) {
-            $shopShipping = \App\Models\ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
+        if (! empty($shopIds)) {
+            $shopShipping = ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
         }
 
         $income = $income->map(function ($tx) use ($shopShipping) {
-                $tx->display_date = $tx->transaction_date;
-                $tx->id = $tx->id; 
-                $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
+            $tx->display_date = $tx->transaction_date;
+            $tx->id = $tx->id;
+            $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
 
-                $base = class_basename($tx->source_type);
-                
-                // Get Source Title for description
-                $sourceTitle = null;
-                if ($base === 'TaskPurchase' && isset($tx->source->task)) {
-                    $sourceTitle = $tx->source->task->title;
-                } elseif ($base === 'ShopPayment' && isset($tx->source->shop)) {
-                    $sourceTitle = $tx->source->shop->name;
-                } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
-                    $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
-                } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
-                    $sourceTitle = $tx->source->membership->level;
-                } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
-                    $sourceTitle = $tx->source->bill->name;
-                } elseif ($base === 'PiggyPotContribution' && isset($tx->source->piggyPot)) {
-                    $sourceTitle = $tx->source->piggyPot->title ?? 'Piggy Pot';
-                } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
-                    $sourceTitle = $tx->source->tipGoal->name;
+            $base = class_basename($tx->source_type);
+
+            // Get Source Title for description
+            $sourceTitle = null;
+            if ($base === 'TaskPurchase' && isset($tx->source->task)) {
+                $sourceTitle = $tx->source->task->title;
+            } elseif ($base === 'ShopPayment' && isset($tx->source->shop)) {
+                $sourceTitle = $tx->source->shop->name;
+            } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
+                $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+            } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
+                $sourceTitle = $tx->source->membership->level;
+            } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
+                $sourceTitle = $tx->source->bill->name;
+            } elseif ($base === 'PiggyPotContribution' && isset($tx->source->piggyPot)) {
+                $sourceTitle = $tx->source->piggyPot->title ?? 'Piggy Pot';
+            } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
+                $sourceTitle = $tx->source->tipGoal->name;
+            }
+
+            $tx->label = match ($base) {
+                'StripePaymentItems' => 'Wish Content',
+                'ShopPayment' => 'Shop Purchase',
+                'TipGoalsPayment' => 'Content Unlock',
+                'PiggyPotContribution' => 'Piggy Pot',
+                'MembershipPayment' => 'Membership',
+                'TaskPurchase' => 'Task',
+                'BillPayment' => 'Bill',
+                default => str_replace(['Payment', 'Purchase'], '', $base)
+            };
+
+            // Update description to include title
+            if ($sourceTitle) {
+                $tx->description = $tx->label.': '.$sourceTitle;
+            }
+
+            // Calculate Creator Gross (Net + VAT) instead of Total Paid (Gross from DB)
+            // Note: net_amount for Shop already includes shipping_amount
+            $shipping = 0;
+            if ($base === 'ShopPayment') {
+                $shipping = (float) ($shopShipping[$tx->source_id] ?? 0);
+                if ($shipping > 0) {
+                    $tx->shipping_amount = $shipping;
                 }
+            }
 
-                $tx->label = match($base) {
-                    'StripePaymentItems' => 'Wish Content',
-                    'ShopPayment' => 'Shop Purchase',
-                    'TipGoalsPayment' => 'Content Unlock',
-                    'PiggyPotContribution' => 'Piggy Pot',
-                    'MembershipPayment' => 'Membership',
-                    'TaskPurchase' => 'Task',
-                    'BillPayment' => 'Bill',
-                    default => str_replace(['Payment', 'Purchase'], '', $base)
+            $tx->gross_amount = (float) $tx->net_amount + (float) ($tx->vat_amount ?? 0);
+
+            // Add item type (digital/physical/instant/timed)
+            if ($base === 'ShopPayment' && $tx->source->shop) {
+                $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
+            } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+                $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
+            }
+
+            // Handling for Task status display in ledger
+            if ($base === 'TaskPurchase' && $tx->source) {
+                $tx->item_status = match ($tx->source->status) {
+                    'completed', 'completed_accepted', 'paid_out' => 'complete',
+                    'delivered' => 'delivered',
+                    'pending_review' => 'review_pending',
+                    'paid', 'assigned' => 'pending',
+                    'escalated' => 'escalated',
+                    default => $tx->source->status
                 };
 
-                // Update description to include title
-                if ($sourceTitle) {
-                    $tx->description = $tx->label . ': ' . $sourceTitle;
+                // Gray out tasks that are not yet finalized (including escalated)
+                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    $tx->is_grayed_out = true;
                 }
+            }
 
-                // Calculate Creator Gross (Net + VAT) instead of Total Paid (Gross from DB)
-                // Note: net_amount for Shop already includes shipping_amount
-                $shipping = 0;
-                if ($base === 'ShopPayment') {
-                    $shipping = (float)($shopShipping[$tx->source_id] ?? 0);
-                    if ($shipping > 0) {
-                        $tx->shipping_amount = $shipping;
-                    }
+            // Handling for Shop status display in ledger
+            if ($base === 'ShopPayment' && $tx->source) {
+                $itemStat = $tx->source->deliverable->status ?? 'processing';
+                $tx->item_status = match ($itemStat) {
+                    'delivered' => 'complete',
+                    'shipped' => 'shipped',
+                    'processing' => 'processing',
+                    default => $itemStat
+                };
+
+                // Gray out physical shop items that are not yet delivered
+                if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
+                    $tx->is_grayed_out = true;
                 }
-                
-                $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
+            }
 
-                // Add item type (digital/physical/instant/timed)
-                if ($base === 'ShopPayment' && $tx->source->shop) {
-                    $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
-                } elseif ($base === 'TaskPurchase' && $tx->source->task) {
-                    $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
-                }
-
-                // Handling for Task status display in ledger
-                if ($base === 'TaskPurchase' && $tx->source) {
-                    $tx->item_status = match($tx->source->status) {
-                        'completed', 'completed_accepted', 'paid_out' => 'complete',
-                        'delivered' => 'delivered',
-                        'pending_review' => 'review_pending',
-                        'paid', 'assigned' => 'pending',
-                        'escalated' => 'escalated',
-                        default => $tx->source->status
-                    };
-
-                    // Gray out tasks that are not yet finalized (including escalated)
-                    if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                        $tx->is_grayed_out = true;
-                    }
-                }
-
-                // Handling for Shop status display in ledger
-                if ($base === 'ShopPayment' && $tx->source) {
-                    $itemStat = $tx->source->deliverable->status ?? 'processing';
-                    $tx->item_status = match($itemStat) {
-                        'delivered' => 'complete',
-                        'shipped' => 'shipped',
-                        'processing' => 'processing',
-                        default => $itemStat
-                    };
-
-                    // Gray out physical shop items that are not yet delivered
-                    if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
-                        $tx->is_grayed_out = true;
-                    }
-                }
-
-                return $tx;
-            });
+            return $tx;
+        });
 
         $this->applyPayoutBadges($income);
 
-        $expensesQuery = \App\Models\CreatorExpense::where('user_id', $user->id)
+        $expensesQuery = CreatorExpense::where('user_id', $user->id)
             ->orderBy('expense_date', 'desc')
             ->orderBy('id', 'desc');
-            
+
         if ($tab !== 'payouts') {
             $expensesQuery->whereBetween('expense_date', [$dates['start'], $dates['end']])->take(20);
         }
-            
+
         $expenses = $expensesQuery->get()
             ->map(function ($exp) {
                 // Mock FinancialTransaction structure for frontend compatibility
-                $tx = new \stdClass();
+                $tx = new \stdClass;
                 $tx->id = $exp->id;
-                $tx->uuid = 'exp-' . $exp->id;
+                $tx->uuid = 'exp-'.$exp->id;
                 $tx->transaction_date = $exp->expense_date;
                 $tx->description = $exp->description;
                 $tx->type = 'expense';
@@ -324,11 +345,11 @@ class CreatorFinancialController extends Controller
                 $tx->net_amount = $exp->amount;
                 $tx->vat_amount = 0;
                 $tx->status = 'completed';
-                $tx->source_type = $exp->category; 
+                $tx->source_type = $exp->category;
                 $tx->currency = $exp->currency;
-                
+
                 $tx->display_date = $exp->expense_date;
-                
+
                 return $tx;
             });
 
@@ -337,11 +358,11 @@ class CreatorFinancialController extends Controller
                 ['display_date', 'desc'],
                 ['id', 'desc'],
             ]);
-            
+
         if ($tab !== 'payouts') {
             $recentTransactions = $recentTransactions->take(20);
         }
-        
+
         $recentTransactions = $recentTransactions->values();
 
         // Top Supporters = realized contributions only. Exclude refunded/disputed/held/pending so a
@@ -357,8 +378,8 @@ class CreatorFinancialController extends Controller
         // Collect Shop IDs for supporter shipping
         $supporterShopIds = $supporterTx->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
         $supporterShopShipping = [];
-        if (!empty($supporterShopIds)) {
-            $supporterShopShipping = \App\Models\ShopPayment::whereIn('id', $supporterShopIds)->pluck('shipping_amount', 'id')->toArray();
+        if (! empty($supporterShopIds)) {
+            $supporterShopShipping = ShopPayment::whereIn('id', $supporterShopIds)->pluck('shipping_amount', 'id')->toArray();
         }
 
         $topSupporters = $supporterTx
@@ -370,7 +391,7 @@ class CreatorFinancialController extends Controller
                     $vat = (float) ($tx->vat_amount ?? 0);
                     $gross = $net + $vat;
 
-                    return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
+                    return $from === $displayCurrency ? $gross : Helpers::priceFormat($from, $gross, $displayCurrency);
                 });
 
                 $breakdown = $items
@@ -382,11 +403,11 @@ class CreatorFinancialController extends Controller
                             $vat = (float) ($tx->vat_amount ?? 0);
                             $gross = $net + $vat;
 
-                            return $from === $displayCurrency ? $gross : \App\Helpers::priceFormat($from, $gross, $displayCurrency);
+                            return $from === $displayCurrency ? $gross : Helpers::priceFormat($from, $gross, $displayCurrency);
                         });
 
                         $base = class_basename($sourceType);
-                        $label = match($base) {
+                        $label = match ($base) {
                             'StripePaymentItems' => 'Wish',
                             'ShopPayment' => 'Shop',
                             'TipGoalsPayment' => 'Tips',
@@ -400,9 +421,10 @@ class CreatorFinancialController extends Controller
                         return [$label => $amount];
                     });
 
-                $hasHold = $items->contains(fn($tx) => in_array($tx->status, ['review_hold', 'disputed']));
+                $hasHold = $items->contains(fn ($tx) => in_array($tx->status, ['review_hold', 'disputed']));
 
                 $first = $items->first();
+
                 return (object) [
                     'supporter_id' => $first->supporter_id,
                     'total_spent' => $total,
@@ -428,15 +450,20 @@ class CreatorFinancialController extends Controller
             $now = now();
             $currency = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
 
-            $rates = \App\Models\Currency::rates();
-            if ($rates instanceof \Illuminate\Support\Collection) {
+            $rates = Currency::rates();
+            if ($rates instanceof Collection) {
                 $rates = $rates->toArray();
             }
             $convert = function (float $amount, string $from, string $to) use ($rates): float {
                 $from = strtoupper($from ?: 'GBP');
                 $to = strtoupper($to ?: 'GBP');
-                if ($from === $to) return $amount;
-                if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+                if ($from === $to) {
+                    return $amount;
+                }
+                if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                    return $amount;
+                }
+
                 return ($amount / $rates[$from]) * $rates[$to];
             };
 
@@ -456,7 +483,7 @@ class CreatorFinancialController extends Controller
                 }
 
                 $earningsMinor = (int) round($earnings * 100);
-                $bonusRate = \App\Models\FastStartBonusPayout::resolveRate($earningsMinor);
+                $bonusRate = FastStartBonusPayout::resolveRate($earningsMinor);
                 $bonus = round($earnings * $bonusRate, 2);
                 $fastStartBonus = [
                     'status' => 'active',
@@ -486,21 +513,26 @@ class CreatorFinancialController extends Controller
         $founderQualification = FounderBonus::where('creator_id', $user->id)->latest('qualification_date')->first();
         if ($founderQualification || $user->is_founder) {
             $currency = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
-            $rates = \App\Models\Currency::rates();
-            if ($rates instanceof \Illuminate\Support\Collection) {
+            $rates = Currency::rates();
+            if ($rates instanceof Collection) {
                 $rates = $rates->toArray();
             }
             $convert = function (float $amount, string $from, string $to) use ($rates): float {
                 $from = strtoupper($from ?: 'GBP');
                 $to = strtoupper($to ?: 'GBP');
-                if ($from === $to) return $amount;
-                if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+                if ($from === $to) {
+                    return $amount;
+                }
+                if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                    return $amount;
+                }
+
                 return ($amount / $rates[$from]) * $rates[$to];
             };
 
             $qualifiedAt = $founderQualification?->qualification_date ? Carbon::parse($founderQualification->qualification_date) : null;
             $programEnd = $qualifiedAt ? $qualifiedAt->copy()->addMonthsNoOverflow(12)->endOfDay() : null;
-            $isPaused = !empty($user->payout_paused_at);
+            $isPaused = ! empty($user->payout_paused_at);
 
             $monthStart = now()->startOfMonth();
             $monthEnd = now()->endOfMonth();
@@ -511,7 +543,7 @@ class CreatorFinancialController extends Controller
             $calcEnd = min(now(), $monthEnd);
 
             $earnings = 0.0;
-            if ($calcStart->lte($calcEnd) && (!$programEnd || now()->lte($programEnd))) {
+            if ($calcStart->lte($calcEnd) && (! $programEnd || now()->lte($programEnd))) {
                 $txs = FinancialTransaction::query()
                     ->where('user_id', $user->id)
                     ->where('type', 'income')
@@ -549,16 +581,16 @@ class CreatorFinancialController extends Controller
 
             $lastMonthKey = now()->subMonthNoOverflow()->format('Y-m');
             $lastRow = null;
-            if (\Illuminate\Support\Facades\Schema::hasTable('founder_bonus')) {
+            if (Schema::hasTable('founder_bonus')) {
                 $lastRow = FounderBonusMonthly::where('creator_id', $user->id)->where('month', $lastMonthKey)->first();
             }
             $lastPayoutRecord = null;
-            if ($lastRow && !empty($lastRow->payout_record_uuid)) {
-                $lastPayoutRecord = \App\Models\PayoutRecord::where('uuid', $lastRow->payout_record_uuid)->first();
+            if ($lastRow && ! empty($lastRow->payout_record_uuid)) {
+                $lastPayoutRecord = PayoutRecord::where('uuid', $lastRow->payout_record_uuid)->first();
             }
             $qualificationPayoutRecord = null;
-            if ($founderQualification && !empty($founderQualification->payout_record_uuid)) {
-                $qualificationPayoutRecord = \App\Models\PayoutRecord::where('uuid', $founderQualification->payout_record_uuid)->first();
+            if ($founderQualification && ! empty($founderQualification->payout_record_uuid)) {
+                $qualificationPayoutRecord = PayoutRecord::where('uuid', $founderQualification->payout_record_uuid)->first();
             }
 
             $status = 'active';
@@ -600,7 +632,7 @@ class CreatorFinancialController extends Controller
         }
 
         // Payout History
-        $payoutHistory = \App\Models\PayoutRecord::where('creator_id', $user->uuid)
+        $payoutHistory = PayoutRecord::where('creator_id', $user->uuid)
             ->latest()
             ->get()
             ->map(function ($p) {
@@ -676,12 +708,15 @@ class CreatorFinancialController extends Controller
             && empty($founderQualification->stripe_payout_id)
         ) {
             $fc = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
-            $rates = \App\Models\Currency::rates();
-            if ($rates instanceof \Illuminate\Support\Collection) {
+            $rates = Currency::rates();
+            if ($rates instanceof Collection) {
                 $rates = $rates->toArray();
             }
             $convertGbp = function (float $amount) use ($rates, $fc): float {
-                if ($fc === 'GBP' || !isset($rates['GBP']) || !isset($rates[$fc])) return $amount;
+                if ($fc === 'GBP' || ! isset($rates['GBP']) || ! isset($rates[$fc])) {
+                    return $amount;
+                }
+
                 return ($amount / $rates['GBP']) * $rates[$fc];
             };
             $founderBonusAmt = round($convertGbp((float) ($founderQualification->bonus_amount ?? 0)), 2);
@@ -690,7 +725,7 @@ class CreatorFinancialController extends Controller
                 : null;
 
             $scheduledFounder = [
-                'uuid' => 'founder-scheduled-' . $founderQualification->id,
+                'uuid' => 'founder-scheduled-'.$founderQualification->id,
                 'date' => $founderQualification->qualification_date
                     ? Carbon::parse($founderQualification->qualification_date)->format('d M Y')
                     : now()->format('d M Y'),
@@ -716,7 +751,7 @@ class CreatorFinancialController extends Controller
 
         // Creator risk level for reserve messaging
         $creatorMetric = CreatorMetric::where('creator_id', $user->uuid)->first();
-        $reservePolicy = app(\App\Services\Risk\ReservePolicy::class)->getReservePolicySummary($user, $creatorMetric, now());
+        $reservePolicy = app(ReservePolicy::class)->getReservePolicySummary($user, $creatorMetric, now());
         $reserveReason = null;
         if (($reservePolicy['effective_percent'] ?? 0) > 0) {
             if (($reservePolicy['onboarding_percent'] ?? 0) > 0 && ($reservePolicy['risk_level'] ?? null) === 'low') {
@@ -743,6 +778,9 @@ class CreatorFinancialController extends Controller
             'summary' => $summary,
             'tax_estimate' => $estimatedTax,
             'tax_year' => $dates['label'],
+            // Numeric tax-year start for the statement download endpoint ('year' must
+            // validate as integer — the display label above is "2025-2026" and would 422).
+            'tax_year_number' => (int) $year,
             'date_range' => [
                 'start' => $dates['start']->format('d M Y'),
                 'end' => $dates['end']->format('d M Y'),
@@ -754,7 +792,7 @@ class CreatorFinancialController extends Controller
             'top_supporters' => $topSupporters,
             'analytics' => [
                 'monthly' => $monthlyStats,
-                'tribute_types' => $tributeTypes
+                'tribute_types' => $tributeTypes,
             ],
             'status_breakdown' => $statusBreakdown,
             'reserve_breakdown' => $reserveBreakdown['breakdown'] ?? [],
@@ -795,15 +833,20 @@ class CreatorFinancialController extends Controller
 
         $currency = strtoupper($user->default_currency ?? 'GBP');
 
-        $rates = \App\Models\Currency::rates();
-        if ($rates instanceof \Illuminate\Support\Collection) {
+        $rates = Currency::rates();
+        if ($rates instanceof Collection) {
             $rates = $rates->toArray();
         }
         $convert = function (float $amount, string $from, string $to) use ($rates): float {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (! isset($rates[$from]) || ! isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
@@ -828,7 +871,7 @@ class CreatorFinancialController extends Controller
         }
 
         $earningsMinor = $row ? (int) $row->earnings_minor : $liveEarningsMinor;
-        $bonusRate = \App\Models\FastStartBonusPayout::resolveRate($earningsMinor);
+        $bonusRate = FastStartBonusPayout::resolveRate($earningsMinor);
         $bonusMinor = (int) round($earningsMinor * $bonusRate);
 
         // Tiered info for display
@@ -884,21 +927,21 @@ class CreatorFinancialController extends Controller
         $user = Auth::user();
         $year = $request->input('year', $this->financialService->getCurrentTaxYear());
         $dates = $this->financialService->getTaxYearDates($year);
-        
+
         // Income (Filtered by Tax Year)
         $income = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->with(['supporter:id,name,username,email', 'source' => function($morphTo) {
+            ->with(['supporter:id,name,username,email', 'source' => function ($morphTo) {
                 $morphTo->morphWith([
-                    \App\Models\TaskPurchase::class => ['task'],
-                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
-                    \App\Models\StripePaymentItems::class => [],
-                    \App\Models\TipGoalsPayment::class => ['tipGoal'],
-                    \App\Models\PiggyPotContribution::class => ['piggyPot'],
-                    \App\Models\MembershipPayment::class => ['membership'],
-                    \App\Models\BillPayment::class => ['bill'],
+                    TaskPurchase::class => ['task'],
+                    ShopPayment::class => ['shop', 'deliverable'],
+                    StripePaymentItems::class => [],
+                    TipGoalsPayment::class => ['tipGoal'],
+                    PiggyPotContribution::class => ['piggyPot'],
+                    MembershipPayment::class => ['membership'],
+                    BillPayment::class => ['bill'],
                 ]);
             }])
             ->orderBy('transaction_date', 'desc')
@@ -908,129 +951,130 @@ class CreatorFinancialController extends Controller
         // Collect Shop IDs for shipping info
         $shopIds = $income->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
         $shopShipping = [];
-        if (!empty($shopIds)) {
-            $shopShipping = \App\Models\ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
+        if (! empty($shopIds)) {
+            $shopShipping = ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
         }
 
         $income = $income->map(function ($tx) use ($shopShipping) {
-                $tx->display_date = $tx->transaction_date;
-                $tx->id = $tx->id;
-                $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
-                
-                $base = class_basename($tx->source_type);
+            $tx->display_date = $tx->transaction_date;
+            $tx->id = $tx->id;
+            $tx->reserve_percent = $tx->net_amount > 0 ? round(($tx->reserve_amount / $tx->net_amount) * 100, 1) : 0;
 
-                // Get Source Title for description
-                $sourceTitle = null;
-                if ($base === 'TaskPurchase' && isset($tx->source->task)) {
-                    $sourceTitle = $tx->source->task->title;
-                } elseif ($base === 'ShopPayment' && isset($tx->source->shop)) {
-                    $sourceTitle = $tx->source->shop->name;
-                } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
-                    $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
-                } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
-                    $sourceTitle = $tx->source->membership->level;
-                } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
-                    $sourceTitle = $tx->source->bill->name;
-                } elseif ($base === 'PiggyPotContribution' && isset($tx->source->piggyPot)) {
-                    $sourceTitle = $tx->source->piggyPot->title ?? 'Piggy Pot';
-                } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
-                    $sourceTitle = $tx->source->tipGoal->name;
+            $base = class_basename($tx->source_type);
+
+            // Get Source Title for description
+            $sourceTitle = null;
+            if ($base === 'TaskPurchase' && isset($tx->source->task)) {
+                $sourceTitle = $tx->source->task->title;
+            } elseif ($base === 'ShopPayment' && isset($tx->source->shop)) {
+                $sourceTitle = $tx->source->shop->name;
+            } elseif ($base === 'StripePaymentItems' && isset($tx->source)) {
+                $sourceTitle = $tx->source->wish_name ?? $tx->source->name;
+            } elseif ($base === 'MembershipPayment' && isset($tx->source->membership)) {
+                $sourceTitle = $tx->source->membership->level;
+            } elseif ($base === 'BillPayment' && isset($tx->source->bill)) {
+                $sourceTitle = $tx->source->bill->name;
+            } elseif ($base === 'PiggyPotContribution' && isset($tx->source->piggyPot)) {
+                $sourceTitle = $tx->source->piggyPot->title ?? 'Piggy Pot';
+            } elseif ($base === 'TipGoalsPayment' && isset($tx->source->tipGoal)) {
+                $sourceTitle = $tx->source->tipGoal->name;
+            }
+
+            $tx->label = match ($base) {
+                'StripePaymentItems' => 'Wish Content',
+                'ShopPayment' => 'Shop Purchase',
+                'TipGoalsPayment' => 'Content Unlock',
+                'PiggyPotContribution' => 'Piggy Pot',
+                'MembershipPayment' => 'Membership',
+                'TaskPurchase' => 'Task',
+                'BillPayment' => 'Bill',
+                default => str_replace(['Payment', 'Purchase'], '', $base)
+            };
+
+            // Update description to include title
+            if ($sourceTitle) {
+                $tx->description = $tx->label.': '.$sourceTitle;
+            }
+
+            // Calculate Creator Gross (Net + VAT) instead of Total Paid (Gross from DB)
+            // Note: net_amount for Shop already includes shipping_amount
+            $shipping = 0;
+            if ($base === 'ShopPayment') {
+                $shipping = (float) ($shopShipping[$tx->source_id] ?? 0);
+                if ($shipping > 0) {
+                    $tx->shipping_amount = $shipping;
                 }
+            }
 
-                $tx->label = match($base) {
-                    'StripePaymentItems' => 'Wish Content',
-                    'ShopPayment' => 'Shop Purchase',
-                    'TipGoalsPayment' => 'Content Unlock',
-                    'PiggyPotContribution' => 'Piggy Pot',
-                    'MembershipPayment' => 'Membership',
-                    'TaskPurchase' => 'Task',
-                    'BillPayment' => 'Bill',
-                    default => str_replace(['Payment', 'Purchase'], '', $base)
+            $tx->gross_amount = (float) $tx->net_amount + (float) ($tx->vat_amount ?? 0);
+
+            // Add item type (digital/physical/instant/timed)
+            if ($base === 'ShopPayment' && $tx->source->shop) {
+                $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
+            } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+                $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
+            }
+
+            // Handling for Task status display in ledger
+            if ($base === 'TaskPurchase' && $tx->source) {
+                $tx->item_status = match ($tx->source->status) {
+                    'completed', 'completed_accepted', 'paid_out' => 'complete',
+                    'delivered' => 'delivered',
+                    'pending_review' => 'review_pending',
+                    'paid', 'assigned' => 'pending',
+                    'escalated' => 'escalated',
+                    default => $tx->source->status
                 };
 
-                // Update description to include title
-                if ($sourceTitle) {
-                    $tx->description = $tx->label . ': ' . $sourceTitle;
+                // Gray out tasks that are not yet finalized (including escalated)
+                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    $tx->is_grayed_out = true;
                 }
+            }
 
-                // Calculate Creator Gross (Net + VAT) instead of Total Paid (Gross from DB)
-                // Note: net_amount for Shop already includes shipping_amount
-                $shipping = 0;
-                if ($base === 'ShopPayment') {
-                    $shipping = (float)($shopShipping[$tx->source_id] ?? 0);
-                    if ($shipping > 0) {
-                        $tx->shipping_amount = $shipping;
-                    }
+            // Handling for Shop status display in ledger
+            if ($base === 'ShopPayment' && $tx->source) {
+                $itemStat = $tx->source->deliverable->status ?? 'processing';
+                $tx->item_status = match ($itemStat) {
+                    'delivered' => 'complete',
+                    'shipped' => 'shipped',
+                    'processing' => 'processing',
+                    default => $itemStat
+                };
+
+                // Gray out physical shop items that are not yet delivered
+                if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
+                    $tx->is_grayed_out = true;
                 }
+            }
 
-                $tx->gross_amount = (float)$tx->net_amount + (float)($tx->vat_amount ?? 0);
-
-                // Add item type (digital/physical/instant/timed)
-                if ($base === 'ShopPayment' && $tx->source->shop) {
-                    $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
-                } elseif ($base === 'TaskPurchase' && $tx->source->task) {
-                    $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
-                }
-
-                // Handling for Task status display in ledger
-                if ($base === 'TaskPurchase' && $tx->source) {
-                    $tx->item_status = match($tx->source->status) {
-                        'completed', 'completed_accepted', 'paid_out' => 'complete',
-                        'delivered' => 'delivered',
-                        'pending_review' => 'review_pending',
-                        'paid', 'assigned' => 'pending',
-                        'escalated' => 'escalated',
-                        default => $tx->source->status
-                    };
-
-                    // Gray out tasks that are not yet finalized (including escalated)
-                    if (!in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                        $tx->is_grayed_out = true;
-                    }
-                }
-
-                // Handling for Shop status display in ledger
-                if ($base === 'ShopPayment' && $tx->source) {
-                    $itemStat = $tx->source->deliverable->status ?? 'processing';
-                    $tx->item_status = match($itemStat) {
-                        'delivered' => 'complete',
-                        'shipped' => 'shipped',
-                        'processing' => 'processing',
-                        default => $itemStat
-                    };
-
-                    // Gray out physical shop items that are not yet delivered
-                    if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
-                        $tx->is_grayed_out = true;
-                    }
-                }
-
-                return $tx;
-            });
+            return $tx;
+        });
 
         $this->applyPayoutBadges($income);
 
         // Expenses (Filtered by Tax Year)
-        $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
+        $expenses = CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$dates['start'], $dates['end']])
             ->orderBy('expense_date', 'desc')
             ->orderBy('id', 'desc')
             ->get()
             ->map(function ($exp) {
-                $tx = new \stdClass();
+                $tx = new \stdClass;
                 $tx->id = $exp->id;
-                $tx->uuid = 'exp-' . $exp->id;
+                $tx->uuid = 'exp-'.$exp->id;
                 $tx->transaction_date = $exp->expense_date;
                 $tx->description = $exp->description;
                 $tx->type = 'expense';
                 $tx->gross_amount = $exp->amount;
                 $tx->vat_amount = 0;
                 $tx->status = 'completed';
-                $tx->source_type = $exp->category; 
+                $tx->source_type = $exp->category;
                 $tx->currency = $exp->currency;
                 $tx->display_date = $exp->expense_date;
                 $tx->label = 'Expense';
                 $tx->supporter = null;
+
                 return $tx;
             });
 
@@ -1040,40 +1084,42 @@ class CreatorFinancialController extends Controller
                 ['id', 'desc'],
             ])
             ->values();
-        
+
         // Pagination
         $perPage = 20;
         $page = $request->input('page', 1);
         $total = $allTransactions->count();
         $paginated = $allTransactions->slice(($page - 1) * $perPage, $perPage)->values();
-        
-        $transactions = new \Illuminate\Pagination\LengthAwarePaginator(
+
+        $transactions = new LengthAwarePaginator(
             $paginated, $total, $perPage, $page, [
                 'path' => $request->url(),
-                'query' => $request->query()
+                'query' => $request->query(),
             ]
         );
 
         return Inertia::render('Creator/Financial/History', [
-            'transactions' => $transactions
+            'transactions' => $transactions,
         ]);
     }
 
     public function refresh(Request $request)
     {
         $user = Auth::user();
-        \Illuminate\Support\Facades\Log::info("CreatorFinancialController: Refreshing records for user {$user->id}");
+        Log::info("CreatorFinancialController: Refreshing records for user {$user->id}");
 
         try {
             Artisan::call('finance:sync-transactions', [
                 '--user_id' => $user->id,
             ]);
-            
-            \Illuminate\Support\Facades\Log::info("CreatorFinancialController: Sync completed for user {$user->id}");
+
+            Log::info("CreatorFinancialController: Sync completed for user {$user->id}");
+
             return redirect()->route('financial.dashboard')->with('success', 'Financial records refreshed.');
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("CreatorFinancialController: Sync failed for user {$user->id}: " . $e->getMessage());
-            return redirect()->route('financial.dashboard')->with('error', 'Failed to refresh records: ' . $e->getMessage());
+            Log::error("CreatorFinancialController: Sync failed for user {$user->id}: ".$e->getMessage());
+
+            return redirect()->route('financial.dashboard')->with('error', 'Failed to refresh records: '.$e->getMessage());
         }
     }
 
@@ -1081,7 +1127,7 @@ class CreatorFinancialController extends Controller
     {
         $user = Auth::user();
         $profile = CreatorFinancialProfile::firstOrCreate(['user_id' => $user->id]);
-        
+
         // Calculate verified metrics for certificate
         $joinDate = $user->created_at;
         $incomeAll = FinancialTransaction::where('user_id', $user->id)
@@ -1099,7 +1145,7 @@ class CreatorFinancialController extends Controller
             ->unique()
             ->values();
 
-        $rates = \App\Models\Currency::whereIn('ISO', $currencies)->pluck('conversion_rate', 'ISO');
+        $rates = Currency::whereIn('ISO', $currencies)->pluck('conversion_rate', 'ISO');
 
         $convert = function ($from, $amount, $to) use ($rates) {
             $from = strtoupper($from ?: $to);
@@ -1108,7 +1154,7 @@ class CreatorFinancialController extends Controller
             if ($from === $to) {
                 return $amount;
             }
-            if (!isset($rates[$from]) || !isset($rates[$to])) {
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
                 return $amount;
             }
             $fromRate = (float) $rates[$from];
@@ -1117,20 +1163,21 @@ class CreatorFinancialController extends Controller
                 return $amount;
             }
             $gbp = $amount / $fromRate;
+
             return $gbp * $toRate;
         };
 
         $totalEarnings = $incomeAll->sum(function ($tx) use ($convert, $displayCurrency) {
             return $convert($tx->currency, $tx->net_amount ?? 0, $displayCurrency);
         });
-            
+
         // Last 12 months for average
         $last12MonthsEarnings = $incomeAll
             ->where('transaction_date', '>=', now()->subMonths(12))
             ->sum(function ($tx) use ($convert, $displayCurrency) {
                 return $convert($tx->currency, $tx->net_amount ?? 0, $displayCurrency);
             });
-            
+
         $activeMonths = max(1, min(12, $joinDate->diffInMonths(now()) + 1));
         $averageMonthly = $last12MonthsEarnings / $activeMonths;
 
@@ -1144,7 +1191,7 @@ class CreatorFinancialController extends Controller
                 'member_since' => $joinDate->format('d M Y'),
                 'generated_at' => now()->format('d M Y'),
                 'verification_id' => strtoupper(uniqid('SP-VER-')),
-            ]
+            ],
         ]);
     }
 
@@ -1179,17 +1226,17 @@ class CreatorFinancialController extends Controller
         $transactions = FinancialTransaction::where('user_id', $user->id)
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
-            ->with(['source' => function($morphTo) {
+            ->with(['source' => function ($morphTo) {
                 $morphTo->morphWith([
-                    \App\Models\TaskPurchase::class => ['task'],
-                    \App\Models\ShopPayment::class => ['shop'],
-                    \App\Models\StripePaymentItems::class => []
+                    TaskPurchase::class => ['task'],
+                    ShopPayment::class => ['shop'],
+                    StripePaymentItems::class => [],
                 ]);
             }])
             ->get()
             ->map(function ($transaction) {
                 $base = class_basename($transaction->source_type);
-                $label = match($base) {
+                $label = match ($base) {
                     'StripePaymentItems' => 'Wish Content',
                     'ShopPayment' => 'Shop Purchase',
                     'TipGoalsPayment' => 'Content Unlock',
@@ -1212,7 +1259,7 @@ class CreatorFinancialController extends Controller
 
                 $description = $transaction->description;
                 if ($sourceTitle) {
-                    $description = $label . ': ' . $sourceTitle;
+                    $description = $label.': '.$sourceTitle;
                 }
 
                 return [
@@ -1220,14 +1267,14 @@ class CreatorFinancialController extends Controller
                     'type' => $transaction->type,
                     'category' => 'Income',
                     'description' => $description,
-                    'gross_amount' => $transaction->type === 'income' ? ((float)$transaction->net_amount + (float)($transaction->vat_amount ?? 0)) : $transaction->gross_amount,
+                    'gross_amount' => $transaction->type === 'income' ? ((float) $transaction->net_amount + (float) ($transaction->vat_amount ?? 0)) : $transaction->gross_amount,
                     'net_amount' => $transaction->net_amount,
                     'currency' => $transaction->currency,
                     'status' => $transaction->status,
                 ];
             });
 
-        $expenses = \App\Models\CreatorExpense::where('user_id', $user->id)
+        $expenses = CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$dates['start'], $dates['end']])
             ->get()
             ->map(function ($expense) {
@@ -1247,16 +1294,16 @@ class CreatorFinancialController extends Controller
 
         $filename = "financial-report-{$year}.csv";
         $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$filename",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         $columns = ['Date', 'Type', 'Category', 'Description', 'Amount', 'Currency', 'Status'];
 
-        $callback = function() use($merged, $columns) {
+        $callback = function () use ($merged, $columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
 
@@ -1268,7 +1315,7 @@ class CreatorFinancialController extends Controller
                     $row['description'],
                     $row['gross_amount'],
                     $row['currency'],
-                    $row['status']
+                    $row['status'],
                 ]);
             }
 
@@ -1277,7 +1324,7 @@ class CreatorFinancialController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
-    
+
     public function generateIncomeStatement(Request $request)
     {
         // For PDF generation, we would use a library like dompdf.
@@ -1285,7 +1332,7 @@ class CreatorFinancialController extends Controller
         $user = Auth::user();
         $year = $request->input('year', $this->financialService->getCurrentTaxYear());
         $dates = $this->financialService->getTaxYearDates($year);
-        
+
         // Use the SAME summary logic as dashboard to ensure consistency
         $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
         $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end'], $displayCurrency);
@@ -1295,7 +1342,7 @@ class CreatorFinancialController extends Controller
             'summary' => $summary,
             'dates' => $dates,
             'profile' => $profile,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -1310,10 +1357,10 @@ class CreatorFinancialController extends Controller
     {
         $validated = $request->validate([
             'period' => 'required|in:month,tax_year,custom',
-            'month'  => 'required_if:period,month|date_format:Y-m',
-            'year'   => 'required_if:period,tax_year|integer|min:2020|max:2100',
-            'from'   => 'required_if:period,custom|date_format:Y-m-d',
-            'to'     => 'required_if:period,custom|date_format:Y-m-d|after_or_equal:from',
+            'month' => 'required_if:period,month|date_format:Y-m',
+            'year' => 'required_if:period,tax_year|integer|min:2020|max:2100',
+            'from' => 'required_if:period,custom|date_format:Y-m-d',
+            'to' => 'required_if:period,custom|date_format:Y-m-d|after_or_equal:from',
             'format' => 'required|in:pdf,csv',
         ]);
 
@@ -1328,13 +1375,13 @@ class CreatorFinancialController extends Controller
 
         $data = $this->buildStatementData($user, $start, $end, $periodLabel);
 
-        $slug = $start->format('Y-m-d') . '_' . $end->format('Y-m-d');
+        $slug = $start->format('Y-m-d').'_'.$end->format('Y-m-d');
 
         if ($validated['format'] === 'csv') {
             return $this->streamStatementCsv($data, "earnings-statement-{$slug}.csv");
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.earnings-statement', $data)
+        $pdf = Pdf::loadView('pdf.earnings-statement', $data)
             ->setPaper('a4', 'portrait');
 
         return $pdf->download("earnings-statement-{$slug}.pdf");
@@ -1347,20 +1394,23 @@ class CreatorFinancialController extends Controller
             case 'month':
                 // Parse with an explicit day: 'Y-m' alone inherits the CURRENT day-of-month,
                 // which overflows short months (requesting Feb on Jan 31 would yield March).
-                $start = Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01')->startOfMonth();
+                $start = Carbon::createFromFormat('Y-m-d', $validated['month'].'-01')->startOfMonth();
                 $end = $start->copy()->endOfMonth();
+
                 return [$start, $end, $start->format('F Y')];
 
             case 'tax_year':
                 $dates = $this->financialService->getTaxYearDates($validated['year']);
                 $start = Carbon::parse($dates['start']);
                 $end = Carbon::parse($dates['end']);
-                return [$start, $end, 'Tax Year ' . $validated['year'] . '/' . (substr((string) ($validated['year'] + 1), -2))];
+
+                return [$start, $end, 'Tax Year '.$validated['year'].'/'.(substr((string) ($validated['year'] + 1), -2))];
 
             default: // custom
                 $start = Carbon::parse($validated['from'])->startOfDay();
                 $end = Carbon::parse($validated['to'])->endOfDay();
-                return [$start, $end, $start->format('d M Y') . ' – ' . $end->format('d M Y')];
+
+                return [$start, $end, $start->format('d M Y').' – '.$end->format('d M Y')];
         }
     }
 
@@ -1385,11 +1435,11 @@ class CreatorFinancialController extends Controller
         foreach ($refundTx as $tx) {
             $from = strtoupper($tx->currency ?? 'GBP');
             $amount = (float) ($tx->net_amount ?? 0) + (float) ($tx->vat_amount ?? 0);
-            $refundsTotal += $from === $currency ? $amount : (float) \App\Helpers::priceFormat($from, $amount, $currency);
+            $refundsTotal += $from === $currency ? $amount : (float) Helpers::priceFormat($from, $amount, $currency);
         }
 
         // Payouts whose Stripe payout was created in the period.
-        $payouts = \App\Models\PayoutRecord::where('creator_id', $user->uuid)
+        $payouts = PayoutRecord::where('creator_id', $user->uuid)
             ->whereBetween('created_at', [$start, $end])
             ->orderBy('created_at')
             ->get()
@@ -1410,7 +1460,7 @@ class CreatorFinancialController extends Controller
             'entity_name' => $profile->business_name ?: $user->name,
             'period_label' => $periodLabel,
             'range' => ['start' => $start->format('d M Y'), 'end' => $end->format('d M Y')],
-            'generated_at' => now()->format('d M Y H:i') . ' UTC',
+            'generated_at' => now()->format('d M Y H:i').' UTC',
             'currency' => $currency,
             'summary' => [
                 'gross' => (float) ($summary['gross_income'] ?? 0),
@@ -1514,7 +1564,7 @@ class CreatorFinancialController extends Controller
             }
             fputcsv($file, []);
 
-            fputcsv($file, ['Transactions' . ($data['transactions_truncated'] ? ' (first 500 shown)' : '')]);
+            fputcsv($file, ['Transactions'.($data['transactions_truncated'] ? ' (first 500 shown)' : '')]);
             fputcsv($file, ['Date', 'Type', 'Gross', 'Net', 'Currency', 'Status']);
             foreach ($data['transactions'] as $row) {
                 fputcsv($file, [
@@ -1547,7 +1597,7 @@ class CreatorFinancialController extends Controller
         $income->each(function ($tx) use ($payoutCutoff) {
             $tx->payout_badge = null;
 
-            if (!empty($tx->payout_run_id)) {
+            if (! empty($tx->payout_run_id)) {
                 $tx->payout_badge = 'paid_out';
             } elseif (($tx->reserve_status ?? null) === 'released') {
                 // Reserve releases 30 days AFTER the transaction — the base earning was
@@ -1560,7 +1610,7 @@ class CreatorFinancialController extends Controller
                 && ($tx->status ?? null) === 'completed'
                 && empty($tx->is_grayed_out)
                 && $tx->transaction_date
-                && \Carbon\Carbon::parse($tx->transaction_date)->lte($payoutCutoff)
+                && Carbon::parse($tx->transaction_date)->lte($payoutCutoff)
             ) {
                 $tx->payout_badge = 'this_week';
             }

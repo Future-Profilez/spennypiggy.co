@@ -8,34 +8,26 @@ export default function PaidTasksAnnouncement() {
     const isCreator = auth && auth.user && auth.user.role === 1;
     return (
         <>
-            <div className="bg-transparent py-20 md:py-28 px-4 relative overflow-x-hidden">
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                    <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
-                    <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
-                    <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
-                </div>
+            <section className="relative bg-transparent py-20 md:py-28 px-4 overflow-x-hidden">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-[#FF007F] rounded-full blur-3xl opacity-10 pointer-events-none z-0"></div>
 
-                <div className="max-w-7xl mx-auto relative z-10">
+                <div className="max-w-6xl mx-auto relative z-10">
                     <div className="text-center mb-8 md:mb-16">
                         <FadeIn y={20} duration={0.5}>
-                            <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-                                <span className="bg-yellow-400 text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
-                                    ✨ New Feature ✨
-                                </span>
-                            </div>
+                            <span className="inline-block bg-[#E6EA7B] text-black font-gulfs px-4 py-1 uppercase tracking-[3px] text-[11px] rounded-full border-2 border-black shadow-[4px_4px_0_0_#0d0a16] mb-4">
+                                ✨ New Feature ✨
+                            </span>
                         </FadeIn>
-                        
+
                         <FadeIn x={-80} y={0} delay={0.1} duration={0.7}>
-                            <h2 className="uppercase fading text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-[4px_4px_0px_0px_#FF007F]">
+                            <h2 className="font-gulfs uppercase text-white tracking-tight text-3xl md:text-4xl lg:text-5xl mb-6 leading-none">
                                 Get Paid for Requests <br/>
-                                <span className="uppercase text-gradient-wishlist tracking-[2px] animate-pulse">
-                                    On Your Terms 
-                                </span> 💸
+                                On Your Terms 💸
                             </h2>
                         </FadeIn>
-                        
+
                         <FadeIn y={20} delay={0.2}>
-                            <p className="fading text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto font-medium leading-relaxed">
+                            <p className="text-xl md:text-2xl text-white/70 max-w-4xl mx-auto font-medium leading-relaxed">
                                 Supporters pay before requesting a task. You approve, set the rules, and deliver on your own time.
                                 Late delivery? Refunds follow your terms — enforced automatically.
                             </p>
@@ -44,41 +36,41 @@ export default function PaidTasksAnnouncement() {
 
                     {/* Cards Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
-                        
+
                         {/* Card 1: Instant */}
                         <StaggerItem index={0} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-gray-900 border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F]">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[24px] p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 shadow-[8px_8px_0_0_#FF007F] hover:shadow-[10px_10px_0_0_#FF007F] motion-reduce:hover:transform-none motion-reduce:hover:shadow-[8px_8px_0_0_#FF007F]">
                             <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
-                            <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Instant <br/>Access</h3>
-                            <p className="fading text-gray-400 text-lg mb-6 leading-snug">
+                            <h3 className="font-gulfs uppercase text-white tracking-tight text-xl md:text-3xl mb-2 md:mb-2">Instant <br/>Access</h3>
+                            <p className="text-white/70 text-lg mb-6 leading-snug">
                                 Upload once. Get paid every time.
                                 Supporters access content instantly — no back-and-forth, no delivery stress.
                             </p>
-                            <div className="fading bg-gray-800 rounded-[30px]   p-3 flex items-center gap-3">
-                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-green-400 animate-pulse"></div>
-                                <span className="text-sm font-bold text-gray-300 uppercase">Passive income mode </span>
+                            <div className="bg-[#0d0a16] border-2 border-[#FF007F] rounded-full p-3 flex items-center gap-3">
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#05EFB8]"></div>
+                                <span className="font-gulfs uppercase tracking-[3px] text-[11px] text-[#FF007F]">Passive income mode </span>
                             </div>
                         </div>
                         </StaggerItem>
 
                         {/* Card 2: Custom */}
                         <StaggerItem index={1} x={-80} y={0} rotate={1} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300  shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15]">
-                            <div className="absolute -top-6 -right-6 bg-yellow-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-[24px] p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 shadow-[8px_8px_0_0_#E6EA7B] hover:shadow-[10px_10px_0_0_#E6EA7B] motion-reduce:hover:transform-none motion-reduce:hover:shadow-[8px_8px_0_0_#E6EA7B]">
+                            <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
                                 <FaMagic />
                             </div>
-                            <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Paid <br/> Tasks (Custom Requests)</h3>
-                            <p className="fading text-gray-400 text-lg mb-6 leading-snug">
+                            <h3 className="font-gulfs uppercase text-white tracking-tight text-xl md:text-3xl mb-2 md:mb-2">Paid <br/> Tasks (Custom Requests)</h3>
+                            <p className="text-white/70 text-lg mb-6 leading-snug">
                                 Supporters want something custom?
                                 They pay first. You decide the rest.
                                 Approve what you want, set the rules, and deliver when it works for you.
                                 No chasing. No awkwardness.
                             </p>
-                            <div className="fading bg-gray-800 rounded-[30px]   p-3 flex items-center gap-3">
-                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-blue-400 animate-pulse"></div>
-                                <span className="text-sm font-bold text-gray-300 uppercase">Full control. Zero pressure.
+                            <div className="bg-[#0d0a16] border-2 border-[#E6EA7B] rounded-full p-3 flex items-center gap-3">
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#05EFB8]"></div>
+                                <span className="font-gulfs uppercase tracking-[3px] text-[11px] text-[#E6EA7B]">Full control. Zero pressure.
                                 </span>
                             </div>
                         </div>
@@ -86,25 +78,25 @@ export default function PaidTasksAnnouncement() {
 
                         {/* Card 3: Safe */}
                         <StaggerItem index={2} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-gray-900 border-2 mb-2 md:mb-0 border-purple-500 rounded-[30px]   p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#A855F7] md:shadow-[8px_8px_0px_0px_#A855F7]">
-                            <div className="absolute -top-6 -right-6 bg-purple-500 text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-[24px] p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 shadow-[8px_8px_0_0_#05EFB8] hover:shadow-[10px_10px_0_0_#05EFB8] motion-reduce:hover:transform-none motion-reduce:hover:shadow-[8px_8px_0_0_#05EFB8]">
+                            <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
                                 <FaShieldAlt />
                             </div>
-                            <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Funds <br/> Protected </h3>
-                            <p className="fading text-gray-400 text-lg mb-6 leading-snug">
-                                
-                                
+                            <h3 className="font-gulfs uppercase text-white tracking-tight text-xl md:text-3xl mb-2 md:mb-2">Funds <br/> Protected </h3>
+                            <p className="text-white/70 text-lg mb-6 leading-snug">
+
+
                                 Paid first. Always.
 You set the timeline, the rules, and the vibe.
 
 If a task isn’t delivered on time, refunds are handled according to your terms — automatically.
- 
+
 
 
                             </p>
-                            <div className="fading bg-gray-800 rounded-[30px]   p-3 flex items-center gap-3">
-                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#FF007F] animate-pulse"></div>
-                                <span className="text-sm font-bold text-gray-300 uppercase">PLATFORM-ENFORCED RULES
+                            <div className="bg-[#0d0a16] border-2 border-[#05EFB8] rounded-full p-3 flex items-center gap-3">
+                                <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#FF007F]"></div>
+                                <span className="font-gulfs uppercase tracking-[3px] text-[11px] text-[#05EFB8]">PLATFORM-ENFORCED RULES
                                 </span>
                             </div>
                         </div>
@@ -112,17 +104,16 @@ If a task isn’t delivered on time, refunds are handled according to your terms
 
                     </div>
 
-                    <p className="text-center  pt-6 md:pt-12 text-white">Clear rules reduce disputes — no awkward reminders, no unpaid “promises”.</p>
+                    <p className="text-center pt-6 md:pt-12 text-white/70">Clear rules reduce disputes — no awkward reminders, no unpaid “promises”.</p>
 
                     {/* CTA Section */}
                     {isCreator && (
                         <div className="mt-8 md:mt-12 lg:mt-20 text-center relative">
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-32 bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-500 rounded-full blur-3xl opacity-20"></div>
-                            <Link  href="/task/dashboard" 
-                                className="relative inline-flex items-center gap-4 bg-white text-black font-black text-base md:text-xl py-3 px-12 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-32 bg-[#FF007F] rounded-full blur-3xl opacity-10"></div>
+                            <Link  href="/task/dashboard"
+                                className="relative inline-flex items-center gap-4 bg-white text-black font-gulfs uppercase tracking-tight text-base md:text-xl py-3 px-12 rounded-full border-2 border-black shadow-[8px_8px_0_0_#FF007F] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[10px_10px_0_0_#FF007F] transition-all duration-300 group" >
                                 <span className="relative z-10">Turn Requests Into Income</span>
                                 <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
-                                <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </Link>
                             <div className="mt-6 flex justify-center items-center gap-2 text-white/50 text-sm font-bold uppercase tracking-widest">
                                 ❤️ Built for creators who are tired of unpaid requests
@@ -130,7 +121,7 @@ If a task isn’t delivered on time, refunds are handled according to your terms
                         </div>
                     )}
                 </div>
-            </div>
+            </section>
         </>
     );
 }

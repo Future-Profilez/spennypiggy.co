@@ -46,11 +46,23 @@ class MonthlyCharge extends Model
         static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
     }
 
+    /**
+     * Newest period first.
+     *
+     * Never order these rows by created_at: a Stripe backfill can write several
+     * consecutive billing periods in the same second, and the tie makes latest()
+     * return an arbitrary (often the oldest) period.
+     */
+    public function scopeNewestFirst($query)
+    {
+        return $query->orderByDesc('id');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-    
+
     /**
      * Get user relationship (for backwards compatibility)
      */

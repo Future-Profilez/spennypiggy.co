@@ -8,7 +8,7 @@ export default function ComingNext() {
    <div className="bg-black py-20 md:py-28 relative overflow-hidden">
        {/* Decorative Background Elements */}
        <div className="absolute top-0 right-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
+            <div className="absolute top-1/4 right-0 w-64 h-64 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
             <div className="absolute bottom-10 left-10 w-48 h-48 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
         </div>
 
@@ -51,13 +51,13 @@ export default function ComingNext() {
                         <span>Receive physical Gifts from Fans</span>
                    </li>
                    <li className='flex items-start gap-4 text-xl md:text-2xl text-gray-300 font-medium'>
-                        <div className="bg-gray-800 p-3 rounded-full text-purple-400 shadow-lg mt-1">
+                        <div className="bg-gray-800 p-3 rounded-full text-[#05EFB8] shadow-lg mt-1">
                             <FaLock />
                         </div>
                         <span>No physical Information is shared! All data is secured by TLS (SSL) 256-bit encryption</span> 
                    </li>
                    <li className='flex items-start gap-4 text-xl md:text-2xl text-gray-300 font-medium'>
-                        <div className="bg-gray-800 p-3 rounded-full text-green-400 shadow-lg mt-1">
+                        <div className="bg-gray-800 p-3 rounded-full text-[#05EFB8] shadow-lg mt-1">
                             <FaRocket />
                         </div>
                         <span>We order and ship for you!</span>

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class EarningsStatementDownloadTest extends TestCase
@@ -21,7 +23,7 @@ class EarningsStatementDownloadTest extends TestCase
 
     public function test_invalid_period_is_rejected()
     {
-        $this->actingAs(User::factory()->create(['uuid' => (string) \Illuminate\Support\Str::uuid()]));
+        $this->actingAs(User::factory()->create(['uuid' => (string) Str::uuid()]));
 
         $response = $this->getJson(route('financial.statement.download', [
             'period' => 'weekly', 'format' => 'csv',
@@ -32,7 +34,7 @@ class EarningsStatementDownloadTest extends TestCase
 
     public function test_custom_range_requires_valid_dates()
     {
-        $this->actingAs(User::factory()->create(['uuid' => (string) \Illuminate\Support\Str::uuid()]));
+        $this->actingAs(User::factory()->create(['uuid' => (string) Str::uuid()]));
 
         // to before from → validation error
         $response = $this->getJson(route('financial.statement.download', [
@@ -44,7 +46,7 @@ class EarningsStatementDownloadTest extends TestCase
 
     public function test_custom_range_over_a_year_is_rejected()
     {
-        $this->actingAs(User::factory()->create(['uuid' => (string) \Illuminate\Support\Str::uuid()]));
+        $this->actingAs(User::factory()->create(['uuid' => (string) Str::uuid()]));
 
         $response = $this->getJson(route('financial.statement.download', [
             'period' => 'custom', 'from' => '2024-01-01', 'to' => '2026-01-01', 'format' => 'csv',
@@ -55,7 +57,7 @@ class EarningsStatementDownloadTest extends TestCase
 
     public function test_csv_statement_downloads_for_user_with_no_activity()
     {
-        $this->actingAs(User::factory()->create(['uuid' => (string) \Illuminate\Support\Str::uuid()]));
+        $this->actingAs(User::factory()->create(['uuid' => (string) Str::uuid()]));
 
         $response = $this->get(route('financial.statement.download', [
             'period' => 'month', 'month' => '2026-06', 'format' => 'csv',
@@ -74,9 +76,9 @@ class EarningsStatementDownloadTest extends TestCase
     {
         // Regression: 'Y-m' parsing inherits the current day-of-month; on Jan 31 a
         // request for Feb would overflow into March. Freeze time to the worst case.
-        \Illuminate\Support\Carbon::setTestNow('2026-01-31 12:00:00');
+        Carbon::setTestNow('2026-01-31 12:00:00');
 
-        $this->actingAs(User::factory()->create(['uuid' => (string) \Illuminate\Support\Str::uuid()]));
+        $this->actingAs(User::factory()->create(['uuid' => (string) Str::uuid()]));
 
         $response = $this->get(route('financial.statement.download', [
             'period' => 'month', 'month' => '2026-02', 'format' => 'csv',
@@ -88,12 +90,12 @@ class EarningsStatementDownloadTest extends TestCase
         $this->assertStringContainsString('01 Feb 2026', $csv);
         $this->assertStringContainsString('28 Feb 2026', $csv);
 
-        \Illuminate\Support\Carbon::setTestNow();
+        Carbon::setTestNow();
     }
 
     public function test_pdf_statement_downloads_for_user_with_no_activity()
     {
-        $this->actingAs(User::factory()->create(['uuid' => (string) \Illuminate\Support\Str::uuid()]));
+        $this->actingAs(User::factory()->create(['uuid' => (string) Str::uuid()]));
 
         $response = $this->get(route('financial.statement.download', [
             'period' => 'month', 'month' => '2026-06', 'format' => 'pdf',

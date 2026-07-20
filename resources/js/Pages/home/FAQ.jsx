@@ -28,7 +28,7 @@ export default function FAQ() {
     <div id={`faq`} className='bg-transparent py-20 md:py-28 relative ' >
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-1/2 right-0 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
+          <div className="absolute top-1/2 right-0 w-96 h-96 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float-delayed"></div>
       </div>
 

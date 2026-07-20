@@ -14,6 +14,7 @@ class WishItemSubscription extends Model
 
     protected $fillable =   [
         'uuid',
+        'fee_profile',
         'stripe_id',
         'session_id',
         'wish_item_id',

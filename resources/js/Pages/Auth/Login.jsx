@@ -433,17 +433,13 @@ export default function Login({ status, canResetPassword }) {
 
     const checkTFA = async (e) => {
         e.preventDefault();
-        
-        // If user has a passkey and is using a supported browser, 
-        // try passkey login first for a seamless "system prompt" experience
-        if (isWebAuthnSupported() && hasPasskey === true) {
-            const platformAuthAvailable = await isPlatformAuthenticatorAvailable();
-            if (platformAuthAvailable) {
-                handlePasskeyLogin(true);
-                return;
-            }
-        }
 
+        // Standard LOG IN always uses password. Passkey is opt-in via the
+        // dedicated "LOG IN WITH PASSKEY" button + Safari autofill (conditional UI).
+        // We do NOT auto-trigger the passkey chooser here: `hasPasskey` only tells us
+        // the user registered a passkey on *some* device, not on *this* one — so on a
+        // device without a local passkey (e.g. Safari on a new machine) it popped a
+        // cross-device/QR chooser at every login and blocked password sign-in.
         proceedToStandardLogin();
     };
 

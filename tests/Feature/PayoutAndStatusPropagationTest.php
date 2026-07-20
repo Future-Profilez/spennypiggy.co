@@ -3,31 +3,33 @@
 namespace Tests\Feature;
 
 use App\Helpers;
+use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TaskController;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\CreatorMetric;
 use App\Models\Currency;
 use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
-use App\Models\MembershipPayment;
 use App\Models\Membership;
+use App\Models\MembershipPayment;
 use App\Models\Payment;
 use App\Models\PayoutRun;
 use App\Models\PlatformRiskState;
 use App\Models\RiskSetting;
 use App\Models\ShopPayment;
-use App\Models\Shop;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
-use App\Models\TaskPurchase;
 use App\Models\Task;
-use App\Models\TipGoalsPayment;
+use App\Models\TaskPurchase;
 use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserPayment;
 use App\Services\Risk\PayoutService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -36,7 +38,9 @@ class PayoutAndStatusPropagationTest extends TestCase
     use RefreshDatabase;
 
     private User $creator;
+
     private string $creatorUuid;
+
     private int $tipGoalId;
 
     protected function setUp(): void
@@ -69,7 +73,7 @@ class PayoutAndStatusPropagationTest extends TestCase
 
         // Create a TipGoal for FK constraint on tip_goals_payments
         // Use DB::table to bypass mass assignment and SoftDeletes issues
-        $this->tipGoalId = \Illuminate\Support\Facades\DB::table('tip_goals')->insertGetId([
+        $this->tipGoalId = DB::table('tip_goals')->insertGetId([
             'uuid' => (string) Str::uuid(),
             'name' => 'Test Goal',
             'user_id' => $this->creator->id,
@@ -150,8 +154,8 @@ class PayoutAndStatusPropagationTest extends TestCase
             'risk_level' => 'low',
         ]);
 
-        $sessionId = 'cs_test_' . Str::random(10);
-        $piId = 'pi_test_' . Str::random(10);
+        $sessionId = 'cs_test_'.Str::random(10);
+        $piId = 'pi_test_'.Str::random(10);
 
         // Create a succeeded payment
         Payment::create([
@@ -171,7 +175,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         $tip = TipGoalsPayment::create([
             'tip_goal_id' => $this->tipGoalId,
             'user_id' => null,
-            
+
             'session_id' => $sessionId,
             'currency' => 'GBP',
             'amount' => 15.00,
@@ -214,6 +218,137 @@ class PayoutAndStatusPropagationTest extends TestCase
         $this->assertEquals(1350, $payout['net_payout']);
     }
 
+    /**
+     * Instant tasks deliver at purchase time. The sync handler runs after Stripe's
+     * redirect (payment confirmed), and the July 2026 client decision on instant
+     * fulfilment (config/payments.php `instant_fulfilment`) is to hand over content
+     * straight away, recovering failed settlement through the debt flow instead of
+     * withholding delivery. So an instant task IS completed here — a timed task is not.
+     */
+    public function test_instant_task_purchase_is_completed_during_sync_creation(): void
+    {
+        $creator = User::factory()->create([
+            'default_currency' => 'GBP',
+            'account_id' => 'acct_test_creator',
+        ]);
+        $buyer = User::factory()->create([
+            'default_currency' => 'GBP',
+        ]);
+
+        $task = Task::create([
+            'creator_id' => $creator->id,
+            'title' => 'Instant task',
+            'description' => 'Test',
+            'price' => 10.00,
+            'currency' => 'GBP',
+            'category' => 'general',
+            'type' => 'instant',
+            'status' => 'active',
+            'is_approved' => true,
+            'deliverable_note' => 'Delivered later',
+        ]);
+
+        $session = (object) [
+            'id' => 'cs_test_'.Str::random(10),
+            'currency' => 'GBP',
+            'amount_total' => 1000,
+            'payment_intent' => null,
+            'metadata' => (object) [
+                'task_id' => $task->id,
+                'buyer_id' => $buyer->id,
+                'creator_id' => $creator->id,
+                'item_amount' => 1000,
+                'payment_type' => 'STANDARD',
+                'vat_amount' => 0,
+                'vat_percent' => 0,
+                'admin_fee' => 0,
+                'platform_fee' => 0,
+                'transfer_amount' => 1000,
+            ],
+            'customer_details' => (object) [
+                'email' => 'buyer@example.com',
+                'name' => 'Buyer',
+            ],
+        ];
+
+        $controller = app(TaskController::class);
+        $reflection = new \ReflectionClass($controller);
+        $method = $reflection->getMethod('createTaskPurchaseSync');
+        $method->setAccessible(true);
+
+        $purchase = $method->invoke($controller, $session, $task);
+        $purchase->refresh();
+
+        $this->assertSame('completed', $purchase->status);
+        $this->assertNotNull($purchase->completed_at);
+
+        $deliverable = Deliverable::where('order_id', $purchase->id)->first();
+        $this->assertNotNull($deliverable);
+        $this->assertSame('delivered', $deliverable->status);
+        $this->assertNotNull($deliverable->delivered_at);
+    }
+
+    public function test_timed_task_purchase_is_not_completed_during_sync_creation(): void
+    {
+        $creator = User::factory()->create([
+            'default_currency' => 'GBP',
+            'account_id' => 'acct_test_creator',
+        ]);
+        $buyer = User::factory()->create(['default_currency' => 'GBP']);
+
+        $task = Task::create([
+            'creator_id' => $creator->id,
+            'title' => 'Timed task',
+            'description' => 'Test',
+            'price' => 10.00,
+            'currency' => 'GBP',
+            'category' => 'general',
+            'type' => 'custom',
+            'status' => 'active',
+            'is_approved' => true,
+            'deliverable_note' => 'Delivered later',
+        ]);
+
+        $session = (object) [
+            'id' => 'cs_test_'.Str::random(10),
+            'currency' => 'GBP',
+            'amount_total' => 1000,
+            'payment_intent' => null,
+            'metadata' => (object) [
+                'task_id' => $task->id,
+                'buyer_id' => $buyer->id,
+                'creator_id' => $creator->id,
+                'item_amount' => 1000,
+                'payment_type' => 'STANDARD',
+                'vat_amount' => 0,
+                'vat_percent' => 0,
+                'admin_fee' => 0,
+                'platform_fee' => 0,
+                'transfer_amount' => 1000,
+            ],
+            'customer_details' => (object) [
+                'email' => 'buyer@example.com',
+                'name' => 'Buyer',
+            ],
+        ];
+
+        $controller = app(TaskController::class);
+        $reflection = new \ReflectionClass($controller);
+        $method = $reflection->getMethod('createTaskPurchaseSync');
+        $method->setAccessible(true);
+
+        $purchase = $method->invoke($controller, $session, $task);
+        $purchase->refresh();
+
+        // A timed/custom task is escrowed until the creator delivers and the buyer accepts.
+        $this->assertSame('paid', $purchase->status);
+        $this->assertNull($purchase->completed_at);
+
+        $deliverable = Deliverable::where('order_id', $purchase->id)->first();
+        $this->assertNotNull($deliverable);
+        $this->assertSame('pending', $deliverable->status);
+    }
+
     public function test_payout_excludes_review_hold_payments(): void
     {
         Carbon::setTestNow('2026-05-01 12:00:00');
@@ -225,7 +360,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // Succeeded payment
-        $session1 = 'cs_ok_' . Str::random(10);
+        $session1 = 'cs_ok_'.Str::random(10);
         Payment::create([
             'creator_id' => $this->creatorUuid,
             'amount' => 1000,
@@ -248,13 +383,13 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // Review hold payment — should be excluded
-        $session2 = 'cs_hold_' . Str::random(10);
+        $session2 = 'cs_hold_'.Str::random(10);
         Payment::create([
             'creator_id' => $this->creatorUuid,
             'amount' => 5000,
             'currency' => 'gbp',
             'stripe_session_id' => $session2,
-            'stripe_payment_intent_id' => 'pi_hold_' . Str::random(10),
+            'stripe_payment_intent_id' => 'pi_hold_'.Str::random(10),
             'status' => 'review_hold',
         ]);
 
@@ -279,8 +414,8 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // A payment that was already paid out, then refunded
-        $session = 'cs_refund_' . Str::random(10);
-        $piId = 'pi_refund_' . Str::random(10);
+        $session = 'cs_refund_'.Str::random(10);
+        $piId = 'pi_refund_'.Str::random(10);
 
         // Create a payout run that "paid" this
         $run = PayoutRun::create(['run_date' => '2026-04-25', 'status' => 'executed', 'totals' => []]);
@@ -297,7 +432,7 @@ class PayoutAndStatusPropagationTest extends TestCase
 
         // The FT has the real creator amount
         $tip = TipGoalsPayment::create([
-            'tip_goal_id' => $this->tipGoalId, 'user_id' => null, 
+            'tip_goal_id' => $this->tipGoalId, 'user_id' => null,
             'session_id' => $session, 'currency' => 'GBP', 'amount' => 30.00, 'tax' => 5, 'status' => 'refunded',
         ]);
         FinancialTransaction::create([
@@ -380,8 +515,8 @@ class PayoutAndStatusPropagationTest extends TestCase
 
     public function test_webhook_sync_propagates_refund_to_all_tables(): void
     {
-        $sessionId = 'cs_sync_' . Str::random(10);
-        $piId = 'pi_sync_' . Str::random(10);
+        $sessionId = 'cs_sync_'.Str::random(10);
+        $piId = 'pi_sync_'.Str::random(10);
 
         // Create risk ledger Payment
         Payment::create([
@@ -406,7 +541,7 @@ class PayoutAndStatusPropagationTest extends TestCase
 
         // TipGoalsPayment
         $tip = TipGoalsPayment::create([
-            'tip_goal_id' => $this->tipGoalId, 'user_id' => null, 
+            'tip_goal_id' => $this->tipGoalId, 'user_id' => null,
             'session_id' => $sessionId, 'currency' => 'GBP', 'amount' => 15, 'tax' => 0, 'status' => 'paid',
         ]);
 
@@ -423,7 +558,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // ShopPayment (use DB::table since shops migration may lack price/currency/type columns)
-        $shopId = \Illuminate\Support\Facades\DB::table('shops')->insertGetId([
+        $shopId = DB::table('shops')->insertGetId([
             'uuid' => (string) Str::uuid(),
             'user_id' => $this->creator->id, 'name' => 'Test Shop',
             'created_at' => now(), 'updated_at' => now(),
@@ -434,7 +569,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // MembershipPayment (use DB::table for membership since columns added via SQL dump)
-        $membershipId = \Illuminate\Support\Facades\DB::table('memberships')->insertGetId([
+        $membershipId = DB::table('memberships')->insertGetId([
             'uuid' => (string) Str::uuid(), 'user_id' => $this->creator->id, 'name' => 'Gold',
             'created_at' => now(), 'updated_at' => now(),
         ]);
@@ -491,7 +626,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // ---- Execute sync (simulates what webhook does) ----
-        $controller = app(\App\Http\Controllers\StripeWebhookController::class);
+        $controller = app(StripeWebhookController::class);
         // Use reflection to call private method
         $method = new \ReflectionMethod($controller, 'syncFinancialTransactionsByPaymentIntent');
         $method->setAccessible(true);
@@ -532,8 +667,8 @@ class PayoutAndStatusPropagationTest extends TestCase
 
     public function test_webhook_sync_propagates_disputed_to_all_tables(): void
     {
-        $sessionId = 'cs_disp_' . Str::random(10);
-        $piId = 'pi_disp_' . Str::random(10);
+        $sessionId = 'cs_disp_'.Str::random(10);
+        $piId = 'pi_disp_'.Str::random(10);
 
         Payment::create([
             'creator_id' => $this->creatorUuid,
@@ -543,7 +678,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         $tip = TipGoalsPayment::create([
-            'tip_goal_id' => $this->tipGoalId, 'user_id' => null, 
+            'tip_goal_id' => $this->tipGoalId, 'user_id' => null,
             'session_id' => $sessionId, 'currency' => 'GBP', 'amount' => 20, 'tax' => 0, 'status' => 'paid',
         ]);
 
@@ -563,7 +698,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // Simulate dispute sync
-        $controller = app(\App\Http\Controllers\StripeWebhookController::class);
+        $controller = app(StripeWebhookController::class);
         $method = new \ReflectionMethod($controller, 'syncFinancialTransactionsByPaymentIntent');
         $method->setAccessible(true);
         $method->invoke($controller, $piId, 'disputed');
@@ -588,7 +723,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // Succeeded payment with reserve
-        $session1 = 'cs_good_' . Str::random(10);
+        $session1 = 'cs_good_'.Str::random(10);
         Payment::create([
             'creator_id' => $this->creatorUuid, 'amount' => 1000,
             'reserve_amount_minor' => 100, 'currency' => 'gbp',
@@ -597,7 +732,7 @@ class PayoutAndStatusPropagationTest extends TestCase
         // Payments are only payout-eligible after the 7-day hold (created_at <= now-7d).
         Payment::where('stripe_session_id', $session1)->update(['created_at' => now()->subDays(10)]);
         $tip1 = TipGoalsPayment::create([
-            'tip_goal_id' => $this->tipGoalId, 'user_id' => null, 
+            'tip_goal_id' => $this->tipGoalId, 'user_id' => null,
             'session_id' => $session1, 'currency' => 'GBP', 'amount' => 10, 'tax' => 0, 'status' => 'paid',
         ]);
         FinancialTransaction::create([
@@ -608,12 +743,12 @@ class PayoutAndStatusPropagationTest extends TestCase
         ]);
 
         // Disputed payment — should NOT be in eligible payments
-        $session2 = 'cs_disp2_' . Str::random(10);
+        $session2 = 'cs_disp2_'.Str::random(10);
         Payment::create([
             'creator_id' => $this->creatorUuid, 'amount' => 5000,
             'reserve_amount_minor' => 500, 'currency' => 'gbp',
             'stripe_session_id' => $session2,
-            'stripe_payment_intent_id' => 'pi_disp2_' . Str::random(10),
+            'stripe_payment_intent_id' => 'pi_disp2_'.Str::random(10),
             'status' => 'disputed',
         ]);
 

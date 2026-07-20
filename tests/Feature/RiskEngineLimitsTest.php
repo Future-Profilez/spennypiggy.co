@@ -119,7 +119,7 @@ class RiskEngineLimitsTest extends TestCase
         $this->assertContains('MARK_REVIEW_HOLD', $riskResult['reason_codes'] ?? []);
     }
 
-    public function test_hourly_spend_limit_blocks_when_initiated_payments_exceed_cap(): void
+    public function test_hourly_spend_limit_blocks_when_in_flight_payments_exceed_cap(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-19 12:00:00'));
         $this->seedSettings([
@@ -151,7 +151,7 @@ class RiskEngineLimitsTest extends TestCase
             'risk_identity_id' => $identity->id,
             'amount' => 1500,
             'currency' => 'gbp',
-            'status' => 'initiated',
+            'status' => 'processing',
             'reason_codes' => [],
         ]);
 
@@ -201,7 +201,7 @@ class RiskEngineLimitsTest extends TestCase
             'risk_identity_id' => $identity->id,
             'amount' => 1500,
             'currency' => 'gbp',
-            'status' => 'initiated',
+            'status' => 'processing',
             'reason_codes' => [],
         ]);
 

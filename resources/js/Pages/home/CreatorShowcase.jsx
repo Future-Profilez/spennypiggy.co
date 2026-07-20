@@ -8,11 +8,11 @@ function ShowcaseCard({ c, cat }) {
     <div className="snap-center shrink-0 w-[260px] md:w-[316px]">
       <Link
         href={`/${c.username}`}
-        className="block group relative rounded-[28px] p-5 bg-gradient-to-b from-gray-900 to-[#0b0b0f] border-2 transition-transform duration-300 hover:-translate-y-1.5 text-white"
-        style={{ borderColor: cat.accent, boxShadow: `0 24px 50px -18px ${cat.glow}` }}
+        className="block group relative rounded-[24px] p-5 bg-[#0d0a16] border-2 transition-transform duration-300 hover:-translate-x-0.5 hover:-translate-y-0.5 text-white"
+        style={{ borderColor: cat.accent, boxShadow: `8px 8px 0 0 ${cat.accent}` }}
       >
         <span
-          className="absolute -top-3 left-5 z-10 px-3 py-1 rounded-full text-[11px] font-gulfs uppercase tracking-widest text-white border-2 border-black"
+          className="absolute -top-3 left-5 z-10 px-3 py-1 rounded-full text-[11px] font-gulfs uppercase tracking-widest text-black border-2 border-black"
           style={{ background: cat.accent }}
         >
           {cat.label}
@@ -26,7 +26,7 @@ function ShowcaseCard({ c, cat }) {
           nolink={true}
           imgclass="!rounded-[18px]"
         />
-        <div className="mt-4 flex items-center justify-between text-xs text-gray-400 border-t border-white/10 pt-3 group-hover:text-white transition-colors">
+        <div className="mt-4 flex items-center justify-between text-xs text-white/60 border-t border-white/10 pt-3 group-hover:text-white transition-colors">
           {cat.stat(c)}
         </div>
       </Link>
@@ -57,12 +57,11 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
       title: "On fire",
       label: "🔥 Trending",
       accent: "#FF007F",
-      glow: "rgba(255,0,127,0.45)",
       data: trending || [],
       stat: (c) => (
         <>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-[#FF007F]"></span>
             24h <span className="text-white font-bold">{c.clicks_24h}</span>
           </span>
           <span>7d <span className="text-white font-bold">{c.clicks_7d}</span></span>
@@ -73,13 +72,12 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
       key: "new",
       title: "Just joined",
       label: "✦ New & Verified",
-      accent: "#22c55e",
-      glow: "rgba(34,197,94,0.4)",
+      accent: "#E6EA7B",
       data: newVerified || [],
       stat: () => (
         <>
           <span className="font-gulfs uppercase tracking-widest text-[11px] text-white">Verified</span>
-          <span className="text-green-400">New this month</span>
+          <span className="text-[#E6EA7B]">New this month</span>
         </>
       ),
     },
@@ -87,15 +85,14 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
       key: "top",
       title: topEarnersLabel ? `Top ${topEarnersLabel}` : "Top earners",
       label: "★ Top Earners",
-      accent: "#8C52FF",
-      glow: "rgba(140,82,255,0.45)",
+      accent: "#05EFB8",
       data: topEarners || [],
       stat: (c) => (
         <>
           <span className="font-gulfs uppercase tracking-widest text-[11px] text-white">
             {c.is_number_one ? "#1 Star" : "Top earner"}
           </span>
-          {topEarnersLabel ? <span className="text-[#c9a6ff]">{topEarnersLabel}</span> : <span>Verified</span>}
+          {topEarnersLabel ? <span className="text-[#05EFB8]">{topEarnersLabel}</span> : <span>Verified</span>}
         </>
       ),
     },
@@ -104,11 +101,11 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
   if (groups.length === 0) return null;
 
   return (
-    <section id="act-proof" className="relative bg-transparent py-16 md:py-0">
+    <section id="act-proof" className="relative bg-transparent py-20 md:py-28 px-4">
       {/* ambient depth */}
       <div aria-hidden className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/3 left-[8%] w-96 h-96 bg-[#FF007F] rounded-full blur-[150px] opacity-15"></div>
-        <div className="absolute bottom-1/4 right-[10%] w-96 h-96 bg-[#8C52FF] rounded-full blur-[150px] opacity-15"></div>
+        <div className="absolute bottom-1/4 right-[10%] w-96 h-96 bg-[#05EFB8] rounded-full blur-[150px] opacity-15"></div>
       </div>
 
       <HorizontalPan className="relative z-10">
@@ -118,7 +115,7 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
           <h2 className="font-gulfs uppercase text-white text-4xl md:text-6xl leading-[0.9] tracking-tight mt-4">
             Creators already winning
           </h2>
-          <p className="font-poppins text-gray-300 text-base md:text-xl mt-5 max-w-md leading-relaxed">
+          <p className="font-poppins text-white/70 text-base md:text-xl mt-5 max-w-md leading-relaxed">
             Real people, real momentum. Trending right now, freshly verified, and this period's top earners.
           </p>
         </div>

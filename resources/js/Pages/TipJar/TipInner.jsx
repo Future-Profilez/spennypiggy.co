@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
@@ -28,7 +29,7 @@ export default function TipInner({classes, idd}) {
   const { data, setData } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
-    message: 'Unlock my supporter-only posts 💖',
+    message: 'Access to my supporter-only posts 💖',
     anonymous: 0,
     amount: amount,
     digital_waiver: false,
@@ -36,6 +37,7 @@ export default function TipInner({classes, idd}) {
     currency: user?.default_currency || 'GBP', // Default to creator currency
     cf_turnstile_response: "",
     device_id: deviceid,
+    payment_method: 'card',
   });
 
   const customAmountTag = (e) => {
@@ -415,7 +417,7 @@ export default function TipInner({classes, idd}) {
 
               {amount > 0 ? <>
                 <div className="mb-3"> 
-                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Unlock my supporter-only posts 💖'}
+                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Access to my supporter-only posts 💖'}
                   onChange={(e) => setData('message', e.target.value)}
                   placeholder="Write a short note." />
                 </div>
@@ -453,6 +455,15 @@ export default function TipInner({classes, idd}) {
                   </label>
                   <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
               </div>
+
+              <PaymentMethodSelector
+                  amount={parseFloat(data.amount) || 0}
+                  currency={user?.default_currency || 'GBP'}
+                  email={data.email || auth?.user?.email}
+                  value={data.payment_method}
+                  onChange={(m) => setData('payment_method', m)}
+                  className="mb-4"
+              />
 
               <CheckoutLegalTerms onAgreeChange={(checked) => {
                   setData('agree', checked);
@@ -587,12 +598,12 @@ export default function TipInner({classes, idd}) {
             You're purchasing access to this creator's content, not making a gift. Platform terms apply to fulfilment and refunds.
           </p>
           <div className="flex gap-3">
-            <button
+            {/* <button
               type="button"
               onClick={() => setShowConfirm(false)}
               className="w-full main-button b"
             > Cancel
-            </button>
+            </button> */}
             <button
               type="button"
               disabled={loading}

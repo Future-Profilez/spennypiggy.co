@@ -68,6 +68,8 @@ class StripeMetadataService
             if (!empty($additionalMetadata)) {
                 $metadata = array_merge($metadata, $additionalMetadata);
             }
+
+            $metadata = $this->pruneStripeMetadataPayload($metadata);
             
             // Update payment intent metadata
             $options = [];
@@ -124,6 +126,17 @@ class StripeMetadataService
         }
     }
     
+    private function shouldRetryPaymentIntentLookup(\Exception $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+        $stripeCode = method_exists($exception, 'getStripeCode') ? $exception->getStripeCode() : null;
+
+        return str_contains($message, 'no such payment_intent')
+            || str_contains($message, 'resource_missing')
+            || str_contains($message, 'not found')
+            || $stripeCode === 'resource_missing';
+    }
+
     /**
      * Update Stripe metadata for a deliverable record - NEW FLATTENED FORMAT
      * 
@@ -140,6 +153,13 @@ class StripeMetadataService
             ]);
             return false;
         }
+
+        Log::info('StripeMetadataService: Updating deliverable metadata', [
+            'deliverable_id' => $deliverable->id,
+            'payment_intent_id' => $deliverable->payment_intent_id,
+            'product_type' => $deliverable->product_type,
+            'additional_metadata_keys' => array_keys($additionalMetadata),
+        ]);
 
         // Determine potential connected account ID
         $stripeAccountId = null;
@@ -166,33 +186,42 @@ class StripeMetadataService
         if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
             try {
                 \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-                
+
                 $pi = null;
                 $targetAccount = null;
+                $lookupErrors = [];
+                $accountsToTry = array_values(array_filter([null, $stripeAccountId]));
 
-                // Try Platform first
-                try {
-                    $pi = \Stripe\PaymentIntent::retrieve(
-                        $deliverable->payment_intent_id,
-                        ['expand' => ['latest_charge']]
-                    );
-                } catch (\Exception $e) {
-                    // Not on Platform, try Connected Account if available
-                    if ($stripeAccountId) {
+                foreach ($accountsToTry as $accountCandidate) {
+                    for ($attempt = 1; $attempt <= 3; $attempt++) {
                         try {
+                            $retrieveOptions = ['expand' => ['latest_charge']];
+                            if ($accountCandidate) {
+                                $retrieveOptions['stripe_account'] = $accountCandidate;
+                            }
+
                             $pi = \Stripe\PaymentIntent::retrieve(
                                 $deliverable->payment_intent_id,
-                                ['expand' => ['latest_charge']],
-                                ['stripe_account' => $stripeAccountId]
+                                $retrieveOptions
                             );
-                            $targetAccount = $stripeAccountId;
-                        } catch (\Exception $inner) {
-                            Log::warning("PI not found on Platform or Connected Account: " . $inner->getMessage());
-                            throw $inner;
+                            $targetAccount = $accountCandidate;
+                            break 2;
+                        } catch (\Exception $e) {
+                            $lookupErrors[] = [
+                                'account_id' => $accountCandidate,
+                                'attempt' => $attempt,
+                                'error' => $e->getMessage(),
+                            ];
+                            if (!$this->shouldRetryPaymentIntentLookup($e) || $attempt === 3) {
+                                continue;
+                            }
+                            usleep(500000 * $attempt);
                         }
-                    } else {
-                         throw $e;
                     }
+                }
+
+                if (!$pi) {
+                    throw new \RuntimeException('Unable to retrieve payment intent after retries: ' . json_encode($lookupErrors));
                 }
 
                 $chargeId = is_object($pi->latest_charge)
@@ -200,24 +229,36 @@ class StripeMetadataService
                     : ($pi->latest_charge ?? null);
 
                 if (!$chargeId) {
-                    try {
-                        $opts = ['payment_intent' => $deliverable->payment_intent_id, 'limit' => 1];
-                        if ($targetAccount) {
-                            $opts['stripe_account'] = $targetAccount;
-                        }
-                        $charges = \Stripe\Charge::all($opts);
-                        if (!empty($charges->data)) {
-                            $chargeId = $charges->data[0]->id;
-                        }
-                    } catch (\Exception $e) {
-                        Log::warning('StripeMetadataService: Fallback charge lookup failed', [
-                            'payment_intent_id' => $deliverable->payment_intent_id,
-                            'error' => $e->getMessage()
-                        ]);
+                    $fallbackErrors = [];
+                    $chargeLookupOptions = ['payment_intent' => $deliverable->payment_intent_id, 'limit' => 1];
+                    if ($targetAccount) {
+                        $chargeLookupOptions['stripe_account'] = $targetAccount;
                     }
+
+                    for ($attempt = 1; $attempt <= 3; $attempt++) {
+                        try {
+                            $charges = \Stripe\Charge::all($chargeLookupOptions);
+                            if (!empty($charges->data)) {
+                                $chargeId = $charges->data[0]->id;
+                                break;
+                            }
+                        } catch (\Exception $e) {
+                            $fallbackErrors[] = ['attempt' => $attempt, 'error' => $e->getMessage()];
+                            if ($attempt === 3) {
+                                Log::warning('StripeMetadataService: Fallback charge lookup failed', [
+                                    'payment_intent_id' => $deliverable->payment_intent_id,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                            usleep(500000 * $attempt);
+                        }
+                    }
+
                     if (!$chargeId) {
                         Log::warning('StripeMetadataService: No latest charge found for task deliverable', [
-                            'payment_intent_id' => $deliverable->payment_intent_id
+                            'payment_intent_id' => $deliverable->payment_intent_id,
+                            'target_account' => $targetAccount,
+                            'errors' => $fallbackErrors,
                         ]);
                         return false;
                     }
@@ -244,6 +285,8 @@ class StripeMetadataService
                     $metadata['task_uuid']
                 );
 
+                $metadata = $this->pruneStripeMetadataPayload($metadata);
+
                 $updateOpts = ['metadata' => $metadata];
                 if ($targetAccount) {
                     $updateOpts = ['metadata' => $metadata, 'stripe_account' => $targetAccount];
@@ -256,13 +299,15 @@ class StripeMetadataService
                 Log::info('StripeMetadataService: Updated latest charge metadata for task deliverable', [
                     'charge_id' => $chargeId,
                     'payment_intent_id' => $deliverable->payment_intent_id,
-                    'target_account' => $targetAccount
+                    'target_account' => $targetAccount,
+                    'metadata_keys' => array_keys($metadata),
                 ]);
                 return true;
             } catch (\Exception $e) {
                 Log::error('StripeMetadataService: Failed to update latest charge metadata for task deliverable', [
                     'payment_intent_id' => $deliverable->payment_intent_id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'stripe_account' => $stripeAccountId,
                 ]);
                 return false;
             }
@@ -336,6 +381,78 @@ class StripeMetadataService
         return $deliverable->product_type === 'support_payment' 
             && !empty($deliverable->certificate_url)
             && $deliverable->status === 'delivered';
+    }
+
+    private function pruneStripeMetadataPayload(array $metadata): array
+    {
+        $metadata = array_filter($metadata, static function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        $metadata = array_map(static function ($value) {
+            if (is_string($value)) {
+                return substr($value, 0, 500);
+            }
+
+            return $value;
+        }, $metadata);
+
+        if (count($metadata) <= 45) {
+            return $metadata;
+        }
+
+        $priorityKeys = [
+            'updated_at',
+            'product_type',
+            'transaction_amount',
+            'payment_currency',
+            'buyer_name',
+            'buyer_email',
+            'creator_name',
+            'creator_profile_url',
+            'gifter_name',
+            'gifter_profile_url',
+            'transfer_amount',
+            'transfer_status',
+            'payment_status',
+            'current_status_of_order',
+            'task_type',
+            'purpose',
+            'payment_type',
+            'delivery_status',
+            'payment_date',
+            'task_url',
+            'sla_hours',
+            'sla_timeline',
+            'value_summary',
+            'payment_confirmed_at',
+            'confirmation_source',
+            'delivery_proof',
+            'delivery_date',
+            'content_delivery_status',
+            'certificate',
+            'certificate_url',
+            'deliverable_uuid',
+        ];
+
+        $kept = [];
+        foreach ($priorityKeys as $key) {
+            if (array_key_exists($key, $metadata)) {
+                $kept[$key] = $metadata[$key];
+            }
+        }
+
+        foreach ($metadata as $key => $value) {
+            if (count($kept) >= 45) {
+                break;
+            }
+
+            if (!array_key_exists($key, $kept)) {
+                $kept[$key] = $value;
+            }
+        }
+
+        return array_slice($kept, 0, 45, true);
     }
     
     /**
