@@ -20,6 +20,7 @@ use App\Models\StripePaymentItems;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\UkTaxSetting;
+use App\Services\CreatorOpportunityService;
 use App\Services\FinancialService;
 use App\Services\Risk\PayoutService;
 use App\Services\Risk\ReservePolicy;
@@ -1344,6 +1345,24 @@ class CreatorFinancialController extends Controller
             'profile' => $profile,
             'user' => $user,
         ]);
+    }
+
+    /**
+     * Revenue Opportunity Centre — who a creator's best supporters are, who is
+     * drifting, and what to do next. Read-only; every suggestion is advisory.
+     */
+    public function opportunities(Request $request)
+    {
+        $user = Auth::user();
+        $displayCurrency = strtoupper($request->cookie('currency', $user->default_currency ?? 'GBP'));
+
+        $data = app(CreatorOpportunityService::class)->for($user, $displayCurrency);
+
+        if ($request->wantsJson()) {
+            return response()->json($data);
+        }
+
+        return Inertia::render('Creator/Financial/Opportunities', $data);
     }
 
     /**

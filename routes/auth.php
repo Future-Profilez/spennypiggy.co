@@ -813,6 +813,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/export/csv', [\App\Http\Controllers\CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
             Route::get('/statement', [\App\Http\Controllers\CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
             Route::get('/statement/download', [\App\Http\Controllers\CreatorFinancialController::class, 'downloadStatement'])->name('statement.download');
+            Route::get('/opportunities', [\App\Http\Controllers\CreatorFinancialController::class, 'opportunities'])->name('opportunities');
             Route::get('/certificate', [\App\Http\Controllers\CreatorFinancialController::class, 'certificate'])->name('certificate');
             Route::get('/fast-start-bonus', [\App\Http\Controllers\CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
 
