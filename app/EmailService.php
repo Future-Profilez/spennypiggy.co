@@ -2,16 +2,17 @@
 
 namespace App;
 
-use App\Mail\Checkout;
-use App\Mail\CheckoutToUser;
-use App\Mail\ForgotPassEmail;
-use App\Mail\MemberMail;
-use App\Mail\MonthlySubscriptionSuccessMail;
-use App\Mail\MonthlySubscriptionFailedMail;
-use App\Jobs\MonthlySubscriptionFailedJobs;
+use App\Http\Controllers\EmailPreferenceController;
 use App\Mail\BillMail;
 use App\Mail\BillMailToUser;
+use App\Mail\Checkout;
+use App\Mail\CheckoutToUser;
+use App\Mail\FeatureSuggestionMail;
+use App\Mail\ForgotPassEmail;
+use App\Mail\MemberMail;
 use App\Mail\MemberMailToUser;
+use App\Mail\MonthlySubscriptionFailedMail;
+use App\Mail\MonthlySubscriptionSuccessMail;
 use App\Mail\RenewMail;
 use App\Mail\SendAdminIntroMail;
 use App\Mail\SendAvatarRestrictionMail;
@@ -31,10 +32,10 @@ use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
 use App\Mail\WishSubscriptionMailToUsers;
-use App\Mail\FeatureSuggestionMail;
 use App\Models\AppService;
+use App\Models\Deliverable;
+use App\Models\Shop;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -43,11 +44,10 @@ use Symfony\Component\Mailer\Exception\TransportException;
 
 class EmailService
 {
-
-
     /**
      * Send welcome email to new users
-     * @param array $data Email Dynamic Data
+     *
+     * @param  array  $data  Email Dynamic Data
      * @return void
      */
     public static function welcome($data)
@@ -100,11 +100,11 @@ class EmailService
             $creator = $data->shop?->user;
 
             // Manual fallback if relationship loading failed
-            if (!$creator && $data->shop_id) {
-                $shop = \App\Models\Shop::withTrashed()->find($data->shop_id);
+            if (! $creator && $data->shop_id) {
+                $shop = Shop::withTrashed()->find($data->shop_id);
                 $creator = $shop?->user;
-                if (!$creator && $shop?->user_id) {
-                    $creator = \App\Models\User::find($shop->user_id);
+                if (! $creator && $shop?->user_id) {
+                    $creator = User::find($shop->user_id);
                 }
             }
 
@@ -114,19 +114,20 @@ class EmailService
                 'shop_payment_id' => $data->id ?? null,
                 'email' => $toEmail ?? 'NOT_FOUND',
                 'shop_id' => $data->shop_id ?? 'NOT_FOUND',
-                'amount' => $amountUserPay
+                'amount' => $amountUserPay,
             ]);
 
-            if (!$toEmail) {
+            if (! $toEmail) {
                 Log::warning('EmailService::shopBuyed - Creator email not found. Skipping email.', [
-                    'shop_payment_id' => $data->id ?? null
+                    'shop_payment_id' => $data->id ?? null,
                 ]);
+
                 return;
             }
 
             $cleanAmount = (float) preg_replace('/[^\d.]/', '', $amountUserPay);
 
-            $amountWithSymbol = $symbol . number_format($cleanAmount, 2);
+            $amountWithSymbol = $symbol.number_format($cleanAmount, 2);
             Mail::to($toEmail)->send(new ShopBuyedMail($data, $anon, $amountWithSymbol));
 
             Log::info('EmailService::shopBuyed - Creator email sent successfully', ['email' => $toEmail]);
@@ -143,7 +144,7 @@ class EmailService
     {
         Log::info('EmailService::shopBuyedUser called', [
             'shop_payment_id' => $data->id ?? null,
-            'currency' => $curr
+            'currency' => $curr,
         ]);
 
         try {
@@ -153,16 +154,17 @@ class EmailService
 
             $toEmail = $data->user?->email ?? $data->email;
 
-            if (!$toEmail) {
+            if (! $toEmail) {
                 Log::warning('EmailService::shopBuyedUser skipped: missing buyer email', [
                     'shop_payment_id' => $data->id ?? null,
                 ]);
+
                 return;
             }
 
-            if (!$deliverable) {
+            if (! $deliverable) {
                 Log::info('EmailService::shopBuyedUser: deliverable missing, attempting to resolve by session_id', ['session_id' => $data->session_id]);
-                $deliverable = \App\Models\Deliverable::where('session_id', $data->session_id)
+                $deliverable = Deliverable::where('session_id', $data->session_id)
                     ->where('product_type', 'shop_item')
                     ->first();
             }
@@ -186,7 +188,7 @@ class EmailService
             'session_id' => $data->session_id ?? 'null',
             'currency' => $curr,
             'user_exists' => isset($data->user) ? 'yes' : 'no',
-            'guest_email' => $data->guest_email ?? 'null'
+            'guest_email' => $data->guest_email ?? 'null',
         ]);
 
         // Determine recipient (logged-in user or guest email)
@@ -199,7 +201,7 @@ class EmailService
         if (isset($data->user)) {
             Log::info('EmailService::checkOutToUser - Using authenticated user for recipient', [
                 'user_id' => $data->user->id ?? 'null',
-                'user_email' => $data->user->email ?? 'null'
+                'user_email' => $data->user->email ?? 'null',
             ]);
             $recipientEmail = $data->user->email ?? null;
             $recipientName = $data->user->name ?? null;
@@ -208,7 +210,7 @@ class EmailService
             $recipientUuid = $data->user->uuid ?? null;
         } else {
             Log::info('EmailService::checkOutToUser - Falling back to guest email', [
-                'guest_email' => $data->guest_email ?? 'null'
+                'guest_email' => $data->guest_email ?? 'null',
             ]);
             $recipientEmail = $data->guest_email ?? null;
             // Attempt to populate optional fields from stored name if available
@@ -217,6 +219,7 @@ class EmailService
 
         if (empty($recipientEmail)) {
             Log::error('EmailService::checkOutToUser - No recipient email available');
+
             return; // Cannot proceed without a recipient
         }
 
@@ -237,8 +240,8 @@ class EmailService
                     'driver' => config('mail.default'),
                     'host' => config('mail.mailers.smtp.host'),
                     'from_address' => config('mail.from.address'),
-                    'from_name' => config('mail.from.name')
-                ]
+                    'from_name' => config('mail.from.name'),
+                ],
             ]);
 
             // Test email configuration first
@@ -247,7 +250,7 @@ class EmailService
                 Log::info('EmailService::checkOutToUser - Mail facade initialized successfully');
             } catch (\Exception $e) {
                 Log::error('EmailService::checkOutToUser - Mail facade initialization failed', [
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
                 throw $e;
             }
@@ -261,21 +264,21 @@ class EmailService
             } catch (\Throwable $e) {
                 Log::error('EmailService::checkOutToUser - Mail send failed', [
                     'error' => $e->getMessage(),
-                    'to' => $emailData['to']
+                    'to' => $emailData['to'],
                 ]);
                 throw $e;
             }
 
             Log::info('EmailService::checkOutToUser - Email process completed successfully', [
                 'to' => $emailData['to'],
-                'payment_id' => $data->id
+                'payment_id' => $data->id,
             ]);
         } catch (TransportException $e) {
             Log::error('EmailService::checkOutToUser - TransportException', [
                 'error' => $e->getMessage(),
                 'payment_id' => $data->id ?? 'null',
                 'to' => $emailData['to'] ?? 'null',
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             AppService::setStatus('email', 0, $e->getMessage());
             throw $e; // Re-throw to ensure job fails if email fails
@@ -286,7 +289,7 @@ class EmailService
                 'to' => $emailData['to'] ?? 'null',
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e; // Re-throw to ensure job fails if email fails
         }
@@ -322,8 +325,6 @@ class EmailService
         }
     }
 
-
-
     // monthly subscribed failed mail
     public static function monthlySubscribedFailedMail($email, $sub)
     {
@@ -333,7 +334,6 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
-
 
     public static function verifyUserEmail($data)
     {
@@ -360,7 +360,7 @@ class EmailService
         try {
             Log::info('EmailService::thankyouUser - Starting to send thank you email', [
                 'payment_id' => $payment->id ?? 'null',
-                'user_id' => $payment->payment->user->id ?? 'null'
+                'user_id' => $payment->payment->user->id ?? 'null',
             ]);
 
             $emailData = [
@@ -374,19 +374,19 @@ class EmailService
 
             Log::info('EmailService::thankyouUser - Email data prepared', [
                 'to' => $emailData['to'],
-                'name' => $emailData['name']
+                'name' => $emailData['name'],
             ]);
 
             Mail::to($emailData['to'])->send(new ThankyouUser($payment));
 
             Log::info('EmailService::thankyouUser - Email sent successfully', [
                 'to' => $emailData['to'],
-                'payment_id' => $payment->id ?? 'null'
+                'payment_id' => $payment->id ?? 'null',
             ]);
 
             // Create deliverable record for email tracking
             try {
-                \App\Models\Deliverable::create([
+                Deliverable::create([
                     'uuid' => Str::uuid(),
                     'product_id' => $payment->payment->stripe_product_id ?? 'thank_you_email',
                     'price_id' => $payment->payment->stripe_price_id ?? null,
@@ -400,55 +400,50 @@ class EmailService
                     'deliverable_url' => null,
                     'metadata' => json_encode([
                         'email_type' => 'thank_you',
-                        'payment_id' => $payment->payment->id ?? null
+                        'payment_id' => $payment->payment->id ?? null,
                     ]),
                     'status' => 'delivered',
-                    'delivered_at' => now()
+                    'delivered_at' => now(),
                 ]);
 
                 Log::info('EmailService::thankyouUser - Deliverable record created');
             } catch (\Exception $e) {
                 Log::error('EmailService::thankyouUser - Failed to create deliverable record', [
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         } catch (TransportException $e) {
             Log::error('EmailService::thankyouUser - Transport Exception', [
                 'error' => $e->getMessage(),
-                'to' => $emailData['to'] ?? 'null'
+                'to' => $emailData['to'] ?? 'null',
             ]);
             AppService::setStatus('email', 0, $e->getMessage());
         } catch (\Exception $e) {
             Log::error('EmailService::thankyouUser - General Exception', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
-                'file' => $e->getFile()
+                'file' => $e->getFile(),
             ]);
         }
     }
-
-
 
     public static function sendRenewMail($array, $type, $module)
     {
         try {
             if (empty($array['email'])) {
-                throw new \InvalidArgumentException("Email address is missing.");
+                throw new \InvalidArgumentException('Email address is missing.');
             }
-            Mail::to($array['email'])->send(new \App\Mail\RenewMail($array, $type, $module));
+            Mail::to($array['email'])->send(new RenewMail($array, $type, $module));
         } catch (\InvalidArgumentException $e) {
-            Log::error('🚫 InvalidArgumentException: ' . $e->getMessage());
-        } catch (\Symfony\Component\Mailer\Exception\TransportException $e) {
-            Log::error('🚨 TransportException: ' . $e->getMessage());
+            Log::error('🚫 InvalidArgumentException: '.$e->getMessage());
+        } catch (TransportException $e) {
+            Log::error('🚨 TransportException: '.$e->getMessage());
         } catch (\Exception $e) {
-            Log::error('🔥 Unexpected error in sendRenewMail: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            Log::error('🔥 Unexpected error in sendRenewMail: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
-
-
-
 
     public static function sendSubscribedMail($sub, $creatorFinalAmount)
     {
@@ -456,6 +451,7 @@ class EmailService
             $toEmail = $sub->wish_item?->user?->email;
             if (empty($toEmail)) {
                 Log::warning('EmailService::sendSubscribedMail skipped: missing creator email');
+
                 return;
             }
             Mail::to($toEmail)->send(new SubsMail($sub, $creatorFinalAmount));
@@ -463,7 +459,6 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
-
 
     // public static function sendMembershipMail($data, $amountWithCurr)
     // {
@@ -480,6 +475,7 @@ class EmailService
             $toEmail = $mem->membership?->user?->email;
             if (empty($toEmail)) {
                 Log::warning('EmailService::sendMembershipMail skipped: missing creator email');
+
                 return;
             }
             Mail::to($toEmail)->send(new MemberMail($mem, $amountWithCurr));
@@ -557,6 +553,7 @@ class EmailService
 
             if (empty($recipientEmail)) {
                 Log::error('EmailService::sendSupportPaymentToUser - No recipient email available');
+
                 return;
             }
 
@@ -564,7 +561,7 @@ class EmailService
                 'payment_id' => $paymentData->id,
                 'to' => $recipientEmail,
                 'amount' => $paymentData->amount_subtotal,
-                'currency' => $currency
+                'currency' => $currency,
             ]);
 
             // Create currency symbol from currency code
@@ -573,25 +570,25 @@ class EmailService
                 'GBP' => '£',
                 'EUR' => '€',
             ];
-            $symbol = $currencySymbols[strtoupper($currency)] ?? strtoupper($currency) . ' ';
+            $symbol = $currencySymbols[strtoupper($currency)] ?? strtoupper($currency).' ';
 
-            Mail::to($recipientEmail)->send(new \App\Mail\SupportPaymentToUser($paymentData, $symbol));
+            Mail::to($recipientEmail)->send(new SupportPaymentToUser($paymentData, $symbol));
 
             Log::info('EmailService::sendSupportPaymentToUser - Email sent successfully', [
                 'to' => $recipientEmail,
-                'payment_id' => $paymentData->id
+                'payment_id' => $paymentData->id,
             ]);
         } catch (TransportException $e) {
             Log::error('EmailService::sendSupportPaymentToUser - TransportException', [
                 'error' => $e->getMessage(),
-                'payment_id' => $paymentData->id ?? 'null'
+                'payment_id' => $paymentData->id ?? 'null',
             ]);
             AppService::setStatus('email', 0, $e->getMessage());
             throw $e;
         } catch (\Exception $e) {
             Log::error('EmailService::sendSupportPaymentToUser - General Exception', [
                 'error' => $e->getMessage(),
-                'payment_id' => $paymentData->id ?? 'null'
+                'payment_id' => $paymentData->id ?? 'null',
             ]);
             throw $e;
         }
@@ -615,11 +612,10 @@ class EmailService
         }
     }
 
-
     public static function sendAvatarRestrictionMail($email)
     {
         try {
-            Mail::to($email)->send(new SendAvatarRestrictionMail());
+            Mail::to($email)->send(new SendAvatarRestrictionMail);
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -628,7 +624,7 @@ class EmailService
     public static function sendCoverRestrictionMail($email)
     {
         try {
-            Mail::to($email)->send(new SendCoverRestrictionMail());
+            Mail::to($email)->send(new SendCoverRestrictionMail);
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -641,7 +637,7 @@ class EmailService
             if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
                 Mail::to('prem@futureprofilez.com')->send(new SendAdminIntroMail($intro));
             } elseif ($appUrl == 'https://spennypiggy.co') {
-                Mail::to("jack@spennypiggy.co")->send(new SendAdminIntroMail($intro));
+                Mail::to('jack@spennypiggy.co')->send(new SendAdminIntroMail($intro));
             }
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
@@ -655,7 +651,7 @@ class EmailService
             if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
                 Mail::to('prem@futureprofilez.com')->send(new ThankYouMailAdmin($pay));
             } elseif ($appUrl == 'https://spennypiggy.co') {
-                Mail::to("jack@spennypiggy.co")->send(new ThankYouMailAdmin($pay));
+                Mail::to('jack@spennypiggy.co')->send(new ThankYouMailAdmin($pay));
             }
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
@@ -677,7 +673,7 @@ class EmailService
             'bill_payment_id' => $data->id ?? 'null',
             'bill_id' => $data->bill->id ?? 'null',
             'currency' => $curr,
-            'recipient_email' => $data->guest_email ?? 'null'
+            'recipient_email' => $data->guest_email ?? 'null',
         ]);
 
         try {
@@ -686,12 +682,12 @@ class EmailService
 
             Log::info('EmailService::billContentDelivery sent successfully', [
                 'bill_payment_id' => $data->id,
-                'recipient_email' => $data->guest_email
+                'recipient_email' => $data->guest_email,
             ]);
         } catch (TransportException $e) {
             Log::error('EmailService::billContentDelivery failed', [
                 'bill_payment_id' => $data->id ?? 'null',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -704,30 +700,32 @@ class EmailService
             Mail::to($emails)->send(new FeatureSuggestionMail($data));
 
             Log::info('EmailService::featureSuggestion - Email sent successfully', [
-                'emails' => $emails
+                'emails' => $emails,
             ]);
         } catch (\Exception $e) {
             Log::error('EmailService::featureSuggestion - Failed to send email', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
 
     /**
      * Send marketing email - respects user's marketing email preferences
-     * @param User $user The user to send email to
-     * @param Mailable $mailable The email to send
+     *
+     * @param  User  $user  The user to send email to
+     * @param  Mailable  $mailable  The email to send
      * @return void
      */
     public static function sendMarketingEmail(User $user, Mailable $mailable)
     {
         try {
             // Check if user has marketing emails enabled
-            if (!$user->marketing_emails_enabled) {
+            if (! $user->marketing_emails_enabled) {
                 Log::info('EmailService::sendMarketingEmail - Skipping marketing email for user '.$user->id.' (marketing emails disabled)', [
                     'user_id' => $user->id,
-                    'email' => $user->email
+                    'email' => $user->email,
                 ]);
+
                 return;
             }
 
@@ -740,13 +738,13 @@ class EmailService
 
             Log::info('EmailService::sendMarketingEmail - Marketing email sent successfully', [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
             ]);
         } catch (TransportException $e) {
             Log::error('EmailService::sendMarketingEmail - TransportException', [
                 'user_id' => $user->id ?? 'null',
                 'email' => $user->email ?? 'null',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             AppService::setStatus('email', 0, $e->getMessage());
             throw $e;
@@ -754,7 +752,61 @@ class EmailService
             Log::error('EmailService::sendMarketingEmail - General Exception', [
                 'user_id' => $user->id ?? 'null',
                 'email' => $user->email ?? 'null',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send a non-marketing communication the user can still opt out of —
+     * product announcements, creator updates, reminder emails.
+     *
+     * Kept separate from sendMarketingEmail so turning off promotions does not
+     * silence product announcements (and the reverse). Security, legal and
+     * transactional mail must never route through here: it has no opt-out and
+     * should use Mail::to() directly.
+     *
+     * @param  string  $category  a column from EmailPreferenceController::CATEGORIES
+     */
+    public static function sendCategoryEmail(User $user, Mailable $mailable, string $category)
+    {
+        if (! in_array($category, EmailPreferenceController::CATEGORIES, true)) {
+            Log::warning('EmailService::sendCategoryEmail - unknown category, refusing to send', [
+                'user_id' => $user->id ?? null,
+                'category' => $category,
+            ]);
+
+            return;
+        }
+
+        // Absent column (pre-migration row) is treated as opted in, matching the
+        // column default.
+        if (! ($user->{$category} ?? true)) {
+            Log::info('EmailService::sendCategoryEmail - skipped, user opted out', [
+                'user_id' => $user->id,
+                'category' => $category,
+            ]);
+
+            return;
+        }
+
+        try {
+            if ($mailable instanceof \Illuminate\Mail\Mailable) {
+                $mailable->with(['user' => $user]);
+            }
+
+            Mail::to($user->email)->send($mailable);
+
+            Log::info('EmailService::sendCategoryEmail - sent', [
+                'user_id' => $user->id,
+                'category' => $category,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('EmailService::sendCategoryEmail - failed', [
+                'user_id' => $user->id ?? null,
+                'category' => $category,
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }

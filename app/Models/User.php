@@ -60,6 +60,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'marketing_unsubscribed_at',
         'push_notifications_enabled',
         'reactivation_emails_enabled',
+        'product_updates_enabled',
+        'creator_updates_enabled',
         'date_of_birth',
         'utm_source',
         'utm_medium',
@@ -89,6 +91,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'marketing_unsubscribed_at' => 'datetime',
         'push_notifications_enabled' => 'boolean',
         'reactivation_emails_enabled' => 'boolean',
+        'product_updates_enabled' => 'boolean',
+        'creator_updates_enabled' => 'boolean',
         'date_of_birth' => 'date',
     ];
 
