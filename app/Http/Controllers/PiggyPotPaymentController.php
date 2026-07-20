@@ -601,7 +601,8 @@ class PiggyPotPaymentController extends Controller
             // Delayed-settlement bank methods (SEPA/ACH): session completes with
             // payment_status 'unpaid' while the debit clears — fulfilment runs
             // via the async_payment_succeeded webhook.
-            if ($pay->fee_profile === 'bank' && in_array($session->payment_status, ['unpaid', 'processing'])) {
+            if (! config('payments.instant_fulfilment', true)
+                && $pay->fee_profile === 'bank' && in_array($session->payment_status, ['unpaid', 'processing'])) {
                 $pay->status = 'processing';
                 $pay->save();
 

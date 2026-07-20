@@ -187,6 +187,9 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess }) {
                 backup_code: bCode || "",
                 email: user.email,
                 password: user.password,
+                // Persistent login: forward the Remember-me choice from the login form
+                // so 2FA users get the remember cookie too (verify2FA reads boolean('remember')).
+                remember: !!user.remember,
             })
             .then((resp) => {
                 setLoading(false);

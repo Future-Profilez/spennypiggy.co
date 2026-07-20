@@ -3866,7 +3866,8 @@ class StripeController extends Controller
             $tip_pay->save();
             // Delayed-settlement bank methods (SEPA/ACH): fulfilment runs via
             // the async_payment_succeeded webhook once the debit clears.
-            if ($tip_pay->fee_profile === 'bank' && $session->payment_status === 'unpaid') {
+            if (! config('payments.instant_fulfilment', true)
+                && $tip_pay->fee_profile === 'bank' && $session->payment_status === 'unpaid') {
                 $tip_pay->status = 'processing';
                 $tip_pay->save();
 

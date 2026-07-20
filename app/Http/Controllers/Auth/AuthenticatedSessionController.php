@@ -7,33 +7,20 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Verify2FARequest;
 use App\Jobs\SendContractMail;
 use App\Models\AuthRedirect;
-use App\Models\BillPayment;
-use App\Models\Bills;
 use App\Models\FanContract;
-use App\Models\GifterCardVerification;
-use App\Models\Membership;
-use App\Models\MembershipPayment;
-use App\Models\Notification;
+use App\Models\FounderBonus;
+use App\Models\MonthlyCharge;
 use App\Models\Post;
 use App\Models\RyeProduct;
-use App\Models\Shop;
 use App\Models\SocialLinks;
-use App\Models\StripePaymentDetail;
-use App\Models\TipGoalsPayment;
-use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserBackupCode;
+use App\Models\UserBlock;
 use App\Models\UserCategory;
-use App\Models\UserIntro;
 use App\Models\WishCategory;
 use App\Models\WishItem;
-use App\Models\WishItemSubscription;
-use App\Models\FounderBonus;
-use App\Models\Deliverable;
-use App\Models\MonthlyCharge;
-use App\Models\UserBlock;
-use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
+use App\Services\UserProfileService;
 use App\StripeControl;
 use App\TwitterAuthService;
 use Carbon\Carbon;
@@ -58,9 +45,10 @@ use Uploadcare\Uploader\Uploader;
 class AuthenticatedSessionController extends Controller
 {
     protected $google2FA;
+
     protected $profileService;
 
-    public function __construct(Google2FA $google2FA, \App\Services\UserProfileService $profileService)
+    public function __construct(Google2FA $google2FA, UserProfileService $profileService)
     {
         $this->google2FA = $google2FA;
         $this->profileService = $profileService;
@@ -88,9 +76,10 @@ class AuthenticatedSessionController extends Controller
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
+
             return response()->json([
                 'status' => false,
-                'message' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.'
+                'message' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.',
             ], 403);
         }
         $request->session()->regenerate();
@@ -100,7 +89,7 @@ class AuthenticatedSessionController extends Controller
             'status' => true,
             'message' => 'Logged in successfully',
             'user' => $user,
-            'redirect_url' => $this->getRedirectUrl($user)
+            'redirect_url' => $this->getRedirectUrl($user),
         ]);
     }
 
@@ -181,7 +170,6 @@ class AuthenticatedSessionController extends Controller
     //     return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
     // }
 
-
     public function verifyUser(Request $request)
     {
         $validated = $request->validate([
@@ -197,23 +185,23 @@ class AuthenticatedSessionController extends Controller
         if (empty($user)) {
             return response()->json([
                 'status' => false,
-                'msg' => "No account exist with this email."
+                'msg' => 'No account exist with this email.',
             ]);
         }
 
         if (method_exists($user, 'trashed') && $user->trashed()) {
             return response()->json([
                 'status' => false,
-                'msg' => "This account is deactivated. Please contact support."
+                'msg' => 'This account is deactivated. Please contact support.',
             ]);
         }
 
         $is_2fa = false;
         if ($user->is_2fa) {
-            if (!Hash::check($validated['password'], $user->password)) {
+            if (! Hash::check($validated['password'], $user->password)) {
                 return response()->json([
                     'status' => false,
-                    'msg' => "Either email or password is wrong."
+                    'msg' => 'Either email or password is wrong.',
                 ]);
             }
             $is_2fa = true;
@@ -221,7 +209,7 @@ class AuthenticatedSessionController extends Controller
 
         return response()->json([
             'status' => true,
-            'is_2fa' => $is_2fa
+            'is_2fa' => $is_2fa,
         ]);
     }
 
@@ -233,7 +221,7 @@ class AuthenticatedSessionController extends Controller
         Log::info('AuthSession: Logout Triggered', [
             'user_id' => Auth::id(),
             'session_id' => $request->session()->getId(),
-            'ip' => $request->ip()
+            'ip' => $request->ip(),
         ]);
 
         Auth::guard('web')->logout();
@@ -241,7 +229,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect(route("login"))->with("success", "Logged out successfully.");
+        return redirect(route('login'))->with('success', 'Logged out successfully.');
     }
 
     /**
@@ -254,7 +242,7 @@ class AuthenticatedSessionController extends Controller
     {
         $forceRefresh = request()->has('refresh');
         if ($forceRefresh && Auth::check()) {
-            $targetUser = \App\Models\User::where('username', $username)->first();
+            $targetUser = User::where('username', $username)->first();
             if ($targetUser && (string) Auth::id() === (string) $targetUser->id) {
                 $this->profileService->clearUserCaches($username, $targetUser->id);
             }
@@ -291,7 +279,7 @@ class AuthenticatedSessionController extends Controller
                 ->newestFirst()
                 ->first();
 
-            if (!$subscription) {
+            if (! $subscription) {
                 $subscription = MonthlyCharge::where('user_id', $user->id)
                     ->newestFirst()
                     ->first();
@@ -329,12 +317,12 @@ class AuthenticatedSessionController extends Controller
 
             // Deferred stripe API calls for non-owners using Inertia Lazy
             // Only do it synchronously if viewing OWN profile
-            if ($page === 'about' && $user->role == 1 && !empty($user->account_id) && $isOwner) {
+            if ($page === 'about' && $user->role == 1 && ! empty($user->account_id) && $isOwner) {
                 [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
             }
             // Fetch social links using eager loaded relation or cache
             $sociallinks = $user->social_links;
-            if ($sociallinks && $sociallinks->status != 1 && (!Auth::check() || Auth::id() !== $user->id)) {
+            if ($sociallinks && $sociallinks->status != 1 && (! Auth::check() || Auth::id() !== $user->id)) {
                 $sociallinks = null;
             }
             if ($page == 'about') {
@@ -384,7 +372,7 @@ class AuthenticatedSessionController extends Controller
                 'user' => $user,
                 'itemid' => request()->query('item') ?? false,
                 'card_capabilities' => $cardCapabilities,
-                'has_stripe_account' => !empty($user->account_id),
+                'has_stripe_account' => ! empty($user->account_id),
                 'isNeedToUpgrade' => $isNeedToUpgrade,
                 'stripe_requirements' => $stripeRequirements,
                 'migration_status' => $migrationStatus,
@@ -413,6 +401,7 @@ class AuthenticatedSessionController extends Controller
         }
         $pageName = $data['__page'] ?? 'Dashboard';
         unset($data['__page']);
+
         return Inertia::render($pageName, $data);
     }
 
@@ -432,9 +421,6 @@ class AuthenticatedSessionController extends Controller
         });
     }
 
-
-
-
     /**
      * Get Stripe account capabilities with caching
      */
@@ -445,7 +431,8 @@ class AuthenticatedSessionController extends Controller
         }
 
         try {
-            $cacheKey = 'stripe_caps_v1_' . $user->account_id;
+            $cacheKey = 'stripe_caps_v1_'.$user->account_id;
+
             return Cache::remember($cacheKey, 300, function () use ($user) {
                 StripeControl::getAccount($user->account_id);
 
@@ -464,7 +451,7 @@ class AuthenticatedSessionController extends Controller
                         'title' => 'Account Upgrade Required',
                         'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
                         'action' => 'Upgrade your Stripe account now.',
-                        'action_url' => '/stripe/upgrade-express-account'
+                        'action_url' => '/stripe/upgrade-express-account',
                     ];
                 }
 
@@ -473,6 +460,7 @@ class AuthenticatedSessionController extends Controller
         } catch (\Exception $e) {
             // Update user if account is invalid
             $user->update(['stripe_details_submitted' => 0]);
+
             return [false, false, [
                 'has_requirements' => true,
                 'requirements' => [[
@@ -481,9 +469,9 @@ class AuthenticatedSessionController extends Controller
                     'title' => 'Account Connection Issue',
                     'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
                     'action' => 'Refresh the page or contact support.',
-                    'action_url' => null
+                    'action_url' => null,
                 ]],
-                'account_status' => []
+                'account_status' => [],
             ]];
         }
     }
@@ -495,9 +483,9 @@ class AuthenticatedSessionController extends Controller
     private function getCategoriesWithItems($user)
     {
         $callback = function () use ($user) {
-            $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
+            $isPublicView = (auth()->check() && auth()->id() !== $user->id) || ! auth()->check();
 
-            $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+            $categoryIds = WishCategory::whereHas('wish', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
                 // For both public and owner, only show categories with approved items
                 // This matches the user's request to only show categories with items (meaning visible items)
@@ -512,7 +500,7 @@ class AuthenticatedSessionController extends Controller
             return $callback();
         }
 
-        return Cache::remember('user_categories_with_items_' . $user->id, 600, $callback);
+        return Cache::remember('user_categories_with_items_'.$user->id, 600, $callback);
     }
 
     /**
@@ -521,12 +509,13 @@ class AuthenticatedSessionController extends Controller
     private function getMigrationStatus($user): array
     {
         // Only check for logged-in users viewing their own profile
-        if (!Auth::check() || Auth::id() !== $user->id) {
+        if (! Auth::check() || Auth::id() !== $user->id) {
             return ['needs_migration' => false, 'show_warning' => false];
         }
 
         try {
-            $cacheKey = 'stripe_migration_status_v1_' . $user->id;
+            $cacheKey = 'stripe_migration_status_v1_'.$user->id;
+
             return Cache::remember($cacheKey, 300, function () use ($user) {
                 $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
 
@@ -536,14 +525,14 @@ class AuthenticatedSessionController extends Controller
                     'current_agreement' => $migrationCheck['current_agreement'] ?? null,
                     'required_agreement' => $migrationCheck['required_agreement'] ?? null,
                     'country' => $migrationCheck['country'] ?? $user->country,
-                    'reason' => $migrationCheck['reason'] ?? 'Account check not available'
+                    'reason' => $migrationCheck['reason'] ?? 'Account check not available',
                 ];
             });
         } catch (\Exception $e) {
             return [
                 'needs_migration' => false,
                 'show_warning' => false,
-                'error' => 'Unable to check migration status'
+                'error' => 'Unable to check migration status',
             ];
         }
     }
@@ -562,7 +551,7 @@ class AuthenticatedSessionController extends Controller
             'tasks' => [],
             'piggyPots' => [],
             'piggyPotTopSupporters' => [],
-            'piggyPotFeed' => []
+            'piggyPotFeed' => [],
         ];
 
         switch ($page) {
@@ -612,11 +601,11 @@ class AuthenticatedSessionController extends Controller
     {
         $defaultImage = url('/og-image.png');
         $image = $defaultImage;
-        if (!empty($user->social_image)) {
+        if (! empty($user->social_image)) {
             $image = "https://ucarecdn.com/{$user->social_image}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        } elseif (!empty($user->cover)) {
+        } elseif (! empty($user->cover)) {
             $image = "https://ucarecdn.com/{$user->cover}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        } elseif (!empty($user->avatar)) {
+        } elseif (! empty($user->avatar)) {
             $image = "https://ucarecdn.com/{$user->avatar}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
         }
 
@@ -628,7 +617,7 @@ class AuthenticatedSessionController extends Controller
                 $wish = WishItem::find($wishId);
             }
         }
-        if ($isWishPage && $wish && !empty($wish->thumbnail)) {
+        if ($isWishPage && $wish && ! empty($wish->thumbnail)) {
             $image = "https://ucarecdn.com/{$wish->thumbnail}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
         }
 
@@ -641,19 +630,19 @@ class AuthenticatedSessionController extends Controller
             : "{$user->name} — Spenny Piggy";
 
         $description = $isWishPage && $wish
-            ? (($wish->description ? trim((string) $wish->description) . ' ' : '') . "Support {$user->name} on Spenny Piggy. Send gifts, join memberships, and explore wishlists.")
+            ? (($wish->description ? trim((string) $wish->description).' ' : '')."Support {$user->name} on Spenny Piggy. Send gifts, join memberships, and explore wishlists.")
             : "Support {$user->name} on Spenny Piggy. Explore wishlists, memberships, paid tasks, and tips — all in one creator platform.";
 
         SeoMeta::addTag('title', $title);
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
 
         $keywords = "{$user->name}, {$user->username}, creator, memberships, wishlists, paid tasks, tips, Spenny Piggy";
-        if (!empty($user->creator_category)) {
+        if (! empty($user->creator_category)) {
             $keywords .= ", {$user->creator_category}";
         }
         if ($isWishPage && $wish) {
             $keywords = "{$wish->wishname}, gift, wishlist, {$user->name}, {$user->username}, Spenny Piggy";
-            if (!empty($wish->category)) {
+            if (! empty($wish->category)) {
                 $keywords .= ", {$wish->category}";
             }
         }
@@ -673,35 +662,34 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addBreadcrumbJsonLd($breadcrumbs);
     }
 
-
     public function usergoal($username)
     {
         $user = $this->profileService->getUserWithRelations($username);
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
+                'message' => 'User not found',
             ]);
         }
 
         $earnings = $this->profileService->getUserEarnings($user->id);
 
         return response()->json([
-            "success" => true,
-            "goal" => [
+            'success' => true,
+            'goal' => [
                 'fullfilled' => $earnings['fulfilled'],
                 'target' => $earnings['target'],
                 'currency' => $user->default_currency,
-            ]
+            ],
         ]);
     }
 
     /**
      * Get User Wish Items
      *
-     * @param string $username Username
-     * @param int   $category_id Category Id
+     * @param  string  $username  Username
+     * @param  int  $category_id  Category Id
      * @return mixed
      */
     public function userItems($username, $category_id = null)
@@ -717,7 +705,7 @@ class AuthenticatedSessionController extends Controller
                     });
                 });
 
-            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+            if ((Auth::check() && $user->id != Auth::id()) || ! (Auth::check())) {
                 $query->where('is_approved', 1);
             }
             // ->orderBy('is_pin', 'DESC')
@@ -734,14 +722,15 @@ class AuthenticatedSessionController extends Controller
             // });
 
             return response()->json([
-                'success'   => true,
-                'items'     =>  $items
+                'success' => true,
+                'items' => $items,
             ]);
         }
+
         return response()->json([
-            'success'   => false,
-            'items'     => [],
-            'message'   =>  'User not found'
+            'success' => false,
+            'items' => [],
+            'message' => 'User not found',
         ]);
     }
 
@@ -750,16 +739,17 @@ class AuthenticatedSessionController extends Controller
         try {
             $user = User::where('username', $username)->first();
             $categories = [];
-            if (!empty($user)) {
+            if (! empty($user)) {
                 $categories = $user->user_categories()->get();
                 // $categories = UserCategory::whereUserId($user->id)->latest()->get();
             }
+
             return response()->json([
-                "success" => true,
-                "categories" => $categories,
+                'success' => true,
+                'categories' => $categories,
             ]);
         } catch (\Throwable $th) {
-            //throw $th;
+            // throw $th;
         }
     }
 
@@ -767,12 +757,13 @@ class AuthenticatedSessionController extends Controller
     {
         $user = User::where('username', $username)->first();
         $categories = [];
-        if (!empty($user)) {
+        if (! empty($user)) {
             $categories = $user->user_shop_categories()->get();
         }
+
         return response()->json([
-            "success" => true,
-            "categories" => $categories,
+            'success' => true,
+            'categories' => $categories,
         ]);
     }
 
@@ -782,11 +773,11 @@ class AuthenticatedSessionController extends Controller
 
         $user = User::firstWhere('username', $username);
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'items'   => [],
-                'message' => 'User not found'
+                'items' => [],
+                'message' => 'User not found',
             ]);
         }
 
@@ -804,7 +795,7 @@ class AuthenticatedSessionController extends Controller
 
         return response()->json([
             'success' => true,
-            'items'   => $allProducts
+            'items' => $allProducts,
         ]);
     }
 
@@ -814,71 +805,68 @@ class AuthenticatedSessionController extends Controller
             $user = User::where('username', $username)->first();
             $slinks = [];
             $sociallinks = [];
-            if (!empty($user)) {
+            if (! empty($user)) {
                 $slinks = $user->social_links()->first();
-                if (!empty($slinks)) {
+                if (! empty($slinks)) {
                     $sociallinks = [
                         [
                             'social' => 'facebook',
-                            'url'    => $slinks->facebook ?? null,
+                            'url' => $slinks->facebook ?? null,
                         ],
                         [
                             'social' => 'twitter',
-                            'url'    => $slinks->twitter ?? null,
+                            'url' => $slinks->twitter ?? null,
                         ],
                         [
                             'social' => 'instagram',
-                            'url'    => $slinks->instagram ?? null,
+                            'url' => $slinks->instagram ?? null,
                         ],
                         [
                             'social' => 'reddit',
-                            'url'    => $slinks->reddit ?? null,
+                            'url' => $slinks->reddit ?? null,
                         ],
                         [
                             'social' => 'youtube',
-                            'url'    => $slinks->youtube ?? null,
+                            'url' => $slinks->youtube ?? null,
                         ],
                         [
                             'social' => 'tumblr',
-                            'url'    => $slinks->tumblr ?? null,
+                            'url' => $slinks->tumblr ?? null,
                         ],
                         [
                             'social' => 'twitch',
-                            'url'    => $slinks->twitch ?? null,
+                            'url' => $slinks->twitch ?? null,
                         ],
                         [
                             'social' => 'other',
-                            'url'    => $slinks->other ?? null,
-                        ]
+                            'url' => $slinks->other ?? null,
+                        ],
                     ];
                 }
             } else {
                 return response()->json([
-                    "success" => false,
-                    "msg" => 'User not found !!'
+                    'success' => false,
+                    'msg' => 'User not found !!',
                 ]);
             }
 
-
-
-
             return response()->json([
-                "success" => true,
+                'success' => true,
                 // "sociallinks" => $sociallinks,
                 // "slinks" => $slinks
             ]);
         } catch (\Throwable $th) {
-            //throw $th;
+            // throw $th;
         }
     }
 
     public function checkUserName($username)
     {
         try {
-            if (preg_match("/^[a-z0-9_]+$/", $username)) {
+            if (preg_match('/^[a-z0-9_]+$/', $username)) {
                 // Username contains only lowercase letters, numbers, and underscores
                 $user = User::where('username', $username)->first();
-                if (!empty($user)) {
+                if (! empty($user)) {
                     return response()->json(['status' => false, 'msg' => 'Username is not available']);
                 } else {
                     return response()->json(['status' => true, 'msg' => 'Username is available']);
@@ -888,7 +876,7 @@ class AuthenticatedSessionController extends Controller
                 return response()->json(['status' => false, 'msg' => 'Username should contains only lowercase letters, numbers, and underscores']);
             }
         } catch (\Throwable $th) {
-            //throw $th;
+            // throw $th;
         }
     }
 
@@ -896,7 +884,7 @@ class AuthenticatedSessionController extends Controller
     {
         $user = User::where('id', Auth::id())->first();
 
-        if (!empty($user->twitter_token)) {
+        if (! empty($user->twitter_token)) {
             //     $req = TwitterAuthService::revokeToken($user->twitter_token);
             //     return response()->json($req);
             // if($req->successful()){
@@ -913,12 +901,11 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Handle Redirect from cross domain
-     *
      */
     public function authRedirects(Request $request, $token)
     {
         $ref = $request->header('Referer', 'http://localhost:8000/');
-        if (!$ref) {
+        if (! $ref) {
             // RateLimiter::hit($request->throttleKey())
             return to_route('home')->with('error', 'Invalid redirection or parameters!');
         }
@@ -931,11 +918,11 @@ class AuthenticatedSessionController extends Controller
             ->where('origin', $origin)
             ->first();
 
-        if (!$token) {
-            abort(404, "Not Found!");
+        if (! $token) {
+            abort(404, 'Not Found!');
         }
 
-        if (!$token->created_at->isAfter(Carbon::now()->subMinutes(2))) {
+        if (! $token->created_at->isAfter(Carbon::now()->subMinutes(2))) {
             return to_route('home')->with('error', 'Link Expired!');
         }
         // return response()->json([
@@ -945,16 +932,17 @@ class AuthenticatedSessionController extends Controller
         // ]);
 
         $user = User::firstWhere('id', $token->user_id);
-        if (!$user) {
+        if (! $user) {
             return to_route('home')->with('error', 'Link is invalid!');
         }
 
         Auth::login($user, true);
         $request->session()->regenerate();
         $token->update([
-            'used_at'   =>  Carbon::now()
+            'used_at' => Carbon::now(),
         ]);
         $token->delete();
+
         return to_route('user.show', ['username' => $user->username])->with('success', 'Welcome back. Login successfull.');
     }
 
@@ -966,15 +954,15 @@ class AuthenticatedSessionController extends Controller
         $user->save();
 
         return response()->json([
-            'success'   => true,
-            'message'   =>  'Vat updated successfully'
+            'success' => true,
+            'message' => 'Vat updated successfully',
         ]);
     }
 
     /**
      * Verify 2FA OTP
      *
-     * @param \App\Http\Requests\Verify2FARequest $verify2faRequest
+     * @param  Verify2FARequest  $verify2faRequest
      * @return \Illuminate\Http\Response JSON
      */
     public function verify2FA(Request $request)
@@ -989,17 +977,17 @@ class AuthenticatedSessionController extends Controller
 
         // Generic failure avoids user-enumeration and the fatal null-deref below
         // ($user->tfa_key / $user->id) when the email doesn't match a user.
-        if (!$user) {
+        if (! $user) {
             return response()->json(['status' => false, 'msg' => 'Invalid verification code.'], 422);
         }
 
         $valid = false;
 
-        if (!empty($otp)) {
+        if (! empty($otp)) {
             $valid = $this->google2FA->verifyKey($user->tfa_key, $otp);
         }
 
-        if (!empty($backup_code)) {
+        if (! empty($backup_code)) {
             $backup = UserBackupCode::where('user_id', $user->id)->get();
             foreach ($backup as $value) {
                 $code = decrypt($value->code);
@@ -1022,66 +1010,71 @@ class AuthenticatedSessionController extends Controller
             if (Auth::attempt($credentials, $request->boolean('remember'))) {
 
                 $request->session()->regenerate();
+                $request->session()->regenerateToken();
                 $user = Auth::user();
 
-                if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
+                if ($request->getHttpHost() == 'uk.spennypiggy.co' and $user->country != 'GB') {
                     // return Inertia::location("https://spennypiggy.com/{$user->username}");
                     $auth = AuthRedirect::create([
-                        "user_id"   =>  $user->id,
-                        'country'   =>  $user->country,
-                        'origin'    =>  $request->getHttpHost(),
-                        'target'    =>  'spennypiggy.co',
+                        'user_id' => $user->id,
+                        'country' => $user->country,
+                        'origin' => $request->getHttpHost(),
+                        'target' => 'spennypiggy.co',
                     ]);
 
                     Auth::logout();
+
                     // return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
                     return response()->json([
                         'status' => true,
                         'redirect_url' => "https://spennypiggy.co/verify-token/{$auth->uuid}",
-                        'message' => 'Redirecting...'
+                        'message' => 'Redirecting...',
                     ]);
-                } else if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
+                } elseif (! in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
                     // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
                     $auth = AuthRedirect::create([
-                        "user_id"   =>  $user->id,
-                        'country'   =>  $user->country,
-                        'origin'    =>  $request->getHttpHost(),
-                        'target'    =>  'uk.spennypiggy.co',
+                        'user_id' => $user->id,
+                        'country' => $user->country,
+                        'origin' => $request->getHttpHost(),
+                        'target' => 'uk.spennypiggy.co',
                         'ip_address' => $request->ip(),
                         'user_agent' => $request->userAgent(),
                     ]);
 
                     Auth::logout();
+
                     // return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
                     return response()->json([
                         'status' => true,
                         'redirect_url' => "https://uk.spennypiggy.co/verify-token/{$auth->uuid}",
-                        'message' => 'Redirecting...'
+                        'message' => 'Redirecting...',
                     ]);
                 }
+
                 // return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
                 return response()->json([
                     'status' => true,
                     'redirect_url' => $this->getRedirectUrl($user),
-                    'message' => 'Logged in successfully.'
+                    'message' => 'Logged in successfully.',
                 ]);
             } else {
                 // return back()->with("error", "Unable to login.");
                 return response()->json([
                     'status' => false,
-                    'msg' => "Unable to login."
+                    'msg' => 'Unable to login.',
                 ]);
             }
         } else {
-            if (!empty($otp)) {
+            if (! empty($otp)) {
                 $text = 'OTP';
             } else {
                 $text = 'Backup Code';
             }
+
             // return back()->with("error", "$text is invalid.");
             return response()->json([
                 'status' => false,
-                'msg' => "$text is invalid."
+                'msg' => "$text is invalid.",
             ]);
         }
     }
@@ -1095,28 +1088,28 @@ class AuthenticatedSessionController extends Controller
     {
         $user = User::findOrFail(Auth::id());
 
-        $recovery = new Recovery();
+        $recovery = new Recovery;
         $codes = $recovery->setCount(5)->toCollection();
         UserBackupCode::where('user_id', $user->id)->delete();
         foreach ($codes as $key => $value) {
-            $backup = new UserBackupCode();
+            $backup = new UserBackupCode;
             $backup->user_id = $user->id;
             $backup->code = encrypt($value);
             $backup->save();
         }
+
         return response()->json([
             'status' => true,
-            'tfa'  => true,
+            'tfa' => true,
             'msg' => 'Open your authenticator app to get security code.',
             'qr' => request()->query('type') == 1 ? $this->twofQR($user->id) : null,
-            'backup_codes' => $codes ?? null
+            'backup_codes' => $codes ?? null,
         ], 200);
     }
 
     /**
      * Sign Contract
      *
-     * @param Request $request
      * @return JSON
      */
     public function signContract(Request $request)
@@ -1144,7 +1137,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = User::where('id', Auth::guard('sanctum')->id())->first();
 
-        $contract = new FanContract();
+        $contract = new FanContract;
         $contract->user_id = $user->id;
         $contract->name = $name ?? $user->name;
         $contract->sign = $sign;
@@ -1162,7 +1155,7 @@ class AuthenticatedSessionController extends Controller
             $configuration = Configuration::create((string) $_ENV['UPLOADCARE_PUBLIC_KEY'], (string) $_ENV['UPLOADCARE_SECRET_KEY']);
             $uploader = new Uploader($configuration);
 
-            $fileInfo = $uploader->fromContent($pdfContent, 'application/pdf', Uuid::uuid4() . ".pdf");
+            $fileInfo = $uploader->fromContent($pdfContent, 'application/pdf', Uuid::uuid4().'.pdf');
 
             $contract->document = $fileInfo->getUuid();
         } else {
@@ -1193,7 +1186,7 @@ class AuthenticatedSessionController extends Controller
         $first30DayEarnings = 0;
         $isEligible = false;
         $daysLeft = 0;
-        $minEarnings = \App\Models\FounderBonus::getMinFirst30dEarnings();
+        $minEarnings = FounderBonus::getMinFirst30dEarnings();
         $windowStart = null;
         $windowEnd = null;
         $qualificationDays = (int) config('founder_bonus.qualification.qualification_period_days', 30);
@@ -1204,10 +1197,10 @@ class AuthenticatedSessionController extends Controller
                 $windowStart = $startAt->copy();
                 $windowEnd = $startAt->copy()->addDays($qualificationDays);
 
-                if (!$user->is_founder && now()->lessThan($windowEnd)) {
+                if (! $user->is_founder && now()->lessThan($windowEnd)) {
                     $isEligible = true;
                     $daysLeft = max(0, now()->diffInDays($windowEnd, false));
-                } else if (!$user->is_founder) {
+                } elseif (! $user->is_founder) {
                     if ($user->founder_missed_at) {
                         // Window ended without qualifying — keep the tracker visible
                         // (as a "missed" banner) for 14 days after the outcome
@@ -1227,7 +1220,7 @@ class AuthenticatedSessionController extends Controller
                 $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
                 // Same net-earnings formula the qualification job uses, so the tracker
                 // shows the number that actually decides qualification
-                $first30DayEarnings = (float) \App\Models\FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
+                $first30DayEarnings = (float) FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
             }
         }
 
@@ -1239,7 +1232,7 @@ class AuthenticatedSessionController extends Controller
             'qualificationDays' => $qualificationDays,
             'windowStart' => $windowStart ? $windowStart->toDateString() : null,
             'windowEnd' => $windowEnd ? $windowEnd->toDateString() : null,
-            'missed' => (bool) ($user && !$user->is_founder && $user->founder_missed_at),
+            'missed' => (bool) ($user && ! $user->is_founder && $user->founder_missed_at),
             'missedAt' => $user?->founder_missed_at?->toDateString(),
         ];
     }

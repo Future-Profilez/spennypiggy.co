@@ -1067,7 +1067,8 @@ class CheckoutController extends Controller
             // clearing when the buyer returns. Never claim/fulfil an unconfirmed
             // bank payment — fail closed to "processing" and let the
             // async_payment_succeeded webhook complete it later.
-            if ($existingPayment && ($existingPayment->fee_profile ?? 'card') === 'bank' && ($existingPayment->payment_status ?? null) !== 'paid') {
+            if (! config('payments.instant_fulfilment', true)
+                && $existingPayment && ($existingPayment->fee_profile ?? 'card') === 'bank' && ($existingPayment->payment_status ?? null) !== 'paid') {
                 $settled = false;
                 try {
                     $liveSession = StripeControl::getCheckoutSession($sessionId, $existingPayment->owner->account_id ?? null);
