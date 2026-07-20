@@ -28,7 +28,7 @@ class SyncSubscriptionStatus extends Command
     {
         $this->info('🔄 Starting subscription sync...');
 
-        $stripeKey = env('STRIPE_SECRET_KEY');
+        $stripeKey = config('services.stripe.secret');
         if (!$stripeKey) {
             $this->error('STRIPE_SECRET_KEY is not set.');
             return 1;

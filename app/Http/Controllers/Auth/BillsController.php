@@ -248,7 +248,7 @@ class BillsController extends Controller
 
             Log::info("after if condition in try request->period: $request->period");
             Log::info("old_period: $old_periods");
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripe = new StripeClient(config('services.stripe.secret'));
 
             // Check if product exists in Stripe
             $stripeProduct = null;
@@ -1012,7 +1012,7 @@ class BillsController extends Controller
             $paymentIntentId = null;
             if ($session && isset($session->id)) {
                 try {
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe = new StripeClient(config('services.stripe.secret'));
                     $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
                     $paymentIntentId = $retrievedSession->payment_intent ?? null;
                     Log::info('BillsController: Retrieved payment intent from session', [
@@ -1108,7 +1108,7 @@ class BillsController extends Controller
     {
         Log::info("Bill status request received");
 
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $endpoint_secret = config('services.stripe.webhook_secret');
 
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');

@@ -555,7 +555,7 @@ class WishitemController extends Controller
                 }
 
                 try {
-                    $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripeClient = new StripeClient(config('services.stripe.secret'));
 
                     // Check if Stripe product exists, if not create a new one
                     $stripeProduct = null;
@@ -1101,7 +1101,7 @@ class WishitemController extends Controller
                 $total = $breakdown['total_supporter_pays'];
                 $tax = $breakdown['total_fees'];
 
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(config('services.stripe.secret'));
                 $stripeProduct = $stripe->products->create([
                     'name'               => 'Exclusive content',
                     'images'             => [$wishitem->perma_link],
@@ -1740,7 +1740,7 @@ class WishitemController extends Controller
             Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
             $ryeProductPayment->save();
 
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
 
             // Create Stripe checkout session
             $successUrl = route('rye.success.payment', [
@@ -2855,7 +2855,7 @@ class WishitemController extends Controller
         $total = $breakdown['total_supporter_pays'];
         $tax = $breakdown['total_fees'];
 
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(config('services.stripe.secret'));
         $stripe_client = $stripe->products->create([
             'name' => 'Treat',
             'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],

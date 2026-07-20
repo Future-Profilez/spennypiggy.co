@@ -1139,7 +1139,7 @@ class SystemDiagnosticsController extends Controller
                 'DB_DATABASE'           => env('DB_DATABASE'),
                 'STRIPE_SECRET'         => config('services.stripe.secret') ?? env('STRIPE_SECRET'),
                 'STRIPE_KEY'            => config('services.stripe.key') ?? env('STRIPE_KEY'),
-                'STRIPE_WEBHOOK_SECRET' => config('services.stripe.webhook_secret') ?? env('STRIPE_WEBHOOK_SECRET'),
+                'STRIPE_WEBHOOK_SECRET' => config('services.stripe.webhook_secret'),
                 'MAGICBELL_API_KEY'     => env('MAGICBELL_API_KEY'),
                 'MAGICBELL_API_SECRET'  => env('MAGICBELL_API_SECRET'),
                 'UPLOADCARE_PUBLIC_KEY' => env('UPLOADCARE_PUBLIC_KEY'),
@@ -1179,7 +1179,7 @@ class SystemDiagnosticsController extends Controller
     {
         try {
             $start = microtime(true);
-            $webhookSecret = config('services.stripe.webhook_secret') ?? env('STRIPE_WEBHOOK_SECRET');
+            $webhookSecret = config('services.stripe.webhook_secret');
             $issues = [];
 
             if (empty($webhookSecret)) {

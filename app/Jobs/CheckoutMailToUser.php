@@ -187,7 +187,7 @@ class CheckoutMailToUser implements ShouldQueue
             $paymentIntentId = null;
             if ($this->payment->session_id) {
                 try {
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe = new StripeClient(config('services.stripe.secret'));
                     $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
                     $paymentIntentId = $session->payment_intent ?? null;
                     Log::info('CheckoutMailToUser: Retrieved payment intent from session', [
@@ -370,7 +370,7 @@ class CheckoutMailToUser implements ShouldQueue
             
             // Fallback: try to get from Stripe session metadata
             if (!empty($this->payment->session_id)) {
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(config('services.stripe.secret'));
                 $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
                 
                 // Try new flattened format first
@@ -553,7 +553,7 @@ class CheckoutMailToUser implements ShouldQueue
             $paymentIntentId = null;
             if ($this->payment->session_id) {
                 try {
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe = new StripeClient(config('services.stripe.secret'));
                     $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
                     $paymentIntentId = $session->payment_intent ?? null;
                     Log::info('CheckoutMailToUser: Retrieved payment intent from session (item deliverable)', [

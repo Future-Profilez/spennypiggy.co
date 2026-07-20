@@ -18,7 +18,7 @@ class RiskGoLiveCheck extends Command
 
         $checks[] = [
             'name' => 'Stripe webhook secret configured',
-            'ok' => (bool) env('STRIPE_WEBHOOK_SECRET'),
+            'ok' => (bool) config('services.stripe.webhook_secret'),
         ];
 
         foreach (['global_limits', 'state_limits', 'supporter_rules', 'creator_rules', 'high_velocity_rules', 'cross_creator_rules', 'platform_state_triggers'] as $key) {

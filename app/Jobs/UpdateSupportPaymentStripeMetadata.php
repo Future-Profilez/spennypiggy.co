@@ -105,7 +105,7 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
             // Verify the update by reading back from Stripe
             if ($success) {
                 try {
-                    \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                    \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
                     $verifyPI = \Stripe\PaymentIntent::retrieve($deliverable->payment_intent_id);
                     $hasCertUrl = isset($verifyPI->metadata['certificate_url']);
                     $certUrlValue = $verifyPI->metadata['certificate_url'] ?? null;
@@ -190,7 +190,7 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
     {
         try {
             // Initialize Stripe
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
             
             // Retrieve current payment intent metadata
             $paymentIntent = \Stripe\PaymentIntent::retrieve($deliverable->payment_intent_id);

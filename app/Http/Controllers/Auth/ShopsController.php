@@ -466,7 +466,7 @@ class ShopsController extends Controller
             ];
 
             try {
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(config('services.stripe.secret'));
 
                 if ($shop->type != 'physical') {
                     if ($old_price == $shop->price) {
