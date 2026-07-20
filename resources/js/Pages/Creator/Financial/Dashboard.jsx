@@ -1281,7 +1281,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <div className="space-y-4 relative z-10">
                                                     <StatementDownloadCard taxYear={tax_year_number} />
                                                     {[
-                                                        { label: 'Income Statement', sub: 'For Your Accountant', href: route('financial.statement'), icon: <FileText size={12} className="text-[#FF007F]" /> },
+                                                        { label: 'Revenue Opportunities', sub: 'What To Do Next', href: route('financial.opportunities'), icon: <TrendingUpIcon size={12} className="text-[#FF007F]" /> },
+                                                    { label: 'Income Statement', sub: 'For Your Accountant', href: route('financial.statement'), icon: <FileText size={12} className="text-[#FF007F]" /> },
                                                         { label: 'Verified Certificate', sub: 'Proof of Income', href: route('financial.certificate'), icon: <CircleCheckIcon size={12} className="text-green-600" /> },
                                                         { label: 'Transaction History', sub: 'Payout Status', href: route('financial.history'), icon: <TrendingUpIcon size={12} className="text-yellow-600" /> },
                                                     ].map((item, idx) => (
