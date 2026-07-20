@@ -12,6 +12,7 @@ class Shop extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'payment_methods_accepted',
         'user_id',
         'type',
         'stripe_product_id',

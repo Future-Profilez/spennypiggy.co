@@ -149,6 +149,20 @@ class Kernel extends ConsoleKernel
                  ->dailyAt('09:45')
                  ->withoutOverlapping(10);
 
+        // Engagement engine. Spread across the morning so they don't all fan out
+        // onto the queue at once. All require queue:work to actually deliver.
+        $schedule->command('reactivation:notify')
+                 ->dailyAt('10:15')
+                 ->withoutOverlapping(15);
+
+        $schedule->command('milestones:notify')
+                 ->dailyAt('08:15')
+                 ->withoutOverlapping(10);
+
+        $schedule->command('whale:retention-alerts')
+                 ->dailyAt('08:45')
+                 ->withoutOverlapping(10);
+
         $schedule->command('bonus:process-fast-start')
                  ->dailyAt('09:15')
                  ->withoutOverlapping();

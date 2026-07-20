@@ -132,17 +132,14 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
     if (!video) return;
 
     if (close === true && popupVideoUrl) {
-      setPopupNeedsInteraction(false);
+      // No autoplay: load the source + poster and let the viewer press play
+      // (native controls or the tap overlay). Keeps intros silent until asked.
       const id = setTimeout(() => {
-        video.muted = true;
-        video.defaultMuted = true;
         if (video.src !== popupVideoUrl) {
           video.src = popupVideoUrl;
           video.load();
         }
-        video.play().catch((err) => {
-          if (err?.name !== 'AbortError') setPopupNeedsInteraction(true);
-        });
+        setPopupNeedsInteraction(true);
       }, 0);
       return () => clearTimeout(id);
     }
@@ -219,7 +216,6 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                   key={popupVideoUrl}
                   ref={popupVideoRef}
                   // playsInline
-                  muted
                   controls
                   controlsList="nodownload"
                   disablePictureInPicture
@@ -237,8 +233,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                       e.stopPropagation();
                       const v = popupVideoRef.current;
                       if (!v) return;
-                      v.muted = true;
-                      v.defaultMuted = true;
+                      v.muted = false;
                       v.play().then(() => setPopupNeedsInteraction(false)).catch(() => {});
                     }}
                   >

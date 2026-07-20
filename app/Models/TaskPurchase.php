@@ -29,6 +29,7 @@ class TaskPurchase extends Model
     ];
 
     protected $fillable = [
+        'fee_profile',
         'uuid',
         'task_id',
         'supporter_id',

@@ -5,6 +5,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import axios from 'axios';
 import LedgerHistoryTable from '@/Components/Financial/LedgerHistoryTable';
+import StatementDownloadCard from './StatementDownloadCard';
 import { WalletIcon,TrendingUpIcon,TrendingDownIcon,DownloadIcon,PlusIcon,TriangleAlertIcon,CircleCheckIcon,ChartBarIcon,UsersIcon,ChevronRightIcon,ChartPieIcon,ShieldCheckIcon, } from "@animateicons/react/lucide";
 import { Calculator,FileText,Building2,ScrollText,HelpCircle,Pencil,RefreshCw,ScrollText as ScrollTextIcon,Calculator as CalculatorIcon,FileText as FileTextIcon } from "lucide-react";
 import { XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,AreaChart,Area } from 'recharts';
@@ -19,7 +20,7 @@ function GroupHeader({ title, sub, divider = true }) {
     );
 }
 
-export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_released_breakdown = [], reserve_total_released = 0, reserve_total_held = 0, upcoming_payout = null, reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], fast_start_bonus = null, founder_bonus = null, active_tab = 'overview' }) {
+export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_year_number, date_range, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, status_breakdown = [], reserve_breakdown = [], reserve_released_breakdown = [], reserve_total_released = 0, reserve_total_held = 0, upcoming_payout = null, reserve_reason, reserve_policy = null, payout_cycle = null, payout_history = [], fast_start_bonus = null, founder_bonus = null, active_tab = 'overview' }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [expandedPayout, setExpandedPayout] = useState(null);
     const [showPayoutBreakdown, setShowPayoutBreakdown] = useState(false);
@@ -1278,6 +1279,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, date_
                                                 <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2 relative z-10"><ShieldCheckIcon className="text-green-600" size={20} /> Tax & Financial Records</h2>
                                                 <p className="text-normal text-gray-500 mb-6 leading-relaxed relative z-10">Download statements and payout history.</p>
                                                 <div className="space-y-4 relative z-10">
+                                                    <StatementDownloadCard taxYear={tax_year_number} />
                                                     {[
                                                         { label: 'Income Statement', sub: 'For Your Accountant', href: route('financial.statement'), icon: <FileText size={12} className="text-[#FF007F]" /> },
                                                         { label: 'Verified Certificate', sub: 'Proof of Income', href: route('financial.certificate'), icon: <CircleCheckIcon size={12} className="text-green-600" /> },

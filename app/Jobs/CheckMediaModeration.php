@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -45,18 +46,17 @@ class CheckMediaModeration implements ShouldQueue
     ];
 
     /**
-     * @param class-string $modelClass  Eloquent model to flag on violation.
-     * @param int|string   $modelId     Primary key of the record.
-     * @param string|null  $mediaUuid   Uploadcare file UUID to scan.
-     * @param array        $flagOnViolation  Attributes to set when content is rejected (e.g. ['status' => 'moderation_hold']).
+     * @param  class-string  $modelClass  Eloquent model to flag on violation.
+     * @param  int|string  $modelId  Primary key of the record.
+     * @param  string|null  $mediaUuid  Uploadcare file UUID to scan.
+     * @param  array  $flagOnViolation  Attributes to set when content is rejected (e.g. ['status' => 'moderation_hold']).
      */
     public function __construct(
         public string $modelClass,
         public $modelId,
         public ?string $mediaUuid,
         public array $flagOnViolation = []
-    ) {
-    }
+    ) {}
 
     public function handle(): void
     {
@@ -64,9 +64,26 @@ class CheckMediaModeration implements ShouldQueue
             return;
         }
 
+        // Callers pass media in mixed formats: bare UUID (tasks), full CDN URL
+        // "https://ucarecdn.com/<uuid>/" (piggy pot cover), or UUID with CDN ops
+        // "<uuid>/-/preview/" (shop image). The Uploadcare REST API only accepts
+        // the bare UUID — anything else 404s every poll, and the fail-closed
+        // fallback then holds perfectly innocent content. Normalize first.
+        if (! preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $this->mediaUuid, $m)) {
+            Log::warning('CheckMediaModeration: no UUID found in media reference — flagging for manual review', [
+                'model' => $this->modelClass,
+                'id' => $this->modelId,
+                'media' => $this->mediaUuid,
+            ]);
+            $this->flag();
+
+            return;
+        }
+        $this->mediaUuid = strtolower($m[0]);
+
         $headers = [
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
+            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
         ];
 
         // Kick off the Rekognition add-on. Processing is asynchronous, so the
@@ -82,14 +99,15 @@ class CheckMediaModeration implements ShouldQueue
             sleep(3);
 
             $response = Http::withHeaders($headers)
-                ->get("https://api.uploadcare.com/files/" . $this->mediaUuid . "/?include=appdata");
+                ->get('https://api.uploadcare.com/files/'.$this->mediaUuid.'/?include=appdata');
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Uploadcare moderation check failed', [
                     'model' => $this->modelClass,
                     'id' => $this->modelId,
                     'status' => $response->status(),
                 ]);
+
                 continue;
             }
 
@@ -100,7 +118,7 @@ class CheckMediaModeration implements ShouldQueue
             }
         }
 
-        if (!is_array($tags)) {
+        if (! is_array($tags)) {
             // Fail CLOSED: if we never got a verdict (API error / Rekognition timeout),
             // flag the content for manual review rather than leaving monetised content
             // live unscanned.
@@ -109,6 +127,7 @@ class CheckMediaModeration implements ShouldQueue
                 'id' => $this->modelId,
             ]);
             $this->flag();
+
             return;
         }
 
@@ -124,6 +143,7 @@ class CheckMediaModeration implements ShouldQueue
             foreach (self::REST_WORDS as $word) {
                 if (stripos($label, $word) !== false) {
                     $this->flag($label);
+
                     return;
                 }
             }
@@ -160,7 +180,7 @@ class CheckMediaModeration implements ShouldQueue
 
             $this->notifyCreator($record, $reason);
         } catch (\Throwable $e) {
-            Log::error('Failed to flag moderated content: ' . $e->getMessage());
+            Log::error('Failed to flag moderated content: '.$e->getMessage());
         }
     }
 
@@ -172,10 +192,8 @@ class CheckMediaModeration implements ShouldQueue
     {
         $l = strtolower($label);
         $category = match (true) {
-            str_contains($l, 'nud') || str_contains($l, 'sexual') || str_contains($l, 'porn') || str_contains($l, 'explicit')
-                => 'possible adult or explicit content',
-            str_contains($l, 'violence') || str_contains($l, 'gore') || str_contains($l, 'disturbing')
-                => 'possible violent or graphic content',
+            str_contains($l, 'nud') || str_contains($l, 'sexual') || str_contains($l, 'porn') || str_contains($l, 'explicit') => 'possible adult or explicit content',
+            str_contains($l, 'violence') || str_contains($l, 'gore') || str_contains($l, 'disturbing') => 'possible violent or graphic content',
             str_contains($l, 'hate') => 'possible hateful content or symbols',
             default => 'content that may not meet our guidelines',
         };
@@ -188,7 +206,7 @@ class CheckMediaModeration implements ShouldQueue
     {
         try {
             $creatorId = $record->user_id ?? $record->creator_id ?? null;
-            $creator = $creatorId ? \App\Models\User::find($creatorId) : null;
+            $creator = $creatorId ? User::find($creatorId) : null;
             if (! $creator) {
                 return;
             }
@@ -196,14 +214,14 @@ class CheckMediaModeration implements ShouldQueue
             $label = self::FEATURE_LABELS[class_basename($this->modelClass)] ?? 'item';
             $title = $record->title ?? $record->name ?? '';
             $named = $title !== '' ? " \"{$title}\"" : '';
-            $why = $reason !== '' ? ' ' . $reason : ' Edit it and upload a different image to make it live, or contact support if you think this is a mistake.';
+            $why = $reason !== '' ? ' '.$reason : ' Edit it and upload a different image to make it live, or contact support if you think this is a mistake.';
 
-            $message = "Your {$label}{$named} is under review and isn't visible to buyers yet." . $why;
+            $message = "Your {$label}{$named} is under review and isn't visible to buyers yet.".$why;
 
-            \App\Jobs\NotificationSave::dispatch($message, $creator, $creator, 'moderation');
+            NotificationSave::dispatch($message, $creator, $creator, 'moderation');
         } catch (\Throwable $e) {
             // A notification failure must not break the moderation hold itself.
-            Log::warning('Moderation notify failed: ' . $e->getMessage());
+            Log::warning('Moderation notify failed: '.$e->getMessage());
         }
     }
 }

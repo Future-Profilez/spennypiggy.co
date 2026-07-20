@@ -3,6 +3,7 @@ import { useForm, usePage, Link } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import CheckoutLegalTerms from '@/Components/CheckoutLegalTerms';
+import PaymentMethodSelector from '@/Components/PaymentMethodSelector';
 import Popup from '@/Components/Popup';
 import {tipheading} from '@/includes/Icons';
 import PriceFormat from '@/includes/PriceFormat';
@@ -31,6 +32,7 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
         anonymous: 0,
         digital_waiver: false,
         agree: false,
+        payment_method: 'card',
     });
 
     const presetAmounts = [25, 50, 75];
@@ -333,6 +335,15 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                     <span>Purchase Amount:</span>
                                     <span className="text-[#e85d9a]">{global_currency || 'GBP'} {amount}</span>
                                 </div>
+
+                                <PaymentMethodSelector
+                                    amount={parseFloat(data.amount) || 0}
+                                    currency={featuredPot.currency || 'GBP'}
+                                    email={data.email || auth?.user?.email}
+                                    value={data.payment_method}
+                                    onChange={(m) => setData('payment_method', m)}
+                                    className="mb-2"
+                                />
 
                                 <CheckoutLegalTerms onAgreeChange={(checked) => {
                                     setData('agree', checked);

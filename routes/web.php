@@ -946,6 +946,14 @@ if (config('app.env') !== 'production') {
     require __DIR__ . '/test-subscription.php';
 }
 
+// Dev helper: refresh logged-in creator's content dates to today.
+// NEVER expose in production — it clears content_posting_paused_at and back-dates
+// content, which would let a creator self-bypass the posting-cadence pause and the
+// creator-activity payment gate (both are content-compliance controls).
+if (config('app.env') !== 'production') {
+    require __DIR__ . '/dev-refresh-dates.php';
+}
+
 
 // Routes already defined above
 // Removed duplicate purchases route
@@ -1016,3 +1024,8 @@ Route::get('/api/user-country', function (\Illuminate\Http\Request $request) {
 Route::post('/video-posters', [VideoPosterController::class, 'resolve'])
     ->middleware('throttle:60,1')
     ->name('video-posters.resolve');
+
+// Method-aware supporter price preview (card vs bank) for the checkout selector.
+Route::post('/payments/price-preview', [\App\Http\Controllers\PaymentMethodController::class, 'preview'])
+    ->middleware('throttle:60,1')
+    ->name('payments.price-preview');

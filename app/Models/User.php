@@ -58,6 +58,9 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'creator_email_receipt_acknowledged_at',
         'marketing_emails_enabled',
         'marketing_unsubscribed_at',
+        'push_notifications_enabled',
+        'reactivation_emails_enabled',
+        'date_of_birth',
         'utm_source',
         'utm_medium',
         'utm_campaign',
@@ -84,6 +87,9 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'creator_email_receipt_acknowledged_at' => 'datetime',
         'marketing_emails_enabled' => 'boolean',
         'marketing_unsubscribed_at' => 'datetime',
+        'push_notifications_enabled' => 'boolean',
+        'reactivation_emails_enabled' => 'boolean',
+        'date_of_birth' => 'date',
     ];
 
     protected $appends = [
@@ -119,7 +125,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($u) => $u->uuid = Uuid::uuid4());
+        // Cast to string: Uuid::uuid4() returns an object, and the in-memory model would
+        // otherwise carry that object (not the string the DB stores) until re-fetched —
+        // breaking any array-by-uuid lookup done in the same request the user was created.
+        static::creating(fn($u) => $u->uuid = (string) Uuid::uuid4());
     }
 
     /**
@@ -595,7 +604,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function creatorMonthlySubscription()
     {
-        return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany();
+        return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany('id');
     }
 
     /**
@@ -603,7 +612,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function allMonthlyCharges()
     {
-        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderBy('created_at', 'desc');
+        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderByDesc('id');
     }
 
     public function followers()

@@ -28,6 +28,7 @@ environments:
       - "npm run build"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
+      - "php artisan stripe:request-bank-capabilities"
       # - "rd /s /q node_modules"
       # - "rd /s /q package-lock.json"
  
@@ -57,10 +58,10 @@ environments:
     build:
       - "composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader"
       - "php artisan event:cache"
-      - "php artisan optimize:clear" 
+      - "php artisan optimize:clear"
       - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
-      - "php artisan ziggy:generate" 
-      - "npm run build" 
+      - "php artisan ziggy:generate"
+      - "npm run build"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
       - "php artisan config:clear"
@@ -69,6 +70,7 @@ environments:
       - "php artisan view:clear"
       - "php artisan event:clear"
       - "php artisan cache:clear"
+      - "php artisan stripe:request-bank-capabilities"
 
     deploy:
       - "php artisan migrations:fix-state"

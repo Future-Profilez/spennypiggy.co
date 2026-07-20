@@ -53,6 +53,16 @@ return new class extends Migration
     private function indexExists(string $table, string $index): bool
     {
         $connection = Schema::getConnection();
+
+        // information_schema.statistics is MySQL-only; on sqlite (the test database)
+        // query the sqlite_master catalog instead so the whole test suite can migrate.
+        if ($connection->getDriverName() === 'sqlite') {
+            return (bool) $connection->selectOne(
+                "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ? LIMIT 1",
+                [$index]
+            );
+        }
+
         $dbName = $connection->getDatabaseName();
 
         return (bool) $connection->selectOne(

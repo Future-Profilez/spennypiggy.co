@@ -8,6 +8,7 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 
 export default function SubCheckout(props) {
     const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
@@ -23,7 +24,9 @@ export default function SubCheckout(props) {
         agree: false,
         digital_waiver: false,
         anonymous: 0,
+        payment_method: 'card',
     });
+    const [previewPrices, setPreviewPrices] = useState(null);
 
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -375,7 +378,9 @@ export default function SubCheckout(props) {
 
                                     <div className='cartPric pr-4'>
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
+                                            data.payment_method === 'bank' && previewPrices?.bank != null
+                                                ? previewPrices.bank
+                                                : calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                             wish && wish.currency
                                         )}
                                     </div>
@@ -389,14 +394,18 @@ export default function SubCheckout(props) {
                                 <span className=" text-black">
                                     <strong className="block text-xl">
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
+                                            data.payment_method === 'bank' && previewPrices?.bank != null
+                                                ? previewPrices.bank
+                                                : calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                             wish && wish.currency
                                         )}
                                     </strong>
                                     {global_currency && global_currency.toUpperCase() !== (wish?.currency || '').toUpperCase() && (
                                         <div className="text-sm text-gray-500 font-medium mt-1">
                                             ≈ {formatMultiPrice(
-                                                calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
+                                                data.payment_method === 'bank' && previewPrices?.bank != null
+                                                    ? previewPrices.bank
+                                                    : calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                                 global_currency
                                             )} (estimated)
                                         </div>
@@ -466,6 +475,18 @@ export default function SubCheckout(props) {
                                     </label>
                                     <p className="text-gray-500 text-sm mb-3" >Your personal email and name will be private.</p>
                                     
+                                    {reccure == 'onetime' && (
+                                        <PaymentMethodSelector
+                                            amount={(parseFloat(String(wish?.price || 0).replace(/,/g, '')) || 0) * (1 + (parseFloat(wish?.user?.vat_amount_percentage) || 0) / 100)}
+                                            currency={wish?.currency || 'GBP'}
+                                            email={data.email || auth?.user?.email}
+                                            value={data.payment_method}
+                                            onChange={(m) => setData('payment_method', m)}
+                                            onPrices={setPreviewPrices}
+                                            className="mb-4"
+                                        />
+                                    )}
+
                                     <CheckoutLegalTerms onAgreeChange={(checked) => {
                                         setData('agree', checked);
                                         setData('digital_waiver', checked);

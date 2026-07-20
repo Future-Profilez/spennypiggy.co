@@ -51,7 +51,6 @@ const WhyLove = lazy(() => import('./home/WhyLove'));
 const HappyCreators = lazy(() => import('./home/HappyCreators'));
 const FeatureSuggestionSection = lazy(() => import('./home/FeatureSuggestionSection'));
 const JoinUs = lazy(() => import('@/Components/JoinUs'));
-const Membership = lazy(() => import("./home/Membership"));
 const NotForBusiness = lazy(() => import("./home/NotForBusiness"));
 const FAQ = lazy(() => import("./home/FAQ"));
 const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
@@ -59,6 +58,7 @@ const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
 const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
 const FounderProgramAnnouncement = lazy(() => import("./home/FounderProgramAnnouncement"));
 const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
+const PayByBankAnnouncement = lazy(() => import("./home/PayByBankAnnouncement"));
 const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'));
 const CreatorShowcase = lazy(() => import('./home/CreatorShowcase'));
 const SetupSteps = lazy(() => import('./home/SetupSteps'));
@@ -133,6 +133,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 {/* ── Chapter 01 · Earn more — announcements enter as cinematic curtain reveals ── */}
                 <div id="act-earn">
                     <EarnMoreAnnouncement founderBonus={founderBonus} />
+                    <PayByBankAnnouncement />
                     <PaidTasksAnnouncement />
                     <ReferEarnAnnouncement />
                     <FounderProgramAnnouncement founderBonus={founderBonus} />
@@ -157,7 +158,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
 
                 {/* ── Chapter 04 · Build your world ── */}
                 <div id="act-build">
-                    <Reveal><Membership /></Reveal>
                     <Parallax amount={50}><NotForBusiness /></Parallax>
                 </div>
 

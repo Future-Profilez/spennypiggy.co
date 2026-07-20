@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
+import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
@@ -36,6 +37,7 @@ export default function TipInner({classes, idd}) {
     currency: user?.default_currency || 'GBP', // Default to creator currency
     cf_turnstile_response: "",
     device_id: deviceid,
+    payment_method: 'card',
   });
 
   const customAmountTag = (e) => {
@@ -454,6 +456,15 @@ export default function TipInner({classes, idd}) {
                   <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
               </div>
 
+              <PaymentMethodSelector
+                  amount={parseFloat(data.amount) || 0}
+                  currency={user?.default_currency || 'GBP'}
+                  email={data.email || auth?.user?.email}
+                  value={data.payment_method}
+                  onChange={(m) => setData('payment_method', m)}
+                  className="mb-4"
+              />
+
               <CheckoutLegalTerms onAgreeChange={(checked) => {
                   setData('agree', checked);
                   setData('digital_waiver', checked);
@@ -587,12 +598,12 @@ export default function TipInner({classes, idd}) {
             You're purchasing access to this creator's content, not making a gift. Platform terms apply to fulfilment and refunds.
           </p>
           <div className="flex gap-3">
-            <button
+            {/* <button
               type="button"
               onClick={() => setShowConfirm(false)}
               className="w-full main-button b"
             > Cancel
-            </button>
+            </button> */}
             <button
               type="button"
               disabled={loading}

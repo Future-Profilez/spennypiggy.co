@@ -377,20 +377,27 @@ class Helpers
         return round($converted, $precision, PHP_ROUND_HALF_UP);
     }
 
-    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'GBP', $reserveRate = 0): array
+    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'GBP', $reserveRate = 0, string $feeProfile = 'card'): array
     {
         $listedPrice = (float) $listedPrice;
         $isZeroDecimal = self::isZeroDecimalCurrency($currency);
 
-        // Stripe fees (Variable based on card/country, used here for estimation to cover costs)
-        // Note: The actual fee is deducted by Stripe at transaction time.
-        // We use a standard rate (e.g. 2.9% + 30c) to ensure the gross-up covers most scenarios.
-        $stripeFeeRate = 0.029;
-        $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
+        // Fee rates come from the per-method profile (config/payments.php).
+        // "card" mirrors the historical hard-coded rates; "bank" is the
+        // lower-fee profile for Pay by Bank / SEPA / ACH.
+        $profile = config("payments.fee_profiles.$feeProfile");
+        if (!is_array($profile)) {
+            $feeProfile = 'card';
+            $profile = config('payments.fee_profiles.card', []);
+        }
 
-        // Platform fees — confirmed rates
-        $platformFeeRate = config('app.platform_fee_percentage', 17) / 100;
-        $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
+        // Note: The actual Stripe fee is deducted at transaction time; the
+        // profile rate is an estimate used so the gross-up covers costs.
+        $stripeFeeRate = ($profile['stripe_rate'] ?? 2.9) / 100;
+        $stripeFixedFee = $isZeroDecimal ? 0 : (float) ($profile['stripe_fixed_fee'] ?? 0.30);
+
+        $platformFeeRate = ($profile['platform_rate'] ?? config('app.platform_fee_percentage', 17)) / 100;
+        $complianceFeeRate = ($profile['compliance_rate'] ?? config('app.transaction_fee_percentage', 2)) / 100;
         $adminFee = self::administrationFeeInCurrency($currency); // £1 converted
 
         // Correct gross-up formula to ensure creator receives exactly listedPrice:
@@ -400,6 +407,7 @@ class Helpers
         if ($totalDeductionRate >= 1) {
             Log::error('Total deduction rate exceeds 100% in calculateStripeDirectChargeFlow');
             return [
+                'fee_profile' => $feeProfile,
                 'listed_price' => $listedPrice,
                 'total_supporter_pays' => $listedPrice,
                 'application_fee' => 0,
@@ -440,6 +448,7 @@ class Helpers
         $netToCreator = round($totalSupporterPays - $actualStripeFee - $applicationFee, $precision);
 
         return [
+            'fee_profile' => $feeProfile,
             'listed_price' => round($listedPrice, $precision),
             'platform_fee' => $platformFee,
             'compliance_fee' => $complianceFee,

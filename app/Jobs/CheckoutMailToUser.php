@@ -1086,7 +1086,7 @@ class CheckoutMailToUser implements ShouldQueue
 
             // If we couldn't get it from deliverables, use a default calculation
             if ($totalCreatorNet <= 0) {
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($this->payment->amount_total, $this->payment->currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($this->payment->amount_total, $this->payment->currency, 0, $this->payment->fee_profile ?? 'card');
                 $totalCreatorNet = $breakdown['net_to_creator'];
             }
 

@@ -14,6 +14,7 @@ class  TipGoalsPayment extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'fee_profile',
         'uuid',
         'session_id',
         'tip_goal_id',

@@ -37,7 +37,7 @@ class AutoSuspendAccount extends Command
 
             $users = User::whereIn('id',$user)->get();
             foreach ($users as $key => $value) {
-                $charge = MonthlyCharge::where('user_id',$value->id)->where('status','paid')->latest()->first();
+                $charge = MonthlyCharge::where('user_id',$value->id)->where('status','paid')->newestFirst()->first();
                 if(empty($charge)){
                     $value->suspended_account = 1;
                     $value->save();

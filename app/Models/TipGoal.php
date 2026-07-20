@@ -14,6 +14,7 @@ class TipGoal extends Model
 
 
     protected $fillable = [
+        'payment_methods_accepted',
         "uuid",
         "user_id",
         'name',

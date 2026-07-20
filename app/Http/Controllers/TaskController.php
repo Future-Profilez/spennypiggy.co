@@ -140,6 +140,7 @@ class TaskController extends Controller
         $task->type = $request->type;
         $task->sla_hours = $request->type === 'timed' ? $request->sla_hours : null;
         $task->status = 'active'; // Admin skip
+        $task->payment_methods_accepted = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
 
         if ($request->media_file) {
             $task->media_url = $request->media_file['url'] ?? null;
@@ -495,7 +496,22 @@ class TaskController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+        // Resolve requested payment method (card|bank) against listing
+        // preference, progressive tiers, and creator capabilities.
+        $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+            $request->input('payment_method', 'card'),
+            $task->payment_methods_accepted ?? 'both',
+            $priceWithVat,
+            $currency,
+            $user,
+            $user->email ?? null,
+            $creator->account_id
+        );
+        if (!($methodResolution['ok'] ?? false)) {
+            return back()->with('error', $methodResolution['message']);
+        }
+
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, 0, $methodResolution['fee_profile']);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -535,7 +551,8 @@ class TaskController extends Controller
 
         // Prepare Transfer Data
         $connectedAccountId = $creator->account_id;
-        $hasCardPayments = StripeControl::hasCardPaymentsCapability($connectedAccountId);
+        $hasCardPayments = $methodResolution['fee_profile'] !== 'card'
+            || StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
         if (!$hasCardPayments) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
@@ -562,13 +579,14 @@ class TaskController extends Controller
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
             'transfer_amount' => (string) round($creatorTransferAmount * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
+            'fee_profile' => $methodResolution['fee_profile'],
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
             'gifter_message' => Str::limit((string) ($gifterMessage ?? ''), 450),
         ]);
 
         $payload = [
-            'payment_method_types' => ['card'],
+            'payment_method_types' => $methodResolution['payment_method_types'],
             'line_items' => $lineItems,
             'mode' => 'payment',
             'payment_intent_data' => [
@@ -582,7 +600,8 @@ class TaskController extends Controller
             'metadata' => $complianceMetadata,
         ];
 
-        $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
+        $force3DS = $methodResolution['fee_profile'] === 'card'
+            && (in_array('FORCE_3DS', $riskData['reason_codes'] ?? []) || $methodResolution['force_3ds']);
 
         // Check if we need to force 3DS
         if ($force3DS) {
@@ -678,6 +697,14 @@ class TaskController extends Controller
                 }
             }
         } else {
+            // Delayed-settlement bank methods (SEPA/ACH) complete the session
+            // before the debit clears — fulfilment happens via the
+            // async_payment_succeeded webhook.
+            if (($session->metadata->fee_profile ?? 'card') === 'bank' && $session->payment_status !== 'paid') {
+                return redirect('/task/' . $uuid)
+                    ->with('success', 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.');
+            }
+
             return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
         }
 
@@ -806,6 +833,7 @@ class TaskController extends Controller
             'currency' => $currency,
             'status' => 'paid', // Always paid in sync handler (and especially for local dev)
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
+            'fee_profile' => $metadata->fee_profile ?? 'card',
             'gifter_message' => $metadata->gifter_message ?? null,
             'admin_fee' => $adminFee,
             'platform_fee' => $platformFee,

@@ -517,20 +517,20 @@ Route::middleware('auth')->group(function () {
                                     ->whereDate('current_end_trial_date', '>=', $now);
                             });
                         })
-                        // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
-                        ->latest()
+                        // Newest period first (created_at ties are not reliable here)
+                        ->newestFirst()
                         ->first();
 
                     // If no active period found, get the most recent one
                     if (!$subscription) {
                         $subscription = MonthlyCharge::where('user_id', $user->id)
-                            ->latest()
+                            ->newestFirst()
                             ->first();
                     }
 
                     // Get complete subscription history for the user
                     $historyCollection = MonthlyCharge::where('user_id', $user->id)
-                        ->latest()
+                        ->newestFirst()
                         ->get();
                     $subscription_history = $historyCollection->map(function ($charge) {
                         $fmt = function ($date) {
@@ -738,7 +738,7 @@ Route::middleware('auth')->group(function () {
 
                 if ($user) {
                     $subscription = MonthlyCharge::where('user_id', $user->id)
-                        ->latest()
+                        ->newestFirst()
                         ->first();
 
                     if ($subscription) {
@@ -812,6 +812,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/profile', [\App\Http\Controllers\CreatorFinancialController::class, 'updateProfile'])->name('profile.update');
             Route::get('/export/csv', [\App\Http\Controllers\CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
             Route::get('/statement', [\App\Http\Controllers\CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
+            Route::get('/statement/download', [\App\Http\Controllers\CreatorFinancialController::class, 'downloadStatement'])->name('statement.download');
             Route::get('/certificate', [\App\Http\Controllers\CreatorFinancialController::class, 'certificate'])->name('certificate');
             Route::get('/fast-start-bonus', [\App\Http\Controllers\CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
 
