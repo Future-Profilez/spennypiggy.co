@@ -25,6 +25,7 @@ use App\Jobs\WishSubscriptionMailToUser;
 use App\Mail\CommandFailed;
 use App\Mail\FastStartBonusPayoutStatusUpdated;
 use App\Mail\FounderBonusPayoutStatusUpdated;
+use App\Mail\PayoutCompleted;
 use App\Mail\TaskPurchasedMail;
 use App\Mail\TaskPurchasedSupporterMail;
 use App\Mail\TaskRefunded;
@@ -4539,6 +4540,51 @@ class StripeWebhookController extends Controller
                             Log::error('Founder payout status push failed', [
                                 'creator_id' => $creator->id,
                                 'stripe_payout_id' => $payout->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // Standard weekly payout run (no bonus_type). Bonus payouts above have
+                    // their own copy; without this branch a creator was told their payout
+                    // was *sent* but never told whether it actually arrived or failed.
+                    if ($creator && $bonusType === '') {
+                        $isZeroDecimal = Helpers::isZeroDecimalCurrency($record->currency ?? 'GBP');
+                        $amountMajor = $isZeroDecimal
+                            ? (int) $record->amount_minor
+                            : round(((int) $record->amount_minor) / 100, 2);
+
+                        try {
+                            Mail::to($creator->email)->send(new PayoutCompleted(
+                                creator: $creator,
+                                amount: (float) $amountMajor,
+                                currency: (string) ($record->currency ?? 'GBP'),
+                                status: $status,
+                                arrivalDate: $record->arrival_date?->format('d M Y'),
+                                destination: $creator->account_id ? 'Connected account '.$creator->account_id : null,
+                                reference: $payout->id,
+                                failureMessage: $payout->failure_message ?? null,
+                            ));
+                        } catch (\Throwable $e) {
+                            Log::error('Failed to send payout-completed email', [
+                                'creator_id' => $creator->id,
+                                'stripe_payout_id' => $payout->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+
+                        try {
+                            $currencySymbol = Helpers::getCurrency($record->currency ?? 'GBP');
+                            Helpers::sendNotification(
+                                $status === 'paid' ? '✅ Payout arrived' : '⚠️ Payout failed',
+                                $status === 'paid'
+                                    ? "Your payout of {$currencySymbol}{$amountMajor} has arrived in your account."
+                                    : "Your payout of {$currencySymbol}{$amountMajor} could not be completed. It will be retried in the next run.",
+                                $creator->email
+                            );
+                        } catch (\Throwable $e) {
+                            Log::error('Failed to push payout-completed notification', [
+                                'creator_id' => $creator->id,
                                 'error' => $e->getMessage(),
                             ]);
                         }
