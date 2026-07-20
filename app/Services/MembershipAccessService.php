@@ -243,7 +243,7 @@ class MembershipAccessService
             }
 
             // Direct check - No Caching
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
             $subscription = $stripe->subscriptions->retrieve($subscriptionId);
             
             $isActive = in_array($subscription->status, ['active', 'trialing', 'past_due']);

@@ -357,7 +357,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
 
-                    $stripeKey = env('STRIPE_SECRET_KEY');
+                    $stripeKey = config('services.stripe.secret');
                     if (empty($stripeKey)) {
                         Log::warning('Stripe API key not configured, falling back to local subscription status', [
                             'user_id' => $this->id,

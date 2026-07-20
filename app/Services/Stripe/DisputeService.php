@@ -18,10 +18,10 @@ class DisputeService
         // Initialize both clients with safety checks
         $ukKey = config('services.stripe.secret');
         if (empty($ukKey)) {
-            $ukKey = env('STRIPE_SECRET_KEY');
+            $ukKey = config('services.stripe.secret');
         }
         
-        $usKey = env('STRIPE_SECRET_KEY_US');
+        $usKey = config('services.stripe.secret_us');
         if (empty($usKey)) {
             $usKey = $ukKey;
         }

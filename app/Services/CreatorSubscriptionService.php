@@ -241,7 +241,7 @@ class CreatorSubscriptionService
         }
 
         try {
-            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+            Stripe::setApiKey(config('services.stripe.secret'));
             $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
             
             if ($stripeSubscription->status === 'trialing' && $stripeSubscription->trial_end) {

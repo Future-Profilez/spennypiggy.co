@@ -41,7 +41,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
             return;
         }
 
-        $secret = env('STRIPE_SECRET_KEY');
+        $secret = config('services.stripe.secret');
         if (!$secret) {
             return;
         }

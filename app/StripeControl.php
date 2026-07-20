@@ -56,7 +56,7 @@ class StripeControl
     {
         try {
             if (empty(self::$client)) {
-                $apiKey = config('services.stripe.secret') ?? env('STRIPE_SECRET_KEY');
+                $apiKey = config('services.stripe.secret');
 
                 if (empty($apiKey) || ! is_string($apiKey)) {
                     Log::error('Stripe UK API key configuration issue');
@@ -67,7 +67,7 @@ class StripeControl
             }
 
             if (empty(self::$clientUs)) {
-                $apiKeyUs = env('STRIPE_SECRET_KEY_US') ?? config('services.stripe.secret') ?? env('STRIPE_SECRET_KEY');
+                $apiKeyUs = config('services.stripe.secret_us') ?? config('services.stripe.secret');
 
                 if (empty($apiKeyUs) || ! is_string($apiKeyUs)) {
                     Log::error('Stripe US API key configuration issue');
@@ -1555,7 +1555,7 @@ class StripeControl
      */
     public static function deleteProductAndPrices(string $productId, string $connectedAccountId)
     {
-        $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $client = new StripeClient(config('services.stripe.secret'));
 
         try {
             // 1. Fetch all prices for the product
@@ -1612,7 +1612,7 @@ class StripeControl
 
     public static function deleteProductAndPricesOfCreator(string $productId, ?string $connectedAccountId = null)
     {
-        $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $client = new StripeClient(config('services.stripe.secret'));
 
         try {
             $options = [];

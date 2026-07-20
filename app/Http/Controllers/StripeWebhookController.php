@@ -113,7 +113,7 @@ class StripeWebhookController extends Controller
         // Prefer config() over env() — on Vapor, cached config makes env() return
         // null mid-request, which would break webhook signature verification.
         // env() is kept as a fallback so no environment regresses.
-        $stripe_secret = config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY');
+        $stripe_secret = config('services.stripe.secret') ?: config('services.stripe.secret');
         Stripe::setApiKey($stripe_secret);
 
         $payload = @file_get_contents('php://input');
@@ -122,8 +122,8 @@ class StripeWebhookController extends Controller
 
         // Try multiple secrets (UK and US)
         $configs = [
-            ['secret' => config('services.stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET'), 'key' => config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY')],
-            ['secret' => config('services.stripe.webhook_secret_us') ?: env('STRIPE_WEBHOOK_SECRET_US'), 'key' => config('services.stripe.secret_us') ?: env('STRIPE_SECRET_KEY_US')],
+            ['secret' => config('services.stripe.webhook_secret') ?: config('services.stripe.webhook_secret'), 'key' => config('services.stripe.secret') ?: config('services.stripe.secret')],
+            ['secret' => config('services.stripe.webhook_secret_us') ?: config('services.stripe.webhook_secret_us'), 'key' => config('services.stripe.secret_us') ?: config('services.stripe.secret_us')],
         ];
 
         $verified = false;

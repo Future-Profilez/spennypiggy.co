@@ -50,7 +50,7 @@ class MembershipController extends Controller
     public function __construct(UserProfileService $userProfileService)
     {
         $this->userProfileService = $userProfileService;
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        Stripe::setApiKey(config('services.stripe.secret'));
     }
 
     /**
@@ -289,7 +289,7 @@ class MembershipController extends Controller
                 }
                 $mem->save();
 
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(config('services.stripe.secret'));
                 $connectedAccountId = $user->account_id;
 
                 // Check if product exists in Stripe
@@ -1361,7 +1361,7 @@ class MembershipController extends Controller
         // $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
         // $payload = $request->getContent();
         // $endpoint_secret = env('MEMBER_SUB_WEBHOOK_SECRET');
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $endpoint_secret = config('services.stripe.webhook_secret');
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
@@ -1493,7 +1493,7 @@ class MembershipController extends Controller
             $paymentIntentId = null;
             if ($session && isset($session->id)) {
                 try {
-                    $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
                     $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
                     $paymentIntentId = $retrievedSession->payment_intent ?? null;
                     \Illuminate\Support\Facades\Log::info('MembershipController: Retrieved payment intent from session', [

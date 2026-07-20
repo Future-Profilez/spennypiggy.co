@@ -79,7 +79,7 @@ class StripeController extends Controller
     public function __construct(UserProfileService $userProfileService)
     {
         $this->userProfileService = $userProfileService;
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        Stripe::setApiKey(config('services.stripe.secret'));
     }
 
     public function cancelMandatorySubscription(Request $request)
@@ -1569,7 +1569,7 @@ class StripeController extends Controller
 
     public function retrive($id)
     {
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(config('services.stripe.secret'));
         $stripe->checkout->sessions->retrieve(
             $id,
             []
@@ -1803,7 +1803,7 @@ class StripeController extends Controller
                     return redirect()->back()->with('error', 'Creator has not connected their Stripe account.');
                 }
 
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(config('services.stripe.secret'));
                 $anonSessionPayload = [
                     'success_url' => route('checkout.anonymous.success', [$device_id]),
                     'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
@@ -2633,7 +2633,7 @@ class StripeController extends Controller
                             $creatorNetMinor = (int) $session->metadata->creator_net_amount;
                         } elseif ($session && isset($session->subscription)) {
                             // Try to get from subscription metadata
-                            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                            $stripe = new StripeClient(config('services.stripe.secret'));
                             try {
                                 $stripeSub = $stripe->subscriptions->retrieve($session->subscription);
                                 if (isset($stripeSub->metadata->creator_net_amount)) {
@@ -2832,7 +2832,7 @@ class StripeController extends Controller
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
 
         // $payload = @file_get_contents('php://input');
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $endpoint_secret = config('services.stripe.webhook_secret');
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
@@ -3757,7 +3757,7 @@ class StripeController extends Controller
                     // Fetch exact platform fee (application_fee_amount) from Stripe Session/Intent if available
                     if (! empty($session->payment_intent)) {
                         try {
-                            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                            Stripe::setApiKey(config('services.stripe.secret'));
                             $intentObj = PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $tip_pay->creator->account_id]);
                             if (isset($intentObj->application_fee_amount)) {
                                 $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
@@ -4315,7 +4315,7 @@ class StripeController extends Controller
     public function createVerificationSession()
     {
         try {
-            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+            Stripe::setApiKey(config('services.stripe.secret'));
             /** @var User $user */
             $user = Auth::user();
             if (! $user) {
@@ -4384,7 +4384,7 @@ class StripeController extends Controller
         }
 
         try {
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY')); // move your secret to .env
+            $stripe = new StripeClient(config('services.stripe.secret')); // move your secret to .env
 
             $deleted = $stripe->accounts->delete($accountId, []);
 
