@@ -395,8 +395,11 @@ class PiggyPotPaymentController extends Controller
         try {
             $session = StripeControl::getCheckoutSession($pay->session_id, $pay->creator->account_id);
 
-            $pay->status = $session->payment_status;
-            if ($session->payment_status == 'paid') {
+            $instantFulfil = config('payments.instant_fulfilment', true) && $pay->fee_profile === 'bank';
+            $isPaidOrInstantBank = $session->payment_status == 'paid' || ($instantFulfil && in_array($session->payment_status, ['unpaid', 'processing']));
+
+            $pay->status = $session->payment_status == 'paid' ? 'paid' : ($instantFulfil ? 'processing' : $session->payment_status);
+            if ($isPaidOrInstantBank) {
                 $pay->payment_intent_id = $session->payment_intent;
                 $pay->save();
 

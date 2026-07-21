@@ -253,50 +253,78 @@
                                 window.navigator.standalone || 
                                 document.referrer.includes('android-app://');
             
+            // If running as standalone PWA and user is logged in, redirect directly to profile page
+            if (isStandalone && window.location.pathname === '/') {
+                try {
+                    const pageData = JSON.parse(document.getElementById('app').dataset.page || '{}');
+                    const username = pageData?.props?.auth?.user?.username;
+                    if (username) {
+                        window.location.replace('/' + username);
+                        return;
+                    }
+                } catch(e) {}
+            }
+
             // Add PWA class to body for styling
             if (isStandalone) {
                 document.addEventListener('DOMContentLoaded', function() {
                     document.body.classList.add('pwa-mode');
                     
-                    // Add safe area padding specifically for header if not already handled
+                    // Add safe area padding and native app feel specifically for PWA
                     const style = document.createElement('style');
                     style.textContent = `
-                        @supports (padding-top: env(safe-area-inset-top)) {
-                            body.pwa-mode {
-                                padding-top: env(safe-area-inset-top) !important;
-                                padding-bottom: env(safe-area-inset-bottom) !important;
-                            }
-                            
-                            /* Adjust header if it's fixed */
-                            body.pwa-mode header, body.pwa-mode .header, body.pwa-mode nav {
-                                padding-top: env(safe-area-inset-top) !important;
-                            }
-                            
-                            /* Fix for bottom bar */
-                            body.pwa-mode .retro-bottom-bar, body.pwa-mode .bottom-navigation {
-                                position: fixed !important;
-                                bottom: 0 !important;
-                                left: 0 !important;
-                                padding-bottom: env(safe-area-inset-bottom) !important;
-                                box-sizing: content-box !important;
-                                display: flex !important;
-                                z-index: 999999 !important;
-                                height: 60px !important;
-                                width: 100vw !important;
-                                margin: 0 !important;
-                                transform: none !important;
-                            }
-                            
-                            /* Ensure main content doesn't push bottom bar */
-                            body.pwa-mode {
-                                min-height: 100vh;
-                                min-height: -webkit-fill-available;
-                                display: block;
-                            }
-                            
-                            body.pwa-mode main {
-                                padding-bottom: calc(60px + env(safe-area-inset-bottom));
-                            }
+                        html, body {
+                            overscroll-behavior-y: none;
+                            -webkit-tap-highlight-color: transparent;
+                        }
+
+                        body.pwa-mode {
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            width: 100vw !important;
+                            overflow-x: hidden !important;
+                            overscroll-behavior-y: contain !important;
+                            -webkit-user-select: none;
+                            user-select: none;
+                        }
+
+                        body.pwa-mode input,
+                        body.pwa-mode textarea,
+                        body.pwa-mode [contenteditable="true"],
+                        body.pwa-mode p,
+                        body.pwa-mode span,
+                        body.pwa-mode article {
+                            -webkit-user-select: text;
+                            user-select: text;
+                        }
+
+                        /* Adjust fixed header for notch safe area */
+                        body.pwa-mode header, body.pwa-mode .header, body.pwa-mode nav {
+                            padding-top: max(10px, env(safe-area-inset-top, 0px)) !important;
+                        }
+                        
+                        /* Floating pill bottom bar for PWA mode */
+                        body.pwa-mode .retro-bottom-bar, body.pwa-mode .bottom-navigation {
+                            position: fixed !important;
+                            bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+                            left: 12px !important;
+                            right: 12px !important;
+                            width: calc(100vw - 24px) !important;
+                            max-width: 480px !important;
+                            margin: 0 auto !important;
+                            border-radius: 30px !important;
+                            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.35) !important;
+                            padding: 4px 12px !important;
+                            box-sizing: border-box !important;
+                            display: flex !important;
+                            z-index: 999999 !important;
+                            height: auto !important;
+                            transform: none !important;
+                        }
+                        
+                        /* Ensure main content doesn't get hidden under floating bottom bar */
+                        body.pwa-mode main {
+                            padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
                         }
                     `;
                     document.head.appendChild(style);

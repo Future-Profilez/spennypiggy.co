@@ -1,5 +1,5 @@
-import { Link, Head } from "@inertiajs/react";
-import { lazy, Suspense } from "react";
+import { Link, Head, router } from "@inertiajs/react";
+import { lazy, Suspense, useEffect } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
@@ -75,6 +75,18 @@ const CHAPTERS = [
 ];
 
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
+
+    useEffect(() => {
+        // PWA Mode: If logged in, redirect directly to profile page
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                      window.navigator.standalone || 
+                      document.referrer.includes('android-app://');
+        
+        const username = auth?.user?.username;
+        if (isPWA && username && (window.location.pathname === '/' || window.location.pathname === '')) {
+            router.visit(`/${username}`, { replace: true });
+        }
+    }, [auth]);
 
     // https://ucarecdn.com/b8140316-a9b0-4833-af41-3bc5841a0ce6/-/preview/900x300/-/text_align/center/center/-/font/11/000000/-/text/80px90p/100p,100p/spennypiggy.co~sNAVEENFP/-/text_align/center/center/-/font/19/000000/-/text/100px100p/100p,100p/NAVEEN/-/overlay/50ee2983-6aa8-4f34-9ee4-f28b2930d82b/30px30p/20p,50p/
 

@@ -121,6 +121,13 @@ class MembershipController extends Controller
         }
 
         $user = User::where('id', Auth::id())->first();
+        if (empty($user->account_id)) {
+            return response()->json([
+                'status' => false,
+                'msg' => "You need to connect your Stripe account first."
+            ]);
+        }
+
         $exist = Membership::where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
 
         if (in_array($request->level, $exist)) {
@@ -187,14 +194,7 @@ class MembershipController extends Controller
         }
 
         try {
-            $connectedAccountId = $user->account_id;
-            if (empty($connectedAccountId)) {
-                return response()->json([
-                    'status' => false,
-                    'msg' => "You need to connect your Stripe account first."
-                ]);
-            }
-            $product = StripeControl::createProduct($productPayload, $connectedAccountId);
+            $product = StripeControl::createProduct($productPayload, $user->account_id);
 
             $mem->product_id = $product->id;
             $mem->price_id = $product->default_price;

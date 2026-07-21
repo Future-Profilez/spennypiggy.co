@@ -10,6 +10,21 @@ import { WalletIcon,TrendingUpIcon,TrendingDownIcon,DownloadIcon,PlusIcon,Triang
 import { Calculator,FileText,Building2,ScrollText,HelpCircle,Pencil,RefreshCw,ScrollText as ScrollTextIcon,Calculator as CalculatorIcon,FileText as FileTextIcon } from "lucide-react";
 import { XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,AreaChart,Area } from 'recharts';
 
+// Payout history badge styles - shared by the desktop table and the mobile card list.
+const PAYOUT_TYPE_STYLES = {
+    fast_start: 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/20',
+    founder: 'bg-purple-100 text-purple-700 border-purple-200',
+    reserve_release: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+    weekly: 'bg-gray-100 text-gray-600 border-gray-200',
+};
+
+const payoutStatusBadgeCls = (status) =>
+    status === 'paid' ? 'bg-green-100 text-green-700' :
+    status === 'in_transit' ? 'bg-blue-100 text-blue-700' :
+    (status === 'failed' || status === 'skipped') ? 'bg-red-100 text-red-700' :
+    status === 'scheduled' ? 'bg-purple-100 text-purple-700' :
+    'bg-yellow-100 text-yellow-700';
+
 // Group heading - chunks a long page into scannable sections.
 function GroupHeader({ title, sub, divider = true }) {
     return (
@@ -677,70 +692,65 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                             {active_tab === 'payouts' && (
                                 <div className="space-y-6">
                                     <GroupHeader title="Payout schedule & reserves" sub="When money is sent, how much is held back, and when it returns." divider={false} />
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                                        <div className="bg-white p-5 md:p-6 rounded-[30px]  border border-gray-200 shadow-sm">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <div>
-                                                    <div className="text-gray-500 text-[13px] font-semibold uppercase tracking-wide mb-2">Weekly Payout Window</div>
-                                                    <div className="text-gray-900 text-lg md:text-xl font-bold">{cycleWindowLabel || '-'}</div>
-                                                    <div className="mt-2 text-[13px] text-gray-500 font-medium">Next payout: <span className="text-gray-900 font-semibold">{nextPayoutLabel || '-'}</span></div>
-                                                    {payout_cycle?.timezone && (
-                                                        <div className="text-[12px] text-gray-500 mt-2 font-medium uppercase tracking-wide">{payout_cycle.timezone} timezone</div>
-                                                    )}
-                                                </div>
-                                                <div className="w-10 h-10 rounded-full bg-[#05EFB8]/10 flex items-center justify-center border border-[#05EFB8]/20">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
+                                        <div className="bg-white p-5 md:p-6 rounded-[30px] border border-gray-200 shadow-sm flex flex-col">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 shrink-0 rounded-full bg-[#05EFB8]/10 flex items-center justify-center border border-[#05EFB8]/20">
                                                     <WalletIcon size={18} className="text-[#05EFB8]" />
                                                 </div>
+                                                <div className={EYEBROW}>Weekly Payout Window</div>
                                             </div>
+                                            <div className="text-gray-900 text-lg md:text-xl font-bold leading-snug">{cycleWindowLabel || '-'}</div>
+                                            <div className="mt-2 text-[13px] text-gray-500 font-medium">Next payout: <span className="text-gray-900 font-semibold">{nextPayoutLabel || '-'}</span></div>
+                                            {payout_cycle?.timezone && (
+                                                <div className="text-[12px] text-gray-500 mt-auto pt-3 font-medium uppercase tracking-wide">{payout_cycle.timezone} timezone</div>
+                                            )}
                                         </div>
 
                                         <button
                                             type="button"
                                             onClick={openReserveDetails}
-                                            className="text-left bg-white p-5 md:p-6 rounded-[30px]  border border-gray-200 shadow-sm hover:border-emerald-300 transition-colors relative group"
+                                            className="text-left bg-white p-5 md:p-6 rounded-[30px] border border-gray-200 shadow-sm hover:border-emerald-300 transition-colors group flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
                                         >
-
-                                            <div className="flex items-center justify-between gap-4">
-                                                <div>
-                                                    <div className="text-gray-500 text-[13px] font-semibold uppercase tracking-wide mb-2">Reserve Hold</div>
-                                                    <div className="text-gray-900 text-lg md:text-xl font-bold tabular-nums tracking-tight">
-                                                        {formatCurrency(summary?.held_reserves ?? 0, displayCurrency)}
-                                                    </div>
-                                                    <div className="text-[13px] text-gray-500 mt-2 font-medium">
-                                                        Current rate on new sales: <span className="text-gray-900 font-semibold tabular-nums">{(reserve_policy?.effective_percent ?? 0) > 0 ? `${reserve_policy.effective_percent}%` : '0%'}</span>
-                                                    </div>
-                                                    {reserve_reason && (
-                                                        <div className="text-[12px] text-gray-500 mt-1.5 font-medium">{reserve_reason}</div>
-                                                    )}
-                                                    <div className="text-[13px] text-gray-500 mt-2 font-medium leading-snug">
-                                                        Temporarily held for account protection &amp; dispute prevention. Released after 30 days.
-                                                    </div>
-                                                </div>
-                                                <div className="w-10 h-10 min-w-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 shrink-0 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
                                                     <ShieldCheckIcon size={18} className="text-emerald-600" />
                                                 </div>
+                                                <div className={EYEBROW}>Reserve Hold</div>
                                             </div>
-                                            <div className="mt-4 text-center px-2 py-2 rounded-full bg-gray-100 border border-gray-200 text-gray-600 text-[12px] font-semibold uppercase tracking-wide group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all">
-                                                View Transactions &gt;
+                                            <div className="text-gray-900 text-lg md:text-xl font-bold tabular-nums tracking-tight">
+                                                {formatCurrency(summary?.held_reserves ?? 0, displayCurrency)}
+                                            </div>
+                                            <div className="text-[13px] text-gray-500 mt-2 font-medium">
+                                                Current rate on new sales: <span className="text-gray-900 font-semibold tabular-nums">{(reserve_policy?.effective_percent ?? 0) > 0 ? `${reserve_policy.effective_percent}%` : '0%'}</span>
+                                            </div>
+                                            {reserve_reason && (
+                                                <div className="text-[12px] text-gray-500 mt-1.5 font-medium">{reserve_reason}</div>
+                                            )}
+                                            <div className="text-[13px] text-gray-500 mt-2 font-medium leading-snug">
+                                                Temporarily held for account protection &amp; dispute prevention. Released after 30 days.
+                                            </div>
+                                            <div className="mt-auto pt-4">
+                                                <div className="text-center px-2 py-2 rounded-full bg-gray-100 border border-gray-200 text-gray-600 text-[12px] font-semibold uppercase tracking-wide group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all">
+                                                    View Transactions &gt;
+                                                </div>
                                             </div>
                                         </button>
 
-                                        <div className="bg-white p-5 md:p-6 rounded-[30px]  border border-gray-200 shadow-sm">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <div>
-                                                    <div className="text-gray-500 text-[13px] font-semibold uppercase tracking-wide mb-2">How Releases Work</div>
-                                                    <div className="text-gray-900 text-sm md:text-base font-semibold leading-snug">Reserves are automatically released after 30 days</div>
-                                                    <div className="text-[13px] text-gray-500 mt-2 font-medium leading-snug">This helps protect your account while keeping payouts predictable.</div>
-                                                    {reserve_policy?.onboarding_percent > 0 && reserve_policy?.onboarding_ends_at && (
-                                                        <div className="text-[13px] text-gray-500 mt-2 font-medium">
-                                                            New creator hold ends: <span className="text-gray-900 font-semibold">{reserve_policy.onboarding_ends_at}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="min-w-10 w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                                        <div className="bg-white p-5 md:p-6 rounded-[30px] border border-gray-200 shadow-sm flex flex-col md:col-span-2 lg:col-span-1">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 shrink-0 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
                                                     <HelpCircle size={18} className="text-yellow-600" />
                                                 </div>
+                                                <div className={EYEBROW}>How Releases Work</div>
                                             </div>
+                                            <div className="text-gray-900 text-sm md:text-base font-semibold leading-snug">Reserves are automatically released after 30 days</div>
+                                            <div className="text-[13px] text-gray-500 mt-2 font-medium leading-snug">This helps protect your account while keeping payouts predictable.</div>
+                                            {reserve_policy?.onboarding_percent > 0 && reserve_policy?.onboarding_ends_at && (
+                                                <div className="text-[13px] text-gray-500 mt-auto pt-3 font-medium">
+                                                    New creator hold ends: <span className="text-gray-900 font-semibold">{reserve_policy.onboarding_ends_at}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -763,7 +773,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <div className="relative z-10 flex flex-col gap-6">
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex flex-col">
-                                                            <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                                                                 <div className="text-gray-500 text-[13px] font-semibold uppercase tracking-wide">Fast Start Bonus</div>
                                                                 <div className="inline-flex items-center gap-2 bg-[#FF007F]/10 text-[#FF007F] border border-[#FF007F]/20 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide">
                                                                     Platform Bonus
@@ -844,7 +854,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <div className="relative z-10 flex flex-col gap-6">
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex flex-col">
-                                                            <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                                                                 <div className="text-gray-500 text-[13px] font-semibold uppercase tracking-wide">Founder Bonus</div>
                                                                 <div className="inline-flex items-center gap-2 bg-purple-500/10 text-purple-700 border border-purple-500/20 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide">
                                                                     Monthly Bonus
@@ -933,46 +943,47 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
 
                                     <GroupHeader title="This week's balance" sub="What's payable now, and the status of every bucket." />
 
-                                    <div className="bg-white flex gap-6 p-5 md:p-6 rounded-[30px]  border border-gray-200 relative overflow-hidden group hover:border-gray-300 transition-colors shadow-sm">
-                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                    <div className="bg-white rounded-[30px] border border-gray-200 relative overflow-hidden group hover:border-gray-300 transition-colors shadow-sm">
+                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
                                             <ShieldCheckIcon size={80} className="text-blue-500" />
                                         </div>
-                                        <div className="relative z-10 w-full">
-                                            <div className="flex flex-col md:flex-row md:justify-between gap-4 text-gray-900">
-                                                <div className="flex-1">
-                                                    <div className={`${EYEBROW} mb-1.5`}>Available for Friday Payout</div>
-                                                    <div className={`text-2xl ${MONEY} text-emerald-600`}>{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
-                                                    <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">
-                                                        Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, pending completion, disputes and refunds.'}
+                                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 text-gray-900">
+                                            <div className="p-5 md:p-6">
+                                                <div className={`${EYEBROW} mb-1.5`}>Available for Friday Payout</div>
+                                                <div className={`text-2xl ${MONEY} text-emerald-600`}>{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
+                                                <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">
+                                                    Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, pending completion, disputes and refunds.'}
+                                                </div>
+                                                {summary.payout_preview?.lines && summary.payout_preview.lines.length > 0 && (
+                                                    <div className="mt-4 space-y-1.5 border-t border-gray-200 pt-3">
+                                                        {summary.payout_preview.lines.map((line, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center gap-3 text-[13px] font-medium">
+                                                                <span className="text-gray-500">{line.label}</span>
+                                                                <span className={`tabular-nums tracking-tight font-semibold whitespace-nowrap ${line.amount >= 0 ? 'text-gray-700' : 'text-red-600'}`}>
+                                                                    {line.amount >= 0 ? '+' : ''}{formatCurrency(line.amount, displayCurrency)}
+                                                                </span>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                    {summary.payout_preview?.lines && summary.payout_preview.lines.length > 0 && (
-                                                        <div className="mt-4 space-y-1.5 border-t border-gray-200 pt-3">
-                                                            {summary.payout_preview.lines.map((line, idx) => (
-                                                                <div key={idx} className="flex justify-between items-center text-[13px] font-medium">
-                                                                    <span className="text-gray-500">{line.label}</span>
-                                                                    <span className={`tabular-nums tracking-tight font-semibold ${line.amount >= 0 ? 'text-gray-700' : 'text-red-600'}`}>
-                                                                        {line.amount >= 0 ? '+' : ''}{formatCurrency(line.amount, displayCurrency)}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                )}
+                                            </div>
+                                            <div className="p-5 md:p-6">
+                                                <div className={`${EYEBROW} mb-1.5`}>Pending Completion (Cleared)</div>
+                                                <div className={`text-2xl ${MONEY} text-yellow-600`}>{formatCurrency(summary.pending_balance || 0, displayCurrency)}</div>
+                                                <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">Waiting for tasks or shop items to be completed (after 7-day clearing).</div>
+                                            </div>
+                                            <div className="p-5 md:p-6">
+                                                <div className={`${EYEBROW} mb-1.5`}>Status</div>
+                                                <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 text-[13px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wide">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Healthy
                                                 </div>
-                                                <div className="border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:px-4 flex-1">
-                                                    <div className={`${EYEBROW} mb-1.5`}>Pending Completion (Cleared)</div>
-                                                    <div className={`text-2xl ${MONEY} text-yellow-600`}>{formatCurrency(summary.pending_balance || 0, displayCurrency)}</div>
-                                                    <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">Waiting for tasks or shop items to be completed (after 7-day clearing).</div>
-                                                </div>
-                                                <div className="border-t md:border-t-0 md:border-l text-start border-gray-200 pt-4 md:pt-0 md:pl-4 flex-1">
-                                                    <div className={`${EYEBROW} mb-1.5`}>Status</div>
-                                                    <div className="inline-block bg-emerald-500/10 text-emerald-600 text-[13px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wide">Healthy</div>
-                                                </div>
+                                                <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">Your account is in good standing and payouts run on schedule.</div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Payment Status Breakdown */}
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                                         {[
                                             { key: 'queued', label: 'Queued for Friday Payout', bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-600', note: 'Included in upcoming payout batch' },
                                             { key: 'clearing', label: 'Pending (Clearing)', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-600', note: 'Payment received, clearing for 7 days' },
@@ -1028,120 +1039,177 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 {payout_history.length} payout{payout_history.length !== 1 ? 's' : ''}
                                             </span>
                                         </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left">
-                                                <thead className="bg-gray-50">
-                                                    <tr className="text-gray-500 text-[12px] uppercase font-bold tracking-widest">
-                                                        <th className="px-6 py-4">Requested On</th>
-                                                        <th className="px-6 py-4">Type</th>
-                                                        <th className="px-6 py-4">Amount</th>
-                                                        <th className="px-6 py-4">Expected Arrival</th>
-                                                        <th className="px-6 py-4 text-right">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-200">
-                                                    {payout_history.length > 0 ? (
-                                                        payout_history.map((p) => {
-                                                            const typeStyles = {
-                                                                fast_start: 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/20',
-                                                                founder: 'bg-purple-100 text-purple-700 border-purple-200',
-                                                                reserve_release: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-                                                                weekly: 'bg-gray-100 text-gray-600 border-gray-200',
-                                                            };
-                                                            const hasBonus = (p.fast_start_bonus > 0 || p.founder_bonus > 0);
-                                                            const bonusAmt = p.type_key === 'fast_start' ? p.fast_start_bonus : p.founder_bonus;
-                                                            const isOpen = expandedPayout === p.uuid;
-                                                            const isFail = p.status === 'failed' || p.status === 'skipped';
-                                                            return (
-                                                                <Fragment key={p.uuid}>
-                                                                <tr className="hover:bg-gray-50 transition-colors align-top">
-                                                                    <td className="px-6 py-4">
+                                        {payout_history.length === 0 ? (
+                                            <div className="px-6 py-12 text-center">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <WalletIcon className="text-gray-300" size={32} />
+                                                    <span className="text-gray-400 text-sm font-medium">No payouts have been processed yet.</span>
+                                                    <span className="text-gray-300 text-[12px]">Payouts are sent every Friday.</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {/* Mobile: stacked cards (table is unreadable on small screens) */}
+                                                <div className="md:hidden divide-y divide-gray-100">
+                                                    {payout_history.map((p) => {
+                                                        const hasBonus = (p.fast_start_bonus > 0 || p.founder_bonus > 0);
+                                                        const bonusAmt = p.type_key === 'fast_start' ? p.fast_start_bonus : p.founder_bonus;
+                                                        const isOpen = expandedPayout === p.uuid;
+                                                        const isFail = p.status === 'failed' || p.status === 'skipped';
+                                                        return (
+                                                            <div key={p.uuid} className="p-4 sm:p-5">
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div>
                                                                         <div className="text-[14px] text-gray-900 font-bold leading-tight">{p.date}</div>
                                                                         <div className="text-[11px] text-gray-400 font-medium mt-0.5">{p.time}</div>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <span className={` whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${typeStyles[p.type_key] || typeStyles.weekly}`}>
-                                                                            {p.type_label}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="text-[15px] tabular-nums font-bold text-gray-900 tabular-nums">{formatCurrency(p.amount, p.currency)}</div>
+                                                                    </div>
+                                                                    <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${payoutStatusBadgeCls(p.status)}`}>
+                                                                        {p.status === 'in_transit' ? 'In Bank Soon' : p.status?.replace('_', ' ')}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="mt-3 flex items-end justify-between gap-3">
+                                                                    <div>
+                                                                        <div className="text-lg tabular-nums tracking-tight font-bold text-gray-900">{formatCurrency(p.amount, p.currency)}</div>
                                                                         {hasBonus && (
                                                                             <div className="text-[11px] font-bold tabular-nums text-[#FF007F] uppercase tracking-wider mt-0.5">
                                                                                 Bonus: {formatCurrency(bonusAmt, p.currency)}
                                                                             </div>
                                                                         )}
-                                                                        {p.reference && (
-                                                                            <div className="text-[10px] text-gray-400 font-mono mt-1 truncate max-w-[140px]" title={p.reference}>
-                                                                                {p.reference}
-                                                                            </div>
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-[14px] text-gray-600">
-                                                                        {isFail ? (
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setExpandedPayout(isOpen ? null : p.uuid)}
-                                                                                className="text-left text-red-600 font-bold text-[12px] hover:underline"
-                                                                            >
-                                                                                {p.failure_reason || 'Payout failed'}
-                                                                                <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
-                                                                                    {isOpen ? 'Hide details ▲' : 'Show details ▼'}
-                                                                                </span>
-                                                                            </button>
-                                                                        ) : p.status === 'paid' ? (
-                                                                            <span className="text-green-700 font-bold">{p.arrival_date || 'Delivered'}</span>
-                                                                        ) : p.status === 'scheduled' ? (
-                                                                            <span className="text-gray-600">{p.arrival_date ? `Est. ${p.arrival_date}` : 'To be scheduled'}</span>
-                                                                        ) : (
-                                                                            <span>{p.arrival_date || 'Processing…'}</span>
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-sm text-right">
-                                                                        <span className={` whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                                                                            p.status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                                            p.status === 'in_transit' ? 'bg-blue-100 text-blue-700' :
-                                                                            isFail ? 'bg-red-100 text-red-700' :
-                                                                            p.status === 'scheduled' ? 'bg-purple-100 text-purple-700' :
-                                                                            'bg-yellow-100 text-yellow-700'
-                                                                        }`}>
-                                                                            {p.status === 'in_transit' ? 'In Bank Soon' : p.status?.replace('_', ' ')}
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
+                                                                    </div>
+                                                                    <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${PAYOUT_TYPE_STYLES[p.type_key] || PAYOUT_TYPE_STYLES.weekly}`}>
+                                                                        {p.type_label}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="mt-2 text-[13px] text-gray-600">
+                                                                    {isFail ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setExpandedPayout(isOpen ? null : p.uuid)}
+                                                                            className="text-left text-red-600 font-bold text-[12px] hover:underline"
+                                                                        >
+                                                                            {p.failure_reason || 'Payout failed'}
+                                                                            <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
+                                                                                {isOpen ? 'Hide details ▲' : 'Show details ▼'}
+                                                                            </span>
+                                                                        </button>
+                                                                    ) : p.status === 'paid' ? (
+                                                                        <span className="text-green-700 font-bold">Arrived {p.arrival_date || ''}</span>
+                                                                    ) : p.status === 'scheduled' ? (
+                                                                        <span>{p.arrival_date ? `Est. arrival ${p.arrival_date}` : 'To be scheduled'}</span>
+                                                                    ) : (
+                                                                        <span>{p.arrival_date ? `Expected ${p.arrival_date}` : 'Processing…'}</span>
+                                                                    )}
+                                                                </div>
                                                                 {isFail && isOpen && (
-                                                                    <tr className="bg-red-50/50">
-                                                                        <td colSpan="5" className="px-6 py-4">
-                                                                            <div className="rounded-xl border border-red-200 bg-white p-4">
-                                                                                <div className="text-[11px] font-black uppercase tracking-widest text-red-500 mb-1">Failure Detail</div>
-                                                                                <p className="text-[13px] text-gray-700 break-words">{p.failure_detail || 'No additional detail provided by Stripe.'}</p>
-                                                                                {p.failure_code && (
-                                                                                    <div className="text-[11px] text-gray-400 font-mono mt-2">Code: {p.failure_code}</div>
-                                                                                )}
-                                                                                <p className="text-[12px] text-gray-500 mt-3">
-                                                                                    Need help? Contact <a href="mailto:support@spennypiggy.co" className="text-[#FF007F] font-bold underline">support@spennypiggy.co</a>.
-                                                                                </p>
-                                                                            </div>
+                                                                    <div className="mt-3 rounded-xl border border-red-200 bg-red-50/50 p-4">
+                                                                        <div className="text-[11px] font-black uppercase tracking-widest text-red-500 mb-1">Failure Detail</div>
+                                                                        <p className="text-[13px] text-gray-700 break-words">{p.failure_detail || 'No additional detail provided by Stripe.'}</p>
+                                                                        {p.failure_code && (
+                                                                            <div className="text-[11px] text-gray-400 font-mono mt-2">Code: {p.failure_code}</div>
+                                                                        )}
+                                                                        <p className="text-[12px] text-gray-500 mt-3">
+                                                                            Need help? Contact <a href="mailto:support@spennypiggy.co" className="text-[#FF007F] font-bold underline">support@spennypiggy.co</a>.
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* Desktop: full table */}
+                                                <div className="hidden md:block overflow-x-auto">
+                                                    <table className="w-full text-left">
+                                                        <thead className="bg-gray-50">
+                                                            <tr className="text-gray-500 text-[12px] uppercase font-bold tracking-widest">
+                                                                <th className="px-6 py-4">Requested On</th>
+                                                                <th className="px-6 py-4">Type</th>
+                                                                <th className="px-6 py-4 text-right">Amount</th>
+                                                                <th className="px-6 py-4">Expected Arrival</th>
+                                                                <th className="px-6 py-4 text-right">Status</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-200">
+                                                            {payout_history.map((p) => {
+                                                                const hasBonus = (p.fast_start_bonus > 0 || p.founder_bonus > 0);
+                                                                const bonusAmt = p.type_key === 'fast_start' ? p.fast_start_bonus : p.founder_bonus;
+                                                                const isOpen = expandedPayout === p.uuid;
+                                                                const isFail = p.status === 'failed' || p.status === 'skipped';
+                                                                return (
+                                                                    <Fragment key={p.uuid}>
+                                                                    <tr className="hover:bg-gray-50 transition-colors align-top">
+                                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                                            <div className="text-[14px] text-gray-900 font-bold leading-tight">{p.date}</div>
+                                                                            <div className="text-[11px] text-gray-400 font-medium mt-0.5">{p.time}</div>
+                                                                        </td>
+                                                                        <td className="px-6 py-4">
+                                                                            <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${PAYOUT_TYPE_STYLES[p.type_key] || PAYOUT_TYPE_STYLES.weekly}`}>
+                                                                                {p.type_label}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="px-6 py-4 text-right">
+                                                                            <div className="text-[15px] tabular-nums tracking-tight font-bold text-gray-900">{formatCurrency(p.amount, p.currency)}</div>
+                                                                            {hasBonus && (
+                                                                                <div className="text-[11px] font-bold tabular-nums text-[#FF007F] uppercase tracking-wider mt-0.5">
+                                                                                    Bonus: {formatCurrency(bonusAmt, p.currency)}
+                                                                                </div>
+                                                                            )}
+                                                                            {p.reference && (
+                                                                                <div className="text-[10px] text-gray-400 font-mono mt-1 truncate max-w-[140px] ml-auto" title={p.reference}>
+                                                                                    {p.reference}
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 text-[14px] text-gray-600">
+                                                                            {isFail ? (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setExpandedPayout(isOpen ? null : p.uuid)}
+                                                                                    className="text-left text-red-600 font-bold text-[12px] hover:underline"
+                                                                                >
+                                                                                    {p.failure_reason || 'Payout failed'}
+                                                                                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
+                                                                                        {isOpen ? 'Hide details ▲' : 'Show details ▼'}
+                                                                                    </span>
+                                                                                </button>
+                                                                            ) : p.status === 'paid' ? (
+                                                                                <span className="text-green-700 font-bold">{p.arrival_date || 'Delivered'}</span>
+                                                                            ) : p.status === 'scheduled' ? (
+                                                                                <span className="text-gray-600">{p.arrival_date ? `Est. ${p.arrival_date}` : 'To be scheduled'}</span>
+                                                                            ) : (
+                                                                                <span>{p.arrival_date || 'Processing…'}</span>
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 text-sm text-right">
+                                                                            <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${payoutStatusBadgeCls(p.status)}`}>
+                                                                                {p.status === 'in_transit' ? 'In Bank Soon' : p.status?.replace('_', ' ')}
+                                                                            </span>
                                                                         </td>
                                                                     </tr>
-                                                                )}
-                                                                </Fragment>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan="5" className="px-6 py-10 text-center">
-                                                                <div className="flex flex-col items-center gap-2">
-                                                                    <WalletIcon className="text-gray-300" size={32} />
-                                                                    <span className="text-gray-400 text-sm font-medium">No payouts have been processed yet.</span>
-                                                                    <span className="text-gray-300 text-[12px]">Payouts are sent every Friday.</span>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                                    {isFail && isOpen && (
+                                                                        <tr className="bg-red-50/50">
+                                                                            <td colSpan="5" className="px-6 py-4">
+                                                                                <div className="rounded-xl border border-red-200 bg-white p-4">
+                                                                                    <div className="text-[11px] font-black uppercase tracking-widest text-red-500 mb-1">Failure Detail</div>
+                                                                                    <p className="text-[13px] text-gray-700 break-words">{p.failure_detail || 'No additional detail provided by Stripe.'}</p>
+                                                                                    {p.failure_code && (
+                                                                                        <div className="text-[11px] text-gray-400 font-mono mt-2">Code: {p.failure_code}</div>
+                                                                                    )}
+                                                                                    <p className="text-[12px] text-gray-500 mt-3">
+                                                                                        Need help? Contact <a href="mailto:support@spennypiggy.co" className="text-[#FF007F] font-bold underline">support@spennypiggy.co</a>.
+                                                                                    </p>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    )}
+                                                                    </Fragment>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     <LedgerHistoryTable transactions={recent_transactions} tax_year={tax_year} active_tab={active_tab} displayCurrency={displayCurrency} />

@@ -57,6 +57,7 @@ export default function EditProfile({
         avatar: null,
         cover: null,
         gender: user?.gender || "he",
+        date_of_birth: user?.date_of_birth ? String(user.date_of_birth).substring(0, 10) : "",
         creator_category: user?.creator_category
             ? typeof user.creator_category === "string"
                 ? JSON.parse(user.creator_category)
@@ -693,6 +694,20 @@ export default function EditProfile({
                                                 </svg>
                                             </div>
                                         </div>
+                                    </li>
+                                    <li className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Date of Birth (for milestone & birthday rewards)
+                                        </label>
+                                        <input
+                                            type="date"
+                                            className="w-full border border-gray-300 px-4 py-3 rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white"
+                                            value={data.date_of_birth}
+                                            onChange={(e) => setData("date_of_birth", e.target.value)}
+                                        />
+                                        {errors.date_of_birth && (
+                                            <span className="text-xs text-red-500 mt-1 block">{errors.date_of_birth}</span>
+                                        )}
                                     </li>
                                     <li className="mb-4">
                                         <div className="flex justify-between items-center mb-1">

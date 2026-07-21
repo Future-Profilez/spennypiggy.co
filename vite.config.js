@@ -3,7 +3,20 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import os from 'os';
 // import { visualizer } from 'rollup-plugin-visualizer';
+
+// The dev server binds to 0.0.0.0 so phones and other machines on the LAN can
+// reach it. HMR needs a host the *browser* can resolve, so a hard-coded
+// "localhost" silently kills hot reload for every device except this one.
+// Resolve the LAN address instead, falling back to localhost when offline.
+const lanHost = () => {
+    for (const iface of Object.values(os.networkInterfaces()).flat()) {
+        if (iface && iface.family === 'IPv4' && !iface.internal) return iface.address;
+    }
+
+    return 'localhost';
+};
 
 export default defineConfig((env) => {
     const ssrBuild = env.ssrBuild || process.argv.includes('--ssr');
@@ -72,9 +85,9 @@ export default defineConfig((env) => {
             'Access-Control-Allow-Origin': '*',
         },
         hmr: {
-            host: 'localhost',
+            host: lanHost(),
             overlay: false,
-        } 
+        }
     },
     resolve: {
         alias: {

@@ -215,8 +215,9 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                 <video
                   key={popupVideoUrl}
                   ref={popupVideoRef}
-                  // playsInline
+                  playsInline
                   controls
+                  autoPlay={false}
                   controlsList="nodownload"
                   disablePictureInPicture
                   preload="none"

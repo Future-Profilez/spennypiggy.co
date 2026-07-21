@@ -120,6 +120,9 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
         } else {
             $user = User::find(Auth::id());
+            if (empty($user->account_id)) {
+                return redirect()->back()->with("error", "Please connect your Stripe account before creating items.");
+            }
             $currency = $user->default_currency ?? 'gbp';
 
             // Use new gross-up flow for consistent fee calculation
@@ -310,6 +313,9 @@ class WishitemController extends Controller
         // }
 
         $user = User::find(Auth::id());
+        if (empty($user->account_id)) {
+            return redirect()->back()->with("error", "Please connect your Stripe account before creating items.");
+        }
         $price = $request->price;
         $currency = $user->default_currency ?? 'gbp';
 

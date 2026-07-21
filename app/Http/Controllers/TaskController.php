@@ -325,6 +325,10 @@ class TaskController extends Controller
             abort(403, 'Unauthorized');
         }
 
+        if (empty($task->deliverable_content)) {
+            return redirect()->back()->with('error', 'No downloadable file is attached to this task.');
+        }
+
         $userId = Auth::id();
 
         if ($task->creator_id === $userId) {
@@ -667,8 +671,9 @@ class TaskController extends Controller
 
         $isPaid = $session->payment_status === 'paid';
         $isLocal = App::environment('local');
+        $instantFulfil = config('payments.instant_fulfilment', true) && (($session->metadata->fee_profile ?? 'card') === 'bank');
 
-        if ($isPaid || $isLocal) {
+        if ($isPaid || $isLocal || ($instantFulfil && in_array($session->payment_status, ['unpaid', 'processing']))) {
 
             $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
 

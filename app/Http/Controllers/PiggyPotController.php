@@ -78,7 +78,16 @@ class PiggyPotController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'target_amount' => 'required|numeric|min:1',
+            'target_amount' => [
+                'required',
+                'numeric',
+                function ($attribute, $value, $fail) {
+                    $err = \App\Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
+                    if ($err) {
+                        $fail($err);
+                    }
+                },
+            ],
             'currency' => 'required|string|max:3',
             'cover_media' => 'nullable|string',
             'content_file' => 'required|string',
@@ -130,7 +139,16 @@ class PiggyPotController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'target_amount' => 'required|numeric|min:1',
+            'target_amount' => [
+                'required',
+                'numeric',
+                function ($attribute, $value, $fail) {
+                    $err = \App\Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
+                    if ($err) {
+                        $fail($err);
+                    }
+                },
+            ],
             'currency' => 'required|string|max:3',
             'cover_media' => 'nullable|string',
             'content_file' => 'required|string',

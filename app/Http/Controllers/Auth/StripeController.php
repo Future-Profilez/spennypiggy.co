@@ -2410,8 +2410,12 @@ class StripeController extends Controller
             // Retrieve session from connected account
             $session = StripeControl::getCheckoutSession($sub->session_id, $sub->wish_item->user->account_id);
 
-            $sub->status = $session->payment_status;
-            if ($session->payment_status == 'paid') {
+            $instantFulfil = config('payments.instant_fulfilment', true)
+                && ($sub->fee_profile === 'bank' || ($session->metadata->fee_profile ?? null) === 'bank' || ! empty(array_intersect(['pay_by_bank', 'sepa_debit', 'us_bank_account'], $session->payment_method_types ?? [])));
+            $isPaidOrInstantBank = $session->payment_status == 'paid' || ($instantFulfil && in_array($session->payment_status, ['unpaid', 'processing']));
+
+            $sub->status = $session->payment_status == 'paid' ? 'paid' : ($instantFulfil ? 'processing' : $session->payment_status);
+            if ($isPaidOrInstantBank) {
 
                 $symbol = Currency::where('iso', strtoupper($sub->currency))->first();
                 if (! $symbol) {
@@ -3658,8 +3662,11 @@ class StripeController extends Controller
         try {
             // Need to pass the connected account ID because the session was created on the creator's account
             $session = StripeControl::getCheckoutSession($tip_pay->session_id, $tip_pay->creator->account_id);
-            $tip_pay->status = $session->payment_status;
-            if ($session->payment_status == 'paid') {
+            $instantFulfil = config('payments.instant_fulfilment', true) && ($tip_pay->fee_profile === 'bank' || in_array('pay_by_bank', $session->payment_method_types ?? []));
+            $isPaidOrInstantBank = $session->payment_status == 'paid' || ($instantFulfil && in_array($session->payment_status, ['unpaid', 'processing']));
+
+            $tip_pay->status = $session->payment_status == 'paid' ? 'paid' : ($instantFulfil ? 'processing' : $session->payment_status);
+            if ($isPaidOrInstantBank) {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso', strtoupper($currency))->first();
 

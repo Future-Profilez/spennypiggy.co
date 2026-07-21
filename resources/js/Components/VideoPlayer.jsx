@@ -11,8 +11,8 @@ const VideoPlayer = ({ src, poster, controls = true, autoPlay = false, className
                 <video
                     className="w-full h-auto rounded-[30px]  shadow-sm border-[3px] border-black"
                     controls={controls}
-                    autoPlay={autoPlay}
-                    preload={autoPlay ? "metadata" : "none"}
+                    autoPlay={false}
+                    preload="none"
                     poster={poster}
                 >
                     <source src={src} type="video/mp4" />

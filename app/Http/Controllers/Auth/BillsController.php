@@ -439,29 +439,22 @@ class BillsController extends Controller
             return to_route('user.show', ['username' => $user->username])
                 ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
-        DB::beginTransaction();
+
         $bill = Bills::with('user')->whereUuid($uuid)->first();
-        // if (!in_array($bill->user->subscription_status, [1, 2])) {
-        //     return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
-        // }
         if (!$bill) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'Bill not found!');
         }
 
         if ($bill->is_suspended) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'This bill is currently suspended and cannot accept payments.');
         }
 
         if (!$bill->user) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'Creator account not found or deactivated.');
         }
 
         // Check if creator has card_payments capability
         if (!StripeControl::hasCardPaymentsCapability($bill->user->account_id)) {
-            DB::rollBack();
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
             return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
@@ -470,8 +463,6 @@ class BillsController extends Controller
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($bill->user);
 
         if (!$subscriptionCheck['eligible']) {
-            DB::rollBack(); // Rollback the transaction before early return
-
             // Send notification to creator about blocked payment
             $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
 
@@ -527,18 +518,9 @@ class BillsController extends Controller
         // Calculate actual VAT amount for display
         $actualVatAmount = $price * $vatPercent / 100;
 
-        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
-        if ($checkGifterStatus === true) {
-            $user = Auth::user();
-            return to_route('user.show', ['username' => $user->username])
-                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
-        }
-
         $user = Auth::user();
-
-        $user = Auth::user();
-        if ($user) {
-            if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
+        if ($user && $bill->user_id === $user->id) {
+            return redirect()->back()->with('error', "You can't buy your own bill!");
         }
 
         if ($request->isMethod("POST")) {
@@ -576,6 +558,8 @@ class BillsController extends Controller
             if ($msgErr = Helpers::validateSupporterMessage($request->message ?? null, 100)) {
                 return redirect()->back()->with('error', $msgErr);
             }
+
+            DB::beginTransaction();
 
             $sub = BillPayment::create([
                 'bills_id'       => $bill->id,

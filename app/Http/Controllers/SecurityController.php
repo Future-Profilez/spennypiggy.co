@@ -92,13 +92,13 @@ class SecurityController extends Controller
 
         return response()->json([
             'status' => true,
-            'blocked_users' => $blockedUsers->map(function ($block) {
+            'blocked_users' => $blockedUsers->filter(fn($block) => $block->blockedUser !== null)->values()->map(function ($block) {
                 return [
                     'id' => $block->blockedUser->id,
                     'name' => $block->blockedUser->name,
                     'username' => $block->blockedUser->username,
                     'avatar_url' => $block->blockedUser->avatar_url,
-                    'blocked_at' => $block->created_at->diffForHumans(),
+                    'blocked_at' => $block->created_at ? $block->created_at->diffForHumans() : null,
                     'reason' => $block->reason,
                 ];
             }),

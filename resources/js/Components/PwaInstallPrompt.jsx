@@ -198,14 +198,14 @@ export default function PwaInstallPrompt() {
             </div>
             
             <div className="space-y-3 text-sm text-neutral-700 ">
-              <div className="p-3 rounded bg-green-50 /20 border border-green-200 ">
+              <div className="p-3 rounded-[20px] bg-green-50 /20 border border-green-200 ">
                 <p className="font-medium mb-2">Chrome Install Steps:</p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-3">
                     <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
                     <div>
                       <p className="font-medium">Look for install icon in address bar</p>
-                      <p className="text-xs text-neutral-500">Click the <span className="font-mono bg-neutral-200  px-1 rounded">⊕</span> or <span className="font-mono bg-neutral-200   px-1 rounded">Install</span> button</p>
+                      <p className="text-xs text-neutral-500">Click the <span className="font-mono bg-neutral-200  px-1 rounded-[20px]">⊕</span> or <span className="font-mono bg-neutral-200   px-1 rounded-[20px]">Install</span> button</p>
                     </div>
                   </div>
                   
@@ -215,7 +215,7 @@ export default function PwaInstallPrompt() {
                     <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
                     <div>
                       <p className="font-medium">Use Chrome menu</p>
-                      <p className="text-xs text-neutral-500">Click <span className="font-mono bg-neutral-200   px-1 rounded">⋮</span> → "Install Spenny Piggy..."</p>
+                      <p className="text-xs text-neutral-500">Click <span className="font-mono bg-neutral-200   px-1 rounded-[20px]">⋮</span> → "Install Spenny Piggy..."</p>
                     </div>
                   </div>
                 </div>
@@ -226,7 +226,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="px-6 py-2 rounded-[30px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                className="px-6 py-2 rounded-[20px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
               >
                 Got it! 🐷
               </button>
@@ -253,7 +253,7 @@ export default function PwaInstallPrompt() {
 
           {isSafari ? (
             <div className="mt-4 space-y-2 text-sm text-neutral-700  ">
-              <div className="p-3 rounded bg-blue-50  border border-blue-200  ">
+              <div className="p-3 rounded-[20px] bg-blue-50  border border-blue-200  ">
                 <p className="font-medium">Safari Install Steps</p>
                 <ol className="list-decimal ml-5 mt-2 space-y-1 text-xs">
                   <li>Tap the Share button (□↑) at the bottom</li>
@@ -269,7 +269,7 @@ export default function PwaInstallPrompt() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="px-4 py-2 rounded-[30px]   border border-neutral-300   text-neutral-700  bg-white   hover:bg-neutral-50  "
+              className="px-4 py-2 rounded-[20px]   border border-neutral-300   text-neutral-700  bg-white   hover:bg-neutral-50  "
             >
               Not now
             </button>
@@ -278,7 +278,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="px-4 py-2 rounded-[30px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                className="px-4 py-2 rounded-[20px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
               >
                 Install
               </button>
@@ -286,7 +286,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="px-4 py-2 rounded-[30px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                className="px-4 py-2 rounded-[20px]   bg-pink-600 hover:bg-pink-700 text-white font-medium"
               >
                 Got it
               </button>

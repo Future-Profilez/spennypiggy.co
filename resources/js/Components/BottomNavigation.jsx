@@ -45,7 +45,7 @@ export default function BottomNavigation({ activeTab = 'home' }) {
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bottom-navigation border-t border-gray-200 z-50 px-4 py-2">
+        <div className="fixed bottom-0 left-0 right-0 bottom-navigation bg-[#0B0B0F]/90 backdrop-blur-md border-t border-white/10 z-50 px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             <div className="flex justify-around items-center max-w-md mx-auto">
                 {navItems.map((item) => (
                     <NavItem key={item.key} item={item} active={isActive(item.href)} />
@@ -84,23 +84,23 @@ const NavItem = ({ item, active }) => {
         <Link
             href={item.href}
             onMouseEnter={() => iconRef.current?.startAnimation?.()}
-            className={`flex flex-col items-center justify-center px-2 sm:px-3 py-2 rounded-[30px]    transition-all duration-200 ${
+            className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-[20px] transition-all duration-200 ${
                 active 
-                    ? 'text-[#05EFB8] bg-[#05EFB8]/10 scale-105' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
+                    ? 'text-[#05EFB8] bg-[#05EFB8]/15 scale-105 font-semibold' 
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
             }`}
         >
             <IconComponent 
                 ref={iconRef}
-                size={24}
+                size={22}
                 duration={1.5}
                 color="currentColor"
-                className={`mb-1 transition-transform duration-200 ${
-                    active ? 'text-[#05EFB8]' : 'text-gray-500'
+                className={`mb-0.5 transition-transform duration-200 ${
+                    active ? 'text-[#05EFB8]' : 'text-gray-400'
                 }`} 
             />
-            <span className={`text-xs font-medium mobile-text-sm ${
-                active ? 'text-[#05EFB8]' : 'text-gray-500'
+            <span className={`text-[11px] leading-tight font-medium ${
+                active ? 'text-[#05EFB8]' : 'text-gray-400'
             }`}>
                 {item.label}
             </span>
