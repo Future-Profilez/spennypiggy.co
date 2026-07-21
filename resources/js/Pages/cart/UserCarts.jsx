@@ -569,8 +569,7 @@ export default function UserCarts(props) {
         }
         if (!auth?.user) {
             if (guestAllowed === false) {
-                const msg =
-                    "Guest checkout is currently disabled. Please log in to continue.";
+                const msg = "Guest checkout is currently disabled. Please log in to continue.";
                 pushDebug("blocked_guest_disabled", { msg });
                 if (window.confirm("Login Required\n\n" + msg)) {
                     window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
@@ -582,10 +581,7 @@ export default function UserCarts(props) {
             const totalGbp = rate ? (fee + subtotal) / rate : fee + subtotal;
             if (totalGbp > 50) {
                 pushDebug("blocked_guest_high_value", { totalGbp });
-                if (
-                    window.confirm(
-                        "Login required\n\nLarger payments more than £50 need to login.",
-                    )
+                if (window.confirm("Login required\n\nLarger payments more than £50 need to login.",)
                 ) {
                     window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`;
                 }
@@ -960,7 +956,7 @@ export default function UserCarts(props) {
                                                 </p>
                                                 <input
                                                     required
-                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[12px] md:rounded-[12px] `}
+                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 md:rounded-[12px] `}
                                                     value={email}
                                                     disabled={
                                                         !!auth?.user?.email

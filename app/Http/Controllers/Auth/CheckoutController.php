@@ -163,10 +163,7 @@ class CheckoutController extends Controller
                 $owner->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
 
                 // Return user-friendly error to fan
-                return redirect()->back()->with(
-                    'error',
-                    app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
-                );
+                return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null));
             }
 
             // Check creator activity eligibility
@@ -303,7 +300,7 @@ class CheckoutController extends Controller
                         'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => 'Total value of item including all fees',
-                            'description' => $productName.' from '.($dd->owner->name ?? 'Creator'),
+                            'description' => $productName . ' from ' . ($dd->owner->name ?? 'Creator'),
                         ],
                         'unit_amount' => (int) round($finalTotalAmount * $multiplier),
                     ],
@@ -368,7 +365,7 @@ class CheckoutController extends Controller
 
             $successUrl = route('checkout.success', [$creator_id]);
             if (request()->has('marketing_opt_in') && request()->input('marketing_opt_in')) {
-                $successUrl .= (parse_url($successUrl, PHP_URL_QUERY) ? '&' : '?').'marketing_opt_in=1';
+                $successUrl .= (parse_url($successUrl, PHP_URL_QUERY) ? '&' : '?') . 'marketing_opt_in=1';
             }
 
             $payload = [
@@ -392,7 +389,7 @@ class CheckoutController extends Controller
             // Validate payload before sending to Stripe
             $validationError = $this->validateStripePayload($payload);
             if ($validationError) {
-                Log::error('Stripe payload validation failed: '.$validationError);
+                Log::error('Stripe payload validation failed: ' . $validationError);
 
                 return redirect()->back()->with('error', 'Payment configuration error. Please try again.');
             }
@@ -401,7 +398,7 @@ class CheckoutController extends Controller
                 // Direct Charge: create session on CONNECTED account
                 $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3ds, $owner->username);
             } catch (InvalidRequestException $e) {
-                Log::error('Stripe Checkout Error: '.$e->getMessage(), [
+                Log::error('Stripe Checkout Error: ' . $e->getMessage(), [
                     'error_body' => $e->getJsonBody(),
                     'error_type' => $e->getError()->type ?? 'unknown',
                     'error_code' => $e->getError()->code ?? 'unknown',
@@ -416,7 +413,7 @@ class CheckoutController extends Controller
 
                 return redirect()->back()->with('error', 'Payment configuration error. Please contact support if this persists.');
             } catch (\Exception $e) {
-                Log::error('General Checkout Error: '.$e->getMessage(), [
+                Log::error('General Checkout Error: ' . $e->getMessage(), [
                     'error_class' => get_class($e),
                     'error_trace' => $e->getTraceAsString(),
                     'payload_mode' => $payload['mode'] ?? 'missing',
@@ -425,7 +422,7 @@ class CheckoutController extends Controller
                     'user_id' => Auth::id(),
                 ]);
 
-                return redirect()->back()->with('error', 'Checkout failed: '.$e->getMessage());
+                return redirect()->back()->with('error', 'Checkout failed: ' . $e->getMessage());
             }
 
             session()->forget('session_id');
@@ -507,7 +504,7 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            Log::error('Error in createCheckout: '.$th->getMessage());
+            Log::error('Error in createCheckout: ' . $th->getMessage());
             throw $th;
         }
     }
@@ -603,9 +600,9 @@ class CheckoutController extends Controller
             return null; // No validation errors
 
         } catch (\Exception $e) {
-            Log::error('Error during payload validation: '.$e->getMessage());
+            Log::error('Error during payload validation: ' . $e->getMessage());
 
-            return 'Payload validation error: '.$e->getMessage();
+            return 'Payload validation error: ' . $e->getMessage();
         }
     }
 
@@ -710,13 +707,13 @@ class CheckoutController extends Controller
                 $itemNum = $index + 1;
                 $prefix = "item_{$itemNum}_";
 
-                $metadata[$prefix.'wish_id'] = (string) $item['wish_id'];
-                $metadata[$prefix.'wish_name'] = substr($item['wish_name'], 0, 100); // Stripe limit
+                $metadata[$prefix . 'wish_id'] = (string) $item['wish_id'];
+                $metadata[$prefix . 'wish_name'] = substr($item['wish_name'], 0, 100); // Stripe limit
 
                 if (! empty($item['content_url'])) {
-                    $metadata[$prefix.'content_url'] = $item['content_url'];
-                    $metadata[$prefix.'content_type'] = $item['content_type'];
-                    $metadata[$prefix.'content_source'] = $item['source'];
+                    $metadata[$prefix . 'content_url'] = $item['content_url'];
+                    $metadata[$prefix . 'content_type'] = $item['content_type'];
+                    $metadata[$prefix . 'content_source'] = $item['source'];
                 }
             }
 
@@ -764,7 +761,7 @@ class CheckoutController extends Controller
                 }
                 // Check Stripe limits
                 if (strlen($metadata[$key]) > 500) {
-                    $metadata[$key] = substr($metadata[$key], 0, 497).'...';
+                    $metadata[$key] = substr($metadata[$key], 0, 497) . '...';
                     Log::warning('Checkout metadata value truncated (NEW FORMAT)', ['key' => $key]);
                 }
             }
@@ -778,7 +775,7 @@ class CheckoutController extends Controller
 
             return $metadata;
         } catch (\Exception $e) {
-            Log::error('Error building NEW FLATTENED checkout metadata: '.$e->getMessage());
+            Log::error('Error building NEW FLATTENED checkout metadata: ' . $e->getMessage());
 
             // Return minimal safe metadata as fallback
             return [
@@ -922,7 +919,7 @@ class CheckoutController extends Controller
         }
 
         // Default: assume it's a filename in storage
-        return asset('storage/'.$fileIdentifier);
+        return asset('storage/' . $fileIdentifier);
     }
 
     /**
@@ -1067,8 +1064,10 @@ class CheckoutController extends Controller
             // clearing when the buyer returns. Never claim/fulfil an unconfirmed
             // bank payment — fail closed to "processing" and let the
             // async_payment_succeeded webhook complete it later.
-            if (! config('payments.instant_fulfilment', true)
-                && $existingPayment && ($existingPayment->fee_profile ?? 'card') === 'bank' && ($existingPayment->payment_status ?? null) !== 'paid') {
+            if (
+                ! config('payments.instant_fulfilment', true)
+                && $existingPayment && ($existingPayment->fee_profile ?? 'card') === 'bank' && ($existingPayment->payment_status ?? null) !== 'paid'
+            ) {
                 $settled = false;
                 try {
                     $liveSession = StripeControl::getCheckoutSession($sessionId, $existingPayment->owner->account_id ?? null);
@@ -1167,7 +1166,7 @@ class CheckoutController extends Controller
 
             if (! $stripeid) {
                 Log::error('StripePaymentDetail not found after update', ['session_id' => $sessionId]);
-                throw new \Exception('Payment record not found for session: '.$sessionId);
+                throw new \Exception('Payment record not found for session: ' . $sessionId);
             }
 
             Log::info('Retrieved StripePaymentDetail', [
@@ -1210,7 +1209,7 @@ class CheckoutController extends Controller
                         'payment_data_id' => $payment_data->id,
                         'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id,
                     ]);
-                    throw new \Exception('Payment relationship not found for payment item: '.$payment_data->id);
+                    throw new \Exception('Payment relationship not found for payment item: ' . $payment_data->id);
                 }
 
                 Log::info('Payment relationship exists', [
@@ -1239,7 +1238,7 @@ class CheckoutController extends Controller
                     Log::info('Currency lookup completed', ['symbol_found' => ! is_null($symbol)]);
 
                     if (! $symbol) {
-                        Log::error('Currency not found for ISO: '.strtoupper($currencyValue));
+                        Log::error('Currency not found for ISO: ' . strtoupper($currencyValue));
 
                         return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Currency configuration error. Please contact support.');
                     }
@@ -1316,7 +1315,7 @@ class CheckoutController extends Controller
                 try {
                     $deliverable = Deliverable::create([
                         'uuid' => (string) Str::uuid(),
-                        'product_id' => 'wish_item_'.($dd->wish_item_id ?? 'direct'),
+                        'product_id' => 'wish_item_' . ($dd->wish_item_id ?? 'direct'),
                         'item_id' => $dd->wish_item_id,
                         'creator_id' => $dd->owner_id,
                         'gifter_id' => $dd->user_id ?? null,
@@ -1363,7 +1362,7 @@ class CheckoutController extends Controller
                 CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
                 Log::info('CheckoutMailToUser job dispatched successfully');
             } else {
-                Log::warning('Currency not found for checkout email: '.strtoupper($actualCurrency));
+                Log::warning('Currency not found for checkout email: ' . strtoupper($actualCurrency));
                 CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
                 Log::info('CheckoutMailToUser job dispatched with default symbol');
             }
@@ -1398,7 +1397,7 @@ class CheckoutController extends Controller
             return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             $errorMessage = $th->getMessage();
-            Log::error('Error in successCheckout: '.$errorMessage, [
+            Log::error('Error in successCheckout: ' . $errorMessage, [
                 'trace' => $th->getTraceAsString(),
                 'file' => $th->getFile(),
                 'line' => $th->getLine(),
@@ -1492,13 +1491,13 @@ class CheckoutController extends Controller
     public function debugCheckout($id)
     {
         try {
-            Log::info('Debug checkout called with ID: '.$id);
+            Log::info('Debug checkout called with ID: ' . $id);
 
             $user = Auth::user();
-            Log::info('User authenticated: '.($user ? 'Yes - ID: '.$user->id : 'No'));
+            Log::info('User authenticated: ' . ($user ? 'Yes - ID: ' . $user->id : 'No'));
 
             $owner = User::find($id);
-            Log::info('Owner found: '.($owner ? 'Yes - Name: '.$owner->name : 'No'));
+            Log::info('Owner found: ' . ($owner ? 'Yes - Name: ' . $owner->name : 'No'));
 
             return response()->json([
                 'status' => 'success',
@@ -1508,7 +1507,7 @@ class CheckoutController extends Controller
                 'timestamp' => now()->toISOString(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Debug checkout error: '.$e->getMessage());
+            Log::error('Debug checkout error: ' . $e->getMessage());
 
             return response()->json([
                 'status' => 'error',
