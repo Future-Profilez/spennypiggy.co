@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { Toaster } from 'react-hot-toast';
 import BottomBar from './BottomBar';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
+import NetworkStatusBanner from '@/Components/NetworkStatusBanner';
 import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
 import IntercomProvider from '@/Components/IntercomProvider';
@@ -18,34 +19,27 @@ export default function Authenticated(props){
     return <>
         {auth?.is_emulated && (
             <div className="bg-purple-600 w-full text-white px-12 py-2 flex justify-between items-center fixed bottom-0 z-[100] shadow-md border-b border-purple-400/30">
-                <div className="flex items-center gap-2">
-                    <span className="text-xl">🎭</span>
-                    <span className="text-sm font-bold">Emulating: {user?.username || auth.user?.username}</span>
+                <div className="flex items-center gap-[#8px]">
+                    <div>✨ Logged in as: <b>{auth?.user?.name} (@{auth?.user?.username})</b></div>
                 </div>
-                <Link 
-                    href={route('admin.emulate.stop')} 
-                    method="post" 
-                    as="button"
-                    className="bg-white text-purple-600 px-3 py-1 rounded-full text-xs font-black hover:bg-gray-100 transition-all active:scale-95"
-                >
-                    STOP
-                </Link>
+                <div>
+                    <Link href={route("admin.emulate.stop")} className="bg-white hover:bg-neutral-100 text-purple-700 font-bold px-[#12px] py-[#6px] rounded-[20px] shadow text-[#13px] border transition flex items-center gap-[#6px] cursor-pointer">Stop Emulation</Link>
+                </div>
             </div>
         )}
-        <Header auth={auth} user={user}  />
-        <main>
+        <Header auth={auth} cart_count={cart_count} />
+        <main className="pb-16 sm:pb-0">
+            <NetworkStatusBanner />
             <PullToRefresh />
             {children}
-            <Toaster
-                reverseOrder={false}
-                gutter={8}
+            <Toaster 
+                position="top-center" 
                 toastOptions={{
                 className: '',
-                duration: 3000,
                 style: {
-                background: '#363636',
-                color: '#fff',
-                marginTop: 'env(safe-area-inset-top)',
+                    border: '1px solid #713200',
+                    padding: '16px',
+                    color: '#713200',
                 },
                 success: {
                 duration: 3000,
@@ -63,7 +57,5 @@ export default function Authenticated(props){
         <FlashMessenger />
         <TermsUpdatePopup />
         <IntercomProvider />
-    </>
+    </>;
 }
-
- 

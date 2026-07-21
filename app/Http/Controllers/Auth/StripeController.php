@@ -79,7 +79,7 @@ class StripeController extends Controller
     public function __construct(UserProfileService $userProfileService)
     {
         $this->userProfileService = $userProfileService;
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        Stripe::setApiKey(config('services.stripe.secret'));
     }
 
     public function cancelMandatorySubscription(Request $request)
@@ -1569,7 +1569,7 @@ class StripeController extends Controller
 
     public function retrive($id)
     {
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(config('services.stripe.secret'));
         $stripe->checkout->sessions->retrieve(
             $id,
             []
@@ -1803,7 +1803,7 @@ class StripeController extends Controller
                     return redirect()->back()->with('error', 'Creator has not connected their Stripe account.');
                 }
 
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(config('services.stripe.secret'));
                 $anonSessionPayload = [
                     'success_url' => route('checkout.anonymous.success', [$device_id]),
                     'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
@@ -2410,8 +2410,12 @@ class StripeController extends Controller
             // Retrieve session from connected account
             $session = StripeControl::getCheckoutSession($sub->session_id, $sub->wish_item->user->account_id);
 
-            $sub->status = $session->payment_status;
-            if ($session->payment_status == 'paid') {
+            $instantFulfil = config('payments.instant_fulfilment', true)
+                && ($sub->fee_profile === 'bank' || ($session->metadata->fee_profile ?? null) === 'bank' || ! empty(array_intersect(['pay_by_bank', 'sepa_debit', 'us_bank_account'], $session->payment_method_types ?? [])));
+            $isPaidOrInstantBank = $session->payment_status == 'paid' || ($instantFulfil && in_array($session->payment_status, ['unpaid', 'processing']));
+
+            $sub->status = $session->payment_status == 'paid' ? 'paid' : ($instantFulfil ? 'processing' : $session->payment_status);
+            if ($isPaidOrInstantBank) {
 
                 $symbol = Currency::where('iso', strtoupper($sub->currency))->first();
                 if (! $symbol) {
@@ -2633,7 +2637,7 @@ class StripeController extends Controller
                             $creatorNetMinor = (int) $session->metadata->creator_net_amount;
                         } elseif ($session && isset($session->subscription)) {
                             // Try to get from subscription metadata
-                            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                            $stripe = new StripeClient(config('services.stripe.secret'));
                             try {
                                 $stripeSub = $stripe->subscriptions->retrieve($session->subscription);
                                 if (isset($stripeSub->metadata->creator_net_amount)) {
@@ -2832,7 +2836,7 @@ class StripeController extends Controller
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
 
         // $payload = @file_get_contents('php://input');
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $endpoint_secret = config('services.stripe.webhook_secret');
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
@@ -3658,8 +3662,11 @@ class StripeController extends Controller
         try {
             // Need to pass the connected account ID because the session was created on the creator's account
             $session = StripeControl::getCheckoutSession($tip_pay->session_id, $tip_pay->creator->account_id);
-            $tip_pay->status = $session->payment_status;
-            if ($session->payment_status == 'paid') {
+            $instantFulfil = config('payments.instant_fulfilment', true) && ($tip_pay->fee_profile === 'bank' || in_array('pay_by_bank', $session->payment_method_types ?? []));
+            $isPaidOrInstantBank = $session->payment_status == 'paid' || ($instantFulfil && in_array($session->payment_status, ['unpaid', 'processing']));
+
+            $tip_pay->status = $session->payment_status == 'paid' ? 'paid' : ($instantFulfil ? 'processing' : $session->payment_status);
+            if ($isPaidOrInstantBank) {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso', strtoupper($currency))->first();
 
@@ -3671,6 +3678,19 @@ class StripeController extends Controller
 
                 // Send notification to creator
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
+
+                // Push to creator — the mail above is consent-gated, but every other
+                // flow (shop/task/pot) also pushes, and tip was the only one that didn't.
+                try {
+                    $supporterName = $tip_pay->anonymous ? 'A supporter' : ($tip_pay->user->name ?? $tip_pay->guest_name ?? 'A supporter');
+                    Helpers::sendNotification(
+                        'New Support Payment! 💰',
+                        $supporterName.' purchased your exclusive content.',
+                        $tip_pay->creator->email
+                    );
+                } catch (Exception $e) {
+                    Log::error('Tip creator push failed', ['tip_id' => $tip_pay->id, 'error' => $e->getMessage()]);
+                }
 
                 $creatorNet = (float) $tip_pay->amount;
 
@@ -3729,6 +3749,20 @@ class StripeController extends Controller
                 // Process supporter deliverable, certificate, and email (replaces TipJarMailToUser)
                 TipPaymentMailToUser::dispatch($tip_pay, $userCurrency ? $userCurrency->iso : $tip_pay->currency);
 
+                // Push to the buyer too (shop parity) — guests have no push identity, so email presence gates it.
+                try {
+                    $buyerEmail = $tip_pay->user->email ?? $tip_pay->guest_email ?? null;
+                    if ($buyerEmail) {
+                        Helpers::sendNotification(
+                            'Purchase Confirmed! ✨',
+                            'Your content from '.($tip_pay->creator->name ?? 'the creator').' is unlocked.',
+                            $buyerEmail
+                        );
+                    }
+                } catch (Exception $e) {
+                    Log::error('Tip buyer push failed', ['tip_id' => $tip_pay->id, 'error' => $e->getMessage()]);
+                }
+
                 // Generate thank you post for creator's feed
                 CreateThankYouPostJob::dispatch($tip_pay);
 
@@ -3757,7 +3791,7 @@ class StripeController extends Controller
                     // Fetch exact platform fee (application_fee_amount) from Stripe Session/Intent if available
                     if (! empty($session->payment_intent)) {
                         try {
-                            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                            Stripe::setApiKey(config('services.stripe.secret'));
                             $intentObj = PaymentIntent::retrieve($session->payment_intent, ['stripe_account' => $tip_pay->creator->account_id]);
                             if (isset($intentObj->application_fee_amount)) {
                                 $platformFee = $isZeroDecimal ? (float) $intentObj->application_fee_amount : ($intentObj->application_fee_amount / 100);
@@ -4315,7 +4349,7 @@ class StripeController extends Controller
     public function createVerificationSession()
     {
         try {
-            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+            Stripe::setApiKey(config('services.stripe.secret'));
             /** @var User $user */
             $user = Auth::user();
             if (! $user) {
@@ -4384,7 +4418,7 @@ class StripeController extends Controller
         }
 
         try {
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY')); // move your secret to .env
+            $stripe = new StripeClient(config('services.stripe.secret')); // move your secret to .env
 
             $deleted = $stripe->accounts->delete($accountId, []);
 

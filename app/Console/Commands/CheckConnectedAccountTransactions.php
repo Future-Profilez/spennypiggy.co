@@ -17,7 +17,7 @@ class CheckConnectedAccountTransactions extends Command
         $this->info('🔍 Analyzing Connected Account transactions...');
         
         // Set Stripe API key
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        Stripe::setApiKey(config('services.stripe.secret'));
         
         $days = $this->option('days');
         $timestampStart = time() - ($days * 24 * 60 * 60);

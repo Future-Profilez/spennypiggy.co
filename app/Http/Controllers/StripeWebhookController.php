@@ -25,6 +25,7 @@ use App\Jobs\WishSubscriptionMailToUser;
 use App\Mail\CommandFailed;
 use App\Mail\FastStartBonusPayoutStatusUpdated;
 use App\Mail\FounderBonusPayoutStatusUpdated;
+use App\Mail\PayoutCompleted;
 use App\Mail\TaskPurchasedMail;
 use App\Mail\TaskPurchasedSupporterMail;
 use App\Mail\TaskRefunded;
@@ -112,7 +113,7 @@ class StripeWebhookController extends Controller
         // Prefer config() over env() — on Vapor, cached config makes env() return
         // null mid-request, which would break webhook signature verification.
         // env() is kept as a fallback so no environment regresses.
-        $stripe_secret = config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY');
+        $stripe_secret = config('services.stripe.secret') ?: config('services.stripe.secret');
         Stripe::setApiKey($stripe_secret);
 
         $payload = @file_get_contents('php://input');
@@ -121,8 +122,8 @@ class StripeWebhookController extends Controller
 
         // Try multiple secrets (UK and US)
         $configs = [
-            ['secret' => config('services.stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET'), 'key' => config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY')],
-            ['secret' => config('services.stripe.webhook_secret_us') ?: env('STRIPE_WEBHOOK_SECRET_US'), 'key' => config('services.stripe.secret_us') ?: env('STRIPE_SECRET_KEY_US')],
+            ['secret' => config('services.stripe.webhook_secret') ?: config('services.stripe.webhook_secret'), 'key' => config('services.stripe.secret') ?: config('services.stripe.secret')],
+            ['secret' => config('services.stripe.webhook_secret_us') ?: config('services.stripe.webhook_secret_us'), 'key' => config('services.stripe.secret_us') ?: config('services.stripe.secret_us')],
         ];
 
         $verified = false;
@@ -1716,6 +1717,16 @@ class StripeWebhookController extends Controller
 
             if ($supporter && $supporter->notification_send == 1) {
                 Mail::to($supporter->email)->send(new TaskPurchasedSupporterMail($purchase, $task, $supporter));
+            }
+
+            // Buyer push — mirrors the redirect (createTaskPurchaseSync) path; whichever
+            // of the two wins the race must send the same set of notifications.
+            if ($supporter) {
+                Helpers::sendNotification(
+                    'Purchase Confirmed! ✨',
+                    'Your order for "'.$task->title.'" is confirmed.',
+                    $supporter->email
+                );
             }
 
             Log::info('StripeWebhookController: Task purchase finalized after Stripe confirmation', [
@@ -4539,6 +4550,51 @@ class StripeWebhookController extends Controller
                             Log::error('Founder payout status push failed', [
                                 'creator_id' => $creator->id,
                                 'stripe_payout_id' => $payout->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // Standard weekly payout run (no bonus_type). Bonus payouts above have
+                    // their own copy; without this branch a creator was told their payout
+                    // was *sent* but never told whether it actually arrived or failed.
+                    if ($creator && $bonusType === '') {
+                        $isZeroDecimal = Helpers::isZeroDecimalCurrency($record->currency ?? 'GBP');
+                        $amountMajor = $isZeroDecimal
+                            ? (int) $record->amount_minor
+                            : round(((int) $record->amount_minor) / 100, 2);
+
+                        try {
+                            Mail::to($creator->email)->send(new PayoutCompleted(
+                                creator: $creator,
+                                amount: (float) $amountMajor,
+                                currency: (string) ($record->currency ?? 'GBP'),
+                                status: $status,
+                                arrivalDate: $record->arrival_date?->format('d M Y'),
+                                destination: $creator->account_id ? 'Connected account '.$creator->account_id : null,
+                                reference: $payout->id,
+                                failureMessage: $payout->failure_message ?? null,
+                            ));
+                        } catch (\Throwable $e) {
+                            Log::error('Failed to send payout-completed email', [
+                                'creator_id' => $creator->id,
+                                'stripe_payout_id' => $payout->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+
+                        try {
+                            $currencySymbol = Helpers::getCurrency($record->currency ?? 'GBP');
+                            Helpers::sendNotification(
+                                $status === 'paid' ? '✅ Payout arrived' : '⚠️ Payout failed',
+                                $status === 'paid'
+                                    ? "Your payout of {$currencySymbol}{$amountMajor} has arrived in your account."
+                                    : "Your payout of {$currencySymbol}{$amountMajor} could not be completed. It will be retried in the next run.",
+                                $creator->email
+                            );
+                        } catch (\Throwable $e) {
+                            Log::error('Failed to push payout-completed notification', [
+                                'creator_id' => $creator->id,
                                 'error' => $e->getMessage(),
                             ]);
                         }

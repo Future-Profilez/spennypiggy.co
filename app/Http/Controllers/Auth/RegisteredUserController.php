@@ -408,7 +408,7 @@ class RegisteredUserController extends Controller
                 'message' => 'Unauthorized.',
             ], 401);
         }
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(config('services.stripe.secret'));
 
         // Ensure Stripe customer
         if (empty($user->stripe_id)) {
@@ -539,7 +539,7 @@ class RegisteredUserController extends Controller
             abort(403);
         }
 
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(config('services.stripe.secret'));
 
         // Optionally, retrieve the latest checkout session for this customer
         $sessions = $stripe->checkout->sessions->all([
@@ -682,7 +682,7 @@ class RegisteredUserController extends Controller
     //     $convertCurrency = Helpers::priceFormat('gbp', $request->amount, $user->default_currency);
     //     $price = round($convertCurrency, 2, PHP_ROUND_HALF_UP);
 
-    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //     $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
 
     //     $lineItems[] = [
     //         'quantity' => 1,

@@ -2,46 +2,71 @@
 
 namespace App\Services\Risk;
 
+use App\Helpers;
+use App\Mail\PayoutInitiated;
+use App\Models\BillPayment;
 use App\Models\CreatorMetric;
+use App\Models\Currency;
+use App\Models\FinancialTransaction;
+use App\Models\MembershipPayment;
 use App\Models\Payment;
-use App\Models\PlatformRiskState;
+use App\Models\PayoutRecord;
 use App\Models\PayoutRun;
+use App\Models\PiggyPotContribution;
+use App\Models\PlatformRiskState;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentDetail;
+use App\Models\StripePaymentItems;
+use App\Models\TaskPurchase;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\StripeControl;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class PayoutService
 {
     private const RESERVE_RELEASE_WINDOW_DAYS = 30;
+
     private const MINIMUM_PAYOUT_MINOR = 100; // £1.00 / $1.00 minimum threshold
 
     /**
      * Get all FinancialTransaction records for a Payment record by looking up source models.
      * Returns a collection of FTs.
      */
-    public function getAllFinancialTransactionsForPayment(\App\Models\Payment $payment): \Illuminate\Support\Collection
+    public function getAllFinancialTransactionsForPayment(Payment $payment): Collection
     {
         $sourceModels = [
-            \App\Models\TaskPurchase::class         => 'stripe_session_id',
-            \App\Models\ShopPayment::class          => 'session_id',
-            \App\Models\PiggyPotContribution::class => 'session_id',
-            \App\Models\TipGoalsPayment::class      => 'session_id',
-            \App\Models\MembershipPayment::class    => 'session_id',
-            \App\Models\BillPayment::class          => 'session_id',
-            \App\Models\StripePaymentItems::class   => 'stripe_session_id',
+            TaskPurchase::class => 'stripe_session_id',
+            ShopPayment::class => 'session_id',
+            PiggyPotContribution::class => 'session_id',
+            TipGoalsPayment::class => 'session_id',
+            MembershipPayment::class => 'session_id',
+            BillPayment::class => 'session_id',
+            StripePaymentItems::class => 'stripe_session_id',
         ];
 
         foreach ($sourceModels as $modelClass => $sessionColumn) {
             $query = $modelClass::query();
 
-            if ($modelClass === \App\Models\StripePaymentItems::class) {
-                if (!$payment->stripe_session_id && !$payment->stripe_payment_intent_id) continue;
-                $detailQuery = \App\Models\StripePaymentDetail::query();
-                if ($payment->stripe_session_id) $detailQuery->orWhere('session_id', $payment->stripe_session_id);
-                if ($payment->stripe_payment_intent_id) $detailQuery->orWhere('session_id', $payment->stripe_payment_intent_id);
+            if ($modelClass === StripePaymentItems::class) {
+                if (! $payment->stripe_session_id && ! $payment->stripe_payment_intent_id) {
+                    continue;
+                }
+                $detailQuery = StripePaymentDetail::query();
+                if ($payment->stripe_session_id) {
+                    $detailQuery->orWhere('session_id', $payment->stripe_session_id);
+                }
+                if ($payment->stripe_payment_intent_id) {
+                    $detailQuery->orWhere('session_id', $payment->stripe_payment_intent_id);
+                }
                 $detailIds = $detailQuery->pluck('id');
-                if ($detailIds->isEmpty()) continue;
+                if ($detailIds->isEmpty()) {
+                    continue;
+                }
                 $query->whereIn('stripe_payment_detail_id', $detailIds);
             } else {
                 $query->where(function ($q) use ($payment, $sessionColumn, $modelClass) {
@@ -49,12 +74,12 @@ class PayoutService
                     if ($payment->stripe_session_id) {
                         $q->orWhere($sessionColumn, $payment->stripe_session_id);
                     }
-                    
+
                     // 2. Check by payment intent ID
                     if ($payment->stripe_payment_intent_id) {
-                        if (in_array($modelClass, [\App\Models\TaskPurchase::class, \App\Models\PiggyPotContribution::class])) {
+                        if (in_array($modelClass, [TaskPurchase::class, PiggyPotContribution::class])) {
                             $q->orWhere('payment_intent_id', $payment->stripe_payment_intent_id);
-                        } elseif (in_array($modelClass, [\App\Models\MembershipPayment::class, \App\Models\BillPayment::class])) {
+                        } elseif (in_array($modelClass, [MembershipPayment::class, BillPayment::class])) {
                             $q->orWhere('stripe_id', $payment->stripe_payment_intent_id);
                         } else {
                             $q->orWhere($sessionColumn, $payment->stripe_payment_intent_id);
@@ -65,12 +90,14 @@ class PayoutService
 
             $items = $query->get(['id']);
 
-            if ($items->isEmpty()) continue;
+            if ($items->isEmpty()) {
+                continue;
+            }
 
-            $fts = \App\Models\FinancialTransaction::where('source_type', $modelClass)
+            $fts = FinancialTransaction::where('source_type', $modelClass)
                 ->whereIn('source_id', $items->pluck('id'))
                 ->get();
-            
+
             if ($fts->isNotEmpty()) {
                 return $fts;
             }
@@ -87,7 +114,7 @@ class PayoutService
     {
         // Default to end of current day if no date passed, so "Expected Payout" includes today's full day.
         $runDate = $runDate ? Carbon::parse($runDate)->endOfDay() : Carbon::now()->endOfDay();
-        
+
         $platformState = PlatformRiskState::latest('started_at')->first();
         $state = $platformState ? $platformState->state : 'NORMAL';
 
@@ -111,26 +138,33 @@ class PayoutService
         $payouts = [];
         $platformTotal = 0;
 
-        $rates = \App\Models\Currency::rates();
+        $rates = Currency::rates();
         $convert = function ($amount, $from, $to = 'GBP') use ($rates) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
         foreach ($creators as $creatorId) {
             $creator = User::where('uuid', $creatorId)->first();
-            if (!$creator) continue;
+            if (! $creator) {
+                continue;
+            }
 
             // Fetch Metrics
             try {
-                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics($creator->uuid);
+                $metrics = app(RiskService::class)->recalculateMetrics($creator->uuid);
             } catch (\Throwable) {
                 $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
             }
-            
+
             $delayDays = 7;
             if (in_array($state, ['THROTTLE', 'FREEZE'], true)) {
                 $delayDays = max($delayDays, (int) $metrics->payout_delay_days);
@@ -144,14 +178,14 @@ class PayoutService
                 ->where('created_at', '<=', $cutoff)
                 ->orderByDesc('created_at')
                 ->get();
-            
+
             $holdIntentIds = Payment::where('creator_id', $creator->uuid)
                 ->whereNull('payout_run_id')
                 ->whereIn('status', ['review_hold', 'disputed'])
                 ->whereNotNull('stripe_payment_intent_id')
                 ->pluck('stripe_payment_intent_id')
                 ->toArray();
-            if (!empty($holdIntentIds)) {
+            if (! empty($holdIntentIds)) {
                 $payments = $payments
                     ->reject(fn ($p) => $p->stripe_payment_intent_id && in_array($p->stripe_payment_intent_id, $holdIntentIds, true))
                     ->values();
@@ -160,16 +194,21 @@ class PayoutService
             $payments = $payments
                 ->sortByDesc(function ($p) {
                     $score = 0;
-                    if ($p->stripe_session_id) $score += 2;
-                    if ($p->stripe_payment_intent_id) $score += 1;
+                    if ($p->stripe_session_id) {
+                        $score += 2;
+                    }
+                    if ($p->stripe_payment_intent_id) {
+                        $score += 1;
+                    }
+
                     return $score;
                 })
                 ->unique(fn ($p) => $p->stripe_payment_intent_id ?: $p->stripe_session_id ?: $p->id)
                 ->values();
 
             $pendingDeliverablesMinor = 0;
-            
-            \Illuminate\Support\Facades\Log::info("Creator: {$creator->uuid}, Payments before filter: " . $payments->count());
+
+            Log::info("Creator: {$creator->uuid}, Payments before filter: ".$payments->count());
 
             // Filter out Physical Shop payments and Timed Tasks that are NOT yet completed
             $payments = $payments->filter(function ($p) use (&$pendingDeliverablesMinor) {
@@ -178,46 +217,56 @@ class PayoutService
 
                 if ($sessionId || $intentId) {
                     // 1. Shop Payments (Physical)
-                    $shopPayment = \App\Models\ShopPayment::with(['shop', 'deliverable'])
+                    $shopPayment = ShopPayment::with(['shop', 'deliverable'])
                         ->where(function ($q) use ($sessionId) {
-                            if ($sessionId) $q->where('session_id', $sessionId);
-                            else $q->whereRaw('1=0');
+                            if ($sessionId) {
+                                $q->where('session_id', $sessionId);
+                            } else {
+                                $q->whereRaw('1=0');
+                            }
                         })
                         ->first();
-                        
+
                     if ($shopPayment && $shopPayment->shop && $shopPayment->shop->type === 'physical') {
                         // Shop Physical: ONLY include if status is 'delivered' (Completed)
-                        if (!$shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
+                        if (! $shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
                             $fts = $this->getAllFinancialTransactionsForPayment($p);
                             if ($fts->isNotEmpty()) {
                                 $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
                             }
-                            return false; 
+
+                            return false;
                         }
                     }
 
                     // 2. Paid Tasks (Timed)
-                    $taskPurchase = \App\Models\TaskPurchase::where(function ($q) use ($sessionId, $intentId) {
-                            if ($sessionId) $q->orWhere('stripe_session_id', $sessionId);
-                            if ($intentId) $q->orWhere('payment_intent_id', $intentId);
-                        })
+                    $taskPurchase = TaskPurchase::where(function ($q) use ($sessionId, $intentId) {
+                        if ($sessionId) {
+                            $q->orWhere('stripe_session_id', $sessionId);
+                        }
+                        if ($intentId) {
+                            $q->orWhere('payment_intent_id', $intentId);
+                        }
+                    })
                         ->first();
 
                     if ($taskPurchase) {
                         $taskType = $taskPurchase->task->type ?? 'timed';
                         if ($taskType === 'timed') {
                             // Task Timed: ONLY include if status is completed/accepted/paid_out
-                            if (!in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                            if (! in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
                                 $fts = $this->getAllFinancialTransactionsForPayment($p);
                                 if ($fts->isNotEmpty()) {
                                     $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
                                 }
+
                                 return false;
                             }
                         }
                         // Note: Instant tasks are included by default if payment succeeded and not on hold
                     }
                 }
+
                 return true;
             });
 
@@ -246,10 +295,10 @@ class PayoutService
                     }
                     $eligiblePayments->push($p);
                 } else {
-                    \Illuminate\Support\Facades\Log::warning("PayoutService: No FinancialTransactions found for payment {$p->id} ({$p->stripe_session_id}) — skipping from payout calculation.");
+                    Log::warning("PayoutService: No FinancialTransactions found for payment {$p->id} ({$p->stripe_session_id}) — skipping from payout calculation.");
                 }
             }
-            
+
             $payments = $eligiblePayments;
             $grossAmount = (int) $payments->sum('amount');
 
@@ -285,13 +334,13 @@ class PayoutService
                     $refundDisputeAmount += (int) $adj->amount;
                 }
             }
-            
+
             $reviewHoldAmount = (int) $reviewHold->sum('amount');
 
             // The net payout should be the Net Earnings minus any NEW reserves being held,
             // plus any OLD reserves being released.
             // Note: net_amount in FinancialTransaction is currently the price before reserve subtraction.
-            
+
             // Reserve release is no longer coupled to the weekly run. Each transaction's
             // reserve is released 30 days after its OWN transaction_date by the dedicated
             // `reserve:release` command (per-transaction rolling window). Kept at 0 here so
@@ -323,7 +372,7 @@ class PayoutService
                 $isBelowThreshold = true;
                 $netPayout = 0;
             }
-            
+
             if ($payments->isEmpty() && $adjustments->isEmpty() && $reviewHold->isEmpty() && $negativeBalance === 0 && $reserveReleaseAmount === 0 && $pendingDeliverablesMinor === 0) {
                 continue;
             }
@@ -357,7 +406,7 @@ class PayoutService
                 'state' => $state,
                 'cutoff_date' => $cutoff->toDateTimeString(),
             ];
-            
+
             $platformTotal += $convert($netPayout / 100, $creatorCurrency, 'GBP') * 100;
         }
 
@@ -391,8 +440,10 @@ class PayoutService
                     'status' => 'executing',
                     'totals' => $previewData,
                 ]);
+
                 return $existing;
             }
+
             return PayoutRun::create([
                 'run_date' => $previewData['run_date'],
                 'status' => 'executing',
@@ -415,21 +466,23 @@ class PayoutService
 
             if ($netPayout > 0) {
                 $creator = User::where('uuid', $creatorId)->first();
-                if (!$creator || $creator->payout_paused_at) {
-                    $reason = !$creator
-                        ? "Creator not found"
-                        : ("Payouts paused" . ($creator->payout_pause_reason ? (": " . $creator->payout_pause_reason) : ""));
+                if (! $creator || $creator->payout_paused_at) {
+                    $reason = ! $creator
+                        ? 'Creator not found'
+                        : ('Payouts paused'.($creator->payout_pause_reason ? (': '.$creator->payout_pause_reason) : ''));
                     Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
                     $data['failure_reason'] = $reason;
                     $skippedPayouts[$creatorId] = $data;
+
                     continue;
                 }
 
-                if (!$creator->account_id) {
-                    $reason = "No connected Stripe account";
+                if (! $creator->account_id) {
+                    $reason = 'No connected Stripe account';
                     Log::warning("Payout: creator {$creatorId} {$reason} — skipping payout.");
                     $data['failure_reason'] = $reason;
                     $skippedPayouts[$creatorId] = $data;
+
                     continue;
                 }
 
@@ -445,27 +498,27 @@ class PayoutService
 
                 try {
                     // Always trigger actual bank payout from connected account balance.
-                    \App\StripeControl::ensureManualPayoutSchedule($creator->account_id, $currency);
+                    StripeControl::ensureManualPayoutSchedule($creator->account_id, $currency);
 
-                    $payout = \App\StripeControl::createPayout([
+                    $payout = StripeControl::createPayout([
                         'amount' => (int) $netPayout,
                         'currency' => $currency,
                         'method' => 'standard',
                         // Deterministic key — a retry of THIS run for THIS creator returns the
                         // same Stripe payout instead of creating a second one.
-                        'idempotency_key' => 'payout_run_' . $run->id . '_' . $creatorId,
+                        'idempotency_key' => 'payout_run_'.$run->id.'_'.$creatorId,
                         'metadata' => [
-                            'reason'           => 'weekly_earnings_payout',
-                            'payout_type'      => 'weekly_run',
-                            'payout_run_id'    => (string) $run->id,
-                            'run_date'         => (string) ($run->run_date ?? ''),
-                            'creator_id'       => (string) $creatorId,
+                            'reason' => 'weekly_earnings_payout',
+                            'payout_type' => 'weekly_run',
+                            'payout_run_id' => (string) $run->id,
+                            'run_date' => (string) ($run->run_date ?? ''),
+                            'creator_id' => (string) $creatorId,
                             'creator_username' => (string) ($creator->username ?? ''),
-                            'creator_email'    => (string) ($creator->email ?? ''),
-                            'payment_count'    => (string) count($paymentIds),
+                            'creator_email' => (string) ($creator->email ?? ''),
+                            'payment_count' => (string) count($paymentIds),
                             'net_payout_minor' => (string) $netPayout,
-                            'currency'         => $currency,
-                            'env'              => (string) config('app.env'),
+                            'currency' => $currency,
+                            'env' => (string) config('app.env'),
                         ],
                     ], $creator->account_id);
 
@@ -475,29 +528,29 @@ class PayoutService
                     // Commit this creator's DB state immediately. If anything later in the
                     // run fails, this commit stands — the money already moved.
                     DB::transaction(function () use ($run, $creatorId, $netPayout, $currency, $payout, $paymentIds, $adjustmentIds, $ftIds, $data) {
-                        \App\Models\PayoutRecord::create([
+                        PayoutRecord::create([
                             'creator_id' => $creatorId,
                             'payout_run_id' => $run->id,
                             'stripe_payout_id' => $payout->id,
                             'amount_minor' => (int) $netPayout,
                             'currency' => $currency,
                             'status' => 'in_transit',
-                            'arrival_date' => \Carbon\Carbon::createFromTimestamp($payout->arrival_date),
+                            'arrival_date' => Carbon::createFromTimestamp($payout->arrival_date),
                             'metadata' => [
                                 'stripe_payout' => $payout->toArray(),
-                            ]
+                            ],
                         ]);
 
-                        if (!empty($paymentIds)) {
+                        if (! empty($paymentIds)) {
                             Payment::whereIn('id', $paymentIds)->update(['payout_run_id' => $run->id]);
                         }
-                        if (!empty($adjustmentIds)) {
+                        if (! empty($adjustmentIds)) {
                             Payment::whereIn('id', $adjustmentIds)->update(['adjustment_payout_run_id' => $run->id]);
                         }
                         // Stamp the canonical ledger so the "paid out" badge and reserve logic
                         // can rely on the FinancialTransaction directly.
-                        if (!empty($ftIds)) {
-                            \App\Models\FinancialTransaction::whereIn('id', $ftIds)->update(['payout_run_id' => $run->id]);
+                        if (! empty($ftIds)) {
+                            FinancialTransaction::whereIn('id', $ftIds)->update(['payout_run_id' => $run->id]);
                         }
                         if (isset($data['negative_balance_after'])) {
                             CreatorMetric::where('creator_id', $creatorId)->update([
@@ -507,14 +560,35 @@ class PayoutService
                         }
                     });
 
-                    $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
+                    $isZeroDecimal = Helpers::isZeroDecimalCurrency($currency);
                     $amountMajor = $isZeroDecimal ? (int) $netPayout : round($netPayout / 100, 2);
-                    $currencySymbol = \App\Helpers::getCurrency($currency);
-                    \App\Helpers::sendNotification(
+                    $currencySymbol = Helpers::getCurrency($currency);
+                    Helpers::sendNotification(
                         '💰 Payout Sent',
                         "Your payout of {$currencySymbol}{$amountMajor} has been sent to your account.",
                         $creator->email
                     );
+
+                    // Transactional email alongside the push — a creator should have a
+                    // written record of money leaving the platform, with the amount,
+                    // date and Stripe reference. Never blocks the payout itself.
+                    try {
+                        Mail::to($creator->email)->send(
+                            new PayoutInitiated(
+                                creator: $creator,
+                                amount: (float) $amountMajor,
+                                currency: $currency,
+                                sentAt: now()->format('d M Y'),
+                                destination: $creator->account_id ? 'Connected account '.$creator->account_id : null,
+                                reference: $payout->id ?? null,
+                            )
+                        );
+                    } catch (\Throwable $mailError) {
+                        Log::error('PayoutService: failed to send payout-initiated email', [
+                            'creator_id' => $creatorId,
+                            'error' => $mailError->getMessage(),
+                        ]);
+                    }
 
                     // Success - add to actual totals
                     $actualPayouts[$creatorId] = $data;
@@ -523,50 +597,52 @@ class PayoutService
 
                 } catch (\Exception $e) {
                     $errorMsg = $e->getMessage();
-                    Log::error("Payout execution failed for creator {$creatorId}: " . $errorMsg);
+                    Log::error("Payout execution failed for creator {$creatorId}: ".$errorMsg);
 
                     // Record failed payout attempt for creator history. Payments are NOT marked,
                     // so they stay eligible and are retried automatically in the next run.
                     try {
-                        \App\Models\PayoutRecord::create([
+                        PayoutRecord::create([
                             'creator_id' => $creatorId,
                             'payout_run_id' => $run->id,
-                            'stripe_payout_id' => 'failed_' . uniqid(),
+                            'stripe_payout_id' => 'failed_'.uniqid(),
                             'amount_minor' => (int) $netPayout,
                             'currency' => $currency,
                             'status' => 'failed',
                             'failure_message' => $errorMsg,
                             'metadata' => [
                                 'error' => $errorMsg,
-                                'attempted_at' => now()->toDateTimeString()
-                            ]
+                                'attempted_at' => now()->toDateTimeString(),
+                            ],
                         ]);
                     } catch (\Exception $logEx) {
-                        Log::error("Failed to record failed payout record: " . $logEx->getMessage());
+                        Log::error('Failed to record failed payout record: '.$logEx->getMessage());
                     }
 
                     $data['failure_reason'] = $errorMsg;
                     $skippedPayouts[$creatorId] = $data;
+
                     continue;
                 }
             } elseif ($isBelowThreshold) {
                 // Skip marking payments as processed if below threshold
                 // They will be picked up in the next run
                 Log::info("Payout skipped for creator {$creatorId}: Amount below threshold — will retry in next run.");
-                $data['failure_reason'] = "Below minimum threshold (£1.00)";
+                $data['failure_reason'] = 'Below minimum threshold (£1.00)';
                 $skippedPayouts[$creatorId] = $data;
+
                 continue;
             } else {
                 // Handle zero payout but mark IDs (e.g. only adjustments or holds processed)
                 DB::transaction(function () use ($run, $creatorId, $paymentIds, $adjustmentIds, $ftIds, $data) {
-                    if (!empty($paymentIds)) {
+                    if (! empty($paymentIds)) {
                         Payment::whereIn('id', $paymentIds)->update(['payout_run_id' => $run->id]);
                     }
-                    if (!empty($adjustmentIds)) {
+                    if (! empty($adjustmentIds)) {
                         Payment::whereIn('id', $adjustmentIds)->update(['adjustment_payout_run_id' => $run->id]);
                     }
-                    if (!empty($ftIds)) {
-                        \App\Models\FinancialTransaction::whereIn('id', $ftIds)->update(['payout_run_id' => $run->id]);
+                    if (! empty($ftIds)) {
+                        FinancialTransaction::whereIn('id', $ftIds)->update(['payout_run_id' => $run->id]);
                     }
                     if (isset($data['negative_balance_after'])) {
                         CreatorMetric::where('creator_id', $creatorId)->update([
@@ -582,10 +658,10 @@ class PayoutService
                 // payout.failed webhook will ever fire for it — this record gives
                 // the run a handle for reconciliation without one.
                 try {
-                    \App\Models\PayoutRecord::create([
+                    PayoutRecord::create([
                         'creator_id' => $creatorId,
                         'payout_run_id' => $run->id,
-                        'stripe_payout_id' => 'zero_' . uniqid(),
+                        'stripe_payout_id' => 'zero_'.uniqid(),
                         'amount_minor' => 0,
                         'currency' => $currency,
                         'status' => 'zero_payout',
@@ -595,7 +671,7 @@ class PayoutService
                         ],
                     ]);
                 } catch (\Exception $logEx) {
-                    Log::error("Failed to record zero payout record for creator {$creatorId}: " . $logEx->getMessage());
+                    Log::error("Failed to record zero payout record for creator {$creatorId}: ".$logEx->getMessage());
                 }
 
                 // Zero payout is still a processed creator
@@ -626,15 +702,15 @@ class PayoutService
     public function getHeldReserves($creatorId, $targetCurrency = null)
     {
         $creator = User::where('uuid', $creatorId)->orWhere('id', $creatorId)->first();
-        if (!$creator) {
+        if (! $creator) {
             return [
                 'total_held' => 0,
                 'breakdown' => [],
-                'currency' => strtoupper($targetCurrency ?: 'GBP')
+                'currency' => strtoupper($targetCurrency ?: 'GBP'),
             ];
         }
 
-        $rates = \App\Models\Currency::rates();
+        $rates = Currency::rates();
         // Convert into the requested display currency when given, otherwise the creator's default.
         // The UI labels these with the display currency, so they MUST be in that currency.
         $creatorCurrency = strtolower((string) ($targetCurrency ?: $creator->default_currency ?? 'gbp'));
@@ -642,9 +718,14 @@ class PayoutService
         $convert = function ($amount, $from, $to = 'GBP') use ($rates) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
             $gbpAmount = $amount / $rates[$from];
+
             return $gbpAmount * $rates[$to];
         };
 
@@ -656,18 +737,18 @@ class PayoutService
         // whether the base earning has already been paid out (payout_run_id set) — and is then
         // released by the `reserve:release` command which flips reserve_status to 'released'.
         // EXCLUDE: review_hold, disputed, refunded; and unfulfilled physical shop / timed tasks.
-        $pendingFts = \App\Models\FinancialTransaction::where('user_id', $creator->id)
+        $pendingFts = FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('reserve_status', '!=', 'released')
-                  ->orWhereNull('reserve_status');
+                    ->orWhereNull('reserve_status');
             })
             ->where('reserve_amount', '>', 0)
-            ->with(['supporter:id,name,username', 'source' => function($morphTo) {
+            ->with(['supporter:id,name,username', 'source' => function ($morphTo) {
                 $morphTo->morphWith([
-                    \App\Models\TaskPurchase::class => ['task'],
-                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
+                    TaskPurchase::class => ['task'],
+                    ShopPayment::class => ['shop', 'deliverable'],
                 ]);
             }])
             ->orderByDesc('transaction_date')
@@ -676,22 +757,24 @@ class PayoutService
 
         foreach ($pendingFts as $ft) {
             // Check fulfillment status for Shop and Task
-            if ($ft->source_type === \App\Models\TaskPurchase::class && $ft->source) {
+            if ($ft->source_type === TaskPurchase::class && $ft->source) {
                 $taskType = $ft->source->task->type ?? 'timed';
-                if ($taskType === 'timed' && !in_array($ft->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                if ($taskType === 'timed' && ! in_array($ft->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
                     continue; // Skip reserve calculation for unfulfilled timed tasks
                 }
             }
-            if ($ft->source_type === \App\Models\ShopPayment::class && $ft->source && $ft->source->shop) {
+            if ($ft->source_type === ShopPayment::class && $ft->source && $ft->source->shop) {
                 if ($ft->source->shop->type === 'physical') {
-                    if (!$ft->source->deliverable || $ft->source->deliverable->status !== 'delivered') {
+                    if (! $ft->source->deliverable || $ft->source->deliverable->status !== 'delivered') {
                         continue; // Skip reserve calculation for unfulfilled physical shop items
                     }
                 }
             }
 
             $reserveMajor = (float) ($ft->reserve_amount ?? 0);
-            if ($reserveMajor <= 0) continue;
+            if ($reserveMajor <= 0) {
+                continue;
+            }
 
             $reserveMinor = (int) round($reserveMajor * 100);
             $currency = strtoupper((string) ($ft->currency ?: 'GBP'));
@@ -745,14 +828,14 @@ class PayoutService
         }
 
         // Sort by release date (soonest first)
-        usort($held, function($a, $b) {
+        usort($held, function ($a, $b) {
             return strtotime($a['release_date']) - strtotime($b['release_date']);
         });
 
         return [
             'total_held' => $totalHeld,
             'breakdown' => $held,
-            'currency' => strtoupper($creatorCurrency)
+            'currency' => strtoupper($creatorCurrency),
         ];
     }
 
@@ -768,23 +851,28 @@ class PayoutService
     public function getReleasedReserves($creatorId, int $limit = 100, $targetCurrency = null)
     {
         $creator = User::where('uuid', $creatorId)->orWhere('id', $creatorId)->first();
-        if (!$creator) {
+        if (! $creator) {
             return ['total_released' => 0, 'breakdown' => [], 'currency' => strtoupper($targetCurrency ?: 'GBP')];
         }
 
-        $rates = \App\Models\Currency::rates();
+        $rates = Currency::rates();
         // Display currency when provided (UI labels with it), otherwise creator default.
         $creatorCurrency = strtolower((string) ($targetCurrency ?: $creator->default_currency ?? 'gbp'));
 
         $convert = function ($amount, $from, $to) use ($rates) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
-        $releasedFts = \App\Models\FinancialTransaction::where('user_id', $creator->id)
+        $releasedFts = FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('reserve_status', 'released')
             ->where('reserve_amount', '>', 0)
@@ -799,7 +887,9 @@ class PayoutService
 
         foreach ($releasedFts as $ft) {
             $reserveMajor = (float) ($ft->reserve_amount ?? 0);
-            if ($reserveMajor <= 0) continue;
+            if ($reserveMajor <= 0) {
+                continue;
+            }
 
             $currency = strtoupper((string) ($ft->currency ?: 'GBP'));
             $convertedMajor = $convert($reserveMajor, $currency, strtoupper($creatorCurrency));
@@ -828,7 +918,7 @@ class PayoutService
                 'released_at' => $releasedAt ? $releasedAt->toIso8601String() : null,
                 'released_date' => $releasedAt ? $releasedAt->toDateString() : null,
                 'reserve_payout_id' => $ft->reserve_payout_id,
-                'verified' => !empty($ft->reserve_payout_id),
+                'verified' => ! empty($ft->reserve_payout_id),
                 'transaction_date' => $txDate ? $txDate->toIso8601String() : null,
                 'source_name' => (string) ($ft->description ?: 'Payment'),
                 'financial_transaction_id' => $ft->id,
@@ -846,7 +936,7 @@ class PayoutService
         return [
             'total_released' => $totalReleased,
             'breakdown' => $released,
-            'currency' => strtoupper($creatorCurrency)
+            'currency' => strtoupper($creatorCurrency),
         ];
     }
 
@@ -864,24 +954,29 @@ class PayoutService
     public function getUpcomingPayoutPreview($creatorId, $targetCurrency = null)
     {
         $creator = User::where('uuid', $creatorId)->orWhere('id', $creatorId)->first();
-        if (!$creator) {
+        if (! $creator) {
             return ['total_net' => 0, 'total_reserve' => 0, 'count' => 0, 'transactions' => [], 'currency' => strtoupper($targetCurrency ?: 'GBP')];
         }
 
-        $rates = \App\Models\Currency::rates();
+        $rates = Currency::rates();
         // Display currency when provided (UI labels with it), otherwise creator default.
         $creatorCurrency = strtoupper((string) ($targetCurrency ?: $creator->default_currency ?? 'gbp'));
         $convert = function ($amount, $from, $to) use ($rates) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
         $cutoff = Carbon::now()->subDays(7);
 
-        $fts = \App\Models\FinancialTransaction::where('user_id', $creator->id)
+        $fts = FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereNull('payout_run_id')
@@ -889,8 +984,8 @@ class PayoutService
             ->where('transaction_date', '<=', $cutoff)
             ->with(['supporter:id,name,username', 'source' => function ($morphTo) {
                 $morphTo->morphWith([
-                    \App\Models\TaskPurchase::class => ['task'],
-                    \App\Models\ShopPayment::class => ['shop', 'deliverable'],
+                    TaskPurchase::class => ['task'],
+                    ShopPayment::class => ['shop', 'deliverable'],
                 ]);
             }])
             ->orderByDesc('transaction_date')
@@ -904,15 +999,15 @@ class PayoutService
         foreach ($fts as $ft) {
             // Same fulfillment gate as getHeldReserves: unfulfilled physical shop / timed tasks
             // are not yet payable.
-            if ($ft->source_type === \App\Models\TaskPurchase::class && $ft->source) {
+            if ($ft->source_type === TaskPurchase::class && $ft->source) {
                 $taskType = $ft->source->task->type ?? 'timed';
-                if ($taskType === 'timed' && !in_array($ft->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                if ($taskType === 'timed' && ! in_array($ft->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
                     continue;
                 }
             }
-            if ($ft->source_type === \App\Models\ShopPayment::class && $ft->source && $ft->source->shop) {
+            if ($ft->source_type === ShopPayment::class && $ft->source && $ft->source->shop) {
                 if ($ft->source->shop->type === 'physical') {
-                    if (!$ft->source->deliverable || $ft->source->deliverable->status !== 'delivered') {
+                    if (! $ft->source->deliverable || $ft->source->deliverable->status !== 'delivered') {
                         continue;
                     }
                 }
@@ -969,5 +1064,4 @@ class PayoutService
             'currency' => $creatorCurrency,
         ];
     }
-
 }

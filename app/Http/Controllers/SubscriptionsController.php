@@ -347,7 +347,7 @@ class SubscriptionsController extends Controller
         try {
             // Cancel the subscription in Stripe using cancel_at_period_end
             if (!str_starts_with($subscription->stripe_id, 'sub_test_')) {
-                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
                 \Stripe\Subscription::update($subscription->stripe_id, [
                     'cancel_at_period_end' => true
                 ]);

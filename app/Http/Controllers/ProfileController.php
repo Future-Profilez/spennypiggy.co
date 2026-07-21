@@ -168,6 +168,7 @@ class ProfileController extends Controller
                     'creator_category' => ['nullable', 'array'],
                     'gender' => ['nullable', 'string', 'max:50'],
                     'country' => ['nullable', 'string', 'max:100'],
+                    'date_of_birth' => ['nullable', 'date', 'before:today'],
                 ], $messages);
 
                 $avatar = $request->avatar;
@@ -177,6 +178,9 @@ class ProfileController extends Controller
                 $user->username = $request->username;
                 $user->gender = $request->gender;
                 $user->country = $request->country;
+                if ($request->has('date_of_birth')) {
+                    $user->date_of_birth = $request->date_of_birth;
+                }
                 $user->creator_category = ! empty($request->creator_category) ? json_encode($request->creator_category) : null;
 
                 if ($request->email !== $user->email) {

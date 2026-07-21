@@ -83,7 +83,7 @@ export default function IntroVideos(props) {
       <Popup space="0" size="md"  classes={`w-full h-full`}
         text={text} >
             <div className='video-payer-pop' >
-              <video playsInline='false' poster={poster} controlsList='nodownload' preload="none" controls src={data && data.perma_link} />
+              <video playsInline poster={poster} controlsList='nodownload' preload="none" autoPlay={false} controls src={data && data.perma_link} />
             </div>
         </Popup>
       </>

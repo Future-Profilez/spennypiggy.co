@@ -171,7 +171,7 @@ class TestController extends Controller
 
     public function manualPayout()
     {
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
 
         $balance = $stripe->balance->retrieve();
 

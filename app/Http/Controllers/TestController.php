@@ -385,7 +385,7 @@ class TestController extends Controller
 
     public function archiveAllStripeProducts()
     {
-        $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $client = new StripeClient(config('services.stripe.secret'));
 
         try {
             $startingAfter = null;
@@ -421,7 +421,7 @@ class TestController extends Controller
 
     public function handle(Request $request)
     {
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $endpoint_secret = config('services.stripe.webhook_secret');
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;

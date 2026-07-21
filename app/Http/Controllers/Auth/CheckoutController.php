@@ -1078,8 +1078,12 @@ class CheckoutController extends Controller
                 }
 
                 if (! $settled) {
+                    // payment_status is NULL on a fresh row and NULL != 'paid' is
+                    // never true in SQL, so the null case must be matched explicitly.
                     StripePaymentDetail::where('session_id', $sessionId)
-                        ->where('payment_status', '!=', 'paid')
+                        ->where(function ($q) {
+                            $q->whereNull('payment_status')->orWhere('payment_status', '!=', 'paid');
+                        })
                         ->update(['payment_status' => 'processing', 'updated_at' => Carbon::now()]);
 
                     return redirect(route('user.show', [$existingPayment->owner->username ?? ($getdata[0]->owner->username ?? '')]))
@@ -1092,8 +1096,14 @@ class CheckoutController extends Controller
             // both can read "not paid" and double-process (duplicate StripePaymentItems,
             // UserPayment, Deliverable). This conditional update only succeeds for the
             // first caller; if 0 rows are affected, someone else already owns it.
+            // A fresh row's payment_status is NULL, and NULL != 'paid' evaluates to
+            // NULL (not true) in SQL — a plain != guard silently matches nothing,
+            // $claimed stays 0, and every first-time checkout is treated as a
+            // duplicate and skipped. The null case must be matched explicitly.
             $claimed = StripePaymentDetail::where('session_id', $sessionId)
-                ->where('payment_status', '!=', 'paid')
+                ->where(function ($q) {
+                    $q->whereNull('payment_status')->orWhere('payment_status', '!=', 'paid');
+                })
                 ->update([
                     'payment_status' => 'paid',
                     'updated_at' => Carbon::now(),

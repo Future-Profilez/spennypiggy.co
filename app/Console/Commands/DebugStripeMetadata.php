@@ -19,7 +19,7 @@ class DebugStripeMetadata extends Command
         
         try {
             // Initialize Stripe
-            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+            Stripe::setApiKey(config('services.stripe.secret'));
             
             // Retrieve payment intent
             $paymentIntent = PaymentIntent::retrieve($paymentIntentId);

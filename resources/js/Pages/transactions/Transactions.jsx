@@ -792,7 +792,9 @@ export default function Transactions(props) {
 
           </div>
         ) : (
-          <Nocontent text="No transactions found" />
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <Nocontent text="No transactions found" />
+          </div>
         )}
       </div>
     </Authenticated>

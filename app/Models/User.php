@@ -60,6 +60,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'marketing_unsubscribed_at',
         'push_notifications_enabled',
         'reactivation_emails_enabled',
+        'product_updates_enabled',
+        'creator_updates_enabled',
         'date_of_birth',
         'utm_source',
         'utm_medium',
@@ -89,6 +91,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'marketing_unsubscribed_at' => 'datetime',
         'push_notifications_enabled' => 'boolean',
         'reactivation_emails_enabled' => 'boolean',
+        'product_updates_enabled' => 'boolean',
+        'creator_updates_enabled' => 'boolean',
         'date_of_birth' => 'date',
     ];
 
@@ -353,7 +357,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
 
-                    $stripeKey = env('STRIPE_SECRET_KEY');
+                    $stripeKey = config('services.stripe.secret');
                     if (empty($stripeKey)) {
                         Log::warning('Stripe API key not configured, falling back to local subscription status', [
                             'user_id' => $this->id,

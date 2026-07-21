@@ -152,6 +152,31 @@ class ProfilePostController extends Controller
                 $includeMembership = in_array($filter, ['all', 'members'], true);
                 $includeSubscription = in_array($filter, ['all', 'subscribers'], true);
 
+                $allCreators = array_unique(array_merge(
+                    $supportCreators,
+                    $nonLifetimeCreators,
+                    $lifetimeCreators,
+                    $subscriptionCreators,
+                    $billCreators
+                ));
+
+                if (empty($allCreators)) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [],
+                        'pagination' => [
+                            'current_page' => $page,
+                            'last_page' => 1,
+                            'per_page' => $perPage,
+                            'total' => 0,
+                            'from' => null,
+                            'to' => null,
+                            'has_more_pages' => false,
+                        ],
+                        'filter' => $filter,
+                    ]);
+                }
+
                 // Build aggregated posts query
                 $postsQuery = Post::whereNotNull('image')
                     ->with('user')

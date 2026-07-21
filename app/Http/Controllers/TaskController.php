@@ -2,44 +2,52 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Task;
-use App\Models\TaskPurchase;
-use App\Models\Deliverable;
-use App\Models\Payment;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
-use Stripe\Stripe;
-use Stripe\Checkout\Session;
-use Stripe\StripeClient;
-use App\Mail\TaskPurchasedMail;
-use App\Mail\TaskProofSubmittedMail;
+use App\Helpers;
+use App\Jobs\CheckMediaModeration;
+use App\Jobs\ProcessWishItemDeliverable;
+use App\Mail\TaskDisputeEscalatedMail;
 use App\Mail\TaskProofAcceptedMail;
 use App\Mail\TaskProofRejectedMail;
-use App\Mail\TaskDisputeEscalatedMail;
-use Illuminate\Support\Facades\Mail;
-use App\Helpers;
-use App\StripeControl;
+use App\Mail\TaskProofSubmittedMail;
+use App\Mail\TaskPurchasedMail;
+use App\Mail\TaskPurchasedSupporterMail;
 use App\Models\Currency;
-use Carbon\Carbon;
-use App\Jobs\ProcessWishItemDeliverable;
-use Illuminate\Support\Facades\Log;
-use App\Services\UserProfileService;
-use App\Services\StripeMetadataService;
-use Illuminate\Support\Facades\App;
-use App\Traits\RiskEnforcement;
-use App\Services\CreatorSubscriptionService;
+use App\Models\Deliverable;
+use App\Models\Payment;
+use App\Models\Task;
+use App\Models\TaskPurchase;
+use App\Models\User;
+use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
-use App\Notifications\SubscriptionBlockedNotification;
-use App\Notifications\PaymentBlockedNotification;
+use App\Services\CreatorSubscriptionService;
+use App\Services\Risk\MoneyNormalizer;
+use App\Services\Risk\ReservePolicy;
+use App\Services\Risk\RiskService;
+use App\Services\StripeMetadataService;
+use App\Services\UserProfileService;
+use App\StripeControl;
+use App\Traits\RiskEnforcement;
+use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
+use Stripe\StripeClient;
 
 class TaskController extends Controller
 {
     use RiskEnforcement;
+
     public function index()
     {
         $tasks = Task::where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
@@ -65,7 +73,7 @@ class TaskController extends Controller
             'tasks' => $tasks,
             'orders' => $orders,
             'completed_orders' => $completed_orders,
-            'purchased_tasks' => $purchased_tasks
+            'purchased_tasks' => $purchased_tasks,
         ]);
     }
 
@@ -80,7 +88,7 @@ class TaskController extends Controller
 
         return Inertia::render('Tasks/Create', [
             'currency' => $userCurrency,
-            'currencySymbol' => $currencySymbol
+            'currencySymbol' => $currencySymbol,
         ]);
     }
 
@@ -97,7 +105,7 @@ class TaskController extends Controller
                 'required',
                 'numeric',
                 'min:0.01',
-                function ($attribute, $value, $fail) use ($request) {
+                function ($attribute, $value, $fail) {
                     $currency = Auth::user()->default_currency ?? 'USD';
                     $priceGBP = Helpers::priceFormat(strtoupper($currency), $value, 'GBP');
 
@@ -114,7 +122,7 @@ class TaskController extends Controller
             'deliverable_file' => [
                 'nullable',
                 function ($attribute, $value, $fail) use ($request) {
-                    if ($request->type === 'instant' && !$value && !$request->deliverable_note) {
+                    if ($request->type === 'instant' && ! $value && ! $request->deliverable_note) {
                         $fail('Either a deliverable file or a note is required for instant delivery.');
                     }
                 },
@@ -128,7 +136,7 @@ class TaskController extends Controller
             return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
         }
 
-        $task = new Task();
+        $task = new Task;
         $task->uuid = Str::uuid();
         $task->creator_id = Auth::id();
         $task->title = $request->title;
@@ -158,8 +166,8 @@ class TaskController extends Controller
 
         // SFW gate: AI-scan the task media; keep it unapproved if it fails moderation.
         $mediaUuid = $request->media_file['uuid'] ?? null;
-        if (!empty($mediaUuid)) {
-            \App\Jobs\CheckMediaModeration::dispatch(
+        if (! empty($mediaUuid)) {
+            CheckMediaModeration::dispatch(
                 Task::class,
                 $task->id,
                 $mediaUuid,
@@ -189,7 +197,7 @@ class TaskController extends Controller
         return Inertia::render('Tasks/Edit', [
             'task' => $task,
             'currency' => $userCurrency,
-            'currencySymbol' => $currencySymbol
+            'currencySymbol' => $currencySymbol,
         ]);
     }
 
@@ -209,7 +217,7 @@ class TaskController extends Controller
                 'required',
                 'numeric',
                 'min:0.01',
-                function ($attribute, $value, $fail) use ($request, $task) {
+                function ($attribute, $value, $fail) use ($task) {
                     $currency = $task->currency ?? 'USD';
                     $priceGBP = Helpers::priceFormat(strtoupper($currency), $value, 'GBP');
 
@@ -226,7 +234,7 @@ class TaskController extends Controller
             'deliverable_file' => [
                 'nullable',
                 function ($attribute, $value, $fail) use ($request, $task) {
-                    if ($request->type === 'instant' && !$value && !$request->deliverable_note && !$task->deliverable_content) {
+                    if ($request->type === 'instant' && ! $value && ! $request->deliverable_note && ! $task->deliverable_content) {
                         $fail('Either a deliverable file or a note is required for instant delivery.');
                     }
                 },
@@ -277,7 +285,7 @@ class TaskController extends Controller
         $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
 
         // Visibility Check: Only Creator can see unapproved tasks
-        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
+        if (! $task->is_approved && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 
@@ -298,7 +306,7 @@ class TaskController extends Controller
             }
         }
 
-        if (Auth::id() !== $task->creator_id && !$purchase) {
+        if (Auth::id() !== $task->creator_id && ! $purchase) {
             $task->makeHidden(['deliverable_content', 'deliverable_note', 'deliverable_content_type']);
         }
 
@@ -313,7 +321,7 @@ class TaskController extends Controller
             'isCreator' => Auth::id() === $task->creator_id,
             'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['paid', 'delivered', 'completed', 'completed_accepted'])) ? route('task.download', $task->uuid) : null,
             'currencySymbol' => $currencySymbol,
-            'card_capabilities' => $card_capabilities
+            'card_capabilities' => $card_capabilities,
         ]);
     }
 
@@ -321,8 +329,12 @@ class TaskController extends Controller
     {
         $task = Task::where('uuid', $uuid)->firstOrFail();
 
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             abort(403, 'Unauthorized');
+        }
+
+        if (empty($task->deliverable_content)) {
+            return redirect()->back()->with('error', 'No downloadable file is attached to this task.');
         }
 
         $userId = Auth::id();
@@ -331,6 +343,7 @@ class TaskController extends Controller
             if (Str::startsWith($task->deliverable_content, ['http', 'https'])) {
                 return redirect($task->deliverable_content);
             }
+
             return Storage::download($task->deliverable_content);
         }
 
@@ -340,12 +353,12 @@ class TaskController extends Controller
             ->latest()
             ->first();
 
-        if (!$purchase) {
+        if (! $purchase) {
             // Debug logging for troubleshooting
-            \Illuminate\Support\Facades\Log::info("Download failed - No valid purchase found", [
+            Log::info('Download failed - No valid purchase found', [
                 'task_id' => $task->id,
                 'user_id' => $userId,
-                'uuid' => $uuid
+                'uuid' => $uuid,
             ]);
 
             // Check for any purchase to provide better error message
@@ -354,10 +367,10 @@ class TaskController extends Controller
                 ->first();
 
             if ($anyPurchase) {
-                \Illuminate\Support\Facades\Log::info("Download failed - Invalid status", [
-                    'status' => $anyPurchase->status
+                Log::info('Download failed - Invalid status', [
+                    'status' => $anyPurchase->status,
                 ]);
-                abort(403, 'Purchase status not allowed: ' . $anyPurchase->status);
+                abort(403, 'Purchase status not allowed: '.$anyPurchase->status);
             }
             abort(403, 'Purchase required');
         }
@@ -365,6 +378,7 @@ class TaskController extends Controller
         if (Str::startsWith($task->deliverable_content, ['http', 'https'])) {
             return redirect($task->deliverable_content);
         }
+
         return Storage::download($task->deliverable_content);
     }
 
@@ -372,26 +386,27 @@ class TaskController extends Controller
     {
         // Stripe compliance: paid tasks require an account (order tracked until delivery).
         // Guest checkout is only allowed for Piggy Pot and Wishes.
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')->with('error', 'Please log in or create an account to purchase — your order needs an account so it can be tracked through to delivery.');
         }
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
             $user = Auth::user();
+
             return to_route('user.show', ['username' => $user->username])
-                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+                ->with('error', '⚠️ Please complete your card verification payment and wait for admin approval before making further payments.');
         }
         $task = Task::where('uuid', $uuid)->firstOrFail();
 
         // Prevent purchasing unapproved tasks
-        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
+        if (! $task->is_approved && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
@@ -405,7 +420,7 @@ class TaskController extends Controller
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
 
-        if (!$subscriptionCheck['eligible']) {
+        if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $task->price));
 
@@ -416,7 +431,7 @@ class TaskController extends Controller
                 'task_id' => $task->id,
                 'task_price' => $task->price,
                 'subscription_status' => $subscriptionCheck['status'],
-                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown',
             ]);
 
             // Return user-friendly error to fan
@@ -429,7 +444,7 @@ class TaskController extends Controller
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
 
-        if (!$activityCheck['eligible']) {
+        if (! $activityCheck['eligible']) {
             // Send notification to creator about blocked payment
             $creator->notify(new PaymentBlockedNotification($activityCheck, $task->price));
 
@@ -440,7 +455,7 @@ class TaskController extends Controller
                 'task_id' => $task->id,
                 'task_price' => $task->price,
                 'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
+                'content_count' => $activityCheck['content_count'] ?? 0,
             ]);
 
             // Return user-friendly error to fan
@@ -456,7 +471,7 @@ class TaskController extends Controller
                 'creator_id' => $creator->id,
                 'creator_username' => $creator->username,
                 'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
+                'content_count' => $activityCheck['content_count'] ?? 0,
             ]);
         }
 
@@ -498,7 +513,7 @@ class TaskController extends Controller
 
         // Resolve requested payment method (card|bank) against listing
         // preference, progressive tiers, and creator capabilities.
-        $methodResolution = \App\Services\CheckoutMethodResolver::resolve(
+        $methodResolution = CheckoutMethodResolver::resolve(
             $request->input('payment_method', 'card'),
             $task->payment_methods_accepted ?? 'both',
             $priceWithVat,
@@ -507,7 +522,7 @@ class TaskController extends Controller
             $user->email ?? null,
             $creator->account_id
         );
-        if (!($methodResolution['ok'] ?? false)) {
+        if (! ($methodResolution['ok'] ?? false)) {
             return back()->with('error', $methodResolution['message']);
         }
 
@@ -530,7 +545,7 @@ class TaskController extends Controller
             false // redirect response
         );
 
-        if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+        if ($riskData instanceof RedirectResponse) {
             return $riskData;
         }
 
@@ -540,13 +555,13 @@ class TaskController extends Controller
                 'price_data' => [
                     'currency' => $currency,
                     'product_data' => [
-                        'name' => "Total value of item including all fees",
-                        'description' => "You are purchasing a digital task. Delivery method: " . ucfirst($task->type) . ".",
+                        'name' => 'Total value of item including all fees',
+                        'description' => 'You are purchasing a digital task. Delivery method: '.ucfirst($task->type).'.',
                         'images' => $task->media_url ? [asset($task->media_url)] : [],
                     ],
                     'unit_amount' => round($finalTotalAmount * $multiplier),
-                ]
-            ]
+                ],
+            ],
         ];
 
         // Prepare Transfer Data
@@ -554,9 +569,10 @@ class TaskController extends Controller
         $hasCardPayments = $methodResolution['fee_profile'] !== 'card'
             || StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
-        if (!$hasCardPayments) {
+        if (! $hasCardPayments) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
-            return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+
+            return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
 
         $appUrl = rtrim(config('app.url'), '/');
@@ -594,8 +610,8 @@ class TaskController extends Controller
                 'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                 'metadata' => $complianceMetadata,
             ],
-            'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => $appUrl . '/task/' . $task->uuid,
+            'success_url' => route('task.success', ['uuid' => $task->uuid]).'?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => $appUrl.'/task/'.$task->uuid,
             'customer_email' => $user->email,
             'metadata' => $complianceMetadata,
         ];
@@ -620,14 +636,17 @@ class TaskController extends Controller
                 [
                     'creator_id' => $creator->uuid,
                     'risk_identity_id' => $riskData['risk_identity_id'] ?? null,
-                    'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($currency)),
+                    'amount' => app(MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($currency)),
                     'reserve_amount_minor' => (function () use ($creator, $creatorNet, $currency, $multiplier) {
                         $creatorNetMinor = (int) round($creatorNet * $multiplier);
-                        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
-                        $reserveRate = app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now());
-                        if ($reserveRate <= 0) return 0;
+                        $metrics = app(RiskService::class)->recalculateMetrics((string) $creator->uuid);
+                        $reserveRate = app(ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now());
+                        if ($reserveRate <= 0) {
+                            return 0;
+                        }
                         $reserveMinor = (int) round(($creatorNetMinor * $reserveRate) / 100);
-                        return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, strtoupper($currency));
+
+                        return app(MoneyNormalizer::class)->toGbpMinor($reserveMinor, strtoupper($currency));
                     })(),
                     'currency' => 'gbp',
                     'stripe_payment_intent_id' => $session->payment_intent ?? null,
@@ -667,12 +686,13 @@ class TaskController extends Controller
 
         $isPaid = $session->payment_status === 'paid';
         $isLocal = App::environment('local');
+        $instantFulfil = config('payments.instant_fulfilment', true) && (($session->metadata->fee_profile ?? 'card') === 'bank');
 
-        if ($isPaid || $isLocal) {
+        if ($isPaid || $isLocal || ($instantFulfil && in_array($session->payment_status, ['unpaid', 'processing']))) {
 
             $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
 
-            if (!$purchase) {
+            if (! $purchase) {
                 $purchase = $this->createTaskPurchaseSync($session, $task);
             }
 
@@ -701,11 +721,11 @@ class TaskController extends Controller
             // before the debit clears — fulfilment happens via the
             // async_payment_succeeded webhook.
             if (($session->metadata->fee_profile ?? 'card') === 'bank' && $session->payment_status !== 'paid') {
-                return redirect('/task/' . $uuid)
+                return redirect('/task/'.$uuid)
                     ->with('success', 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.');
             }
 
-            return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
+            return redirect('/task/'.$uuid)->with('error', 'Payment not completed.');
         }
 
         $displayAmount = $session->amount_total / 100;
@@ -743,24 +763,22 @@ class TaskController extends Controller
 
         if ($task->type === 'instant' && $task->deliverable_content) {
             $contentUrl = $task->deliverable_content;
-            if (!\Illuminate\Support\Str::startsWith($contentUrl, ['http://', 'https://'])) {
-                $contentUrl = 'https://ucarecdn.com/' . $contentUrl . '/';
+            if (! Str::startsWith($contentUrl, ['http://', 'https://'])) {
+                $contentUrl = 'https://ucarecdn.com/'.$contentUrl.'/';
             }
 
             $thankYouParams['wish_content'] = [
                 'type' => $task->deliverable_content_type ?? 'image',
                 'name' => 'Task Content',
-                'url' => $contentUrl
+                'url' => $contentUrl,
             ];
         }
         Log::info('Redirecting to thank you page after task purchase', [
-            'thank_you_params' => $thankYouParams
+            'thank_you_params' => $thankYouParams,
         ]);
 
         return to_route('thank-you', $thankYouParams)->with('success', 'Payment Successful.');
     }
-
-
 
     /**
      * Synchronously create task purchase if webhook is delayed
@@ -769,12 +787,14 @@ class TaskController extends Controller
     {
         // Double check to avoid race condition
         $existing = TaskPurchase::where('stripe_session_id', $session->id)->first();
-        if ($existing) return $existing;
+        if ($existing) {
+            return $existing;
+        }
 
         $metadata = $session->metadata;
 
         // If session metadata is empty (because we moved it to PaymentIntent), try to fetch from PI
-        if (empty($metadata->buyer_id) && !empty($session->payment_intent)) {
+        if (empty($metadata->buyer_id) && ! empty($session->payment_intent)) {
             try {
                 $client = new StripeClient(config('services.stripe.secret'));
                 $piId = is_string($session->payment_intent) ? $session->payment_intent : $session->payment_intent->id;
@@ -787,12 +807,12 @@ class TaskController extends Controller
             }
         }
 
-        $taskId = (!empty($metadata->task_id)) ? $metadata->task_id : $task->id;
-        $buyerId = (!empty($metadata->buyer_id)) ? $metadata->buyer_id : null;
-        $creatorId = (!empty($metadata->creator_id)) ? $metadata->creator_id : $task->creator_id;
+        $taskId = (! empty($metadata->task_id)) ? $metadata->task_id : $task->id;
+        $buyerId = (! empty($metadata->buyer_id)) ? $metadata->buyer_id : null;
+        $creatorId = (! empty($metadata->creator_id)) ? $metadata->creator_id : $task->creator_id;
 
         $currency = strtoupper($session->currency ?? ($task->currency ?? 'GBP'));
-        $currencyModel = \App\Models\Currency::where('ISO', $currency)->first();
+        $currencyModel = Currency::where('ISO', $currency)->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $itemAmountMinor = $metadata->item_amount ?? null;
@@ -800,7 +820,7 @@ class TaskController extends Controller
 
         // Try to get charge_id from payment intent if available
         $chargeId = null;
-        if (!empty($session->payment_intent)) {
+        if (! empty($session->payment_intent)) {
             try {
                 $client = new StripeClient(config('services.stripe.secret'));
                 // Check if payment_intent is already an object (expanded) or string
@@ -814,7 +834,7 @@ class TaskController extends Controller
 
         $vat = isset($metadata->vat_amount) ? ((float) $metadata->vat_amount / $multiplier) : 0;
         $vatPercent = (float) ($metadata->vat_percent ?? 0);
-        if ((!$vat || $vat <= 0) && $vatPercent > 0) {
+        if ((! $vat || $vat <= 0) && $vatPercent > 0) {
             $vat = round(((float) $amount * $vatPercent) / 100, 2, PHP_ROUND_HALF_UP);
         }
         $adminFee = isset($metadata->admin_fee) ? ((float) $metadata->admin_fee / $multiplier) : 0;
@@ -875,8 +895,8 @@ class TaskController extends Controller
             'customer_name' => $session->customer_details->name ?? null,
             'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
             'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
-            'metadata' => json_encode(array_merge((array)$metadata, [
-                'currency' => $currency
+            'metadata' => json_encode(array_merge((array) $metadata, [
+                'currency' => $currency,
             ])),
         ]);
 
@@ -887,7 +907,7 @@ class TaskController extends Controller
         try {
             app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to sync initial metadata in createTaskPurchaseSync: " . $e->getMessage());
+            Log::error('Failed to sync initial metadata in createTaskPurchaseSync: '.$e->getMessage());
         }
 
         if ($task->type === 'instant') {
@@ -900,11 +920,11 @@ class TaskController extends Controller
                 $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                 if ($deliverable) {
                     app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
-                        'task_type' => 'instant'
+                        'task_type' => 'instant',
                     ]);
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to update metadata on instant task completion: " . $e->getMessage());
+                Log::error('Failed to update metadata on instant task completion: '.$e->getMessage());
             }
 
             $deliverable->status = 'delivered';
@@ -922,17 +942,26 @@ class TaskController extends Controller
                 }
 
                 Helpers::sendNotification(
-                    "New Task Order! 💰",
-                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title,
+                    'New Task Order! 💰',
+                    ($supporter ? $supporter->name : 'A Guest').' purchased your task: '.$task->title,
                     $creator->email
                 );
             }
 
             if ($supporter && $supporter->notification_send == 1) {
-                Mail::to($supporter->email)->send(new \App\Mail\TaskPurchasedSupporterMail($purchase, $task, $supporter));
+                Mail::to($supporter->email)->send(new TaskPurchasedSupporterMail($purchase, $task, $supporter));
+            }
+
+            // Buyer push (shop parity) — the mail above is consent-gated, the push is not.
+            if ($supporter) {
+                Helpers::sendNotification(
+                    'Purchase Confirmed! ✨',
+                    'Your order for "'.$task->title.'" is confirmed.',
+                    $supporter->email
+                );
             }
         } catch (\Exception $e) {
-            Log::error("Failed to send task purchase email/notification in sync handler", ['error' => $e->getMessage()]);
+            Log::error('Failed to send task purchase email/notification in sync handler', ['error' => $e->getMessage()]);
         }
 
         return $purchase;
@@ -948,7 +977,7 @@ class TaskController extends Controller
 
         $request->validate([
             'proof_file' => 'required',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ]);
 
         $fileData = $request->proof_file;
@@ -956,7 +985,7 @@ class TaskController extends Controller
         $fileName = $fileData['name'] ?? 'proof_file';
         $mimeType = $fileData['mimeType'] ?? null;
 
-        if (!$fileUrl) {
+        if (! $fileUrl) {
             return back()->withErrors(['proof_file' => 'Invalid file upload. Please try again.']);
         }
 
@@ -966,7 +995,7 @@ class TaskController extends Controller
             'mime_type' => $mimeType,
             'notes' => $request->notes,
             'uploaded_at' => now()->toIso8601String(),
-            'is_external' => true
+            'is_external' => true,
         ];
 
         $purchase->status = 'pending_review';
@@ -977,11 +1006,11 @@ class TaskController extends Controller
             $deliverable = Deliverable::where('order_id', $purchase->id)->first();
             if ($deliverable) {
                 app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
-                    'proof_uploaded_at' => now()->toIso8601String()
+                    'proof_uploaded_at' => now()->toIso8601String(),
                 ]);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to update metadata on proof upload: " . $e->getMessage());
+            Log::error('Failed to update metadata on proof upload: '.$e->getMessage());
         }
 
         try {
@@ -993,8 +1022,8 @@ class TaskController extends Controller
                 Mail::to($supporter->email)->send(new TaskProofSubmittedMail($purchase, $task, $creator));
 
                 Helpers::sendNotification(
-                    "Proof Submitted! 🚀",
-                    $creator->name . " submitted proof for task: " . $task->title,
+                    'Proof Submitted! 🚀',
+                    $creator->name.' submitted proof for task: '.$task->title,
                     $supporter->email
                 );
             }
@@ -1014,7 +1043,7 @@ class TaskController extends Controller
 
         $request->validate([
             'action' => 'required|in:accept,reject',
-            'reason' => 'required_if:action,reject|nullable|string'
+            'reason' => 'required_if:action,reject|nullable|string',
         ]);
 
         $creator = $purchase->creator;
@@ -1041,7 +1070,7 @@ class TaskController extends Controller
                 if ($deliverable) {
                     $metadata = [
                         'proof_status' => 'accepted',
-                        'accepted_by' => 'supporter'
+                        'accepted_by' => 'supporter',
                     ];
 
                     if ($wasDispute) {
@@ -1052,7 +1081,7 @@ class TaskController extends Controller
                     app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, $metadata);
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to update metadata on proof acceptance: " . $e->getMessage());
+                Log::error('Failed to update metadata on proof acceptance: '.$e->getMessage());
             }
 
             // Update Deliverable Status
@@ -1063,7 +1092,7 @@ class TaskController extends Controller
                     $deliverable->delivered_at = now();
                     // If task has content URL, ensure it's set in deliverable_url?
                     // Usually deliverable_url for tasks might be the proof file or task content.
-                    // If task type is instant, it's already set. 
+                    // If task type is instant, it's already set.
                     // For timed task, maybe we set it to proof file URL?
                     if (isset($purchase->proof_content['file'])) {
                         $deliverable->deliverable_url = $purchase->proof_content['file'];
@@ -1071,15 +1100,15 @@ class TaskController extends Controller
                     $deliverable->save();
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to update deliverable status (proof accepted): " . $e->getMessage());
+                Log::error('Failed to update deliverable status (proof accepted): '.$e->getMessage());
             }
 
             try {
                 if ($creator && $creator->notification_send == 1) {
                     Mail::to($creator->email)->send(new TaskProofAcceptedMail($purchase, $task, $supporter));
                     Helpers::sendNotification(
-                        "Proof Accepted! ✅",
-                        $supporter->name . " accepted your proof for task: " . $task->title,
+                        'Proof Accepted! ✅',
+                        $supporter->name.' accepted your proof for task: '.$task->title,
                         $creator->email
                     );
                 }
@@ -1091,9 +1120,9 @@ class TaskController extends Controller
                 $purchase->status = 'paid_out';
                 $purchase->save();
 
-                \Illuminate\Support\Facades\Log::info('Paid Task marked as paid_out (Direct Charge)', [
+                Log::info('Paid Task marked as paid_out (Direct Charge)', [
                     'purchase_id' => $purchase->id,
-                    'payment_intent' => $purchase->payment_intent_id
+                    'payment_intent' => $purchase->payment_intent_id,
                 ]);
 
                 // Update Metadata with new status (paid_out / transferred)
@@ -1103,11 +1132,11 @@ class TaskController extends Controller
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'transfer_status' => 'transferred',
                             'current_status_of_order' => 'paid_out',
-                            'payment_status' => 'paid'
+                            'payment_status' => 'paid',
                         ]);
                     }
                 } catch (\Exception $e) {
-                    Log::error("Failed to update metadata after marking paid_out: " . $e->getMessage());
+                    Log::error('Failed to update metadata after marking paid_out: '.$e->getMessage());
                 }
             }
         } else {
@@ -1128,11 +1157,11 @@ class TaskController extends Controller
                     if ($deliverable) {
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'dispute_status' => 'open',
-                            'escalation_reason' => $request->reason
+                            'escalation_reason' => $request->reason,
                         ]);
                     }
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to update metadata on escalation: " . $e->getMessage());
+                    Log::error('Failed to update metadata on escalation: '.$e->getMessage());
                 }
 
                 // Notify Creator
@@ -1140,9 +1169,9 @@ class TaskController extends Controller
                     if ($creator->notification_send == 1) {
                         Mail::to($creator->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $creator, 'creator'));
                     }
-                    Helpers::sendNotification("Dispute Escalated ⚠️", "Task dispute escalated to admin for '{$task->title}'", $creator->email);
+                    Helpers::sendNotification('Dispute Escalated ⚠️', "Task dispute escalated to admin for '{$task->title}'", $creator->email);
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to notify creator about escalation: " . $e->getMessage());
+                    Log::error('Failed to notify creator about escalation: '.$e->getMessage());
                 }
 
                 // Notify Supporter
@@ -1150,9 +1179,9 @@ class TaskController extends Controller
                     if ($supporter->notification_send == 1) {
                         Mail::to($supporter->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $supporter, 'supporter'));
                     }
-                    Helpers::sendNotification("Dispute Escalated ⚠️", "Task dispute escalated to admin for '{$task->title}'", $supporter->email);
+                    Helpers::sendNotification('Dispute Escalated ⚠️', "Task dispute escalated to admin for '{$task->title}'", $supporter->email);
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to notify supporter about escalation: " . $e->getMessage());
+                    Log::error('Failed to notify supporter about escalation: '.$e->getMessage());
                 }
 
                 // Notify Admin (via email)
@@ -1166,7 +1195,7 @@ class TaskController extends Controller
                     }
                     // Send to admin support email
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to notify admin about escalation: " . $e->getMessage());
+                    Log::error('Failed to notify admin about escalation: '.$e->getMessage());
                 }
             } else {
                 $purchase->status = 'rejected_once';
@@ -1179,11 +1208,11 @@ class TaskController extends Controller
                     if ($deliverable) {
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'status' => 'rejected_once',
-                            'rejection_reason' => $request->reason
+                            'rejection_reason' => $request->reason,
                         ]);
                     }
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to update metadata on rejection: " . $e->getMessage());
+                    Log::error('Failed to update metadata on rejection: '.$e->getMessage());
                 }
 
                 // Notify Creator about rejection
@@ -1191,9 +1220,9 @@ class TaskController extends Controller
                     if ($creator->notification_send == 1) {
                         Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
                     }
-                    Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review.", $creator->email);
+                    Helpers::sendNotification('Proof Rejected ❌', "Proof rejected for '{$task->title}'. Please review.", $creator->email);
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to notify creator about rejection: " . $e->getMessage());
+                    Log::error('Failed to notify creator about rejection: '.$e->getMessage());
                 }
             }
         }
@@ -1204,7 +1233,7 @@ class TaskController extends Controller
     public function order($uuid)
     {
         $purchase = TaskPurchase::where('uuid', $uuid)->with(['task', 'supporter', 'creator'])->first();
-        if (!$purchase) {
+        if (! $purchase) {
             abort(404);
         }
 
@@ -1212,7 +1241,7 @@ class TaskController extends Controller
             abort(403);
         }
 
-        $currencySymbol = \App\Models\Currency::where('ISO', $purchase->task->currency)->value('symbol') ?? '$';
+        $currencySymbol = Currency::where('ISO', $purchase->task->currency)->value('symbol') ?? '$';
 
         return Inertia::render('Tasks/Order', [
             'purchase' => $purchase,

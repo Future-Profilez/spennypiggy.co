@@ -186,33 +186,35 @@ export default function Hero({auth}) {
   const ctaRef = ctaIsUser ? rocketIconRef1 : rocketIconRef2;
 
   return <>
-        <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
-            <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
-              <li>
-                <a  href="#home"  className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`}
-                    onClick={(e) => handleNavItemClick(e, 'home')}
-                    onMouseEnter={() => houseIconRef.current?.startAnimation()}
-                >
-                  <HouseIcon ref={houseIconRef} size={24} color="currentColor" duration={1.5} />
-                </a>
-              </li>
-              <li>
-                <a href="#features" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'features' ? 'active text-[#FF007F]' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'features')}>
-                  Features
-                </a>
-              </li>
-              <li>
-                <a href="#reviews" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'reviews' ? 'active text-[#FF007F]' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
-                  Reviews
-                </a>
-              </li>
-              <li>
-                <a href="#faq" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'faq' ? 'active text-[#FF007F]' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
-                  FAQ's
-                </a>
-              </li>
-            </ul>
-        </div>
+        {!auth?.user && (
+            <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
+                <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
+                  <li>
+                    <a  href="#home"  className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`}
+                        onClick={(e) => handleNavItemClick(e, 'home')}
+                        onMouseEnter={() => houseIconRef.current?.startAnimation()}
+                    >
+                      <HouseIcon ref={houseIconRef} size={24} color="currentColor" duration={1.5} />
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#features" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'features' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'features')}>
+                      Features
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#reviews" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'reviews' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
+                      Reviews
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#faq" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'faq' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
+                      FAQ's
+                    </a>
+                  </li>
+                </ul>
+            </div>
+        )}
 
         <img
           src={transparentPixel}

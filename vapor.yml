@@ -28,13 +28,15 @@ environments:
       - "npm run build"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
-      - "php artisan stripe:request-bank-capabilities"
       # - "rd /s /q node_modules"
       # - "rd /s /q package-lock.json"
- 
+
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
+      # Queries the users table, so it can only run after deploy — the build
+      # container has no database connection.
+      - "php artisan stripe:request-bank-capabilities"
 
   production:
     memory: 1024
@@ -70,11 +72,13 @@ environments:
       - "php artisan view:clear"
       - "php artisan event:clear"
       - "php artisan cache:clear"
-      - "php artisan stripe:request-bank-capabilities"
 
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
+      # Queries the users table, so it can only run after deploy — the build
+      # container has no database connection.
+      - "php artisan stripe:request-bank-capabilities"
 
 # - "php artisan app:notifications-pending-approval"
 # - "php artisan subscription:sync --all"

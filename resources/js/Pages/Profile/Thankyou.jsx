@@ -332,9 +332,9 @@ export default function Thankyou(props) {
             .explore-btn:hover{background:#fde047;transform:translateY(2px);box-shadow:2px 2px 0px 0px rgba(0,0,0,1);}
             `}</style>
              <div className='!py-12 thankyou-wrap'>
-                <div className="mb-6 text-center">
+                <div className="mb-6 text-center ">
                   {getIcon()}
-                  <h2 className='text-3xl md:text-4xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]'>
+                  <h2 className='text-2xl md:text-4xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]'>
                     {getTitle()}
                   </h2>
                   <p className='text-gray-800 font-bold text-sm md:text-base'>{getSubTitle()}</p>

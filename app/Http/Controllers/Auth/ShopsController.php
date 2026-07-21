@@ -175,7 +175,7 @@ class ShopsController extends Controller
                 'name' => $request->name,
                 'description' => $request->description,
                 'price' => $request->price,
-                'currency' => $user->default_currency,
+                'currency' => $user->default_currency ?? 'gbp',
                 'image' => $request->image ?? null,
                 'success_page_type' => ! empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
                 'success_page_value' => ! empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
@@ -195,7 +195,7 @@ class ShopsController extends Controller
                 'name' => $request->name,
                 'description' => $request->description,
                 'price' => $request->price,
-                'currency' => $user->default_currency,
+                'currency' => $user->default_currency ?? 'gbp',
                 'image' => $request->image ?? null,
                 'success_page_type' => ! empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
                 'success_page_value' => ! empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
@@ -466,7 +466,7 @@ class ShopsController extends Controller
             ];
 
             try {
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe = new StripeClient(config('services.stripe.secret'));
 
                 if ($shop->type != 'physical') {
                     if ($old_price == $shop->price) {
@@ -931,6 +931,7 @@ class ShopsController extends Controller
                 return response()->json([
                     'status' => false,
                     'code' => $methodResolution['code'],
+                    'message' => $methodResolution['message'],
                     'msg' => $methodResolution['message'],
                 ]);
             }
