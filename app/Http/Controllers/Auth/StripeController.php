@@ -3679,6 +3679,19 @@ class StripeController extends Controller
                 // Send notification to creator
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
 
+                // Push to creator — the mail above is consent-gated, but every other
+                // flow (shop/task/pot) also pushes, and tip was the only one that didn't.
+                try {
+                    $supporterName = $tip_pay->anonymous ? 'A supporter' : ($tip_pay->user->name ?? $tip_pay->guest_name ?? 'A supporter');
+                    Helpers::sendNotification(
+                        'New Support Payment! 💰',
+                        $supporterName.' purchased your exclusive content.',
+                        $tip_pay->creator->email
+                    );
+                } catch (Exception $e) {
+                    Log::error('Tip creator push failed', ['tip_id' => $tip_pay->id, 'error' => $e->getMessage()]);
+                }
+
                 $creatorNet = (float) $tip_pay->amount;
 
                 // Create deliverable record for tracking and certificate generation.
@@ -3735,6 +3748,20 @@ class StripeController extends Controller
 
                 // Process supporter deliverable, certificate, and email (replaces TipJarMailToUser)
                 TipPaymentMailToUser::dispatch($tip_pay, $userCurrency ? $userCurrency->iso : $tip_pay->currency);
+
+                // Push to the buyer too (shop parity) — guests have no push identity, so email presence gates it.
+                try {
+                    $buyerEmail = $tip_pay->user->email ?? $tip_pay->guest_email ?? null;
+                    if ($buyerEmail) {
+                        Helpers::sendNotification(
+                            'Purchase Confirmed! ✨',
+                            'Your content from '.($tip_pay->creator->name ?? 'the creator').' is unlocked.',
+                            $buyerEmail
+                        );
+                    }
+                } catch (Exception $e) {
+                    Log::error('Tip buyer push failed', ['tip_id' => $tip_pay->id, 'error' => $e->getMessage()]);
+                }
 
                 // Generate thank you post for creator's feed
                 CreateThankYouPostJob::dispatch($tip_pay);

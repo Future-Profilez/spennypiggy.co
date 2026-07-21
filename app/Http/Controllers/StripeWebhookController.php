@@ -1719,6 +1719,16 @@ class StripeWebhookController extends Controller
                 Mail::to($supporter->email)->send(new TaskPurchasedSupporterMail($purchase, $task, $supporter));
             }
 
+            // Buyer push — mirrors the redirect (createTaskPurchaseSync) path; whichever
+            // of the two wins the race must send the same set of notifications.
+            if ($supporter) {
+                Helpers::sendNotification(
+                    'Purchase Confirmed! ✨',
+                    'Your order for "'.$task->title.'" is confirmed.',
+                    $supporter->email
+                );
+            }
+
             Log::info('StripeWebhookController: Task purchase finalized after Stripe confirmation', [
                 'purchase_id' => $purchase->id,
                 'deliverable_id' => $deliverable->id,
