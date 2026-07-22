@@ -45,13 +45,12 @@ return [
         'webhook_secret_us' => env('STRIPE_WEBHOOK_SECRET_US'),
     ],
 
-    // Add these new sections
     'fraud_notifications' => [
-        'admin_email' => env('FRAUD_DISPUTE_NOTIFICATIONS_ADMIN_EMAIL', 'admin@spennypiggy.com'),
+        'admin_email' => 'support@spennypiggy.co',
     ],
 
     'dispute_notifications' => [
-        'admin_email' => env('FRAUD_DISPUTE_NOTIFICATIONS_ADMIN_EMAIL', 'admin@spennypiggy.com'),
+        'admin_email' => 'support@spennypiggy.co',
     ],
 
     'magicbell' => [

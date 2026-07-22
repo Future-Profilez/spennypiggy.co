@@ -83,7 +83,7 @@ class RegisteredUserController extends Controller
             'street_address' => ['sometimes', 'required', 'string', 'min:20'],
             'city' => ['sometimes', 'required', 'string'],
             'state' => ['sometimes', 'required', 'string'],
-            'postal_code' => ['sometimes', 'required', 'integer', 'digits_between:4,8'],
+            'postal_code' => ['sometimes', 'required', 'string', 'max:20'],
         ], $messages);
 
         $validator->after(function ($validator) use ($request) {
@@ -158,7 +158,7 @@ class RegisteredUserController extends Controller
                 'street_address' => 'required|string|min:20',
                 'city'           => 'required|string',
                 'state'          => 'required|string',
-                'postal_code'    => 'required|integer|digits_between:4,8',
+                'postal_code'    => 'required|string|max:20',
             ]);
         }
 
@@ -267,7 +267,20 @@ class RegisteredUserController extends Controller
             'profile_status_lock' => 0,
             'cover'               => $assignedCover,
             'cover_approved'      => 1,
-            'utm_source'          => $request->input('utm_source'),
+            // Fall back to the first-touch source cookie set by TrackSiteVisit.
+            // Without it, anyone who arrived from Reddit, browsed, and signed up
+            // later from a clean URL was recorded as "direct" — which is why
+            // attribution was almost entirely empty.
+            //
+            // Sanitised, not normalised: lowercased and capped so 'Reddit' and
+            // 'reddit' are one channel and an oversized query string cannot fail
+            // the INSERT — but custom campaign tags (pride_qr) pass through
+            // untouched, because collapsing them to 'other' would erase the very
+            // thing they were created to measure.
+            'utm_source'          => $this->sanitiseUtm(
+                $request->input('utm_source')
+                    ?: $request->cookie(\App\Services\VisitTracker::ATTRIBUTION_COOKIE)
+            ),
             'utm_medium'          => $request->input('utm_medium'),
             'utm_campaign'        => $request->input('utm_campaign'),
         ]);
@@ -727,4 +740,23 @@ class RegisteredUserController extends Controller
     //         'data' => $verification,
     //     ]);
     // }
+
+    /**
+     * Make a utm value safe to store and consistent to report on.
+     *
+     * Lowercased so 'Reddit' and 'reddit' are one channel in attribution and
+     * CAC; capped because the column is varchar(255) and an oversized query
+     * string must never be able to fail the registration INSERT. Custom
+     * campaign tags (pride_qr) pass through untouched.
+     */
+    private function sanitiseUtm(?string $value): ?string
+    {
+        $value = strtolower(trim((string) $value));
+
+        if ($value === '') {
+            return null;
+        }
+
+        return mb_substr($value, 0, 100);
+    }
 }

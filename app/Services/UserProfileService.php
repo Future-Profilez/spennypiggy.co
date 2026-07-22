@@ -748,6 +748,8 @@ class UserProfileService
 
         // Clear basic profile cache
         Cache::forget('user_profile_basic_' . $username);
+        Cache::forget('user_followers_count_' . $userId);
+        Cache::forget('user_following_count_' . $userId);
 
         // Clear all data cache variations (common ones)
         Cache::forget('profile_all_data_' . $userId . '_all_page_about');
@@ -1346,6 +1348,12 @@ class UserProfileService
                 ->get(['id', 'name', 'username', 'avatar', 'avatar_cdn_modifier', 'avatar_approved'])
                 ->keyBy('id');
 
+            // VIP tier chips, resolved for the whole list in one pass. Same
+            // VipScoreService the gifter hub and public leaderboard use, so a
+            // supporter's badge reads the same wherever it appears.
+            $badges = app(\App\Services\VipScoreService::class)
+                ->badgesFor($userTotals->pluck('user_id')->all());
+
             $top = [];
             foreach ($userTotals as $row) {
                 $u = $users->get($row->user_id);
@@ -1354,6 +1362,7 @@ class UserProfileService
                     'username' => $u ? $u->username : null,
                     'purchases' => (int) $row->purchases,
                     'avatar' => $u ? $u->avatar_url : null,
+                    'vip' => $badges[$row->user_id] ?? null,
                 ];
             }
 

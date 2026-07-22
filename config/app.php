@@ -220,10 +220,13 @@ return [
 
     'debug_token' => env('LOG_DEBUG_TOKEN'),
 
-    // 'surprise_tax' => 10,
-    // 'crowd_tax' => 10,
-    // 'member_tax' => 15,
-    // 'jar_tax' => 20,
-    // 'bill_tax' => 8,
-    // 'shop_tax' => 12
+    /*
+    |--------------------------------------------------------------------------
+    | Central Admin Email List
+    |--------------------------------------------------------------------------
+    |
+    | Single source of truth for all admin notification recipients across the app.
+    |
+    */
+    'admin_emails' => array_values(array_filter(array_map('trim', explode(',', env('ADMIN_EMAILS', 'support@spennypiggy.co,naveen@internetbusinesssolutionsindia.com'))))),
 ];

@@ -80,7 +80,7 @@ class LinkUserToCrmCreator implements ShouldQueue
         $fromStage = $crmCreator->crm_stage;
 
         $crmCreator->user_id = $user->id;
-        $crmCreator->crm_stage = 'signed_up';
+        $crmCreator->crm_stage = 'verified';
         if ($triggerSource === 'invite_token') {
             $crmCreator->invite_token_used_at = Carbon::now();
         }
@@ -92,7 +92,7 @@ class LinkUserToCrmCreator implements ShouldQueue
         CrmCreatorStageHistory::create([
             'crm_creator_id' => $crmCreator->id,
             'from_stage' => $fromStage,
-            'to_stage' => 'signed_up',
+            'to_stage' => 'verified',
             'trigger_source' => $triggerSource,
             'triggered_by' => null,
         ]);

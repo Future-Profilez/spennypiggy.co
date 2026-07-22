@@ -144,7 +144,12 @@ class NotificationDispatcher
         try {
             $mailableClass = $payload['mailable'];
             $args = $payload['mailable_args'] ?? [];
-            $mailable = new $mailableClass(...array_values($args));
+
+            // Spread as-is, not array_values(): a keyed payload becomes NAMED
+            // arguments, so reordering the keys at a call site can no longer
+            // silently hand the mailable its arguments in the wrong order. A
+            // plain list still spreads positionally, so old callers are safe.
+            $mailable = new $mailableClass(...$args);
 
             if ($marketing) {
                 EmailService::sendMarketingEmail($user, $mailable);

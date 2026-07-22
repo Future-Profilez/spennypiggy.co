@@ -245,14 +245,13 @@ class FounderBonus extends Model
 
             $earnings = (float) self::calculateCompletedNetEarnings($creator, $joinDate, $calculationEndDate, 'GBP');
                 
-            $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
-            $isQualified = $earnings >= $minEarnings && $daysRemaining <= 0;
-            
+            $daysRemaining = $thirtyDaysLater->isFuture() ? max(1, (int) ceil(now()->diffInSeconds($thirtyDaysLater) / 86400)) : 0;
+            $isQualified = $earnings >= $minEarnings;
             
             $leaderboard[] = [
                 'creator' => $creator,
                 'current_earnings' => (float) $earnings,
-                'days_remaining' => $daysRemaining > 0 ? $daysRemaining : 0,
+                'days_remaining' => $daysRemaining,
                 'is_qualified' => $isQualified,
                 'qualification_progress' => min(100, ($earnings / $minEarnings) * 100),
             ];

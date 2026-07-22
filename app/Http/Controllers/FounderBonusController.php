@@ -121,12 +121,12 @@ class FounderBonusController extends Controller
                         // User not in top 50, calculate their progress
                         $earnings = $this->calculateFirst30DayEarnings($user->id);
 
-                        $daysRemaining = $thirtyDaysLater && $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
+                        $daysRemaining = $thirtyDaysLater && $thirtyDaysLater->isFuture() ? max(1, (int) ceil(now()->diffInSeconds($thirtyDaysLater) / 86400)) : 0;
 
                         $userProgress = [
                             'creator' => $user,
                             'current_earnings' => $earnings,
-                            'days_remaining' => $daysRemaining > 0 ? $daysRemaining : 0,
+                            'days_remaining' => $daysRemaining,
                             'is_qualified' => $earnings >= $minEarnings,
                             'qualification_progress' => min(100, ($earnings / $minEarnings) * 100),
                         ];

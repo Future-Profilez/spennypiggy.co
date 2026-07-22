@@ -814,6 +814,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/statement', [\App\Http\Controllers\CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
             Route::get('/statement/download', [\App\Http\Controllers\CreatorFinancialController::class, 'downloadStatement'])->name('statement.download');
             Route::get('/opportunities', [\App\Http\Controllers\CreatorFinancialController::class, 'opportunities'])->name('opportunities');
+            // Creator-triggered platform reminder to one of THEIR quiet
+            // supporters. Throttled: it sends real email/push on each hit.
+            Route::post('/opportunities/remind/{supporterId}', [\App\Http\Controllers\CreatorFinancialController::class, 'remindSupporter'])
+                ->whereNumber('supporterId')
+                ->middleware('throttle:10,1')
+                ->name('opportunities.remind');
             Route::get('/certificate', [\App\Http\Controllers\CreatorFinancialController::class, 'certificate'])->name('certificate');
             Route::get('/fast-start-bonus', [\App\Http\Controllers\CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
 

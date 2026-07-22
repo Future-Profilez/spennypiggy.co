@@ -6,6 +6,7 @@ use App\Models\BillPayment;
 use App\Models\Currency;
 use App\Models\MembershipPayment;
 use App\Models\ShopPayment;
+use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
 use App\Models\WishItemSubscription;
@@ -52,6 +53,7 @@ class VipScoreService
                 $current = $t;
             }
         }
+
         return ['level' => $current['level'], 'icon' => $current['icon'], 'color' => $current['color']];
     }
 
@@ -69,6 +71,31 @@ class VipScoreService
      */
     public function for($user): array
     {
+        return $this->forMany([$user->id])[$user->id] ?? $this->dress(0.0, [
+            'spend' => 0.0, 'gifts' => 0, 'creators' => 0, 'types' => 0, 'recency' => 0.0,
+        ], [
+            'amount_gbp' => 0.0, 'gifts' => 0, 'creators' => 0, 'types' => 0,
+        ]);
+    }
+
+    /**
+     * Same payload as for(), but for a set of supporters in one pass.
+     *
+     * Six source tables are read once for the whole set instead of once per
+     * supporter, which is what makes a tier badge affordable on a list — a
+     * ten-supporter leaderboard is six queries, not sixty.
+     *
+     * @param  array<int, int>  $userIds
+     * @return array<int, array> keyed by user id; ids with no purchases are omitted
+     */
+    public function forMany(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+
+        if (empty($userIds)) {
+            return [];
+        }
+
         $from = Carbon::now()->subMonths(3);
         $to = Carbon::now();
         $rates = Currency::whereNotNull('conversion_rate')
@@ -76,95 +103,136 @@ class VipScoreService
             ->mapWithKeys(fn ($rate, $iso) => [strtoupper($iso) => (float) $rate])
             ->toArray();
 
-        $totalAmount = 0.0;
-        $gifts = 0;
-        $creators = [];
-        $types = [];
-        $latest = null;
+        // One accumulator per supporter, seeded so every requested id gets an
+        // entry even when they turn out to have nothing in the window.
+        $acc = [];
+        foreach ($userIds as $id) {
+            $acc[$id] = ['amount' => 0.0, 'gifts' => 0, 'creators' => [], 'types' => [], 'latest' => null];
+        }
 
-        $add = function ($amount, $currency, $type, $createdAt, $creatorId) use (
-            &$totalAmount, &$gifts, &$creators, &$types, &$latest, $rates
-        ) {
-            $totalAmount += $this->toGbp((float) $amount, $currency, $rates);
-            $gifts++;
-            if ($creatorId && !in_array($creatorId, $creators, true)) {
-                $creators[] = $creatorId;
+        $add = function ($buyerId, $amount, $currency, $type, $createdAt, $creatorId) use (&$acc, $rates) {
+            $buyerId = (int) $buyerId;
+
+            if (! isset($acc[$buyerId])) {
+                return;
             }
-            if (!in_array($type, $types, true)) {
-                $types[] = $type;
+
+            $acc[$buyerId]['amount'] += $this->toGbp((float) $amount, $currency, $rates);
+            $acc[$buyerId]['gifts']++;
+
+            if ($creatorId && ! in_array($creatorId, $acc[$buyerId]['creators'], true)) {
+                $acc[$buyerId]['creators'][] = $creatorId;
             }
-            if ($createdAt && (!$latest || $createdAt > $latest)) {
-                $latest = $createdAt;
+
+            if (! in_array($type, $acc[$buyerId]['types'], true)) {
+                $acc[$buyerId]['types'][] = $type;
+            }
+
+            if ($createdAt && (! $acc[$buyerId]['latest'] || $createdAt > $acc[$buyerId]['latest'])) {
+                $acc[$buyerId]['latest'] = $createdAt;
             }
         };
 
-        // Wishes (line items)
-        $wishes = StripePaymentItems::whereHas('payment', function ($q) use ($from, $to, $user) {
-            $q->where('user_id', $user->id)
+        // Wishes (line items) — the buyer lives on the parent payment row.
+        $wishes = StripePaymentItems::whereHas('payment', function ($q) use ($from, $to, $userIds) {
+            $q->whereIn('user_id', $userIds)
                 ->where('payment_status', 'paid')
                 ->whereNotIn('id', function ($sub) {
                     $sub->select('source_id')->from('financial_transactions')
-                        ->where('source_type', \App\Models\StripePaymentDetail::class)
+                        ->where('source_type', StripePaymentDetail::class)
                         ->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->whereBetween('stripe_payment_details.created_at', [$from, $to]);
         })->with(['payment', 'wish.user'])->get();
         foreach ($wishes as $r) {
-            $add($r->amount, $r->payment?->currency, 'wish', $r->created_at, $r->wish?->user_id);
+            $add($r->payment?->user_id, $r->amount, $r->payment?->currency, 'wish', $r->created_at, $r->wish?->user_id);
         }
 
         // Wish subscriptions
-        $this->scopedPaid(WishItemSubscription::with('wish_item'), $user, $from, $to, \App\Models\WishItemSubscription::class)
-            ->each(fn ($r) => $add($r->amount, $r->currency, 'subscription', $r->created_at, $r->wish_item?->user_id));
+        $this->scopedPaid(WishItemSubscription::with('wish_item'), $userIds, $from, $to, WishItemSubscription::class)
+            ->each(fn ($r) => $add($r->user_id, $r->amount, $r->currency, 'subscription', $r->created_at, $r->wish_item?->user_id));
 
         // Tips
-        $this->scopedPaid(TipGoalsPayment::query(), $user, $from, $to, \App\Models\TipGoalsPayment::class)
-            ->each(fn ($r) => $add($r->amount, $r->currency, 'tip', $r->created_at, $r->creator_id));
+        $this->scopedPaid(TipGoalsPayment::query(), $userIds, $from, $to, TipGoalsPayment::class)
+            ->each(fn ($r) => $add($r->user_id, $r->amount, $r->currency, 'tip', $r->created_at, $r->creator_id));
 
         // Memberships
-        $this->scopedPaid(MembershipPayment::with('membership'), $user, $from, $to, \App\Models\MembershipPayment::class)
-            ->each(fn ($r) => $add($r->amount, $r->currency, 'membership', $r->created_at, $r->membership?->user_id));
+        $this->scopedPaid(MembershipPayment::with('membership'), $userIds, $from, $to, MembershipPayment::class)
+            ->each(fn ($r) => $add($r->user_id, $r->amount, $r->currency, 'membership', $r->created_at, $r->membership?->user_id));
 
         // Bills
-        $this->scopedPaid(BillPayment::with('bill'), $user, $from, $to, \App\Models\BillPayment::class)
-            ->each(fn ($r) => $add($r->amount, $r->currency, 'bill', $r->created_at, $r->bill?->user_id));
+        $this->scopedPaid(BillPayment::with('bill'), $userIds, $from, $to, BillPayment::class)
+            ->each(fn ($r) => $add($r->user_id, $r->amount, $r->currency, 'bill', $r->created_at, $r->bill?->user_id));
 
         // Shop
         $shop = ShopPayment::with('shop')
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', $userIds)
             ->where('payment_status', 'paid')
             ->whereNotIn('id', function ($q) {
                 $q->select('source_id')->from('financial_transactions')
-                    ->where('source_type', \App\Models\ShopPayment::class)
+                    ->where('source_type', ShopPayment::class)
                     ->whereIn('status', ['refunded', 'disputed']);
             })
             ->whereBetween('created_at', [$from, $to])->get();
         foreach ($shop as $r) {
-            $add($r->amount, $r->currency ?? 'GBP', 'shop', $r->created_at, $r->shop?->user_id);
+            $add($r->user_id, $r->amount, $r->currency ?? 'GBP', 'shop', $r->created_at, $r->shop?->user_id);
         }
 
-        // Score via the canonical formula (shared with the leaderboard).
-        $creatorsCount = count($creators);
-        $typesCount = count($types);
-        $recency = 0.0;
-        if ($latest) {
-            $days = Carbon::parse($latest)->diffInDays($to);
-            $recency = max(0, 10 - ($days / 3));
-        }
-        $score = self::scoreFromTotals($totalAmount, $gifts, $creatorsCount, $typesCount, $latest, $to);
+        $out = [];
 
-        return $this->dress($score, [
-            'spend'    => round(min(40, $totalAmount), 1),
-            'gifts'    => min(30, $gifts * 2),
-            'creators' => min(20, $creatorsCount * 4),
-            'types'    => min(10, $typesCount * 2),
-            'recency'  => round($recency, 1),
-        ], [
-            'amount_gbp' => round($totalAmount, 2),
-            'gifts'      => $gifts,
-            'creators'   => $creatorsCount,
-            'types'      => $typesCount,
-        ]);
+        foreach ($acc as $id => $row) {
+            $creatorsCount = count($row['creators']);
+            $typesCount = count($row['types']);
+
+            $recency = 0.0;
+            if ($row['latest']) {
+                $days = Carbon::parse($row['latest'])->diffInDays($to);
+                $recency = max(0, 10 - ($days / 3));
+            }
+
+            // Score via the canonical formula (shared with the leaderboard).
+            $score = self::scoreFromTotals($row['amount'], $row['gifts'], $creatorsCount, $typesCount, $row['latest'], $to);
+
+            $out[$id] = $this->dress($score, [
+                'spend' => round(min(40, $row['amount']), 1),
+                'gifts' => min(30, $row['gifts'] * 2),
+                'creators' => min(20, $creatorsCount * 4),
+                'types' => min(10, $typesCount * 2),
+                'recency' => round($recency, 1),
+            ], [
+                'amount_gbp' => round($row['amount'], 2),
+                'gifts' => $row['gifts'],
+                'creators' => $creatorsCount,
+                'types' => $typesCount,
+            ]);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Just the badge: {level, icon, color, score} per supporter.
+     *
+     * For list surfaces (a creator's supporter leaderboard) that want the tier
+     * chip without the progress-bar payload.
+     *
+     * @param  array<int, int>  $userIds
+     * @return array<int, array{level:string, icon:string, color:string, score:float}>
+     */
+    public function badgesFor(array $userIds): array
+    {
+        $badges = [];
+
+        foreach ($this->forMany($userIds) as $id => $status) {
+            $badges[$id] = [
+                'level' => $status['level'],
+                'icon' => $status['icon'],
+                'color' => $status['color'],
+                'score' => $status['score'],
+            ];
+        }
+
+        return $badges;
     }
 
     /** Build the tier/progress wrapper around a raw score. */
@@ -187,24 +255,24 @@ class VipScoreService
         }
 
         return [
-            'score'       => $score,
-            'level'       => $current['level'],
-            'icon'        => $current['icon'],
-            'color'       => $current['color'],
-            'next_level'  => $next['level'] ?? null,
-            'to_next'     => $toNext,
-            'progress'    => round($progress, 3),
+            'score' => $score,
+            'level' => $current['level'],
+            'icon' => $current['icon'],
+            'color' => $current['color'],
+            'next_level' => $next['level'] ?? null,
+            'to_next' => $toNext,
+            'progress' => round($progress, 3),
             'window_days' => self::WINDOW_DAYS,
-            'breakdown'   => $breakdown,
-            'totals'      => $totals,
+            'breakdown' => $breakdown,
+            'totals' => $totals,
         ];
     }
 
-    /** Shared "this user, paid, in-window, not refunded/disputed" query. */
-    private function scopedPaid($query, $user, $from, $to, string $sourceType)
+    /** Shared "these users, paid, in-window, not refunded/disputed" query. */
+    private function scopedPaid($query, array $userIds, $from, $to, string $sourceType)
     {
         return $query
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', $userIds)
             ->where('status', 'paid')
             ->whereNotIn('id', function ($q) use ($sourceType) {
                 $q->select('source_id')->from('financial_transactions')
@@ -223,6 +291,7 @@ class VipScoreService
         if ($rate <= 0) {
             return $amount;
         }
+
         return round($amount / $rate, 2, PHP_ROUND_HALF_UP);
     }
 }

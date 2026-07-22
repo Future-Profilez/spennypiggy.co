@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\ReactivationReminder;
 use App\Models\EngagementNotification;
+use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Services\NotificationDispatcher;
 use App\Services\SupporterLapseService;
@@ -87,8 +89,17 @@ class ReactivationNotify extends Command
                         'title' => $copy['title'],
                         'body' => $copy['body'],
                         'module' => 'reactivation',
+                        // Email is marketing-class: the dispatcher checks
+                        // reactivation_emails_enabled and the marketing opt-out
+                        // before it sends, so no extra gate is needed here.
+                        'mailable' => ReactivationReminder::class,
+                        'mailable_args' => [
+                            'userId' => $user->id,
+                            'days' => $days,
+                            'creators' => $this->creatorsSupportedBy($user->id),
+                        ],
                     ],
-                    [NotificationDispatcher::CHANNEL_BELL, NotificationDispatcher::CHANNEL_PUSH],
+                    NotificationDispatcher::ALL_CHANNELS,
                 );
 
                 $totalSent++;
@@ -98,5 +109,56 @@ class ReactivationNotify extends Command
         $this->info("Reactivation reminders queued: {$totalSent}".($dryRun ? ' (dry-run — nothing sent)' : ''));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The creators this supporter has actually paid, most recently first.
+     *
+     * The email names real people instead of making a generic "come back" pitch,
+     * which is both more effective and more honest. Capped at three: an email is
+     * a nudge, not a catalogue.
+     *
+     * @return array<int, array{name:string, username:?string, avatar:?string}>
+     */
+    private function creatorsSupportedBy(int $supporterId): array
+    {
+        $creatorIds = FinancialTransaction::query()
+            ->where('type', 'income')
+            ->where('supporter_id', $supporterId)
+            ->whereNotIn('status', SupporterLapseService::EXCLUDED_STATUSES)
+            // On an income row user_id IS the creator who earned it; there is no
+            // creator_id column on this table.
+            ->whereNotNull('user_id')
+            ->selectRaw('user_id, MAX(transaction_date) as last_purchase')
+            ->groupBy('user_id')
+            ->orderByDesc('last_purchase')
+            ->limit(3)
+            ->pluck('user_id')
+            ->all();
+
+        if (empty($creatorIds)) {
+            return [];
+        }
+
+        // Preserve the recency order the query established — whereIn does not.
+        $creators = User::whereIn('id', $creatorIds)->get()->keyBy('id');
+
+        $out = [];
+
+        foreach ($creatorIds as $id) {
+            $creator = $creators[$id] ?? null;
+
+            if (! $creator) {
+                continue;
+            }
+
+            $out[] = [
+                'name' => (string) ($creator->name ?: $creator->username ?: 'A creator you support'),
+                'username' => $creator->username ? (string) $creator->username : null,
+                'avatar' => (string) $creator->avatar_url,
+            ];
+        }
+
+        return $out;
     }
 }

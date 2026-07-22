@@ -44,6 +44,19 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                             <div className="absolute -bottom-2 -right-2 bg-[#FFD700] border-[2px] border-black text-[10px] md:text-xs font-black px-1.5 py-0.5 rounded-full z-10 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">#{idx + 1}</div>
                                         </div>
                                         <div className="font-black text-black mt-3 w-full text-center truncate">{item.name}</div>
+                                        {/* Supporter's VIP tier — same VipScoreService that
+                                            drives the public leaderboard and their own hub,
+                                            so the badge reads identically everywhere. */}
+                                        {item.vip && (
+                                            <div
+                                                title={`${item.vip.level} supporter · VIP score ${item.vip.score}`}
+                                                className="mt-2 inline-flex items-center gap-1 rounded-full border-[2px] border-black bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                style={{ color: item.vip.color }}
+                                            >
+                                                <span aria-hidden="true">{item.vip.icon}</span>
+                                                {item.vip.level}
+                                            </div>
+                                        )}
                                         <div className="font-black text-[#e85d9a] mt-1 text-xs md:text-sm uppercase tracking-widest">
                                             {(item.purchases ?? 0)} {(item.purchases === 1 ? 'unlock' : 'unlocks')}
                                         </div>

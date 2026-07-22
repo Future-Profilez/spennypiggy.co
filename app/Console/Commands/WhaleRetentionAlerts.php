@@ -65,7 +65,7 @@ class WhaleRetentionAlerts extends Command
             return self::SUCCESS;
         }
 
-        $adminEmail = config('services.dispute_notifications.admin_email');
+        $adminEmails = Helpers::getAdminEmails();
         $sent = 0;
 
         foreach ($atRisk as $row) {
@@ -94,11 +94,11 @@ class WhaleRetentionAlerts extends Command
                 .' has not purchased since '.$dedupKey
                 .'. Spend in the last '.$lookback.' days: '.number_format((float) $row->total_spend, 2).'.';
 
-            if ($adminEmail) {
+            foreach ($adminEmails as $email) {
                 try {
-                    Helpers::sendNotification($title, $body, $adminEmail);
+                    Helpers::sendNotification($title, $body, $email);
                 } catch (\Throwable $e) {
-                    Log::error('Whale retention alert failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+                    Log::error('Whale retention alert failed', ['user_id' => $user->id, 'email' => $email, 'error' => $e->getMessage()]);
                 }
             }
 

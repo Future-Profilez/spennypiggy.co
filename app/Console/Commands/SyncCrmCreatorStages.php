@@ -21,6 +21,18 @@ class SyncCrmCreatorStages extends Command
 
     public function handle(): int
     {
+        // Retired, not deleted: this version writes the OLD stage keys
+        // (signed_up, activated, milestone_*) with month-scoped earnings, so a
+        // single manual run silently reverts the July 2026 pipeline rebuild in
+        // the shared database. The replacement is the admin app's
+        // `php artisan crm:sync-stages`. Unscheduling was not enough — the
+        // command itself has to refuse.
+        $this->error('Retired: this wrote legacy stage keys and would corrupt the rebuilt pipeline.');
+        $this->line('Use `php artisan crm:sync-stages` on admin.spennypiggy.co instead.');
+
+        return self::FAILURE;
+
+        // @phpstan-ignore-next-line -- kept for reference until the next cleanup
         $dryRun = (bool) $this->option('dry-run');
 
         $now = Carbon::now();

@@ -98,14 +98,15 @@ class ProcessFastStartBonusPayouts extends Command
 
             $earningsMinor = 0;
             foreach ($txs as $tx) {
-                if (($tx->status ?? null) !== 'completed') {
+                $statusVal = $tx->status ?? null;
+                if ($statusVal === 'completed') {
+                    $from = strtoupper((string) ($tx->currency ?? 'GBP'));
+                    $net = (float) ($tx->net_amount ?? 0);
+                    $converted = $convert($net, $from, $currency);
+                    $earningsMinor += (int) round($converted * 100);
+                } elseif (in_array($statusVal, ['pending', 'review_hold', 'disputed'], true)) {
                     $unsettledCount++;
-                    continue;
                 }
-                $from = strtoupper((string) ($tx->currency ?? 'GBP'));
-                $net = (float) ($tx->net_amount ?? 0);
-                $converted = $convert($net, $from, $currency);
-                $earningsMinor += (int) round($converted * 100);
             }
 
             $bonusRate = FastStartBonusPayout::resolveRate($earningsMinor);
@@ -128,7 +129,7 @@ class ProcessFastStartBonusPayouts extends Command
             $payoutRow->earnings_minor = $earningsMinor;
             $payoutRow->bonus_minor = $bonusMinor;
             $payoutRow->currency = $currency;
-            $payoutRow->status = $now->lt($eligibleAt) ? 'pending_settlement' : 'ready';
+            $payoutRow->status = ($now->lt($eligibleAt) || $unsettledCount > 0) ? 'pending_settlement' : 'ready';
             $payoutRow->save();
 
             if ($payoutRow->status !== 'ready') {

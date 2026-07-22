@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Helpers;
+use App\Mail\ReactivationReminder;
 use App\Models\BillPayment;
 use App\Models\CreatorExpense;
 use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorMetric;
 use App\Models\Currency;
+use App\Models\EngagementNotification;
 use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
 use App\Models\FounderBonus;
@@ -20,8 +22,10 @@ use App\Models\StripePaymentItems;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\UkTaxSetting;
+use App\Models\User;
 use App\Services\CreatorOpportunityService;
 use App\Services\FinancialService;
+use App\Services\NotificationDispatcher;
 use App\Services\Risk\PayoutService;
 use App\Services\Risk\ReservePolicy;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -38,6 +42,9 @@ use Inertia\Inertia;
 
 class CreatorFinancialController extends Controller
 {
+    /** No supporter hears from any reactivation sender twice inside this window. */
+    private const REACTIVATION_COOLDOWN_DAYS = 7;
+
     protected $financialService;
 
     protected $payoutService;
@@ -281,9 +288,9 @@ class CreatorFinancialController extends Controller
             $tx->gross_amount = (float) $tx->net_amount + (float) ($tx->vat_amount ?? 0);
 
             // Add item type (digital/physical/instant/timed)
-            if ($base === 'ShopPayment' && $tx->source->shop) {
+            if ($base === 'ShopPayment' && $tx->source?->shop) {
                 $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
-            } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+            } elseif ($base === 'TaskPurchase' && $tx->source?->task) {
                 $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
             }
 
@@ -1010,9 +1017,9 @@ class CreatorFinancialController extends Controller
             $tx->gross_amount = (float) $tx->net_amount + (float) ($tx->vat_amount ?? 0);
 
             // Add item type (digital/physical/instant/timed)
-            if ($base === 'ShopPayment' && $tx->source->shop) {
+            if ($base === 'ShopPayment' && $tx->source?->shop) {
                 $tx->item_type = $tx->source->shop->type === 'physical' ? 'physical' : 'digital';
-            } elseif ($base === 'TaskPurchase' && $tx->source->task) {
+            } elseif ($base === 'TaskPurchase' && $tx->source?->task) {
                 $tx->item_type = $tx->source->task->type === 'instant' ? 'instant' : 'timed';
             }
 
@@ -1634,5 +1641,131 @@ class CreatorFinancialController extends Controller
                 $tx->payout_badge = 'this_week';
             }
         });
+    }
+
+    /**
+     * Creator-triggered platform reminder to one of their quiet supporters.
+     *
+     * This is the "trigger platform reminder where allowed" action from the
+     * client brief, and "where allowed" is the whole design:
+     *
+     *  - The supporter must actually be THIS creator's at-risk supporter —
+     *    repeat buyer, quiet 30+ days, verified against the ledger, never
+     *    trusted from the request.
+     *  - Consent is checked exactly like the automated engine's sends. A
+     *    creator's button is not an override.
+     *  - One nudge per creator per quiet period, via the same
+     *    engagement_notifications claim the automatic engine uses — a new
+     *    purchase resets the cycle, and re-clicking does nothing.
+     *  - The message is the platform's fixed content-first template naming this
+     *    creator. No free text, and the supporter's contact details never reach
+     *    the creator.
+     */
+    public function remindSupporter(Request $request, int $supporterId)
+    {
+        $creator = Auth::user();
+
+        // Ownership + at-risk, straight from the ledger.
+        $row = FinancialTransaction::query()
+            ->where('user_id', $creator->id)
+            ->where('supporter_id', $supporterId)
+            ->where('type', 'income')
+            ->whereNotIn('status', ['disputed', 'refunded', 'review_hold', 'pending', 'failed'])
+            ->selectRaw('COUNT(*) as purchases, MAX(transaction_date) as last_purchase')
+            ->first();
+
+        if (! $row || (int) $row->purchases === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This person has not purchased from you.',
+            ], 404);
+        }
+
+        $daysQuiet = $row->last_purchase ? Carbon::parse($row->last_purchase)->diffInDays(now()) : null;
+
+        if ((int) $row->purchases < 2 || $daysQuiet === null || $daysQuiet < 30) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reminders unlock for repeat supporters who have been quiet for 30 days.',
+            ], 422);
+        }
+
+        $supporter = User::find($supporterId);
+
+        if (! $supporter || empty($supporter->email)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This supporter can no longer be reached.',
+            ], 404);
+        }
+
+        // Consent — same gates as every other marketing-class send.
+        if (! ($supporter->push_notifications_enabled ?? true)
+            && ! (($supporter->reactivation_emails_enabled ?? true) && ($supporter->marketing_emails_enabled ?? true))
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This supporter has switched platform reminders off.',
+            ], 422);
+        }
+
+        // Quiet-period cooldown across EVERY reactivation sender. The creator's
+        // key and the automatic engine's key live in different namespaces, so
+        // without this a lapsed supporter could get the platform's own 30-day
+        // reminder and a creator's nudge on the same morning.
+        $recentContact = EngagementNotification::query()
+            ->where('user_id', $supporter->id)
+            ->where('type', EngagementNotification::TYPE_REACTIVATION)
+            ->where('sent_at', '>=', now()->subDays(self::REACTIVATION_COOLDOWN_DAYS))
+            ->exists();
+
+        if ($recentContact) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This supporter heard from us in the last week. Try again in a few days.',
+            ], 409);
+        }
+
+        // One nudge per creator per quiet period. Shares the automated engine's
+        // table, so re-runs and racing clicks cannot double-send; a new purchase
+        // changes the date and legitimately reopens it.
+        $dedupKey = 'creator:'.$creator->id.'|'.substr((string) $row->last_purchase, 0, 10);
+
+        if (! NotificationDispatcher::claim(
+            $supporter->id,
+            EngagementNotification::TYPE_REACTIVATION,
+            $dedupKey
+        )) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A reminder already went out for this quiet spell. It unlocks again after their next purchase.',
+            ], 409);
+        }
+
+        NotificationDispatcher::queue(
+            $supporter,
+            EngagementNotification::TYPE_REACTIVATION,
+            [
+                'title' => 'New content is waiting for you',
+                'body' => ($creator->name ?: '@'.$creator->username).' has published since your last visit — see what is new.',
+                'module' => 'reactivation',
+                'mailable' => ReactivationReminder::class,
+                'mailable_args' => [
+                    'userId' => $supporter->id,
+                    'days' => 30,
+                    'creators' => [[
+                        'name' => (string) ($creator->name ?: $creator->username),
+                        'username' => $creator->username ? (string) $creator->username : null,
+                        'avatar' => (string) $creator->avatar_url,
+                    ]],
+                ],
+            ],
+            NotificationDispatcher::ALL_CHANNELS,
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reminder queued — it goes out with your name on it.',
+        ]);
     }
 }

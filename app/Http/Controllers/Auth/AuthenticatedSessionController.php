@@ -402,7 +402,13 @@ class AuthenticatedSessionController extends Controller
         $pageName = $data['__page'] ?? 'Dashboard';
         unset($data['__page']);
 
-        return Inertia::render($pageName, $data);
+        $response = Inertia::render($pageName, $data);
+        if (app()->environment('production') && !Auth::check()) {
+            return $response->withHeaders([
+                'Cache-Control' => 'public, max-age=60, s-maxage=300, must-revalidate',
+            ]);
+        }
+        return $response;
     }
 
     private function getCachedPageSpecificData(int $userId, string $page, bool $isOwner, bool $bypassCache): array
@@ -458,8 +464,10 @@ class AuthenticatedSessionController extends Controller
                 return [$isNeedToUpgrade, $cardCapabilities, $requirements];
             });
         } catch (\Exception $e) {
-            // Update user if account is invalid
-            $user->update(['stripe_details_submitted' => 0]);
+            // Only disable stripe connected details if the account was explicitly deleted from Stripe (404)
+            if ($e instanceof \Stripe\Exception\InvalidRequestException && $e->getHttpStatus() === 404) {
+                $user->update(['stripe_details_submitted' => 0]);
+            }
 
             return [false, false, [
                 'has_requirements' => true,
@@ -1217,10 +1225,13 @@ class AuthenticatedSessionController extends Controller
                     }
                 }
 
-                $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
-                // Same net-earnings formula the qualification job uses, so the tracker
-                // shows the number that actually decides qualification
-                $first30DayEarnings = (float) FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
+                $first30DayEarnings = 0.0;
+                if ($isEligible) {
+                    $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
+                    // Same net-earnings formula the qualification job uses, so the tracker
+                    // shows the number that actually decides qualification
+                    $first30DayEarnings = (float) FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
+                }
             }
         }
 

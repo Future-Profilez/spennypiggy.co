@@ -312,11 +312,14 @@ class StripeWebhookController extends Controller
                     break;
 
                 case 'radar.early_fraud_warning.created':
-                    $this->handleEarlyFraudWarningCreated($data);
+                    // Connected account matters: an EFW usually arrives BEFORE
+                    // checkout.session.completed, so the creator can only be
+                    // resolved from the account the charge landed on.
+                    $this->handleEarlyFraudWarningCreated($data, $event->account ?? null);
                     break;
 
                 case 'radar.early_fraud_warning.updated':
-                    $this->handleEarlyFraudWarningUpdated($data);
+                    $this->handleEarlyFraudWarningUpdated($data, $event->account ?? null);
                     break;
 
                     // case 'radar.early_fraud_warning.closed':
@@ -1122,9 +1125,22 @@ class StripeWebhookController extends Controller
             $pay->payment_intent_id = $session->payment_intent;
             $pay->save();
 
+            $payment = Payment::where('stripe_session_id', $session->id)->first();
+            $newStatus = 'succeeded';
+            if (
+                $payment &&
+                (
+                    $payment->status === 'review_hold' ||
+                    (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes)) ||
+                    (is_string($payment->reason_codes) && str_contains($payment->reason_codes, 'MARK_REVIEW_HOLD'))
+                )
+            ) {
+                $newStatus = 'review_hold';
+            }
+
             Payment::where('stripe_session_id', $session->id)->update([
                 'stripe_payment_intent_id' => $session->payment_intent,
-                'status' => 'succeeded',
+                'status' => $newStatus,
             ]);
 
             // Sync to FinancialTransactions
@@ -1175,7 +1191,7 @@ class StripeWebhookController extends Controller
                         'reserve_amount' => $reserveAmountMajor,
                         'reserve_status' => $reserveStatus,
                         'currency' => strtoupper($pay->currency ?? 'GBP'),
-                        'status' => 'completed',
+                        'status' => $newStatus === 'review_hold' ? 'review_hold' : 'completed',
                         'description' => 'Content purchase: '.($pay->piggyPot?->title ?? 'Content'),
                         'transaction_date' => $pay->created_at,
                     ]
@@ -1314,9 +1330,22 @@ class StripeWebhookController extends Controller
         $tip->save();
 
         try {
+            $payment = Payment::where('stripe_session_id', $session->id)->first();
+            $newStatus = 'succeeded';
+            if (
+                $payment &&
+                (
+                    $payment->status === 'review_hold' ||
+                    (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes)) ||
+                    (is_string($payment->reason_codes) && str_contains($payment->reason_codes, 'MARK_REVIEW_HOLD'))
+                )
+            ) {
+                $newStatus = 'review_hold';
+            }
+
             Payment::where('stripe_session_id', $session->id)->update([
                 'stripe_payment_intent_id' => $session->payment_intent,
-                'status' => 'succeeded',
+                'status' => $newStatus,
             ]);
         } catch (\Throwable $e) {
         }
@@ -1857,8 +1886,8 @@ class StripeWebhookController extends Controller
                     }
                 }
 
-                $adminEmail = config('services.dispute_notifications.admin_email');
-                if ($adminEmail) {
+                $adminEmails = $this->resolveAdminEmails('dispute');
+                foreach ($adminEmails as $adminEmail) {
                     $currencySymbol = Helpers::getCurrency($dispute->currency);
                     $formattedAmount = number_format($dispute->amount / 100, 2);
                     $title = "⚠️ DISPUTE CREATED: {$dispute->id}";
@@ -2014,8 +2043,8 @@ class StripeWebhookController extends Controller
 
             if (isset($changes['status'])) {
                 try {
-                    $adminEmail = config('services.dispute_notifications.admin_email');
-                    if ($adminEmail) {
+                    $adminEmails = $this->resolveAdminEmails('dispute');
+                    foreach ($adminEmails as $adminEmail) {
                         $title = "⚠️ DISPUTE STATUS UPDATED: {$dispute->id}";
                         $content = "Status changed from {$changes['status']['old']} to {$changes['status']['new']}\nReason: {$dispute->reason}\nAmount: ".($dispute->amount / 100)." {$dispute->currency}";
 
@@ -2024,6 +2053,7 @@ class StripeWebhookController extends Controller
                             'dispute_id' => $dispute->id,
                             'old_status' => $changes['status']['old'],
                             'new_status' => $changes['status']['new'],
+                            'admin_email' => $adminEmail,
                         ]);
 
                         $adminUser = new User(['email' => $adminEmail]);
@@ -2093,8 +2123,8 @@ class StripeWebhookController extends Controller
                 Log::info('Risk Engine: Dispute status updated', ['status' => $dispute->status]);
 
                 try {
-                    $adminEmail = config('services.dispute_notifications.admin_email');
-                    if ($adminEmail) {
+                    $adminEmails = $this->resolveAdminEmails('dispute');
+                    foreach ($adminEmails as $adminEmail) {
                         $currencySymbol = Helpers::getCurrency($dispute->currency);
                         $formattedAmount = number_format($dispute->amount / 100, 2);
                         $isWon = $dispute->status === 'won';
@@ -2105,6 +2135,7 @@ class StripeWebhookController extends Controller
                         Log::info('StripeWebhookController: Admin notification sent for dispute closed', [
                             'dispute_id' => $dispute->id,
                             'status' => $dispute->status,
+                            'admin_email' => $adminEmail,
                         ]);
 
                         $adminUser = new User(['email' => $adminEmail]);
@@ -3826,7 +3857,94 @@ class StripeWebhookController extends Controller
     /**
      * Handle Early Fraud Warning Created
      */
-    private function handleEarlyFraudWarningCreated($efw)
+    /**
+     * Resolve who/what/how-much for an Early Fraud Warning straight from Stripe.
+     *
+     * An EFW arrives before our own records for the payment exist, so the local
+     * tables cannot answer "whose sale is this, and for how much" yet. The
+     * PaymentIntent metadata already carries it (creator_id, creator_name,
+     * currency, item_amount, buyer_*), and the connected account identifies the
+     * creator even when metadata is missing.
+     *
+     * Best-effort: a Stripe outage must never stop the warning being recorded,
+     * so every failure returns an empty array and the caller keeps its defaults.
+     *
+     * @return array<string, mixed>
+     */
+    private function fetchEfwPaymentContext(?string $paymentIntentId, ?string $connectedAccountId): array
+    {
+        if (! $paymentIntentId) {
+            return [];
+        }
+
+        $context = [];
+
+        try {
+            $client = $connectedAccountId
+                ? AppStripeControl::getClientForAccount($connectedAccountId)
+                : AppStripeControl::getClient();
+
+            $options = $connectedAccountId ? ['stripe_account' => $connectedAccountId] : [];
+            $intent = $client->paymentIntents->retrieve($paymentIntentId, [], $options);
+
+            $meta = $intent->metadata ?? null;
+
+            // Stripe amounts are in minor units.
+            if (! empty($intent->amount)) {
+                $context['amount'] = ((int) $intent->amount) / 100;
+            }
+
+            if (! empty($intent->currency)) {
+                $context['currency'] = strtoupper($intent->currency);
+            }
+
+            if ($meta) {
+                $context['description'] = $meta->task_title
+                    ?? $meta->item_name
+                    ?? $meta->product_type
+                    ?? null;
+                $context['creator_name'] = $meta->creator_name ?? null;
+                $context['buyer_name'] = $meta->buyer_name ?? null;
+                $context['buyer_email'] = $meta->buyer_email ?? null;
+
+                // Creator email is not in metadata — resolve it from the id.
+                $creatorId = $meta->creator_id ?? null;
+
+                if ($creatorId) {
+                    $creator = is_numeric($creatorId)
+                        ? User::find($creatorId)
+                        : User::where('uuid', $creatorId)->first();
+
+                    if ($creator) {
+                        $context['creator_email'] = $creator->email;
+                        $context['creator_name'] = $context['creator_name'] ?: $creator->name;
+                    }
+                }
+            }
+
+            // Fallback: the connected account itself identifies the creator.
+            if (empty($context['creator_email']) && $connectedAccountId) {
+                $creator = User::where('account_id', $connectedAccountId)->first();
+
+                if ($creator) {
+                    $context['creator_email'] = $creator->email;
+                    $context['creator_name'] = $context['creator_name'] ?: $creator->name;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('EFW: could not resolve payment context from Stripe', [
+                'payment_intent' => $paymentIntentId,
+                'connected_account' => $connectedAccountId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        return array_filter($context, fn ($v) => $v !== null && $v !== '');
+    }
+
+    private function handleEarlyFraudWarningCreated($efw, $connectedAccountId = null)
     {
         Log::info('================ EFW WEBHOOK START ================');
 
@@ -3838,6 +3956,7 @@ class StripeWebhookController extends Controller
                 'action' => $efw->action ?? null,
                 'fraud_type' => $efw->fraud_type ?? null,
                 'risk_level' => $efw->risk_level ?? null,
+                'connected_account' => $connectedAccountId,
             ]);
 
             $paymentIntentId = $efw->payment_intent;
@@ -3847,32 +3966,36 @@ class StripeWebhookController extends Controller
                 'payment_intent' => $paymentIntentId,
             ]);
 
-            // Try to find payment
+            /*
+             * Stripe delivers radar.early_fraud_warning.created BEFORE
+             * checkout.session.completed, so the Payment row usually does not
+             * exist yet.
+             *
+             * It previously created a placeholder row with creator_id = null,
+             * amount = 0, currency = 'gbp'. That row then became THE risk-ledger
+             * row for the payment intent: checkout.session.completed mapped onto
+             * it instead of creating a correct one, and because PayoutService
+             * finds work with Payment::where('creator_id', ...), a null creator
+             * made the sale invisible to the payout engine — the creator would
+             * never be paid for it. It also produced "creator_id cannot be null"
+             * SQL errors on the creator_metrics insert.
+             *
+             * Now: look the payment up by intent AND by charge, and if it still
+             * is not there, leave it alone. `early_fraud_warnings.payment_id` is
+             * nullable, so the warning is recorded and linked later rather than
+             * poisoning the ledger with a placeholder.
+             */
             $payment = null;
+
             if ($paymentIntentId) {
                 $payment = Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            }
 
-                if (! $payment) {
-                    Log::info('Payment not found - Creating minimal payment record', [
-                        'payment_intent' => $paymentIntentId,
-                    ]);
-
-                    $payment = Payment::create([
-                        'stripe_payment_intent_id' => $paymentIntentId,
-                        'creator_id' => null,
-                        'amount' => 0,
-                        'currency' => 'gbp',
-                        'status' => 'initiated',
-                        'reserve_amount_minor' => 0,
-                        'platform_holds_funds' => 0,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-
-                    Log::info('Minimal payment created', [
-                        'payment_id' => $payment->id,
-                    ]);
-                }
+            if (! $payment) {
+                Log::info('EFW: no Payment row yet (warning arrived before fulfilment) — recording the warning without one', [
+                    'payment_intent' => $paymentIntentId,
+                    'charge' => $chargeId,
+                ]);
             }
 
             // Check for existing fraud warning
@@ -3895,6 +4018,31 @@ class StripeWebhookController extends Controller
             $paymentDescription = 'Unknown';
             $buyerName = 'Unknown';
             $buyerEmail = 'Unknown';
+
+            /*
+             * Seed from the PaymentIntent's own metadata first.
+             *
+             * The local TaskPurchase/Deliverable rows are written by
+             * checkout.session.completed, which lands AFTER this event — so
+             * looking only at the database produced an alert reading
+             * "Amount: $0.00 · Product: Unknown · Buyer: Unknown · Creator:
+             * Unknown", which tells the person receiving it nothing and cannot
+             * be acted on. Stripe already carries all of it.
+             *
+             * The database lookups below still run and override these values
+             * whenever the local records do exist.
+             */
+            $stripeMeta = $this->fetchEfwPaymentContext($paymentIntentId, $connectedAccountId);
+
+            if (! empty($stripeMeta)) {
+                $currency = strtoupper($stripeMeta['currency'] ?? $currency);
+                $amount = $stripeMeta['amount'] ?? $amount;
+                $paymentDescription = $stripeMeta['description'] ?? $paymentDescription;
+                $creatorName = $stripeMeta['creator_name'] ?? $creatorName;
+                $creatorEmail = $stripeMeta['creator_email'] ?? $creatorEmail;
+                $buyerName = $stripeMeta['buyer_name'] ?? $buyerName;
+                $buyerEmail = $stripeMeta['buyer_email'] ?? $buyerEmail;
+            }
 
             if ($paymentIntentId) {
                 $taskPurchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
@@ -3984,11 +4132,8 @@ class StripeWebhookController extends Controller
                 'action' => $fraudWarning->action,
             ]);
 
-            // Get admin user for email
-            $adminEmail = config('services.fraud_notifications.admin_email');
-            $adminUser = null;
-
-            if ($adminEmail) {
+            $adminEmails = $this->resolveAdminEmails('fraud');
+            foreach ($adminEmails as $adminEmail) {
                 $adminUser = User::where('email', $adminEmail)->first();
                 if (! $adminUser) {
                     $adminUser = new User;
@@ -3996,28 +4141,24 @@ class StripeWebhookController extends Controller
                     $adminUser->name = 'Admin';
                     $adminUser->id = 1;
                 }
-            }
 
-            // Send MagicBell Notification
-            Log::info('STEP 5 : Sending MagicBell Notification');
-            $this->sendFraudWarningMagicBellNotification(
-                $efw,
-                $fraudWarning,
-                $amount,
-                $currency,
-                $creatorName,
-                $creatorEmail,
-                $buyerName,
-                $buyerEmail,
-                $paymentDescription,
-                $adminEmail
-            );
+                // Send MagicBell Notification
+                Log::info('STEP 5 : Sending MagicBell Notification', ['admin_email' => $adminEmail]);
+                $this->sendFraudWarningMagicBellNotification(
+                    $efw,
+                    $fraudWarning,
+                    $amount,
+                    $currency,
+                    $creatorName,
+                    $creatorEmail,
+                    $buyerName,
+                    $buyerEmail,
+                    $paymentDescription,
+                    $adminEmail
+                );
 
-            // Dispatch Fraud Mail Job
-            Log::info('STEP 6 : Dispatch Fraud Mail');
-
-            try {
-                if ($adminUser) {
+                // Dispatch Fraud Mail Job
+                try {
                     $fraudWarning->refresh();
                     SendFraudWarningMailJob::dispatch(
                         $adminUser,
@@ -4028,12 +4169,13 @@ class StripeWebhookController extends Controller
                         'fraud_warning_id' => $fraudWarning->id,
                         'admin_email' => $adminEmail,
                     ]);
+                } catch (\Throwable $e) {
+                    Log::error('Fraud Mail Dispatch FAILED', [
+                        'error' => $e->getMessage(),
+                        'fraud_warning_id' => $fraudWarning->id,
+                        'admin_email' => $adminEmail,
+                    ]);
                 }
-            } catch (\Throwable $e) {
-                Log::error('Fraud Mail Dispatch FAILED', [
-                    'error' => $e->getMessage(),
-                    'fraud_warning_id' => $fraudWarning->id,
-                ]);
             }
 
             // Process payment actions if payment exists
@@ -5106,7 +5248,7 @@ class StripeWebhookController extends Controller
     /**
      * Handle Early Fraud Warning Updated
      */
-    private function handleEarlyFraudWarningUpdated($efw)
+    private function handleEarlyFraudWarningUpdated($efw, $connectedAccountId = null)
     {
         Log::info('StripeWebhookController: Processing radar.early_fraud_warning.updated', [
             'efw_id' => $efw->id,
@@ -5122,7 +5264,7 @@ class StripeWebhookController extends Controller
                 Log::info('StripeWebhookController: Early Fraud Warning not found, processing as created', [
                     'efw_id' => $efw->id,
                 ]);
-                $this->handleEarlyFraudWarningCreated($efw);
+                $this->handleEarlyFraudWarningCreated($efw, $connectedAccountId);
 
                 return;
             }
@@ -5153,8 +5295,8 @@ class StripeWebhookController extends Controller
 
             if (! empty($changes)) {
                 try {
-                    $adminEmail = config('services.fraud_notifications.admin_email');
-                    if ($adminEmail) {
+                    $adminEmails = $this->resolveAdminEmails('fraud');
+                    foreach ($adminEmails as $adminEmail) {
                         $title = "⚠️ FRAUD WARNING UPDATED: {$efw->id}";
                         $content = "Action: {$efw->action}\nPrevious Action: {$oldAction}\nPayment Intent: {$efw->payment_intent}";
 
@@ -5383,5 +5525,8 @@ class StripeWebhookController extends Controller
     //             'trace' => $e->getTraceAsString(),
     //         ]);
     //     }
-    // }
+    private function resolveAdminEmails(string $type = 'dispute'): array
+    {
+        return Helpers::getAdminEmails();
+    }
 }

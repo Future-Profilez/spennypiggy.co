@@ -1,25 +1,45 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { FaCopy, FaShareAlt } from "react-icons/fa";
 import { useState } from "react";
 import axios from "axios";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+    Copy, Check, Share2, Link2, Users, Trophy, Banknote, Wallet,
+    ArrowRight, Scissors,
+} from "lucide-react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import ShareProfile from "../../wishlist/ShareProfile";
+
+const PINK = "#FF007F";
+const MINT = "#A2E4B8";
+const GOAL = 1000;
+const REWARD = 50;
+
+const CARD =
+    "bg-white border-[3px] border-black rounded-box shadow-[6px_6px_0_0_#000]";
+const NUM = "tabular-nums [font-variant-numeric:tabular-nums]";
+
+const money = (v) =>
+    Number(v || 0).toLocaleString("en-GB", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
 
 export default function ReferAndEarn({
     auth,
     referral = {},
     stats = {},
     referrals = [],
-    canRedeem = false, // ✅ FIX 1
+    canRedeem = false,
 }) {
+    const reduce = useReducedMotion();
     const [copied, setCopied] = useState(false);
     const [referralCode, setReferralCode] = useState(referral?.code || null);
     const [referralLink, setReferralLink] = useState(referral?.link || null);
+    const [loading, setLoading] = useState(false);
+    const [redeeming, setRedeeming] = useState(false);
 
-    // ✅ REAL condition
     const hasReferral = Boolean(referralCode);
 
-    const [loading, setLoading] = useState(false);
     const copyLink = () => {
         if (!referralLink) return;
         navigator.clipboard.writeText(referralLink);
@@ -27,415 +47,351 @@ export default function ReferAndEarn({
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const getCooldownText = (timestamp) => {
-        if (!timestamp) return null;
-
-        const diff = timestamp * 1000 - Date.now();
-        if (diff <= 0) return null;
-
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const mins = Math.floor((diff / (1000 * 60)) % 60);
-
-        return `${hours}h ${mins}m remaining`;
-    };
-
-    const ProgressBar = ({ value }) => {
-        const percent = Math.min((Number(value || 0) / 1000) * 100, 100);
-
-        return (
-            <div className="w-full">
-                {/* Bar background */}
-                <div className="w-full h-3 bg-gray-200 rounded-full border border-black overflow-hidden">
-                    <div
-                        className={`h-full transition-all duration-500 ${
-                            percent >= 100 ? "bg-green-500" : "bg-[#FF007F]"
-                        }`}
-                        style={{ width: `${percent}%` }}
-                    />
-                </div>
-
-                {/* Percentage text */}
-                <div className="text-[11px] text-gray-500 mt-1 text-center">
-                    £{formatMoney(value || 0)} / £1,000
-                </div>
-
-                {/* Qualified label (only when 100%) */}
-                {/* {percent >= 100 && (
-                    <div className="text-[11px] text-green-700 font-semibold mt-1 text-center">
-                        🎉 Qualified
-                    </div>
-                )} */}
-            </div>
-        );
-    };
-
     const createReferralLink = async () => {
         setLoading(true);
         try {
             const res = await axios.post("/refer-and-earn/create-link");
-            setReferralCode(res.data.code); // ✅ store code
-            setReferralLink(res.data.link); // ✅ store link
+            setReferralCode(res.data.code);
+            setReferralLink(res.data.link);
+        } catch (err) {
+            // 409 = link already exists; the payload still carries it
+            const data = err?.response?.data;
+            if (data?.code) {
+                setReferralCode(data.code);
+                setReferralLink(data.link);
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    const formatMoney = (value) => {
-        const num = Number(value || 0);
-        return num.toFixed(2);
+    const redeem = () => {
+        setRedeeming(true);
+        router.post(route("referral.redeem"), {}, {
+            onFinish: () => setRedeeming(false),
+        });
     };
+
+    const rise = (i = 0) =>
+        reduce
+            ? {}
+            : {
+                  initial: { opacity: 0, y: 14 },
+                  animate: { opacity: 1, y: 0 },
+                  transition: { duration: 0.35, delay: i * 0.06, ease: "easeOut" },
+              };
 
     return (
         <Authenticated auth={auth?.user} user={auth?.user}>
             <Head title="Refer & Earn" />
 
-            <div className="bg-[#A2E4B8] pt-6 pb-10">
+            <div className="bg-[#A2E4B8] pt-6 pb-14">
                 <div className="containerbox">
-                    {/* ================= HEADER ================= */}
-                    {/* ================= HEADER + REFERRAL LINK (MERGED) ================= */}
-                    <div className="mb-6 border-[3px] border-black shadow-[6px_6px_0_0_#000] rounded-[30px]   overflow-hidden">
-                        {/* Mac style bar */}
-                        <div className="p-4 pinkbg flex items-center border-b-[3px] border-black !border-t-[0px] !border-r-[0px] !border-l-[0px] border-black">
-                            <span className="border-black border-2 bg-red-700 mr-2 w-5 h-5 rounded-full block"></span>
-                            <span className="border-black border-2 bg-yellow-400 mr-2 w-5 h-5 rounded-full block"></span>
-                            <span className="border-black border-2 bg-mint mr-2 w-5 h-5 rounded-full block"></span>
-
-                            <h1 className="text-white font-gulfs uppercase ml-4">
-                                Refer & Earn
-                            </h1>
-
-                            <Link
-                                href={`/${auth?.user?.username}`}
-                                className="ml-auto text-white text-sm hover:underline"
-                            >
-                                ← Back to Profile
-                            </Link>
-                        </div>
-
-                        {/* Content */}
-                        <div className="whbg p-6">
-                            {/* Intro text */}
-                            <p className="text-gray-500 max-w-3xl mb-6">
-                                Invite creators to Spenny Piggy and earn{" "}
-                                <strong>£50</strong> for every creator who
-                                reaches <strong>£1,000 lifetime GMV</strong>.
-                            </p>
-
-                            {/* Referral Link Box */}
-                            <div className="py-2">
-                                <h2 className="text-lg font-GillSans uppercase mb-3">
-                                    Your Referral Link
-                                </h2>
-
-                                {/* INPUT + CTA */}
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        readOnly
-                                        value={hasReferral ? referralLink : ""}
-                                        placeholder="Click Generate to create your referral link"
-                                        className={`w-full px-4 py-3 md:py-4 
-                                        md:pr-[220px] pr-4
-                                        rounded-[30px]  border-2 border-black text-sm
-                                        overflow-hidden text-ellipsis
-                                        ${hasReferral ? "bg-white text-black" : "bg-gray-100 text-gray-500"}`}
-                                    />
-
-                                    {/* CTA AREA */}
-                                    <div
-                                        className="
-                                            flex flex-wrap items-center gap-2
-                                            mt-3
-                                            md:absolute md:top-1/2 md:right-2 md:-translate-y-1/2 md:mt-0
-                                        "
-                                    >
-                                        {/* GENERATE */}
-                                        {!hasReferral && (
-                                            <button
-                                                onClick={createReferralLink}
-                                                disabled={loading}
-                                                className="
-                                                bg-pink-600 hover:bg-pink-700
-                                                text-white font-bold
-                                                px-4 md:px-6 py-2.5 md:py-3
-                                                rounded-full
-                                                text-sm
-                                                shadow-md
-                                                transition
-                                                whitespace-nowrap
-                                            "
-                                            >
-                                                {loading
-                                                    ? "Generating…"
-                                                    : "Generate Code"}
-                                            </button>
-                                        )}
-
-                                        {/* COPY + SHARE */}
-                                        {hasReferral && (
-                                            <>
-                                                <button
-                                                    onClick={copyLink}
-                                                    className="
-                                                    flex items-center gap-2
-                                                    px-4 py-2
-                                                    bg-white border-2 border-black
-                                                    rounded-full text-sm font-semibold
-                                                    hover:bg-gray-100
-                                                "
-                                                >
-                                                    <FaCopy />
-                                                    {copied ? "Copied" : "Copy"}
-                                                </button>
-
-                                                <ShareProfile
-                                                    username={auth?.name}
-                                                    custom={referralLink}
-                                                    classes="
-                                                    flex items-center gap-2
-                                                    px-4 py-2
-                                                    bg-white border-2 border-black
-                                                    rounded-full text-sm font-semibold
-                                                    hover:bg-gray-100
-                                                "
-                                                >
-                                                    <FaShareAlt />
-                                                    Share
-                                                </ShareProfile>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <p className="text-xs text-gray-500 mt-3">
-                                    Share this link with creators. You’ll earn
-                                    £50 once they reach £1,000 lifetime GMV.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ================= HOW IT WORKS ================= */}
-                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6 mb-6">
-                        <h2 className="text-xl font-GillSans uppercase mb-4">
-                            How You Earn £50
-                        </h2>
-
-                        <ol className="list-decimal ml-6 space-y-2 text-sm">
-                            <li>Share your referral link with creators</li>
-                            <li>Creators sign up using your link</li>
-                            <li>They earn £1,000 lifetime GMV</li>
-                            <li>You receive a £50 referral reward</li>
-                            <li>Request payout via Stripe anytime</li>
-                        </ol>
-                    </div>
-
-                    {/* ================= STATS ================= */}
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                        <Stat
-                            label="Total Referrals"
-                            value={stats.total_referrals || 0}
-                        />
-                        <Stat
-                            label="Qualified"
-                            value={stats.qualified_referrals}
-                        />
-                        <Stat label="Earned (£)" value={stats.total_earned} />
-                        <Stat
-                            label="Available (£)"
-                            value={stats.available_for_payout}
-                        />
-                        <Stat
-                            label="Paid Out (£)"
-                            value={stats.paid_out_amount}
-                        />
-                    </div>
-
-                    {/* ================= REDEEM ================= */}
-                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
+                    {/* ============ PAGE HEAD ============ */}
+                    <div className="flex items-end justify-between mb-5 px-1">
                         <div>
-                            <h3 className="text-lg font-GillSans uppercase mb-1">
-                                Redeem Referral Earnings
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                                Redemption requests are reviewed before payout.
+                            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-black/60">
+                                Creator referrals
+                            </div>
+                            <h1 className="font-gulfs uppercase text-2xl md:text-3xl leading-none mt-1">
+                                Refer &amp; Earn
+                            </h1>
+                        </div>
+                        <Link
+                            href={`/${auth?.user?.username}`}
+                            className="text-sm font-semibold underline underline-offset-4 hover:no-underline"
+                        >
+                            ← Back to profile
+                        </Link>
+                    </div>
+
+                    {/* ============ VOUCHER HERO ============ */}
+                    <motion.div
+                        {...rise(0)}
+                        className={`${CARD} relative overflow-hidden mb-6 grid lg:grid-cols-[1.35fr_1fr]`}
+                    >
+                        {/* --- Main panel: the offer --- */}
+                        <div className="p-6 md:p-8 relative">
+                            <div className="flex items-baseline gap-3 flex-wrap">
+                                <span
+                                    className="font-gulfs leading-none text-[64px] md:text-[88px]"
+                                    style={{ color: PINK }}
+                                >
+                                    £{REWARD}
+                                </span>
+                                <span className="font-GillSans uppercase text-lg md:text-xl leading-tight">
+                                    for every creator
+                                    <br className="hidden md:block" /> you bring
+                                    to Spenny Piggy
+                                </span>
+                            </div>
+
+                            {/* The sequence — a real one, so numbered */}
+                            <ol className="mt-6 space-y-3">
+                                {[
+                                    ["Share your link", "Send it to a creator you rate."],
+                                    ["They sign up and sell", `Your referral counts once they reach £${money(GOAL)} lifetime sales.`],
+                                    [`You earn £${REWARD}`, "Redeem to your Stripe account any time."],
+                                ].map(([t, d], i) => (
+                                    <li key={t} className="flex items-start gap-3">
+                                        <span className="shrink-0 w-7 h-7 rounded-full border-2 border-black bg-[#A2E4B8] font-black text-sm flex items-center justify-center">
+                                            {i + 1}
+                                        </span>
+                                        <div>
+                                            <div className="font-bold text-sm uppercase tracking-wide">
+                                                {t}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                {d}
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+
+                        {/* --- Perforation --- */}
+                        {/* vertical (lg) */}
+                        <div className="hidden lg:block absolute top-0 bottom-0 lg:left-[57.4%] w-0 border-l-[3px] border-dashed border-black" />
+                        <div className="hidden lg:flex absolute lg:left-[57.4%] -top-[3px] -translate-x-1/2 w-7 h-7 rounded-full border-[3px] border-black bg-[#A2E4B8] -translate-y-1/2" />
+                        <div className="hidden lg:flex absolute lg:left-[57.4%] -bottom-[3px] -translate-x-1/2 w-7 h-7 rounded-full border-[3px] border-black bg-[#A2E4B8] translate-y-1/2" />
+
+                        {/* --- Stub: the link you tear off --- */}
+                        <div className="relative bg-[#FFF7CF] p-6 md:p-8 border-t-[3px] border-dashed border-black lg:border-t-0">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Scissors size={16} className="rotate-180 lg:rotate-90" />
+                                <span className="text-[11px] font-black uppercase tracking-[0.18em]">
+                                    Your link — tear here
+                                </span>
+                            </div>
+
+                            {hasReferral ? (
+                                <>
+                                    <div className="bg-white border-2 border-black rounded-box-sm px-4 py-3 text-sm break-all font-mono">
+                                        {referralLink}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mt-4">
+                                        <button
+                                            onClick={copyLink}
+                                            className="flex items-center gap-2 px-5 py-2.5 rounded-box-sm border-2 border-black bg-black text-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#FF007F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                        >
+                                            {copied ? <Check size={15} /> : <Copy size={15} />}
+                                            {copied ? "Copied" : "Copy link"}
+                                        </button>
+                                        <ShareProfile
+                                            username={auth?.name}
+                                            custom={referralLink}
+                                            classes="flex items-center gap-2 px-5 py-2.5 rounded-box-sm border-2 border-black bg-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                        >
+                                            <Share2 size={15} />
+                                            Share
+                                        </ShareProfile>
+                                    </div>
+                                    {referralCode && (
+                                        <div className="mt-4 text-xs text-gray-600">
+                                            Code:{" "}
+                                            <span className="font-mono font-bold">
+                                                {referralCode}
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        Generate your personal link once — it
+                                        never expires.
+                                    </p>
+                                    <button
+                                        onClick={createReferralLink}
+                                        disabled={loading}
+                                        className="flex items-center gap-2 px-6 py-3 rounded-box-sm border-2 border-black text-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-60"
+                                        style={{ background: PINK }}
+                                    >
+                                        <Link2 size={15} />
+                                        {loading ? "Generating…" : "Generate my link"}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </motion.div>
+
+                    {/* ============ STATS ============ */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        {[
+                            { label: "Referred", value: stats.total_referrals || 0, Icon: Users },
+                            { label: "Qualified", value: stats.qualified_referrals || 0, Icon: Trophy },
+                            { label: "Earned", value: `£${money(stats.total_earned)}`, Icon: Banknote },
+                            { label: "Paid out", value: `£${money(stats.paid_out_amount)}`, Icon: Wallet },
+                        ].map(({ label, value, Icon }, i) => (
+                            <motion.div
+                                key={label}
+                                {...rise(i + 1)}
+                                className={`${CARD} !rounded-box p-5`}
+                            >
+                                <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-black/50">
+                                    <Icon size={14} />
+                                    {label}
+                                </div>
+                                <div className={`text-3xl font-black mt-2 ${NUM}`}>
+                                    {value}
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* ============ REDEEM BANNER ============ */}
+                    <motion.div
+                        {...rise(2)}
+                        className="border-[3px] border-black rounded-box shadow-[6px_6px_0_0_#000] mb-6 p-6 md:px-8 flex flex-col md:flex-row md:items-center gap-4"
+                        style={{ background: PINK }}
+                    >
+                        <div className="flex-1 text-white">
+                            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
+                                Available to redeem
+                            </div>
+                            <div className={`font-gulfs text-4xl md:text-5xl leading-none mt-1 ${NUM}`}>
+                                £{money(stats.available_for_payout)}
+                            </div>
+                            <p className="text-xs text-white/80 mt-2 max-w-sm">
+                                {canRedeem
+                                    ? "Requests are reviewed, then paid to your Stripe account."
+                                    : `Redeem opens at £${REWARD} available.`}
                             </p>
                         </div>
 
-                        <div className="flex flex-col items-end gap-2">
-                            <div className="text-sm">
-                                <span className="text-gray-500">
-                                    Available balance:
-                                </span>{" "}
-                                <strong>
-                                    £{formatMoney(stats.available_for_payout)}
-                                </strong>
-                            </div>
+                        <button
+                            onClick={redeem}
+                            disabled={!canRedeem || redeeming}
+                            className={`group flex items-center justify-center gap-2 px-7 py-3.5 rounded-box-sm border-[3px] border-black text-[15px] font-black uppercase tracking-wide transition-all
+                                ${
+                                    canRedeem && !redeeming
+                                        ? "bg-white text-black shadow-[4px_4px_0_0_#000] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                                        : "bg-white/40 text-black/40 cursor-not-allowed"
+                                }`}
+                        >
+                            {redeeming
+                                ? "Sending…"
+                                : `Redeem £${money(stats.available_for_payout)}`}
+                            <ArrowRight
+                                size={16}
+                                className="transition-transform group-hover:translate-x-1"
+                            />
+                        </button>
+                    </motion.div>
 
-                            <button
-                                disabled={!canRedeem || loading}
-                                className={`btn-pink px-6 py-3 min-w-[240px]
-                                    text-[15px] font-extrabold tracking-wide uppercase
-                                    ${
-                                        !canRedeem || loading
-                                            ? "bg-gray-400 cursor-not-allowed text-gray-700"
-                                            : "text-white"
-                                    }
-                                `}
-                                onClick={() => {
-                                    setLoading(true);
-                                    router.post(
-                                        route("referral.redeem"),
-                                        {},
-                                        {
-                                            onFinish: () => setLoading(false),
-                                        },
-                                    );
-                                }}
-                            >
-                                Redeem £
-                                {formatMoney(stats.available_for_payout)}
-                            </button>
-
-                            {!canRedeem && (
-                                <p className="text-xs text-gray-500 text-right max-w-xs">
-                                    You can redeem once you have at least £50
-                                    available.
-                                </p>
-                            )}
-
-                            {canRedeem && (
-                                <p className="text-xs text-gray-500 text-right max-w-xs">
-                                    Your request will be reviewed and paid to
-                                    your Stripe account.
-                                </p>
+                    {/* ============ REFERRED CREATORS ============ */}
+                    <motion.div {...rise(3)} className={`${CARD} p-6 md:p-8`}>
+                        <div className="flex items-baseline justify-between mb-5">
+                            <h2 className="text-xl font-GillSans uppercase">
+                                Referred creators
+                            </h2>
+                            {referrals.length > 0 && (
+                                <span className={`text-sm text-gray-500 ${NUM}`}>
+                                    {referrals.length}{" "}
+                                    {referrals.length === 1 ? "creator" : "creators"}
+                                </span>
                             )}
                         </div>
-                    </div>
-
-                    {/* ================= REFERRAL TABLE ================= */}
-                    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-6">
-                        <h2 className="text-xl font-GillSans uppercase mb-4">
-                            Referred Creators
-                        </h2>
 
                         {referrals.length === 0 ? (
-                            <p className="text-gray-500 text-sm">
-                                No creators have signed up using your referral
-                                link yet.
-                            </p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm border-collapse">
-                                    <thead>
-                                        <tr className="border-b">
-                                            <th className="text-left py-3">
-                                                Creator
-                                            </th>
-                                            <th className="text-center">
-                                                Joined
-                                            </th>
-                                            <th className="text-center">
-                                                Lifetime GMV
-                                            </th>
-                                            <th className="text-center">
-                                                Status
-                                            </th>
-                                            <th className="text-center">
-                                                Progress
-                                            </th>
-                                            <th className="text-center">
-                                                Reward
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {referrals.map((r) => (
-                                            <tr key={r.id} className="border-b">
-                                                <td className="py-3">
-                                                    <strong>{r.name}</strong>
-                                                    <div className="text-xs text-gray-500">
-                                                        @{r.username}
-                                                    </div>
-                                                </td>
-
-                                                <td className="text-center">
-                                                    {r.joined_at}
-                                                </td>
-
-                                                <td className="text-center">
-                                                    £
-                                                    {formatMoney(
-                                                        r.lifetime_gmv,
-                                                    )}
-                                                </td>
-
-                                                <td className="text-center">
-                                                    <StatusBadge
-                                                        status={r.status}
-                                                    />
-                                                </td>
-
-                                                <td className="text-center min-w-[220px] px-3">
-                                                    <ProgressBar
-                                                        value={r.lifetime_gmv}
-                                                    />
-
-                                                    {/* 🔴 Rejection Reason (if any) */}
-                                                    {r.rejection_reason ? (
-                                                        <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
-                                                            <strong>
-                                                                Rejected:
-                                                            </strong>{" "}
-                                                            {r.rejection_reason}
-                                                        </div>
-                                                    ) : (
-                                                        r.lifetime_gmv >=
-                                                            1000 && (
-                                                            <div className="text-[11px] text-green-700 font-semibold mt-1 text-center">
-                                                                🎉 Qualified
-                                                            </div>
-                                                        )
-                                                    )}
-                                                </td>
-
-                                                <td className="text-center font-semibold">
-                                                    £50
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="border-2 border-dashed border-black/30 rounded-box-sm p-8 text-center">
+                                <p className="font-bold uppercase text-sm tracking-wide">
+                                    No referrals yet
+                                </p>
+                                <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+                                    Share your link with a creator — they'll
+                                    show up here the moment they sign up.
+                                </p>
+                                {hasReferral && (
+                                    <button
+                                        onClick={copyLink}
+                                        className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-box-sm border-2 border-black bg-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                    >
+                                        {copied ? <Check size={15} /> : <Copy size={15} />}
+                                        {copied ? "Copied" : "Copy your link"}
+                                    </button>
+                                )}
                             </div>
+                        ) : (
+                            <ul className="divide-y-2 divide-black/10">
+                                {referrals.map((r) => (
+                                    <ReferralRow key={r.id} r={r} />
+                                ))}
+                            </ul>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </Authenticated>
     );
 }
 
-/* ================= HELPERS ================= */
+/* ============ ROW ============ */
 
-const Stat = ({ label, value }) => (
-    <div className="shadow-[6px_6px_0_0_#000] border-3 border-black bg-white rounded-[20px] md:rounded-[30px]  p-5 text-center">
-        <div className="text-3xl font-bold">{value}</div>
-        <div className="text-xs uppercase mt-1">{label}</div>
-    </div>
-);
+function ReferralRow({ r }) {
+    const pct = Math.min((Number(r.lifetime_gmv || 0) / GOAL) * 100, 100);
+    const done = pct >= 100;
+
+    return (
+        <li className="py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+            {/* Who */}
+            <div className="md:w-[220px] shrink-0 flex items-center gap-3">
+                <span className="w-10 h-10 rounded-full border-2 border-black bg-[#A2E4B8] font-black flex items-center justify-center uppercase">
+                    {(r.name || "?").charAt(0)}
+                </span>
+                <div className="min-w-0">
+                    <div className="font-bold text-sm truncate">{r.name}</div>
+                    <div className="text-xs text-gray-500 truncate">
+                        @{r.username} · joined {r.joined_at}
+                    </div>
+                </div>
+            </div>
+
+            {/* Progress to £1,000 */}
+            <div className="flex-1 min-w-0">
+                <div className="h-3.5 bg-gray-100 rounded-full border-2 border-black overflow-hidden">
+                    <div
+                        className={`h-full transition-all duration-500 ${done ? "bg-green-500" : "bg-[#FF007F]"}`}
+                        style={{ width: `${pct}%` }}
+                    />
+                </div>
+                <div className={`text-[11px] text-gray-500 mt-1 ${NUM}`}>
+                    £{money(r.lifetime_gmv)} of £{money(GOAL)}
+                    {done && !r.rejection_reason && (
+                        <span className="text-green-700 font-bold ml-2">
+                            Qualified — £{REWARD} earned
+                        </span>
+                    )}
+                </div>
+                {r.rejection_reason && (
+                    <div className="mt-1.5 text-xs text-red-700 bg-red-50 border-2 border-red-200 rounded-box-sm px-3 py-1.5 inline-block">
+                        <strong>Rejected:</strong> {r.rejection_reason}
+                    </div>
+                )}
+            </div>
+
+            {/* Status */}
+            <div className="md:w-[130px] shrink-0 md:text-right">
+                <StatusBadge status={r.status} />
+            </div>
+        </li>
+    );
+}
 
 const StatusBadge = ({ status }) => {
     const map = {
-        IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-        QUALIFIED: "bg-green-100 text-green-800",
-        PAYOUT_REQUESTED: "bg-blue-100 text-blue-800",
-        PAID: "bg-purple-100 text-purple-800",
-        REVOKED: "bg-red-100 text-red-800",
+        IN_PROGRESS: "bg-yellow-100 text-yellow-800 border-yellow-300",
+        QUALIFIED: "bg-green-100 text-green-800 border-green-300",
+        PAYOUT_REQUESTED: "bg-blue-100 text-blue-800 border-blue-300",
+        PAID: "bg-purple-100 text-purple-800 border-purple-300",
+        REVOKED: "bg-red-100 text-red-800 border-red-300",
     };
-
     return (
-        <span className={`px-3 py-1 rounded-full text-xs ${map[status] || ""}`}>
-            {status?.replace("_", " ") || "-"}
+        <span
+            className={`inline-block px-3 py-1 rounded-full border-2 text-[11px] font-bold uppercase tracking-wide ${map[status] || "bg-gray-100 text-gray-600 border-gray-300"}`}
+        >
+            {status?.replaceAll("_", " ") || "—"}
         </span>
     );
 };

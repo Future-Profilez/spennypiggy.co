@@ -47,6 +47,9 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\IpTracker::class,
             \App\Http\Middleware\CheckSuspendedUser::class,
             \App\Http\Middleware\EnforceEmulationTimeBox::class,
+            // Last in the group: it runs after the response exists, counts an
+            // anonymous page view, and can never block a page from rendering.
+            \App\Http\Middleware\TrackSiteVisit::class,
         ],
 
         'api' => [

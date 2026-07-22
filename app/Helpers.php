@@ -28,6 +28,22 @@ class Helpers
     }
 
     /**
+     * Centralized admin email addresses for all system notifications,
+     * fraud alerts, dispute alerts, and high-value supporter alerts.
+     *
+     * @return array<int, string>
+     */
+    public static function getAdminEmails(): array
+    {
+        $emails = config('app.admin_emails') ?? config('services.admin_emails');
+        if (is_array($emails) && ! empty($emails)) {
+            return array_values(array_unique(array_filter($emails)));
+        }
+
+        return ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'];
+    }
+
+    /**
      * Scan a single string for blocked words/emojis (same rules as checkBlockData).
      *
      * @return false|string The blocked token if found, false otherwise

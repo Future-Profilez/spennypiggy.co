@@ -113,7 +113,7 @@ class OptimizedProfileController extends Controller
             ];
         }
 
-        return Inertia::render('Dashboard', [
+        $response = Inertia::render('Dashboard', [
             'username' => $username,
             'user' => $user,
             'card_capabilities' => $cardCapabilities,
@@ -135,6 +135,13 @@ class OptimizedProfileController extends Controller
             'founderData' => $founderData,
             'shouldShowFounderBanner' => $shouldShowFounderBanner,
         ]);
+
+        if (app()->environment('production') && !Auth::check()) {
+            return $response->withHeaders([
+                'Cache-Control' => 'public, max-age=60, s-maxage=300, must-revalidate',
+            ]);
+        }
+        return $response;
     }
 
     /**
@@ -173,8 +180,10 @@ class OptimizedProfileController extends Controller
             
             return [$isNeedToUpgrade, $cardCapabilities, $requirements];
         } catch (\Exception $e) {
-            // Update user if account is invalid
-            $user->update(['stripe_details_submitted' => 0]);
+            // Only disable stripe connected details if the account was explicitly deleted from Stripe (404)
+            if ($e instanceof \Stripe\Exception\InvalidRequestException && $e->getHttpStatus() === 404) {
+                $user->update(['stripe_details_submitted' => 0]);
+            }
             return [false, false, [
                 'has_requirements' => true,
                 'requirements' => [[
@@ -201,16 +210,20 @@ class OptimizedProfileController extends Controller
         }
 
         try {
-            $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-            
-            return [
-                'needs_migration' => $migrationCheck['needs_migration'] ?? false,
-                'show_warning' => $migrationCheck['needs_migration'] ?? false,
-                'current_agreement' => $migrationCheck['current_agreement'] ?? null,
-                'required_agreement' => $migrationCheck['required_agreement'] ?? null,
-                'country' => $migrationCheck['country'] ?? $user->country,
-                'reason' => $migrationCheck['reason'] ?? 'Account check not available'
-            ];
+            $cacheKey = 'stripe_migration_status_v1_' . $user->id;
+
+            return Cache::remember($cacheKey, 300, function () use ($user) {
+                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+
+                return [
+                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
+                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
+                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
+                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
+                    'country' => $migrationCheck['country'] ?? $user->country,
+                    'reason' => $migrationCheck['reason'] ?? 'Account check not available'
+                ];
+            });
         } catch (\Exception $e) {
             return [
                 'needs_migration' => false,
@@ -500,10 +513,13 @@ class OptimizedProfileController extends Controller
                     }
                 }
             
-                $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
-                // Same net-earnings formula the qualification job uses, so the tracker
-                // shows the number that actually decides qualification
-                $first30DayEarnings = (float) \App\Models\FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
+                $first30DayEarnings = 0.0;
+                if ($isEligible) {
+                    $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
+                    // Same net-earnings formula the qualification job uses, so the tracker
+                    // shows the number that actually decides qualification
+                    $first30DayEarnings = (float) \App\Models\FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
+                }
             }
         }
 

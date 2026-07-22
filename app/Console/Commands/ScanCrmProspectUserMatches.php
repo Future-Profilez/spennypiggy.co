@@ -19,10 +19,22 @@ class ScanCrmProspectUserMatches extends Command
         $force = (bool) $this->option('force');
         $limit = max(1, (int) $this->option('limit'));
 
+        // Pre-signup stages only — a prospect with an account needs no matching.
+        //
+        // These are the admin app's CrmStages::preSignupKeys(); the two apps
+        // share this database but not their code, so the list is mirrored here
+        // and must be kept in step. The legacy names are included because a row
+        // migrated by hand, or written by an old deploy still in flight, would
+        // otherwise drop out of matching silently.
+        $preSignup = [
+            'prospect', 'contacted', 'responded', 'call_booked', 'approved',
+            'outreach_sent', 'in_conversation',
+        ];
+
         $query = CrmCreator::query()
             ->whereNull('deleted_at')
             ->whereNull('user_id')
-            ->whereIn('crm_stage', ['prospect', 'outreach_sent', 'in_conversation']);
+            ->whereIn('crm_stage', $preSignup);
 
         if (!$force) {
             $query->whereNull('social_match_suggested_at');

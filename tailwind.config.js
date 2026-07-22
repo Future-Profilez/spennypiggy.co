@@ -107,6 +107,18 @@ export default {
                 '3xl': '4rem',
                 '4xl': '4.5rem',
                 'full': '9999px',
+                /*
+                 * House corner radii, shared with the admin app. Use these on new
+                 * work instead of arbitrary values — mixed radii are the fastest
+                 * way for a UI to look unfinished.
+                 *
+                 *   rounded-box     30px — containers: cards, panels, modals, sections
+                 *   rounded-box-sm  20px — things inside one: buttons, inputs, chips
+                 *
+                 * Pills and avatars stay rounded-full.
+                 */
+                box: '30px',
+                'box-sm': '20px',
                  ...Array.from({ length: 51 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: `${i}px` }), {}),
             },
             borderWidth: {

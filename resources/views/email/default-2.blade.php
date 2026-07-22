@@ -1,6 +1,10 @@
 <html>
 
 <head>
+    {{-- Without this, clients fall back to latin-1 and every emoji, em dash and
+         curly quote in any email using this layout renders as mojibake. --}}
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>{{ $title ?? 'Spenny Piggy Emails' }}</title>
     <meta name="color-scheme" content="light dark">
     <meta name="supported-color-schemes" content="light dark">

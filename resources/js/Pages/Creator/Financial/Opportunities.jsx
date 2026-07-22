@@ -1,7 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
+import axios from 'axios';
 import { route } from 'ziggy-js';
-import { Users, TrendingUp, AlertTriangle, Sparkles } from 'lucide-react';
+import { Users, TrendingUp, AlertTriangle, Sparkles, Send } from 'lucide-react';
 
 /**
  * Revenue Opportunity Centre.
@@ -22,6 +24,59 @@ const money = (amount, currency) =>
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })}${currency !== 'GBP' ? ` ${currency}` : ''}`;
+
+/**
+ * "Send platform reminder" on an at-risk supporter.
+ *
+ * The platform delivers its standard content-first message with this creator's
+ * name on it — the creator writes nothing and never sees contact details.
+ * Consent and the once-per-quiet-spell lock are enforced server-side; this
+ * component only reflects the answer.
+ */
+const RemindButton = ({ supporterId }) => {
+    const [state, setState] = useState('idle'); // idle | busy | sent | blocked
+    const [note, setNote] = useState(null);
+
+    const send = async () => {
+        setState('busy');
+
+        try {
+            const { data } = await axios.post(
+                route('financial.opportunities.remind', supporterId)
+            );
+            setState('sent');
+            setNote(data.message);
+        } catch (error) {
+            setState('blocked');
+            setNote(error?.response?.data?.message || 'Could not send right now.');
+        }
+    };
+
+    if (state === 'sent' || state === 'blocked') {
+        return (
+            <span
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold ${
+                    state === 'sent' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                }`}
+                title={note || ''}
+            >
+                {state === 'sent' ? '✓ Reminder sent' : note}
+            </span>
+        );
+    }
+
+    return (
+        <button
+            onClick={send}
+            disabled={state === 'busy'}
+            title="The platform sends its standard reminder with your name on it — once per quiet spell, and only if the supporter allows reminders."
+            className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#FF007F] px-3 py-1 text-[11px] font-bold text-[#FF007F] transition-colors hover:bg-[#FF007F] hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/50"
+        >
+            <Send size={11} />
+            {state === 'busy' ? 'Sending…' : 'Send platform reminder'}
+        </button>
+    );
+};
 
 const RetentionStat = ({ label, value, hint }) => (
     <div className="rounded-[20px] border border-gray-200 bg-white p-4">
@@ -179,14 +234,20 @@ export default function Opportunities({
                                                 <div className="text-xs text-gray-400">lifetime</div>
                                             </div>
                                         </div>
+                                        {s.at_risk && (
+                                            <div className="mt-3 border-t border-gray-100 pt-3">
+                                                <RemindButton supporterId={s.supporter_id} />
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
 
                         <p className="mt-4 text-xs italic text-gray-500">
-                            Supporter contact details are never shared. If you want to reach someone, do it
-                            through your own social channels, and only if appropriate.
+                            Supporter contact details are never shared. "Send platform reminder" delivers the
+                            platform's standard message with your name on it — once per quiet spell, and only if
+                            the supporter allows reminders. For anything personal, use your own social channels.
                         </p>
                     </section>
                 </div>

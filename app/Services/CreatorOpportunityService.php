@@ -38,7 +38,7 @@ class CreatorOpportunityService
     {
         $supporters = $this->supporters($creator, $currency);
         $retention = $this->retention($creator);
-        $alerts = $this->alerts($supporters, $retention);
+        $alerts = $this->alerts($creator, $supporters, $retention);
 
         return [
             'currency' => $currency,
@@ -118,7 +118,12 @@ class CreatorOpportunityService
         $topIds = $collection->take(self::VIP_ENRICH_LIMIT)->pluck('supporter_id')->all();
         $users = User::whereIn('id', $topIds)->get(['id', 'name', 'username', 'avatar'])->keyBy('id');
 
-        return $collection->map(function ($row, $index) use ($users, $currency) {
+        // One pass for the whole displayed slice. Calling for() inside the map
+        // ran the six source queries per supporter — ten supporters meant
+        // ninety queries on a single page load.
+        $badges = $this->vip->badgesFor($topIds);
+
+        return $collection->map(function ($row, $index) use ($users, $currency, $badges) {
             $user = $users->get($row['supporter_id']);
             $last = $row['last_purchase'] ? Carbon::parse($row['last_purchase']) : null;
 
@@ -138,17 +143,9 @@ class CreatorOpportunityService
             // VIP tier is the supporter's platform-wide standing (same source as
             // the public leaderboard) — enriching every supporter would be a
             // query each, so only the displayed slice gets it.
-            $row['vip'] = null;
-
-            if ($index < self::VIP_ENRICH_LIMIT && $user) {
-                $vip = $this->vip->for($user);
-                $row['vip'] = [
-                    'level' => $vip['level'] ?? null,
-                    'icon' => $vip['icon'] ?? null,
-                    'color' => $vip['color'] ?? null,
-                    'score' => $vip['score'] ?? null,
-                ];
-            }
+            $row['vip'] = ($index < self::VIP_ENRICH_LIMIT && $user)
+                ? ($badges[$row['supporter_id']] ?? null)
+                : null;
 
             return $row;
         });
@@ -181,6 +178,7 @@ class CreatorOpportunityService
             ->get();
 
         $new = $returning = $reactivated = $lost = 0;
+        $reactivatedIds = [];
 
         foreach ($rows as $row) {
             $first = Carbon::parse($row->first_purchase);
@@ -214,6 +212,7 @@ class CreatorOpportunityService
 
             if ($previous && Carbon::parse($previous)->lt($dormantCutoff)) {
                 $reactivated++;
+                $reactivatedIds[] = (int) $row->supporter_id;
             }
         }
 
@@ -221,15 +220,22 @@ class CreatorOpportunityService
             'new' => $new,
             'returning' => $returning,
             'reactivated' => $reactivated,
+            // Who they are, so alerts can single out the valuable ones. The
+            // page already lists these supporters, so no new exposure.
+            'reactivated_ids' => $reactivatedIds,
             'lost' => $lost,
             'window_days' => 30,
         ];
     }
 
+    /** A single purchase this big is an event in itself, GBP-equivalent. */
+    private const BIG_PURCHASE_GBP = 100.0;
+
     /** Notable changes worth surfacing at the top of the page. */
-    public function alerts($supporters, array $retention): array
+    public function alerts(User $creator, $supporters, array $retention): array
     {
         $alerts = [];
+        $windowStart = now()->subDays($retention['window_days'] ?? 30);
 
         $topTier = $supporters->filter(
             fn ($s) => in_array($s['vip']['level'] ?? null, ['Platinum', 'Diamond'], true)
@@ -264,7 +270,91 @@ class CreatorOpportunityService
             ];
         }
 
+        // New whale: someone whose FIRST purchase was inside the window and who
+        // has already passed the high-value line. They arrived spending big —
+        // the moment to make them feel seen.
+        $newWhales = $supporters->filter(
+            fn ($s) => ($s['lifetime_spent'] ?? 0) >= self::HIGH_VALUE_GBP
+                && ! empty($s['first_purchase'])
+                && Carbon::parse($s['first_purchase'])->gte($windowStart)
+        );
+
+        if ($newWhales->isNotEmpty()) {
+            $alerts[] = [
+                'key' => 'new_whale',
+                'severity' => 'good',
+                'title' => 'A big supporter arrived this month',
+                'detail' => $newWhales->count().' new supporter(s) have already passed '
+                    .number_format(self::HIGH_VALUE_GBP).' in purchases within their first month.',
+            ];
+        }
+
+        // Returning whale: a high-value supporter who came back after 60+ days
+        // of silence. Different from a steady regular — they nearly left.
+        $reactivatedIds = $retention['reactivated_ids'] ?? [];
+
+        $returningWhales = $supporters->filter(
+            fn ($s) => in_array((int) $s['supporter_id'], $reactivatedIds, true)
+                && ($s['lifetime_spent'] ?? 0) >= self::HIGH_VALUE_GBP
+        );
+
+        if ($returningWhales->isNotEmpty()) {
+            $alerts[] = [
+                'key' => 'returning_whale',
+                'severity' => 'good',
+                'title' => 'A big supporter came back',
+                'detail' => $returningWhales->count().' high-value supporter(s) returned after two months or more away.',
+            ];
+        }
+
+        // High-value purchase: one single order past the line, inside the
+        // window. The sum can hide it; the event deserves its own flag.
+        $big = $this->biggestRecentPurchaseGbp($creator, $windowStart);
+
+        if ($big !== null && $big >= self::BIG_PURCHASE_GBP) {
+            $alerts[] = [
+                'key' => 'high_value_purchase',
+                'severity' => 'good',
+                'title' => 'A high-value purchase landed',
+                'detail' => 'Your biggest single purchase in the last '.($retention['window_days'] ?? 30)
+                    .' days was £'.number_format($big, 2).' (GBP equivalent).',
+            ];
+        }
+
         return $alerts;
+    }
+
+    /**
+     * The largest single purchase in the window, converted to GBP.
+     *
+     * Max per currency first, then converted — a raw SQL MAX across currencies
+     * would happily call 1,000 JPY bigger than 100 GBP.
+     */
+    private function biggestRecentPurchaseGbp(User $creator, $windowStart): ?float
+    {
+        $rows = FinancialTransaction::query()
+            ->where('user_id', $creator->id)
+            ->where('type', 'income')
+            ->whereNotIn('status', self::EXCLUDED_STATUSES)
+            ->whereNotNull('supporter_id')
+            ->where('transaction_date', '>=', $windowStart)
+            ->select('currency', DB::raw('MAX(net_amount + COALESCE(vat_amount, 0)) as biggest'))
+            ->groupBy('currency')
+            ->get();
+
+        $best = null;
+
+        foreach ($rows as $row) {
+            $from = strtoupper($row->currency ?: 'GBP');
+            $amount = (float) $row->biggest;
+            $gbp = $from === 'GBP' ? $amount : (float) Helpers::priceFormat($from, $amount, 'GBP');
+
+            if ($best === null || $gbp > $best) {
+                $best = $gbp;
+            }
+        }
+
+        return $best;
     }
 
     /**

@@ -135,6 +135,67 @@ class EngagementEngineTest extends TestCase
         Queue::assertPushed(SendEngagementNotification::class, 1);
     }
 
+    public function test_reactivation_reminder_includes_the_email_channel(): void
+    {
+        Queue::fake();
+
+        $creator = $this->makeUser(['name' => 'Creator One', 'username' => 'creatorone']);
+        $supporter = $this->makeUser();
+        $this->purchase($creator, $supporter, 7);
+
+        $this->artisan('reactivation:notify')->assertExitCode(0);
+
+        // Email was the missing third channel: the engine wrote bell and push
+        // only, so the reactivation email nobody could opt out of also never
+        // arrived. Assert the channel AND the mailable are on the payload.
+        Queue::assertPushed(SendEngagementNotification::class, function ($job) use ($creator) {
+            return in_array(NotificationDispatcher::CHANNEL_EMAIL, $job->channels, true)
+                && ($job->payload['mailable'] ?? null) === \App\Mail\ReactivationReminder::class
+                && collect($job->payload['mailable_args']['creators'] ?? [])
+                    ->pluck('username')->contains($creator->username);
+        });
+    }
+
+    public function test_reactivation_email_is_not_sent_to_an_opted_out_supporter(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $creator = $this->makeUser();
+        $supporter = $this->makeUser(['reactivation_emails_enabled' => false]);
+
+        app(NotificationDispatcher::class)->send(
+            $supporter,
+            'reactivation',
+            [
+                'title' => 'New content',
+                'body' => 'Come see',
+                'mailable' => \App\Mail\ReactivationReminder::class,
+                'mailable_args' => ['userId' => $supporter->id, 'days' => 7, 'creators' => []],
+            ],
+            [NotificationDispatcher::CHANNEL_EMAIL],
+            true,
+        );
+
+        \Illuminate\Support\Facades\Mail::assertNothingSent();
+    }
+
+    public function test_reactivation_email_renders_with_the_creators_they_support(): void
+    {
+        $supporter = $this->makeUser(['name' => 'Sam Taylor']);
+
+        $html = (new \App\Mail\ReactivationReminder($supporter->id, 7, [
+            ['name' => 'Creator One', 'username' => 'creatorone', 'avatar' => 'https://example.test/a.jpg'],
+        ]))->render();
+
+        $this->assertStringContainsString('Sam', $html);
+        $this->assertStringContainsString('Creator One', $html);
+        $this->assertStringContainsString('creatorone', $html);
+        // Content-first copy: no gift/tip/donation/fundraising wording.
+        foreach (['donation', 'donate', 'tip us', 'fundraise'] as $banned) {
+            $this->assertStringNotContainsStringIgnoringCase($banned, $html);
+        }
+    }
+
     public function test_reactivation_dry_run_sends_and_records_nothing(): void
     {
         Queue::fake();

@@ -5,35 +5,65 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\BillPayment;
+use App\Models\Currency;
+use App\Models\FinancialTransaction;
+use App\Models\Follow;
 use App\Models\MembershipPayment;
+use App\Models\PiggyPotContribution;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
-use App\Models\FinancialTransaction;
-use App\Models\Currency;
 use App\Models\User;
 use App\Models\WishItemSubscription;
+use App\Services\VipScoreService;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class LeaderBoardController extends Controller
 {
+    /** Every leaderboard period the platform offers, in display order. */
+    public const PERIODS = ['daily', 'weekly', 'monthly', 'quarterly', 'annual', 'all'];
+
     private function ttlForType($type)
     {
+        // Longer periods move more slowly, so they can be cached for longer.
         return match ($type) {
             'daily' => 600,
             'weekly' => 1200,
             'monthly' => 1800,
+            'quarterly' => 3600,
+            'annual' => 7200,
+            'all' => 7200,
             default => 600,
+        };
+    }
+
+    /**
+     * The [from, to] window for a leaderboard period, or null for lifetime.
+     *
+     * Single definition, used by every source in a leaderboard query. `all` (and
+     * anything unrecognised) means no date constraint — the lifetime board.
+     *
+     * @return array{0: Carbon, 1: Carbon}|null
+     */
+    public static function periodWindow(?string $type): ?array
+    {
+        $now = Carbon::now();
+
+        return match ($type) {
+            'daily' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+            'weekly' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            'monthly' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+            'quarterly' => [$now->copy()->startOfQuarter(), $now->copy()->endOfQuarter()],
+            'annual' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
+            default => null,
         };
     }
 
@@ -50,14 +80,14 @@ class LeaderBoardController extends Controller
         if (Auth::check()) {
             $users = $getData();
         } else {
-            $cacheKey = 'leaderboard_' . ($type ?? 'all') . '_' . request()->get('page', 1);
+            $cacheKey = 'leaderboard_'.($type ?? 'all').'_'.request()->get('page', 1);
             $users = Cache::remember($cacheKey, $this->ttlForType($type ?? 'daily'), $getData);
         }
 
         $perPage = 50;
         $page = request()->get('page', 1);
         $totalUsers = max($users->count(), 1);
-        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+        $paginator = new LengthAwarePaginator(
             $users->forPage($page, $perPage),
             $users->count(),
             $perPage,
@@ -76,12 +106,12 @@ class LeaderBoardController extends Controller
                 'profile_status_lock' => $query->profile_status_lock,
                 'role' => $query->role,
                 'avatar' => $query->avatar_url,
-                'coverimg' =>  $query->cover_url,
+                'coverimg' => $query->cover_url,
                 'top' => $topPercent,
                 'amount' => 0, // Privacy: Hide amount from public leaderboard
                 'currency' => $query->currency ?? 'GBP',
                 'supporters' => $query->total_supporters ?? 0,
-                'engagement' => $query->engagement_score ?? 0
+                'engagement' => $query->engagement_score ?? 0,
             ];
             $rank++;
         }
@@ -95,160 +125,118 @@ class LeaderBoardController extends Controller
             }
 
             return Inertia::render('leaderboard/Board', [
-                "data" => $data,
-                "is_daily" => $is_daily
+                'data' => $data,
+                'is_daily' => $is_daily,
             ]);
         }
 
         // Leaderboard stars
         return response()->json([
-            "success" => true,
+            'success' => true,
             'data' => $data,
-            "message" => 'Wishtender wishes get successfully',
-            "last_page" => $paginator->lastPage() ?? null,
-            "current_page" => $paginator->currentPage() ?? null,
-            "total" => $paginator->total() ?? null,
-            "per_page" => $paginator->perPage() ?? null,
-            "stars" => $paginator->perPage() ?? null,
+            'message' => 'Wishtender wishes get successfully',
+            'last_page' => $paginator->lastPage() ?? null,
+            'current_page' => $paginator->currentPage() ?? null,
+            'total' => $paginator->total() ?? null,
+            'per_page' => $paginator->perPage() ?? null,
+            'stars' => $paginator->perPage() ?? null,
         ]);
     }
 
     public function calc($type)
     {
-        $currentMonth = Carbon::now()->month;
-        $currentYear = Carbon::now()->year;
-        $currentWeekStartDate = Carbon::now()->startOfWeek();
-        $currentWeekEndDate = Carbon::now()->endOfWeek();
-        $currentDate = Carbon::today()->format('Y-m-d');
+        // One window for the whole query. Every source below used to carry its
+        // own copy of the same if/elseif date logic, so adding a period meant
+        // editing seven places and getting all seven right.
+        $window = self::periodWindow($type);
+
+        $applyPeriod = function ($query, string $column) use ($window) {
+            if ($window === null) {
+                return; // lifetime — no date constraint at all
+            }
+
+            $query->whereBetween($column, $window);
+        };
 
         $users = User::where('stripe_details_submitted', 1)
             ->where('suspended_account', 0)
             ->withCount([
-                'followers as total_supporters' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                    if ($type == 'monthly') {
-                        $query->whereYear('follows.created_at', '=', $currentYear)
-                            ->whereMonth('follows.created_at', $currentMonth);
-                    } elseif ($type == 'weekly') {
-                        $query->whereBetween('follows.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                    } elseif ($type == 'daily') {
-                        $query->whereDate('follows.created_at', $currentDate);
-                    }
+                'followers as total_supporters' => function ($query) use ($applyPeriod) {
+                    $applyPeriod($query, 'follows.created_at');
                 },
-                'following as following_count'
+                'following as following_count',
             ])
             ->withCount([
-                'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                    $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                'paymentitems as total_payments' => function ($query) use ($applyPeriod) {
+                    $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                         ->where('stripe_payment_details.payment_status', 'paid')
                         ->whereNotIn('stripe_payment_details.id', function ($q) {
                             $q->select('source_id')
-                              ->from('financial_transactions')
-                              ->where('source_type', \App\Models\StripePaymentDetail::class)
-                              ->whereIn('status', ['refunded', 'disputed']);
+                                ->from('financial_transactions')
+                                ->where('source_type', StripePaymentDetail::class)
+                                ->whereIn('status', ['refunded', 'disputed']);
                         });
-                    if ($type == 'monthly') {
-                        $query->whereYear('stripe_payment_items.created_at', '=', $currentYear)
-                            ->whereMonth('stripe_payment_items.created_at', $currentMonth);
-                    } elseif ($type == 'weekly') {
-                        $query->whereBetween('stripe_payment_items.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                    } elseif ($type == 'daily') {
-                        $query->whereDate('stripe_payment_items.created_at', $currentDate);
-                    }
+                    $applyPeriod($query, 'stripe_payment_items.created_at');
                 },
-                'subscriptions as total_subscriptions' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                    $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                'subscriptions as total_subscriptions' => function ($query) use ($applyPeriod) {
+                    $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                         ->where('wish_item_subscriptions.status', 'paid')
                         ->whereNotIn('wish_item_subscriptions.id', function ($q) {
                             $q->select('source_id')
-                              ->from('financial_transactions')
-                              ->where('source_type', \App\Models\WishItemSubscription::class)
-                              ->whereIn('status', ['refunded', 'disputed']);
+                                ->from('financial_transactions')
+                                ->where('source_type', WishItemSubscription::class)
+                                ->whereIn('status', ['refunded', 'disputed']);
                         });
 
-                    if ($type == 'monthly') {
-                        $query->whereYear('wish_item_subscriptions.created_at', '=', $currentYear)
-                            ->whereMonth('wish_item_subscriptions.created_at', $currentMonth);
-                    } elseif ($type == 'weekly') {
-                        $query->whereBetween('wish_item_subscriptions.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                    } elseif ($type == 'daily') {
-                        $query->whereDate('wish_item_subscriptions.created_at', $currentDate);
-                    }
+                    $applyPeriod($query, 'wish_item_subscriptions.created_at');
                 },
-                'tip_goal_payment as total_tips' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                    $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                'tip_goal_payment as total_tips' => function ($query) use ($applyPeriod) {
+                    $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                         ->where('tip_goals_payments.status', 'paid')
                         ->whereNotIn('tip_goals_payments.id', function ($q) {
                             $q->select('source_id')
-                              ->from('financial_transactions')
-                              ->where('source_type', \App\Models\TipGoalsPayment::class)
-                              ->whereIn('status', ['refunded', 'disputed']);
+                                ->from('financial_transactions')
+                                ->where('source_type', TipGoalsPayment::class)
+                                ->whereIn('status', ['refunded', 'disputed']);
                         });
 
-                    if ($type == 'monthly') {
-                        $query->whereYear('tip_goals_payments.created_at', '=', $currentYear)
-                            ->whereMonth('tip_goals_payments.created_at', $currentMonth);
-                    } elseif ($type == 'weekly') {
-                        $query->whereBetween('tip_goals_payments.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                    } elseif ($type == 'daily') {
-                        $query->whereDate('tip_goals_payments.created_at', $currentDate);
-                    }
+                    $applyPeriod($query, 'tip_goals_payments.created_at');
                 },
-                'membership_payments as total_member' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                    $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                'membership_payments as total_member' => function ($query) use ($applyPeriod) {
+                    $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                         ->where('membership_payments.status', 'paid')
                         ->whereNotIn('membership_payments.id', function ($q) {
                             $q->select('source_id')
-                              ->from('financial_transactions')
-                              ->where('source_type', \App\Models\MembershipPayment::class)
-                              ->whereIn('status', ['refunded', 'disputed']);
+                                ->from('financial_transactions')
+                                ->where('source_type', MembershipPayment::class)
+                                ->whereIn('status', ['refunded', 'disputed']);
                         });
 
-                    if ($type == 'monthly') {
-                        $query->whereYear('membership_payments.created_at', '=', $currentYear)
-                            ->whereMonth('membership_payments.created_at', $currentMonth);
-                    } elseif ($type == 'weekly') {
-                        $query->whereBetween('membership_payments.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                    } elseif ($type == 'daily') {
-                        $query->whereDate('membership_payments.created_at', $currentDate);
-                    }
+                    $applyPeriod($query, 'membership_payments.created_at');
                 },
-                'bill_payments as total_bill' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                    $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                'bill_payments as total_bill' => function ($query) use ($applyPeriod) {
+                    $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                         ->where('bill_payments.status', 'paid')
                         ->whereNotIn('bill_payments.id', function ($q) {
                             $q->select('source_id')
-                              ->from('financial_transactions')
-                              ->where('source_type', \App\Models\BillPayment::class)
-                              ->whereIn('status', ['refunded', 'disputed']);
+                                ->from('financial_transactions')
+                                ->where('source_type', BillPayment::class)
+                                ->whereIn('status', ['refunded', 'disputed']);
                         });
 
-                    if ($type == 'monthly') {
-                        $query->whereYear('bill_payments.created_at', '=', $currentYear)
-                            ->whereMonth('bill_payments.created_at', $currentMonth);
-                    } elseif ($type == 'weekly') {
-                        $query->whereBetween('bill_payments.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                    } elseif ($type == 'daily') {
-                        $query->whereDate('bill_payments.created_at', $currentDate);
-                    }
+                    $applyPeriod($query, 'bill_payments.created_at');
                 },
-                'shop_payments as total_shop' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                    $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                'shop_payments as total_shop' => function ($query) use ($applyPeriod) {
+                    $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                         ->where('shop_payments.payment_status', 'paid')
                         ->whereNotIn('shop_payments.id', function ($q) {
                             $q->select('source_id')
-                              ->from('financial_transactions')
-                              ->where('source_type', \App\Models\ShopPayment::class)
-                              ->whereIn('status', ['refunded', 'disputed']);
+                                ->from('financial_transactions')
+                                ->where('source_type', ShopPayment::class)
+                                ->whereIn('status', ['refunded', 'disputed']);
                         });
 
-                    if ($type == 'monthly') {
-                        $query->whereYear('shop_payments.created_at', '=', $currentYear)
-                            ->whereMonth('shop_payments.created_at', $currentMonth);
-                    } elseif ($type == 'weekly') {
-                        $query->whereBetween('shop_payments.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                    } elseif ($type == 'daily') {
-                        $query->whereDate('shop_payments.created_at', $currentDate);
-                    }
+                    $applyPeriod($query, 'shop_payments.created_at');
                 },
             ])
             ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
@@ -270,16 +258,16 @@ class LeaderBoardController extends Controller
                 $user->total_tips,
                 $user->total_member,
                 $user->total_bill,
-                $user->total_shop
+                $user->total_shop,
             ];
 
             // Filter out NaN values and ensure we have valid numbers
             $validAmounts = array_filter($amounts, function ($amount) {
-                return is_numeric($amount) && !is_nan($amount) && is_finite($amount);
+                return is_numeric($amount) && ! is_nan($amount) && is_finite($amount);
             });
 
             $user->total_amount = array_sum($validAmounts);
-            
+
             // ✅ Ensure we return a consistent currency code (uppercase)
             $user->currency = strtoupper($user->default_currency ?? 'GBP');
 
@@ -320,7 +308,7 @@ class LeaderBoardController extends Controller
                 ->with(['paymentitems', 'subscriptions', 'tip_goal_payment'])
                 ->withCount([
                     'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'));
                         if ($type == 'monthly') {
                             $query->whereYear('stripe_payment_items.created_at', '=', $currentYear)
                                 ->whereMonth('stripe_payment_items.created_at', $currentMonth);
@@ -331,7 +319,7 @@ class LeaderBoardController extends Controller
                         }
                     },
                     'subscriptions as total_subscriptions' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'));
 
                         if ($type == 'monthly') {
                             $query->whereYear('wish_item_subscriptions.created_at', '=', $currentYear)
@@ -343,7 +331,7 @@ class LeaderBoardController extends Controller
                         }
                     },
                     'tip_goal_payment as total_tips' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'));
 
                         if ($type == 'monthly') {
                             $query->whereYear('tip_goals_payments.created_at', '=', $currentYear)
@@ -367,7 +355,7 @@ class LeaderBoardController extends Controller
                     'name' => $query->name ?? '',
                     'username' => $query->username ?? '',
                     'avatar' => $query->avatar_url,
-                    'coverimg' =>  $query->cover_url,
+                    'coverimg' => $query->cover_url,
                     'profile_status_lock' => $query->profile_status_lock,
                     'role' => $query->role,
                     'top' => $rank / 100,
@@ -377,20 +365,20 @@ class LeaderBoardController extends Controller
 
             if (empty($type)) {
                 return Inertia::render('leaderboard/Board', [
-                    "data" => $data,
+                    'data' => $data,
                 ]);
             }
 
             return response()->json([
-                "success" => true,
+                'success' => true,
                 'data' => $data,
-                "message" => 'Top supporters by frequency retrieved successfully',
+                'message' => 'Top supporters by frequency retrieved successfully',
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                "success" => false,
-                "message" => 'Something went wrong',
-                "error" => $e->getMessage()
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -429,7 +417,7 @@ class LeaderBoardController extends Controller
             $totalSupportersLastMonth = User::whereHas('paymentitems', function ($q) use ($now) {
                 $q->whereHas('payment', function ($query) use ($now) {
                     $query->where('payment_status', 'paid')
-                          ->where('created_at', '<', $now->copy()->startOfMonth());
+                        ->where('created_at', '<', $now->copy()->startOfMonth());
                 });
             })->count();
 
@@ -464,42 +452,43 @@ class LeaderBoardController extends Controller
                     'avg_growth' => $avgGrowth,
                     'creators_trend' => [
                         'positive' => $creatorsGrowth >= 0,
-                        'percentage' => abs($creatorsGrowth)
+                        'percentage' => abs($creatorsGrowth),
                     ],
                     'supporters_trend' => [
                         'positive' => $supportersGrowth >= 0,
-                        'percentage' => abs($supportersGrowth)
-                    ]
+                        'percentage' => abs($supportersGrowth),
+                    ],
                 ],
                 'milestones' => [
                     [
                         'title' => 'Active Creators Goal',
                         'description' => 'Current active creators on the platform',
                         'current' => $activeCreators,
-                        'target' => max(100, ceil($activeCreators / 100) * 100)
+                        'target' => max(100, ceil($activeCreators / 100) * 100),
                     ],
                     [
                         'title' => 'Total Users Goal',
                         'description' => 'Registered users goal',
                         'current' => $totalUsers,
-                        'target' => max(1000, ceil($totalUsers / 1000) * 1000)
-                    ]
+                        'target' => max(1000, ceil($totalUsers / 1000) * 1000),
+                    ],
                 ],
                 'countries' => empty($countriesData) ? [] : $countriesData,
-                'achievements' => [] // Empty for now as there's no dynamic achievement table
+                'achievements' => [], // Empty for now as there's no dynamic achievement table
             ];
 
             return response()->json([
-                "success" => true,
+                'success' => true,
                 'data' => $data,
-                "message" => 'Platform analytics retrieved successfully',
+                'message' => 'Platform analytics retrieved successfully',
             ]);
         } catch (\Exception $e) {
-            Log::error('Platform analytics error: ' . $e->getMessage());
+            Log::error('Platform analytics error: '.$e->getMessage());
+
             return response()->json([
-                "success" => false,
-                "message" => 'Failed to retrieve platform analytics',
-                "error" => $e->getMessage()
+                'success' => false,
+                'message' => 'Failed to retrieve platform analytics',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -516,7 +505,7 @@ class LeaderBoardController extends Controller
                     ->whereNotIn('id', function ($sub) {
                         $sub->select('source_id')
                             ->from('financial_transactions')
-                            ->where('source_type', \App\Models\StripePaymentDetail::class)
+                            ->where('source_type', StripePaymentDetail::class)
                             ->whereIn('status', ['refunded', 'disputed']);
                     })
                     ->where('created_at', '>', $last24hour);
@@ -527,8 +516,8 @@ class LeaderBoardController extends Controller
                 if ($user) {
                     $gifters[] = [
                         'id' => $user->id,
-                        'name' => $user->name ?? "Anonymous",
-                        'username' => $user->username ?? "Anonymous",
+                        'name' => $user->name ?? 'Anonymous',
+                        'username' => $user->username ?? 'Anonymous',
                         'avatar_url' => $user->avatar_url ?? null,
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
@@ -545,9 +534,9 @@ class LeaderBoardController extends Controller
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
                     $q->select('source_id')
-                      ->from('financial_transactions')
-                      ->where('source_type', \App\Models\WishItemSubscription::class)
-                      ->whereIn('status', ['refunded', 'disputed']);
+                        ->from('financial_transactions')
+                        ->where('source_type', WishItemSubscription::class)
+                        ->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->where('created_at', '>', $last24hour)
                 ->get();
@@ -556,8 +545,8 @@ class LeaderBoardController extends Controller
                 $user = $sub->user;
                 $gifters[] = [
                     'id' => $user->id,
-                    'name' => $user->name ?? "Anonymous",
-                    'username' => $user->username ?? "Anonymous",
+                    'name' => $user->name ?? 'Anonymous',
+                    'username' => $user->username ?? 'Anonymous',
                     'avatar_url' => $user->avatar_url ?? null,
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
@@ -573,9 +562,9 @@ class LeaderBoardController extends Controller
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
                     $q->select('source_id')
-                      ->from('financial_transactions')
-                      ->where('source_type', \App\Models\TipGoalsPayment::class)
-                      ->whereIn('status', ['refunded', 'disputed']);
+                        ->from('financial_transactions')
+                        ->where('source_type', TipGoalsPayment::class)
+                        ->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->where('created_at', '>', $last24hour)
                 ->get();
@@ -584,8 +573,8 @@ class LeaderBoardController extends Controller
                 $user = $tip->user;
                 $gifters[] = [
                     'id' => $user->id,
-                    'name' => $user->name ?? "Anonymous",
-                    'username' => $user->username ?? "Anonymous",
+                    'name' => $user->name ?? 'Anonymous',
+                    'username' => $user->username ?? 'Anonymous',
                     'avatar_url' => $user->avatar_url ?? null,
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
@@ -601,9 +590,9 @@ class LeaderBoardController extends Controller
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
                     $q->select('source_id')
-                      ->from('financial_transactions')
-                      ->where('source_type', \App\Models\MembershipPayment::class)
-                      ->whereIn('status', ['refunded', 'disputed']);
+                        ->from('financial_transactions')
+                        ->where('source_type', MembershipPayment::class)
+                        ->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->where('created_at', '>', $last24hour)
                 ->get();
@@ -612,8 +601,8 @@ class LeaderBoardController extends Controller
                 $user = $member->user;
                 $gifters[] = [
                     'id' => $user->id,
-                    'name' => $user->name ?? "Anonymous",
-                    'username' => $user->username ?? "Anonymous",
+                    'name' => $user->name ?? 'Anonymous',
+                    'username' => $user->username ?? 'Anonymous',
                     'avatar_url' => $user->avatar_url ?? null,
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
@@ -629,9 +618,9 @@ class LeaderBoardController extends Controller
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
                     $q->select('source_id')
-                      ->from('financial_transactions')
-                      ->where('source_type', \App\Models\BillPayment::class)
-                      ->whereIn('status', ['refunded', 'disputed']);
+                        ->from('financial_transactions')
+                        ->where('source_type', BillPayment::class)
+                        ->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->where('created_at', '>', $last24hour)
                 ->get();
@@ -640,8 +629,8 @@ class LeaderBoardController extends Controller
                 $user = $bill->user;
                 $gifters[] = [
                     'id' => $user->id,
-                    'name' => $user->name ?? "Anonymous",
-                    'username' => $user->username ?? "Anonymous",
+                    'name' => $user->name ?? 'Anonymous',
+                    'username' => $user->username ?? 'Anonymous',
                     'avatar_url' => $user->avatar_url ?? null,
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
@@ -660,14 +649,14 @@ class LeaderBoardController extends Controller
             $gifters = collect($gifters)->unique('username')->values()->take(5);
 
             return response()->json([
-                "status" => true,
+                'status' => true,
                 'data' => $gifters,
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                "status" => false,
-                "msg" => 'Something went wrong',
-                "error" => $e->getMessage()
+                'status' => false,
+                'msg' => 'Something went wrong',
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -685,44 +674,44 @@ class LeaderBoardController extends Controller
                         });
                     })->whereHas('payment', function ($q) {
                         $q->where('payment_status', 'paid')
-                          ->whereNotIn('id', function ($sub) {
-                              $sub->select('source_id')
-                                  ->from('financial_transactions')
-                                  ->where('source_type', \App\Models\StripePaymentDetail::class)
-                                  ->whereIn('status', ['refunded', 'disputed']);
-                          });
+                            ->whereNotIn('id', function ($sub) {
+                                $sub->select('source_id')
+                                    ->from('financial_transactions')
+                                    ->where('source_type', StripePaymentDetail::class)
+                                    ->whereIn('status', ['refunded', 'disputed']);
+                            });
                     })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item', function ($q) {
                         $q->whereHas('user', function ($query) {
                             // Restriction removed
                         });
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                     $tips = TipGoalsPayment::whereHas('creator', function ($q) {
                         // Restriction removed
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
 
                     $members = MembershipPayment::whereHas('membership', function ($q) {
                         $q->whereHas('user', function ($query) {
                             // Restriction removed
                         });
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                     $bills = BillPayment::whereHas('bill', function ($q) {
                         $q->whereHas('user', function ($query) {
                             // Restriction removed
                         });
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                 } else {
                     $last24hour = Carbon::now()->subHour(24);
                     $wishes = StripePaymentItems::whereHas('wish', function ($q) {
@@ -731,44 +720,44 @@ class LeaderBoardController extends Controller
                         });
                     })->whereHas('payment', function ($q) {
                         $q->where('payment_status', 'paid')
-                          ->whereNotIn('id', function ($sub) {
-                              $sub->select('source_id')
-                                  ->from('financial_transactions')
-                                  ->where('source_type', \App\Models\StripePaymentDetail::class)
-                                  ->whereIn('status', ['refunded', 'disputed']);
-                          });
+                            ->whereNotIn('id', function ($sub) {
+                                $sub->select('source_id')
+                                    ->from('financial_transactions')
+                                    ->where('source_type', StripePaymentDetail::class)
+                                    ->whereIn('status', ['refunded', 'disputed']);
+                            });
                     })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item', function ($q) {
                         $q->whereHas('user', function ($query) {
                             // Restriction removed
                         });
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                     $tips = TipGoalsPayment::whereHas('creator', function ($q) {
                         // Restriction removed
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
 
                     $members = MembershipPayment::whereHas('membership', function ($q) {
                         $q->whereHas('user', function ($query) {
                             // Restriction removed
                         });
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                     $bills = BillPayment::whereHas('bill', function ($q) {
                         $q->whereHas('user', function ($query) {
                             // Restriction removed
                         });
                     })->where('status', 'paid')
-                      ->whereNotIn('id', function ($q) {
-                          $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
-                      })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
+                        ->whereNotIn('id', function ($q) {
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                        })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                 }
 
                 $array = [];
@@ -782,7 +771,7 @@ class LeaderBoardController extends Controller
                         'amount' => $value->amount,
                         'profile_status_lock' => $value->wish->user->profile_status_lock,
                         'role' => $value->wish->user->role,
-                        'currency' => $value->payment->currency
+                        'currency' => $value->payment->currency,
                     ];
                 }
 
@@ -795,7 +784,7 @@ class LeaderBoardController extends Controller
                         'profile_status_lock' => $value->wish_item->user->profile_status_lock,
                         'role' => $value->wish_item->user->role,
                         'amount' => $value->amount,
-                        'currency' => $value->currency
+                        'currency' => $value->currency,
                     ];
                 }
 
@@ -808,7 +797,7 @@ class LeaderBoardController extends Controller
                         'profile_status_lock' => $value->creator->profile_status_lock,
                         'role' => $value->creator->role,
                         'amount' => $value->amount,
-                        'currency' => $value->currency
+                        'currency' => $value->currency,
                     ];
                 }
 
@@ -821,7 +810,7 @@ class LeaderBoardController extends Controller
                         'role' => $value->membership->user->role,
                         'cover_url' => $value->membership->user->cover_url,
                         'amount' => $value->amount,
-                        'currency' => $value->currency
+                        'currency' => $value->currency,
                     ];
                 }
 
@@ -834,7 +823,7 @@ class LeaderBoardController extends Controller
                         'profile_status_lock' => $value->bill->user->profile_status_lock,
                         'role' => $value->bill->user->role,
                         'amount' => $value->amount,
-                        'currency' => $value->currency
+                        'currency' => $value->currency,
                     ];
                 }
 
@@ -843,20 +832,20 @@ class LeaderBoardController extends Controller
                 });
 
                 return response()->json([
-                    "status" => true,
+                    'status' => true,
                     'data' => $array,
                 ]);
             } else {
                 return response()->json([
-                    "status" => false,
-                    "msg" => 'Please enter valid type',
+                    'status' => false,
+                    'msg' => 'Please enter valid type',
                 ]);
             }
         } catch (\Exception $e) {
             return response()->json([
-                "status" => false,
-                "msg" => 'Something went wrong',
-                "error" => $e
+                'status' => false,
+                'msg' => 'Something went wrong',
+                'error' => $e,
             ]);
         }
     }
@@ -867,19 +856,19 @@ class LeaderBoardController extends Controller
             $gifters = [];
             $currencyRates = Currency::whereNotNull('conversion_rate')
                 ->pluck('conversion_rate', 'ISO')
-                ->mapWithKeys(fn($rate, $iso) => [strtoupper($iso) => (float) $rate])
+                ->mapWithKeys(fn ($rate, $iso) => [strtoupper($iso) => (float) $rate])
                 ->toArray();
 
             // Helper to accumulate amounts by username
             $addGifter = function (&$gifters, $user, $amount, $currency) use ($currencyRates) {
-                $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+                $username = $user->username ?? 'anonymous_'.($user->id ?? uniqid());
                 $normalizedAmount = $this->normalizeToGbp((float) $amount, $currency, $currencyRates);
 
-                if (!isset($gifters[$username])) {
+                if (! isset($gifters[$username])) {
                     $gifters[$username] = [
                         'id' => $user->id ?? null,
-                        'name' => $user->name ?? "Anonymous",
-                        'username' => $user->username ?? "Anonymous",
+                        'name' => $user->name ?? 'Anonymous',
+                        'username' => $user->username ?? 'Anonymous',
                         'avatar_url' => $user->avatar_url ?? null,
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
@@ -895,12 +884,12 @@ class LeaderBoardController extends Controller
             // Wishlist Payments
             $wishes = StripePaymentItems::whereHas('payment', function ($q) {
                 $q->where('payment_status', 'paid')
-                  ->whereNotIn('id', function ($sub) {
-                      $sub->select('source_id')
-                          ->from('financial_transactions')
-                          ->where('source_type', \App\Models\StripePaymentDetail::class)
-                          ->whereIn('status', ['refunded', 'disputed']);
-                  });
+                    ->whereNotIn('id', function ($sub) {
+                        $sub->select('source_id')
+                            ->from('financial_transactions')
+                            ->where('source_type', StripePaymentDetail::class)
+                            ->whereIn('status', ['refunded', 'disputed']);
+                    });
             })->with('payment.user')->get();
 
             foreach ($wishes as $item) {
@@ -914,7 +903,7 @@ class LeaderBoardController extends Controller
             $subscriptions = WishItemSubscription::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -929,7 +918,7 @@ class LeaderBoardController extends Controller
             $tips = TipGoalsPayment::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -944,7 +933,7 @@ class LeaderBoardController extends Controller
             $members = MembershipPayment::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -959,7 +948,7 @@ class LeaderBoardController extends Controller
             $bills = BillPayment::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -971,15 +960,16 @@ class LeaderBoardController extends Controller
             }
 
             $sortedGifters = collect($gifters)->sortByDesc('amount')->values();
+
             return response()->json([
-                "status" => true,
+                'status' => true,
                 'data' => $sortedGifters,
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                "status" => false,
-                "msg" => 'Something went wrong',
-                "error" => $e->getMessage()
+                'status' => false,
+                'msg' => 'Something went wrong',
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -990,17 +980,17 @@ class LeaderBoardController extends Controller
             $gifters = [];
 
             $storeMaxPayment = function (&$gifters, $user, $amount, $currency, $type, $createdAt) {
-                $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+                $username = $user->username ?? 'anonymous_'.($user->id ?? uniqid());
 
                 if (
-                    !isset($gifters[$username]) ||
+                    ! isset($gifters[$username]) ||
                     $amount > $gifters[$username]['amount']
                 ) {
                     $gifters[$username] = [
                         'id' => $user->id ?? null,
                         'type' => $type,
-                        'name' => $user->name ?? "Anonymous",
-                        'username' => $user->username ?? "Anonymous",
+                        'name' => $user->name ?? 'Anonymous',
+                        'username' => $user->username ?? 'Anonymous',
                         'avatar_url' => $user->avatar_url ?? null,
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
@@ -1015,12 +1005,12 @@ class LeaderBoardController extends Controller
             // Wishlist Gifts
             $wishes = StripePaymentItems::whereHas('payment', function ($q) {
                 $q->where('payment_status', 'paid')
-                  ->whereNotIn('id', function ($sub) {
-                      $sub->select('source_id')
-                          ->from('financial_transactions')
-                          ->where('source_type', \App\Models\StripePaymentDetail::class)
-                          ->whereIn('status', ['refunded', 'disputed']);
-                  });
+                    ->whereNotIn('id', function ($sub) {
+                        $sub->select('source_id')
+                            ->from('financial_transactions')
+                            ->where('source_type', StripePaymentDetail::class)
+                            ->whereIn('status', ['refunded', 'disputed']);
+                    });
             })->with('payment.user')->get();
 
             foreach ($wishes as $item) {
@@ -1033,7 +1023,7 @@ class LeaderBoardController extends Controller
             // Subscriptions
             $subs = WishItemSubscription::with('user')->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
                 })->get();
             foreach ($subs as $sub) {
                 if ($sub->user) {
@@ -1044,7 +1034,7 @@ class LeaderBoardController extends Controller
             // Tips
             $tips = TipGoalsPayment::with('user')->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })->get();
             foreach ($tips as $tip) {
                 if ($tip->user) {
@@ -1055,7 +1045,7 @@ class LeaderBoardController extends Controller
             // Memberships
             $memberships = MembershipPayment::with('user')->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })->get();
             foreach ($memberships as $member) {
                 if ($member->user) {
@@ -1066,7 +1056,7 @@ class LeaderBoardController extends Controller
             // Bills
             $bills = BillPayment::with('user')->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })->get();
             foreach ($bills as $bill) {
                 if ($bill->user) {
@@ -1098,7 +1088,7 @@ class LeaderBoardController extends Controller
         $users = $this->calc($type);
         $perPage = 50;
         $page = request()->get('page', 1);
-        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+        $paginator = new LengthAwarePaginator(
             $users->forPage($page, $perPage),
             $users->count(),
             $perPage,
@@ -1122,27 +1112,27 @@ class LeaderBoardController extends Controller
                 'profile_status_lock' => $query->profile_status_lock,
                 'role' => $query->role,
                 'avatar' => $query->avatar_url,
-                'coverimg' =>  $query->cover_url,
+                'coverimg' => $query->cover_url,
                 'top' => $topPercent,
                 'amount' => $query->total_amount,
                 'currency' => $query->currency ?? 'GBP',
                 'supporters' => $periodFollowers > 0 ? $periodFollowers : $query->total_supporters ?? 0,
                 'engagement' => $query->engagement_score ?? 0,
                 'combined_score' => $query->combined_score ?? $query->total_amount,
-                'is_engagement_based' => $query->engagement_score > 0
+                'is_engagement_based' => $query->engagement_score > 0,
             ];
             $rank++;
         }
 
         return response()->json([
-            "success" => true,
+            'success' => true,
             'data' => $data,
-            "message" => 'Enhanced leaderboard data retrieved successfully',
-            "last_page" => $paginator->lastPage() ?? null,
-            "current_page" => $paginator->currentPage() ?? null,
-            "total" => $paginator->total() ?? null,
-            "per_page" => $paginator->perPage() ?? null,
-            "period" => $type ?? 'all',
+            'message' => 'Enhanced leaderboard data retrieved successfully',
+            'last_page' => $paginator->lastPage() ?? null,
+            'current_page' => $paginator->currentPage() ?? null,
+            'total' => $paginator->total() ?? null,
+            'per_page' => $paginator->perPage() ?? null,
+            'period' => $type ?? 'all',
         ]);
     }
 
@@ -1151,7 +1141,7 @@ class LeaderBoardController extends Controller
      */
     private function calculatePeriodFollowers($user, $type)
     {
-        if (!$type) {
+        if (! $type) {
             return $user->followers_count ?? 0;
         }
 
@@ -1177,13 +1167,13 @@ class LeaderBoardController extends Controller
 
             // Helper function to count gifts by user
             $addSupporterGift = function (&$supporters, $user, $currency, $type) {
-                $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+                $username = $user->username ?? 'anonymous_'.($user->id ?? uniqid());
 
-                if (!isset($supporters[$username])) {
+                if (! isset($supporters[$username])) {
                     $supporters[$username] = [
                         'id' => $user->id,
-                        'name' => $user->name ?? "Anonymous",
-                        'username' => $user->username ?? "Anonymous",
+                        'name' => $user->name ?? 'Anonymous',
+                        'username' => $user->username ?? 'Anonymous',
                         'avatar_url' => $user->avatar_url ?? null,
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
@@ -1199,7 +1189,7 @@ class LeaderBoardController extends Controller
                 $supporters[$username]['latest_support_type'] = $type;
 
                 // Track unique support types
-                if (!in_array($type, $supporters[$username]['support_types'])) {
+                if (! in_array($type, $supporters[$username]['support_types'])) {
                     $supporters[$username]['support_types'][] = $type;
                 }
             };
@@ -1207,12 +1197,12 @@ class LeaderBoardController extends Controller
             // Count wishlist payments
             $wishes = StripePaymentItems::whereHas('payment', function ($q) {
                 $q->where('payment_status', 'paid')
-                  ->whereNotIn('id', function ($sub) {
-                      $sub->select('source_id')
-                          ->from('financial_transactions')
-                          ->where('source_type', \App\Models\StripePaymentDetail::class)
-                          ->whereIn('status', ['refunded', 'disputed']);
-                  });
+                    ->whereNotIn('id', function ($sub) {
+                        $sub->select('source_id')
+                            ->from('financial_transactions')
+                            ->where('source_type', StripePaymentDetail::class)
+                            ->whereIn('status', ['refunded', 'disputed']);
+                    });
             })->with('payment.user')->get();
 
             foreach ($wishes as $item) {
@@ -1226,7 +1216,7 @@ class LeaderBoardController extends Controller
             $subscriptions = WishItemSubscription::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -1241,7 +1231,7 @@ class LeaderBoardController extends Controller
             $tips = TipGoalsPayment::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -1256,7 +1246,7 @@ class LeaderBoardController extends Controller
             $members = MembershipPayment::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -1271,7 +1261,7 @@ class LeaderBoardController extends Controller
             $bills = BillPayment::with('user')
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->get();
 
@@ -1300,9 +1290,6 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
-
-
-
 
     /**
      * Earnings
@@ -1346,30 +1333,39 @@ class LeaderBoardController extends Controller
             ->get(['ISO', 'conversion_rate', 'ISOdigits'])
             ->keyBy('ISO');
 
-        if (!isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
+        if (! isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
             $displayCurrency = 'GBP';
         }
 
         $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) return null;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($currencyMeta[$from]) || ! isset($currencyMeta[$to])) {
+                return null;
+            }
             $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
             $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
-            if ($fromRate <= 0 || $toRate <= 0) return null;
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return null;
+            }
             $gbp = $amount / $fromRate;
             $converted = $gbp * $toRate;
             $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
         $labelForSource = function (?string $sourceType) {
             $base = class_basename((string) $sourceType);
+
             return match ($base) {
                 'StripePaymentItems' => ['title' => 'exclusive content', 'tag' => 'single_wish'],
                 'ShopPayment' => ['title' => 'shop items', 'tag' => 'shops'],
                 'TipGoalsPayment' => ['title' => 'piggy bank', 'tag' => 'tip_goal'],
+                'PiggyPotContribution' => ['title' => 'piggy pots', 'tag' => 'piggy_pots'],
                 'MembershipPayment' => ['title' => 'memberships', 'tag' => 'memberships'],
                 'TaskPurchase' => ['title' => 'paid task', 'tag' => 'task'],
                 'BillPayment' => ['title' => 'bills', 'tag' => 'bills'],
@@ -1382,7 +1378,7 @@ class LeaderBoardController extends Controller
         foreach ($incomeTx as $tx) {
             $meta = $labelForSource($tx->source_type);
             $tag = $meta['tag'];
-            if (!isset($buckets[$tag])) {
+            if (! isset($buckets[$tag])) {
                 $buckets[$tag] = [
                     'title' => $meta['title'],
                     'tag' => $tag,
@@ -1446,30 +1442,39 @@ class LeaderBoardController extends Controller
             ->get(['ISO', 'conversion_rate', 'ISOdigits', 'symbol'])
             ->keyBy('ISO');
 
-        if (!isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
+        if (! isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
             $displayCurrency = 'GBP';
         }
 
         $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) return null;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($currencyMeta[$from]) || ! isset($currencyMeta[$to])) {
+                return null;
+            }
             $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
             $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
-            if ($fromRate <= 0 || $toRate <= 0) return null;
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return null;
+            }
             $gbp = $amount / $fromRate;
             $converted = $gbp * $toRate;
             $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
         $labelKey = function (?string $sourceType) {
             $base = class_basename((string) $sourceType);
+
             return match ($base) {
                 'StripePaymentItems' => 'Wishes',
                 'ShopPayment' => 'Shops',
                 'TipGoalsPayment' => 'Piggy_Bank',
+                'PiggyPotContribution' => 'Piggy_Pots',
                 'MembershipPayment' => 'Memberships',
                 'TaskPurchase' => 'PaidTask',
                 'BillPayment' => 'Bills',
@@ -1493,8 +1498,12 @@ class LeaderBoardController extends Controller
             ];
 
             foreach ($tx as $row) {
-                if (!$row->transaction_date) continue;
-                if ((int) $row->transaction_date->format('n') !== $month) continue;
+                if (! $row->transaction_date) {
+                    continue;
+                }
+                if ((int) $row->transaction_date->format('n') !== $month) {
+                    continue;
+                }
 
                 $from = strtoupper($row->currency ?? 'GBP');
                 $amount = (float) ($row->net_amount ?? 0);
@@ -1517,8 +1526,6 @@ class LeaderBoardController extends Controller
             'data' => $data,
         ]);
     }
-
-
 
     public function initialQuery($user, $type)
     {
@@ -1614,7 +1621,6 @@ class LeaderBoardController extends Controller
     //         });
     //     }
 
-
     //     if ($type == 'shop') {
     //         return ShopPayment::whereHas('shop', function ($q) use ($user) {
     //             $q->where('user_id', $user->id);
@@ -1625,6 +1631,7 @@ class LeaderBoardController extends Controller
     private function getRange($type)
     {
         $now = Carbon::now();
+
         return match ($type) {
             'week' => [
                 $now->copy()->startOfWeek(),
@@ -1668,7 +1675,7 @@ class LeaderBoardController extends Controller
                     $q->where('owner_id', $user->id)->where('payment_status', 'paid');
                 })->pluck('id')->toArray();
 
-            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', StripePaymentItems::class)
+            $ftStatuses = FinancialTransaction::where('source_type', StripePaymentItems::class)
                 ->whereIn('source_id', $itemIds)
                 ->pluck('status')->toArray();
 
@@ -1685,7 +1692,7 @@ class LeaderBoardController extends Controller
         return response()->json([
             'status' => true,
             'data' => $resp,
-            'auth' => $user
+            'auth' => $user,
         ]);
     }
 
@@ -1710,7 +1717,7 @@ class LeaderBoardController extends Controller
                 ->where('status', 'paid')
                 ->pluck('id')->toArray();
 
-            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', WishItemSubscription::class)
+            $ftStatuses = FinancialTransaction::where('source_type', WishItemSubscription::class)
                 ->whereIn('source_id', $itemIds)
                 ->pluck('status')->toArray();
 
@@ -1726,7 +1733,7 @@ class LeaderBoardController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $resp
+            'data' => $resp,
         ]);
     }
 
@@ -1751,7 +1758,7 @@ class LeaderBoardController extends Controller
                 ->where('status', 'completed')
                 ->pluck('id')->toArray();
 
-            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', TaskPurchase::class)
+            $ftStatuses = FinancialTransaction::where('source_type', TaskPurchase::class)
                 ->whereIn('source_id', $itemIds)
                 ->pluck('status')->toArray();
 
@@ -1767,7 +1774,7 @@ class LeaderBoardController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $resp
+            'data' => $resp,
         ]);
     }
 
@@ -1792,7 +1799,7 @@ class LeaderBoardController extends Controller
                 ->where('status', 'paid')
                 ->pluck('id')->toArray();
 
-            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', BillPayment::class)
+            $ftStatuses = FinancialTransaction::where('source_type', BillPayment::class)
                 ->whereIn('source_id', $itemIds)
                 ->pluck('status')->toArray();
 
@@ -1808,7 +1815,7 @@ class LeaderBoardController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $resp
+            'data' => $resp,
         ]);
     }
 
@@ -1833,7 +1840,7 @@ class LeaderBoardController extends Controller
                 ->where('payment_status', 'paid')
                 ->pluck('id')->toArray();
 
-            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', ShopPayment::class)
+            $ftStatuses = FinancialTransaction::where('source_type', ShopPayment::class)
                 ->whereIn('source_id', $itemIds)
                 ->pluck('status')->toArray();
 
@@ -1849,7 +1856,7 @@ class LeaderBoardController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $resp
+            'data' => $resp,
         ]);
     }
 
@@ -1858,7 +1865,7 @@ class LeaderBoardController extends Controller
         $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
-        $pay = \App\Models\PiggyPotContribution::whereBetween('created_at', [$start, $end])
+        $pay = PiggyPotContribution::whereBetween('created_at', [$start, $end])
             ->where('creator_id', $user->id)
             ->where('status', 'paid')
             ->whereNotNull('piggy_pot_id')->with('piggyPot')->groupBy('piggy_pot_id')
@@ -1868,15 +1875,17 @@ class LeaderBoardController extends Controller
         $resp = [];
 
         foreach ($pay as $p) {
-            if (!$p->piggyPot) continue;
-            
-            $itemIds = \App\Models\PiggyPotContribution::where('piggy_pot_id', $p->piggy_pot_id)
+            if (! $p->piggyPot) {
+                continue;
+            }
+
+            $itemIds = PiggyPotContribution::where('piggy_pot_id', $p->piggy_pot_id)
                 ->whereBetween('created_at', [$start, $end])
                 ->where('creator_id', $user->id)
                 ->where('status', 'paid')
                 ->pluck('id')->toArray();
 
-            $ftStatuses = \App\Models\FinancialTransaction::where('source_type', \App\Models\PiggyPotContribution::class)
+            $ftStatuses = FinancialTransaction::where('source_type', PiggyPotContribution::class)
                 ->whereIn('source_id', $itemIds)
                 ->pluck('status')->toArray();
 
@@ -1893,7 +1902,7 @@ class LeaderBoardController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $resp
+            'data' => $resp,
         ]);
     }
 
@@ -1915,33 +1924,33 @@ class LeaderBoardController extends Controller
                 ->whereHas('paymentitems', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->whereHas('payment', function ($q) {
                         $q->where('payment_status', 'paid')
-                          ->whereNotIn('id', function ($sub) {
-                              $sub->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
-                          });
+                            ->whereNotIn('id', function ($sub) {
+                                $sub->select('source_id')->from('financial_transactions')->where('source_type', StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
+                            });
                     })
                         ->whereBetween('stripe_payment_items.created_at', [$threeMonthsAgo, $currentDate]);
                 })
                 ->withCount([
                     'paymentitems as total_payments' => function ($query) use ($threeMonthsAgo, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                             ->whereHas('payment', function ($q) {
                                 $q->where('payment_status', 'paid')
-                                  ->whereNotIn('id', function ($sub) {
-                                      $sub->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
-                                  });
+                                    ->whereNotIn('id', function ($sub) {
+                                        $sub->select('source_id')->from('financial_transactions')->where('source_type', StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
+                                    });
                             })
                             ->whereBetween('stripe_payment_items.created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'paymentitems as total_count' => function ($query) use ($threeMonthsAgo, $currentDate) {
                         $query->whereHas('payment', function ($q) {
                             $q->where('payment_status', 'paid')
-                              ->whereNotIn('id', function ($sub) {
-                                  $sub->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
-                              });
+                                ->whereNotIn('id', function ($sub) {
+                                    $sub->select('source_id')->from('financial_transactions')->where('source_type', StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
+                                });
                         })
                             ->whereBetween('stripe_payment_items.created_at', [$threeMonthsAgo, $currentDate]);
                     },
-                    'followers as supporters_count'
+                    'followers as supporters_count',
                 ])
                 ->orderBy('total_payments', 'desc')
                 ->take(10)
@@ -1954,10 +1963,10 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => (float)$user->total_payments,
+                        'total_amount' => (float) $user->total_payments,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => strtoupper($user->default_currency ?? 'GBP')
+                        'currency' => strtoupper($user->default_currency ?? 'GBP'),
                     ];
                 });
 
@@ -1967,27 +1976,27 @@ class LeaderBoardController extends Controller
                 ->whereHas('subscriptions', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('wish_item_subscriptions.status', 'paid')
                         ->whereNotIn('wish_item_subscriptions.id', function ($q) {
-                            $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
                         })
                         ->whereBetween('wish_item_subscriptions.created_at', [$threeMonthsAgo, $currentDate]);
                 })
                 ->withCount([
                     'subscriptions as total_subscriptions' => function ($query) use ($threeMonthsAgo, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                             ->where('wish_item_subscriptions.status', 'paid')
                             ->whereNotIn('wish_item_subscriptions.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('wish_item_subscriptions.created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'subscriptions as total_count' => function ($query) use ($threeMonthsAgo, $currentDate) {
                         $query->where('wish_item_subscriptions.status', 'paid')
                             ->whereNotIn('wish_item_subscriptions.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('wish_item_subscriptions.created_at', [$threeMonthsAgo, $currentDate]);
                     },
-                    'followers as supporters_count'
+                    'followers as supporters_count',
                 ])
                 ->orderBy('total_subscriptions', 'desc')
                 ->take(10)
@@ -2000,10 +2009,10 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => (float)$user->total_subscriptions,
+                        'total_amount' => (float) $user->total_subscriptions,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => strtoupper($user->default_currency ?? 'GBP')
+                        'currency' => strtoupper($user->default_currency ?? 'GBP'),
                     ];
                 });
 
@@ -2013,27 +2022,27 @@ class LeaderBoardController extends Controller
                 ->whereHas('tip_goal_payment', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('status', 'paid')
                         ->whereNotIn('tip_goals_payments.id', function ($q) {
-                            $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
                         })
                         ->whereBetween('created_at', [$threeMonthsAgo, $currentDate]);
                 })
                 ->withCount([
                     'tip_goal_payment as total_tips' => function ($query) use ($threeMonthsAgo, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                             ->where('status', 'paid')
                             ->whereNotIn('tip_goals_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'tip_goal_payment as total_count' => function ($query) use ($threeMonthsAgo, $currentDate) {
                         $query->where('status', 'paid')
                             ->whereNotIn('tip_goals_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('created_at', [$threeMonthsAgo, $currentDate]);
                     },
-                    'followers as supporters_count'
+                    'followers as supporters_count',
                 ])
                 ->orderBy('total_tips', 'desc')
                 ->take(10)
@@ -2046,10 +2055,10 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => (float)$user->total_tips,
+                        'total_amount' => (float) $user->total_tips,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => strtoupper($user->default_currency ?? 'GBP')
+                        'currency' => strtoupper($user->default_currency ?? 'GBP'),
                     ];
                 });
 
@@ -2059,27 +2068,27 @@ class LeaderBoardController extends Controller
                 ->whereHas('membership_payments', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('membership_payments.status', 'paid')
                         ->whereNotIn('membership_payments.id', function ($q) {
-                            $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
                         })
                         ->whereBetween('membership_payments.created_at', [$threeMonthsAgo, $currentDate]);
                 })
                 ->withCount([
                     'membership_payments as total_memberships' => function ($query) use ($threeMonthsAgo, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                             ->where('membership_payments.status', 'paid')
                             ->whereNotIn('membership_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('membership_payments.created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'membership_payments as total_count' => function ($query) use ($threeMonthsAgo, $currentDate) {
                         $query->where('membership_payments.status', 'paid')
                             ->whereNotIn('membership_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('membership_payments.created_at', [$threeMonthsAgo, $currentDate]);
                     },
-                    'followers as supporters_count'
+                    'followers as supporters_count',
                 ])
                 ->orderBy('total_memberships', 'desc')
                 ->take(10)
@@ -2092,10 +2101,10 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => (float)$user->total_memberships,
+                        'total_amount' => (float) $user->total_memberships,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => strtoupper($user->default_currency ?? 'GBP')
+                        'currency' => strtoupper($user->default_currency ?? 'GBP'),
                     ];
                 });
 
@@ -2105,27 +2114,27 @@ class LeaderBoardController extends Controller
                 ->whereHas('bill_payments', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('bill_payments.status', 'paid')
                         ->whereNotIn('bill_payments.id', function ($q) {
-                            $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
                         })
                         ->whereBetween('bill_payments.created_at', [$threeMonthsAgo, $currentDate]);
                 })
                 ->withCount([
                     'bill_payments as total_bills' => function ($query) use ($threeMonthsAgo, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                             ->where('bill_payments.status', 'paid')
                             ->whereNotIn('bill_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('bill_payments.created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'bill_payments as total_count' => function ($query) use ($threeMonthsAgo, $currentDate) {
                         $query->where('bill_payments.status', 'paid')
                             ->whereNotIn('bill_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('bill_payments.created_at', [$threeMonthsAgo, $currentDate]);
                     },
-                    'followers as supporters_count'
+                    'followers as supporters_count',
                 ])
                 ->orderBy('total_bills', 'desc')
                 ->take(10)
@@ -2138,10 +2147,10 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => (float)$user->total_bills,
+                        'total_amount' => (float) $user->total_bills,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => strtoupper($user->default_currency ?? 'GBP')
+                        'currency' => strtoupper($user->default_currency ?? 'GBP'),
                     ];
                 });
 
@@ -2151,27 +2160,27 @@ class LeaderBoardController extends Controller
                 ->whereHas('shop_payments', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('shop_payments.payment_status', 'paid')
                         ->whereNotIn('shop_payments.id', function ($q) {
-                            $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                            $q->select('source_id')->from('financial_transactions')->where('source_type', ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
                         })
                         ->whereBetween('shop_payments.created_at', [$threeMonthsAgo, $currentDate]);
                 })
                 ->withCount([
                     'shop_payments as total_shop' => function ($query) use ($threeMonthsAgo, $currentDate) {
-                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
+                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
                             ->where('shop_payments.payment_status', 'paid')
                             ->whereNotIn('shop_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('shop_payments.created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'shop_payments as total_count' => function ($query) use ($threeMonthsAgo, $currentDate) {
                         $query->where('shop_payments.payment_status', 'paid')
                             ->whereNotIn('shop_payments.id', function ($q) {
-                                $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                                $q->select('source_id')->from('financial_transactions')->where('source_type', ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
                             })
                             ->whereBetween('shop_payments.created_at', [$threeMonthsAgo, $currentDate]);
                     },
-                    'followers as supporters_count'
+                    'followers as supporters_count',
                 ])
                 ->orderBy('total_shop', 'desc')
                 ->take(10)
@@ -2184,10 +2193,10 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => (float)$user->total_shop,
+                        'total_amount' => (float) $user->total_shop,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => strtoupper($user->default_currency ?? 'GBP')
+                        'currency' => strtoupper($user->default_currency ?? 'GBP'),
                     ];
                 });
 
@@ -2203,7 +2212,7 @@ class LeaderBoardController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Category leaders error: ' . $e->getMessage());
+            Log::error('Category leaders error: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -2220,7 +2229,6 @@ class LeaderBoardController extends Controller
         }
     }
 
-
     /**
      * Get VIP Supporters - Most active and generous supporters
      */
@@ -2232,21 +2240,21 @@ class LeaderBoardController extends Controller
             $currentDate = Carbon::now();
             $currencyRates = Currency::whereNotNull('conversion_rate')
                 ->pluck('conversion_rate', 'ISO')
-                ->mapWithKeys(fn($rate, $iso) => [strtoupper($iso) => (float) $rate])
+                ->mapWithKeys(fn ($rate, $iso) => [strtoupper($iso) => (float) $rate])
                 ->toArray();
 
             $supporters = [];
 
             // Helper function to accumulate supporter data
             $addSupporterData = function (&$supporters, $user, $amount, $currency, $type, $createdAt) use ($currencyRates) {
-                $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+                $username = $user->username ?? 'anonymous_'.($user->id ?? uniqid());
                 $normalizedAmount = $this->normalizeToGbp((float) $amount, $currency, $currencyRates);
 
-                if (!isset($supporters[$username])) {
+                if (! isset($supporters[$username])) {
                     $supporters[$username] = [
                         'id' => $user->id,
-                        'name' => $user->name ?? "Anonymous",
-                        'username' => $user->username ?? "Anonymous",
+                        'name' => $user->name ?? 'Anonymous',
+                        'username' => $user->username ?? 'Anonymous',
                         'avatar_url' => $user->avatar_url ?? null,
                         'cover_url' => $user->cover_url ?? null,
                         'role' => $user->role ?? 0,
@@ -2265,7 +2273,7 @@ class LeaderBoardController extends Controller
                 $supporters[$username]['total_gifts']++;
 
                 // Track unique support types
-                if (!in_array($type, $supporters[$username]['support_types'])) {
+                if (! in_array($type, $supporters[$username]['support_types'])) {
                     $supporters[$username]['support_types'][] = $type;
                 }
 
@@ -2279,7 +2287,7 @@ class LeaderBoardController extends Controller
             $wishes = StripePaymentItems::whereHas('payment', function ($q) use ($threeMonthsAgo, $currentDate) {
                 $q->where('payment_status', 'paid')
                     ->whereNotIn('id', function ($sub) {
-                        $sub->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
+                        $sub->select('source_id')->from('financial_transactions')->where('source_type', StripePaymentDetail::class)->whereIn('status', ['refunded', 'disputed']);
                     })
                     ->whereBetween('stripe_payment_details.created_at', [$threeMonthsAgo, $currentDate]);
             })->with(['payment.user', 'wish.user'])->get();
@@ -2290,7 +2298,7 @@ class LeaderBoardController extends Controller
                 if ($user && $creator) {
                     $addSupporterData($supporters, $user, $item->amount, $item->payment->currency, 'wish', $item->created_at);
                     // Track creators supported
-                    if (!in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
+                    if (! in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
                         $supporters[$user->username]['creators_supported'][] = $creator->id;
                     }
                 }
@@ -2300,7 +2308,7 @@ class LeaderBoardController extends Controller
             $subscriptions = WishItemSubscription::with(['user', 'wish_item.user'])
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', WishItemSubscription::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->whereBetween('created_at', [$threeMonthsAgo, $currentDate])
                 ->get();
@@ -2310,7 +2318,7 @@ class LeaderBoardController extends Controller
                 $creator = $sub->wish_item->user ?? null;
                 if ($user && $creator) {
                     $addSupporterData($supporters, $user, $sub->amount, $sub->currency, 'subscription', $sub->created_at);
-                    if (!in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
+                    if (! in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
                         $supporters[$user->username]['creators_supported'][] = $creator->id;
                     }
                 }
@@ -2320,7 +2328,7 @@ class LeaderBoardController extends Controller
             $tips = TipGoalsPayment::with(['user', 'creator'])
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', TipGoalsPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->whereBetween('created_at', [$threeMonthsAgo, $currentDate])
                 ->get();
@@ -2330,7 +2338,7 @@ class LeaderBoardController extends Controller
                 $creator = $tip->creator ?? null;
                 if ($user && $creator) {
                     $addSupporterData($supporters, $user, $tip->amount, $tip->currency, 'tip', $tip->created_at);
-                    if (!in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
+                    if (! in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
                         $supporters[$user->username]['creators_supported'][] = $creator->id;
                     }
                 }
@@ -2340,7 +2348,7 @@ class LeaderBoardController extends Controller
             $members = MembershipPayment::with(['user', 'membership.user'])
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', MembershipPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->whereBetween('created_at', [$threeMonthsAgo, $currentDate])
                 ->get();
@@ -2350,7 +2358,7 @@ class LeaderBoardController extends Controller
                 $creator = $member->membership->user ?? null;
                 if ($user && $creator) {
                     $addSupporterData($supporters, $user, $member->amount, $member->currency, 'membership', $member->created_at);
-                    if (!in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
+                    if (! in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
                         $supporters[$user->username]['creators_supported'][] = $creator->id;
                     }
                 }
@@ -2360,7 +2368,7 @@ class LeaderBoardController extends Controller
             $bills = BillPayment::with(['user', 'bill.user'])
                 ->where('status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', BillPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->whereBetween('created_at', [$threeMonthsAgo, $currentDate])
                 ->get();
@@ -2370,7 +2378,7 @@ class LeaderBoardController extends Controller
                 $creator = $bill->bill->user ?? null;
                 if ($user && $creator) {
                     $addSupporterData($supporters, $user, $bill->amount, $bill->currency, 'bill', $bill->created_at);
-                    if (!in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
+                    if (! in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
                         $supporters[$user->username]['creators_supported'][] = $creator->id;
                     }
                 }
@@ -2380,7 +2388,7 @@ class LeaderBoardController extends Controller
             $shopPurchases = ShopPayment::with(['user', 'shop.user'])
                 ->where('payment_status', 'paid')
                 ->whereNotIn('id', function ($q) {
-                    $q->select('source_id')->from('financial_transactions')->where('source_type', \App\Models\ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
+                    $q->select('source_id')->from('financial_transactions')->where('source_type', ShopPayment::class)->whereIn('status', ['refunded', 'disputed']);
                 })
                 ->whereBetween('created_at', [$threeMonthsAgo, $currentDate])
                 ->get();
@@ -2390,7 +2398,7 @@ class LeaderBoardController extends Controller
                 $creator = $purchase->shop->user ?? null;
                 if ($user && $creator) {
                     $addSupporterData($supporters, $user, $purchase->amount, $purchase->currency ?? 'GBP', 'shop', $purchase->created_at);
-                    if (!in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
+                    if (! in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
                         $supporters[$user->username]['creators_supported'][] = $creator->id;
                     }
                 }
@@ -2407,7 +2415,7 @@ class LeaderBoardController extends Controller
                 // - Diversity of creators supported (up to 20 points)
                 // - Variety of support types (up to 10 points)
                 // Canonical formula — single source of truth shared with the gifter hub.
-                $supporter['vip_score'] = \App\Services\VipScoreService::scoreFromTotals(
+                $supporter['vip_score'] = VipScoreService::scoreFromTotals(
                     $supporter['total_amount'],
                     $supporter['total_gifts'],
                     $supporter['creators_supported_count'],
@@ -2439,7 +2447,7 @@ class LeaderBoardController extends Controller
                 'message' => 'VIP supporters retrieved successfully',
             ]);
         } catch (\Exception $e) {
-            Log::error('VIP Supporters error: ' . $e->getMessage());
+            Log::error('VIP Supporters error: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -2456,7 +2464,7 @@ class LeaderBoardController extends Controller
     private function getVipLevel($score)
     {
         // Canonical thresholds — single source of truth shared with the gifter hub.
-        return \App\Services\VipScoreService::tier((float) $score);
+        return VipScoreService::tier((float) $score);
     }
 
     private function normalizeToGbp(float $amount, ?string $currency, array $currencyRates): float
@@ -2504,9 +2512,10 @@ class LeaderBoardController extends Controller
                 ->take(10)
                 ->get()
                 ->map(function ($user) {
-                    $totalFollowers = \App\Models\Follow::where('followed_id', $user->id)->count();
+                    $totalFollowers = Follow::where('followed_id', $user->id)->count();
                     $previousFollowers = max(1, $totalFollowers - $user->followers_count);
                     $growthPercent = round(($user->followers_count / $previousFollowers) * 100, 1);
+
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
@@ -2517,7 +2526,7 @@ class LeaderBoardController extends Controller
                         'supporters' => $user->followers_count,
                         'growth_percentage' => $growthPercent,
                         'current_amount' => 0,
-                        'currency' => $user->default_currency ?? 'GBP'
+                        'currency' => $user->default_currency ?? 'GBP',
                     ];
                 });
 
@@ -2532,9 +2541,10 @@ class LeaderBoardController extends Controller
                 ->take(10)
                 ->get()
                 ->map(function ($user) {
-                    $totalFollowers = \App\Models\Follow::where('followed_id', $user->id)->count();
+                    $totalFollowers = Follow::where('followed_id', $user->id)->count();
                     $previousFollowers = max(1, $totalFollowers - $user->followers_count);
                     $growthPercent = round(($user->followers_count / $previousFollowers) * 100, 1);
+
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
@@ -2545,17 +2555,17 @@ class LeaderBoardController extends Controller
                         'supporters' => $user->followers_count,
                         'growth_percentage' => $growthPercent,
                         'current_amount' => 0,
-                        'currency' => $user->default_currency ?? 'GBP'
+                        'currency' => $user->default_currency ?? 'GBP',
                     ];
                 });
 
             // Get total interactions (followers)
             $totalInteractions = DB::table('follows')->count();
-            
+
             $totalInteractionsLastMonth = DB::table('follows')
                 ->where('created_at', '<', Carbon::now()->startOfMonth())
                 ->count();
-            
+
             $interactionsGrowth = $totalInteractionsLastMonth > 0 ? round((($totalInteractions - $totalInteractionsLastMonth) / $totalInteractionsLastMonth) * 100, 1) : 0;
 
             // Get new supporters this month
@@ -2579,11 +2589,11 @@ class LeaderBoardController extends Controller
                 'new_supporters' => $newSupporters,
                 'supporters_growth' => $supportersGrowth,
                 'avg_community_score' => $totalCreators > 0 ? round($totalInteractions / $totalCreators, 1) : 0,
-                'community_growth' => 0, 
-                'monthly_revenue' => 0, 
-                'revenue_growth' => 0, 
-                'avg_support' => 0, 
-                'avg_growth' => 0, 
+                'community_growth' => 0,
+                'monthly_revenue' => 0,
+                'revenue_growth' => 0,
+                'avg_support' => 0,
+                'avg_growth' => 0,
             ];
 
             return response()->json([
@@ -2596,7 +2606,7 @@ class LeaderBoardController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Growth trends error: ' . $e->getMessage());
+            Log::error('Growth trends error: '.$e->getMessage());
 
             // Return default structure with empty data in case of error
             return response()->json([

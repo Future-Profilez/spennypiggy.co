@@ -632,12 +632,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function getFollowersCountAttribute()
     {
-        return $this->followers()->count();
+        return Cache::remember('user_followers_count_' . $this->id, 300, function() {
+            return $this->followers()->count();
+        });
     }
 
     public function getFollowingCountAttribute()
     {
-        return $this->following()->count();
+        return Cache::remember('user_following_count_' . $this->id, 300, function() {
+            return $this->following()->count();
+        });
     }
 
 

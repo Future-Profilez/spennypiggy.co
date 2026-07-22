@@ -403,9 +403,9 @@ class PiggyPotPaymentController extends Controller
                 $pay->payment_intent_id = $session->payment_intent;
                 $pay->save();
 
+                $newStatus = 'succeeded';
                 try {
                     $payment = Payment::where('stripe_session_id', $session->id)->first();
-                    $newStatus = 'succeeded';
                     if (
                         $payment &&
                         (
@@ -472,7 +472,7 @@ class PiggyPotPaymentController extends Controller
                             'reserve_amount' => $reserveAmountMajor,
                             'reserve_status' => $reserveStatus,
                             'currency' => strtoupper($pay->currency ?? 'GBP'),
-                            'status' => 'completed',
+                            'status' => $newStatus === 'review_hold' ? 'review_hold' : 'completed',
                             'description' => 'Content purchase: '.($pay->piggyPot?->title ?? 'Content'),
                             'transaction_date' => $pay->created_at,
                         ]

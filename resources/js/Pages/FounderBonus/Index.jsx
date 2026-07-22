@@ -258,17 +258,19 @@ export default function FounderBonusIndex() {
                                             <div className="flex-1 bg-white/30 rounded-full h-3 mr-3">
                                                 <div 
                                                     className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full transition-all duration-500 shadow-lg"
-                                                    style={{ width: `${Math.min(userProgress?.qualification_progress, 100)}%` }}
+                                                    style={{ width: `${Math.min(userProgress?.qualification_progress || 0, 100)}%` }}
                                                 ></div>
                                             </div>
-                                            <span className="text-lg font-bold">{Math.round(userProgress?.qualification_progress)}%</span>
+                                            <span className="text-lg font-bold">{Math.round(userProgress?.qualification_progress || 0)}%</span>
                                         </div>
                                         <p className="text-xs opacity-75">
-                                            {userProgress?.qualification_progress >= 75 
+                                            {(userProgress?.qualification_progress || 0) >= 100
+                                                ? "🎉 Target reached! Awaiting month-end confirmation."
+                                                : (userProgress?.qualification_progress || 0) >= 75 
                                                 ? "🎯 Almost there! Final push!" 
-                                                : userProgress?.qualification_progress >= 50 
+                                                : (userProgress?.qualification_progress || 0) >= 50 
                                                 ? "⚡ Halfway there! You're doing great!" 
-                                                : userProgress?.qualification_progress >= 25 
+                                                : (userProgress?.qualification_progress || 0) >= 25 
                                                 ? "🌟 Great start! Keep building!" 
                                                 : "🚀 Your journey begins now!"
                                             }
@@ -281,18 +283,21 @@ export default function FounderBonusIndex() {
                                             <p className="text-normal opacity-90">Status</p>
                                         </div>
                                         <p className="text-xl font-bold mb-1">
-                                            {userProgress?.is_qualified ? '🎉 Founder Qualified!' : '🏃‍♂️ Racing to Qualify'}
+                                            {userProgress?.is_qualified || (userProgress?.current_earnings || 0) >= minEarnings
+                                                ? '🎉 Target Reached!'
+                                                : '🏃‍♂️ Racing to Qualify'
+                                            }
                                         </p>
                                         <p className="text-xs opacity-75">
-                                            {userProgress?.is_qualified 
-                                                ? "🏆 Enjoy your exclusive benefits!" 
+                                            {userProgress?.is_qualified || (userProgress?.current_earnings || 0) >= minEarnings
+                                                ? "🏆 Goal met! Founder badge & monthly bonus set!" 
                                                 : "💎 Exclusive rewards await you!"
                                             }
                                         </p>
                                     </div>
                                 </div>
                                 
-                                {!userProgress?.is_qualified && (
+                                {!(userProgress?.is_qualified || (userProgress?.current_earnings || 0) >= minEarnings) && (
                                     <div className="mt-6 bg-white/10 rounded-[30px]    p-4 backdrop-blur-sm">
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -392,7 +397,7 @@ export default function FounderBonusIndex() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Qualification Target</p>
-                                    <p className="text-2xl font-bold text-gray-900">£{(minEarnings)}</p>
+                                    <p className="text-2xl font-bold text-gray-900">£{minEarnings.toLocaleString()}</p>
                                 </div>
                                 <div className="p-3 bg-blue-100 rounded-full">
                                     <FaGift className="w-6 h-6 text-blue-600" />

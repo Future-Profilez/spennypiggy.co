@@ -336,6 +336,18 @@ export default function Board(props) {
                                             All Time
                                         </button>
                                         <button
+                                            className={` !text-sm md:!text-[18px] ${period == "annual" ? "active text-white" : ""}`}
+                                            onClick={() => switchTime("annual")}
+                                        >
+                                            Annual
+                                        </button>
+                                        <button
+                                            className={` !text-sm md:!text-[18px] ${period == "quarterly" ? "active text-white" : ""}`}
+                                            onClick={() => switchTime("quarterly")}
+                                        >
+                                            Quarterly
+                                        </button>
+                                        <button
                                             className={` !text-sm md:!text-[18px] ${period == "monthly" ? "active text-white" : ""}`}
                                             onClick={() => switchTime("monthly")}
                                         >

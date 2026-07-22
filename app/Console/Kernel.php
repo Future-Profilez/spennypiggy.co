@@ -135,6 +135,12 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping();
 
         // Risk Engine: Release held reserves 30 days after each transaction (daily)
+        // Visit counters live in the cache between runs; without this the funnel
+        // dashboard has no visit data and the counts eventually expire.
+        $schedule->command('visits:flush')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping();
+
         $schedule->command('reserve:release')
                  ->dailyAt('10:30')
                  ->withoutOverlapping();
@@ -177,10 +183,17 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping(10)
                  ->runInBackground();
 
-        $schedule->command('crm:sync-creator-stages')
-                 ->everyThirtyMinutes()
-                 ->withoutOverlapping();
+        // Stage syncing moved to the admin app's crm:sync-stages (July 2026
+        // rebuild) — this app's version wrote the OLD stage keys, so every run
+        // silently reverted the migrated pipeline. Do not re-enable.
+        // $schedule->command('crm:sync-creator-stages')
+        //          ->everyThirtyMinutes()
+        //          ->withoutOverlapping();
 
+        // Social matching is NOT stage syncing: it only fills the
+        // social_match_suggested_* columns the admin dashboard reads, and it
+        // never touches crm_stage — so it stays on this app, where the user
+        // accounts live.
         $schedule->command('crm:scan-prospect-user-matches')
                  ->everyThirtyMinutes()
                  ->withoutOverlapping();
