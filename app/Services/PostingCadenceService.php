@@ -67,6 +67,25 @@ class PostingCadenceService
         $paused = $creator->isContentPostingPaused();
         $pastGrace = $this->isPastGracePeriod($creator);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Auto resume if creator has now met the posting requirement
+        |--------------------------------------------------------------------------
+        */
+        if ($paused && $meets) {
+            Log::info('Posting cadence: auto resuming creator', [
+                'creator_id' => $creator->id,
+                'member_posts' => $count,
+            ]);
+
+            $this->resumeCreator($creator);
+
+            // refresh paused state
+            $creator->refresh();
+
+            $paused = $creator->isContentPostingPaused();
+        }
+
         if ($paused) {
             $status = 'paused';
         } elseif ($meets) {
@@ -150,7 +169,7 @@ class PostingCadenceService
         // Stripe subscription IDs start with "sub_"; ignore one-off payment-intent ids.
         return array_values(array_unique(array_filter(
             array_merge($bill, $membership),
-            fn ($id) => is_string($id) && str_starts_with($id, 'sub_')
+            fn($id) => is_string($id) && str_starts_with($id, 'sub_')
         )));
     }
 
@@ -195,7 +214,9 @@ class PostingCadenceService
                 $paused++;
             } catch (\Throwable $e) {
                 Log::warning('PostingCadence: failed to pause subscription', [
-                    'creator_id' => $creator->id, 'subscription' => $subId, 'error' => $e->getMessage(),
+                    'creator_id' => $creator->id,
+                    'subscription' => $subId,
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -222,7 +243,9 @@ class PostingCadenceService
                 $resumed++;
             } catch (\Throwable $e) {
                 Log::warning('PostingCadence: failed to resume subscription', [
-                    'creator_id' => $creator->id, 'subscription' => $subId, 'error' => $e->getMessage(),
+                    'creator_id' => $creator->id,
+                    'subscription' => $subId,
+                    'error' => $e->getMessage(),
                 ]);
             }
         }

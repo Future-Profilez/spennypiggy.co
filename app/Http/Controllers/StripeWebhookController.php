@@ -147,7 +147,7 @@ class StripeWebhookController extends Controller
                 // Try next secret
                 continue;
             } catch (\Exception $e) {
-                Log::error('Stripe webhook error: '.$e->getMessage());
+                Log::error('Stripe webhook error: ' . $e->getMessage());
 
                 return response()->json(['status' => false, 'message' => $e->getMessage()], 400);
             }
@@ -236,7 +236,7 @@ class StripeWebhookController extends Controller
         $data = $event->data->object;
         $metadata = $event->data->object->metadata ?? null;
 
-        Log::info('Handling Stripe Event: '.$type);
+        Log::info('Handling Stripe Event: ' . $type);
 
         try {
             switch ($type) {
@@ -246,7 +246,7 @@ class StripeWebhookController extends Controller
                     $this->processIdentityVerification($event);
                     break;
 
-                    // --- Payment & Subscription Events ---
+                // --- Payment & Subscription Events ---
                 case 'checkout.session.completed':
                     $this->handleCheckoutSessionCompleted($data, $metadata);
                     $this->handleSupportPaymentDeliverableReady($data, $metadata);
@@ -287,8 +287,8 @@ class StripeWebhookController extends Controller
                     $this->handleChargeDisputeCreated($data);
                     break;
 
-                    // case 'charge.dispute.updated':
-                    // case 'charge.dispute.funds_withdrawn':
+                // case 'charge.dispute.updated':
+                // case 'charge.dispute.funds_withdrawn':
 
                 case 'charge.dispute.updated':
                 case 'charge.dispute.funds_reinstated':
@@ -322,13 +322,13 @@ class StripeWebhookController extends Controller
                     $this->handleEarlyFraudWarningUpdated($data, $event->account ?? null);
                     break;
 
-                    // case 'radar.early_fraud_warning.closed':
-                    //     $this->handleEarlyFraudWarningClosed($data);
-                    //     break;
+                // case 'radar.early_fraud_warning.closed':
+                //     $this->handleEarlyFraudWarningClosed($data);
+                //     break;
 
-                    // case 'early_fraud_warning.created':
-                    //     $this->handleEarlyFraudWarningCreated($data);
-                    //     break;
+                // case 'early_fraud_warning.created':
+                //     $this->handleEarlyFraudWarningCreated($data);
+                //     break;
 
                 case 'customer.subscription.updated':
                     // Handle Wish/Bill/Membership updates based on metadata
@@ -355,8 +355,8 @@ class StripeWebhookController extends Controller
                     $this->processMandatorySubscription($event);
                     break;
 
-                    // case 'customer.subscription.trial_will_end':
-                    // case 'customer.subscription.created':
+                // case 'customer.subscription.trial_will_end':
+                // case 'customer.subscription.created':
                 case 'customer.updated':
                     $this->processMandatorySubscription($event);
                     break;
@@ -365,11 +365,11 @@ class StripeWebhookController extends Controller
                     $this->handleReviewClosed($data);
                     break;
 
-                    // --- Connect Account / Payout Risk Monitoring ---
+                // --- Connect Account / Payout Risk Monitoring ---
                 case 'account.updated':
                     $this->handleAccountUpdated($data);
                     break;
-                    // case 'payout.created':
+                // case 'payout.created':
                 case 'payout.paid':
                 case 'payout.failed':
                 case 'payout.in_transit':
@@ -378,7 +378,7 @@ class StripeWebhookController extends Controller
                     break;
 
                 default:
-                    Log::info('Unhandled event type: '.$type);
+                    Log::info('Unhandled event type: ' . $type);
             }
         } catch (\Throwable $e) {
             if ($webhookStatus) {
@@ -474,7 +474,7 @@ class StripeWebhookController extends Controller
                 $customer = $subscription->customer;
             }
         } catch (\Exception $e) {
-            Log::error('Failed to retrieve subscription/customer in processMandatorySubscription: '.$e->getMessage());
+            Log::error('Failed to retrieve subscription/customer in processMandatorySubscription: ' . $e->getMessage());
 
             return;
         }
@@ -764,7 +764,7 @@ class StripeWebhookController extends Controller
                             Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
                         }
                     } catch (\Exception $e) {
-                        Log::error("Failed to capture PaymentIntent {$paymentIntentId}: ".$e->getMessage());
+                        Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
                     }
                 }
             }
@@ -965,8 +965,10 @@ class StripeWebhookController extends Controller
             // with payment_status 'unpaid' while the debit clears. Defer ALL
             // fulfilment to checkout.session.async_payment_succeeded — mark the
             // risk-ledger payment 'processing' and stop here.
-            if (! config('payments.instant_fulfilment', true)
-                && ($session->payment_status ?? 'paid') === 'unpaid') {
+            if (
+                ! config('payments.instant_fulfilment', true)
+                && ($session->payment_status ?? 'paid') === 'unpaid'
+            ) {
                 Payment::where('stripe_session_id', $session->id)
                     ->whereIn('status', ['initiated', 'review_hold'])
                     ->update([
@@ -1040,7 +1042,7 @@ class StripeWebhookController extends Controller
                     Log::warning("Risk Ledger: No payment found for session_id: {$session->id} after delay");
                 }
             } catch (\Exception $e) {
-                Log::error('Risk Ledger: Failed mapping checkout.session.completed: '.$e->getMessage(), [
+                Log::error('Risk Ledger: Failed mapping checkout.session.completed: ' . $e->getMessage(), [
                     'session_id' => $session->id,
                 ]);
             }
@@ -1164,12 +1166,8 @@ class StripeWebhookController extends Controller
 
                 $reserveAmountMajor = 0;
                 $reserveStatus = 'none';
-                $creatorMetric = $pay->creator?->uuid
-                    ? CreatorMetric::where('creator_id', $pay->creator->uuid)->first()
-                    : null;
-                $reservePercent = $pay->creator
-                    ? (int) app(ReservePolicy::class)->getEffectiveReservePercent($pay->creator, $creatorMetric, $pay->created_at)
-                    : 0;
+                $creatorMetric = $pay->creator?->uuid ? CreatorMetric::where('creator_id', $pay->creator->uuid)->first() : null;
+                $reservePercent = $pay->creator ? (int) app(ReservePolicy::class)->getEffectiveReservePercent($pay->creator, $creatorMetric, $pay->created_at) : 0;
                 if ($reservePercent > 0) {
                     $precision = $isZeroDecimal ? 0 : 2;
                     $reserveAmountMajor = round(((float) $pay->amount * $reservePercent) / 100, $precision, PHP_ROUND_HALF_UP);
@@ -1197,7 +1195,7 @@ class StripeWebhookController extends Controller
                     ]
                 );
             } catch (\Throwable $e) {
-                Log::error('Failed to sync PiggyPotContribution to FinancialTransaction via Webhook: '.$e->getMessage());
+                Log::error('Failed to sync PiggyPotContribution to FinancialTransaction via Webhook: ' . $e->getMessage());
             }
 
             // Stripe compliance: store a content deliverable + fulfilment status.
@@ -1207,7 +1205,7 @@ class StripeWebhookController extends Controller
                 if (! empty($pot?->content_file)) {
                     $contentUrl = $pot->content_file;
                     if (! str_starts_with($contentUrl, 'http')) {
-                        $contentUrl = 'https://ucarecdn.com/'.trim($contentUrl, '/').'/';
+                        $contentUrl = 'https://ucarecdn.com/' . trim($contentUrl, '/') . '/';
                     }
                 }
 
@@ -1215,7 +1213,7 @@ class StripeWebhookController extends Controller
                     ['product_type' => 'piggy_pot', 'item_id' => $pay->id],
                     [
                         'uuid' => (string) Str::uuid(),
-                        'product_id' => 'piggy_pot_'.($pot?->id ?? 'unknown'),
+                        'product_id' => 'piggy_pot_' . ($pot?->id ?? 'unknown'),
                         'creator_id' => $pay->creator_id,
                         'gifter_id' => $pay->user_id,
                         'payment_intent_id' => $session->payment_intent,
@@ -1242,17 +1240,17 @@ class StripeWebhookController extends Controller
                     ]
                 );
             } catch (\Throwable $e) {
-                Log::error('Failed to create PiggyPot deliverable via Webhook: '.$e->getMessage());
+                Log::error('Failed to create PiggyPot deliverable via Webhook: ' . $e->getMessage());
             }
 
             // Clear the cache for the creator's piggy pots
-            Cache::forget('user_piggy_pots_'.$pay->creator_id.'_owner_pinned');
-            Cache::forget('user_piggy_pots_'.$pay->creator_id.'_owner_all');
-            Cache::forget('user_piggy_pots_'.$pay->creator_id.'_public_pinned');
-            Cache::forget('user_piggy_pots_'.$pay->creator_id.'_public_all');
-            Cache::forget('user_piggy_pot_top_'.$pay->creator_id);
-            Cache::forget('user_piggy_pot_top_supporters_'.$pay->creator_id);
-            Cache::forget('user_piggy_pot_feed_'.$pay->creator_id);
+            Cache::forget('user_piggy_pots_' . $pay->creator_id . '_owner_pinned');
+            Cache::forget('user_piggy_pots_' . $pay->creator_id . '_owner_all');
+            Cache::forget('user_piggy_pots_' . $pay->creator_id . '_public_pinned');
+            Cache::forget('user_piggy_pots_' . $pay->creator_id . '_public_all');
+            Cache::forget('user_piggy_pot_top_' . $pay->creator_id);
+            Cache::forget('user_piggy_pot_top_supporters_' . $pay->creator_id);
+            Cache::forget('user_piggy_pot_feed_' . $pay->creator_id);
 
             if ($pay->creator) {
                 $this->userProfileService->clearUserCaches($pay->creator->username, $pay->creator->id);
@@ -1269,7 +1267,7 @@ class StripeWebhookController extends Controller
 
             if ($sendCreator && $pay->creator?->email) {
                 $title = '🐷 New content purchase!';
-                $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}".number_format((float) $pay->amount, 2).'.';
+                $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}" . number_format((float) $pay->amount, 2) . '.';
                 Helpers::sendNotification($title, $content, $pay->creator->email);
                 $pay->creator_notified_at = now();
             }
@@ -1277,7 +1275,7 @@ class StripeWebhookController extends Controller
             $supporterEmail = $pay->user?->email ?: $pay->guest_email;
             if ($sendSupporter && $supporterEmail) {
                 $title = '✅ Payment Successful!';
-                $content = "Your purchase of {$symbol}".number_format((float) $pay->total_paid, 2)." from {$pay->creator?->name} is complete.";
+                $content = "Your purchase of {$symbol}" . number_format((float) $pay->total_paid, 2) . " from {$pay->creator?->name} is complete.";
                 if (! empty($pay->piggyPot?->content_file)) {
                     $content .= ' Exclusive content unlocked.';
                 }
@@ -1353,7 +1351,7 @@ class StripeWebhookController extends Controller
         try {
             TipPaymentMailToUser::dispatch($tip, $tip->currency ?? 'USD');
         } catch (\Throwable $e) {
-            Log::error('Failed to dispatch TipPaymentMailToUser from webhook: '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
+            Log::error('Failed to dispatch TipPaymentMailToUser from webhook: ' . $e->getMessage(), ['tip_pay_id' => $tip->id]);
         }
 
         try {
@@ -1739,7 +1737,7 @@ class StripeWebhookController extends Controller
 
                 Helpers::sendNotification(
                     'New Task Order! 💰',
-                    ($supporter ? $supporter->name : 'A Guest').' purchased your task: '.$task->title,
+                    ($supporter ? $supporter->name : 'A Guest') . ' purchased your task: ' . $task->title,
                     $creator->email
                 );
             }
@@ -1843,7 +1841,7 @@ class StripeWebhookController extends Controller
                         $payment->load('creator');
                         Log::info('handleChargeDisputeCreated: Auto-created Payment record', ['payment_id' => $payment->id]);
                     } catch (\Exception $e) {
-                        Log::error('handleChargeDisputeCreated: Failed to auto-create payment: '.$e->getMessage());
+                        Log::error('handleChargeDisputeCreated: Failed to auto-create payment: ' . $e->getMessage());
                     }
                 }
             } else {
@@ -1882,7 +1880,7 @@ class StripeWebhookController extends Controller
                     try {
                         $this->riskService->recalculateMetrics($creatorId);
                     } catch (\Exception $e) {
-                        Log::error('Risk Engine: Failed to recalculate metrics on dispute: '.$e->getMessage());
+                        Log::error('Risk Engine: Failed to recalculate metrics on dispute: ' . $e->getMessage());
                     }
                 }
 
@@ -1891,7 +1889,7 @@ class StripeWebhookController extends Controller
                     $currencySymbol = Helpers::getCurrency($dispute->currency);
                     $formattedAmount = number_format($dispute->amount / 100, 2);
                     $title = "⚠️ DISPUTE CREATED: {$dispute->id}";
-                    $content = "Payment Intent: {$paymentIntentId}\nAmount: ".($dispute->amount / 100)." {$dispute->currency}\nReason: {$dispute->reason}\nCreator: ".($payment && $payment->creator ? $payment->creator->email : 'Unknown')."\nEvidence Due By: ".($dbDispute->evidence_due_by ? $dbDispute->evidence_due_by->format('Y-m-d H:i:s') : 'Unknown');
+                    $content = "Payment Intent: {$paymentIntentId}\nAmount: " . ($dispute->amount / 100) . " {$dispute->currency}\nReason: {$dispute->reason}\nCreator: " . ($payment && $payment->creator ? $payment->creator->email : 'Unknown') . "\nEvidence Due By: " . ($dbDispute->evidence_due_by ? $dbDispute->evidence_due_by->format('Y-m-d H:i:s') : 'Unknown');
 
                     try {
                         Helpers::sendNotification($title, $content, $adminEmail);
@@ -1928,7 +1926,7 @@ class StripeWebhookController extends Controller
                 $this->syncRiskLedgerStatus($paymentIntentId, 'disputed');
             }
         } catch (\Exception $e) {
-            Log::error('Risk Engine: Failed to record dispute: '.$e->getMessage());
+            Log::error('Risk Engine: Failed to record dispute: ' . $e->getMessage());
         }
 
         if (! $paymentIntentId) {
@@ -2046,7 +2044,7 @@ class StripeWebhookController extends Controller
                     $adminEmails = $this->resolveAdminEmails('dispute');
                     foreach ($adminEmails as $adminEmail) {
                         $title = "⚠️ DISPUTE STATUS UPDATED: {$dispute->id}";
-                        $content = "Status changed from {$changes['status']['old']} to {$changes['status']['new']}\nReason: {$dispute->reason}\nAmount: ".($dispute->amount / 100)." {$dispute->currency}";
+                        $content = "Status changed from {$changes['status']['old']} to {$changes['status']['new']}\nReason: {$dispute->reason}\nAmount: " . ($dispute->amount / 100) . " {$dispute->currency}";
 
                         Helpers::sendNotification($title, $content, $adminEmail);
                         Log::info('StripeWebhookController: Admin notification sent for dispute status change', [
@@ -2102,7 +2100,7 @@ class StripeWebhookController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Risk Engine: Failed to update dispute: '.$e->getMessage(), ['stripe_dispute_id' => $dispute->id ?? null]);
+            Log::error('Risk Engine: Failed to update dispute: ' . $e->getMessage(), ['stripe_dispute_id' => $dispute->id ?? null]);
         }
     }
 
@@ -2128,8 +2126,8 @@ class StripeWebhookController extends Controller
                         $currencySymbol = Helpers::getCurrency($dispute->currency);
                         $formattedAmount = number_format($dispute->amount / 100, 2);
                         $isWon = $dispute->status === 'won';
-                        $title = ($isWon ? '✅' : '❌')." DISPUTE CLOSED: {$dispute->id}";
-                        $content = "Final Status: {$dispute->status}\nReason: {$dispute->reason}\nAmount: ".($dispute->amount / 100)." {$dispute->currency}\nCreator: ".($riskDispute->creator ? $riskDispute->creator->email : 'Unknown');
+                        $title = ($isWon ? '✅' : '❌') . " DISPUTE CLOSED: {$dispute->id}";
+                        $content = "Final Status: {$dispute->status}\nReason: {$dispute->reason}\nAmount: " . ($dispute->amount / 100) . " {$dispute->currency}\nCreator: " . ($riskDispute->creator ? $riskDispute->creator->email : 'Unknown');
 
                         Helpers::sendNotification($title, $content, $adminEmail);
                         Log::info('StripeWebhookController: Admin notification sent for dispute closed', [
@@ -2153,7 +2151,7 @@ class StripeWebhookController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Risk Engine: Failed to update dispute status: '.$e->getMessage());
+            Log::error('Risk Engine: Failed to update dispute status: ' . $e->getMessage());
         }
 
         if ($paymentIntentId) {
@@ -2194,7 +2192,7 @@ class StripeWebhookController extends Controller
                         Log::info('Updated deliverable status to refunded for lost dispute', ['deliverable_id' => $deliverable->id]);
                     }
                 } catch (\Exception $e) {
-                    Log::error('Failed to update deliverable status on dispute lost: '.$e->getMessage());
+                    Log::error('Failed to update deliverable status on dispute lost: ' . $e->getMessage());
                 }
             } else {
                 if (str_contains($status, 'warning')) {
@@ -2449,7 +2447,7 @@ class StripeWebhookController extends Controller
         return Deliverable::whereIn('product_type', ['wish_subscription_content', 'wish_subscription_renewal'])
             ->where('item_id', $wishSubscription->wish_item->id)
             ->where('gifter_id', $wishSubscription->user_id)
-            ->where('metadata', 'like', '%"invoice_id":"'.$invoiceId.'"%')
+            ->where('metadata', 'like', '%"invoice_id":"' . $invoiceId . '"%')
             ->exists();
     }
 
@@ -2584,9 +2582,9 @@ class StripeWebhookController extends Controller
             // Use the base subscription amount (wish item price only, without platform fees)
             $currency = Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
             $currencySymbol = $currency ? $currency->symbol : '£';
-            $formattedAmount = $currencySymbol.number_format($wishSubscription->amount, 2);
+            $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
             $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
-            $renewalAmount = $formattedAmount.'/'.$subscriptionPeriod;
+            $renewalAmount = $formattedAmount . '/' . $subscriptionPeriod;
 
             // Use the existing wish subscription email system for renewals
             WishSubscriptionMailToUser::dispatch(
@@ -2606,7 +2604,7 @@ class StripeWebhookController extends Controller
 
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
                 $creatorNet = $breakdown['net_to_creator'];
-                $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
+                $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
 
                 SubscribedMail::dispatch($wishSubscription, $creatorNetAmountWithSymbol);
 
@@ -2686,7 +2684,7 @@ class StripeWebhookController extends Controller
                     $total_amount = ($data->amount_paid ?? 0) / 100;
                     $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $billPayment->currency);
                     $creatorNet = $breakdown['net_to_creator'];
-                    $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
+                    $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
 
                     BillPayMail::dispatch($billPayment, $creatorNetAmountWithSymbol);
 
@@ -2750,7 +2748,7 @@ class StripeWebhookController extends Controller
                         $total_amount = ($data->amount_paid ?? 0) / 100;
                         $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $membershipPayment->currency);
                         $creatorNet = $breakdown['net_to_creator'];
-                        $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
+                        $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
 
                         MembershipMail::dispatch($membershipPayment, $creatorNetAmountWithSymbol);
 
@@ -2886,9 +2884,9 @@ class StripeWebhookController extends Controller
                 // Send subscription payment notification using existing wish subscription email
                 $currency = Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
                 $currencySymbol = $currency ? $currency->symbol : '£';
-                $formattedAmount = $currencySymbol.number_format($wishSubscription->amount, 2);
+                $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
                 $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
-                $paymentAmount = $formattedAmount.'/'.$subscriptionPeriod;
+                $paymentAmount = $formattedAmount . '/' . $subscriptionPeriod;
 
                 // Use existing wish subscription email system
                 WishSubscriptionMailToUser::dispatch(
@@ -2908,7 +2906,7 @@ class StripeWebhookController extends Controller
 
                     $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
                     $creatorNet = $breakdown['net_to_creator'];
-                    $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
+                    $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
 
                     SubscribedMail::dispatch($wishSubscription, $creatorNetAmountWithSymbol);
 
@@ -3052,7 +3050,7 @@ class StripeWebhookController extends Controller
                 'price_id' => $price->id,
             ];
         } catch (\Exception $e) {
-            Log::error('Error creating £8.99/month subscription: '.$e->getMessage());
+            Log::error('Error creating £8.99/month subscription: ' . $e->getMessage());
 
             return ['error' => $e->getMessage()];
         }
@@ -3083,7 +3081,7 @@ class StripeWebhookController extends Controller
             // Create deliverable entry for renewed membership access
             $deliverable = Deliverable::create([
                 'uuid' => Uuid::uuid4(),
-                'product_id' => $membership->product_id ?? 'membership_'.$membership->id,
+                'product_id' => $membership->product_id ?? 'membership_' . $membership->id,
                 'price_id' => $membership->price_id,
                 'item_id' => $membership->id,
                 'creator_id' => $membership->user_id,
@@ -3104,7 +3102,7 @@ class StripeWebhookController extends Controller
                     'product_type' => 'membership',
                     'membership_id' => $membership->id,
                     'membership_level' => $membership->level,
-                    'membership_name' => $membership->level.' Membership',
+                    'membership_name' => $membership->level . ' Membership',
                     'amount' => $membershipPayment->amount,
                     'creator_net_amount' => $breakdown['net_to_creator'],
                     'currency' => $membershipPayment->currency,
@@ -3165,7 +3163,7 @@ class StripeWebhookController extends Controller
             // Create deliverable entry for renewal tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
                 'uuid' => Uuid::uuid4(),
-                'product_id' => $bill->product_id ?? 'bill_'.$bill->id,
+                'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
                 'price_id' => $bill->price_id,
                 'item_id' => $bill->id, // Add item_id for bill lookup
                 'creator_id' => $bill->user_id,
@@ -3284,7 +3282,7 @@ class StripeWebhookController extends Controller
         try {
             $this->handleCheckoutSessionCompleted($session, $metadata);
         } catch (\Exception $e) {
-            Log::error('Async settlement: deferred fulfilment failed: '.$e->getMessage(), [
+            Log::error('Async settlement: deferred fulfilment failed: ' . $e->getMessage(), [
                 'session_id' => $session->id,
             ]);
         }
@@ -3299,7 +3297,7 @@ class StripeWebhookController extends Controller
             try {
                 $this->completeBySessionLookup($session);
             } catch (\Exception $e) {
-                Log::error('Async settlement: session-lookup fulfilment failed: '.$e->getMessage(), [
+                Log::error('Async settlement: session-lookup fulfilment failed: ' . $e->getMessage(), [
                     'session_id' => $session->id,
                 ]);
             }
@@ -3323,7 +3321,7 @@ class StripeWebhookController extends Controller
             try {
                 app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
             } catch (\Exception $e) {
-                Log::error('Failed to update metadata on async payment succeeded: '.$e->getMessage());
+                Log::error('Failed to update metadata on async payment succeeded: ' . $e->getMessage());
             }
         }
 
@@ -3393,7 +3391,7 @@ class StripeWebhookController extends Controller
             try {
                 app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
             } catch (\Exception $e) {
-                Log::error('Failed to update metadata on async payment failed: '.$e->getMessage());
+                Log::error('Failed to update metadata on async payment failed: ' . $e->getMessage());
             }
         }
 
@@ -3530,11 +3528,11 @@ class StripeWebhookController extends Controller
                 try {
                     $this->riskService->recalculateMetrics($creatorId);
                 } catch (\Exception $e) {
-                    Log::error('Risk Engine: Failed to recalculate metrics on refund: '.$e->getMessage());
+                    Log::error('Risk Engine: Failed to recalculate metrics on refund: ' . $e->getMessage());
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Risk Engine: Failed to process refund: '.$e->getMessage());
+            Log::error('Risk Engine: Failed to process refund: ' . $e->getMessage());
         }
         // ----------------------------------
 
@@ -3584,7 +3582,7 @@ class StripeWebhookController extends Controller
                             'refund_reason' => 'charge_refunded',
                         ]);
                     } catch (\Exception $e) {
-                        Log::error('Failed to update metadata on charge refunded webhook: '.$e->getMessage());
+                        Log::error('Failed to update metadata on charge refunded webhook: ' . $e->getMessage());
                     }
                 }
             } catch (\Exception $e) {
@@ -3617,7 +3615,7 @@ class StripeWebhookController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to send refund notifications (webhook): '.$e->getMessage());
+                Log::error('Failed to send refund notifications (webhook): ' . $e->getMessage());
             }
         }
 
@@ -3767,7 +3765,7 @@ class StripeWebhookController extends Controller
                     }
                     Log::info('Risk Ledger: Auto-created missing Payment record', ['id' => $payment->id, 'creator_id' => $creatorId]);
                 } catch (\Exception $e) {
-                    Log::error('Risk Ledger: Failed to auto-create payment: '.$e->getMessage());
+                    Log::error('Risk Ledger: Failed to auto-create payment: ' . $e->getMessage());
                 }
             }
         }
@@ -3823,7 +3821,7 @@ class StripeWebhookController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to backfill reserve amount on payment success: '.$e->getMessage());
+                Log::error('Failed to backfill reserve amount on payment success: ' . $e->getMessage());
             }
 
             // 2. Update Identity Rollups
@@ -3833,7 +3831,7 @@ class StripeWebhookController extends Controller
                     $rollupService->refreshRollups($payment->riskIdentity);
                     Log::info('Risk Ledger: Identity rollups refreshed', ['identity_id' => $payment->risk_identity_id]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to refresh identity rollups on payment success: '.$e->getMessage());
+                    Log::error('Failed to refresh identity rollups on payment success: ' . $e->getMessage());
                 }
             }
 
@@ -3842,7 +3840,7 @@ class StripeWebhookController extends Controller
                 // We recalculate fully to ensure rates are up to date with new denominator
                 $this->riskService->recalculateMetrics($payment->creator_id);
             } catch (\Exception $e) {
-                Log::error('Failed to update creator metrics on payment success: '.$e->getMessage());
+                Log::error('Failed to update creator metrics on payment success: ' . $e->getMessage());
             }
         } else {
             Log::info('Payment intent succeeded but not found in Risk Ledger (might be legacy or direct)', ['pi' => $paymentIntentId]);
@@ -3949,7 +3947,7 @@ class StripeWebhookController extends Controller
         Log::info('================ EFW WEBHOOK START ================');
 
         try {
-            Log::info('EFW Payload Received', [
+            Log::info('EFW Payload Received', [ 
                 'efw_id' => $efw->id ?? null,
                 'payment_intent' => $efw->payment_intent ?? null,
                 'charge' => $efw->charge ?? null,
@@ -3999,10 +3997,7 @@ class StripeWebhookController extends Controller
             }
 
             // Check for existing fraud warning
-            $existing = EarlyFraudWarning::where(
-                'stripe_efw_id',
-                $efw->id
-            )->exists();
+            $existing = EarlyFraudWarning::where('stripe_efw_id', $efw->id)->exists();
 
             if ($existing) {
                 Log::warning('EFW already exists. Returning.');
@@ -4255,24 +4250,24 @@ class StripeWebhookController extends Controller
             // Get proper currency symbol
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
             $symbol = $currencyModel ? $currencyModel->symbol : '$';
-            $formattedAmount = $symbol.number_format($amount, 2);
+            $formattedAmount = $symbol . number_format($amount, 2);
 
             // Clean notification with proper data
             $title = '🚨 FRAUD WARNING DETECTED';
 
             $contentLines = [];
-            $contentLines[] = '🔴 FRAUD TYPE: '.ucfirst(str_replace('_', ' ', $fraudWarning->fraud_type ?? 'Unknown'));
-            $contentLines[] = '📊 RISK LEVEL: '.ucfirst($fraudWarning->risk_level ?? 'Unknown');
-            $contentLines[] = '⚡ ACTION: '.ucfirst(str_replace('_', ' ', $fraudWarning->action ?? 'None'));
+            $contentLines[] = '🔴 FRAUD TYPE: ' . ucfirst(str_replace('_', ' ', $fraudWarning->fraud_type ?? 'Unknown'));
+            $contentLines[] = '📊 RISK LEVEL: ' . ucfirst($fraudWarning->risk_level ?? 'Unknown');
+            $contentLines[] = '⚡ ACTION: ' . ucfirst(str_replace('_', ' ', $fraudWarning->action ?? 'None'));
             $contentLines[] = '';
             $contentLines[] = '📝 PAYMENT DETAILS:';
-            $contentLines[] = '   💰 Amount: '.$formattedAmount;
-            $contentLines[] = '   📦 Product: '.$paymentDescription;
-            $contentLines[] = '   👤 Buyer: '.($buyerName ?: $buyerEmail ?: 'Unknown');
-            $contentLines[] = '   🎨 Creator: '.($creatorName ?: $creatorEmail ?: 'Unknown');
+            $contentLines[] = '   💰 Amount: ' . $formattedAmount;
+            $contentLines[] = '   📦 Product: ' . $paymentDescription;
+            $contentLines[] = '   👤 Buyer: ' . ($buyerName ?: $buyerEmail ?: 'Unknown');
+            $contentLines[] = '   🎨 Creator: ' . ($creatorName ?: $creatorEmail ?: 'Unknown');
             $contentLines[] = '';
-            $contentLines[] = '🆔 EFW ID: '.($efw->id ?? 'N/A');
-            $contentLines[] = '📅 DATE: '.now()->format('Y-m-d H:i:s');
+            $contentLines[] = '🆔 EFW ID: ' . ($efw->id ?? 'N/A');
+            $contentLines[] = '📅 DATE: ' . now()->format('Y-m-d H:i:s');
 
             $content = implode("\n", $contentLines);
 
@@ -4358,7 +4353,7 @@ class StripeWebhookController extends Controller
                 }
 
                 // 4. Save notification
-                $message = $username.' just purchased your shop item '.$shopPayment->shop->name;
+                $message = $username . ' just purchased your shop item ' . $shopPayment->shop->name;
                 NotificationSave::dispatch($message, $shopPayment->shop->user, $shopPayment->user, 'Shop');
 
                 $currencyModel = Currency::where('ISO', strtoupper($shopPayment->currency ?? 'GBP'))->first();
@@ -4384,7 +4379,7 @@ class StripeWebhookController extends Controller
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate, $shopPayment->fee_profile ?? 'card');
-                $creatorNetAmount = $symbol.number_format($breakdown['net_to_creator'], 2);
+                $creatorNetAmount = $symbol . number_format($breakdown['net_to_creator'], 2);
 
                 // 7. Dispatch jobs
                 ShopBuyed::dispatch($shopPayment, $shopPayment->anonymous == 1, $creatorNetAmount);
@@ -4395,7 +4390,7 @@ class StripeWebhookController extends Controller
                     if (! Deliverable::where('session_id', $session->id)->exists()) {
                         $deliverable = Deliverable::create([
                             'uuid' => (string) Str::uuid(),
-                            'product_id' => $shopPayment->shop->stripe_product_id ?? 'shop_'.$shopPayment->shop->id,
+                            'product_id' => $shopPayment->shop->stripe_product_id ?? 'shop_' . $shopPayment->shop->id,
                             'price_id' => $shopPayment->shop->price_id,
                             'item_id' => $shopPayment->shop->id,
                             'creator_id' => $shopPayment->shop->user_id,
@@ -4476,7 +4471,7 @@ class StripeWebhookController extends Controller
                 // 11. Clear user caches
                 $this->userProfileService->clearUserCaches($shopPayment->shop->user->username, $shopPayment->shop->user->id);
             } catch (\Exception $e) {
-                Log::error('StripeWebhookController: Error processing shop payment: '.$e->getMessage(), [
+                Log::error('StripeWebhookController: Error processing shop payment: ' . $e->getMessage(), [
                     'session_id' => $session->id,
                     'trace' => $e->getTraceAsString(),
                 ]);
@@ -4506,7 +4501,7 @@ class StripeWebhookController extends Controller
             $current = AppStripeControl::capabilitiesMap($account);
             $missing = array_values(array_filter(
                 $wanted,
-                fn ($c) => ! array_key_exists($c, $current)
+                fn($c) => ! array_key_exists($c, $current)
             ));
 
             if (empty($missing)) {
@@ -4521,7 +4516,7 @@ class StripeWebhookController extends Controller
 
             AppStripeControl::requestBankCapabilities($account->id, $country);
         } catch (\Throwable $e) {
-            Log::warning('ensureBankCapabilities failed: '.$e->getMessage(), [
+            Log::warning('ensureBankCapabilities failed: ' . $e->getMessage(), [
                 'account_id' => $account->id ?? null,
             ]);
         }
@@ -4576,7 +4571,7 @@ class StripeWebhookController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Error handling account.updated for risk monitoring: '.$e->getMessage());
+            Log::error('Error handling account.updated for risk monitoring: ' . $e->getMessage());
         }
     }
 
@@ -4911,7 +4906,7 @@ class StripeWebhookController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            Log::error("Error handling {$eventType} for risk monitoring: ".$e->getMessage());
+            Log::error("Error handling {$eventType} for risk monitoring: " . $e->getMessage());
         }
     }
 
@@ -4989,16 +4984,16 @@ class StripeWebhookController extends Controller
             $adminEmail = config('services.payout_notifications.weekly_job_email');
             if ($adminEmail) {
                 Mail::to($adminEmail)->send(new CommandFailed(
-                    '['.strtoupper(app()->environment()).'] Payout failed & requeued',
+                    '[' . strtoupper(app()->environment()) . '] Payout failed & requeued',
                     "Payout {$record->stripe_payout_id} for creator {$creatorId} failed ("
-                        .($record->failure_message ?: 'unknown reason')
-                        .'). Payments requeued for the next payout run.'
+                        . ($record->failure_message ?: 'unknown reason')
+                        . '). Payments requeued for the next payout run.'
                 ));
             }
 
             Log::warning("Payout failed & requeued: run {$runId}, creator {$creatorId}, payout {$record->stripe_payout_id}.");
         } catch (\Throwable $e) {
-            Log::error('Failed to requeue failed payout: '.$e->getMessage());
+            Log::error('Failed to requeue failed payout: ' . $e->getMessage());
         }
     }
 
@@ -5089,15 +5084,15 @@ class StripeWebhookController extends Controller
                             // Re-evaluate Refer & Earn GMV on any payment status change
                             Helpers::recalculateGmv($intUserId);
 
-                            Log::info('Financial Sync queued for creator user_id: '.$intUserId);
+                            Log::info('Financial Sync queued for creator user_id: ' . $intUserId);
                         }
                     } catch (\Exception $e) {
-                        Log::error('Failed to queue financial sync: '.$e->getMessage());
+                        Log::error('Failed to queue financial sync: ' . $e->getMessage());
                     }
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Failed to sync risk ledger status: '.$e->getMessage());
+            Log::error('Failed to sync risk ledger status: ' . $e->getMessage());
         }
     }
 
@@ -5146,7 +5141,7 @@ class StripeWebhookController extends Controller
                     ->update(['status' => 'refunded']);
             }
         } catch (\Exception $e) {
-            Log::error('syncSourcePaymentStatusesByPaymentIntent failed: '.$e->getMessage());
+            Log::error('syncSourcePaymentStatusesByPaymentIntent failed: ' . $e->getMessage());
         }
     }
 
@@ -5227,7 +5222,7 @@ class StripeWebhookController extends Controller
             // Deliverable + UserPayment carry the same terminal status (refund/dispute/etc.).
             if ($sourceStatus !== null) {
                 $delIds = Deliverable::where('payment_intent_id', $paymentIntentId)
-                    ->when($sessionId, fn ($q) => $q->orWhere('session_id', $sessionId))
+                    ->when($sessionId, fn($q) => $q->orWhere('session_id', $sessionId))
                     ->pluck('id')->all();
                 if (! empty($delIds)) {
                     Deliverable::whereIn('id', $delIds)
@@ -5241,7 +5236,7 @@ class StripeWebhookController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            Log::error('syncFinancialTransactionsByPaymentIntent failed: '.$e->getMessage());
+            Log::error('syncFinancialTransactionsByPaymentIntent failed: ' . $e->getMessage());
         }
     }
 
