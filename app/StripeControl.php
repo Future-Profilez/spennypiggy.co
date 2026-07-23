@@ -237,11 +237,20 @@ class StripeControl
      * Check if connected account has card_payments capability active
      * This determines whether the account can accept direct charges
      *
-     * @param  string  $accountId  Stripe Connected Account ID
+     * @param  string|null  $accountId  Stripe Connected Account ID
      * @return bool True if account can accept direct charges, false otherwise
      */
-    public static function hasCardPaymentsCapability(string $accountId): bool
+    public static function hasCardPaymentsCapability(?string $accountId): bool
     {
+        // Nullable + fail closed: listings created before creators were gated on
+        // account_id still exist, and a TypeError here surfaced to the supporter
+        // as a 500 rather than a "creator isn't set up for payments" message.
+        if (empty($accountId)) {
+            Log::warning('Card capability check skipped — creator has no connected account');
+
+            return false;
+        }
+
         // Use cache to avoid repeated API calls for the same account
         // Removed caching to ensure real-time accuracy for critical payment capability checks
         // $cacheKey = "stripe_card_payments_capability_{$accountId}";
@@ -691,9 +700,12 @@ class StripeControl
      * Create Account
      *
      * @param  array  $payload  Account Payload
+     * @param  string|null  $idempotencyKey  Retry-safe key — a repeat call with the
+     *                                       same key returns the original account
+     *                                       instead of creating a second one.
      * @return Account|Throwable
      */
-    public static function createAccount($payload)
+    public static function createAccount($payload, ?string $idempotencyKey = null)
     {
         self::setClient();
         try {
@@ -709,7 +721,10 @@ class StripeControl
             }
             $payload['settings']['payouts']['schedule']['interval'] = 'manual';
 
-            return self::$client->accounts->create($payload);
+            return self::$client->accounts->create(
+                $payload,
+                $idempotencyKey ? ['idempotency_key' => $idempotencyKey] : []
+            );
         } catch (RateLimitException $e) {
             throw new Exception('Stripe RateLimit: '.$e->getMessage());
         } catch (InvalidRequestException $e) {

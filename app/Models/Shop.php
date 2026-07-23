@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Ramsey\Uuid\Uuid;
 
 class Shop extends Model
@@ -44,24 +45,34 @@ class Shop extends Model
         'creator_growth_rate',
         'rising_score',
         'engagement_level',
-        'trending_status'
+        'trending_status',
     ];
 
-    protected $hidden   =   [
+    /**
+     * `reward_file` and `success_page_value` ARE the paid digital deliverable —
+     * serialising them on a public listing hands the content to anyone who can
+     * see the card. They stay hidden by default; entitled surfaces (the owner,
+     * or a buyer with a paid ShopPayment) opt back in with entitledFor()/
+     * withDeliverable().
+     */
+    protected $hidden = [
         'id',
         // 'user_id',
         'stripe_product_id',
         'image',
+        'reward_file',
+        'success_page_value',
+        'price_id',
+        'paid_payments_count',
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     protected $appends = [
         'perma_link',
-        'reward_file_url',
         'total_sold',
-        'real_category'
+        'real_category',
     ];
 
     public static function boot()
@@ -70,16 +81,17 @@ class Shop extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function user(){
-        return $this->belongsTo(User::class,'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-
-    public function getPermaLinkAttribute(){
+    public function getPermaLinkAttribute()
+    {
         $url = false;
-        if(!empty($this->image)){
+        if (! empty($this->image)) {
             // Use only format transformation, quality seems to cause 400 errors
-            $url = "https://ucarecdn.com/" . $this->image . "/-/format/jpeg/";
+            $url = 'https://ucarecdn.com/'.$this->image.'/-/format/jpeg/';
         }
 
         return $url;
@@ -94,7 +106,7 @@ class Shop extends Model
             return '';
         }
 
-        $baseUrl = "https://ucarecdn.com/" . $this->image;
+        $baseUrl = 'https://ucarecdn.com/'.$this->image;
         $transformations = [];
 
         // Add format transformation
@@ -117,7 +129,7 @@ class Shop extends Model
             $transformations[] = 'progressive/yes';
         }
 
-        return $baseUrl . '/-/' . implode('/-/', $transformations) . '/';
+        return $baseUrl.'/-/'.implode('/-/', $transformations).'/';
     }
 
     /**
@@ -129,17 +141,17 @@ class Shop extends Model
             return [];
         }
 
-        $baseUrl = "https://ucarecdn.com/" . $this->image;
+        $baseUrl = 'https://ucarecdn.com/'.$this->image;
         $sizes = [320, 640, 768, 1024, 1280, 1920];
         $formats = ['original', 'webp', 'avif'];
 
         $data = [
-            'original' => $baseUrl . '/-/format/jpeg/-/quality/85/',
+            'original' => $baseUrl.'/-/format/jpeg/-/quality/85/',
             'formats' => [
-                'webp' => $baseUrl . '/-/format/webp/-/quality/85/',
-                'avif' => $baseUrl . '/-/format/avif/-/quality/85/'
+                'webp' => $baseUrl.'/-/format/webp/-/quality/85/',
+                'avif' => $baseUrl.'/-/format/avif/-/quality/85/',
             ],
-            'responsive' => []
+            'responsive' => [],
         ];
 
         foreach ($formats as $format) {
@@ -154,30 +166,81 @@ class Shop extends Model
         return $data;
     }
 
-
-    public function getRewardFileUrlAttribute(){
+    public function getRewardFileUrlAttribute()
+    {
         $url = false;
-        if(!empty($this->reward_file)){
-            if (\Illuminate\Support\Str::startsWith($this->reward_file, ['http://', 'https://'])) {
+        if (! empty($this->reward_file)) {
+            if (Str::startsWith($this->reward_file, ['http://', 'https://'])) {
                 $url = $this->reward_file;
             } else {
-                $url = "https://ucarecdn.com/" . $this->reward_file . "/";
+                $url = 'https://ucarecdn.com/'.$this->reward_file.'/';
             }
         }
 
         return $url;
     }
 
-
-    public function getTotalSoldAttribute(){
-        $payments = ShopPayment::where('shop_id',$this->id)->where('payment_status','paid')->count();
-
-        return $payments;
+    /**
+     * Reveal the paid deliverable on this model instance. Only call once the
+     * viewer is known to be entitled (owner, or a paid ShopPayment).
+     */
+    public function withDeliverable(): self
+    {
+        return $this->makeVisible(['reward_file', 'success_page_value'])
+            ->append('reward_file_url');
     }
 
+    /**
+     * Reveal the deliverable only when $userId owns the listing or has paid for
+     * it. Safe to call with a null user (guest) — it simply reveals nothing.
+     */
+    public function entitledFor(?int $userId, ?string $sessionId = null): self
+    {
+        if ($userId && (int) $this->user_id === (int) $userId) {
+            return $this->withDeliverable();
+        }
 
-    public function category(){
-        return $this->hasMany(ShopCategory::class,'shop_id');
+        // No identity at all (guest with no checkout session) → reveal nothing.
+        if (! $userId && ! $sessionId) {
+            return $this;
+        }
+
+        // A logged-in user unlocks ONLY their own paid rows (user_id bound); a
+        // guest unlocks only via the session_id from their own checkout return.
+        // Never let a bare session_id override the user_id scope — that lets an
+        // authenticated attacker replay someone else's session id.
+        $paid = ShopPayment::where('shop_id', $this->id)
+            ->where('payment_status', 'paid')
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->when(! $userId && $sessionId, fn ($q) => $q->where('session_id', $sessionId))
+            ->exists();
+
+        return $paid ? $this->withDeliverable() : $this;
+    }
+
+    /**
+     * Paid sales for this listing. Eager-load with `withCount('paidPayments')`
+     * on list queries so `total_sold` does not fire one COUNT per row.
+     */
+    public function paidPayments()
+    {
+        return $this->hasMany(ShopPayment::class, 'shop_id')->where('payment_status', 'paid');
+    }
+
+    public function getTotalSoldAttribute()
+    {
+        // Uses the eager-loaded count when the query asked for it (withCount),
+        // otherwise falls back to a direct count for single-model reads.
+        if (array_key_exists('paid_payments_count', $this->attributes)) {
+            return (int) $this->attributes['paid_payments_count'];
+        }
+
+        return ShopPayment::where('shop_id', $this->id)->where('payment_status', 'paid')->count();
+    }
+
+    public function category()
+    {
+        return $this->hasMany(ShopCategory::class, 'shop_id');
     }
 
     public function getRealCategoryAttribute()
@@ -199,5 +262,4 @@ class Shop extends Model
     {
         return $this->belongsTo(ShippingProfile::class);
     }
-
 }

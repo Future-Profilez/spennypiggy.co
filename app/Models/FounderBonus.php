@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class FounderBonus extends Model
 {
@@ -38,7 +39,9 @@ class FounderBonus extends Model
 
     // Payout status constants
     const STATUS_PENDING = 'pending';
+
     const STATUS_PAID = 'paid';
+
     const STATUS_REJECTED = 'rejected';
 
     /**
@@ -109,27 +112,48 @@ class FounderBonus extends Model
     {
         $currency = strtoupper($currency ?: 'GBP');
         $rates = Currency::rates();
-        if ($rates instanceof \Illuminate\Support\Collection) {
+        if ($rates instanceof Collection) {
             $rates = $rates->toArray();
         }
 
         $convert = function (float $amount, string $from, string $to) use ($rates): float {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
+        // eager-load source: a TaskPurchase-backed income row flips FT.status to
+        // 'completed' as soon as the buyer pays (see SyncFinancialTransactions),
+        // but a timed task is still in escrow until the buyer accepts. Counting
+        // that as earned let a creator qualify for a real cash Founder bonus on
+        // money that could still be refunded — and it disagreed with getSummary,
+        // PayoutService and ReleaseReserves, which all apply this same gate.
         $txs = FinancialTransaction::query()
             ->where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$start, $end])
-            ->get(['net_amount', 'currency']);
+            // Full source, not a column-constrained select: this is a morphTo and
+            // some source types (ShopPayment, StripePaymentItems) have no `status`
+            // column, so `source:id,status` would error on them. Mirrors getSummary.
+            ->with('source')
+            ->get(['id', 'net_amount', 'currency', 'source_type', 'source_id']);
 
         $total = 0.0;
         foreach ($txs as $tx) {
+            if ($tx->source_type === 'App\Models\TaskPurchase'
+                && isset($tx->source->status)
+                && ! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'], true)) {
+                continue;
+            }
+
             $from = strtoupper((string) ($tx->currency ?? 'GBP'));
             $net = (float) ($tx->net_amount ?? 0);
             $total += $convert($net, $from, $currency);
@@ -153,7 +177,7 @@ class FounderBonus extends Model
     {
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
-        
+
         return $query->whereBetween('qualification_date', [$startOfMonth, $endOfMonth]);
     }
 
@@ -163,6 +187,7 @@ class FounderBonus extends Model
     public static function calculateBonusAmount($first30dEarnings)
     {
         $bonusPercentage = self::getBonusPercentage();
+
         return round($first30dEarnings * $bonusPercentage, 2);
     }
 
@@ -207,6 +232,7 @@ class FounderBonus extends Model
     {
         $maxSeats = self::getMaxFounderSeats();
         $currentMonthFounders = self::qualifiedThisMonth()->count();
+
         return $maxSeats - $currentMonthFounders;
     }
 
@@ -217,10 +243,10 @@ class FounderBonus extends Model
     {
         // Get all creators excluding test/dummy users and those who already became founders
         $existingFounderIds = self::pluck('creator_id')->toArray();
-        
+
         // Get creators who joined in the last 60 days to show recent joiners
         $cutoffDate = now()->subDays(60);
-        
+
         $creators = User::where('name', 'NOT LIKE', '%Test%')
             ->where('name', 'NOT LIKE', '%Founder%')
             ->where('name', 'NOT LIKE', '%test%')
@@ -237,19 +263,31 @@ class FounderBonus extends Model
 
         foreach ($creators as $creator) {
             $joinDate = $creator->stripe_connected_at;
-            if (!$joinDate) {
+            if (! $joinDate) {
                 continue;
             }
             $thirtyDaysLater = $joinDate->copy()->addDays($qualificationDays);
             $calculationEndDate = min($thirtyDaysLater, now());
 
             $earnings = (float) self::calculateCompletedNetEarnings($creator, $joinDate, $calculationEndDate, 'GBP');
-                
+
             $daysRemaining = $thirtyDaysLater->isFuture() ? max(1, (int) ceil(now()->diffInSeconds($thirtyDaysLater) / 86400)) : 0;
             $isQualified = $earnings >= $minEarnings;
-            
+
             $leaderboard[] = [
-                'creator' => $creator,
+                // Explicit whitelist, not the whole model. /founder/bonus is a
+                // public page, and User::$hidden does NOT cover email, date_of_birth,
+                // ip_address or identity_* — passing the model shipped all of those
+                // for up to 50 creators to anonymous visitors. Mirror the shape
+                // recentWinners already uses in the controller.
+                'creator' => [
+                    'id' => $creator->id,
+                    'name' => $creator->name,
+                    'username' => $creator->username,
+                    'avatar_url' => $creator->avatar_url,
+                    'profile_status_lock' => $creator->profile_status_lock,
+                    'role' => $creator->role,
+                ],
                 'current_earnings' => (float) $earnings,
                 'days_remaining' => $daysRemaining,
                 'is_qualified' => $isQualified,
@@ -258,7 +296,7 @@ class FounderBonus extends Model
         }
 
         // Sort by qualification progress (highest first), then by earnings
-        usort($leaderboard, function($a, $b) {
+        usort($leaderboard, function ($a, $b) {
             // First sort by qualification status (qualified first)
             if ($a['is_qualified'] !== $b['is_qualified']) {
                 return $b['is_qualified'] <=> $a['is_qualified'];
@@ -267,6 +305,7 @@ class FounderBonus extends Model
             if ($a['qualification_progress'] !== $b['qualification_progress']) {
                 return $b['qualification_progress'] <=> $a['qualification_progress'];
             }
+
             // Finally by earnings
             return $b['current_earnings'] <=> $a['current_earnings'];
         });
@@ -290,7 +329,7 @@ class FounderBonus extends Model
      */
     public function getFormattedBonusAttribute()
     {
-        return '£' . number_format($this->bonus_amount, 2);
+        return '£'.number_format($this->bonus_amount, 2);
     }
 
     /**
@@ -298,7 +337,7 @@ class FounderBonus extends Model
      */
     public function getFormattedFirst30dEarningsAttribute()
     {
-        return '£' . number_format($this->first_30d_earnings, 2);
+        return '£'.number_format($this->first_30d_earnings, 2);
     }
 
     /**

@@ -113,7 +113,7 @@ export default function MySubscriptions(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gray-200">
+                <div className="min-h-dvh bg-gray-200">
                     <div className="containerbox m-auto">
                         <div className="py-8 md:py-16 w-full m-auto">
                         <CreatorDashboardTabs />
@@ -137,7 +137,7 @@ export default function MySubscriptions(props) {
                         {/* STATS */}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                            <div className="bg-white border-2 border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <p className="text-gray-600 text-sm">
                                     Active Bill Subscriptions
                                 </p>
@@ -147,7 +147,7 @@ export default function MySubscriptions(props) {
                                 </h2>
                             </div>
 
-                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                            <div className="bg-white border-2 border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <p className="text-gray-600 text-sm">
                                     Active Membership Subscriptions
                                 </p>
@@ -157,7 +157,7 @@ export default function MySubscriptions(props) {
                                 </h2>
                             </div>
 
-                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                            <div className="bg-white border-2 border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <p className="text-gray-600 font-bold uppercase text-sm">
                                     Monthly Spend
                                 </p>
@@ -170,7 +170,7 @@ export default function MySubscriptions(props) {
                                 </h2>
                             </div>
 
-                            <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                            <div className="bg-white border-2 border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <p className="text-gray-600 font-bold uppercase text-sm">
                                     Yearly Spend
                                 </p>
@@ -188,7 +188,7 @@ export default function MySubscriptions(props) {
                             <button
                                 onClick={() => setSubscriptionTab("bills")}
                                 className={`
-                                px-5 py-3 rounded-[30px] 
+                                px-5 py-3 rounded-box-sm 
                                 text-sm font-bold transition-all duration-300
                                 ${
                                     subscriptionTab === "bills"
@@ -205,7 +205,7 @@ export default function MySubscriptions(props) {
                                     setSubscriptionTab("memberships")
                                 }
                                 className={`
-                                    px-5 py-3 rounded-[30px] 
+                                    px-5 py-3 rounded-box-sm 
                                     text-sm font-bold transition-all duration-300
                                     ${
                                         subscriptionTab === "memberships"
@@ -220,7 +220,7 @@ export default function MySubscriptions(props) {
 
                         {/* TABLE */}
 
-                        <div className="bg-white border-2 border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                        <div className="bg-white border-2 border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                             <div className="p-6 border-b-2 border-black">
                                 <h2 className="text-xl md:text-2xl font-GillSans uppercase text-black">
                                     {subscriptionTab === "bills"
@@ -321,7 +321,7 @@ export default function MySubscriptions(props) {
                                                         <td className="px-6 py-5">
                                                             <span
                                                                 className={`
-                                                                    px-3 py-2 rounded-xl
+                                                                    px-3 py-2 rounded-box-sm
                                                                     text-sm font-bold capitalize
                                                                     border
                                                                     ${
@@ -341,7 +341,7 @@ export default function MySubscriptions(props) {
                                                         {/* STATUS */}
 
                                                         <td className="px-6 py-5">
-                                                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold">
+                                                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-box-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold">
                                                                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
 
                                                                 {subscription?.end ==
@@ -358,7 +358,7 @@ export default function MySubscriptions(props) {
                                                                     className="
                                                                     inline-flex items-center
                                                                     gap-2 px-4 py-2
-                                                                    rounded-xl
+                                                                    rounded-box-sm
                                                                     bg-red-500/10
                                                                     border border-red-500/20
                                                                     text-red-400
@@ -375,7 +375,7 @@ export default function MySubscriptions(props) {
                                                                         )
                                                                     }
                                                                     className="
-                                                                    px-4 py-2 rounded-xl
+                                                                    px-4 py-2 rounded-box-sm
                                                                     bg-red-500/10
                                                                     border border-red-500/20
                                                                     text-red-400
@@ -401,7 +401,7 @@ export default function MySubscriptions(props) {
                                                     <div className="flex flex-col items-center justify-center">
                                                         <div
                                                             className={`
-                                                            w-24 h-24 rounded-3xl
+                                                            w-24 h-24 rounded-box-sm
                                                             flex items-center justify-center
                                                             text-4xl mb-6 border
                                                             ${
@@ -460,7 +460,7 @@ export default function MySubscriptions(props) {
                     <div
                         className="
                         w-full max-w-md
-                        rounded-[30px]
+                        rounded-box
                         bg-white
                         border-2 border-black
                         shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
@@ -471,7 +471,7 @@ export default function MySubscriptions(props) {
                             <div
                                 className="
                                 w-24 h-24 mx-auto
-                                rounded-[30px]
+                                rounded-box-sm
                                 bg-red-500/10
                                 border-2 border-red-500/30
                                 flex items-center justify-center
@@ -519,7 +519,7 @@ export default function MySubscriptions(props) {
                                 <button
                                     onClick={() => setCancelModal(false)}
                                     className="
-                                    flex-1 py-3 rounded-[30px]
+                                    flex-1 py-3 rounded-box-sm
                                     bg-white border-2 border-black
                                     text-black font-bold
                                     shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]
@@ -533,7 +533,7 @@ export default function MySubscriptions(props) {
                                 <button
                                     onClick={confirmCancelSubscription}
                                     className="
-                                    flex-1 py-3 rounded-[30px]
+                                    flex-1 py-3 rounded-box-sm
                                     bg-gradient-to-r
                                     from-red-500 to-pink-500
                                     text-white font-bold border-2 border-red-700

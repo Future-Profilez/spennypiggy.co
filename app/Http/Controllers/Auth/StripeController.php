@@ -58,6 +58,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -681,6 +682,16 @@ class StripeController extends Controller
             return redirect()->route('stripe.index')->with('error', 'You must agree to the Merchant of Record terms first.');
         }
 
+        // The terms checkbox was enforced nowhere: the client check was commented
+        // out and the server never looked at it, so a creator could connect Stripe
+        // without accepting the terms at all. The client gate is a convenience;
+        // this is the one that counts. Only on first connect — this method is also
+        // Stripe's refresh_url, hit as a bare GET with no form fields, and an
+        // account that already exists has already been through the gate.
+        if (empty($user->account_id) && $request->input('termaccept') !== 'termaccept') {
+            return redirect()->route('stripe.index')->with('error', 'Please accept the terms & conditions before connecting Stripe.');
+        }
+
         if (empty($user->creator_email_receipt_acknowledged_at)) {
             if ($request->boolean('creator_email_receipt_ack')) {
                 $user->creator_email_receipt_acknowledged_at = now();
@@ -713,60 +724,99 @@ class StripeController extends Controller
         if (empty($user->account_id)) {
             $country = strtoupper($country);
             try {
-                // Determine service agreement type based on country to handle cross-border payment restrictions
-                $serviceAgreementType = self::getServiceAgreementType($country);
+                // Two concurrent requests (double-submit, two tabs, a retry after a
+                // slow first response) both used to read account_id as empty, both
+                // create a Stripe account, and the second save orphaned the first
+                // one with no reference kept anywhere. Re-read under a row lock so
+                // only one request can win the create, and pass a per-user
+                // idempotency key so even a Stripe-side retry returns the same
+                // account rather than a second one.
+                $claimed = DB::transaction(function () use ($user) {
+                    $locked = User::whereKey($user->id)->lockForUpdate()->first();
 
-                Log::info('Creating Stripe account with service agreement', [
-                    'user_id' => $user->id,
-                    'country' => $country,
-                    'service_agreement' => $serviceAgreementType,
-                    'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account',
-                    'mor_consent' => true,
-                ]);
+                    return $locked && ! empty($locked->account_id) ? $locked->account_id : null;
+                });
 
-                // Set capabilities based on service agreement type
-                $capabilities = [];
-                if ($serviceAgreementType === 'recipient') {
-                    $capabilities['transfers'] = ['requested' => true];
+                if ($claimed) {
+                    $user->refresh();
                 } else {
-                    // For card_payments capability, Stripe requires BOTH card_payments AND transfers
-                    $capabilities['card_payments'] = ['requested' => true];
-                    $capabilities['transfers'] = ['requested' => true];
+                    // Determine service agreement type based on country to handle cross-border payment restrictions
+                    $serviceAgreementType = self::getServiceAgreementType($country);
 
-                    // Bank payment methods (Pay by Bank / SEPA / ACH) must be
-                    // requested explicitly — the dashboard "on by default"
-                    // toggle only covers accounts with Stripe Dashboard access,
-                    // so without this a new creator's checkout refuses bank.
-                    foreach (StripeControl::bankCapabilitiesForCountry($country) as $bankCapability) {
-                        $capabilities[$bankCapability] = ['requested' => true];
-                    }
-                }
-
-                $payload = [
-                    'country' => $country,
-                    'type' => 'express',
-                    'email' => $user->email,
-                    'capabilities' => $capabilities,
-                    'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
-                    'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
-                    'business_profile' => [
-                        'url' => "https://spennypiggy.co/{$user->username}",
-                        'mcc' => '7278',
-                    ],
-                    'default_currency' => $currency,
-                    'metadata' => [
-                        'mor_consent_given' => true,
-                        'mor_consent_id' => $morConsent->id ?? null,
-                        'mor_consent_date' => $morConsent->consent_given_at->toISOString() ?? null,
+                    Log::info('Creating Stripe account with service agreement', [
                         'user_id' => $user->id,
-                        'username' => $user->username,
-                    ],
-                ];
-                $account = StripeControl::createAccount($payload);
-                $user->account_id = $account->id;
-                $user->country = $country;
-                $user->save();
-                $this->userProfileService->clearUserCaches($user->username, $user->id);
+                        'country' => $country,
+                        'service_agreement' => $serviceAgreementType,
+                        'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account',
+                        'mor_consent' => true,
+                    ]);
+
+                    // Set capabilities based on service agreement type
+                    $capabilities = [];
+                    if ($serviceAgreementType === 'recipient') {
+                        $capabilities['transfers'] = ['requested' => true];
+                    } else {
+                        // For card_payments capability, Stripe requires BOTH card_payments AND transfers
+                        $capabilities['card_payments'] = ['requested' => true];
+                        $capabilities['transfers'] = ['requested' => true];
+
+                        // Bank payment methods (Pay by Bank / SEPA / ACH) must be
+                        // requested explicitly — the dashboard "on by default"
+                        // toggle only covers accounts with Stripe Dashboard access,
+                        // so without this a new creator's checkout refuses bank.
+                        foreach (StripeControl::bankCapabilitiesForCountry($country) as $bankCapability) {
+                            $capabilities[$bankCapability] = ['requested' => true];
+                        }
+                    }
+
+                    $payload = [
+                        'country' => $country,
+                        'type' => 'express',
+                        'email' => $user->email,
+                        'capabilities' => $capabilities,
+                        'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
+                        'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
+                        'business_profile' => [
+                            'url' => "https://spennypiggy.co/{$user->username}",
+                            'mcc' => '7278',
+                        ],
+                        'default_currency' => $currency,
+                        'metadata' => [
+                            'mor_consent_given' => true,
+                            'mor_consent_id' => $morConsent->id ?? null,
+                            'mor_consent_date' => $morConsent->consent_given_at->toISOString() ?? null,
+                            'user_id' => $user->id,
+                            'username' => $user->username,
+                        ],
+                    ];
+                    $account = StripeControl::createAccount($payload, "connect_account_user_{$user->id}_{$country}");
+
+                    // Claim the account id under the same row lock. If another
+                    // request won the race in between, keep theirs and drop this
+                    // one rather than overwriting a live account id.
+                    $winner = DB::transaction(function () use ($user, $account, $country) {
+                        $locked = User::whereKey($user->id)->lockForUpdate()->first();
+                        if (! empty($locked->account_id)) {
+                            return $locked->account_id;
+                        }
+                        $locked->account_id = $account->id;
+                        $locked->country = $country;
+                        $locked->save();
+
+                        return $account->id;
+                    });
+
+                    if ($winner !== $account->id) {
+                        Log::warning('Concurrent Stripe account creation — discarding duplicate', [
+                            'user_id' => $user->id,
+                            'kept_account' => $winner,
+                            'discarded_account' => $account->id,
+                        ]);
+                    }
+
+                    $user->refresh();
+                    $this->userProfileService->clearUserCaches($user->username, $user->id);
+                }
             } catch (Exception $e) {
                 return redirect(route('stripe.index'))->with('error', 'Account creation error:'.$e->getMessage());
             }
@@ -3465,7 +3515,7 @@ class StripeController extends Controller
             // preference, progressive tiers, and creator capabilities.
             $methodResolution = CheckoutMethodResolver::resolve(
                 $request->input('payment_method', 'card'),
-                $goal->payment_methods_accepted ?? 'both',
+                $goal?->payment_methods_accepted ?? 'both',
                 $priceWithVat,
                 $sourceCurrency,
                 Auth::user(),
@@ -3511,7 +3561,7 @@ class StripeController extends Controller
             $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
             $pay = TipGoalsPayment::create([
-                'tip_goal_id' => $goal->id ?? null,
+                'tip_goal_id' => $goal?->id,
                 'user_id' => Auth::id() ?? null,
                 'creator_id' => $creator->id,
                 'guest_name' => $request->name,
@@ -3659,6 +3709,24 @@ class StripeController extends Controller
         if (! $tip_pay) {
             return to_route('home')->with('error', 'Insufficient data!');
         }
+
+        // Idempotency: this handler runs every time the supporter lands on / reloads /
+        // back-buttons the success page, and it can race the async webhook. Without this
+        // guard the goal progress (fullfilled) is re-incremented and the confirmation
+        // emails / thank-you post re-fire on every hit. Once the payment is 'paid' the
+        // work is done — go straight to the receipt.
+        if ($tip_pay->status === 'paid') {
+            return to_route('thank-you', [
+                'username' => $tip_pay->creator->username,
+                'type' => 'support',
+                'item_name' => $tip_pay->tipGoal ? $tip_pay->tipGoal->name : 'Support Payment',
+                'amount' => $tip_pay->total_paid ?? 0,
+                'currency' => $tip_pay->currency ?? 'GBP',
+                'source' => 'tip_goals_payments',
+                'source_id' => $tip_pay->id,
+            ])->with('success', 'Thank you for your support!');
+        }
+
         try {
             // Need to pass the connected account ID because the session was created on the creator's account
             $session = StripeControl::getCheckoutSession($tip_pay->session_id, $tip_pay->creator->account_id);
@@ -3850,7 +3918,10 @@ class StripeController extends Controller
                 Helpers::sendNotification($title, $content, $email);
                 /****************************TIP**JAR**PWA**ENDS****************************************************/
 
-                if (! empty($tip_pay->tipGoal)) {
+                // Only move goal progress + tweet when THIS request created the deliverable.
+                // The redirect handler and the async webhook race for the same payment;
+                // gating on wasRecentlyCreated makes exactly one of them count the amount.
+                if (! empty($tip_pay->tipGoal) && $deliverable->wasRecentlyCreated) {
                     $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
                     $tip_pay->tipGoal->save();
 

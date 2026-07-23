@@ -659,7 +659,7 @@ export default function Membership_dashboard(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gray-200">
+                <div className="min-h-dvh bg-gray-200">
                     <div className="containerbox m-auto">
                         <div className="py-6 md:py-10 w-full m-auto">
                             {/* Header Section */}
@@ -715,7 +715,7 @@ export default function Membership_dashboard(props) {
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-green-400"></div>
 
-                                    <span className="text-xs text-green-300">
+                                    <span className="text-xs text-emerald-700">
                                         {uniqueMemberships.length || 0} active
                                         memberships
                                     </span>
@@ -795,7 +795,7 @@ export default function Membership_dashboard(props) {
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-amber-400"></div>
 
-                                    <span className="text-xs text-amber-300">
+                                    <span className="text-xs text-amber-700">
                                         Recurring earnings
                                     </span>
                                 </div>
@@ -830,7 +830,7 @@ export default function Membership_dashboard(props) {
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
 
-                                    <span className="text-xs text-cyan-300">
+                                    <span className="text-xs text-cyan-700">
                                         Based on active recurring supporters
                                     </span>
                                 </div>

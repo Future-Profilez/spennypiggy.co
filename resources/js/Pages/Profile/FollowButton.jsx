@@ -44,8 +44,7 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
 
     return (
         <button onClick={handleFollowToggle} disabled={loading}
-            className={`uppercase text-[14px]  font-semibold  rounded-[18px] px-6 !py-[10px] me-3  border-[3px] 
-                border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${isFollowing ? "!bg-gray-300 " : "btn-shadow  bg-mint text-black"}`} > {isFollowing ? "Following" : "Follow"}
+            className={`text-[14px] font-semibold rounded-full px-6 py-2.5 ring-1 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60 ${isFollowing ? "bg-white/5 text-slate-300 ring-white/10" : "bg-white/10 text-white ring-white/20 hover:bg-white/15"}`} > {isFollowing ? "Following" : "Follow"}
         </button>
     );
 };

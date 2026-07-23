@@ -3,15 +3,24 @@
 namespace App\Services;
 
 use App\Models\Deliverable;
-use App\Models\MembershipPayment;
 use App\Models\Membership;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
+use App\Models\MembershipPayment;
+use App\Models\User;
+use App\StripeControl;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class MembershipAccessService
 {
     protected $profileService;
+
+    /**
+     * Per-request memo: a supporter with several memberships used to trigger one
+     * synchronous Stripe round-trip per deliverable, inside a loop, on page render.
+     */
+    protected array $subscriptionStatusCache = [];
+
+    protected array $creatorAccountCache = [];
 
     public function __construct(UserProfileService $profileService)
     {
@@ -21,19 +30,19 @@ class MembershipAccessService
     /**
      * Check if user has active membership access to a specific creator's content
      *
-     * @param int $userId
-     * @param int $creatorId
-     * @param string $membershipLevel (optional) - specific level to check
+     * @param  int  $userId
+     * @param  int  $creatorId
+     * @param  string  $membershipLevel  (optional) - specific level to check
      * @return array
      */
     public function hasActiveMembership($userId, $creatorId, $membershipLevel = null)
     {
         try {
-            if (!$userId || !$creatorId) {
+            if (! $userId || ! $creatorId) {
                 return [
                     'has_access' => false,
                     'reason' => 'Invalid user or creator ID',
-                    'membership' => null
+                    'membership' => null,
                 ];
             }
 
@@ -41,7 +50,7 @@ class MembershipAccessService
             Log::info('MembershipAccessService: Checking membership access', [
                 'user_id' => $userId,
                 'creator_id' => $creatorId,
-                'membership_level' => $membershipLevel
+                'membership_level' => $membershipLevel,
             ]);
 
             // Method 1: Check via active deliverables (most reliable)
@@ -66,20 +75,20 @@ class MembershipAccessService
                 'has_access' => false,
                 'reason' => 'No active membership found',
                 'membership' => null,
-                'expires_at' => null
+                'expires_at' => null,
             ];
 
         } catch (\Exception $e) {
             Log::error('MembershipAccessService: Error checking membership access', [
                 'user_id' => $userId,
                 'creator_id' => $creatorId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'has_access' => false,
                 'reason' => 'System error checking membership access',
-                'membership' => null
+                'membership' => null,
             ];
         }
     }
@@ -100,26 +109,26 @@ class MembershipAccessService
         Log::info('MembershipAccessService: Found deliverables', [
             'user_id' => $userId,
             'creator_id' => $creatorId,
-            'deliverables_count' => $deliverables->count()
+            'deliverables_count' => $deliverables->count(),
         ]);
 
         foreach ($deliverables as $deliverable) {
             $metadata = json_decode($deliverable->metadata, true) ?? [];
-            
+
             // Check if this deliverable matches the required membership level
-            if ($membershipLevel && 
-                isset($metadata['membership_level']) && 
+            if ($membershipLevel &&
+                isset($metadata['membership_level']) &&
                 $metadata['membership_level'] !== $membershipLevel) {
                 continue;
             }
 
             // Check if membership is still active based on subscription status
-            if (isset($metadata['subscription_id']) && !empty($metadata['subscription_id'])) {
-                $subscriptionActive = $this->isSubscriptionActive($metadata['subscription_id']);
-                
+            if (isset($metadata['subscription_id']) && ! empty($metadata['subscription_id'])) {
+                $subscriptionActive = $this->isSubscriptionActive($metadata['subscription_id'], $creatorId);
+
                 if ($subscriptionActive) {
                     $membership = Membership::find($metadata['membership_id'] ?? null);
-                    
+
                     return [
                         'has_access' => true,
                         'reason' => 'Active subscription membership via deliverable',
@@ -127,21 +136,21 @@ class MembershipAccessService
                         'membership_level' => $metadata['membership_level'] ?? null,
                         'subscription_id' => $metadata['subscription_id'],
                         'deliverable_id' => $deliverable->id,
-                        'access_method' => 'deliverable_subscription'
+                        'access_method' => 'deliverable_subscription',
                     ];
                 }
             }
             // Check for lifetime membership
             elseif (isset($metadata['recurring_type']) && $metadata['recurring_type'] === 'lifetime') {
                 $membership = Membership::find($metadata['membership_id'] ?? null);
-                
+
                 return [
                     'has_access' => true,
                     'reason' => 'Lifetime membership via deliverable',
                     'membership' => $membership,
                     'membership_level' => $metadata['membership_level'] ?? null,
                     'deliverable_id' => $deliverable->id,
-                    'access_method' => 'deliverable_lifetime'
+                    'access_method' => 'deliverable_lifetime',
                 ];
             }
         }
@@ -164,13 +173,21 @@ class MembershipAccessService
             })
             ->with('membership');
 
-        // For recurring memberships, check if subscription is still active
-        $activeSubscriptions = $query->where('recurring_for', '!=', 'onetime')
+        // For recurring memberships, check if subscription is still active.
+        // NOTE: clone — Eloquent builders are mutable, so reusing $query below would
+        // keep these constraints and make the lifetime branch unreachable.
+        $activeSubscriptions = (clone $query)->where('recurring_for', '!=', 'onetime')
             ->whereNotNull('stripe_id')
             ->get();
 
         foreach ($activeSubscriptions as $subscription) {
-            if ($this->isSubscriptionActive($subscription->stripe_id)) {
+            // Local state first: a cancelled row whose paid-for period has already
+            // ended never needs a Stripe call.
+            if (! $subscription->isSubscriptionActive()) {
+                continue;
+            }
+
+            if ($this->isSubscriptionActive($subscription->stripe_id, $creatorId)) {
                 return [
                     'has_access' => true,
                     'reason' => 'Active recurring subscription',
@@ -178,14 +195,14 @@ class MembershipAccessService
                     'membership_level' => $subscription->membership->level,
                     'subscription_id' => $subscription->stripe_id,
                     'membership_payment_id' => $subscription->id,
-                    'access_method' => 'subscription_payment'
+                    'access_method' => 'subscription_payment',
                 ];
             }
         }
 
         // Check for lifetime memberships
-        $lifetimePayments = $query->where('recurring_type', 'lifetime')->get();
-        
+        $lifetimePayments = (clone $query)->where('recurring_type', 'lifetime')->get();
+
         foreach ($lifetimePayments as $payment) {
             return [
                 'has_access' => true,
@@ -193,7 +210,7 @@ class MembershipAccessService
                 'membership' => $payment->membership,
                 'membership_level' => $payment->membership->level,
                 'membership_payment_id' => $payment->id,
-                'access_method' => 'lifetime_payment'
+                'access_method' => 'lifetime_payment',
             ];
         }
 
@@ -225,7 +242,7 @@ class MembershipAccessService
                 'membership' => $query->membership,
                 'membership_level' => $query->membership->level,
                 'membership_payment_id' => $query->id,
-                'access_method' => 'lifetime_membership'
+                'access_method' => 'lifetime_membership',
             ];
         }
 
@@ -235,36 +252,54 @@ class MembershipAccessService
     /**
      * Check if Stripe subscription is active
      */
-    private function isSubscriptionActive($subscriptionId)
+    private function isSubscriptionActive($subscriptionId, $creatorId = null)
     {
+        if (empty($subscriptionId)) {
+            return false;
+        }
+
+        if (array_key_exists($subscriptionId, $this->subscriptionStatusCache)) {
+            return $this->subscriptionStatusCache[$subscriptionId];
+        }
+
         try {
-            if (empty($subscriptionId)) {
-                return false;
-            }
+            // Memberships are Direct Charges on the creator's connected account, so the
+            // subscription does NOT exist on the platform account — retrieving it there
+            // 404s and (because we fail closed) locks paying members out of their content.
+            $accountId = $this->connectedAccountFor($creatorId);
+            $opts = $accountId ? ['stripe_account' => $accountId] : [];
 
-            // Direct check - No Caching
-            $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
-            $subscription = $stripe->subscriptions->retrieve($subscriptionId);
-            
+            $client = StripeControl::getClientForCurrency('gbp');
+            $subscription = $client->subscriptions->retrieve($subscriptionId, [], $opts);
+
             $isActive = in_array($subscription->status, ['active', 'trialing', 'past_due']);
-            
-            Log::info('MembershipAccessService: Checked Stripe subscription status', [
-                'subscription_id' => $subscriptionId,
-                'status' => $subscription->status,
-                'is_active' => $isActive
-            ]);
-
-            return $isActive;
-
         } catch (\Exception $e) {
             Log::warning('MembershipAccessService: Failed to check subscription status', [
                 'subscription_id' => $subscriptionId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             // If we can't check Stripe, assume inactive for safety
-            return false;
+            $isActive = false;
         }
+
+        return $this->subscriptionStatusCache[$subscriptionId] = $isActive;
+    }
+
+    /**
+     * Connected account id for a creator, resolved once per request.
+     */
+    private function connectedAccountFor($creatorId): ?string
+    {
+        if (empty($creatorId)) {
+            return null;
+        }
+
+        if (! array_key_exists($creatorId, $this->creatorAccountCache)) {
+            $this->creatorAccountCache[$creatorId] = User::where('id', $creatorId)->value('account_id');
+        }
+
+        return $this->creatorAccountCache[$creatorId] ?: null;
     }
 
     /**
@@ -274,7 +309,7 @@ class MembershipAccessService
     {
         try {
             $memberships = [];
-            
+
             // Get all creators this user has memberships with
             $creatorIds = MembershipPayment::where('user_id', $userId)
                 ->where('status', 'paid')
@@ -296,7 +331,7 @@ class MembershipAccessService
         } catch (\Exception $e) {
             Log::error('MembershipAccessService: Error getting user memberships', [
                 'user_id' => $userId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [];

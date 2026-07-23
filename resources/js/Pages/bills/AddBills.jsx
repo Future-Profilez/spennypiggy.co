@@ -83,9 +83,14 @@ export default function AddBills(props) {
     }, [thumbnail]);
 
     const [loading, setLoading] = useState(false);
+    // The form posts via axios, not useForm.post, so Inertia's `errors` never fills.
+    // Keep server-side field errors locally so they can render inline.
+    const [fieldErrors, setFieldErrors] = useState({});
     const createBills = async (e) => {
         e.preventDefault();
+        if (loading) return;
         setLoading(true);
+        setFieldErrors({});
         axios
             .post(isEdit ? `/bill/edit/${item.uuid}` : `/bill/save`, data)
             .then((resp) => {
@@ -110,12 +115,13 @@ export default function AddBills(props) {
                     reset();
                     resetUploader();
                 } else {
+                    setFieldErrors(resp.data.errors || {});
                     errorAlert(resp.data.msg);
                 }
                 setLoading(false);
             })
             .catch((err) => {
-                console.error("err", err);
+                setFieldErrors(err?.response?.data?.errors || {});
                 setLoading(false);
                 errorsHandling(err);
             });
@@ -130,7 +136,7 @@ export default function AddBills(props) {
                 <div className="pl-3 text-left">
                     <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Recurring content</h2>
                     <p className="text-sm font-poppins">
-                        Pesky bill? Fans unlock exclusive content to help cover it.
+                        Sell content your supporters unlock every week or month.
                     </p>
                 </div>
             </div>
@@ -138,6 +144,10 @@ export default function AddBills(props) {
     };
 
     const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
+    const fieldError = (field) => {
+        const err = fieldErrors[field] || errors[field];
+        return Array.isArray(err) ? err[0] : err;
+    };
     return (
         <Popup
             modalclass="pinkmodal full"
@@ -194,9 +204,9 @@ export default function AddBills(props) {
                                         only, never what the supporter buys. Don't name a
                                         bill, debt or expense (e.g. rent, phone bill).
                                     </p>
-                                    {errors.goal_label && (
+                                    {fieldError("goal_label") && (
                                         <p className="mt-1 text-xs text-red-500 text-left">
-                                            {errors.goal_label}
+                                            {fieldError("goal_label")}
                                         </p>
                                     )}
                                 </li>
@@ -218,9 +228,9 @@ export default function AddBills(props) {
                                         }
                                         required
                                     />
-                                    {errors.name && (
+                                    {fieldError("name") && (
                                         <p className="mt-1 text-xs text-red-500 text-left">
-                                            {errors.name}
+                                            {fieldError("name")}
                                         </p>
                                     )}
                                 </li>
@@ -237,17 +247,26 @@ export default function AddBills(props) {
                                             type="number"
                                             name="price"
                                             placeholder="Eg. 50"
-                                            defaultValue={
-                                                (item && item.price) ||
-                                                data.price
-                                            }
+                                            value={data.price}
+                                            min="4.99"
+                                            max="100"
+                                            step="0.01"
                                             className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
                                             }
+                                            required
                                         />
                                     </div>
+                                    <p className="mt-1 text-xs text-gray-500 text-left">
+                                        Between {defaultCurrency} 4.99 and {defaultCurrency} 100 per period.
+                                    </p>
+                                    {fieldError("price") && (
+                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                            {fieldError("price")}
+                                        </p>
+                                    )}
                                     {data.price > 0 && (
                                         <div className="mt-3 p-3 bg-gray-50 rounded-[30px]  border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">

@@ -49,7 +49,7 @@ const membershipBenefits = [
     },
     {
         title: " ⁠X Community ",
-        value: "x_community ",
+        value: "x_community",
     },
     {
         title: "⁠Monthly Content Bundle",
@@ -81,6 +81,7 @@ export default function EditMembership({ item }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const { auth } = usePage().props;
+    const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
     const uploaderRef = useRef();
     const resetUploader = () => {
         if (uploaderRef.current) {
@@ -285,7 +286,7 @@ export default function EditMembership({ item }) {
                                 : "Monthly Price"}
                         </label>
                         <div className="relative currency-wrapper">
-                            <span className="currency-tag absolute">GBP</span>
+                            <span className="currency-tag absolute">{defaultCurrency}</span>
                             <input
                                 className="border border-gray-300 rounded-[30px]  px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-300 bg-white text-black"
                                 onChange={handleInput}
@@ -306,11 +307,11 @@ export default function EditMembership({ item }) {
                                     <span className="font-bold text-gray-900">
                                         {new Intl.NumberFormat("en-GB", {
                                             style: "currency",
-                                            currency: "GBP",
+                                            currency: defaultCurrency,
                                         }).format(
                                             calculateTotalSupporterPays(
                                                 data.month_price,
-                                                "GBP",
+                                                defaultCurrency,
                                             ).total_supporter_pays,
                                         )}
                                     </span>
@@ -322,7 +323,7 @@ export default function EditMembership({ item }) {
                                     <span className="font-bold text-green-600">
                                         {new Intl.NumberFormat("en-GB", {
                                             style: "currency",
-                                            currency: "GBP",
+                                            currency: defaultCurrency,
                                         }).format(data.month_price)}
                                     </span>
                                 </div>

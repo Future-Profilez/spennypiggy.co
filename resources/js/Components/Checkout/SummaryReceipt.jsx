@@ -28,7 +28,7 @@ export default function SummaryReceipt({
     children,
 }) {
     return (
-        <div className="relative bg-white border-[3px] border-black rounded-[24px] shadow-[8px_8px_0px_rgba(0,0,0,1)] overflow-hidden">
+        <div className="relative bg-white border-[3px] border-black rounded-box shadow-[8px_8px_0px_rgba(0,0,0,1)] overflow-hidden">
             <div className="bg-[#A2E4B8] border-b-[3px] border-black px-5 py-3 !border-t-0 !border-r-0 !border-l-0">
                 <p className="font-black uppercase tracking-widest text-[11px]"> Order summary </p>
             </div>
@@ -140,7 +140,7 @@ export function PayButton({ label, processingLabel = "Processing…", processing
             type="button"
             onClick={onClick}
             disabled={off}
-            className={`w-full border-[3px] border-black rounded-[16px] px-4 py-3.5 font-black uppercase tracking-wide text-sm transition-[transform,box-shadow] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
+            className={`w-full border-[3px] border-black rounded-box-sm px-4 py-3.5 font-black uppercase tracking-wide text-sm transition-[transform,box-shadow] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                 off
                     ? "bg-gray-200 text-black/50 cursor-not-allowed"
                     : "bg-[#FF007F] text-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"

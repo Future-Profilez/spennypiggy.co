@@ -59,7 +59,7 @@ export default function AllMembershipPayments({ auth }) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                <div className="min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
                         {/* Header with Back Button */}
                         <div className="mb-6 sm:mb-8">
@@ -92,9 +92,9 @@ export default function AllMembershipPayments({ auth }) {
 
                         {/* Stats Overview - Responsive Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                            <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4">
+                            <div className="rounded-box bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4">
                                 <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-pink-500/10 flex items-center justify-center text-base sm:text-lg">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-box-sm bg-pink-500/10 flex items-center justify-center text-base sm:text-lg">
                                         👥
                                     </div>
                                     <div>
@@ -107,9 +107,9 @@ export default function AllMembershipPayments({ auth }) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4">
+                            <div className="rounded-box bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4">
                                 <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-base sm:text-lg">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-box-sm bg-emerald-500/10 flex items-center justify-center text-base sm:text-lg">
                                         💰
                                     </div>
                                     <div>
@@ -122,9 +122,9 @@ export default function AllMembershipPayments({ auth }) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4 sm:col-span-2 lg:col-span-1">
+                            <div className="rounded-box bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4 sm:col-span-2 lg:col-span-1">
                                 <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-base sm:text-lg">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-box-sm bg-amber-500/10 flex items-center justify-center text-base sm:text-lg">
                                         📊
                                     </div>
                                     <div>
@@ -140,12 +140,12 @@ export default function AllMembershipPayments({ auth }) {
                         </div>
 
                         {/* Filters and Search - Responsive */}
-                        <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4 mb-4 sm:mb-6">
+                        <div className="rounded-box bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4 mb-4 sm:mb-6">
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <button
                                         onClick={() => setFilter("all")}
-                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-medium transition-all ${
                                             filter === "all"
                                                 ? "bg-pink-500 text-white"
                                                 : "bg-white/5 text-slate-400 hover:bg-white/10"
@@ -155,7 +155,7 @@ export default function AllMembershipPayments({ auth }) {
                                     </button>
                                     <button
                                         onClick={() => setFilter("monthly")}
-                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-medium transition-all ${
                                             filter === "monthly"
                                                 ? "bg-pink-500 text-white"
                                                 : "bg-white/5 text-slate-400 hover:bg-white/10"
@@ -165,7 +165,7 @@ export default function AllMembershipPayments({ auth }) {
                                     </button>
                                     <button
                                         onClick={() => setFilter("yearly")}
-                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-medium transition-all ${
                                             filter === "yearly"
                                                 ? "bg-pink-500 text-white"
                                                 : "bg-white/5 text-slate-400 hover:bg-white/10"
@@ -182,7 +182,7 @@ export default function AllMembershipPayments({ auth }) {
                                         onChange={(e) =>
                                             setSearchTerm(e.target.value)
                                         }
-                                        className="w-full sm:w-64 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-pink-500 text-xs sm:text-sm"
+                                        className="w-full sm:w-64 px-3 sm:px-4 py-1.5 sm:py-2 rounded-box-sm bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-pink-500 text-xs sm:text-sm"
                                     />
                                     <svg
                                         className="absolute right-2 sm:right-3 top-2 sm:top-2.5 w-3 h-3 sm:w-4 sm:h-4 text-slate-400"
@@ -202,7 +202,7 @@ export default function AllMembershipPayments({ auth }) {
                         </div>
 
                         {/* Payments Cards View for Mobile, Table for Desktop */}
-                        <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden">
+                        <div className="rounded-box bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden">
                             {/* Mobile Card View */}
                             <div className="block lg:hidden">
                                 {filteredPayments.map((payment, index) => (

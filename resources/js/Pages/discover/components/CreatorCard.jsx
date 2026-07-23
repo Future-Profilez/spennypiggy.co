@@ -39,8 +39,8 @@ function CreatorCard({ auth, item }) {
             </div>
 
             {/* footer — avatar overlaps the cover */}
-            <div className="relative flex items-center   px-3.5 pb-3.5 pt-1">
-                <div className="mt-[-15px] overflow-hidden rounded-[20px] max-w-[70px] border-[1px] border-pink-500  shadow-[0_6px_6px_-6px_rgba(0,0,0,0.8)]">
+            <div className="p-3 relative flex items-center ">
+                <div className="mt-[0px] overflow-hidden rounded-[20px] max-w-[70px] border-[1px] border-pink-500  shadow-[0_6px_6px_-6px_rgba(0,0,0,0.8)]">
                     <Avatar
                     auth={auth}
                     user={item}

@@ -3,10 +3,19 @@ import axios from 'axios';
 import { useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
-import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
 import { TimeFormat } from '@/includes/TimeFormat';
 import OrderDetail from './OrderDetail';
+
+const OrderCardSkeleton = () => (
+   <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden p-3 md:p-4 animate-pulse">
+      <div className="h-[130px] sm:h-[160px] w-full bg-gray-200 rounded-box-sm border border-black" />
+      <div className="h-4 bg-gray-200 rounded-box-sm mt-4 w-3/4" />
+      <div className="h-3 bg-gray-200 rounded-box-sm mt-2 w-1/2" />
+      <div className="h-6 bg-gray-200 rounded-box-sm mt-4 w-24" />
+      <div className="h-11 bg-gray-200 rounded-box-sm mt-4 w-full" />
+   </div>
+);
 
 export default function OrdersLists({ type = 'sales' }) {
    const slug = (inputString) => {
@@ -17,7 +26,7 @@ export default function OrdersLists({ type = 'sales' }) {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
    }
-   const { global_currency, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+   const { global_currency } = usePage().props;
    const [orderloading, setOrderLoading] = useState(false);
    const [orders, setOrders] = useState([]);
    const [userCurrency, setUserCurrency] = useState(global_currency);
@@ -26,40 +35,13 @@ export default function OrdersLists({ type = 'sales' }) {
    const [monthEarning, setmonthEarning] = useState(0);
    const [claims, setclaims] = useState(0);
 
-   const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+   // Fee maths comes from PriceFormat — a second local copy of the formula drifts.
+   const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
 
-   const isZeroDecimalCurrency = (curr) => {
-       const zeroDecimalCurrencies = [
-           'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
-           'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
-       ];
-       return zeroDecimalCurrencies.includes(curr?.toUpperCase());
-   };
-
-   const calculateTotalSupporterPays = (price, curr) => {
-       const listedPrice = parseFloat(price || 0);
-       const isZeroDecimal = isZeroDecimalCurrency(curr);
-
-       const stripeFeeRate = 0.029;
-       const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-       const platformFeeRate = (platform_fee_percentage || 17) / 100;
-       const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
-       const adminFee = adminFeeInCurrency(curr);
-       const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-
-       if (totalDeductionRate >= 1) return listedPrice;
-
-       const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-
-       if (!isZeroDecimal) {
-           return Math.ceil(totalSupporterPays * 100) / 100;
-       } else {
-           return Math.ceil(totalSupporterPays);
-       }
-   };
-
+   const [loadError, setLoadError] = useState(false);
    const fetchorders = () =>{
       setOrderLoading(true);
+      setLoadError(false);
         axios.get(`/shop/orders-list?type=${type}`)
        .then(res =>{
          setOrders(res.data.orders);
@@ -69,8 +51,9 @@ export default function OrdersLists({ type = 'sales' }) {
          setUserCurrency(res.data.user_currency || global_currency);
          setOrderLoading(false);
         })
-       .catch(err =>{
-            console.log(err);
+       .catch(() =>{
+            // An API failure must not render as "you have no orders".
+            setLoadError(true);
             setOrderLoading(false);
         });
    }
@@ -87,15 +70,15 @@ export default function OrdersLists({ type = 'sales' }) {
 
       {type === 'sales' && (
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8' >
-         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
             <h2 className='font-black text-3xl mb-1' >{claims}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Claims</p>
          </div>
-         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
             <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(monthEarning, userCurrency)}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Last 30 Days</p>
          </div>
-         <div className='bg-white p-6 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+         <div className='bg-white p-6 border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
             <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(allEarning, userCurrency)}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>All Time</p>
          </div>
@@ -106,40 +89,47 @@ export default function OrdersLists({ type = 'sales' }) {
 
       {orders && orders.length > 0 && (
          <div  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {orders.map((item, index) =>
+               {orders.map((item) =>
                   <article 
-                    key={index} 
-                    className="relative bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
+                    key={item.uuid ?? item.id}
+                    className="relative bg-white border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
                   >
                     <div className="p-3 md:p-4">
                         <div className="relative">
-                            <div className="block border border-black rounded-[20px] overflow-hidden relative">
-                                <span className={`absolute top-2 left-2 text-[11px] px-3 py-1 rounded-lg border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] z-[5] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                            <div className="block border border-black rounded-box-sm overflow-hidden relative">
+                                <span className={`absolute top-2 left-2 text-[11px] px-3 py-1 rounded-box-sm border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] z-[5] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                                     {item?.shop?.type === 'physical' ? 'Physical' : 'Digital'}
                                 </span>
                                 
                                 <Link href={item.shop ? `/shop/item/${slug(item.shop.name)}/${item.shop.uuid}` : '#'}>
                                     <img
                                         className="object-cover h-[130px] sm:h-[160px] w-full"
-                                        src={item?.shop?.perma_link || 'https://via.placeholder.com/400?text=🛍️'}
+                                        src={item?.shop?.perma_link || ''}
                                         alt={item?.shop?.name || "Product"}
                                         onError={(e) => {
-                                            e.target.src = 'https://via.placeholder.com/400?text=🛍️';
+                                            // Guard, or re-setting src re-fires onError forever.
+                                            if (e.target.dataset.fallback) return;
+                                            e.target.dataset.fallback = '1';
+                                            e.target.style.backgroundColor = '#f3f4f6';
+                                            e.target.style.display = 'flex';
+                                            e.target.style.alignItems = 'center';
+                                            e.target.style.justifyContent = 'center';
+                                            e.target.innerHTML = '🛍️';
                                         }}
                                     />
                                  <div className="absolute top-2 right-2 flex items-center gap-2">
                                        {item.payment_status === 'refunded' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-gray-200 text-gray-700 uppercase">Refunded</span>
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-gray-200 text-gray-700 uppercase">Refunded</span>
                                        ) : item.status === 'delivered' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-green-100 text-green-700 uppercase">Completed</span>
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-green-100 text-green-700 uppercase">Completed</span>
                                        ) : item.status === 'shipped' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-blue-100 text-blue-700 uppercase">Shipped</span>
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-blue-100 text-blue-700 uppercase">Shipped</span>
                                        ) : item.status === 'processing' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-indigo-100 text-indigo-700 uppercase">Processing</span>
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-indigo-100 text-indigo-700 uppercase">Processing</span>
                                        ) : item.is_delayed ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-red-100 text-red-700 uppercase">Delayed</span>
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-red-100 text-red-700 uppercase">Delayed</span>
                                        ) : (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-lg border border-black bg-yellow-100 text-yellow-700 uppercase">Pending</span>
+                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-yellow-100 text-yellow-700 uppercase">Pending</span>
                                        )}
                                  </div>
                                 </Link>
@@ -194,9 +184,10 @@ export default function OrdersLists({ type = 'sales' }) {
                         <div className="mt-auto">
                             <OrderDetail 
                                 date={<TimeFormat dateString={item.created_at} />} 
-                                item={item} 
+                                item={item}
+                                type={type}
                                 text={'View Info'} 
-                                classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 text-black text-sm sm:text-base uppercase text-center block" 
+                                classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 text-black text-sm sm:text-base uppercase text-center block" 
                                 onSuccess={fetchorders} 
                             />
                         </div>
@@ -208,8 +199,37 @@ export default function OrdersLists({ type = 'sales' }) {
       </>
       : ''}
 
-      {orderloading ? <LoadingScreen /> : "" }
-      {!orderloading && orders.length < 1 ? <Nocontent bg="none" text="Nothing to see" /> : ""}
+      {/* Skeletons, not a full-page spinner — the grid stays in place on refetch. */}
+      {orderloading ? (
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[0, 1, 2].map((n) => <OrderCardSkeleton key={n} />)}
+         </div>
+      ) : loadError ? (
+         <>
+            <Nocontent
+               hideImage
+               text={type === 'sales' ? "Couldn't load your orders" : "Couldn't load your purchases"}
+               subheading="Something went wrong on our side. Nothing has been lost — try again."
+            />
+            <div className="text-center mt-4">
+               <button
+                  onClick={fetchorders}
+                  className="font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000]"
+               >
+                  Try again
+               </button>
+            </div>
+         </>
+      ) : orders.length < 1 ? (
+         <Nocontent
+            text={type === 'sales' ? "No orders yet" : "No purchases yet"}
+            subheading={type === 'sales'
+               ? "When a supporter buys one of your products, the order lands here."
+               : "Anything you buy from a creator shows up here with its delivery status."}
+            actionHref={type === 'sales' ? '/shop?type=products' : '/discover'}
+            actionText={type === 'sales' ? 'Manage your products' : 'Find creators'}
+         />
+      ) : ""}
 
       <style>{`
          .dropdown-menu .drop-icon-text svg path{fill:none;}

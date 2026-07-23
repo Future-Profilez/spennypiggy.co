@@ -413,6 +413,12 @@ export default function BillCheckout(props) {
         );
     };
 
+    // A bill can be weekly / monthly / yearly — hardcoded "monthly" copy told a
+    // weekly supporter the wrong charge cadence at the moment they pay.
+    const periodKey = (bill?.period || "monthly").toLowerCase();
+    const periodLabel = { weekly: "Weekly", monthly: "Monthly", yearly: "Yearly", annual: "Yearly" }[periodKey] || "Recurring";
+    const periodAdverb = { weekly: "weekly", monthly: "monthly", yearly: "yearly", annual: "yearly" }[periodKey] || "on schedule";
+
     return (
         <>
             <Authenticated auth={auth.user} user={user}>
@@ -424,7 +430,7 @@ export default function BillCheckout(props) {
                                 Complete your membership
                             </h1>
                             <p className="text-sm font-bold text-black/60 mt-2">
-                                Monthly content membership from{" "}
+                                {periodLabel} content membership from{" "}
                                 {bill?.user?.name || ""}{" "}
                                 <Link
                                     className="text-[#FF007F] hover:underline"
@@ -447,15 +453,15 @@ export default function BillCheckout(props) {
                                             </SectionLabel>
                                             <textarea
                                                 rows={3}
-                                                className="w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
-                                                onKeyUp={(e) =>
+                                                className="w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                                onChange={(e) =>
                                                     setData(
                                                         "message",
                                                         e.target.value,
                                                     )
                                                 }
                                                 placeholder="Write message in under 800 Words..."
-                                                defaultValue={data.message}
+                                                value={data.message}
                                             ></textarea>
                                             <span className="text-xs text-red-600">
                                                 {errors.message}
@@ -471,7 +477,7 @@ export default function BillCheckout(props) {
                                                         From
                                                     </label>
                                                     <input
-                                                        className="w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                                        className="w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
                                                         onChange={(e) =>
                                                             setData(
                                                                 "name",
@@ -500,7 +506,7 @@ export default function BillCheckout(props) {
                                                             auth.user.email
                                                                 ? "opacity-60 cursor-not-allowed"
                                                                 : ""
-                                                        } w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
+                                                        } w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
                                                         value={data.email}
                                                         disabled={
                                                             auth &&
@@ -591,7 +597,7 @@ export default function BillCheckout(props) {
                                     creatorUsername={bill?.user?.username}
                                     rows={[
                                         {
-                                            label: "Monthly membership",
+                                            label: `${periodLabel} membership`,
                                             value: formatMultiPrice(
                                                 finalTotalAmount,
                                                 bill && bill.currency,
@@ -603,7 +609,7 @@ export default function BillCheckout(props) {
                                         bill && bill?.currency,
                                     )}
                                     totalNote={`Includes all fees. You'll be charged in ${bill?.currency}.`}
-                                    renewalNote="Renews monthly · cancel anytime"
+                                    renewalNote={`Renews ${periodAdverb} · cancel anytime`}
                                 >
                                     <PayButton
                                         label={`Subscribe & pay ${formatMultiPrice(
@@ -653,7 +659,7 @@ export default function BillCheckout(props) {
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="e.g. 123456"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
@@ -666,7 +672,7 @@ export default function BillCheckout(props) {
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="CONFIRM"
                                     value={typedConfirmation}
                                     onChange={(e) =>

@@ -33,6 +33,10 @@ export default function Stripe(props) {
     const [country, setCountry] = useState("");
     const [connecting, setConnecting] = useState(false);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
+    // Terms acceptance must be state, not a ref. Reading checkRef.current inside
+    // the button's `disabled` expression never re-renders, and on first paint the
+    // ref is still undefined — which left the button enabled with nothing ticked.
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const adminIdentityApproved = auth?.user?.identity_admin_status === 1;
     const finalStepsUnlocked = auth?.user?.profile_status_lock == 2;
@@ -47,6 +51,16 @@ export default function Stripe(props) {
             window.scrollTo({ top: 0, behavior: "smooth" });
         }
     }, [success]);
+
+    // Every gate the server also enforces, so the button can never be the only
+    // thing standing between an un-consented creator and a Stripe account.
+    const canConnect =
+        !connecting &&
+        finalStepsUnlocked &&
+        !!mor_consent_given &&
+        !!country &&
+        termsAccepted &&
+        (creatorEmailReceiptAcked || !!data.creator_email_receipt_ack);
 
     // Only show consent details if consent was given before this session
     // Don't show if we just submitted the form (success message will handle that)
@@ -105,24 +119,19 @@ export default function Stripe(props) {
             return false;
         }
 
-        if (
-            !creatorEmailReceiptAcked &&
-            creatorEmailReceiptAckRef &&
-            creatorEmailReceiptAckRef.current &&
-            !creatorEmailReceiptAckRef.current.checked
-        ) {
+        if (!creatorEmailReceiptAcked && !data.creator_email_receipt_ack) {
             errorAlert(
                 "Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.",
             );
-            creatorEmailReceiptAckRef.current.focus();
+            creatorEmailReceiptAckRef.current?.focus();
             return false;
         }
 
-        // if (!checkRef.current.checked) {
-        //     errorAlert("Please check accept terms & conditions checkbox");
-        //     checkRef.current.focus();
-        //     return false;
-        // }
+        if (!termsAccepted) {
+            errorAlert("Please accept the terms & conditions to continue.");
+            checkRef.current?.focus();
+            return false;
+        }
 
         setConnecting(true);
 
@@ -134,11 +143,13 @@ export default function Stripe(props) {
             {
                 preserveScroll: true,
                 onError: (errs) => {
-                    setConnecting(false);
                     Object.keys(errs || {}).forEach((k) => {
                         if (errs[k]) errorAlert(errs[k]);
                     });
                 },
+                // A server-side redirect carrying a flash error never fires
+                // onError, which left the button spinning and disabled forever.
+                onFinish: () => setConnecting(false),
             },
         );
         return true;
@@ -638,14 +649,15 @@ export default function Stripe(props) {
                                 ref={checkRef}
                                 id="termaccept"
                                 name="termaccept"
-                                value="termaccept"
                                 required
-                                onChange={(e) =>
+                                checked={termsAccepted}
+                                onChange={(e) => {
+                                    setTermsAccepted(e.target.checked);
                                     setData(
                                         "termaccept",
-                                        e.target.value,
-                                    )
-                                }
+                                        e.target.checked ? "termaccept" : "",
+                                    );
+                                }}
                                 className="mt-1 w-5 h-5 text-pink border-2 border-gray-300 rounded focus:ring-pink focus:ring-2"
                             />
                             <p className="text-sm text-gray-700 leading-relaxed">
@@ -669,19 +681,9 @@ export default function Stripe(props) {
 
                     <div className="flex justify-center">
                         <button
-                            className={`${!country || (checkRef && checkRef.current && !checkRef.current.checked) ? "opacity-50 cursor-not-allowed" : ""} block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105`}
+                            className={`${canConnect ? "" : "opacity-50 cursor-not-allowed"} block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full btn-shadow active:transform active:scale-[0.99] transition-all duration-200`}
                             onClick={checkTerms}
-                            disabled={
-                                connecting ||
-                                !finalStepsUnlocked ||
-                                !mor_consent_given ||
-                                !country ||
-                                (checkRef && checkRef.current && !checkRef.current.checked) ||
-                                (!creatorEmailReceiptAcked &&
-                                    creatorEmailReceiptAckRef &&
-                                    creatorEmailReceiptAckRef.current &&
-                                    !creatorEmailReceiptAckRef.current.checked)
-                            }
+                            disabled={!canConnect}
                         >
                             {connecting ? (
                                 <span className="flex items-center justify-center">

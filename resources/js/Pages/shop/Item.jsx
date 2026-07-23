@@ -11,7 +11,6 @@ import {
 } from "@animateicons/react/lucide";
 import { Rss, Percent } from "lucide-react";
 import axios from "axios";
-import AllContries from "../../includes/AllCountries";
 
 export default function ShopDetailItem(props) {
     const twitterRef = useRef(null);
@@ -55,20 +54,13 @@ export default function ShopDetailItem(props) {
         const shareUrl = `https://feedly.com/i/subscription/feed/${encodeURIComponent(url)}`;
         window.open(shareUrl, "_blank", "noopener,noreferrer");
     };
-    const { formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
-    const {
-        global_currency,
-        turnstileSiteKey,
-        platform_fee_percentage,
-        transaction_fee_percentage,
-    } = usePage().props;
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
 
     const isOwner = Number(auth?.user?.id) === Number(shop?.user_id);
     const vatPercentage = shop?.user?.vat_amount_percentage || 0;
     const itemCurrency = (shop?.currency || shop?.user?.default_currency || "GBP").toUpperCase();
 
-    const hasVariants = false;
-    const [price, setPrice] = useState(shop.price);
+    const price = shop.price;
 
     const [currentCountry, setCurrentCountry] = useState();
     const getIp = async () => {
@@ -96,15 +88,27 @@ export default function ShopDetailItem(props) {
         }
         return 0;
     });
+    const [shippingUnknown, setShippingUnknown] = useState(false);
     const getShippingPrice = (c) => {
+        if (!c) return;
         axios
-            .get(`/shop/shipping-price/${shop.uuid}?country=${c}`)
+            .get(`/shop/shipping-price/${shop.uuid}?country=${encodeURIComponent(c)}`)
             .then((resp) => {
+                setShippingUnknown(false);
                 setShippingPrice(resp.data && resp.data.shipping_price);
             })
-            .catch((err) => {
-                console.error("api err", err);
+            .catch(() => {
+                // Say so, rather than leaving a stale figure on screen as if it were live.
+                setShippingUnknown(true);
             });
+    };
+
+    // The destination the buyer picks — not the country their IP resolved to — is
+    // what the quote and the purchase request must use.
+    const handleCountryChange = (code) => {
+        if (!code || code === currentCountry) return;
+        setCurrentCountry(code);
+        getShippingPrice(code);
     };
 
     useEffect(() => {
@@ -120,14 +124,14 @@ export default function ShopDetailItem(props) {
     return (
         <>
             <Guest auth={auth.user} user={user}>
-                <div className="bg-gray-200 min-h-screen">
+                <div className="bg-gray-200 min-h-dvh">
                     <div className="container mx-auto px-4 m-auto">
-                        <div className="py-6 md:py-14 max-w-[900px] m-auto">
+                        <div className="py-6 md:py-14 max-w-[900px] m-auto pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-14">
                             <Head title={shop.name || "Spenny Piggy Shop"} />
                             <div className="product-details max-w-[700px] px-2 mx-auto">
                                 <button
                                     className="flex md:hidden items-center text-xl mb-4 "
-                                    onClick={() => window.history.back()} >
+                                    onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = `/${shop?.user?.username || ''}`))} >
                                     <span className="mt-1">
                                         <ChevronLeftIcon size={24} />
                                     </span>{" "}
@@ -198,9 +202,9 @@ export default function ShopDetailItem(props) {
                                         <h3 className="text-md font-semibold text-gray-800 mb-3">Your Purchases</h3>
                                         <div className="space-y-3">
                                             {props.my_purchases.map(purchase => (
-                                                <div key={purchase.id} className="bg-gray-50 !rounded-[20px] p-4 px-6 flex justify-between items-center text-sm">
+                                                <div key={purchase.id} className="bg-gray-50 !rounded-box p-4 px-6 flex justify-between items-center text-sm">
                                                     <div>
-                                                        <p className="font-medium text-lg text-gray-700">Order #{purchase.uuid.substring(0, 8)}</p>
+                                                        <p className="font-medium text-lg text-gray-700">Order #{(purchase.uuid || purchase.id || '').toString().substring(0, 8) || 'â€”'}</p>
                                                         <p className="text-normal text-gray-500 capitalize">Status: {purchase.status}</p>
                                                     </div>
                                                     <div className="flex flex-col items-end">
@@ -227,13 +231,13 @@ export default function ShopDetailItem(props) {
                                     </div>
                                 )}
 
-                                {isOwner && shop.edited_status == 0 && (
-                                    <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-[20px] font-medium text-sm">
+                                {isOwner && shop.edited_status == 0 && shop.edited_reason && (
+                                    <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-box-sm font-medium text-sm">
                                         <strong>Admin requested changes:</strong> {shop.edited_reason}
                                     </div>
                                 )}
                                 {shop?.is_suspended == 1 && (
-                                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-r-[20px] font-medium text-sm">
+                                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-r-box-sm font-medium text-sm">
                                         <strong className="uppercase">Suspended</strong>
                                         <div className="mt-1">
                                             {shop?.suspend_reason
@@ -245,12 +249,12 @@ export default function ShopDetailItem(props) {
 
                                 <div className="w-full relative">
                                     <img
-                                        className="w-full max-h-[400px] object-cover rounded-[30px]  "
-                                        alt="image of a girl posing"
+                                        className="w-full max-h-[400px] object-cover rounded-box"
+                                        alt={shop.name || "Product image"}
                                         src={shop.perma_link}
                                     />
                                     {shop.ai_generated == 1 ? (
-                                        <div className="absolute bottom-2 left-2 z-10 bg-black shadow-sm rounded-[30px]   px-2 py-1 text-[8px] text-white">
+                                        <div className="absolute bottom-2 left-2 z-10 bg-black shadow-sm rounded-box-sm px-2 py-1 text-[8px] text-white">
                                             MADE WITH AI{" "}
                                         </div>
                                     ) : (
@@ -262,7 +266,7 @@ export default function ShopDetailItem(props) {
                                     <h2 className="font-GillSans uppercase text-3xl">
                                         {shop.name}
                                     </h2>
-                                    <span className={`px-3 py-1 rounded-lg border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                                    <span className={`px-3 py-1 rounded-box-sm border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                                         {shop.type === 'physical' ? 'Physical' : 'Digital'}
                                     </span>
                                 </div>
@@ -271,7 +275,7 @@ export default function ShopDetailItem(props) {
                                 </p>
 
                                 {shop.type === 'physical' && shop.shipping_information && (
-                                    <div className="mt-4 p-5 bg-blue-50 border-[1px] border-gray-300 rounded-[24px] animate-in fade-in slide-in-from-top-2 duration-500">
+                                    <div className="mt-4 p-5 bg-blue-50 border-[1px] border-gray-300 rounded-box animate-in fade-in slide-in-from-top-2 duration-500">
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="text-xl">🚚</span>
                                             <h3 className="text-sm font-black uppercase tracking-widest text-blue-800">Shipping Information</h3>
@@ -285,16 +289,17 @@ export default function ShopDetailItem(props) {
                                 <p className=" text-base lg:leading-tight leading-normal text-black mt-3 mb-2">
                                     Category : {" "}
                                     <span className="capitalize">
-                                        {(shop?.category && shop.category.map((c, i) => {
-                                            return `${c?.category?.category !== null ? c?.category?.category : ""}${i>=0 && i<shop.category.length-1 ? ',' : ''}`;
-                                        })) || "Not Available"} 
+                                        {shop?.category
+                                            ?.map((c) => c?.category?.category)
+                                            .filter(Boolean)
+                                            .join(", ") || "Not Available"}
                                     </span>
                                 </p>
 
                                 {shop &&
                                 shop.is_member == 0 &&
                                 shop.special_member_price ? (
-                                    <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[30px]   p-3 ">
+                                    <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-box p-3 ">
                                         <div className="discount-tag w-[50px] h-[50px] mr-2 flex items-center justify-center">
                                             <Percent size={32} className="text-[#FF007F]" />
                                         </div>
@@ -340,7 +345,7 @@ export default function ShopDetailItem(props) {
                                             <a
                                                 href={`https://twitter.com/intent/tweet?url=${url}`}
                                                 target="_blank"
-                                                className=" break-words text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/twitter"
+                                                className=" break-words text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/twitter"
                                                 aria-label="Twitter"
                                                 onMouseEnter={() => twitterRef.current?.startAnimation()}
                                             >
@@ -353,9 +358,10 @@ export default function ShopDetailItem(props) {
                                         </li>
 
                                         <li>
-                                            <div
+                                            <button
+                                                type="button"
                                                 onClick={instashare}
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/insta"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/insta"
                                                 aria-label="Instagram"
                                                 onMouseEnter={() => instaRef.current?.startAnimation()}
                                             >
@@ -364,12 +370,13 @@ export default function ShopDetailItem(props) {
                                                     size={28} 
                                                     duration={1.5}
                                                 />
-                                            </div>
+                                            </button>
                                         </li>
 
                                         <li>
-                                            <div
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/fb"
+                                            <button
+                                                type="button"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/fb"
                                                 aria-label="Facebook"
                                                 onClick={fbShare}
                                                 onMouseEnter={() => fbRef.current?.startAnimation()}
@@ -379,37 +386,41 @@ export default function ShopDetailItem(props) {
                                                     size={28} 
                                                     duration={1.5}
                                                 />
-                                            </div>
+                                            </button>
                                         </li>
 
                                         <li>
-                                            <div
-                                                className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]    p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                            <button
+                                                type="button"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                                 aria-label="RSS"
                                                 onClick={rssShare}
                                             >
                                                 <Rss size={28} />
-                                            </div>
+                                            </button>
                                         </li>
                                     </ul>
                                 </div>
 
 
 
-                                {shop.slot_limitation && (shop.slot_limitation - shop.total_sold) > 0 ? (
+                                {/* `slot_limitation` is REMAINING stock — the server decrements it on each sale. */}
+                                {shop.slot_limitation != null && Number(shop.slot_limitation) > 0 ? (
                                     <div className="my-2">
                                         <span className=" text-pink text-lg font-light ">
-                                            Only {" "}
-                                            {shop.slot_limitation -
-                                                shop.total_sold}{" "}
-                                            Left
+                                            Only {Number(shop.slot_limitation)} Left
                                         </span>
                                     </div>
-                                        
                                 ) : (
                                     ""
                                 )}
                                 
+                                {shippingUnknown && shop.type === 'physical' && (
+                                    <p className="text-sm font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-box-sm px-3 py-2 my-2">
+                                        Shipping couldn't be calculated right now — it will be confirmed at checkout.
+                                    </p>
+                                )}
+
                                 <div className="!py-4 sm:flex items-center justify-between">
                                     <div className=" mb-3">
                                         <h3 className="text-3xl font-bold flex flex-col ">
@@ -488,13 +499,25 @@ export default function ShopDetailItem(props) {
                                 
                                 <div>
                                     {IsloggedIn ? (
-                                        ""
+                                        // The owner used to get a dead end here — no edit, no way back to their shop.
+                                        <div className="flex flex-col sm:flex-row gap-3">
+                                            <Link
+                                                href="/shop?type=products"
+                                                className="w-full sm:w-auto text-center font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000]"
+                                            >
+                                                Manage in my shop
+                                            </Link>
+                                            <Link
+                                                href="/shop?type=orders"
+                                                className="w-full sm:w-auto text-center font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000]"
+                                            >
+                                                View orders
+                                            </Link>
+                                        </div>
                                     ) : (
                                         <>
-                                            {shop.slot_limitation &&
-                                            shop.slot_limitation -
-                                                shop.total_sold ===
-                                                0 ? (
+                                            {shop.slot_limitation != null &&
+                                            Number(shop.slot_limitation) <= 0 ? (
                                                 <button className="btn-pink sm disabled w-full sm:w-auto">
                                                     SOLD
                                                 </button>
@@ -508,6 +531,7 @@ export default function ShopDetailItem(props) {
                                                             shippingPrice
                                                         }
                                                         country={currentCountry}
+                                                        onCountryChange={handleCountryChange}
                                                         vat_percent={
                                                             vat_percent
                                                         }

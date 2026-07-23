@@ -45,6 +45,16 @@ class CheckoutMethodResolverTest extends TestCase
         $this->assertFalse($r['force_3ds']);
     }
 
+    public function test_missing_connected_account_refuses_closed(): void
+    {
+        // Listings created before creators were gated on account_id still exist;
+        // a null account here must be a readable refusal, not a TypeError 500.
+        $r = CheckoutMethodResolver::resolve('card', 'both', 50, 'GBP', null, null, null);
+
+        $this->assertFalse($r['ok']);
+        $this->assertSame('creator_not_connected', $r['code']);
+    }
+
     public function test_unknown_requested_method_falls_back_to_card(): void
     {
         // A client sending anything other than 'bank' must never get bank pricing.

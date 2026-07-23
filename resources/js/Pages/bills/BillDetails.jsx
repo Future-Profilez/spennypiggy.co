@@ -84,7 +84,7 @@ export default function BillDetails(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gray-200">
+                <div className="min-h-dvh bg-gray-200">
                     <div className="max-w-[1500px] mx-auto px-4 py-8">
                         {/* PAGE HEADER */}
                         <div className="mb-8">

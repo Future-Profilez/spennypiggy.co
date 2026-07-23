@@ -130,9 +130,10 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         }
     };
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this Piggy Pot?')) {
-            destroy(route('piggy-pots.destroy', id), {
+    const handleDelete = (pot) => {
+        const label = pot?.title ? `"${pot.title}"` : 'this Piggy Pot';
+        if (confirm(`Delete ${label}? Supporters who already purchased keep their content, but the pot will no longer be visible.`)) {
+            destroy(route('piggy-pots.destroy', pot.id), {
                 onSuccess: () => successAlert('Piggy Pot deleted successfully!'),
                 onError: () => errorAlert('Failed to delete Piggy Pot.'),
             });
@@ -150,17 +151,17 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         >
             <Head title="Piggy Pots" />
 
-            <div className="bg-gray-200 min-vh-100 pb-12">
+            <div className="bg-gray-200 min-h-dvh pb-12">
                 <div className="containerbox m-auto">
                     <div className="py-8 md:py-16 max-w-[900px] m-auto">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
                             <h2 className="font-GillSans uppercase text-3xl">
                                 Piggy Pots
                             </h2>
                             <button
                                 type="button"
                                 onClick={openCreateModal}
-                                className="text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block p-2 !px-4 border border-black rounded-[14px] md:rounded-[16px] !text-black bg-yellow-300 shadow-[3px_3px_0px_#000]"
+                                className="text-lg w-full md:w-auto min-h-[48px] inline-flex items-center justify-center px-4 border border-black rounded-box-sm !text-black bg-yellow-300 shadow-[3px_3px_0px_#000]"
                             >
                                 + Create New Pot
                             </button>
@@ -265,21 +266,21 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
 
                                         <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
                                             {data.cover_media && (
-                                                <div className="mb-3 bg-white border-2 border-black rounded-xl overflow-hidden relative group">
+                                                <div className="mb-3 bg-white border-2 border-black rounded-box-sm overflow-hidden relative">
                                                     <img
                                                         src={data.cover_media}
                                                         className="w-full h-[150px] object-cover"
-                                                        alt="Cover Preview"
+                                                        alt="Cover preview"
                                                     />
-                                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setData('cover_media', '')}
-                                                            className="bg-white text-red-600 font-bold px-4 py-2 border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
-                                                        >
-                                                            Remove Cover
-                                                        </button>
-                                                    </div>
+                                                    {/* Persistent, not hover-only — a phone has no hover. */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setData('cover_media', '')}
+                                                        aria-label="Remove cover image"
+                                                        className="absolute top-2 right-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-white text-red-600 font-black text-xl border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                             )}
                                             <div className="uploader overflow-hidden">
@@ -336,7 +337,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                     <button
                                                         type="button"
                                                         onClick={() => setData('content_file', '')}
-                                                        className="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded-lg"
+                                                        className="text-red-500 hover:text-red-700 text-xs px-3 min-h-[44px] border border-red-200 rounded-box-sm"
                                                     >
                                                         Remove
                                                     </button>
@@ -447,18 +448,27 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                         </Popup>
 
                         {piggyPots.length === 0 ? (
-                            <div className="text-center py-10 bg-white border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-3xl mt-4">
-                                <p className="text-gray-500 text-lg">
+                            <div className="text-center py-10 px-6 bg-white border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-box mt-4">
+                                <div className="text-4xl mb-3">🐷</div>
+                                <p className="text-gray-500 text-lg mb-6">
                                     You haven't created any Piggy Pots yet.
                                 </p>
+                                <button
+                                    type="button"
+                                    onClick={openCreateModal}
+                                    className="inline-flex items-center justify-center min-h-[48px] px-8 border-2 border-black rounded-box-sm bg-yellow-300 text-black font-black uppercase tracking-widest shadow-[3px_3px_0px_#000] hover:-translate-y-1"
+                                >
+                                    + Create your first Pot
+                                </button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mt-4">
                                 {piggyPots.map((pot) => {
-                                    const progressPercent = Math.min(
-                                        100,
-                                        ((pot.total_raised || 0) / pot.target_amount) * 100,
-                                    );
+                                    const potTarget = Number(pot.target_amount) || 0;
+                                    const potRaised = Number(pot.total_raised) || 0;
+                                    const progressPercent = potTarget > 0
+                                        ? Math.min(100, (potRaised / potTarget) * 100)
+                                        : 0;
 
                                     return (
                                         <div
@@ -529,7 +539,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                                 Progress Goal
                                                             </p>
                                                             <p className="font-black text-xl text-black">
-                                                                {pot.currency} {pot.target_amount}
+                                                                {pot.currency} {potTarget.toFixed(2)}
                                                             </p>
                                                         </div>
                                                         <div className="text-right">
@@ -562,7 +572,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleDelete(pot.id)}
+                                                        onClick={() => handleDelete(pot)}
                                                         className="px-5 py-2.5 border-[3px] border-black rounded-full text-sm font-black uppercase tracking-wider bg-red-100 hover:bg-red-200 text-red-600 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                                                     >
                                                         Delete

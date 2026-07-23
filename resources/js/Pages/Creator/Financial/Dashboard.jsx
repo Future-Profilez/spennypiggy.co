@@ -74,6 +74,16 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
         }).format(Number(amount || 0));
     };
 
+    // Bare currency symbol for chart axes (Intl currency formatting is too wide for a tick).
+    const currencySymbol = (() => {
+        try {
+            const parts = new Intl.NumberFormat('en-GB', { style: 'currency', currency: displayCurrency || 'GBP' }).formatToParts(0);
+            return parts.find((p) => p.type === 'currency')?.value || '£';
+        } catch (e) {
+            return '£';
+        }
+    })();
+
     // Shared display tokens - one currency + label system across the whole page.
     const MONEY = 'tabular-nums tracking-tight font-bold';        // every currency figure
     const MONEY_POS = 'text-emerald-600';                         // money to the creator (light surfaces)
@@ -954,18 +964,39 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">
                                                     Paid out every Friday. {summary.carry_over_amount > 0 ? `Includes ${formatCurrency(summary.carry_over_amount, displayCurrency)} from previous tax year.` : ''} {summary.has_adjustment ? 'Includes recovery for previous payouts.' : 'Excludes reserves, pending completion, disputes and refunds.'}
                                                 </div>
-                                                {summary.payout_preview?.lines && summary.payout_preview.lines.length > 0 && (
-                                                    <div className="mt-4 space-y-1.5 border-t border-gray-200 pt-3">
-                                                        {summary.payout_preview.lines.map((line, idx) => (
-                                                            <div key={idx} className="flex justify-between items-center gap-3 text-[13px] font-medium">
-                                                                <span className="text-gray-500">{line.label}</span>
-                                                                <span className={`tabular-nums tracking-tight font-semibold whitespace-nowrap ${line.amount >= 0 ? 'text-gray-700' : 'text-red-600'}`}>
-                                                                    {line.amount >= 0 ? '+' : ''}{formatCurrency(line.amount, displayCurrency)}
-                                                                </span>
+                                                {(() => {
+                                                    // Build the "why your payable is lower than your earnings" breakdown from the
+                                                    // fields the backend actually returns (net_earnings / reserve_held /
+                                                    // refund_disputes / review_holds / negative_balance_*). The old code read a
+                                                    // `.lines` key the API never sent, so this entire breakdown was dead.
+                                                    const pp = summary.payout_preview;
+                                                    if (!pp) return null;
+                                                    const negRecovery = Number(pp.negative_balance_before || 0);
+                                                    const rawLines = [
+                                                        { label: 'Net earnings', amount: Number(pp.net_earnings || 0) },
+                                                        { label: 'Reserve held (released later)', amount: -Number(pp.reserve_held || 0) },
+                                                        { label: 'Refunds & disputes', amount: -Number(pp.refund_disputes || 0) },
+                                                        { label: 'Under review', amount: -Number(pp.review_holds || 0) },
+                                                        { label: 'Balance recovery', amount: -negRecovery },
+                                                    ].filter((l) => Math.abs(l.amount) > 0.005);
+                                                    if (rawLines.length <= 1) return null;
+                                                    return (
+                                                        <div className="mt-4 space-y-1.5 border-t border-gray-200 pt-3">
+                                                            {rawLines.map((line, idx) => (
+                                                                <div key={idx} className="flex justify-between items-center gap-3 text-[13px] font-medium">
+                                                                    <span className="text-gray-500">{line.label}</span>
+                                                                    <span className={`tabular-nums tracking-tight font-semibold whitespace-nowrap ${line.amount >= 0 ? 'text-gray-700' : 'text-red-600'}`}>
+                                                                        {line.amount >= 0 ? '+' : ''}{formatCurrency(line.amount, displayCurrency)}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                            <div className="flex justify-between items-center gap-3 text-[13px] font-bold border-t border-gray-200 pt-2 mt-1">
+                                                                <span className="text-gray-700">Payable now</span>
+                                                                <span className="tabular-nums tracking-tight text-emerald-600 whitespace-nowrap">{formatCurrency(summary.payoutable_balance, displayCurrency)}</span>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                             <div className="p-5 md:p-6">
                                                 <div className={`${EYEBROW} mb-1.5`}>Pending Completion (Cleared)</div>
@@ -974,10 +1005,41 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             </div>
                                             <div className="p-5 md:p-6">
                                                 <div className={`${EYEBROW} mb-1.5`}>Status</div>
-                                                <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 text-[13px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wide">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Healthy
-                                                </div>
-                                                <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">Your account is in good standing and payouts run on schedule.</div>
+                                                {(() => {
+                                                    // Derive the real state instead of always showing green. A paused,
+                                                    // negative-balance or below-threshold creator was previously told
+                                                    // "payouts run on schedule" while receiving nothing.
+                                                    const pp = summary.payout_preview;
+                                                    const paused = !!auth?.user?.payout_paused_at;
+                                                    const negative = Number(pp?.negative_balance_after || 0) > 0;
+                                                    const belowThreshold = !!pp?.is_below_threshold;
+
+                                                    let tone = 'emerald', label = 'Healthy', note = 'Your account is in good standing and payouts run on schedule.';
+                                                    if (paused) {
+                                                        tone = 'red'; label = 'Payouts paused';
+                                                        note = 'Payouts are paused on your account. Contact support if you were not expecting this.';
+                                                    } else if (negative) {
+                                                        tone = 'amber'; label = 'Balance recovery';
+                                                        note = 'A previous refund left a negative balance that is being recovered from new earnings before the next payout.';
+                                                    } else if (belowThreshold) {
+                                                        tone = 'amber'; label = 'Below minimum';
+                                                        note = 'Your payable balance is under the minimum payout amount. It carries over and pays out once it clears the minimum.';
+                                                    }
+                                                    const toneMap = {
+                                                        emerald: 'bg-emerald-500/10 text-emerald-600',
+                                                        amber: 'bg-amber-500/10 text-amber-600',
+                                                        red: 'bg-red-500/10 text-red-600',
+                                                    };
+                                                    const dotMap = { emerald: 'bg-emerald-500', amber: 'bg-amber-500', red: 'bg-red-500' };
+                                                    return (
+                                                        <>
+                                                            <div className={`inline-flex items-center gap-1.5 ${toneMap[tone]} text-[13px] font-bold px-3 py-1.5 rounded-box-sm uppercase tracking-wide`}>
+                                                                <span className={`w-1.5 h-1.5 rounded-full ${dotMap[tone]}`} /> {label}
+                                                            </div>
+                                                            <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">{note}</div>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     </div>
@@ -1267,7 +1329,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             <defs><linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#FF007F" stopOpacity={0.3}/><stop offset="95%" stopColor="#FF007F" stopOpacity={0}/></linearGradient></defs>
                                                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                                                             <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                                                            <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v}`} />
+                                                            <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${currencySymbol}${v}`} />
                                                             <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} itemStyle={{ color: '#111827' }} />
                                                             <Area type="monotone" dataKey="total" stroke="#FF007F" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
                                                         </AreaChart>

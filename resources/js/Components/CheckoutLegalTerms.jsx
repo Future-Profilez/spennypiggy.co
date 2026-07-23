@@ -39,14 +39,14 @@ export default function CheckoutLegalTerms({ onAgreeChange }) {
                 </button>
 
                 {expanded && (
-                    <div className="mt-3 mb-4 p-4 bg-gray-50 rounded-[15px] border border-gray-200">
+                    <div className="mt-3 mb-4 p-4 bg-gray-50 rounded-box-sm border border-gray-200">
                         <p className="text-sm text-gray-700 font-semibold mb-2">By completing this purchase, I acknowledge and agree that:</p>
                         <ul className="list-disc pl-4 text-sm text-gray-600 space-y-1.5">
                             <li>Payments are made directly to the creator, who is the merchant of record and solely responsible for the content, products, and fulfilment</li>
                             <li>Spenny Piggy acts as a technology platform facilitating payments and is not the seller of any goods or services</li>
                             <li>For digital content, memberships, or access-based products, access may be provided immediately after payment and is considered fulfilled at the point access is granted</li>
                             <li>Where I request immediate access to digital content or services, I expressly consent to this and understand that I may lose any applicable cancellation rights once access has been provided</li>
-                            <li>For support payments, tips, or wishes, I acknowledge that I am making a voluntary, non-refundable contribution to the creator, which may include access to content or other creator-defined rewards</li>
+                            <li>For content unlocks and creator services, I acknowledge that I am making a non-refundable purchase of creator content, which may include access to content or other creator-defined deliverables</li>
                             <li>For physical goods (if applicable), the creator is responsible for delivery, fulfilment, and any applicable returns or refunds in accordance with their stated terms</li>
                             <li>I have reviewed the creator’s profile, content, or offering and understand what I am purchasing before completing this transaction</li>
                             <li>To the extent permitted by law, refunds, disputes, or claims relating to the purchase must be directed to the creator</li>

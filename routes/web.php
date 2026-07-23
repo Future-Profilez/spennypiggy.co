@@ -315,7 +315,7 @@ Route::get('get-cart', function () {
 Route::post('/analytics/search-click', [\App\Http\Controllers\AnalyticsController::class, 'searchClick'])->name('analytics.search-click');
 Route::post('/feature-suggestion', [FeatureSuggestionController::class, 'store'])->middleware('throttle:5,1')->name('feature-suggestion.store');
 Route::post('/api/report-content', [\App\Http\Controllers\Api\ReportController::class, 'store'])->middleware('throttle:5,1')->name('api.report.store');
-Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
+Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->middleware('rye.enabled')->name('rye.webhook');
 
 // Unified Stripe Webhook Endpoint
 Route::post('/webhook/payment', [StripeWebhookController::class, 'handle'])->name('stripe.webhook.unified');
@@ -341,7 +341,7 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 // GiftStore Route
 Route::get('/giftstore', function () {
     return Inertia::render('rye/GiftStore');
-})->name('giftStore');
+})->middleware('rye.enabled')->name('giftStore');
 
 Route::get('/creators', function () {
     return Inertia::render('creators/Index');
@@ -388,48 +388,10 @@ if (app()->environment('local')) {
     Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 }
 
-Route::get('/migrate-covers', function () {
-    $users = \App\Models\User::whereNull('cover')
-        ->orWhere('cover', '')
-        ->orWhere('cover', 'like', '%wishlistbannerimg%')
-        ->orWhere('cover', 'like', '%default%')
-        ->get();
-
-    $creatorCovers = [
-        '0139dcd1-f9c5-47ac-b6f9-3baac6f48d06',
-        '21de57a2-c786-4a5a-b7e4-2edcdb61fc42',
-        '6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2',
-        'fcdb1692-d64d-4de8-b7af-5e0556cdf6e8',
-        '40aaf556-fa59-4f8e-b482-e49726026499',
-        'a2cad976-2480-4c77-baa3-cb5df3cdc0d6',
-        'b81b3097-5c4c-4f48-aaf0-3687bc928a18',
-        '32c130a9-37e6-4934-8d72-a83a5d8bdaa6',
-        'e71ed424-f17a-47d9-b0e7-3e5eca4e51cb',
-        'dc1021e2-41a4-4dfa-8379-b27fb7e3834e',
-        '175e706f-ae6a-4920-a131-bf90502084f8',
-        'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
-        '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
-        'c3b7ff7a-719a-452a-ba8f-d074d916b395',
-        '133b057f-f069-4ea4-82e4-ba9184d721cd'
-    ];
-
-    $count = 0;
-    foreach ($users as $user) {
-        if ($user->role == 1) {
-            $user->cover = $creatorCovers[array_rand($creatorCovers)];
-        } else {
-            $user->cover = 'dc1021e2-41a4-4dfa-8379-b27fb7e3834e';
-        }
-        $user->cover_approved = 1;
-        $user->save();
-        $count++;
-    }
-
-    return response()->json([
-        'message' => "Successfully updated covers for $count users.",
-        'updated_count' => $count
-    ]);
-});
+// REMOVED: GET /migrate-covers — a public, unauthenticated closure that wrote
+// cover + cover_approved=1 on every user with a default/empty cover, and
+// re-randomised them on every call. A one-shot data migration belongs in an
+// Artisan command, not an anonymous GET that mass-mutates the users table.
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
@@ -498,7 +460,15 @@ Route::get('/currency/{c}', function (Request $request, $c) {
     return back()->with('error', 'Invalid Currency!');
 })->name('change.currency');
 
-Route::prefix("test")->name("test.")->group(function () {
+/*
+| Scratch/test routes — local and testing only.
+|
+| These were reachable on every deployed environment with no authentication:
+| they send real email, hit Stripe, and expose currency/API debug output. Dev is
+| a publicly reachable host, so "not production" would not have been a guard
+| either — this group is closed everywhere except a developer's own machine.
+*/
+Route::prefix("test")->name("test.")->middleware('localonly')->group(function () {
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("search", [TestController::class, "stripeSearch"])->name("search");
         Route::get("checkout", [CheckoutController::class, 'testCheckout'])->name('checkout');
@@ -908,10 +878,20 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     Route::patch('/feature-suggestions/{suggestion}/status', [FeatureSuggestionController::class, 'updateStatus'])->name('admin.feature-suggestions.update-status');
 });
 
-// System Diagnostics Admin — must be admin-only (was previously unprotected).
-// Route::middleware(['auth', 'verified', 'admin'])->group(function () {});
-Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
-Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
+/*
+| System Diagnostics — admin only.
+|
+| The guard was previously written as a commented-out group with the routes left
+| registered OUTSIDE it, so the comment claimed a protection that did not exist.
+| Anonymously reachable, it returned the last ERROR/CRITICAL lines of the
+| application log (payment intent ids, buyer emails, stack traces), platform
+| financial integrity counts, and which secrets are configured — and its Stripe
+| test path creates a real Connect Express account on every run.
+*/
+Route::middleware(['auth', 'verified', 'admin'])->group(function () {
+    Route::get('admin/system-diagnostics', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
+    Route::post('admin/system-diagnostics/run', [\App\Http\Controllers\Admin\SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
+});
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
 Route::get('/debug-sentry', function () {
@@ -980,15 +960,18 @@ if (app()->environment('local')) {
     })->name('test.intercom');
 }
 
-// Intercom debug route
-Route::get('/debug-intercom', [\App\Http\Controllers\IntercomDebugController::class, 'debug'])->name('debug.intercom');
 
 
 
 // Moved /task/* routes to routes/auth.php to respect username catch-all ordering
 
-// Test Scheduler Route
-Route::get('/test/scheduler/is/running', function () {
+// Test Scheduler Route.
+//
+// Local only: it reports the cache driver and store names, which is deployment
+// detail with no reason to be public. (Its own logic is also dead — $lastRun is
+// hardcoded null, so it always answers "inactive". Real scheduler health is
+// checked by the admin app's infra:health-check.)
+Route::middleware('localonly')->get('/test/scheduler/is/running', function () {
     // Caching disabled for production stability
     $lastRun = null;
     $lastRunDynamo = null;

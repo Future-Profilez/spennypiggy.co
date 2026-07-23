@@ -23,7 +23,11 @@ import axios from "axios";
 import DeviceID from "./includes/DeviceID";
 import "./utils/pwaDebug";
 import Maintaince from "./Components/Maintaince.jsx";
+<<<<<<< Updated upstream
 import SmoothScroll from "./Components/SmoothScroll.jsx";
+=======
+import Lenis from "lenis";
+>>>>>>> Stashed changes
 
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
@@ -256,6 +260,40 @@ createInertiaApp({
         
         // Set up global cart refresh functions
         setupGlobalCartFunctions(props);
+
+        // Smooth, elastic momentum scrolling (Lenis) — init once, respect reduced motion
+        if (
+            typeof window !== "undefined" &&
+            !window.__lenis &&
+            !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ) {
+            const style = document.createElement("style");
+            style.textContent =
+                "html.lenis,html.lenis body{height:auto}.lenis.lenis-smooth{scroll-behavior:auto!important}.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}.lenis.lenis-stopped{overflow:hidden}";
+            document.head.appendChild(style);
+
+            const lenis = new Lenis({
+                duration: 1.15,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                smoothWheel: true,
+                touchMultiplier: 1.6,
+                overscroll: true,
+            });
+            window.__lenis = lenis;
+
+            const raf = (time) => {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            };
+            requestAnimationFrame(raf);
+
+            // Reset scroll position cleanly on Inertia page visits
+            router.on("navigate", () => {
+                try {
+                    lenis.scrollTo(0, { immediate: true });
+                } catch (e) {}
+            });
+        }
     },
     progress: {
         color: "var(--pink)",

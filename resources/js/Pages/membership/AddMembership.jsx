@@ -49,7 +49,7 @@ const membershipBenifits = [
   },
   {
     'title':' ⁠X Community ',
-    'value':'x_community '
+    'value':'x_community'
   },
   {
     'title':'⁠Monthly Content Bundle',

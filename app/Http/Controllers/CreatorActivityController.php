@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Services\CreatorActivityService;
-use App\Models\User;
-use App\Models\Task;
-use App\Models\WishItem;
-use App\Models\Membership;
-use App\Models\Shop;
-use App\Models\Bills;
-use App\Models\Post;
-use App\Models\PiggyPot;
-use App\Models\Deliverable;
-use App\Models\Payment;
 use App\Models\AuditLog;
+use App\Models\Bills;
+use App\Models\Deliverable;
+use App\Models\Membership;
+use App\Models\Payment;
+use App\Models\PiggyPot;
+use App\Models\Post;
+use App\Models\Shop;
+use App\Models\Task;
+use App\Models\User;
+use App\Models\WishItem;
+use App\Services\CreatorActivityService;
+use App\Services\PostingCadenceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -50,10 +50,16 @@ class CreatorActivityController extends Controller
 
         return Inertia::render('Creator/ActivityStatus', [
             'activityStatus' => $activityStatus,
-            'postingCadence' => app(\App\Services\PostingCadenceService::class)->statusFor($user),
+            'postingCadence' => app(PostingCadenceService::class)->statusFor($user),
             'contentBreakdown' => $contentBreakdown,
             'blockedPayments' => $blockedPayments,
             'activityTimeline' => $activityTimeline,
+            // "What do I do about it" — the page previously reported a blocked state with
+            // no way to act on it.
+            'suggestions' => $this->activityService->getContentSuggestions(
+                $activityStatus['breakdown'] ?? $this->activityService->getContentBreakdown($user),
+                $user
+            ),
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -94,7 +100,7 @@ class CreatorActivityController extends Controller
 
             if (is_array($log->metadata_json)) {
                 $metadata = $log->metadata_json;
-            } elseif (is_string($log->metadata_json) && !empty($log->metadata_json)) {
+            } elseif (is_string($log->metadata_json) && ! empty($log->metadata_json)) {
                 $metadata = json_decode($log->metadata_json, true) ?? [];
             }
 
@@ -125,7 +131,7 @@ class CreatorActivityController extends Controller
                 'method' => $requestContext['method'] ?? $metadata['method'] ?? null,
                 'url' => $requestContext['url'] ?? $metadata['url'] ?? null,
                 'changes' => $changes,
-                'has_changes' => !empty($changes),
+                'has_changes' => ! empty($changes),
                 'what_changed' => $whatChanged,
                 'raw_metadata' => $metadata,
             ];
@@ -185,7 +191,7 @@ class CreatorActivityController extends Controller
      */
     private function getReferenceName($referenceId, $modelType)
     {
-        if (!$referenceId) {
+        if (! $referenceId) {
             return null;
         }
 
@@ -346,47 +352,72 @@ class CreatorActivityController extends Controller
      */
     private function formatChangeValue($field, $value)
     {
-        if ($value === null || $value === '') return '—';
+        if ($value === null || $value === '') {
+            return '—';
+        }
 
-        if (is_bool($value)) return $value ? 'Yes' : 'No';
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
 
         $fieldLower = strtolower($field);
 
         if (str_contains($fieldLower, 'approved')) {
-            if ($value === 2 || $value === '2' || $value === 'rejected') return 'Rejected';
-            if ($value === 1 || $value === '1' || $value === 'approved') return 'Approved';
-            if ($value === 0 || $value === '0' || $value === 'pending') return 'Pending';
+            if ($value === 2 || $value === '2' || $value === 'rejected') {
+                return 'Rejected';
+            }
+            if ($value === 1 || $value === '1' || $value === 'approved') {
+                return 'Approved';
+            }
+            if ($value === 0 || $value === '0' || $value === 'pending') {
+                return 'Pending';
+            }
         }
 
         if (str_contains($fieldLower, 'status')) {
-            if ($value === 2 || $value === '2') return 'Inactive';
-            if ($value === 1 || $value === '1') return 'Active';
-            if ($value === 'completed') return 'Completed';
-            if ($value === 'expired') return 'Expired';
-            if ($value === 'pending') return 'Pending';
+            if ($value === 2 || $value === '2') {
+                return 'Inactive';
+            }
+            if ($value === 1 || $value === '1') {
+                return 'Active';
+            }
+            if ($value === 'completed') {
+                return 'Completed';
+            }
+            if ($value === 'expired') {
+                return 'Expired';
+            }
+            if ($value === 'pending') {
+                return 'Pending';
+            }
         }
 
         if (str_contains($fieldLower, 'lock') || str_contains($fieldLower, 'profile_status')) {
-            if ($value === 2 || $value === '2') return 'Locked';
-            if ($value === 1 || $value === '1') return 'Unlocked';
+            if ($value === 2 || $value === '2') {
+                return 'Locked';
+            }
+            if ($value === 1 || $value === '1') {
+                return 'Unlocked';
+            }
         }
 
         if (str_contains($fieldLower, 'stripe')) {
             // Format Stripe IDs - show first part and last part for readability
             if (is_string($value) && strlen($value) > 20) {
-                return substr($value, 0, 10) . '...' . substr($value, -10);
+                return substr($value, 0, 10).'...'.substr($value, -10);
             }
-            return (string)$value;
+
+            return (string) $value;
         }
 
         if (str_contains($fieldLower, 'price') || str_contains($fieldLower, 'amount')) {
             // Check if it's a numeric value (actual price/amount)
-            if (is_numeric($value) && !str_contains($fieldLower, 'price_id')) {
-                return '$' . number_format((float)$value, 2);
+            if (is_numeric($value) && ! str_contains($fieldLower, 'price_id')) {
+                return '$'.number_format((float) $value, 2);
             }
             // For price_id and similar fields, truncate if too long
             if (is_string($value) && strlen($value) > 20) {
-                return substr($value, 0, 10) . '...' . substr($value, -10);
+                return substr($value, 0, 10).'...'.substr($value, -10);
             }
         }
 
@@ -399,15 +430,15 @@ class CreatorActivityController extends Controller
         // Handle URLs and IDs
         if (str_contains($fieldLower, 'url') || str_contains($fieldLower, 'link') || str_contains($fieldLower, 'id')) {
             if (is_string($value) && strlen($value) > 50) {
-                return substr($value, 0, 47) . '...';
+                return substr($value, 0, 47).'...';
             }
         }
 
         if (is_string($value) && strlen($value) > 100) {
-            return substr($value, 0, 100) . '...';
+            return substr($value, 0, 100).'...';
         }
 
-        return (string)$value;
+        return (string) $value;
     }
 
     /**
@@ -487,7 +518,7 @@ class CreatorActivityController extends Controller
             // Add all item details
             if (isset($metadata['item']) && is_array($metadata['item'])) {
                 foreach ($metadata['item'] as $key => $value) {
-                    if ($key !== 'id' && !empty($value) && $value !== 'N/A') {
+                    if ($key !== 'id' && ! empty($value) && $value !== 'N/A') {
                         $fieldLabel = $this->formatFieldName($key);
                         $formattedValue = $this->formatChangeValue($key, $value);
 
@@ -572,7 +603,7 @@ class CreatorActivityController extends Controller
     {
         $user = Auth::user();
         $activityStatus = $this->activityService->validateCreatorActivity($user);
-        $activityStatus['postingCadence'] = app(\App\Services\PostingCadenceService::class)->statusFor($user);
+        $activityStatus['postingCadence'] = app(PostingCadenceService::class)->statusFor($user);
 
         return response()->json($activityStatus);
     }
@@ -589,7 +620,7 @@ class CreatorActivityController extends Controller
         return response()->json([
             'success' => true,
             'activityStatus' => $activityStatus,
-            'message' => 'Activity status refreshed successfully'
+            'message' => 'Activity status refreshed successfully',
         ]);
     }
 
@@ -598,47 +629,16 @@ class CreatorActivityController extends Controller
      */
     private function getContentBreakdown($user)
     {
-        $sinceDate = Carbon::now()->subDays(28);
+        // Reuse the service so the page's breakdown can never disagree with the number
+        // the payment gate itself uses (it had its own copy, which also counted the
+        // automatic support-thank-you posts the gate excludes).
+        $breakdown = $this->activityService->getContentBreakdown($user);
 
-        $posts = Post::where('user_id', $user->id)
-            ->where('approved', 1)
-            ->where('created_at', '>=', $sinceDate)
-            ->count();
-
-        $wishes = WishItem::where('user_id', $user->id)
-            ->where('is_approved', 1)
-            ->where('created_at', '>=', $sinceDate)
-            ->count();
-
-        $memberships = Membership::where('user_id', $user->id)
-            ->where('approved', 1)
-            ->where('created_at', '>=', $sinceDate)
-            ->count();
-
-        $shops = Shop::where('user_id', $user->id)
-            ->where('approved', 1)
-            ->where('created_at', '>=', $sinceDate)
-            ->count();
-
-        $bills = Bills::where('user_id', $user->id)
-            ->where('approved', 1)
-            ->where('created_at', '>=', $sinceDate)
-            ->count();
-
-        $tasks = Task::where('creator_id', $user->id)
-            ->where('is_approved', 1)
-            ->where('created_at', '>=', $sinceDate)
-            ->count();
-
-        return [
-            'posts' => $posts,
-            'wishes' => $wishes,
-            'memberships' => $memberships,
-            'shops' => $shops,
-            'bills' => $bills,
-            'tasks' => $tasks,
-            'total' => $posts + $wishes + $memberships + $shops + $bills + $tasks,
-            'period' => '28 days'
+        return $breakdown + [
+            'total' => array_sum($breakdown),
+            'required' => CreatorActivityService::REQUIRED_CONTENT_COUNT,
+            'period_days' => CreatorActivityService::ACTIVITY_PERIOD_DAYS,
+            'period' => CreatorActivityService::ACTIVITY_PERIOD_DAYS.' days',
         ];
     }
 
@@ -656,48 +656,48 @@ class CreatorActivityController extends Controller
     private function getActivityTimeline($user)
     {
         $days = 30;
+        $since = Carbon::now()->subDays($days - 1)->startOfDay();
+
+        /*
+         * One grouped query per content type (6 total). This used to loop 30 days and run
+         * 6 counts inside the loop — 180 queries on every load of the activity page.
+         */
+        $sources = [
+            [Post::class, 'user_id', 'approved', 1],
+            [WishItem::class, 'user_id', 'is_approved', 1],
+            [Membership::class, 'user_id', 'approved', 1],
+            [Shop::class, 'user_id', 'approved', 1],
+            [Bills::class, 'user_id', 'approved', 1],
+            [Task::class, 'creator_id', 'is_approved', 1],
+        ];
+
+        $counts = [];
+
+        foreach ($sources as [$model, $ownerColumn, $approvedColumn, $approvedValue]) {
+            $rows = $model::where($ownerColumn, $user->id)
+                ->where($approvedColumn, $approvedValue)
+                ->where('created_at', '>=', $since)
+                ->selectRaw('DATE(created_at) as day, COUNT(*) as aggregate')
+                ->groupBy('day')
+                ->pluck('aggregate', 'day');
+
+            foreach ($rows as $day => $count) {
+                // MySQL returns DATE() as Y-m-d; sqlite may include a time part.
+                $key = substr((string) $day, 0, 10);
+                $counts[$key] = ($counts[$key] ?? 0) + (int) $count;
+            }
+        }
+
         $timeline = [];
 
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
-            $dayStart = $date->copy()->startOfDay();
-            $dayEnd = $date->copy()->endOfDay();
-
-            $dayContent = 0;
-            $dayContent += Post::where('user_id', $user->id)
-                ->where('approved', 1)
-                ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->count();
-
-            $dayContent += WishItem::where('user_id', $user->id)
-                ->where('is_approved', 1)
-                ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->count();
-
-            $dayContent += Membership::where('user_id', $user->id)
-                ->where('approved', 1)
-                ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->count();
-
-            $dayContent += Shop::where('user_id', $user->id)
-                ->where('approved', 1)
-                ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->count();
-
-            $dayContent += Bills::where('user_id', $user->id)
-                ->where('approved', 1)
-                ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->count();
-
-            $dayContent += Task::where('creator_id', $user->id)
-                ->where('is_approved', 1)
-                ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->count();
+            $key = $date->format('Y-m-d');
 
             $timeline[] = [
-                'date' => $date->format('Y-m-d'),
-                'content_count' => $dayContent,
-                'is_weekend' => $date->isWeekend()
+                'date' => $key,
+                'content_count' => $counts[$key] ?? 0,
+                'is_weekend' => $date->isWeekend(),
             ];
         }
 
@@ -714,42 +714,34 @@ class CreatorActivityController extends Controller
 
         $suggestions = [];
 
-        if (!$activityStatus['eligible']) {
-            $needed = 3 - ($activityStatus['content_count'] ?? 0);
+        /*
+         * The action links used to be built from route('posts.create') / route('wish-items.create')
+         * / route('memberships.create') / route('shop.create') — none of those route names exist,
+         * so route() threw RouteNotFoundException and this endpoint returned a 500 every time.
+         * They now come from CreatorActivityService, which owns the real, reachable URLs.
+         */
+        $needed = $activityStatus['needed'] ?? 0;
 
-            if ($needed > 0) {
-                $suggestions[] = [
-                    'type' => 'create_content',
-                    'priority' => 'high',
-                    'title' => 'Create More Content',
-                    'description' => "Add {$needed} more approved content items to reactivate payments",
-                    'actions' => [
-                        ['label' => 'Create Post', 'url' => route('posts.create')],
-                        ['label' => 'Add Wish Item', 'url' => route('wish-items.create')],
-                        ['label' => 'Create Membership', 'url' => route('memberships.create')],
-                        ['label' => 'Add Shop Item', 'url' => route('shop.create')],
-                        ['label' => 'Create Task', 'url' => route('task.create')]
-                    ]
-                ];
-            }
-        }
+        if (! $activityStatus['eligible'] && $needed > 0) {
+            $breakdown = $activityStatus['breakdown'] ?? [];
 
-        if ($activityStatus['status'] === 'grace_period_ending') {
+            $actions = collect($this->activityService->getContentSuggestions($breakdown, $user))
+                ->map(fn ($s) => ['label' => $s['title'], 'url' => $s['action_url'], 'icon' => $s['icon'] ?? null])
+                ->values()
+                ->all();
+
             $suggestions[] = [
-                'type' => 'prepare_for_requirements',
-                'priority' => 'medium',
-                'title' => 'Prepare for Requirements',
-                'description' => 'Your grace period is ending soon. Make sure you have consistent content creation habits.',
-                'actions' => [
-                    ['label' => 'View Content Calendar', 'url' => '/creator/calendar'],
-                    ['label' => 'Set Reminders', 'url' => '/creator/settings#notifications']
-                ]
+                'type' => 'create_content',
+                'priority' => 'high',
+                'title' => 'Create More Content',
+                'description' => "Add {$needed} more approved content ".($needed === 1 ? 'item' : 'items').' to reactivate payments',
+                'actions' => $actions,
             ];
         }
 
         return response()->json([
             'suggestions' => $suggestions,
-            'activityStatus' => $activityStatus
+            'activityStatus' => $activityStatus,
         ]);
     }
 }

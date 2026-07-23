@@ -741,11 +741,11 @@ export default function Dashboard(props) {
 
     return (
         <>
-            <Guest auth={auth.user} user={user} className="bg-[#A2E4B8]">
+            <Guest auth={auth.user} user={user} className="bg-fixed bg-gradient-to-b from-[#0a0f20] via-[#0d1430] to-[#0a0f20]">
                 <Head
                     title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
                 />
-                <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
+                <div className="wishlistPage overflow-x-hidden min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
                     <div className="containerbox relative z-10">
                         <VersionUpdate />
                         {props.founderData?.isEligible &&
@@ -767,9 +767,9 @@ export default function Dashboard(props) {
                         {IsloggedIn && <ReferralBanner />}
 
                         <div className="wishbanner relative ">
-                            <div className="relative border-b-4 border-black rounded-[30px]  overflow-hidden">
+                            <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden">
                                 {user?.is_founder ? (
-                                    <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-[30px]  p-1">
+                                    <div className="absolute top-5 left-5 md:left-7 flex justify-center lg:justify-start z-10 bg-white/10 backdrop-blur-md rounded-full shadow-[0_8px_24px_-8px_rgba(34,211,238,0.5)] ring-1 ring-cyan-300/40 p-1.5">
                                         <FounderBadge size="md" />
                                     </div>
                                 ) : (
@@ -793,6 +793,9 @@ export default function Dashboard(props) {
                                     loading="eager"
                                     fetchpriority="high"
                                 />
+                                {/* Blend the cover into the dark page + neon edge */}
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-b from-transparent via-[#0a0f20]/70 to-[#0a0f20]" />
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-cyan-400/0 via-cyan-400/60 to-lime-400/0" />
                                 {IsloggedIn &&
                                 auth?.user?.cover_url &&
                                 auth?.user?.cover_approved == 0 ? (

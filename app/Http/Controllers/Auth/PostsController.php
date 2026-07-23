@@ -11,270 +11,293 @@ use App\Models\PostComment;
 use App\Models\PostCommentReplies;
 use App\Models\PostLike;
 use App\Models\User;
+use App\Services\CreatorActivityService;
+use App\Services\ModerationService;
+use App\Services\UserProfileService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use App\Services\UserProfileService;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class PostsController extends Controller
 {
+    /**
+     * Audiences a creator may publish to. `support_thanks` posts are written by the
+     * platform, never by this endpoint.
+     */
+    private const ALLOWED_MODULES = ['public', 'membership', 'subscription', 'support'];
+
+    /** Post kinds a creator may submit. */
+    private const ALLOWED_TYPES = ['image', 'blog'];
+
+    /**
+     * Validation rules shared by savePost/editPost.
+     *
+     * A post must carry an image OR text — previously `image` was `required` outright,
+     * so a text-only update was impossible, while title/content were only required for
+     * type=blog (a type the UI never sends), meaning an image post could be saved with
+     * no title and no body at all.
+     */
+    private function postRules(): array
+    {
+        return [
+            'type' => ['required', 'string', Rule::in(self::ALLOWED_TYPES)],
+            'for_module' => ['required', 'string', Rule::in(self::ALLOWED_MODULES)],
+            'image' => ['nullable', 'string', 'max:500', 'required_without:content'],
+            'title' => ['nullable', 'string', 'max:150'],
+            'content' => ['nullable', 'string', 'max:5000', 'required_without:image'],
+            'ai_generated' => ['sometimes', 'boolean'],
+        ];
+    }
 
     public function savePost(Request $request)
     {
-        $request->validate([
-            "type" => [
-                'required',
-                "string",
-            ],
-            'image' => [
-                'required'
-            ],
-            "title" => [
-                'sometimes',
-                'required_if:type,blog'
-            ],
-            "content" => [
-                'sometimes',
-                "required_if:type,blog"
-            ],
-            'for_module' => [
-                'sometimes',
-                'string'
-            ],
+        $request->validate($this->postRules(), [
+            'content.required_without' => 'Add some text or choose an image for this post.',
+            'image.required_without' => 'Add some text or choose an image for this post.',
         ]);
 
+        // NOTE: this endpoint is called with axios and the caller reads resp.data.status.
+        // These two guards used to return redirect()->back(), so the real reason was
+        // swallowed and the creator saw a generic failure with no idea what to change.
         $blockedWord = Helpers::checkBlockData($request);
         if ($blockedWord !== false) {
-            return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
+            return response()->json([
+                'status' => false,
+                'msg' => "The word or emoji '{$blockedWord}' is not allowed as per our policies.",
+            ], 422);
         }
 
         // Stripe compliance: PG-13 / adult-content moderation seam (media classifier wired later).
-        $moderation = app(\App\Services\ModerationService::class)
-            ->classify(trim(($request->title ?? '') . ' ' . ($request->content ?? '')), $request->image ?? null);
+        $moderation = app(ModerationService::class)
+            ->classify(trim(($request->title ?? '').' '.($request->content ?? '')), $request->image ?? null);
         if ($moderation['flagged']) {
-            return redirect()->back()->with("error", $moderation['reason'] ?? 'This content did not pass moderation.');
-        }
-
-        {
-            Post::create([
-                'user_id' => Auth::id(),
-                'type' => $request->type,
-                'for_module' => $request->for_module,
-                'title' => $request->title ?? null,
-                'content' => $request->content ?? null,
-                'image' => $request->image ?? null,
-                "ai_generated" => $request->ai_generated ?? 0,
-            ]);
-
-            // Clear activity cache to ensure real-time updates
-            app(\App\Services\CreatorActivityService::class)->clearActivityCache(Auth::user());
-
-            // Clear user caches
-            $user = Auth::user();
-            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
-
             return response()->json([
-                'status' => true,
-                'msg' => "Post saved successfully, your upload will be approved shortly."
-            ]);
+                'status' => false,
+                'msg' => $moderation['reason'] ?? 'This content did not pass moderation.',
+            ], 422);
         }
-    }
 
+        $post = Post::create([
+            'user_id' => Auth::id(),
+            'type' => $request->type,
+            'for_module' => $request->for_module,
+            'title' => $request->title ?: null,
+            'content' => $request->content ?: null,
+            'image' => $request->image ?: null,
+            'ai_generated' => $request->boolean('ai_generated'),
+        ]);
+
+        // Clear activity cache to ensure real-time updates
+        app(CreatorActivityService::class)->clearActivityCache(Auth::user());
+
+        // Clear user caches
+        $user = Auth::user();
+        app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
+        return response()->json([
+            'status' => true,
+            'uuid' => $post->uuid,
+            'msg' => 'Post saved. It will appear to your audience once approved.',
+        ]);
+    }
 
     public function editPost(Request $request, $uuid)
     {
+        $request->validate($this->postRules(), [
+            'content.required_without' => 'Add some text or choose an image for this post.',
+            'image.required_without' => 'Add some text or choose an image for this post.',
+        ]);
+
         $post = Post::where('uuid', $uuid)->first();
 
-        $request->validate([
-            "type" => [
-                'required',
-                "string",
-            ],
-            "title" => [
-                'sometimes',
-                "string",
-            ],
-            "content" => [
-                'sometimes',
-                "string",
-            ],
-            'for_module' => [
-                'required',
-                'string'
-            ],
-            'image' => [
-                'sometimes',
-                'string',
-            ]
-        ]);
+        if (empty($post)) {
+            return response()->json(['status' => false, 'msg' => 'Post not found.'], 404);
+        }
+
+        // Ownership check — only the post's author can edit it (IDOR).
+        if ((int) $post->user_id !== (int) Auth::id()) {
+            return response()->json(['status' => false, 'msg' => 'Unauthorized.'], 403);
+        }
+
+        // Platform-written posts (support thank-yous) are not creator-editable.
+        if ($post->type === 'support_thanks') {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Automatic thank-you posts cannot be edited.',
+            ], 422);
+        }
 
         $blockedWord = Helpers::checkBlockData($request);
         if ($blockedWord !== false) {
-            return redirect()->back()->with("error", "The word or emoji '{$blockedWord}' is not allowed as per our policies.");
-        } else {
-            if (!empty($post)) {
-                // Ownership check — only the post's author can edit it (IDOR).
-                if ((int) $post->user_id !== (int) Auth::id()) {
-                    return redirect()->back()->with("error", "Unauthorized.");
-                }
-                $post->type = $request->type;
-                $post->for_module = $request->for_module;
-                $post->title = $request->title ?? null;
-                $post->content = $request->content ?? null;
-                $post->image = $request->image ?? null;
-                $post->ai_generated = $request->ai_generated ?? 0;
-                $post->approved = 0;
-                $post->save();
-
-                $logs = Logs::where('edited_post_id', $post->id)->where('status', 'pending')->first();
-                if (!empty($logs)) {
-                    $logs->status = 'updated';
-                    $logs->save();
-                }
-
-                // Clear user caches
-                $user = Auth::user();
-                app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
-
-                return response()->json([
-                    'status' => true,
-                    'msg' => "Post edited successfully."
-                ]);
-            }
-
             return response()->json([
                 'status' => false,
-                'msg' => "Post not found."
-            ]);
+                'msg' => "The word or emoji '{$blockedWord}' is not allowed as per our policies.",
+            ], 422);
         }
-    }
 
+        // Edits go back through moderation exactly like a new post does — without this an
+        // approved post could be edited into anything and stay live until re-review.
+        $moderation = app(ModerationService::class)
+            ->classify(trim(($request->title ?? '').' '.($request->content ?? '')), $request->image ?? null);
+        if ($moderation['flagged']) {
+            return response()->json([
+                'status' => false,
+                'msg' => $moderation['reason'] ?? 'This content did not pass moderation.',
+            ], 422);
+        }
+
+        $post->type = $request->type;
+        $post->for_module = $request->for_module;
+        $post->title = $request->title ?: null;
+        $post->content = $request->content ?: null;
+        $post->image = $request->image ?: null;
+        $post->ai_generated = $request->boolean('ai_generated');
+        $post->approved = 0;
+        $post->save();
+
+        $logs = Logs::where('edited_post_id', $post->id)->where('status', 'pending')->first();
+        if (! empty($logs)) {
+            $logs->status = 'updated';
+            $logs->save();
+        }
+
+        // An edit changes the approved-content count the payment gate reads, so the same
+        // caches savePost clears must be cleared here too.
+        app(CreatorActivityService::class)->clearActivityCache(Auth::user());
+
+        $user = Auth::user();
+        app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Post updated. It will be re-checked before going live again.',
+        ]);
+    }
 
     public function deletePost($uuid)
     {
 
         $post = Post::where('uuid', $uuid)->first();
-        if (!empty($post)) {
-            // Check if this is a support_thanks post with deletion protection
-            if ($post->type === 'support_thanks') {
-                // Use can_delete_until if set, otherwise calculate from created_at
-                $canDeleteUntil = $post->can_delete_until ?
-                    \Carbon\Carbon::parse($post->can_delete_until) :
-                    $post->created_at->addMonth();
 
-                if (now()->lt($canDeleteUntil)) {
-                    $daysLeft = max(1, now()->diffInDays($canDeleteUntil));
-                    return response()->json([
-                        'status' => false,
-                        'msg' => "Creator support thank you posts cannot be deleted for 1 month after creation. You can delete this post in {$daysLeft} day(s)."
-                    ]);
-                }
-            }
+        if (empty($post)) {
+            return response()->json(['status' => false, 'msg' => 'Data not found.'], 404);
+        }
 
-            // Verify the user owns this post (security check)
-            if ($post->user_id !== Auth::id()) {
-                return response()->json([
-                    'status' => false,
-                    'msg' => "You don't have permission to delete this post."
-                ]);
-            }
-
-            $comments = PostComment::where('post_id', $post->id)->get();
-            foreach ($comments as $comment) {
-                PostCommentReplies::where('post_comment_id', $comment->id)->delete();
-            }
-            PostComment::where('post_id', $post->id)->delete();
-            PostLike::where('post_id', $post->id)->delete();
-
-            $post->delete();
-
-            // Clear user caches
-            $user = Auth::user();
-            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
-
-            return response()->json([
-                'status' => true,
-                'msg' => "Post deleted successfully."
-            ]);
-        } else {
+        // Ownership is checked FIRST — the thank-you-post branch below leaks the post's
+        // type and age to anyone who guesses a uuid if it runs before this.
+        if ((int) $post->user_id !== (int) Auth::id()) {
             return response()->json([
                 'status' => false,
-                'msg' => "Data not found."
-            ]);
+                'msg' => "You don't have permission to delete this post.",
+            ], 403);
         }
-    }
 
+        // Check if this is a support_thanks post with deletion protection
+        if ($post->type === 'support_thanks') {
+            // Use can_delete_until if set, otherwise calculate from created_at
+            $canDeleteUntil = $post->can_delete_until ?
+                Carbon::parse($post->can_delete_until) :
+                $post->created_at->addMonth();
+
+            if (now()->lt($canDeleteUntil)) {
+                $daysLeft = max(1, (int) ceil(now()->floatDiffInDays($canDeleteUntil)));
+
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Creator support thank you posts cannot be deleted for 1 month after creation. You can delete this post in {$daysLeft} day(s).",
+                ], 422);
+            }
+        }
+
+        $comments = PostComment::where('post_id', $post->id)->get();
+        foreach ($comments as $comment) {
+            PostCommentReplies::where('post_comment_id', $comment->id)->delete();
+        }
+        PostComment::where('post_id', $post->id)->delete();
+        PostLike::where('post_id', $post->id)->delete();
+
+        $post->delete();
+
+        // Deleting a post lowers the approved-content count the payment gate reads.
+        app(CreatorActivityService::class)->clearActivityCache(Auth::user());
+
+        // Clear user caches
+        $user = Auth::user();
+        app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Post deleted successfully.',
+        ]);
+    }
 
     public function postLike($uuid)
     {
         $post = Post::where('uuid', $uuid)->first();
 
-        $user = User::where('id', Auth::id())->first();
+        if (empty($post)) {
+            return response()->json(['status' => false, 'msg' => 'Post not found.'], 404);
+        }
 
-        if (!empty($post)) {
-            $is_liked = false;
-            $like = PostLike::where('user_id', $user->id)->where('post_id', $post->id)->first();
+        $user = Auth::user();
 
-            if (!empty($like)) {
+        $like = PostLike::where('user_id', $user->id)->where('post_id', $post->id)->first();
 
-                if ($like->status == 0) {
-                    $like->status = 1;
-                    $like->save();
-
-                    $is_liked = true;
-
-                    $message = $user->name . " liked your post " . $post->title;
-                    NotificationSave::dispatch($message, $post->user, $user, 'Post Like');
-
-                    $name = ucfirst($user->name);
-                    $title = "❤️ New Like on Your Post!";
-                    $content = "$name liked one of your post ({$post->title}).";
-                    $email = $post->user->email;
-
-                    Helpers::sendNotification($title, $content, $email);
-                } else {
-                    $like->status = 0;
-                    $like->save();
-
-                    $is_liked = false;
-
-                    return response()->json([
-                        'status' => true,
-                        'liked' => $is_liked,
-                        'msg' => "Post unliked successfully."
-                    ]);
-                }
-            } else {
-                PostLike::create([
-                    'user_id' => $user->id,
-                    'post_id' => $post->id,
-                    'status' => 1
-                ]);
-
-                $is_liked = true;
-                $name = ucfirst($user->name);
-                $title = "❤️ New Like on Your Post!";
-                $content = "$name liked one of your post ({$post->title}).";
-                $email = $post->user->email;
-
-                Helpers::sendNotification($title, $content, $email);
-
-
-                $message = $user->name . " liked your post " . $post->title;
-                NotificationSave::dispatch($message, $post->user, $user, 'Post Like');
-            }
-
-            return response()->json([
-                'status' => true,
-                'liked' => $is_liked,
-                'msg' => "Post liked successfully."
+        if ($like) {
+            $wasLiked = (int) $like->status === 1;
+            $like->status = $wasLiked ? 0 : 1;
+            $like->save();
+            $isLiked = ! $wasLiked;
+            // A like that has already been announced once must not re-notify on every
+            // unlike/relike — that turned a toggling supporter into an email flood.
+            $shouldNotify = false;
+        } else {
+            PostLike::create([
+                'user_id' => $user->id,
+                'post_id' => $post->id,
+                'status' => 1,
             ]);
+            $isLiked = true;
+            $shouldNotify = true;
+        }
+
+        // Never notify a creator about their own like, and never send to a missing author.
+        if ($shouldNotify && $post->user && (int) $post->user_id !== (int) $user->id) {
+            $label = $this->postLabel($post);
+            $name = ucfirst($user->name);
+
+            NotificationSave::dispatch("{$user->name} liked your post {$label}", $post->user, $user, 'Post Like');
+            Helpers::sendNotification('❤️ New Like on Your Post!', "$name liked one of your posts ({$label}).", $post->user->email);
         }
 
         return response()->json([
-            'status' => false,
-            'msg' => "Post not found."
+            'status' => true,
+            'liked' => $isLiked,
+            'likes_count' => $post->likes()->where('status', 1)->count(),
+            'msg' => $isLiked ? 'Post liked successfully.' : 'Post unliked successfully.',
         ]);
+    }
+
+    /**
+     * Human label for a post in a notification. Posts are not required to have a title
+     * (an image-only post has none), and the old copy read "liked your post " with a
+     * trailing blank.
+     */
+    private function postLabel(Post $post): string
+    {
+        $title = trim((string) $post->title);
+        if ($title !== '') {
+            return $title;
+        }
+
+        $content = trim((string) $post->content);
+        if ($content !== '') {
+            return Str::limit($content, 40);
+        }
+
+        return 'your latest post';
     }
 
     public function commentOnPost(Request $request, $uuid)
@@ -282,14 +305,14 @@ class PostsController extends Controller
         $request->validate([
             'comment' => [
                 'required',
-                'string'
-            ]
+                'string',
+            ],
         ]);
 
         $post = Post::where('uuid', $uuid)->first();
         $user = User::where('id', Auth::id())->first();
 
-        if (!empty($post)) {
+        if (! empty($post)) {
 
             $blockedMessage = Helpers::validateSupporterMessage(
                 $request->comment
@@ -298,7 +321,7 @@ class PostsController extends Controller
             if ($blockedMessage) {
                 return response()->json([
                     'status' => false,
-                    'msg' => $blockedMessage
+                    'msg' => $blockedMessage,
                 ], 422);
             }
 
@@ -312,17 +335,18 @@ class PostsController extends Controller
             $comment = $post->comments()->create([
                 'user_id' => $user->id,
                 'comment' => $request->comment,
-                'is_approved' => $isApproved
+                'is_approved' => $isApproved,
             ]);
 
             // Only send notification if comment is NOT from the post owner
-            if (!$isPostOwner) {
-                $message = $user->name . " commented on your post " . $post->title;
+            if (! $isPostOwner) {
+                $message = $user->name.' commented on your post '.$this->postLabel($post);
                 NotificationSave::dispatch($message, $post->user, $user, 'Post Comment');
 
                 $name = ucfirst($user->name);
-                $title = "💬 New Comment Needing Approval!";
-                $content = "$name commented on your post ({$post->title}). Please review and approve it.";
+                $title = '💬 New Comment Needing Approval!';
+                $label = $this->postLabel($post);
+                $content = "$name commented on your post ({$label}). Please review and approve it.";
                 $email = $post->user->email;
 
                 Helpers::sendNotification($title, $content, $email);
@@ -330,31 +354,30 @@ class PostsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => $isPostOwner ? "Comment added successfully." : "Comment added and pending approval.",
-                'is_approved' => $isApproved
+                'msg' => $isPostOwner ? 'Comment added successfully.' : 'Comment added and pending approval.',
+                'is_approved' => $isApproved,
             ]);
         }
 
         return response()->json([
             'status' => false,
-            'msg' => "Post not found."
+            'msg' => 'Post not found.',
         ]);
     }
-
 
     public function replyOnComment(Request $request, $comment_uid)
     {
         $request->validate([
             'reply' => [
                 'required',
-                'string'
-            ]
+                'string',
+            ],
         ]);
 
         $comment = PostComment::where('uuid', $comment_uid)->first();
         $user = User::where('id', Auth::id())->first();
 
-        if (!empty($comment)) {
+        if (! empty($comment)) {
 
             $blockedMessage = Helpers::validateSupporterMessage(
                 $request->reply
@@ -363,7 +386,7 @@ class PostsController extends Controller
             if ($blockedMessage) {
                 return response()->json([
                     'status' => false,
-                    'msg' => $blockedMessage
+                    'msg' => $blockedMessage,
                 ], 422);
             }
 
@@ -376,18 +399,19 @@ class PostsController extends Controller
             $reply = $comment->replies()->create([
                 'user_id' => $user->id,
                 'reply' => $request->reply,
-                'is_approved' => $isApproved
+                'is_approved' => $isApproved,
             ]);
 
             // Notify post owner if reply is from someone else (needs approval).
-            if (!$isPostOwner) {
+            if (! $isPostOwner) {
                 $name = ucfirst($user->name);
-                $title = "💬 New Reply Needing Approval!";
-                $content = "$name replied to a comment on your post ({$comment->post->title}). Please review and approve it.";
+                $title = '💬 New Reply Needing Approval!';
+                $label = $this->postLabel($comment->post);
+                $content = "$name replied to a comment on your post ({$label}). Please review and approve it.";
                 $email = $comment->post->user->email;
                 Helpers::sendNotification($title, $content, $email);
 
-                $message = $user->name . " replied to a comment on your post " . $comment->post->title;
+                $message = $user->name.' replied to a comment on your post '.$this->postLabel($comment->post);
                 NotificationSave::dispatch($message, $comment->post->user, $user, 'Post Reply');
             }
 
@@ -396,25 +420,25 @@ class PostsController extends Controller
             if ($comment->user_id !== $user->id) {
                 $commenter = $comment->user;
                 $name = ucfirst($user->name);
-                $title = "↩️ Your Comment Got a Reply!";
-                $content = "$name replied to one of your comments on the post ({$comment->post->title}).";
+                $title = '↩️ Your Comment Got a Reply!';
+                $label = $this->postLabel($comment->post);
+                $content = "$name replied to one of your comments on the post ({$label}).";
                 $email = $commenter->email;
                 Helpers::sendNotification($title, $content, $email);
             }
 
             return response()->json([
                 'status' => true,
-                'msg' => $isPostOwner ? "Reply added successfully." : "Reply added and pending approval.",
-                'is_approved' => $isApproved
+                'msg' => $isPostOwner ? 'Reply added successfully.' : 'Reply added and pending approval.',
+                'is_approved' => $isApproved,
             ]);
         }
 
         return response()->json([
             'status' => false,
-            'msg' => "Comment not found."
+            'msg' => 'Comment not found.',
         ]);
     }
-
 
     public function allComments($uuid)
     {
@@ -423,7 +447,7 @@ class PostsController extends Controller
         if (empty($post)) {
             return response()->json([
                 'status' => false,
-                'msg' => "Post not found."
+                'msg' => 'Post not found.',
             ]);
         }
 
@@ -433,10 +457,10 @@ class PostsController extends Controller
         // This route is public, so guard comments on premium/gated posts: an
         // unauthenticated caller must not read comments (and commenter identities) on
         // subscription/membership/support-gated posts.
-        if (!$isCreator && !$userId && in_array($post->for_module, ['subscription', 'membership', 'support'], true)) {
+        if (! $isCreator && ! $userId && in_array($post->for_module, ['subscription', 'membership', 'support'], true)) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Unauthorized.'
+                'msg' => 'Unauthorized.',
             ], 403);
         }
 
@@ -464,7 +488,7 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'comments' => $comments,
-            'post_user_id' => $post->user_id
+            'post_user_id' => $post->user_id,
         ]);
     }
 
@@ -472,27 +496,27 @@ class PostsController extends Controller
     {
         $comment = PostComment::where('uuid', $uuid)->first();
         if (empty($comment)) {
-            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+            return response()->json(['status' => false, 'msg' => 'Comment not found.']);
         }
 
         // Only the post creator can approve comments
         if ($comment->post->user_id !== Auth::id()) {
-            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+            return response()->json(['status' => false, 'msg' => 'Unauthorized.']);
         }
 
         if ($comment->is_approved === 0) {
             $comment->is_approved = 2;
-            $msg = "Comment sent to admin review.";
+            $msg = 'Comment sent to admin review.';
         } else {
             $comment->is_approved = 0;
-            $msg = "Comment hidden and reset to pending approval.";
+            $msg = 'Comment hidden and reset to pending approval.';
         }
         $comment->save();
 
         return response()->json([
             'status' => true,
             'is_approved' => $comment->is_approved,
-            'msg' => $msg
+            'msg' => $msg,
         ]);
     }
 
@@ -500,27 +524,27 @@ class PostsController extends Controller
     {
         $reply = PostCommentReplies::where('uuid', $uuid)->first();
         if (empty($reply)) {
-            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+            return response()->json(['status' => false, 'msg' => 'Reply not found.']);
         }
 
         // Only the post creator can approve replies
         if ($reply->post_comment->post->user_id !== Auth::id()) {
-            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+            return response()->json(['status' => false, 'msg' => 'Unauthorized.']);
         }
 
         if ($reply->is_approved === 0) {
             $reply->is_approved = 2;
-            $msg = "Reply sent to admin review.";
+            $msg = 'Reply sent to admin review.';
         } else {
             $reply->is_approved = 0;
-            $msg = "Reply hidden and reset to pending approval.";
+            $msg = 'Reply hidden and reset to pending approval.';
         }
         $reply->save();
 
         return response()->json([
             'status' => true,
             'is_approved' => $reply->is_approved,
-            'msg' => $msg
+            'msg' => $msg,
         ]);
     }
 
@@ -528,7 +552,7 @@ class PostsController extends Controller
     {
         $comment = PostComment::where('uuid', $uuid)->first();
         if (empty($comment)) {
-            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+            return response()->json(['status' => false, 'msg' => 'Comment not found.']);
         }
 
         $comment->is_approved = 1;
@@ -537,7 +561,7 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'is_approved' => 1,
-            'msg' => "Comment approved by admin."
+            'msg' => 'Comment approved by admin.',
         ]);
     }
 
@@ -545,7 +569,7 @@ class PostsController extends Controller
     {
         $comment = PostComment::where('uuid', $uuid)->first();
         if (empty($comment)) {
-            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+            return response()->json(['status' => false, 'msg' => 'Comment not found.']);
         }
 
         $comment->is_approved = 3;
@@ -554,7 +578,7 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'is_approved' => 3,
-            'msg' => "Comment rejected by admin."
+            'msg' => 'Comment rejected by admin.',
         ]);
     }
 
@@ -562,7 +586,7 @@ class PostsController extends Controller
     {
         $reply = PostCommentReplies::where('uuid', $uuid)->first();
         if (empty($reply)) {
-            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+            return response()->json(['status' => false, 'msg' => 'Reply not found.']);
         }
 
         $reply->is_approved = 1;
@@ -571,7 +595,7 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'is_approved' => 1,
-            'msg' => "Reply approved by admin."
+            'msg' => 'Reply approved by admin.',
         ]);
     }
 
@@ -579,7 +603,7 @@ class PostsController extends Controller
     {
         $reply = PostCommentReplies::where('uuid', $uuid)->first();
         if (empty($reply)) {
-            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+            return response()->json(['status' => false, 'msg' => 'Reply not found.']);
         }
 
         $reply->is_approved = 3;
@@ -588,7 +612,7 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'is_approved' => 3,
-            'msg' => "Reply rejected by admin."
+            'msg' => 'Reply rejected by admin.',
         ]);
     }
 
@@ -596,20 +620,22 @@ class PostsController extends Controller
     {
         $comment = PostComment::where('uuid', $uuid)->first();
         if (empty($comment)) {
-            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+            return response()->json(['status' => false, 'msg' => 'Comment not found.']);
         }
 
         // Only the post creator or comment owner can delete comments
-        if ($comment->post->user_id !== Auth::id() && $comment->user_id !== Auth::id()) {
-            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+        if ((int) $comment->post->user_id !== (int) Auth::id() && (int) $comment->user_id !== (int) Auth::id()) {
+            return response()->json(['status' => false, 'msg' => 'Unauthorized.'], 403);
         }
 
-        // Soft delete handles replies if cascading is set up, otherwise manual delete
+        // Soft deletes do NOT cascade in Eloquent — replies were being left behind,
+        // orphaned and still counted by the post's comment counter.
+        PostCommentReplies::where('post_comment_id', $comment->id)->delete();
         $comment->delete();
 
         return response()->json([
             'status' => true,
-            'msg' => "Comment removed successfully."
+            'msg' => 'Comment removed successfully.',
         ]);
     }
 
@@ -617,19 +643,19 @@ class PostsController extends Controller
     {
         $reply = PostCommentReplies::where('uuid', $uuid)->first();
         if (empty($reply)) {
-            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+            return response()->json(['status' => false, 'msg' => 'Reply not found.']);
         }
 
         // Only the post creator or reply owner can delete replies
         if ($reply->post_comment->post->user_id !== Auth::id() && $reply->user_id !== Auth::id()) {
-            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+            return response()->json(['status' => false, 'msg' => 'Unauthorized.']);
         }
 
         $reply->delete();
 
         return response()->json([
             'status' => true,
-            'msg' => "Reply removed successfully."
+            'msg' => 'Reply removed successfully.',
         ]);
     }
 }

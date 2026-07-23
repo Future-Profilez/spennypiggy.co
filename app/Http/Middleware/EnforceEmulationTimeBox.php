@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Controllers\Admin\EmulationLoginController;
+use App\Models\Admin;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,24 @@ class EnforceEmulationTimeBox
             return $next($request);
         }
 
+        $adminId = $request->session()->get('emulation_admin_id');
+
+        // End the impersonation the moment the acting admin is disabled — the
+        // admin app can't reach this (web) guard's session, but both apps share
+        // one DB, so one read on admins.disabled_at closes the gap. Without it a
+        // just-disabled admin keeps acting as the user until the time-box below.
+        if ($adminId) {
+            try {
+                $disabledAt = Admin::whereKey($adminId)->value('disabled_at');
+            } catch (\Throwable $e) {
+                $disabledAt = null; // never break the request on the lookup
+            }
+
+            if ($disabledAt) {
+                return $this->endSession($request, $adminId, 'admin_disabled');
+            }
+        }
+
         $startedAt = $request->session()->get('emulation_started_at');
 
         // Sessions started before this middleware existed have no timestamp —
@@ -41,20 +60,27 @@ class EnforceEmulationTimeBox
             return $next($request);
         }
 
-        $adminId = $request->session()->get('emulation_admin_id');
+        return $this->endSession($request, $adminId, 'timeout');
+    }
+
+    /**
+     * Force-end the impersonation session, audit it, and bounce back to admin.
+     */
+    private function endSession(Request $request, $adminId, string $reason): Response
+    {
         $userId = Auth::id();
 
-        EmulationLoginController::recordStop($adminId, $userId, 'timeout');
+        EmulationLoginController::recordStop($adminId, $userId, $reason);
 
         Auth::logout();
         $request->session()->forget(['emulated_by_admin', 'emulation_admin_id', 'emulation_started_at']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        Log::info('Emulation session auto-ended after time-box', [
+        Log::info('Emulation session auto-ended', [
             'admin_id' => $adminId,
             'user_id' => $userId,
-            'minutes' => self::MAX_MINUTES,
+            'reason' => $reason,
         ]);
 
         $adminDashboardUrl = env('ADMIN_SITE_URL', 'http://localhost:8001');

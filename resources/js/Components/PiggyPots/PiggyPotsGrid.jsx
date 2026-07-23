@@ -5,6 +5,24 @@ import Nocontent from "@/includes/Nocontent";
 const Popup = lazy(() => import("@/Components/Popup"));
 const PiggyPotWidget = lazy(() => import("@/Components/PiggyPots/PiggyPotWidget"));
 
+// Prices are shown in the pot's own currency — that is what the supporter is charged.
+const money = (value, currency) =>
+    new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: (currency || "GBP").toUpperCase(),
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Number(value) || 0);
+
+const WidgetSkeleton = () => (
+    <div className="w-full animate-pulse" aria-hidden="true">
+        <div className="h-52 w-full rounded-box-sm border-[3px] border-black bg-gray-200" />
+        <div className="mt-4 h-7 w-2/3 rounded-box-sm bg-gray-200" />
+        <div className="mt-2 h-4 w-full rounded-box-sm bg-gray-100" />
+        <div className="mt-6 h-12 w-full rounded-box-sm border-[3px] border-black bg-gray-200" />
+    </div>
+);
+
 export default function PiggyPotsGrid({
     piggyPots,
     IsloggedIn, inPopup,
@@ -38,8 +56,14 @@ export default function PiggyPotsGrid({
                                     : 'bg-gray-200 text-gray-800';
 
                         return (
-                            <div key={pot.id} onClick={() => setActivePiggyPot(pot)} className={`cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-[30px] "} transition-all p-4 flex flex-col relative group`}>
-                                <div className="mb-3 rounded-[20px] overflow-hidden border-2 border-black h-[170px] flex-shrink-0 relative">
+                            <button
+                                key={pot.id}
+                                type="button"
+                                onClick={() => setActivePiggyPot(pot)}
+                                aria-label={`Open ${pot.title}`}
+                                className={`text-left cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-box "} transition-all p-4 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e85d9a]`}
+                            >
+                                <div className="mb-3 rounded-box-sm overflow-hidden border-2 border-black h-[170px] flex-shrink-0 relative">
                                     <div className="absolute top-3 left-3 z-10">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${statusBadgeClass}`}>
                                             {isComplete ? '✓ completed' : statusLabel}
@@ -64,10 +88,10 @@ export default function PiggyPotsGrid({
                                 </p>
                                 <div className="mt-3  flex justify-between items-center flex-shrink-0">
                                     <span className="text-xs font-black text-gray-600 uppercase tracking-wider">
-                                        Target
+                                        Progress
                                     </span>
                                     <span className="font-black text-pink-600">
-                                        {pot.currency} {pot.target_amount}
+                                        {money(raised, pot.currency)} / {money(target, pot.currency)}
                                     </span>
                                 </div>
                                 <div className="mt-2 w-full bg-white h-4 md:h-5 rounded-full border-[3px] border-black overflow-hidden  shadow-[inset_0_2px_0_rgba(0,0,0,0.1)]">
@@ -76,7 +100,7 @@ export default function PiggyPotsGrid({
                                         style={{ width: `${progressPercent}%` }}
                                     ></div>
                                 </div>
-                            </div>
+                            </button>
                         );
                     })}
 
@@ -98,7 +122,7 @@ export default function PiggyPotsGrid({
 
         if (IsloggedIn) {
             return (
-                <div className="w-full bg-white border-[3px] border-black rounded-[30px]  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
+                <div className="w-full bg-white border-[3px] border-black rounded-box  p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-4">
                     <div className="text-4xl mb-3">🐷</div>
                     <h3 className="font-gulfs text-2xl uppercase mb-2">
                         No Active Piggy Pots
@@ -136,7 +160,7 @@ export default function PiggyPotsGrid({
                 >
                     {activePiggyPot && (
                         <div className="relative">
-                            <Suspense fallback={null}>
+                            <Suspense fallback={<WidgetSkeleton />}>
                                 <PiggyPotWidget inPopup={true}
                                     piggyPots={[activePiggyPot]}
                                     user={user}

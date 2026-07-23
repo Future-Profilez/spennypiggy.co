@@ -45,7 +45,7 @@ export default function MembershipDetails(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                <div className="min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
                         {/* HEADER */}
 

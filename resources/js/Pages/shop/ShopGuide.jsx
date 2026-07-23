@@ -5,7 +5,7 @@ export default function ShopGuide() {
         <div className="pt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Digital Products Flow */}
-                <div className="bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <h3 className="font-black text-xl uppercase tracking-wide">💻 Digital Products</h3>
                     </div>
@@ -24,13 +24,13 @@ export default function ShopGuide() {
                         </li>
                         <li className="flex gap-3">
                             <span className="font-black text-[#FF007F]">04.</span>
-                            <p className="text-sm font-bold text-gray-700">Funds are added to your balance immediately.</p>
+                            <p className="text-sm font-bold text-gray-700">Earnings appear in your balance straight away, then clear after the standard 7-day hold (a reserve may be held longer) and go out in the next payout run.</p>
                         </li>
                     </ul>
                 </div>
 
                 {/* Physical Products Flow */}
-                <div className="bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <h3 className="font-black text-xl uppercase tracking-wide">📦 Physical Products</h3>
                     </div>
@@ -49,24 +49,20 @@ export default function ShopGuide() {
                         </li>
                         <li className="flex gap-3">
                             <span className="font-black text-[#FF007F]">04.</span>
-                            <p className="text-sm font-bold text-gray-700">Mark as <span className="text-green-600 uppercase">Delivered</span> in View Info to release the funds to your balance.</p>
+                            <p className="text-sm font-bold text-gray-700">Mark as <span className="text-green-600 uppercase">Delivered</span> in View Info. That starts the 7-day hold, after which the earning is paid out in the next run.</p>
                         </li>
                     </ul>
                 </div>
 
-                {/* General Tips */}
-                <div className="md:col-span-2 bg-yellow-100 border-[3px] border-black rounded-[20px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
-                    <h3 className="font-black text-xl uppercase tracking-wide mb-4">💡 Pro Tips for Creators</h3>
+                {/* General guidance */}
+                <div className="md:col-span-2 bg-yellow-100 border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+                    <h3 className="font-black text-xl uppercase tracking-wide mb-4">💡 Best Practices for Creators</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* <div className="bg-white border-2 border-black p-4 rounded-[20px] md:rounded-[30px]  shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            <p className="text-xs font-black uppercase mb-1 text-[#FF007F]">Variations</p>
-                            <p className="text-sm font-bold">Use variations for different sizes, colors, or versions of your product.</p>
-                        </div> */}
-                        <div className="bg-white border-2 border-black p-4 rounded-[20px] md:rounded-[30px]  shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="bg-white border-2 border-black p-4 rounded-box shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             <p className="text-xs font-black uppercase mb-1 text-[#FF007F]">Approval</p>
                             <p className="text-sm font-bold">New items are reviewed by Admin. Only you can see them until they are approved.</p>
                         </div>
-                        <div className="bg-white border-2 border-black p-4 rounded-[20px] md:rounded-[30px]  shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="bg-white border-2 border-black p-4 rounded-box shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             <p className="text-xs font-black uppercase mb-1 text-[#FF007F]">Communication</p>
                             <p className="text-sm font-bold">Supporters can leave messages or answer your custom questions during purchase.</p>
                         </div>

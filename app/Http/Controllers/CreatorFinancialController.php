@@ -154,7 +154,14 @@ class CreatorFinancialController extends Controller
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->with('source')
+            // morphWith so the grouping closure reads already-loaded shop/deliverable/task
+            // relations instead of a query per shop or task row.
+            ->with(['source' => function ($morphTo) {
+                $morphTo->morphWith([
+                    TaskPurchase::class => [],
+                    ShopPayment::class => ['shop', 'deliverable'],
+                ]);
+            }])
             ->get(['status', 'net_amount', 'currency', 'source_type', 'source_id', 'vat_amount']);
 
         // Collect all Shop IDs for status breakdown shipping
@@ -207,7 +214,11 @@ class CreatorFinancialController extends Controller
         $incomeQuery = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
-            ->with(['supporter:id,name,username,email', 'source' => function ($morphTo) {
+            // No email: the platform never exposes a supporter's contact details to a
+            // creator (see CreatorOpportunityService). History.jsx renders only
+            // name/username, so this was over-serialised into the Inertia payload —
+            // an exportable list of every buyer's email address.
+            ->with(['supporter:id,name,username', 'source' => function ($morphTo) {
                 $morphTo->morphWith([
                     TaskPurchase::class => ['task'],
                     ShopPayment::class => ['shop', 'deliverable'],
@@ -941,7 +952,11 @@ class CreatorFinancialController extends Controller
             ->where('type', 'income')
             ->whereIn('status', ['completed', 'review_hold', 'disputed', 'refunded'])
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
-            ->with(['supporter:id,name,username,email', 'source' => function ($morphTo) {
+            // No email: the platform never exposes a supporter's contact details to a
+            // creator (see CreatorOpportunityService). History.jsx renders only
+            // name/username, so this was over-serialised into the Inertia payload —
+            // an exportable list of every buyer's email address.
+            ->with(['supporter:id,name,username', 'source' => function ($morphTo) {
                 $morphTo->morphWith([
                     TaskPurchase::class => ['task'],
                     ShopPayment::class => ['shop', 'deliverable'],

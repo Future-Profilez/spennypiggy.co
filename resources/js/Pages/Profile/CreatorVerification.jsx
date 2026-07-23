@@ -192,7 +192,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     description:
                         "Finish setting up Stripe so you can receive funds.",
                     action: (
-                        <Link className={"text-pink font-bold"} href="/stripe">
+                        <Link className={"text-pink font-bold"} href="/stripe/authorize">
                             Connect Stripe
                         </Link>
                     ),
@@ -1042,7 +1042,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 {auth?.user?.identity_status == 1 ? (
                                     <Link
                                         className={"text-pink"}
-                                        href="/stripe"
+                                        href="/stripe/authorize"
                                     >
                                         Connect
                                     </Link>

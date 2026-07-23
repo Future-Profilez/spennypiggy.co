@@ -3,21 +3,24 @@
 namespace App;
 
 use App\Jobs\SendReferralQualifiedEmailJob;
+use App\Models\Admin;
 use App\Models\CreatorReferral;
 use App\Models\Currency;
 use App\Models\Payment;
 use App\Models\RiskIdentity;
+use App\Models\Shop;
 use App\Models\User;
 use App\Models\UserPayment;
 use App\Services\Risk\EffectiveLimitsService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
 
 class Helpers
 {
-    const DIGITAL_WAIVER_TEXT = "I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.";
+    const DIGITAL_WAIVER_TEXT = 'I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.';
 
     public static function applyDigitalWaiver($model, bool $confirmed): void
     {
@@ -35,12 +38,56 @@ class Helpers
      */
     public static function getAdminEmails(): array
     {
-        $emails = config('app.admin_emails') ?? config('services.admin_emails');
-        if (is_array($emails) && ! empty($emails)) {
-            return array_values(array_unique(array_filter($emails)));
+        $configured = config('app.admin_emails') ?? config('services.admin_emails');
+        $configured = is_array($configured) ? $configured : [];
+
+        if (empty($configured)) {
+            $configured = ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'];
         }
 
-        return ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'];
+        /*
+         * Also notify everyone who actually signs into the admin panel.
+         *
+         * These alerts are delivered by MagicBell keyed on the recipient's email,
+         * and the admin panel's bell subscribes as the logged-in admin's own
+         * address. With only the configured env list, a fraud or dispute alert
+         * reached a shared mailbox but never appeared in the panel of the person
+         * looking at it — which is where they are meant to act on it.
+         *
+         * Only roles that can act on the alert are included. A CSM or a read-only
+         * auditor cannot refund a payment or answer a dispute, so adding them
+         * turns a time-critical alert into noise for people who must ignore it.
+         *
+         * Disabled admins are excluded: an account we have just blocked from
+         * signing in should not keep receiving security alerts.
+         *
+         * ⚠️ Role IDs live in admin.spennypiggy.co's Admin model and are read
+         * here out of the SHARED database. If they change there, change them
+         * here — the two apps share data, not code.
+         */
+        $rolesThatCanAct = [
+            1, // Super Admin
+            3, // Finance
+            4, // Support
+        ];
+
+        try {
+            $adminAccounts = Admin::query()
+                ->whereNull('deleted_at')
+                ->whereNull('disabled_at')
+                ->whereIn('role', $rolesThatCanAct)
+                ->pluck('email')
+                ->all();
+        } catch (\Throwable $e) {
+            // An alert must never fail because of the recipient lookup — but a
+            // silent shrink to the static list on schema drift must be visible.
+            \Log::warning('getAdminEmails: admin lookup failed, falling back to configured list', [
+                'error' => $e->getMessage(),
+            ]);
+            $adminAccounts = [];
+        }
+
+        return array_values(array_unique(array_filter(array_merge($configured, $adminAccounts))));
     }
 
     /**
@@ -131,7 +178,7 @@ class Helpers
 
         foreach ($blockedWords as $word) {
             // 1. Direct match with word boundaries
-            if (preg_match("/\b" . preg_quote($word, '/') . "\b/i", $value)) {
+            if (preg_match("/\b".preg_quote($word, '/')."\b/i", $value)) {
                 return $word;
             }
 
@@ -143,7 +190,7 @@ class Helpers
             }
             $obfuscatedPattern = implode('[\W_]*', $regexChars);
 
-            if (preg_match("/(?<!\p{L})" . $obfuscatedPattern . "(?!\p{L})/iu", $value)) {
+            if (preg_match("/(?<!\p{L})".$obfuscatedPattern."(?!\p{L})/iu", $value)) {
                 return $word;
             }
         }
@@ -190,8 +237,8 @@ class Helpers
      *
      * Use this to guard the line-item / receipt text, NOT the listing title field.
      *
-     * @param  string|null  $text The payment-facing item text
-     * @return string|null  Error message if a disallowed token is present, else null
+     * @param  string|null  $text  The payment-facing item text
+     * @return string|null Error message if a disallowed token is present, else null
      */
     public static function validateItemField(?string $text): ?string
     {
@@ -206,7 +253,7 @@ class Helpers
         ];
 
         foreach ($disallowed as $word) {
-            if (preg_match("/\b" . preg_quote($word, '/') . "\b/i", $text)) {
+            if (preg_match("/\b".preg_quote($word, '/')."\b/i", $text)) {
                 return "The item field must describe content, not '{$word}'.";
             }
         }
@@ -219,11 +266,11 @@ class Helpers
      * Minimum £4.99 applies to every paid feature; per-feature maximums:
      * £500 (Wish/Piggy Pot) · £100/mo (Bills/Memberships) · £10,000 (Tasks/Sell Something).
      *
-     * @param  float|int|string $value    Price in the listing's own currency
-     * @param  string|null      $currency Listing currency (defaults to GBP)
-     * @param  float            $minGbp   Minimum allowed, GBP equivalent
-     * @param  float|null       $maxGbp   Maximum allowed, GBP equivalent (null = no max)
-     * @return string|null  Error message if out of range, else null
+     * @param  float|int|string  $value  Price in the listing's own currency
+     * @param  string|null  $currency  Listing currency (defaults to GBP)
+     * @param  float  $minGbp  Minimum allowed, GBP equivalent
+     * @param  float|null  $maxGbp  Maximum allowed, GBP equivalent (null = no max)
+     * @return string|null Error message if out of range, else null
      */
     public static function priceWithinLimits($value, ?string $currency, float $minGbp = 4.99, ?float $maxGbp = null): ?string
     {
@@ -231,10 +278,10 @@ class Helpers
         $priceGBP = self::priceFormat($currency, (float) $value, 'GBP');
 
         if ($priceGBP < $minGbp) {
-            return 'Price must be at least £' . rtrim(rtrim(number_format($minGbp, 2), '0'), '.') . ' (GBP equivalent).';
+            return 'Price must be at least £'.rtrim(rtrim(number_format($minGbp, 2), '0'), '.').' (GBP equivalent).';
         }
         if ($maxGbp !== null && $priceGBP > $maxGbp) {
-            return 'Price cannot exceed £' . number_format($maxGbp, 0) . ' (GBP equivalent).';
+            return 'Price cannot exceed £'.number_format($maxGbp, 0).' (GBP equivalent).';
         }
 
         return null;
@@ -243,7 +290,6 @@ class Helpers
     /**
      * Validate a supporter-facing free-text message (word limit + blocked words/emojis).
      *
-     * @param  string|null  $text
      * @return string|null Error message for the user, or null if OK / empty
      */
     public static function validateSupporterMessage(?string $text, int $wordLimit = 100): ?string
@@ -268,8 +314,8 @@ class Helpers
      * Add GMV to an existing creator referral
      * (Deprecated: kept for backward compatibility, now just triggers recalculateGmv)
      *
-     * @param int   $referredCreatorId  Creator who received payment
-     * @param float $amount             GMV amount (ignored now)
+     * @param  int  $referredCreatorId  Creator who received payment
+     * @param  float  $amount  GMV amount (ignored now)
      */
     public static function addGmv(int|string $referredCreatorId): void
     {
@@ -279,7 +325,7 @@ class Helpers
     /**
      * Recalculate GMV for an existing creator referral based on successful payments.
      *
-     * @param int|string $referredCreatorId  Creator who received payment (id or uuid)
+     * @param  int|string  $referredCreatorId  Creator who received payment (id or uuid)
      */
     public static function recalculateGmv($referredCreatorId): void
     {
@@ -287,13 +333,13 @@ class Helpers
 
             $user = User::where('id', $referredCreatorId)->orWhere('uuid', $referredCreatorId)->first();
 
-            if (!$user) {
+            if (! $user) {
                 return;
             }
 
             $referral = CreatorReferral::with('referrer', 'referred')->where('referred_creator_id', $user->id)->first();
 
-            if (!$referral) {
+            if (! $referral) {
                 return;
             }
 
@@ -306,6 +352,7 @@ class Helpers
 
             $totalGmvGbp = $payments->sum(function ($payment) {
                 $amount = $payment->amount / 100;
+
                 return strtolower($payment->currency) === 'gbp' ? $amount : self::priceFormat($payment->currency, $amount, 'gbp');
             });
 
@@ -315,7 +362,7 @@ class Helpers
                 $referral->status = 'QUALIFIED';
                 $referral->qualified_at = now();
 
-                \App\Jobs\SendReferralQualifiedEmailJob::dispatch($referral);
+                SendReferralQualifiedEmailJob::dispatch($referral);
 
                 $referredCreatorName = $referral->referred->name;
 
@@ -327,19 +374,17 @@ class Helpers
             Log::info('Creator referral GMV recalculated', [
                 'referrer_creator_id' => $referral->referrer_creator_id,
                 'referred_creator_id' => $user->id,
-                'total_gmv_gbp'       => $referral->lifetime_gmv,
-                'status'              => $referral->status,
+                'total_gmv_gbp' => $referral->lifetime_gmv,
+                'status' => $referral->status,
             ]);
         } catch (\Throwable $e) {
 
             Log::error('CreatorReferralHelper::recalculateGmv failed', [
                 'referred_creator_id' => $referredCreatorId,
-                'error'               => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
-
-
 
     /**
      * Calculate total price for Stripe Direct Charges Flow
@@ -348,8 +393,8 @@ class Helpers
      * Step 2: Add platform fee (15%) and compliance fee (2%)
      * Step 3: Add fixed administration fee ($1.00)
      *
-     * @param float $listedPrice The price set by the creator
-     * @param string $currency The currency ISO code
+     * @param  float  $listedPrice  The price set by the creator
+     * @param  string  $currency  The currency ISO code
      * @return array Breakdown of fees and total
      */
     public static function isZeroDecimalCurrency($currency): bool
@@ -370,9 +415,36 @@ class Helpers
             'VUV',
             'XAF',
             'XOF',
-            'XPF'
+            'XPF',
         ];
+
         return in_array(strtoupper($currency), $zeroDecimalCurrencies);
+    }
+
+    /**
+     * Convert a major-unit amount (what we store on ledger rows) into the minor units
+     * Stripe expects. Zero-decimal currencies (JPY, KRW…) have NO minor unit — multiplying
+     * them by 100 submits a payout 100x too large.
+     */
+    public static function toMinorUnits($amount, $currency): int
+    {
+        $amount = (float) $amount;
+
+        return self::isZeroDecimalCurrency($currency)
+            ? (int) round($amount)
+            : (int) round($amount * 100);
+    }
+
+    /**
+     * Inverse of toMinorUnits() — minor units back to a displayable major amount.
+     */
+    public static function toMajorUnits($minor, $currency): float
+    {
+        $minor = (float) $minor;
+
+        return self::isZeroDecimalCurrency($currency)
+            ? round($minor, 0)
+            : round($minor / 100, 2);
     }
 
     public static function administrationFeeInCurrency($currency): float
@@ -385,11 +457,12 @@ class Helpers
         }
 
         $converted = (float) self::priceFormat('GBP', $feeGbp, $currency);
-        if (!is_finite($converted) || $converted <= 0) {
+        if (! is_finite($converted) || $converted <= 0) {
             return $feeGbp;
         }
 
         $precision = self::isZeroDecimalCurrency($currency) ? 0 : 2;
+
         return round($converted, $precision, PHP_ROUND_HALF_UP);
     }
 
@@ -402,7 +475,7 @@ class Helpers
         // "card" mirrors the historical hard-coded rates; "bank" is the
         // lower-fee profile for Pay by Bank / SEPA / ACH.
         $profile = config("payments.fee_profiles.$feeProfile");
-        if (!is_array($profile)) {
+        if (! is_array($profile)) {
             $feeProfile = 'card';
             $profile = config('payments.fee_profiles.card', []);
         }
@@ -422,6 +495,7 @@ class Helpers
 
         if ($totalDeductionRate >= 1) {
             Log::error('Total deduction rate exceeds 100% in calculateStripeDirectChargeFlow');
+
             return [
                 'fee_profile' => $feeProfile,
                 'listed_price' => $listedPrice,
@@ -436,7 +510,7 @@ class Helpers
 
         // Use CEIL as per client requirement to avoid underpayment (round UP)
         $precision = $isZeroDecimal ? 0 : 2;
-        if (!$isZeroDecimal) {
+        if (! $isZeroDecimal) {
             $totalSupporterPays = ceil($totalSupporterPays * 100) / 100;
         } else {
             $totalSupporterPays = ceil($totalSupporterPays);
@@ -478,34 +552,60 @@ class Helpers
         ];
     }
 
+    /**
+     * Request-scoped Currency lookup by ISO. Backs priceFormat so a page rendering many
+     * foreign-currency rows hits the currencies table once, not twice per row.
+     *
+     * @var array<string, Currency|null>|null
+     */
+    private static ?array $currencyIsoCache = null;
+
+    private static function currencyByIso($iso)
+    {
+        $iso = strtoupper((string) $iso);
+
+        if (self::$currencyIsoCache === null) {
+            self::$currencyIsoCache = Currency::all()->keyBy(fn ($c) => strtoupper($c->ISO))->all();
+        }
+
+        return self::$currencyIsoCache[$iso] ?? null;
+    }
+
     public static function priceFormat($currency1, $amount, $currency2)
     {
         // Validate input amount
-        if (!is_numeric($amount) || is_nan($amount) || !is_finite($amount)) {
+        if (! is_numeric($amount) || is_nan($amount) || ! is_finite($amount)) {
             Log::error('Invalid amount in priceFormat', [
                 'amount' => $amount,
                 'currency1' => $currency1,
-                'currency2' => $currency2
+                'currency2' => $currency2,
             ]);
+
             return 0; // Return 0 for invalid amounts
         }
 
-        $def = Currency::where('ISO', strtoupper($currency1))->first();
-        $prof = Currency::where('ISO', strtoupper($currency2))->first();
+        // Currency rows change only via the daily SyncEchangeRate command, so caching them
+        // for the life of the request is safe. Dashboards/feeds call priceFormat once per
+        // foreign-currency row — this collapses two Currency queries per row into a single
+        // lookup shared across the whole request.
+        $def = self::currencyByIso($currency1);
+        $prof = self::currencyByIso($currency2);
 
-        if (!$def || !$prof) {
+        if (! $def || ! $prof) {
             Log::error('Currency not found', [
                 'currency1' => $currency1,
-                'currency2' => $currency2
+                'currency2' => $currency2,
             ]);
+
             return $amount; // Return original amount if currencies not found
         }
 
         if ($def->conversion_rate == 0) {
             Log::error('Division by zero prevented in priceFormat', [
                 'currency1' => $currency1,
-                'conversion_rate' => $def->conversion_rate
+                'conversion_rate' => $def->conversion_rate,
             ]);
+
             return $amount; // Return original amount to prevent division by zero
         }
 
@@ -517,15 +617,16 @@ class Helpers
         $result = round($prof_cur_price, $decimalPlaces, PHP_ROUND_HALF_UP);
 
         // Final validation to ensure we don't return NaN
-        if (is_nan($result) || !is_finite($result)) {
+        if (is_nan($result) || ! is_finite($result)) {
             Log::error('NaN result in priceFormat', [
                 'amount' => $amount,
                 'currency1' => $currency1,
                 'currency2' => $currency2,
                 'gbp_price' => $gbp_price,
                 'prof_cur_price' => $prof_cur_price,
-                'result' => $result
+                'result' => $result,
             ]);
+
             return 0; // Return 0 instead of NaN
         }
 
@@ -561,7 +662,7 @@ class Helpers
                 ];
             }
         } catch (\Throwable $e) {
-            Log::error('Error checking guest allowed limits in Helpers: ' . $e->getMessage());
+            Log::error('Error checking guest allowed limits in Helpers: '.$e->getMessage());
         }
 
         $currency = strtoupper($currency ?: 'GBP');
@@ -586,39 +687,41 @@ class Helpers
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
+            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
         ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
             'target' => $uuid,
         ]);
 
         $response = Http::withHeaders([
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
+            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
         ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('Uploadcare API failed in checkUnsafeContent', [
                 'uuid' => $uuid,
                 'status' => $response->status(),
-                'response' => $response->body()
+                'response' => $response->body(),
             ]);
+
             return false; // Return false if API fails
         }
 
         $data = $response->json();
 
-        if (!isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
+        if (! isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
             Log::warning('ModerationLabels not found in checkUnsafeContent', [
                 'uuid' => $uuid,
-                'response' => $data
+                'response' => $data,
             ]);
+
             return false;
         }
 
         $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
 
         foreach ($tags as $tag) {
-            $name = explode(" ", $tag['Name']);
+            $name = explode(' ', $tag['Name']);
             $common = array_intersect($rest_words, $name);
 
             if (count($common) > 0) {
@@ -635,10 +738,10 @@ class Helpers
     public static function sendShopPurchaseEmails($shopPayment, $symbol, $deliverable = null): void
     {
         try {
-            $lockKey = 'shop_emails_sent_' . $shopPayment->uuid;
+            $lockKey = 'shop_emails_sent_'.$shopPayment->uuid;
 
             // Try to acquire a lock for 10 minutes. If already locked, skip.
-            $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 600);
+            $lock = Cache::lock($lockKey, 600);
 
             if ($lock->get()) {
                 Log::info('Helpers::sendShopPurchaseEmails: START', ['uuid' => $shopPayment->uuid]);
@@ -650,26 +753,26 @@ class Helpers
                             $q->withTrashed();
                         },
                         'shop.user',
-                        'user'
+                        'user',
                     ]);
 
-                    $amountUserPay = (float)($shopPayment->total_paid ?? $shopPayment->amount);
-                    $originalItemPrice = (float)($shopPayment->amount); // The base price creator receives for the item
+                    $amountUserPay = (float) ($shopPayment->total_paid ?? $shopPayment->amount);
+                    $originalItemPrice = (float) ($shopPayment->amount); // The base price creator receives for the item
 
                     $multiplier = self::isZeroDecimalCurrency($shopPayment->currency) ? 1 : 100;
                     $totalPaidAmount = $shopPayment->total_paid && $shopPayment->total_paid > 0
                         ? $shopPayment->total_paid
                         : (float) ($shopPayment->amount + ($shopPayment->shipping_amount ?? 0) + ($shopPayment->vat_tax_amount ?? 0));
-                    $amountWithcurrency = ($symbol ?? '£') . number_format($totalPaidAmount, 2);
-                    $originalPriceWithCurrency = ($symbol ?? '£') . number_format($originalItemPrice, 2);
+                    $amountWithcurrency = ($symbol ?? '£').number_format($totalPaidAmount, 2);
+                    $originalPriceWithCurrency = ($symbol ?? '£').number_format($originalItemPrice, 2);
 
                     // --- CREATOR NOTIFICATION BLOCK ---
                     try {
                         $shop = $shopPayment->shop;
 
                         // Fallback 1: If shop relationship failed, find by shop_id manually
-                        if (!$shop && $shopPayment->shop_id) {
-                            $shop = \App\Models\Shop::withTrashed()->find($shopPayment->shop_id);
+                        if (! $shop && $shopPayment->shop_id) {
+                            $shop = Shop::withTrashed()->find($shopPayment->shop_id);
                             if ($shop) {
                                 Log::info('Helpers::sendShopPurchaseEmails: Shop found via manual fallback', ['shop_id' => $shopPayment->shop_id]);
                             }
@@ -678,8 +781,8 @@ class Helpers
                         $creator = $shop?->user;
 
                         // Fallback 2: If user relationship failed, find by user_id manually
-                        if (!$creator && $shop?->user_id) {
-                            $creator = \App\Models\User::find($shop->user_id);
+                        if (! $creator && $shop?->user_id) {
+                            $creator = User::find($shop->user_id);
                             if ($creator) {
                                 Log::info('Helpers::sendShopPurchaseEmails: Creator found via manual fallback', ['user_id' => $shop->user_id]);
                             }
@@ -692,12 +795,12 @@ class Helpers
                                 'uuid' => $shopPayment->uuid,
                                 'email' => $creatorEmail,
                                 'name' => $creator->name,
-                                'showing_price' => $originalItemPrice
+                                'showing_price' => $originalItemPrice,
                             ]);
 
                             // Creator Email - Send ONLY the original item price
                             try {
-                                \App\EmailService::shopBuyed($shopPayment, (bool)$shopPayment->anonymous, $originalItemPrice, $symbol);
+                                EmailService::shopBuyed($shopPayment, (bool) $shopPayment->anonymous, $originalItemPrice, $symbol);
                             } catch (\Throwable $e) {
                                 Log::error('Helpers::sendShopPurchaseEmails: Creator Email failed', ['error' => $e->getMessage()]);
                             }
@@ -705,7 +808,7 @@ class Helpers
                             // Creator Push - Send ONLY the original item price
                             try {
                                 $fanName = ucfirst(ucwords($shopPayment->user?->name ?? ($shopPayment->name ?? 'A Fan')));
-                                $creatorTitle = "📦 New Shop Order!";
+                                $creatorTitle = '📦 New Shop Order!';
                                 $creatorContent = "$fanName placed an order in your shop for $originalPriceWithCurrency. Time to fulfill it!.";
                                 self::sendNotification($creatorTitle, $creatorContent, $creatorEmail);
                             } catch (\Throwable $e) {
@@ -715,7 +818,7 @@ class Helpers
                             Log::warning('Helpers::sendShopPurchaseEmails: Creator notification skipped - invalid or missing email', [
                                 'uuid' => $shopPayment->uuid,
                                 'email_found' => $creatorEmail ?? 'NULL',
-                                'shop_exists' => $shopPayment->shop ? 'YES' : 'NO'
+                                'shop_exists' => $shopPayment->shop ? 'YES' : 'NO',
                             ]);
                         }
                     } catch (\Throwable $e) {
@@ -726,7 +829,7 @@ class Helpers
                     try {
                         // Gifter Email
                         try {
-                            \App\EmailService::shopBuyedUser($shopPayment, $shopPayment->shop?->reward_file_url, $symbol, $deliverable);
+                            EmailService::shopBuyedUser($shopPayment, $shopPayment->shop?->reward_file_url, $symbol, $deliverable);
                         } catch (\Throwable $e) {
                             Log::error('Helpers::sendShopPurchaseEmails: Gifter Email failed', ['error' => $e->getMessage()]);
                         }
@@ -736,7 +839,7 @@ class Helpers
                         if ($gifterEmail && filter_var($gifterEmail, FILTER_VALIDATE_EMAIL)) {
                             Log::info('Helpers::sendShopPurchaseEmails: Notifying Gifter (Push)', ['email' => $gifterEmail]);
                             $creatorName = ucfirst($shopPayment->shop?->user?->name ?? 'A Creator');
-                            $gifterTitle = "🛍️ Purchase Confirmed!";
+                            $gifterTitle = '🛍️ Purchase Confirmed!';
                             $gifterContent = "You bought something from $creatorName ’s shop for {$amountWithcurrency}. They’ll process it soon.";
                             self::sendNotification($gifterTitle, $gifterContent, $gifterEmail);
                         }
@@ -779,7 +882,7 @@ class Helpers
             'cad' => 'CA$',
             'chf' => 'Fr.',
             'sek' => 'kr',
-            'nzd' => 'NZ$'
+            'nzd' => 'NZ$',
         ];
 
         return $arr[$curr];
@@ -797,9 +900,9 @@ class Helpers
                 'title' => $title,
                 'content' => $content,
                 'recipients' => [
-                    ['email' => $email]
-                ]
-            ]
+                    ['email' => $email],
+                ],
+            ],
         ];
         try {
             $apiKey = env('MAGICBELL_API_KEY');
@@ -807,6 +910,7 @@ class Helpers
 
             if (empty($apiKey) || empty($apiSecret)) {
                 Log::error('Helpers::sendNotification: Missing MagicBell credentials');
+
                 return false;
             }
 
@@ -816,7 +920,7 @@ class Helpers
                 'Accept' => 'application/json',
             ])->post('https://api.magicbell.com/notifications', $payload);
 
-            Log::info('MagicBell API response status: ' . $response->status());
+            Log::info('MagicBell API response status: '.$response->status());
 
             if ($response->successful()) {
                 return true;
@@ -825,12 +929,13 @@ class Helpers
             Log::error('Failed to send push notification', [
                 'status' => $response->status(),
                 'reason' => $response->reason(),
-                'body' => $response->body()
+                'body' => $response->body(),
             ]);
 
             return false;
         } catch (\Exception $e) {
-            Log::error('Error sending push notification: ' . $e->getMessage());
+            Log::error('Error sending push notification: '.$e->getMessage());
+
             return false;
         }
     }
@@ -840,9 +945,9 @@ class Helpers
      */
     public static function checkGifterCardVerificationStatus(): bool
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             // No user logged in - this is normal for guest checkouts
             return false;
         }
@@ -873,12 +978,14 @@ class Helpers
 
             if ($user->is_500_limit_exceeded == 0 && $totalAmountPaid && $totalAmountPaid > 500) {
                 $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
+
                 return true;
             }
 
             return false;
         } catch (\Exception $e) {
-            Log::error('Error retrieving authenticated user: ' . $e->getMessage());
+            Log::error('Error retrieving authenticated user: '.$e->getMessage());
+
             return false;
         }
     }
@@ -886,9 +993,9 @@ class Helpers
     /**
      * Build comprehensive Stripe metadata for payments with detailed user and transaction information
      *
-     * @param string $type Payment type (support, wishlist, membership, bill, shop, etc.)
-     * @param mixed $paymentModel Payment model instance
-     * @param array $extra Additional metadata fields
+     * @param  string  $type  Payment type (support, wishlist, membership, bill, shop, etc.)
+     * @param  mixed  $paymentModel  Payment model instance
+     * @param  array  $extra  Additional metadata fields
      * @return array Formatted metadata array
      */
     public static function buildStripeMetadata(string $type, $paymentModel, array $extra = []): array
@@ -958,7 +1065,7 @@ class Helpers
                     'wish_item_id' => (string) ($paymentModel->wish_item_id ?? ''),
                     'wish_name' => $wishItem ? substr($wishItem->name ?? 'Wishlist Content', 0, 100) : 'Wishlist Content',
                     'deliverable_type' => 'wish_content',
-                    'has_content' => $wishItem && (!empty($wishItem->content_file) || !empty($wishItem->reward)) ? '1' : '0',
+                    'has_content' => $wishItem && (! empty($wishItem->content_file) || ! empty($wishItem->reward)) ? '1' : '0',
                 ]);
                 break;
 
@@ -978,13 +1085,13 @@ class Helpers
                     'buyer_name' => $subscriber ? $subscriber->name : ($paymentModel->name ?? $paymentModel->guest_name ?? 'Anonymous'),
                     'buyer_username' => $subscriber ? $subscriber->username : 'guest',
                     'buyer_email' => $subscriber ? $subscriber->email : ($paymentModel->guest_email ?? 'anonymous@spennypiggy.co'),
-                    'buyer_profile_url' => $subscriber ? env('APP_URL') . '/' . $subscriber->username : '',
+                    'buyer_profile_url' => $subscriber ? env('APP_URL').'/'.$subscriber->username : '',
 
                     // Creator Information
                     'creator_id' => (string) ($membership->user_id ?? $paymentModel->creator_id),
                     'creator_name' => $creator ? $creator->name : 'Unknown Creator',
                     'creator_username' => $creator ? $creator->username : '',
-                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL').'/'.$creator->username : '',
 
                     // Membership Details
                     'membership_id' => (string) ($paymentModel->membership_id ?? $membership->id ?? ''),
@@ -992,7 +1099,7 @@ class Helpers
                     'membership_description' => $membership ? $membership->description : '',
                     'subscription_type' => $paymentModel->recurring_type ?? 'monthly',
                     'membership_price' => (string) ($membership->price ?? $paymentModel->amount ?? '0'),
-                    'transaction_description' => 'Membership subscription: ' . ($membership ? $membership->level : 'Level') . ' for ' . ($creator ? $creator->name : 'creator'),
+                    'transaction_description' => 'Membership subscription: '.($membership ? $membership->level : 'Level').' for '.($creator ? $creator->name : 'creator'),
                 ]);
                 break;
 
@@ -1012,20 +1119,20 @@ class Helpers
                     'buyer_name' => $subscriber ? $subscriber->name : ($paymentModel->name ?? 'Anonymous'),
                     'buyer_username' => $subscriber ? $subscriber->username : 'guest',
                     'buyer_email' => $subscriber ? $subscriber->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
-                    'buyer_profile_url' => $subscriber ? env('APP_URL') . '/' . $subscriber->username : '',
+                    'buyer_profile_url' => $subscriber ? env('APP_URL').'/'.$subscriber->username : '',
 
                     // Creator Information
                     'creator_id' => (string) ($wishItem->user_id ?? $paymentModel->creator_id),
                     'creator_name' => $creator ? $creator->name : 'Unknown Creator',
                     'creator_username' => $creator ? $creator->username : '',
-                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL').'/'.$creator->username : '',
 
                     // Subscription Details
                     'wish_item_id' => (string) ($paymentModel->wish_item_id ?? ''),
                     'wish_item_name' => $wishItem ? $wishItem->name : 'Wishlist Item',
                     'subscription_type' => $paymentModel->recurring_type ?? 'monthly',
                     'subscription_purpose' => $wishItem && $wishItem->subscription ? 'task_request' : 'wishlist_contribution',
-                    'transaction_description' => 'Recurring subscription for wishlist item: ' . ($wishItem ? $wishItem->name : 'item'),
+                    'transaction_description' => 'Recurring subscription for wishlist item: '.($wishItem ? $wishItem->name : 'item'),
                 ]);
                 break;
 
@@ -1057,11 +1164,11 @@ class Helpers
                     // never reach payment-facing text (descriptor, receipt, line item).
                     'goal_label' => $bill ? substr((string) ($bill->goal_label ?? ''), 0, 60) : '',
                     'subscription_type' => $paymentModel->recurring_type ?? 'one_time',
-                    'deliverable_type' => $bill && !empty($bill->content_file) ? 'digital_content' : 'recurring_content',
-                    'has_content' => $bill && !empty($bill->content_file) ? '1' : '0',
+                    'deliverable_type' => $bill && ! empty($bill->content_file) ? 'digital_content' : 'recurring_content',
+                    'has_content' => $bill && ! empty($bill->content_file) ? '1' : '0',
                     'fulfilment_status' => 'pending',
                     'delivery_status' => 'pending',
-                    'transaction_description' => 'Recurring content subscription: ' . ($bill ? substr($bill->name, 0, 80) : 'subscription'),
+                    'transaction_description' => 'Recurring content subscription: '.($bill ? substr($bill->name, 0, 80) : 'subscription'),
                 ]);
                 break;
 
@@ -1082,14 +1189,14 @@ class Helpers
                     'buyer_name' => $buyer ? $buyer->name : ($paymentModel->name ?? 'Anonymous'),
                     'buyer_username' => $buyer ? $buyer->username : 'guest',
                     'buyer_email' => $buyer ? $buyer->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
-                    'buyer_profile_url' => $buyer ? env('APP_URL') . '/' . $buyer->username : '',
+                    'buyer_profile_url' => $buyer ? env('APP_URL').'/'.$buyer->username : '',
                     'is_anonymous_purchase' => (string) ($paymentModel->anonymous ?? '0'),
 
                     // Shop Owner Information
                     'creator_id' => (string) ($shopItem->user_id ?? $paymentModel->creator_id),
                     'creator_name' => $creator ? $creator->name : 'Unknown Creator',
                     'creator_username' => $creator ? $creator->username : '',
-                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL').'/'.$creator->username : '',
 
                     // Shop Item Details
                     'shop_item_id' => (string) ($paymentModel->shop_id ?? $shopItem->id ?? ''),
@@ -1097,7 +1204,7 @@ class Helpers
                     'shop_item_description' => $shopItem ? $shopItem->description : '',
                     'shop_item_type' => $shopItem ? $shopItem->type : 'digital',
                     'quantity_purchased' => (string) ($paymentModel->quantity ?? '1'),
-                    'transaction_description' => 'Shop purchase: ' . ($shopItem ? $shopItem->name : 'item') . ' from ' . ($creator ? $creator->name : 'creator'),
+                    'transaction_description' => 'Shop purchase: '.($shopItem ? $shopItem->name : 'item').' from '.($creator ? $creator->name : 'creator'),
                 ]);
                 break;
 
@@ -1144,7 +1251,7 @@ class Helpers
                     'buyer_name' => $subscriber ? $subscriber->name : ($paymentModel->name ?? 'Anonymous'),
                     'buyer_username' => $subscriber ? $subscriber->username : 'guest',
                     'buyer_email' => $subscriber ? $subscriber->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
-                    'buyer_profile_url' => $subscriber ? env('APP_URL') . '/' . $subscriber->username : '',
+                    'buyer_profile_url' => $subscriber ? env('APP_URL').'/'.$subscriber->username : '',
 
                     // Platform Information (SpennyPiggy is both platform and "creator")
                     'creator_id' => 'platform',
@@ -1158,7 +1265,7 @@ class Helpers
                     'currency' => (string) ($paymentModel->currency ?? 'GBP'),
                     'trial_period_days' => '3',
                     'subscription_description' => 'Mandatory monthly subscription for platform access',
-                    'transaction_description' => 'Monthly platform access subscription for ' . ($subscriber ? $subscriber->name : 'user'),
+                    'transaction_description' => 'Monthly platform access subscription for '.($subscriber ? $subscriber->name : 'user'),
                 ]);
                 break;
 
@@ -1167,60 +1274,60 @@ class Helpers
                 $buyer = $paymentModel->user ?? null;
 
                 $baseMetadata = array_merge($commonFields, [
-                    'type'                    => 'product_purchase',
-                    'purpose'                 => 'Marketplace Product Purchase',
-                    'payment_category'        => 'product_purchase',
-                    'product_type'            => 'rye_product',
+                    'type' => 'product_purchase',
+                    'purpose' => 'Marketplace Product Purchase',
+                    'payment_category' => 'product_purchase',
+                    'product_type' => 'rye_product',
 
-                    'buyer_id'                => (string) ($paymentModel->user_id ?? 'guest'),
-                    'buyer_name'              => $buyer ? $buyer->name : ($paymentModel->customer_email ?? 'Anonymous'),
-                    'buyer_email'             => $buyer ? $buyer->email : ($paymentModel->customer_email ?? 'anonymous@spennypiggy.co'),
-                    'buyer_username'          => $buyer ? ($buyer->username ?? 'guest') : 'guest',
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $buyer ? $buyer->name : ($paymentModel->customer_email ?? 'Anonymous'),
+                    'buyer_email' => $buyer ? $buyer->email : ($paymentModel->customer_email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_username' => $buyer ? ($buyer->username ?? 'guest') : 'guest',
 
-                    'payment_amount'          => (string) ($paymentModel->amount ?? ''),
-                    'total_paid'              => (string) ($paymentModel->total_paid ?? ''),
-                    'currency'                => (string) ($paymentModel->currency ?? 'GBP'),
-                    'anonymous'               => (string) ($paymentModel->anonymous ?? '0'),
-                    'message'                 => $paymentModel->message ? substr($paymentModel->message, 0, 200) : '',
-                    'transaction_description' => 'Marketplace product purchase by ' . ($buyer ? $buyer->name : 'buyer'),
+                    'payment_amount' => (string) ($paymentModel->amount ?? ''),
+                    'total_paid' => (string) ($paymentModel->total_paid ?? ''),
+                    'currency' => (string) ($paymentModel->currency ?? 'GBP'),
+                    'anonymous' => (string) ($paymentModel->anonymous ?? '0'),
+                    'message' => $paymentModel->message ? substr($paymentModel->message, 0, 200) : '',
+                    'transaction_description' => 'Marketplace product purchase by '.($buyer ? $buyer->name : 'buyer'),
                 ]);
                 break;
 
             case 'piggy_pot':
             case 'piggy_pot_contribution':
                 $contributor = $paymentModel->user ?? null;
-                $pot         = $paymentModel->piggyPot ?? null;
-                $creator     = $paymentModel->creator ?? $pot?->user ?? null;
+                $pot = $paymentModel->piggyPot ?? null;
+                $creator = $paymentModel->creator ?? $pot?->user ?? null;
 
                 $baseMetadata = array_merge($commonFields, [
-                    'type'                    => 'piggy_pot_contribution',
-                    'purpose'                 => 'Content Purchase',
-                    'payment_category'        => 'piggy_pot',
-                    'product_type'            => 'piggy_pot',
+                    'type' => 'piggy_pot_contribution',
+                    'purpose' => 'Content Purchase',
+                    'payment_category' => 'piggy_pot',
+                    'product_type' => 'piggy_pot',
 
-                    'buyer_id'                => (string) ($paymentModel->user_id ?? 'guest'),
-                    'buyer_name'              => $contributor ? $contributor->name : ($paymentModel->name ?? 'Anonymous'),
-                    'buyer_email'             => $contributor ? $contributor->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
-                    'buyer_username'          => $contributor ? ($contributor->username ?? 'guest') : 'guest',
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $contributor ? $contributor->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_email' => $contributor ? $contributor->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_username' => $contributor ? ($contributor->username ?? 'guest') : 'guest',
 
-                    'creator_id'              => (string) ($paymentModel->creator_id ?? $pot?->user_id ?? ''),
-                    'creator_name'            => $creator ? $creator->name : 'Unknown Creator',
-                    'creator_username'        => $creator ? ($creator->username ?? '') : '',
+                    'creator_id' => (string) ($paymentModel->creator_id ?? $pot?->user_id ?? ''),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? ($creator->username ?? '') : '',
 
-                    'piggy_pot_id'            => (string) ($paymentModel->piggy_pot_id ?? $pot?->id ?? ''),
-                    'content_id'              => (string) ($paymentModel->piggy_pot_id ?? $pot?->id ?? ''),
-                    'piggy_pot_title'         => $pot ? substr($pot->title ?? 'Content', 0, 100) : 'Content',
-                    'deliverable_type'        => $pot && !empty($pot->content_file) ? 'digital_content' : 'content',
-                    'has_content'             => $pot && !empty($pot->content_file) ? '1' : '0',
-                    'fulfilment_status'       => 'pending',
-                    'delivery_status'         => 'pending',
+                    'piggy_pot_id' => (string) ($paymentModel->piggy_pot_id ?? $pot?->id ?? ''),
+                    'content_id' => (string) ($paymentModel->piggy_pot_id ?? $pot?->id ?? ''),
+                    'piggy_pot_title' => $pot ? substr($pot->title ?? 'Content', 0, 100) : 'Content',
+                    'deliverable_type' => $pot && ! empty($pot->content_file) ? 'digital_content' : 'content',
+                    'has_content' => $pot && ! empty($pot->content_file) ? '1' : '0',
+                    'fulfilment_status' => 'pending',
+                    'delivery_status' => 'pending',
                     // Progress goal is descriptive context only — never payment-facing text.
                     // Piggy Pot's title IS the content deliverable, so the goal label here is
                     // the optional progress goal (target amount), not the content title.
-                    'goal_label'              => '',
-                    'goal_target'             => (string) ($pot->target_amount ?? ''),
-                    'message'                 => $paymentModel->message ? substr($paymentModel->message, 0, 200) : '',
-                    'transaction_description' => 'Content purchase from ' . ($creator ? $creator->name : 'creator'),
+                    'goal_label' => '',
+                    'goal_target' => (string) ($pot->target_amount ?? ''),
+                    'message' => $paymentModel->message ? substr($paymentModel->message, 0, 200) : '',
+                    'transaction_description' => 'Content purchase from '.($creator ? $creator->name : 'creator'),
                 ]);
                 break;
 
@@ -1253,10 +1360,10 @@ class Helpers
 
             // Truncate if too long (Stripe limit: 500 chars per value)
             if (strlen($metadata[$key]) > 500) {
-                $metadata[$key] = substr($metadata[$key], 0, 497) . '...';
+                $metadata[$key] = substr($metadata[$key], 0, 497).'...';
                 Log::warning('Stripe metadata value truncated', [
                     'key' => $key,
-                    'original_length' => strlen((string) $value)
+                    'original_length' => strlen((string) $value),
                 ]);
             }
         }

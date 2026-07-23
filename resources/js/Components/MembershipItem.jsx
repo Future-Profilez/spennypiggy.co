@@ -132,13 +132,13 @@ export default function MembershipItem({
         <div
             className={`${item?.status == 0 ? "inactive-item" : ""} h-full group/card`}
         >
-            <div className="relative flex flex-col h-full bg-white rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 overflow-hidden">
+            <div className="relative flex flex-col h-full bg-white rounded-box border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 overflow-hidden">
                 <div className="pt-16 px-6 pb-6 relative bg-[#fdfbf7]">
                     {item?.is_suspended == 1 && (
-                        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-lg z-10 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help">
+                        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-box-sm z-10 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help">
                             Suspended
                             {item.suspend_reason && (
-                                <div className="absolute top-full left-0 mt-2 w-56 bg-black text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/suspend:opacity-100 transition-opacity pointer-events-none">
+                                <div className="absolute top-full left-0 mt-2 w-56 bg-black text-white text-[10px] p-2 rounded-box-sm pointer-events-none">
                                     Reason: {item.suspend_reason}
                                 </div>
                             )}
@@ -153,7 +153,7 @@ export default function MembershipItem({
                                 </div>
 
                                 {item?.edited_reason && (
-                                    <div className="absolute top-full left-0 mt-2 w-64 bg-black text-white text-[11px] leading-relaxed p-3 rounded-xl shadow-lg opacity-0 invisible group-hover/approval:opacity-100 group-hover/approval:visible transition-all duration-200">
+                                    <div className="absolute top-full left-0 mt-2 w-64 bg-black text-white text-[11px] leading-relaxed p-3 rounded-box-sm shadow-lg">
                                         <div className="font-bold text-yellow-300 mb-1">
                                             Edit Reason
                                         </div>
@@ -176,7 +176,7 @@ export default function MembershipItem({
                                 {item?.level}
                             </h3>
                         </div>
-                        <div className="w-14 h-14 rounded-[30px]  border-[3px] border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 group-hover/card:-rotate-3 transition-transform">
+                        <div className="w-14 h-14 rounded-box border-[3px] border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 group-hover/card:-rotate-3 transition-transform">
                             <img
                                 src={item?.perma_link || dummy}
                                 alt={item?.level}
@@ -207,7 +207,7 @@ export default function MembershipItem({
                     {IsloggedIn && (
                         <div className="absolute top-4 right-4">
                             <Menu as="div" className="relative">
-                                <Menu.Button className="p-1.5 rounded-full bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-colors">
+                                <Menu.Button className="p-1.5 min-h-[44px] px-4 rounded-full bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-colors">
                                     <div className="flex gap-[3px]">
                                         <span className="bg-black w-1 h-1 rounded-full"></span>
                                         <span className="bg-black w-1 h-1 rounded-full"></span>
@@ -223,12 +223,12 @@ export default function MembershipItem({
                                     leaveFrom="transform opacity-100 scale-100"
                                     leaveTo="transform opacity-0 scale-95"
                                 >
-                                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50 focus:outline-none overflow-hidden">
+                                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50 focus:outline-none overflow-hidden">
                                         <div className="p-1">
                                             <Menu.Item>
                                                 {({ active }) => (
                                                     <RemoveMembership
-                                                        classes={`w-full text-left px-3 py-2.5 text-xs font-black uppercase rounded-lg ${active ? "bg-red-50 text-red-600" : "text-gray-900 hover:bg-gray-100"}`}
+                                                        classes={`w-full text-left px-3 py-2.5 text-xs font-black uppercase rounded-box-sm ${active ? "bg-red-50 text-red-600" : "text-gray-900 hover:bg-gray-100"}`}
                                                         uuid={item?.uuid}
                                                         text="Cancel Membership"
                                                     />
@@ -301,7 +301,7 @@ export default function MembershipItem({
                     <div className="mt-8">
                         {IsloggedIn ? (
                             <EditMembership
-                                classes="w-full py-3.5 bg-white border-[3px] border-black text-black font-black uppercase text-xs tracking-widest rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                classes="w-full py-3.5 bg-white border-[3px] border-black text-black font-black uppercase text-xs tracking-widest rounded-box-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                 item={item}
                             />
                         ) : (
@@ -311,7 +311,7 @@ export default function MembershipItem({
                                 href={route("membership.checkout", {
                                     uuid: item?.uuid,
                                 })}
-                                className={`w-full py-3.5 ${theme.bg} ${theme.text} border-[3px] border-black font-black uppercase text-xs tracking-widest rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2`}
+                                className={`w-full py-3.5 ${theme.bg} ${theme.text} border-[3px] border-black font-black uppercase text-xs tracking-widest rounded-box-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2`}
                             >
                                 Join Tier
                                 <svg

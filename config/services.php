@@ -89,4 +89,22 @@ return [
         'weekly_job_email' => env('WEEKLY_PAYOUT_JOB_NOTIFY_EMAIL', 'naveen@internetbusinesssolutionsindia.com'),
     ],
 
+    // RYE (physical-goods gifting via retailers). Kill-switch defaults OFF:
+    // this feature predates the content-first compliance rebuild and must not
+    // be reachable until legal/Stripe sign-off. Set RYE_ENABLED=true to enable.
+    'rye' => [
+        'enabled' => env('RYE_ENABLED', false),
+        'api_url' => env('RYE_API_URL', 'https://graphql.api.rye.com/v1/query'),
+        'api_key' => env('RYE_API_KEY'),
+        'webhook_secret' => env('RYE_WEBHOOK_SECRET'),
+        'payment_token' => env('PAYMENT_TOKEN'),
+        'shopper_ip' => env('RYE_SHOPPER_IP'),
+    ],
+
+    // Shared secret for the internal financial-sync endpoint (routes/api.php).
+    // Read via config() so it survives config:cache; env() would return null.
+    'internal_sync' => [
+        'token' => env('INTERNAL_SYNC_TOKEN'),
+    ],
+
 ];

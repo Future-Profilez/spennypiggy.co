@@ -51,8 +51,15 @@ Route::post('/alerts/performance', function (Request $request) {
     return response()->json(['status' => 'received'], 200);
 });
 
-// Founder Bonus API Routes
-Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners']);
+// REMOVED: GET /api/founder/qualify-winners.
+//
+// It had no auth of any kind, while the identical web route is admin-gated
+// (routes/auth.php). qualifyWinners() sets users.is_founder, inserts
+// founder_bonuses rows with a real bonus_amount and payout_status = pending,
+// and emails the creator — and ProcessFounderPayouts then pays those pending
+// rows out over Stripe on its daily run. An anonymous GET therefore created
+// real, self-paying financial liability and consumed founder seats.
+// Use the admin route, or `php artisan` on the server.
 
 // Deliverables API (requires authentication)
 Route::middleware('auth:sanctum')->prefix('deliverables')->group(function () {

@@ -1,476 +1,630 @@
-import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import GuestLayout from '@/Layouts/GuestLayout';
+import React, { useMemo, useState } from "react";
+import { Head, Link, router } from "@inertiajs/react";
+import Authenticated from "@/Layouts/AuthenticatedLayout";
 
-const ActivityStatus = ({ activityStatus, postingCadence, contentBreakdown, blockedPayments, activityTimeline, user }) => {
-    const [refreshing, setRefreshing] = useState(false);
+/* Status → presentation. `error` is a real backend state (validation temporarily
+   unavailable) and used to fall through to a bare "Unknown" chip with no explanation. */
+const STATUS_BADGES = {
+    grace_period: {
+        color: "bg-blue-600 text-white",
+        text: "Grace period",
+        icon: "🆕",
+    },
+    active: {
+        color: "bg-green-600 text-white",
+        text: "Payments active",
+        icon: "✅",
+    },
+    insufficient_content: {
+        color: "bg-red-600 text-white",
+        text: "Payments paused",
+        icon: "⚠️",
+    },
+    not_fully_verified: {
+        color: "bg-yellow-500 text-black",
+        text: "Verification pending",
+        icon: "⏳",
+    },
+    error: {
+        color: "bg-gray-600 text-white",
+        text: "Check unavailable",
+        icon: "ℹ️",
+    },
+};
 
-    const pge = usePage().props;
+const CADENCE_STYLES = {
+    paused: ["bg-red-100 text-red-800 border-red-300", "⛔ Paused"],
+    active: ["bg-green-100 text-green-800 border-green-400", "✅ Active"],
+    grace: ["bg-blue-100 text-blue-800 border-blue-300", "🆕 Grace period"],
+    at_risk: ["bg-yellow-100 text-yellow-900 border-yellow-400", "⚠️ At risk"],
+};
 
-    const getStatusBadge = (status) => {
-        const badges = {
-            'grace_period': { color: 'bg-blue-500', text: 'Grace Period', icon: '🆕' },
-            'active': { color: 'bg-green-500', text: 'Active', icon: '✅' },
-            'insufficient_content': { color: 'bg-red-500', text: 'Payments Paused', icon: '⚠️' },
-            'grace_period_ending': { color: 'bg-yellow-500', text: 'Grace Ending', icon: '⏰' }
-        };
+const BREAKDOWN_ROWS = [
+    ["posts", "📝", "Posts"],
+    ["wishes", "🎁", "Wish Items"],
+    ["memberships", "💎", "Memberships"],
+    ["shops", "🛍️", "Shop Items"],
+    ["bills", "🧾", "Subscriptions"],
+    ["tasks", "📋", "Paid Tasks"],
+];
 
-        const badge = badges[status] || { color: 'bg-gray-500', text: 'Unknown', icon: 'ℹ️' };
+const Card = ({ children, className = "" }) => (
+    <div
+        className={`bg-white rounded-box border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] p-5 md:p-6 ${className}`}
+    >
+        {children}
+    </div>
+);
 
-        return (
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-black ${badge.color}`}>
-                <span className="mr-1">{badge.icon}</span>
-                {badge.text}
-            </span>
+const Note = ({ tone, children }) => {
+    const tones = {
+        red: "bg-red-50 border-red-300 text-red-800",
+        green: "bg-green-50 border-green-300 text-green-800",
+        yellow: "bg-yellow-50 border-yellow-400 text-yellow-900",
+        blue: "bg-blue-50 border-blue-300 text-blue-800",
+        gray: "bg-gray-50 border-gray-300 text-gray-700",
+    };
+    return (
+        <div
+            className={`border rounded-box-sm p-4 mt-4 text-sm leading-relaxed ${tones[tone] || tones.gray}`}
+        >
+            {children}
+        </div>
+    );
+};
+
+/**
+ * 30-day activity, drawn as a calendar-style heatmap.
+ *
+ * The old chart was 30 stacked full-width bars inside a scroll box, and the only way to
+ * read a day's number was a hover tooltip — which never fires on a touch device, and was
+ * styled `text-black` on `bg-gray-900` so it was unreadable even with a mouse.
+ */
+const ActivityHeatmap = ({ timeline = [] }) => {
+    const [selected, setSelected] = useState(null);
+
+    const stats = useMemo(() => {
+        const total = timeline.reduce((sum, d) => sum + d.content_count, 0);
+        const activeDays = timeline.filter((d) => d.content_count > 0).length;
+        const lastWeek = timeline
+            .slice(-7)
+            .reduce((s, d) => s + d.content_count, 0);
+        const prevWeek = timeline
+            .slice(-14, -7)
+            .reduce((s, d) => s + d.content_count, 0);
+        const best = timeline.reduce(
+            (a, b) => (a && a.content_count >= b.content_count ? a : b),
+            null,
         );
+
+        return {
+            total,
+            activeDays,
+            lastWeek,
+            trend: lastWeek - prevWeek,
+            best,
+        };
+    }, [timeline]);
+
+    if (!timeline.length) {
+        return (
+            <p className="text-sm text-gray-600">No activity recorded yet.</p>
+        );
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    const max = Math.max(1, ...timeline.map((d) => d.content_count));
+
+    const shade = (count) => {
+        if (count === 0) return "bg-gray-100 text-gray-400";
+        const ratio = count / max;
+        if (ratio > 0.66) return "bg-green-600 text-white";
+        if (ratio > 0.33) return "bg-green-400 text-black";
+        return "bg-green-200 text-black";
     };
 
-    const ActivityChart = ({ timeline }) => {
-        const maxContent = Math.max(...timeline.map(day => day.content_count));
-        const today = new Date().toISOString().split('T')[0];
-        const totalDaysWithContent = timeline.filter(day => day.content_count > 0).length;
-        const averageContent = (timeline.reduce((sum, day) => sum + day.content_count, 0) / timeline.length).toFixed(1);
-        const totalContent = timeline.reduce((sum, day) => sum + day.content_count, 0);
-        
-        return (
-            <div className="space-y-4">
-                {/* Header with Summary Stats */}
-                <div className="md:flex justify-between items-start mb-4">
-                    <div>
-                        <h4 className="font-medium text-lg mb-2">Last 30 Days Activity</h4>
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                            <span>📊 You posted content on <strong className="text-green-600">{totalDaysWithContent} of 30 days</strong></span>
-                            <span>📈 Average daily content: <strong className="text-blue-600">{averageContent}</strong></span>
-                            <span>🎯 Total items created: <strong className="text-purple-600">{totalContent}</strong></span>
-                        </div>
-                    </div>
-                    <div className="mt-6 md:mt-0 flex items-center space-x-4 text-sm text-gray-600">
-                        <div className="flex items-center">
-                            <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-blue-600 rounded mr-1"></div>
-                            Content Created
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-3 h-3 bg-gray-200 rounded mr-1"></div>
-                            No Activity
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-3 h-3 bg-yellow-400 rounded mr-1 ring-2 ring-yellow-300"></div>
-                            Today
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Activity Chart */}
-                <div className="relative">
-                    <div className="space-y-2 p-4 bg-gray-50 rounded-[30px]    max-h-96 overflow-y-auto">
-                        {timeline.map((day, index) => {
-                            const width = maxContent > 0 ? Math.max((day.content_count / maxContent) * 100, 5) : 5;
-                            const hasContent = day.content_count > 0;
-                            const isToday = day.date === today;
-                            const date = new Date(day.date);
-                            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-                            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                            
-                            // Enhanced color coding with gradients
-                            let barColor = 'bg-gray-200';
-                            if (hasContent) {
-                                if (day.content_count === 1) barColor = 'bg-gradient-to-r from-blue-300 to-blue-400';
-                                else if (day.content_count <= 3) barColor = 'bg-gradient-to-r from-blue-400 to-blue-500';
-                                else barColor = 'bg-gradient-to-r from-blue-500 to-blue-600';
+    const label = (d) =>
+        new Date(d).toLocaleDateString("en-GB", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+        });
+
+    return (
+        <div>
+            <div className="flex flex-wrap gap-3 text-sm mb-4">
+                <span className="bg-gray-100 rounded-box-sm px-3 py-1.5">
+                    <strong>{stats.total}</strong> items in 30 days
+                </span>
+                <span className="bg-gray-100 rounded-box-sm px-3 py-1.5">
+                    Active on <strong>{stats.activeDays}</strong> days
+                </span>
+                <span className="bg-gray-100 rounded-box-sm px-3 py-1.5">
+                    This week <strong>{stats.lastWeek}</strong>
+                    {stats.trend !== 0 && (
+                        <span
+                            className={
+                                stats.trend > 0
+                                    ? "text-green-700 ml-1"
+                                    : "text-red-700 ml-1"
                             }
-                            
-                            return (
-                                <div
-                                    key={day.date}
-                                    className="group relative flex items-center cursor-pointer transition-all duration-200 hover:scale-[1.02]"
-                                >
-                                    {/* Date Label */}
-                                    <div className="flex items-center space-x-2 w-20 flex-shrink-0">
-                                        <div className="text-xs text-gray-600 text-right">
-                                            <div className="font-medium">{dayName}</div>
-                                            <div className="text-gray-400">{dateStr.replace(', ', '')}</div>
-                                        </div>
-                                        {isToday && (
-                                            <div className="w-2 h-2 bg-yellow-400 rounded-full ring-2 ring-yellow-300"></div>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Activity Bar Container */}
-                                    <div className="flex-1 relative ml-3">
-                                        {/* Weekend background shading */}
-                                        {day.is_weekend && (
-                                            <div className="absolute inset-0 bg-blue-50 rounded-sm -z-10 opacity-30"></div>
-                                        )}
-                                        
-                                        {/* Activity Bar */}
-                                        <div 
-                                            className={`h-6 rounded-sm transition-all duration-200 ${
-                                                barColor
-                                            } ${
-                                                isToday ? 'ring-2 ring-yellow-400 ring-offset-1' : ''
-                                            } ${
-                                                day.is_weekend && !hasContent ? 'opacity-40' : ''
-                                            } relative`}
-                                            style={{ width: width + '%' }}
-                                        >
-                                            {/* Content count display inside bar for larger values */}
-                                            {hasContent && day.content_count > 0 && width > 15 && (
-                                                <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-black">
-                                                    {day.content_count}
-                                                </span>
-                                            )}
-                                        </div>
-                                        
-                                        {/* Content count display outside bar for smaller values */}
-                                        {hasContent && day.content_count > 0 && width <= 15 && (
-                                            <span className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 text-xs font-medium text-gray-600">
-                                                {day.content_count}
-                                            </span>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Enhanced Tooltip */}
-                                    <div className="absolute left-full ml-4 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-black text-xs rounded-[30px]    opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                                        <div className="font-semibold">{dateStr} ({dayName})</div>
-                                        <div className={hasContent ? 'text-green-300' : 'text-gray-400'}>
-                                            {hasContent ? `${day.content_count} item${day.content_count !== 1 ? 's' : ''} created` : 'No activity'}
-                                        </div>
-                                        {isToday && <div className="text-yellow-300 text-xs">Today</div>}
-                                        {day.is_weekend && <div className="text-blue-300 text-xs">Weekend</div>}
-                                        {/* Tooltip arrow */}
-                                        <div className="absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    
-                    {/* Progress indicator */}
-                    <div className="mt-3 flex justify-between items-center text-xs text-gray-500 px-4">
-                        <span>{timeline[0]?.date && new Date(timeline[0].date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
-                        <span>Today ({new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})</span>
-                    </div>
-                </div>
-                
-                {/* Activity Insights */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div className="bg-blue-50 rounded-[30px]  md:rounded-[20px]   p-4">
-                        <div className="text-blue-600 text-sm font-medium">Most Active Day</div>
-                        <div className="text-blue-900 font-semibold">
-                            {(() => {
-                                const mostActiveDay = timeline.reduce((prev, current) => 
-                                    (prev.content_count > current.content_count) ? prev : current
-                                );
-                                return mostActiveDay.content_count > 0 
-                                    ? `${new Date(mostActiveDay.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} (${mostActiveDay.content_count} items)`
-                                    : 'No activity yet';
-                            })()
-                            }
-                        </div>
-                    </div>
-                    
-                    <div className="bg-green-50 rounded-[30px]  md:rounded-[20px]   p-4">
-                        <div className="text-green-600 text-sm font-medium">Consistency Score</div>
-                        <div className="text-green-900 font-semibold">
-                            {Math.round((totalDaysWithContent / 30) * 100)}%
-                            <span className="text-xs text-green-600 ml-1">
-                                ({totalDaysWithContent}/30 days)
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div className="bg-purple-50 rounded-[30px]  md:rounded-[20px]   p-4">
-                        <div className="text-purple-600 text-sm font-medium">Content Velocity</div>
-                        <div className="text-purple-900 font-semibold">
-                            {(() => {
-                                const lastWeek = timeline.slice(-7).reduce((sum, day) => sum + day.content_count, 0);
-                                const prevWeek = timeline.slice(-14, -7).reduce((sum, day) => sum + day.content_count, 0);
-                                const trend = lastWeek - prevWeek;
-                                return (
-                                    <span className={trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-600'}>
-                                        {trend > 0 ? '↗️' : trend < 0 ? '↘️' : '→'} {lastWeek} this week
-                                        {trend !== 0 && <span className="text-xs ml-1">({trend > 0 ? '+' : ''}{trend})</span>}
-                                    </span>
-                                );
-                            })()
-                            }
-                        </div>
-                    </div>
-                </div>
+                        >
+                            ({stats.trend > 0 ? "+" : ""}
+                            {stats.trend})
+                        </span>
+                    )}
+                </span>
             </div>
-        );
+
+            {/* Tap, not hover — the detail below updates on touch as well as mouse. */}
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                {timeline.map((day) => {
+                    const isToday = day.date === today;
+                    const isSelected = selected === day.date;
+                    return (
+                        <button
+                            key={day.date}
+                            type="button"
+                            onClick={() =>
+                                setSelected(isSelected ? null : day.date)
+                            }
+                            aria-label={`${label(day.date)}: ${day.content_count} item${day.content_count === 1 ? "" : "s"}`}
+                            aria-pressed={isSelected}
+                            className={`aspect-square rounded-box-sm text-xs font-bold flex items-center justify-center border-2 transition-all
+                                ${shade(day.content_count)}
+                                ${isToday ? "border-black ring-2 ring-yellow-400" : "border-black/20"}
+                                ${isSelected ? "scale-105 ring-2 ring-[#FF007F]" : ""}`}
+                        >
+                            {day.content_count > 0 ? day.content_count : ""}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="mt-3 min-h-[24px] text-sm text-gray-700">
+                {selected ? (
+                    (() => {
+                        const day = timeline.find((d) => d.date === selected);
+                        return (
+                            <span>
+                                <strong>{label(selected)}</strong> —{" "}
+                                {day.content_count > 0
+                                    ? `${day.content_count} item${day.content_count === 1 ? "" : "s"} created`
+                                    : "no activity"}
+                            </span>
+                        );
+                    })()
+                ) : (
+                    <span className="text-gray-500">
+                        Tap any day for detail. Darker means more content.
+                    </span>
+                )}
+            </div>
+
+            {stats.best?.content_count > 0 && (
+                <p className="mt-3 text-sm text-gray-600">
+                    🏆 Busiest day: <strong>{label(stats.best.date)}</strong> (
+                    {stats.best.content_count} items)
+                </p>
+            )}
+        </div>
+    );
+};
+
+const ActivityStatus = ({
+    activityStatus,
+    postingCadence,
+    contentBreakdown,
+    blockedPayments,
+    activityTimeline,
+    suggestions = [],
+    user,
+}) => {
+    const [refreshing, setRefreshing] = useState(false);
+
+    // These all come from the backend now — the page used to hard-code "3" and "28 days"
+    // in six places, and read `current_content`, a key most branches never sent.
+    const required =
+        activityStatus?.required ?? contentBreakdown?.required ?? 3;
+    const periodDays =
+        activityStatus?.period_days ?? contentBreakdown?.period_days ?? 28;
+    const contentCount =
+        activityStatus?.current_content ??
+        activityStatus?.content_count ??
+        contentBreakdown?.total ??
+        0;
+    const needed =
+        activityStatus?.needed ?? Math.max(0, required - contentCount);
+
+    const badge = STATUS_BADGES[activityStatus?.status] || STATUS_BADGES.error;
+    const progress = Math.min(
+        100,
+        Math.round((contentCount / Math.max(1, required)) * 100),
+    );
+
+    const refresh = () => {
+        setRefreshing(true);
+        router.reload({
+            only: [
+                "activityStatus",
+                "contentBreakdown",
+                "blockedPayments",
+                "activityTimeline",
+                "postingCadence",
+                "suggestions",
+            ],
+            onFinish: () => setRefreshing(false),
+        });
     };
 
     return (
-        <div className='bg-[#A2E4B8] !py-8'>
-            <GuestLayout>
-                <Head title="Creator Activity Status" />
-                
-                <div className="container !pt-12 mx-auto px-4 py-8 max-w-6xl">
-                    <div className="flex justify-between items-start mb-6">
-                        <div> 
-                            <h1 className="text-black font-gulfs uppercase text-4xl  text-gray-900">Activity Status</h1>
-                            <p className="text-gray-900 mt-1">Monitor your content activity and payment eligibility</p>
+        <Authenticated>
+            <Head title="Activity Status" />
+
+            <div className="bg-[#A2E4B8] min-h-dvh pb-28">
+                <div className="container mx-auto px-4 pt-8 pb-8 max-w-5xl">
+                    <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+                        <div>
+                            <h1 className="font-gulfs uppercase text-3xl md:text-4xl text-black">
+                                Activity Status
+                            </h1>
+                            <p className="text-black/70 mt-1">
+                                Keep posting to keep your payments running
+                            </p>
                         </div>
+                        <button
+                            type="button"
+                            onClick={refresh}
+                            disabled={refreshing}
+                            className="min-h-[44px] px-4 bg-white border-[3px] border-black rounded-box-sm font-bold text-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
+                        >
+                            {refreshing ? "Refreshing…" : "↻ Refresh"}
+                        </button>
                     </div>
 
-                    {/* Content membership posting cadence */}
+                    {/* ---- Headline: are payments running, and what closes the gap ---- */}
+                    <Card className="mb-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <h2 className="text-xl font-gulfs uppercase">
+                                Payments
+                            </h2>
+                            <span
+                                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold ${badge.color}`}
+                            >
+                                <span aria-hidden="true">{badge.icon}</span>
+                                {badge.text}
+                            </span>
+                        </div>
+
+                        <div className="mt-4">
+                            <div className="flex justify-between text-sm font-bold mb-1.5">
+                                <span>
+                                    {contentCount} of {required} content items
+                                </span>
+                                <span className="text-gray-600">
+                                    last {periodDays} days
+                                </span>
+                            </div>
+                            <div className="h-4 w-full bg-gray-200 rounded-full border-2 border-black overflow-hidden">
+                                <div
+                                    className={`h-full transition-all ${contentCount >= required ? "bg-green-500" : "bg-[#FF007F]"}`}
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {activityStatus?.status === "grace_period" && (
+                            <Note tone="blue">
+                                🎉 You're in your onboarding window —{" "}
+                                <strong>
+                                    {activityStatus.days_remaining} days
+                                </strong>{" "}
+                                left. Payments run whatever your activity. After
+                                that you need at least {required} approved
+                                content items in any {periodDays}-day period.
+                            </Note>
+                        )}
+
+                        {activityStatus?.status === "active" && (
+                            <Note tone="green">
+                                ✨ You have{" "}
+                                <strong>
+                                    {contentCount} approved content items
+                                </strong>{" "}
+                                in the last {periodDays} days. Payments are
+                                running normally.
+                            </Note>
+                        )}
+
+                        {activityStatus?.status === "insufficient_content" && (
+                            <Note tone="red">
+                                ⚠️ <strong>Payments are paused.</strong> Add{" "}
+                                <strong>{needed}</strong> more approved content{" "}
+                                {needed === 1 ? "item" : "items"} to start
+                                receiving payments again — it resumes
+                                automatically within a few minutes of approval.
+                            </Note>
+                        )}
+
+                        {activityStatus?.status === "not_fully_verified" && (
+                            <Note tone="yellow">
+                                ⏳ Finish identity verification and profile
+                                approval to start earning.
+                            </Note>
+                        )}
+
+                        {activityStatus?.status === "error" && (
+                            <Note tone="gray">
+                                ℹ️ We couldn't run this check just now, so
+                                payments are being allowed through. Try
+                                refreshing in a few minutes.
+                            </Note>
+                        )}
+                    </Card>
+
+                    {/* ---- The page used to state the problem and offer nothing to do about it ---- */}
+                    {suggestions.length > 0 && (
+                        <Card className="mb-6">
+                            <h2 className="text-xl font-gulfs uppercase">
+                                Quick ways to add content
+                            </h2>
+                            <p className="text-sm text-gray-600 mt-1">
+                                Each of these counts towards your {required}
+                                -item requirement.
+                            </p>
+                            <div className="grid sm:grid-cols-2 gap-3 mt-4">
+                                {suggestions.map((s) => (
+                                    <Link
+                                        key={s.type}
+                                        href={s.action_url}
+                                        className="flex items-start gap-3 border-2 border-black rounded-box-sm p-4 min-h-[44px] bg-[#fdfbf7] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                    >
+                                        <span
+                                            className="text-xl"
+                                            aria-hidden="true"
+                                        >
+                                            {s.icon || "➕"}
+                                        </span>
+                                        <span>
+                                            <span className="block font-bold text-sm uppercase tracking-wide">
+                                                {s.title}
+                                            </span>
+                                            <span className="block text-xs text-gray-600 mt-0.5">
+                                                {s.description}
+                                            </span>
+                                            <span className="block text-xs text-gray-500 mt-1">
+                                                ~{s.estimated_time}
+                                            </span>
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* ---- Posting cadence (a separate rule from the payment gate above) ---- */}
                     {postingCadence && (
-                        <div className="bg-white rounded-[30px] shadow-lg p-6 mb-8">
-                            <div className="flex items-start justify-between gap-3">
+                        <Card className="mb-6">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <h2 className="text-xl font-semibold mb-1">Content membership posting</h2>
-                                    <p className="text-gray-700">
-                                        <strong>{postingCadence.member_posts}/{postingCadence.required}</strong> member posts in the last {postingCadence.window_days} days
+                                    <h2 className="text-xl font-gulfs uppercase">
+                                        Member posting
+                                    </h2>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        A separate rule: recurring subscribers
+                                        must keep receiving content.
                                     </p>
                                 </div>
                                 {(() => {
-                                    const map = {
-                                        paused: ['bg-red-100 text-red-800 border-red-300', '⛔ Paused'],
-                                        active: ['bg-green-100 text-green-800 border-green-400', '✅ Active'],
-                                        grace: ['bg-blue-100 text-blue-800 border-blue-300', '🆕 Grace period'],
-                                        at_risk: ['bg-yellow-100 text-yellow-800 border-yellow-300', `⚠️ Post ${postingCadence.posts_needed} more`],
-                                    };
-                                    const [cls, label] = map[postingCadence.status] || map.at_risk;
+                                    const [cls, label] =
+                                        CADENCE_STYLES[postingCadence.status] ||
+                                        CADENCE_STYLES.at_risk;
                                     return (
-                                        <span className={`whitespace-nowrap text-sm font-bold px-4 py-2 rounded-full border ${cls}`}>{label}</span>
+                                        <span
+                                            className={`whitespace-nowrap text-sm font-bold px-4 py-2 rounded-full border ${cls}`}
+                                        >
+                                            {label}
+                                        </span>
                                     );
                                 })()}
                             </div>
 
+                            <p className="mt-4 font-bold">
+                                {postingCadence.member_posts}/
+                                {postingCadence.required} member posts in the
+                                last {postingCadence.window_days} days
+                            </p>
+
                             {postingCadence.paused ? (
-                                <div className="bg-red-50 border border-red-200 rounded-[20px] p-4 mt-4">
-                                    <p className="text-red-800">
-                                        ⛔ <strong>Your content memberships are paused.</strong> Bill & membership subscribers are not being charged.
-                                        Post <strong>{postingCadence.posts_needed}</strong> more member {postingCadence.posts_needed === 1 ? 'post' : 'posts'} (Members / Subscribers visibility) to resume payments automatically.
-                                    </p>
-                                </div>
-                            ) : postingCadence.status === 'at_risk' ? (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-[20px] p-4 mt-4">
-                                    <p className="text-yellow-800">
-                                        ⚠️ Post <strong>{postingCadence.posts_needed}</strong> more member {postingCadence.posts_needed === 1 ? 'post' : 'posts'} within the {postingCadence.window_days}-day window, or your memberships will be paused.
-                                    </p>
-                                </div>
-                            ) : postingCadence.status === 'grace' ? (
-                                <div className="bg-blue-50 border border-blue-200 rounded-[20px] p-4 mt-4">
-                                    <p className="text-blue-800">
-                                        🆕 You're within your onboarding window — memberships won't be paused yet. Aim for at least {postingCadence.required} member posts every {postingCadence.window_days} days.
-                                    </p>
-                                </div>
+                                <Note tone="red">
+                                    ⛔{" "}
+                                    <strong>
+                                        Your recurring subscriptions are paused
+                                    </strong>{" "}
+                                    — subscribers are not being charged. Post{" "}
+                                    <strong>
+                                        {postingCadence.posts_needed}
+                                    </strong>{" "}
+                                    more{" "}
+                                    {postingCadence.posts_needed === 1
+                                        ? "post"
+                                        : "posts"}{" "}
+                                    to Members or Subscribers and they resume
+                                    automatically.
+                                </Note>
+                            ) : postingCadence.status === "at_risk" ? (
+                                <Note tone="yellow">
+                                    ⚠️ Post{" "}
+                                    <strong>
+                                        {postingCadence.posts_needed}
+                                    </strong>{" "}
+                                    more member{" "}
+                                    {postingCadence.posts_needed === 1
+                                        ? "post"
+                                        : "posts"}{" "}
+                                    within the {postingCadence.window_days}-day
+                                    window, or your subscriptions will pause.
+                                </Note>
+                            ) : postingCadence.status === "grace" ? (
+                                <Note tone="blue">
+                                    🆕 You're in your onboarding window —
+                                    nothing will pause yet. Aim for{" "}
+                                    {postingCadence.required} member posts every{" "}
+                                    {postingCadence.window_days} days.
+                                </Note>
                             ) : (
-                                <div className="bg-green-50 border border-green-200 rounded-[20px] p-4 mt-4">
-                                    <p className="text-green-800">
-                                        ✅ You're meeting the posting requirement. Keep posting at least {postingCadence.required} member posts every {postingCadence.window_days} days to keep memberships active.
-                                    </p>
-                                </div>
+                                <Note tone="green">
+                                    ✅ You're meeting the requirement. Keep it
+                                    at {postingCadence.required} member posts
+                                    every {postingCadence.window_days} days.
+                                </Note>
                             )}
-                        </div>
+
+                            {user?.username && (
+                                <Link
+                                    href={`/${user.username}?page=feed`}
+                                    className="mt-4 inline-flex items-center justify-center min-h-[44px] px-5 bg-[#FF007F] text-white font-black uppercase text-sm tracking-wide border-[3px] border-black rounded-box-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                >
+                                    Write a member post
+                                </Link>
+                            )}
+                        </Card>
                     )}
 
-                    {/* Current Status Card */}
-                    <div className="bg-white rounded-[30px]    shadow-lg p-6 mb-8">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <div className="flex items-center space-x-3 mb-3">
-                                    <h2 className="text-xl font-semibold">Current Status</h2>
-                                    {getStatusBadge(activityStatus.status)}
-                                </div>
-                                
-                                {activityStatus.status === 'grace_period' && (
-                                    <div className="bg-blue-50 border border-blue-200 rounded-[30px]    p-4">
-                                        <p className="text-blue-800">
-                                            🎉 Welcome to SpennypPiggy! You're in your <strong>{activityStatus.days_remaining} day grace period</strong>. 
-                                            During this time, you can receive payments regardless of your activity level. 
-                                            After your grace period ends, you'll need at least 3 approved content items in the last 28 days to continue receiving payments.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {activityStatus.status === 'active' && (
-                                    <div className="bg-green-50 border border-green-200 rounded-[20px]   p-4">
-                                        <p className="text-green-800">
-                                            ✨ Great job! You have <strong>{activityStatus.current_content} approved content items</strong> in the last 28 days. 
-                                            Your payments are active and you're meeting all requirements.
-                                        </p>
-                                    </div>
-                                )}
-
-                                
-                                {activityStatus.status === 'insufficient_content' && (
-                                    <div className="bg-red-50 border border-red-200 rounded-[30px]    p-4">
-                                        <p className="text-red-800">
-                                            ⚠️ <strong>Payments are currently paused.</strong> You have {activityStatus.current_content || 0} approved content items, 
-                                            but need at least 3 in the last 28 days to receive payments.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {activityStatus.status === 'grace_period_ending' && (
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-[30px]    p-4">
-                                        <p className="text-yellow-800">
-                                            ⏰ Your grace period ends in <strong>{activityStatus.days_remaining} days</strong>. 
-                                            You currently have {activityStatus.current_content || 0} approved content items. 
-                                            {(activityStatus.current_content || 0) < 3 ? 
-                                                ` You need ${3 - (activityStatus.current_content || 0)} more to maintain payment eligibility.` :
-                                                ' You\'re all set to continue receiving payments after your grace period ends!'
-                                            }
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Content Breakdown */}
                     <div className="grid md:grid-cols-2 gap-6 mb-6">
-                        <div className="bg-white rounded-[30px]    shadow p-6">
-                            <h3 className="text-lg font-gulfs uppercase mb-4">Content Breakdown (Last 28 Days)</h3>
+                        {/* ---- Breakdown ---- */}
+                        <Card>
+                            <h3 className="text-lg font-gulfs uppercase mb-4">
+                                Content ({periodDays} days)
+                            </h3>
                             <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">📝 Posts</span>
-                                    <span className="font-medium">{contentBreakdown.posts}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">🎁 Wish Items</span>
-                                    <span className="font-medium">{contentBreakdown.wishes}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">💎 Memberships</span>
-                                    <span className="font-medium">{contentBreakdown.memberships}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">🛍️ Shop Items</span>
-                                    <span className="font-medium">{contentBreakdown.shops}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">🧾 Bills</span>
-                                    <span className="font-medium">{contentBreakdown.bills}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">📋 Tasks</span>
-                                    <span className="font-medium">{contentBreakdown.tasks}</span>
-                                </div>
-                                <hr className='!my-4' />
-                                <div className="flex justify-between items-center font-semibold">
-                                    <span>Total Active Content</span>
-                                    <span className={`${contentBreakdown.total >= 3 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {contentBreakdown.total} / 3
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-[30px]    shadow p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-gulfs uppercase">Payment Impact</h3>
-                                <button 
-                                    onClick={() => {
-                                        setRefreshing(true);
-                                        router.reload({ only: ['blockedPayments'] });
-                                        setTimeout(() => setRefreshing(false), 1000);
-                                    }}
-                                    disabled={refreshing}
-                                    className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-[30px]    transition-colors"
-                                >
-                                    {refreshing ? '🔄' : '↻'} Refresh
-                                </button>
-                            </div>
-                            
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Recent Blocked Payments (30 days)</span>
-                                    <span className={`font-medium ${blockedPayments.count > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {blockedPayments.count}
-                                    </span>
-                                </div>
-                                
-                                {blockedPayments.last_blocked_at && (
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-600">Last Blocked Payment</span>
-                                            <div className="text-right text-sm">
-                                                <div className="font-medium text-red-600">
-                                                    {blockedPayments.last_blocked_at_human || new Date(blockedPayments.last_blocked_at).toLocaleDateString()}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {new Date(blockedPayments.last_blocked_at).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        {blockedPayments.recent_attempts && blockedPayments.recent_attempts.length > 0 && (
-                                            <div className="bg-gray-50 rounded-[30px]    p-3">
-                                                <div className="text-xs text-gray-600 mb-2">Most Recent Blocked Payment:</div>
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="text-gray-700">
-                                                        {blockedPayments.recent_attempts[0].payment_type} • {blockedPayments.recent_attempts[0].amount}
-                                                    </span>
-                                                    <span className="text-gray-500">
-                                                        {blockedPayments.recent_attempts[0].blocked_at}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
+                                {BREAKDOWN_ROWS.map(([key, icon, label]) => (
+                                    <div
+                                        key={key}
+                                        className="flex justify-between items-center text-sm"
+                                    >
+                                        <span className="text-gray-700">
+                                            {icon} {label}
+                                        </span>
+                                        <span className="font-bold">
+                                            {contentBreakdown?.[key] ?? 0}
+                                        </span>
                                     </div>
-                                )}
-                                
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Total Blocked Amount</span>
-                                    <span className="font-medium text-red-600">
-                                        {blockedPayments.currency} {blockedPayments.total_amount_blocked}
+                                ))}
+                                <hr className="!my-4" />
+                                <div className="flex justify-between items-center font-bold">
+                                    <span>Total</span>
+                                    <span
+                                        className={
+                                            contentBreakdown?.total >= required
+                                                ? "text-green-700"
+                                                : "text-red-700"
+                                        }
+                                    >
+                                        {contentBreakdown?.total ?? 0} /{" "}
+                                        {required}
                                     </span>
                                 </div>
                             </div>
-                            
-                            {blockedPayments.count > 0 && (
-                                <div className="mt-4 p-3 bg-red-50 rounded-[30px]   ">
-                                    <p className="text-red-700 text-sm">
-                                        💡 <strong>Tip:</strong> Once you add enough content to meet requirements, payments will resume automatically within a few minutes!
-                                    </p>
-                                    
-                                    {blockedPayments.recent_attempts && blockedPayments.recent_attempts.length > 1 && (
-                                        <details className="mt-2">
-                                            <summary className="text-xs text-red-600 cursor-pointer hover:text-red-700">
-                                                View all {blockedPayments.recent_attempts.length} blocked payments ↓
+                        </Card>
+
+                        {/* ---- Blocked payments ---- */}
+                        <Card>
+                            <h3 className="text-lg font-gulfs uppercase mb-4">
+                                Payment impact (30 days)
+                            </h3>
+
+                            {blockedPayments?.count > 0 ? (
+                                <>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-700">
+                                            Blocked payments
+                                        </span>
+                                        <span className="font-bold text-red-700">
+                                            {blockedPayments.count}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm mt-3">
+                                        <span className="text-gray-700">
+                                            Total blocked
+                                        </span>
+                                        <span className="font-bold text-red-700">
+                                            {blockedPayments.currency}{" "}
+                                            {
+                                                blockedPayments.total_amount_blocked
+                                            }
+                                        </span>
+                                    </div>
+                                    {blockedPayments.last_blocked_at_human && (
+                                        <div className="flex justify-between items-center text-sm mt-3">
+                                            <span className="text-gray-700">
+                                                Most recent
+                                            </span>
+                                            <span className="font-bold">
+                                                {
+                                                    blockedPayments.last_blocked_at_human
+                                                }
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <Note tone="red">
+                                        💡 Once you meet the requirement,
+                                        payments resume automatically within a
+                                        few minutes.
+                                    </Note>
+
+                                    {blockedPayments.recent_attempts?.length >
+                                        1 && (
+                                        <details className="mt-3">
+                                            <summary className="text-sm text-red-700 cursor-pointer min-h-[44px] flex items-center">
+                                                View all{" "}
+                                                {
+                                                    blockedPayments
+                                                        .recent_attempts.length
+                                                }{" "}
+                                                blocked payments
                                             </summary>
-                                            <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                                                {blockedPayments.recent_attempts.map((attempt, index) => (
-                                                    <div key={attempt.id} className="text-xs text-gray-600 flex justify-between">
-                                                        <span>{attempt.payment_type} • {attempt.amount}</span>
-                                                        <span>{attempt.blocked_at}</span>
-                                                    </div>
-                                                ))}
+                                            <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                                                {blockedPayments.recent_attempts.map(
+                                                    (a) => (
+                                                        <div
+                                                            key={a.id}
+                                                            className="text-xs text-gray-600 flex justify-between gap-2 border-b border-gray-100 pb-1.5"
+                                                        >
+                                                            <span>
+                                                                {a.payment_type}{" "}
+                                                                • {a.amount}
+                                                            </span>
+                                                            <span className="whitespace-nowrap">
+                                                                {a.blocked_at}
+                                                            </span>
+                                                        </div>
+                                                    ),
+                                                )}
                                             </div>
                                         </details>
                                     )}
-                                </div>
+                                </>
+                            ) : (
+                                <Note tone="green">
+                                    ✅ No payments have been blocked in the last
+                                    30 days.
+                                </Note>
                             )}
-                            
-                            {blockedPayments.count === 0 && (
-                                <div className="mt-4 p-3 bg-green-50 rounded-[30px]   ">
-                                    <p className="text-green-700 text-sm">
-                                        ✅ <strong>Great!</strong> No payments have been blocked in the last 30 days.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                        </Card>
                     </div>
 
-                    {/* Activity Timeline */}
-                    <div className="bg-white rounded-[30px]    shadow p-6">
-                        <ActivityChart timeline={activityTimeline} />
-                        <div className="mt-4 text-sm text-gray-600">
-                            <p>Each bar represents content created on that day. Weekend activity is shown with reduced opacity.</p>
-                        </div>
-                    </div>
+                    {/* ---- Timeline ---- */}
+                    <Card>
+                        <h3 className="text-lg font-gulfs uppercase mb-4">
+                            Last 30 days
+                        </h3>
+                        <ActivityHeatmap timeline={activityTimeline} />
+                    </Card>
                 </div>
-            </GuestLayout>
-        </div>
+            </div>
+        </Authenticated>
     );
 };
 

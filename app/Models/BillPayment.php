@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Helpers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 class BillPayment extends Model
 {
-    use HasFactory, SoftDeletes;
+    use \App\Models\Concerns\RecurringPaymentState, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -34,6 +33,10 @@ class BillPayment extends Model
         'twitter_response',
         'end',
         'upcoming_payment',
+        'current_period_start',
+        'current_period_end',
+        'stripe_status',
+        'cancel_at_period_end',
         'renewal_reminded_for',
         'creator_currency',
         'charge_currency',
@@ -51,10 +54,16 @@ class BillPayment extends Model
         'sender',
     ];
 
+    protected $casts = [
+        'current_period_start' => 'datetime',
+        'current_period_end' => 'datetime',
+        'cancel_at_period_end' => 'boolean',
+    ];
+
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function user()
@@ -96,6 +105,7 @@ class BillPayment extends Model
                 $sender = true;
             }
         }
+
         return $sender;
     }
 }

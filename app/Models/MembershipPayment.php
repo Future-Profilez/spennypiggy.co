@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Helpers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 class MembershipPayment extends Model
 {
-    use HasFactory, SoftDeletes;
+    use \App\Models\Concerns\RecurringPaymentState, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -35,6 +34,10 @@ class MembershipPayment extends Model
         'anonymous',
         'end',
         'upcoming_payment',
+        'current_period_start',
+        'current_period_end',
+        'stripe_status',
+        'cancel_at_period_end',
         'renewal_reminded_for',
         'status',
         'twitter_response',
@@ -55,12 +58,17 @@ class MembershipPayment extends Model
         'sender',
     ];
 
+    protected $casts = [
+        'current_period_start' => 'datetime',
+        'current_period_end' => 'datetime',
+        'cancel_at_period_end' => 'boolean',
+    ];
+
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
-
 
     public function membership()
     {
@@ -71,12 +79,12 @@ class MembershipPayment extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function deliverables()
     {
         return $this->hasMany(Deliverable::class, 'gifter_id', 'user_id')
-                    ->where('product_type', 'membership')
-                    ->whereRaw('JSON_EXTRACT(metadata, "$.membership_id") = ?', [$this->membership_id]);
+            ->where('product_type', 'membership')
+            ->whereRaw('JSON_EXTRACT(metadata, "$.membership_id") = ?', [$this->membership_id]);
     }
 
     public function getSenderAttribute()
@@ -87,6 +95,7 @@ class MembershipPayment extends Model
                 $sender = true;
             }
         }
+
         return $sender;
     }
 }

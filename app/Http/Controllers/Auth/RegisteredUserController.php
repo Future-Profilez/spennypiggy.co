@@ -124,7 +124,12 @@ class RegisteredUserController extends Controller
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => ['required', 'string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
-            'role'     => ['required'],
+            // 0 = gifter, 1 = creator. 2 is ADMIN and must never be reachable from
+            // this form: `role` is mass-assigned into User::create() and
+            // EnsureUserIsAdmin gates purely on role === '2', so an unvalidated
+            // `role` made "POST /register with role=2" a route to platform admin
+            // (including the founder payout triggers).
+            'role'     => ['required', \Illuminate\Validation\Rule::in([0, 1, '0', '1'])],
             'promo'    => ['nullable', 'string'], // referral code
             'crm_invite_token' => ['nullable', 'string', 'max:255'],
         ], $messages);

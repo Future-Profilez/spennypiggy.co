@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers;
 use App\Jobs\CheckMediaModeration;
 use App\Models\PiggyPot;
 use App\Services\UserProfileService;
@@ -25,6 +26,9 @@ class PiggyPotController extends Controller
      */
     private const DEFAULT_COVER_UUID = '6d5506b2-7361-4c58-8f1b-dfe1e196885a';
 
+    /** Recent supporters shown per pot on the creator dashboard. */
+    private const DASHBOARD_CONTRIBUTIONS_LIMIT = 25;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -43,14 +47,12 @@ class PiggyPotController extends Controller
     public function index(Request $request)
     {
         $query = PiggyPot::where('user_id', Auth::id())
-            ->with(['contributions' => function ($q) {
-                $q->where('status', 'paid')
-                    ->with('user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved')
-                    ->orderBy('created_at', 'desc');
-            }])
             ->withSum(['contributions as total_raised' => function ($q) {
                 $q->where('status', 'paid');
             }], 'amount')
+            ->withCount(['contributions as contributions_count' => function ($q) {
+                $q->where('status', 'paid');
+            }])
             ->orderBy('created_at', 'desc');
 
         if ($request->has('pot_id') && $request->pot_id) {
@@ -58,6 +60,18 @@ class PiggyPotController extends Controller
         }
 
         $piggyPots = $query->get();
+
+        // Only the most recent supporters are rendered — eager-loading every
+        // paid contribution pulled a long-running pot's whole history into
+        // memory on each dashboard view.
+        $piggyPots->each(function ($pot) {
+            $pot->setRelation('contributions', $pot->contributions()
+                ->where('status', 'paid')
+                ->with('user:id,name,username,avatar,avatar_cdn_modifier,avatar_approved')
+                ->orderByDesc('created_at')
+                ->limit(self::DASHBOARD_CONTRIBUTIONS_LIMIT)
+                ->get());
+        });
 
         $allPotsList = PiggyPot::where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
@@ -75,6 +89,14 @@ class PiggyPotController extends Controller
      */
     public function store(Request $request)
     {
+        // A purchasable listing needs a payment destination. Without it the pot
+        // still publishes and the first supporter hits a TypeError at checkout
+        // (hasCardPaymentsCapability takes a non-nullable string), so the crash
+        // lands on the buyer instead of the creator who can fix it.
+        if (empty(Auth::user()->account_id)) {
+            return redirect()->back()->with('error', 'Please connect your Stripe account before creating a Piggy Pot.');
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -82,7 +104,7 @@ class PiggyPotController extends Controller
                 'required',
                 'numeric',
                 function ($attribute, $value, $fail) {
-                    $err = \App\Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
+                    $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
                     if ($err) {
                         $fail($err);
                     }
@@ -143,7 +165,7 @@ class PiggyPotController extends Controller
                 'required',
                 'numeric',
                 function ($attribute, $value, $fail) {
-                    $err = \App\Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
+                    $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 500);
                     if ($err) {
                         $fail($err);
                     }

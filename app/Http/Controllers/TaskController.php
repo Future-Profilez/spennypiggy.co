@@ -31,6 +31,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -96,6 +97,14 @@ class TaskController extends Controller
     {
         if (Auth::user()->role !== 1) {
             abort(403, 'Only creators can create tasks.');
+        }
+
+        // A purchasable listing needs a payment destination. Without it the task
+        // still publishes and the first supporter hits a TypeError at checkout
+        // (CheckoutMethodResolver::resolve takes a non-nullable string), so the
+        // crash lands on the buyer instead of the creator who can fix it.
+        if (empty(Auth::user()->account_id)) {
+            return redirect()->back()->with('error', 'Please connect your Stripe account before creating a paid task.');
         }
 
         $request->validate([
@@ -841,28 +850,42 @@ class TaskController extends Controller
         $platformFee = isset($metadata->platform_fee) ? ((float) $metadata->platform_fee / $multiplier) : 0;
         $transferAmount = isset($metadata->transfer_amount) ? ((float) $metadata->transfer_amount / $multiplier) : 0;
 
-        // Create TaskPurchase
-        $purchase = TaskPurchase::create([
-            'task_id' => $taskId,
-            'supporter_id' => $buyerId,
-            'creator_id' => $creatorId,
-            'stripe_session_id' => $session->id,
-            'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
-            'charge_id' => $chargeId,
-            'amount' => $amount,
-            'currency' => $currency,
-            'status' => 'paid', // Always paid in sync handler (and especially for local dev)
-            'payment_type' => $metadata->payment_type ?? 'STANDARD',
-            'fee_profile' => $metadata->fee_profile ?? 'card',
-            'gifter_message' => $metadata->gifter_message ?? null,
-            'admin_fee' => $adminFee,
-            'platform_fee' => $platformFee,
-            'vat_amount' => $vat,
-            'transfer_amount' => $transferAmount,
-            'dispute_status' => 'none',
-            'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
-            'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
-        ]);
+        // Create TaskPurchase. The unique index on stripe_session_id is the real race
+        // guard — the pre-check above narrows the window, this catches the case where the
+        // webhook inserted between the check and here: re-fetch the winner instead of
+        // creating a duplicate (which would double GMV + SLA + emails).
+        try {
+            $purchase = TaskPurchase::create([
+                'task_id' => $taskId,
+                'supporter_id' => $buyerId,
+                'creator_id' => $creatorId,
+                'stripe_session_id' => $session->id,
+                'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
+                'charge_id' => $chargeId,
+                'amount' => $amount,
+                'currency' => $currency,
+                'status' => 'paid', // Always paid in sync handler (and especially for local dev)
+                'payment_type' => $metadata->payment_type ?? 'STANDARD',
+                'fee_profile' => $metadata->fee_profile ?? 'card',
+                'gifter_message' => $metadata->gifter_message ?? null,
+                'admin_fee' => $adminFee,
+                'platform_fee' => $platformFee,
+                'vat_amount' => $vat,
+                'transfer_amount' => $transferAmount,
+                'dispute_status' => 'none',
+                'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
+                'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
+            ]);
+        } catch (QueryException $e) {
+            $existing = TaskPurchase::where('stripe_session_id', $session->id)->first();
+            if ($existing) {
+                Log::info('createTaskPurchaseSync: lost create race, returning existing purchase', ['session_id' => $session->id]);
+
+                return $existing;
+            }
+
+            throw $e;
+        }
 
         // SLA logic
         $slaHours = (int) ($metadata->sla_hours ?? 0);

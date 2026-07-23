@@ -119,10 +119,17 @@ export default function Billing_dashboard(props) {
         return matchesStatus && matchesSearch;
     });
 
-    // Calculate collection rate
-    const collectionRate =
-        data.total_revenue > 0
-            ? (data.total_paid_amount / data.total_revenue) * 100
+    // Share of this month's revenue that is expected to recur next month. Subscriptions
+    // are collected by Stripe, so a "collection rate" is always 100% and meaningless —
+    // recurring share is the number a creator actually cares about.
+    const recurringRate =
+        data.monthly_revenue > 0
+            ? Math.min(
+                  100,
+                  (Number(data.estimated_next_month || 0) /
+                      Number(data.monthly_revenue || 0)) *
+                      100,
+              )
             : 0;
 
     // Get chart data based on selected period
@@ -282,7 +289,7 @@ export default function Billing_dashboard(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-screen bg-gray-200">
+                <div className="min-h-dvh bg-gray-200">
                     <div className="containerbox m-auto">
                         <div className="py-6 md:py-10 w-full m-auto">
                             {/* Header Section */}
@@ -314,7 +321,7 @@ export default function Billing_dashboard(props) {
                             {/* Stats Grid - Main Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 mb-8">
                                 {/* TOTAL BILLS */}
-                                <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
                                         <div className="w-12 h-12 bg-blue-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                             📄
@@ -338,7 +345,7 @@ export default function Billing_dashboard(props) {
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full bg-green-400"></div>
 
-                                        <span className="text-xs text-green-300">
+                                        <span className="text-xs text-emerald-700">
                                             {data.active_bills || 0} active
                                             bills
                                         </span>
@@ -346,7 +353,7 @@ export default function Billing_dashboard(props) {
                                 </div>
 
                                 {/* TOTAL REVENUE */}
-                                <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
                                         <div className="w-12 h-12 bg-emerald-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                             💰
@@ -372,10 +379,10 @@ export default function Billing_dashboard(props) {
 
                                     <div className="w-full">
                                         <div className="flex justify-between text-xs text-gray-600 mb-2">
-                                            <span>Collection Rate</span>
+                                            <span>Recurring share</span>
 
                                             <span>
-                                                {Math.round(collectionRate)}%
+                                                {Math.round(recurringRate)}%
                                             </span>
                                         </div>
 
@@ -383,7 +390,7 @@ export default function Billing_dashboard(props) {
                                             <div
                                                 className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500"
                                                 style={{
-                                                    width: `${collectionRate}%`,
+                                                    width: `${recurringRate}%`,
                                                 }}
                                             ></div>
                                         </div>
@@ -391,7 +398,7 @@ export default function Billing_dashboard(props) {
                                 </div>
 
                                 {/* MONTHLY REVENUE */}
-                                <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
                                         <div className="w-12 h-12 bg-amber-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                             📈
@@ -416,18 +423,18 @@ export default function Billing_dashboard(props) {
                                     </div>
 
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-green-300">
+                                        <span className="text-xs text-emerald-700">
                                             {data.total_payments || 0} payments
                                         </span>
 
-                                        <span className="text-xs text-amber-300">
+                                        <span className="text-xs text-amber-700">
                                             Live tracking
                                         </span>
                                     </div>
                                 </div>
 
                                 {/* NEXT MONTH */}
-                                <div className="bg-white border-[1px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border-[1px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
                                         <div className="w-12 h-12 bg-cyan-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                             🚀
@@ -454,7 +461,7 @@ export default function Billing_dashboard(props) {
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
 
-                                        <span className="text-xs text-cyan-300">
+                                        <span className="text-xs text-cyan-700">
                                             Based on active subscriptions
                                         </span>
                                     </div>
@@ -464,7 +471,7 @@ export default function Billing_dashboard(props) {
                             {/* Top Performing Bills & Chart Section */}
                             <div className="flex flex-col gap-6 md:gap-8 mb-10">
                                 {/* Top Performing Bills */}
-                                <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
                                     <div className="mb-4">
                                         <h2 className="text-xl font-GillSans uppercase font-black text-black">
                                             Top Performing Bills
@@ -479,13 +486,13 @@ export default function Billing_dashboard(props) {
                                                 (bill, index) => (
                                                     <div
                                                         key={index}
-                                                        className="flex items-center justify-between p-3 rounded-3xl bg-gray-100 border-2 border-black rounded-[20px] mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
+                                                        className="flex items-center justify-between p-3 rounded-box-sm bg-gray-100 border-2 border-black rounded-[20px] mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
                                                         onClick={() =>
                                                             (window.location.href = `/billing/bill/${bill.uuid}`)
                                                         }
                                                     >
                                                         <div className="flex items-center gap-3 flex-1">
-                                                            <div className="w-8 h-8 rounded-lg bg-blue-200 flex items-center justify-center text-sm font-bold text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                            <div className="w-8 h-8 rounded-box-sm bg-blue-200 flex items-center justify-center text-sm font-bold text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                                                 #{index + 1}
                                                             </div>
                                                             <div className="flex-1">
@@ -549,10 +556,10 @@ export default function Billing_dashboard(props) {
                                                     No bills created yet
                                                 </p>
                                                 <Link
-                                                    href="/bills/create"
-                                                    className="text-blue-400 text-sm mt-2 inline-block"
+                                                    href={route("user.show", { username: auth?.user?.username, page: "bills" })}
+                                                    className="text-[#FF007F] font-bold text-sm mt-2 inline-block"
                                                 >
-                                                    Create your first bill →
+                                                    Create your first subscription →
                                                 </Link>
                                             </div>
                                         )}
@@ -561,7 +568,7 @@ export default function Billing_dashboard(props) {
 
                                 {/* REVENUE ANALYTICS */}
 
-                                <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                                     {/* HEADER */}
 
                                     <div className="p-6 ">
@@ -582,7 +589,7 @@ export default function Billing_dashboard(props) {
 
                                                     <div
                                                         className={`
-                                                        px-4 py-2 rounded-[30px] 
+                                                        px-4 py-2 rounded-box-sm 
                                                         flex items-center gap-2
                                                         border
                                                         ${
@@ -614,8 +621,8 @@ export default function Billing_dashboard(props) {
                                                         )
                                                     }
                                                     className="
-                                                    bg-white/10 border border-white/10
-                                                    rounded-[30px]  px-5 py-3 text-sm
+                                                    bg-white border-2 border-black
+                                                    rounded-box-sm min-h-[44px] px-5 py-3 text-sm
                                                     text-black focus:outline-none
                                                     focus:ring-2 focus:ring-cyan-500
                                                 "
@@ -641,7 +648,7 @@ export default function Billing_dashboard(props) {
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b-[2px] ">
                                         {/* GROWTH */}
 
-                                        <div className="rounded-[30px]  bg-white/5 border border-white/10 p-5">
+                                        <div className="rounded-box bg-white border-2 border-black p-5">
                                             <p className="text-gray-600 text-xs uppercase tracking-wider">
                                                 Monthly Growth
                                             </p>
@@ -680,7 +687,7 @@ export default function Billing_dashboard(props) {
 
                                         {/* BEST MONTH */}
 
-                                        <div className="rounded-[30px]  bg-white/5 border border-white/10 p-5">
+                                        <div className="rounded-box bg-white border-2 border-black p-5">
                                             <p className="text-gray-600 text-xs uppercase tracking-wider">
                                                 Best Performing Month
                                             </p>
@@ -699,7 +706,7 @@ export default function Billing_dashboard(props) {
 
                                         {/* AVG */}
 
-                                        <div className="rounded-[30px]  bg-white/5 border border-white/10 p-5">
+                                        <div className="rounded-box bg-white border-2 border-black p-5">
                                             <p className="text-gray-600 text-xs uppercase tracking-wider">
                                                 Average Revenue
                                             </p>
@@ -720,7 +727,7 @@ export default function Billing_dashboard(props) {
                                     {/* CHART */}
 
                                     <div className="p-6">
-                                        <div className="rounded-3xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 p-5">
+                                        <div className="rounded-box bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 p-5">
                                             {data.monthly_data?.length > 0 ? (
                                                 <RevenueChart
                                                     data={chartData}
@@ -749,7 +756,7 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* All Bills Section with Filters */}
-                            <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-6">
+                            <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-6">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4  gap-4">
                                     <div>
                                         <h2 className="text-xl font-GillSans uppercase font-black text-black">
@@ -770,7 +777,7 @@ export default function Billing_dashboard(props) {
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm text-black placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                className="bg-white border-2 border-black rounded-box-sm px-4 py-2 text-sm text-black placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div className="flex gap-2">
@@ -778,7 +785,7 @@ export default function Billing_dashboard(props) {
                                                 onClick={() =>
                                                     setFilterStatus("all")
                                                 }
-                                                className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "all" ? "bg-blue-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
+                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm transition-colors ${filterStatus === "all" ? "bg-blue-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
                                             >
                                                 All
                                             </button>
@@ -786,7 +793,7 @@ export default function Billing_dashboard(props) {
                                                 onClick={() =>
                                                     setFilterStatus("active")
                                                 }
-                                                className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "active" ? "bg-green-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
+                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm transition-colors ${filterStatus === "active" ? "bg-green-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
                                             >
                                                 Active
                                             </button>
@@ -794,7 +801,7 @@ export default function Billing_dashboard(props) {
                                                 onClick={() =>
                                                     setFilterStatus("inactive")
                                                 }
-                                                className={`px-3 py-2 rounded-lg text-sm transition-colors ${filterStatus === "inactive" ? "bg-red-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
+                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm transition-colors ${filterStatus === "inactive" ? "bg-red-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
                                             >
                                                 Inactive
                                             </button>
@@ -847,7 +854,7 @@ export default function Billing_dashboard(props) {
                                                                             className="w-8 h-8 rounded-lg object-cover"
                                                                         />
                                                                     ) : (
-                                                                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-lg">
+                                                                        <div className="w-8 h-8 rounded-box-sm bg-blue-500/20 flex items-center justify-center text-lg">
                                                                             📄
                                                                         </div>
                                                                     )}
@@ -883,7 +890,7 @@ export default function Billing_dashboard(props) {
                                                                 <div className="inline-flex items-center gap-1 mt-1 px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/10">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
 
-                                                                    <span className="text-[10px] uppercase tracking-wide text-cyan-300">
+                                                                    <span className="text-[10px] uppercase tracking-wide text-cyan-700">
                                                                         supporters
                                                                     </span>
                                                                 </div>
@@ -917,7 +924,7 @@ export default function Billing_dashboard(props) {
                                                                     href={`/billing/bill/${bill.uuid}`}
                                                                     className="
                                                                 inline-flex items-center gap-2
-                                                                px-4 py-2 rounded-xl
+                                                                px-4 py-2 rounded-box-sm
                                                                 bg-blue-300 text-black text-sm font-black uppercase border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all
                                                             "
                                                                 >
@@ -949,10 +956,10 @@ export default function Billing_dashboard(props) {
                                         {!searchTerm &&
                                             filterStatus === "all" && (
                                                 <Link
-                                                    href="/bills/create"
-                                                    className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm"
+                                                    href={route("user.show", { username: auth?.user?.username, page: "bills" })}
+                                                    className="min-h-[44px] inline-flex items-center px-4 py-2 bg-[#FF007F] text-white font-bold border-2 border-black rounded-box-sm text-sm"
                                                 >
-                                                    Create Bill →
+                                                    Create subscription →
                                                 </Link>
                                             )}
                                     </div>
